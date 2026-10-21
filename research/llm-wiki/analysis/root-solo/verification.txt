@@ -1,0 +1,13 @@
+Run environment: Windows PowerShell, Python 3.10; checkout worktrees/root-solo-main.
+
+PASS
+- python -m py_compile gateway/app/agent_service.py gateway/app/review.py gateway/app/core.py tests/root_solo_check.py
+- node --check gateway/app/agent_static/console.js
+- bash -n console.sh
+- python tests/open_endpoints.py (exit 0)
+- python tests/root_solo_check.py (6 tests, OK)
+- python tests/intake_risk_tier_check.py (25 tests, 13 skipped, exit 0)
+
+INCOMPLETE
+- python tests/intake_identity_test.py: ImportError, datetime.UTC is unavailable in system Python 3.10.
+- GitHub origin fetch: unable to connect to github.com:443. Local origin/main ref remained d3238dccd6a6fb7266a7b9201f5b133e2a025aea.

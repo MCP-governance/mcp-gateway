@@ -113,6 +113,8 @@ services:
       - ./field/ca:/field-ca:ro
     environment:
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
+      # D-188: 한 사람이 운영하는 현장 기본값. 0으로 끄면 서로 다른 관리자 요건이 그대로 돈다.
+      ROOT_SOLO_APPROVAL: ${ROOT_SOLO_APPROVAL:-1}
       FIELD_CA_FILE: /field-ca/root.crt
       ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
       ENDPOINT_GATEWAY_IPS: ${ENDPOINT_GATEWAY_IPS:-${APPLIANCE_BIND}}

@@ -49,6 +49,8 @@ usage: ./console.sh <command>
                          빈 폐기 보관 볼륨을 한 번 초기화
   field pc-command       개인별 설치 키트 다운로드와 관리형 설치 절차
   field set-password <아이디>
+  field add-account <아이디> --role 관리자|직원 [--department 부서]
+                         계정 한 개를 만듦(비밀번호는 화면에 보이지 않게 두 번 입력)
                          계정 한 개의 비밀번호를 바꿈
   field register-pc <이름> [owner] [platform]
                          실제 PC를 단말 장치로 등록(기존 /api/endpoint/devices), 장치 키를 한 번 출력
@@ -425,6 +427,38 @@ print("바꿨습니다" if n else "그런 계정이 없습니다")
 sys.exit(0 if n else 1)' "$email"
 }
 
+field_add_account() {
+  local name="${1:?아이디를 지정하세요 (예: admin1)}" role="" department="운영" pw again
+  shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --role) role="${2:-}"; shift 2 ;;
+      --department) department="${2:-}"; shift 2 ;;
+      *) echo "알 수 없는 옵션: $1" >&2; exit 2 ;;
+    esac
+  done
+  case "$role" in 관리자|admin) role=admin ;; 직원|user) role=user ;; *) echo "--role 관리자 또는 --role 직원 을 지정하세요" >&2; exit 2 ;; esac
+  [[ "$name" =~ ^[a-z][a-z0-9]*([._-][a-z0-9]+)*$ && ${#name} -ge 3 && ${#name} -le 32 ]] || {
+    echo "아이디는 영문 소문자로 시작하는 3~32자(숫자·. _ - 가능)여야 합니다" >&2; exit 2; }
+  read -r -s -p "비밀번호(12자 이상, 화면에 보이지 않음): " pw; echo
+  [[ ${#pw} -ge 12 ]] || { echo "12자 이상으로 정하세요" >&2; exit 1; }
+  read -r -s -p "비밀번호 확인: " again; echo
+  [[ "$pw" == "$again" ]] || { echo "두 비밀번호가 다릅니다" >&2; exit 1; }
+  # 관리자 토큰은 root와 같은 형식(아이디), 직원은 가입 승인과 같은 형식(emp-아이디)이다.
+  printf '%s' "$pw" | docker compose "${FIELD_COMPOSE[@]}" exec -T agent-service python -c '
+import os, sys, psycopg
+name, role, department = sys.argv[1], sys.argv[2], sys.argv[3]
+token, db_role = (name, "admin") if role == "admin" else ("emp-" + name, "employee")
+with psycopg.connect(os.environ["DATABASE_URL"]) as db:
+    taken = db.execute("SELECT 1 FROM principals WHERE lower(email)=lower(%s) OR user_id=%s OR token=%s", (name, name, token)).fetchone()
+    if taken:
+        print("이미 있는 아이디입니다"); sys.exit(1)
+    db.execute("""INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash,managed_required)
+                  VALUES (%s,%s,%s,%s,%s,%s,crypt(%s, gen_salt(%s, 12)),%s)""",
+               (token, name, name, name, db_role, department, sys.stdin.read(), "bf", db_role != "admin"))
+print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었습니다: " + name)' "$name" "$role" "$department"
+}
+
 # 설치 권한은 OS 관리자에게 있고, 가입자용 grant는 Console 인증 뒤 생성한다.
 field_pc_command() {
   field_browser_trust
@@ -469,6 +503,7 @@ field_dispatch() {
     register-pc) shift; field_register_pc "$@" ;;
     pc-command) field_pc_command ;;
     set-password) shift; field_set_password "$@" ;;
+    add-account) shift; field_add_account "$@" ;;
     *) usage; exit 2 ;;
   esac
 }
