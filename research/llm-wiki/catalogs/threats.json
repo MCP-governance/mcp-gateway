@@ -119,7 +119,8 @@
         "full_stack_lab/gateway/app/review.py",
         "full_stack_lab/opa/policy_test.rego",
         "full_stack_lab/runtime/worker.py",
-        "full_stack_lab/supply_chain/intake_worker.py"
+        "full_stack_lab/supply_chain/intake_worker.py",
+        "full_stack_lab/tests/intake_identity_test.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -147,9 +148,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
-        "committed_sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
-        "normalized_sha256": "580f6e1b6ade6953c84c76ac0ce98493b2f41d8c19d26ea5a95ee32207f32514",
+        "sha256": "c76a75c02f942d5738cdb7217c412ca9776853b5f472038c4be6dcd7c13bf5bf",
+        "committed_sha256": "c76a75c02f942d5738cdb7217c412ca9776853b5f472038c4be6dcd7c13bf5bf",
+        "normalized_sha256": "c76a75c02f942d5738cdb7217c412ca9776853b5f472038c4be6dcd7c13bf5bf",
         "worktree_modified": false
       },
       {
@@ -240,7 +241,8 @@
       "files_match_review": false,
       "changed_review_files": [
         "full_stack_lab/gateway/app/agent_service.py",
-        "full_stack_lab/gateway/app/review.py"
+        "full_stack_lab/gateway/app/review.py",
+        "full_stack_lab/tests/intake_identity_test.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -650,9 +652,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
-        "sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
-        "committed_sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
-        "normalized_sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
+        "sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "committed_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "normalized_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
         "worktree_modified": false
       },
       {
@@ -2453,9 +2455,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
-        "sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
-        "committed_sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
-        "normalized_sha256": "98429817eddfc8f1abe85cd0a80a883f53cf6a103e02d80b05f0f783610182a2",
+        "sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "committed_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
+        "normalized_sha256": "d29870a729c580f58e11d1654be32959944a2da74844f68f11feff753c675a20",
         "worktree_modified": false
       }
     ],
