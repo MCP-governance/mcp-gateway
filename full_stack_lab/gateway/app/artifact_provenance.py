@@ -3,7 +3,13 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import re
+import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlsplit
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.exceptions import InvalidSignature
@@ -17,6 +23,126 @@ PAYLOAD_TYPE = "application/vnd.in-toto+json"
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
 SLSA_PREDICATE = "https://slsa.dev/provenance/v1"
 POLICY_ID = "MCP-SUPPLY-001"
+REFERRER_TIMEOUT_SECONDS = 3
+REFERRER_TOTAL_SECONDS = 8
+REFERRER_MAX_DESCRIPTORS = 16
+REFERRER_MAX_BLOBS = 8
+REFERRER_MAX_BYTES = 2 << 20
+REFERRER_ACCEPT = ", ".join((
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.oci.image.manifest.v1+json",
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+    "application/vnd.docker.distribution.manifest.v2+json",
+    "application/json",
+))
+
+
+class _SameOriginRedirect(HTTPRedirectHandler):
+    def __init__(self, origin: str):
+        self.origin = origin
+
+    def redirect_request(self, request, fp, code, msg, headers, new_url):
+        if urlsplit(new_url).scheme != "https" or urlsplit(new_url).netloc.lower() != self.origin:
+            raise URLError("registry redirect left the configured origin")
+        return super().redirect_request(request, fp, code, msg, headers, new_url)
+
+
+def _registry_get(origin: str, path: str, *, accept: str = REFERRER_ACCEPT, deadline: float | None = None) -> bytes:
+    timeout = REFERRER_TIMEOUT_SECONDS if deadline is None else min(REFERRER_TIMEOUT_SECONDS, deadline - time.monotonic())
+    if timeout <= 0:
+        raise TimeoutError("OCI referrer lookup exceeded time limit")
+    request = Request(origin + path, headers={"Accept": accept})
+    opener = build_opener(_SameOriginRedirect(urlsplit(origin).netloc.lower()))
+    with opener.open(request, timeout=timeout) as response:
+        data = response.read(REFERRER_MAX_BYTES + 1)
+    if len(data) > REFERRER_MAX_BYTES:
+        raise ValueError("OCI referrer response exceeds limit")
+    return data
+
+
+def _attestation_from_index(origin: str, repository: str, index: dict, deadline: float) -> dict | None:
+    descriptors = index.get("manifests")
+    if not isinstance(descriptors, list):
+        descriptors = [index] if isinstance(index, dict) and index.get("layers") else []
+    for descriptor in descriptors[:REFERRER_MAX_DESCRIPTORS]:
+        if not isinstance(descriptor, dict) or not isinstance(descriptor.get("digest"), str):
+            continue
+        manifest_bytes = _registry_get(origin, f"/v2/{repository}/manifests/{quote(descriptor['digest'], safe=':')}",
+                                       deadline=deadline)
+        manifest = json.loads(manifest_bytes)
+        layers = manifest.get("layers") or manifest.get("blobs") or []
+        config = manifest.get("config")
+        candidates = ([config] if isinstance(config, dict) else []) + (layers if isinstance(layers, list) else [])
+        for blob in candidates[:REFERRER_MAX_BLOBS]:
+            if not isinstance(blob, dict):
+                continue
+            media_type = str(blob.get("mediaType", "")).lower()
+            if "dsse" not in media_type and "in-toto" not in media_type:
+                continue
+            if isinstance(blob.get("data"), str):
+                raw = base64.b64decode(blob["data"], validate=True)
+            elif isinstance(blob.get("digest"), str):
+                raw = _registry_get(origin, f"/v2/{repository}/blobs/{quote(blob['digest'], safe=':')}", deadline=deadline)
+            else:
+                continue
+            if len(raw) > REFERRER_MAX_BYTES:
+                raise ValueError("OCI attestation exceeds limit")
+            envelope = json.loads(raw)
+            if (isinstance(envelope, dict) and envelope.get("payloadType") == PAYLOAD_TYPE
+                    and isinstance(envelope.get("payload"), str) and isinstance(envelope.get("signatures"), list)
+                    and envelope["signatures"] and all(isinstance(sig, dict) and isinstance(sig.get("sig"), str)
+                                                        for sig in envelope["signatures"])):
+                payload = base64.b64decode(envelope["payload"], validate=True)
+                json.loads(payload)
+                return envelope
+    return None
+
+
+def collect_oci_referrer(registry_origins: list[str], repository: str, digest: str) -> dict | None:
+    """Find a DSSE in-toto envelope for an allowed OCI repository; all discovery failures are optional."""
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest) or not re.fullmatch(r"[a-z0-9]+(?:[._-][a-z0-9]+)*(?:/[a-z0-9]+(?:[._-][a-z0-9]+)*)*", repository):
+        return None
+    deadline = time.monotonic() + REFERRER_TOTAL_SECONDS
+    for origin in registry_origins[:4]:
+        parsed = urlsplit(origin)
+        if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
+                or parsed.path not in ("", "/") or parsed.query or parsed.fragment):
+            continue
+        clean_origin = f"https://{parsed.netloc.lower()}"
+        referrers = f"/v2/{repository}/referrers/{quote(digest, safe=':')}"
+        try:
+            try:
+                index = json.loads(_registry_get(clean_origin, referrers, deadline=deadline))
+            except HTTPError as exc:
+                if exc.code not in (404, 405):
+                    continue
+                fallback_tag = "sha256-" + digest.split(":", 1)[1]
+                index = json.loads(_registry_get(clean_origin,
+                                                 f"/v2/{repository}/manifests/{fallback_tag}", deadline=deadline))
+            if envelope := _attestation_from_index(clean_origin, repository, index, deadline):
+                return envelope
+        except (OSError, URLError, HTTPError, AttributeError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+            continue
+    return None
+
+
+def allowed_registry_origins(value: str | None = None) -> list[str]:
+    """Read exact HTTPS registry origins from administrator configuration, never from intake input."""
+    return [item.strip().rstrip("/") for item in (value if value is not None else
+            os.getenv("MCP_PROVENANCE_REGISTRY_ALLOWLIST", "")).split(",") if item.strip()]
+
+
+def collect_intake_referrer(registry_origins: list[str], repository_url: str, digest: str) -> dict | None:
+    """Map an approved GitHub source path to the same path in each configured OCI registry."""
+    parsed = urlsplit(repository_url)
+    if parsed.scheme != "https" or parsed.hostname != "github.com" or parsed.query or parsed.fragment:
+        return None
+    parts = [part for part in parsed.path.strip("/").split("/") if part]
+    if len(parts) != 2:
+        return None
+    # shortcut: source digest exists before build; use an approved OCI image coordinate when intake supplies one.
+    repository = "/".join(part.removesuffix(".git").lower() for part in parts)
+    return collect_oci_referrer(registry_origins, repository, digest)
 
 
 def trust_keys(path: str | Path = "") -> dict:

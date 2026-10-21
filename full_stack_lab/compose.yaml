@@ -224,6 +224,7 @@ services:
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
       INTAKE_REPORT_DIR: /intake-reports
+      MCP_PROVENANCE_REGISTRY_ALLOWLIST: ${MCP_PROVENANCE_REGISTRY_ALLOWLIST:-}
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
       IDP_ISSUER: ${IDP_ISSUER:-http://agent-service:8000}

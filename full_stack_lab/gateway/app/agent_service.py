@@ -1938,6 +1938,36 @@ async def approval_row(request_id: UUID, user: dict) -> dict:
     return row
 
 
+async def collect_proposal_provenance(row: dict, record: dict) -> tuple[dict, str | None]:
+    """OCI discovery is optional; only a discovered envelope is sent through the fail-closed verifier."""
+    record = dict(record or {})
+    artifact = record.get("artifact") or {}
+    digest = artifact.get("sha256")
+    if row.get("intake_kind") == "repository" and isinstance(digest, str):
+        envelope = await asyncio.to_thread(
+            artifact_provenance.collect_intake_referrer,
+            artifact_provenance.allowed_registry_origins(), row.get("repository_url") or "", f"sha256:{digest}")
+        if envelope is not None:
+            record["verification"] = {**(record.get("verification") or {}), "attestation": envelope,
+                                       "attestation_source": "oci-referrer"}
+    verification = record.get("verification") or {}
+    if verification.get("attestation"):
+        try:
+            keys = artifact_provenance.trust_keys(os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+        except (OSError, ValueError, TypeError):
+            keys = None
+        if keys is None:
+            proof = {"status": artifact_provenance.UNAVAILABLE, "reason": "신뢰 키 설정을 읽을 수 없습니다."}
+        else:
+            proof = artifact_provenance.verify_source_attestation(record, str(digest or ""), keys)
+    else:
+        proof = artifact_provenance.verify_source_attestation(record, str(digest or ""), {})
+    verification = {**verification, "provenance_status": proof["status"], "provenance_reason": proof["reason"],
+                    "provenance_keyid": proof.get("keyid")}
+    record["verification"] = verification
+    return record, artifact_provenance.blocking_reason(proof)
+
+
 @app.post("/api/mcp-requests/{request_id}/approval-preview")
 async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, user: dict = Depends(admin_caller),
                                   authorization: str | None = Header(default=None)):
@@ -1971,6 +2001,9 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
     else:
         blockers.append({"code": "execution-missing", "message": "실행 계약이 없습니다. 관리 실행을 확인하세요."})
     record = intake_proposal.source_record(row, found) if found else row.get("provenance") or {}
+    record, provenance_blocker = await collect_proposal_provenance(row, record)
+    if provenance_blocker:
+        blockers.append({"code": "provenance-mismatch", "message": provenance_blocker})
     gate = await review.intake_gate({**row, "provenance": record})
     blockers += [b for b in gate["blockers"] if b["code"] != "critical"]
     if row["intake_kind"] == "repository" and (not row.get("validated_at") or not row.get("commit_sha")):
@@ -2049,6 +2082,15 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
             raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
         current = {**row, "provenance": proposal["provenance"]}
+        try:
+            keys = (artifact_provenance.trust_keys(os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+                    if (proposal["provenance"].get("verification") or {}).get("attestation") else {})
+        except (OSError, ValueError, TypeError) as exc:
+            raise HTTPException(409, "출처 증명 신뢰 키를 확인할 수 없습니다.") from exc
+        proof = artifact_provenance.verify_source_attestation(
+            proposal["provenance"], str(((proposal["provenance"].get("artifact") or {}).get("sha256") or "")), keys)
+        if blocker := artifact_provenance.blocking_reason(proof):
+            raise HTTPException(409, f"출처 증명 재검증에서 보류했습니다: {blocker}")
         gate = await review.intake_gate(current)
         if (intake_proposal.scan_basis(gate) != proposal["scan_sha256"]
                 or any(b["code"] != "critical" for b in gate["blockers"])):
