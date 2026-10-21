@@ -43,12 +43,13 @@ FLOORS = (
     ("자율 실행 권한", lambda i: i["permission"] == "x" and i["autonomy"] == "autonomous", "high"),
 )
 
-# Critical finding acceptance is separate; a reason never substitutes for an approver.
+# D-189. High and very high need two different administrators; a written reason never substitutes for one.
+# Very high also needs the written reason ("required"). Critical finding acceptance is separate (review.accept_risk).
 APPROVAL = {
     "low": {"approvers": 1, "reason": "none"},
     "medium": {"approvers": 1, "reason": "none"},
     "high": {"approvers": 2, "reason": "none"},
-    "very_high": {"approvers": 2, "reason": "none"},
+    "very_high": {"approvers": 2, "reason": "required"},
 }
 MIN_REASON = 10  # the length approval already asks of a written risk acceptance
 
@@ -102,8 +103,10 @@ def decide(tier: str, approvers: int, reason: str | None) -> tuple[str, str]:
     """What the next approval click means: finish it ("approve"), record it as the first of two
     ("cosign") or refuse it for a missing written reason ("refuse"). `approvers` counts the person
     clicking plus the different people who already recorded theirs for this same input."""
-    rule = APPROVAL[tier]
+    rule, written = APPROVAL[tier], len((reason or "").strip()) >= MIN_REASON
     label = TIER_LABELS[tier]
+    if rule["reason"] == "required" and not written:
+        return "refuse", f"{label} 등급은 위험 수용 사유({MIN_REASON}자 이상)가 필요합니다."
     if approvers >= rule["approvers"]:
         return "approve", ""
     return "cosign", f"{label} 등급은 서로 다른 관리자 {rule['approvers']}명의 승인이 필요합니다. 현재 {approvers}명."
@@ -153,7 +156,7 @@ def package(stated: Any, intake: dict[str, Any]) -> list[dict[str, str]]:
     elif rule["approvers"] == 1:
         way = "관리자 1명"
     else:
-        way = f"관리자 {rule['approvers']}명"
+        way = f"관리자 {rule['approvers']}명" + (" 및 위험 수용 사유" if rule["reason"] == "required" else "")
     return [
         {"item": "처리 대상", "value": intake.get("display_name") or "—", "form": "처리 시스템"},
         {"item": "처리 목적", "value": intake.get("purpose") or "—", "form": "처리의 목적·성격"},

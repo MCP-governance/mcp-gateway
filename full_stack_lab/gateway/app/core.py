@@ -671,15 +671,18 @@ async def register_server(request: dict, actor: str) -> dict:
     approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
-    if stated["tier"] in {"high", "very_high"}:
+    rule = risk_tier.APPROVAL[stated["tier"]]
+    if rule["approvers"] > 1:
         approvers = []
         for person in approved_risk.get("approvers") or []:
             if await review.same_person(person, intake["submitted_by"]):
                 raise ValueError("신청자는 승인자로 셀 수 없습니다.")
             if not any([await review.same_person(person, other) for other in approvers]):
                 approvers.append(person)
-        if len(approvers) < 2:
+        if len(approvers) < rule["approvers"]:
             raise ValueError("높은 위험 등급은 서로 다른 관리자 두 명이 승인해야 등록할 수 있습니다.")
+    if rule["reason"] == "required" and not approved_risk.get("written_reason"):
+        raise ValueError("매우 높은 위험 등급은 승인 때 기록한 위험 수용 사유가 필요합니다.")
     ranks = list(risk_tier.CHOICES["data_class"])
     if ranks.index(request["data_class"]) > ranks.index(intake["risk_input"]["data_class"]):
         raise ValueError("등록할 수 없습니다: 신청에 적은 데이터 등급보다 높은 등급입니다. 영향평가 입력을 고쳐 다시 승인하세요.")

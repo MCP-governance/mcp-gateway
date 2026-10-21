@@ -1734,6 +1734,7 @@ class OneClickApproval(StrictModel):
     tools: list[str] = Field(min_length=1, max_length=300)
     valid_days: int = Field(default=90, ge=1, le=365)
     critical_reason: str = Field(default="", max_length=1000)
+    risk_reason: str = Field(default="", max_length=1000)
     supplier_assurance: dict = Field(default_factory=dict)
     residency: dict = Field(default_factory=dict)
 
@@ -1880,9 +1881,17 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                     approvers.append(actor)
         if not any([await review.same_person(user["principal"], seen) for seen in approvers]):
             approvers.append(user["principal"])
-        required = 2 if assessed["tier"] in {"high", "very_high"} else 1
-        if len(approvers) < required:
-            pending = {"scope": scope, "approvers": approvers, "critical_reason": reason}
+        if assessed.get("tier") not in risk_tier.APPROVAL:
+            raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
+        # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
+        risk_reason = request.risk_reason.strip()
+        verdict, message = risk_tier.decide(assessed["tier"], len(approvers), risk_reason)
+        if verdict == "refuse":
+            raise HTTPException(422, message)
+        risk_reasons = ({**((pending or {}).get("risk_reasons") or {}), user["principal"]: risk_reason}
+                        if risk_tier.APPROVAL[assessed["tier"]]["reason"] == "required" else {})
+        if verdict == "cosign":
+            pending = {"scope": scope, "approvers": approvers, "critical_reason": reason, "risk_reasons": risk_reasons}
             changed = await review.transition(
                 "UPDATE mcp_intake_requests SET evidence=%s WHERE id=%s AND evidence=%s AND status=%s RETURNING id,status",
                 (Jsonb({**evidence, "one_click_pending": pending}), request_id, Jsonb(evidence), row["status"]),
@@ -1898,9 +1907,11 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location)
-        risk_record = {**assessed, "approvers": approvers}
-        updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record,
-                   "one_click_scope": scope, "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason}}
+        risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
+                       "reasons": risk_reasons}
+        updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
+                   "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
+                                         "risk_reasons": risk_reasons}}
         record = dict(proposal["provenance"])
         internal_url = row.get("internal_repo_url")
         if row["intake_kind"] == "remote-endpoint":
