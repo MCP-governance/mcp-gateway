@@ -265,6 +265,8 @@ class GatewayWiringTests(unittest.IsolatedAsyncioTestCase):
             "REGISTER_LOCK": asyncio.Lock(), "datetime": datetime, "UTC": UTC, "review": review,
             "registry": SimpleNamespace(runtime=lambda: doc, save_runtime=lambda _: None, sync=AsyncMock()),
             "upstream": SimpleNamespace(release_pool=release),
+            # A remote server has nothing running on a device; the local stop is a no-op here.
+            "local_jobs": SimpleNamespace(quiesce=AsyncMock()),
         })
         with patch.object(mcp_sessions, "terminate", AsyncMock(side_effect=RuntimeError("database unavailable"))):
             with self.assertRaises(RuntimeError):

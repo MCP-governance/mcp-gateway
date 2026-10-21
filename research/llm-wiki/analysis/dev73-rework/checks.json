@@ -1,0 +1,310 @@
+[
+  {
+    "name": "py_compile",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "py_compile",
+      "endpoint-agent/local-runner.py",
+      "endpoint-agent/managed-linux.py",
+      "full_stack_lab/field/sign-local-manifest.py",
+      "full_stack_lab/gateway/app/agent_service.py",
+      "full_stack_lab/gateway/app/core.py",
+      "full_stack_lab/gateway/app/decommission.py",
+      "full_stack_lab/gateway/app/endpoint_plane.py",
+      "full_stack_lab/gateway/app/idp.py",
+      "full_stack_lab/gateway/app/local_jobs.py",
+      "full_stack_lab/gateway/app/main.py",
+      "full_stack_lab/gateway/app/ops_response.py",
+      "full_stack_lab/gateway/app/upstream.py",
+      "full_stack_lab/tests/dev73_rework_check.py",
+      "full_stack_lab/tests/dev73_rework_pg_check.py",
+      "full_stack_lab/tests/local_jobs_pg_check.py",
+      "full_stack_lab/tests/local_run_manifest_check.py",
+      "research/llm-wiki/analysis/dev73-rework/capture_evidence.py",
+      "research/llm-wiki/analysis/dev73-rework/final_checks.py",
+      "research/llm-wiki/analysis/dev73-rework/run_checks.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.079885+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:43.218766+00:00"
+  },
+  {
+    "name": "javascript",
+    "command": [
+      "node",
+      "--check",
+      "full_stack_lab/gateway/app/agent_static/console.js"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.218766+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:43.266485+00:00"
+  },
+  {
+    "name": "open_endpoints",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/open_endpoints.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.267488+00:00",
+    "returncode": 0,
+    "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 92개 (그중 장치 자격 13개: GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:43.329350+00:00"
+  },
+  {
+    "name": "console_state",
+    "command": [
+      "node",
+      "--test",
+      "full_stack_lab/tests/console-state.test.mjs"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.329350+00:00",
+    "returncode": 0,
+    "stdout": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.5938ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.6268ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.1558ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2318ms)\n✔ the status phrase never presents a failed poll as fresh (0.7558ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.4179ms)\n✔ splitBy counts per key with a decision split, largest first (0.2105ms)\n✔ sankey layers never merge a server with a harness of the same name (0.2257ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.2935ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.4502ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (1.1157ms)\n✔ latency values read as durations and never invent a measurement (0.2701ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.227ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (9.4469ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.1942ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 77.4246\n",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:43.450613+00:00"
+  },
+  {
+    "name": "dev73_rework_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/dev73_rework_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.451608+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "test_F2_current_generation_accepts_then_each_change_blocks (__main__.ControlChecks) ... ok\ntest_F2_signed_expiry_and_generation_are_required (__main__.ControlChecks) ... ok\ntest_F3_both_sides_restrict_exact_mirror_and_digest (__main__.ControlChecks) ... ok\ntest_F3_container_uses_preimported_digest_and_no_log_disk (__main__.ControlChecks) ... ok\ntest_F5_actual_host_mapping_cannot_pass_as_userns (__main__.ControlChecks) ... ok\ntest_F5_missing_or_wrong_engine_mapping_is_blocked (__main__.ControlChecks) ... ok\ntest_F4_concurrent_parent_replacement_never_selects_secret_inode (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\ntest_F4_parent_symlink_is_refused (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\ntest_F4_repeated_replacement_never_redirects_pinned_source (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\ntest_F10_claimed_unknown_result_is_not_retried (__main__.OutcomeAndQueue) ... ok\ntest_F10_restart_only_removes_orphans_and_never_executes_them (__main__.OutcomeAndQueue) ... ok\ntest_F7_queue_and_rate_saturation_block_before_insert (__main__.OutcomeAndQueue) ... ok\ntest_F8_bound_observer_survives_a_newer_device_heartbeat (__main__.OutcomeAndQueue) ... ok\ntest_F9_F10_dispatch_outcomes_keep_not_executed_and_unconfirmed_separate (__main__.OutcomeAndQueue) ... ok\ntest_F9_result_evidence_retains_uuid_timestamps_state_hash (__main__.OutcomeAndQueue) ... ok\ntest_F2_stop_receipt_is_idempotent_and_requires_engine_confirmation (__main__.OutputBounds) ... ok\ntest_F6_line_count_bound_is_independent (__main__.OutputBounds) ... ok\ntest_F6_queue_bound_stops_without_unbounded_growth (__main__.OutputBounds) ... ok\ntest_F6_silent_stdout_read_deadline_stops (__main__.OutputBounds) ... ok\ntest_F6_single_line_bound_stops_and_discards_session (__main__.OutputBounds) ... ok\ntest_F6_total_byte_bound_is_independent (__main__.OutputBounds) ... ok\n\n----------------------------------------------------------------------\nRan 21 tests in 0.104s\n\nOK (skipped=3)\n",
+    "finished_at": "2026-10-21T04:55:43.719521+00:00"
+  },
+  {
+    "name": "user_server_suspend_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/user_server_suspend_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:43.720521+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "test_after_resume_the_send_goes_out (__main__.DispatchChecks) ... ok\ntest_stop_committed_before_dispatch_refuses_the_send (__main__.DispatchChecks) ... ok\ntest_stop_waits_for_a_dispatch_already_inside_and_refuses_the_next (__main__.DispatchChecks) ... ok\ntest_uncommitted_stop_makes_dispatch_wait_and_then_see_it (__main__.DispatchChecks) ... ok\ntest_unreadable_state_at_dispatch_is_a_recorded_fail_closed (__main__.DispatchChecks) ... ok\ntest_observation_mode_does_not_relax_it (__main__.GateChecks) ... ok\ntest_other_employee_and_other_server_pass_the_gate (__main__.GateChecks) ... ok\ntest_resume_lets_the_next_call_through (__main__.GateChecks) ... ok\ntest_state_is_read_with_the_identity_row_for_this_pair (__main__.GateChecks) ... ok\ntest_suspended_pair_is_blocked_with_its_own_policy_before_anything_runs (__main__.GateChecks) ... ok\ntest_unreadable_state_runs_nothing (__main__.GateChecks) ... ok\ntest_calls_in_flight_are_counted_in_the_record (__main__.LedgerChecks) ... ok\ntest_no_code_edits_the_ledger (__main__.LedgerChecks) ... ok\ntest_other_employee_and_other_server_are_separate_pairs (__main__.LedgerChecks) ... ok\ntest_pair_can_be_suspended_again_after_resume_with_a_new_row (__main__.LedgerChecks) ... ok\ntest_resume_records_the_actor_and_second_resume_adds_nothing (__main__.LedgerChecks) ... ok\ntest_second_suspend_changes_nothing_and_adds_no_record (__main__.LedgerChecks) ... ok\ntest_state_and_record_commit_together_or_not_at_all (__main__.LedgerChecks) ... ok\ntest_suspend_records_who_whom_which_server_and_when (__main__.LedgerChecks) ... ok\ntest_the_pair_is_locked_first_with_the_lock_dispatch_takes (__main__.LedgerChecks) ... ok\ntest_unknown_employee_or_server_is_refused_without_record (__main__.LedgerChecks) ... ok\ntest_ledger_entry_is_unique_gateway_enforced_and_a_block (__main__.WiringChecks) ... ok\ntest_routes_are_admin_only_and_proxied_by_the_console (__main__.WiringChecks) ... ok\ntest_table_has_one_active_row_per_pair (__main__.WiringChecks) ... ok\n\n----------------------------------------------------------------------\nRan 24 tests in 0.658s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:44.541567+00:00"
+  },
+  {
+    "name": "endpoint_offline_buffer_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/endpoint_offline_buffer_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:44.542568+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "..........\n----------------------------------------------------------------------\nRan 10 tests in 0.374s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:45.020852+00:00"
+  },
+  {
+    "name": "root_solo_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/root_solo_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:45.021857+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.054s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:45.247625+00:00"
+  },
+  {
+    "name": "solo_mode_ledger_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/solo_mode_ledger_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:45.248625+00:00",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "EEEEEEEE\n======================================================================\nERROR: test_change_writes_exactly_one_transition_row (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_first_start_with_mode_off_is_recorded_too (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_first_start_with_mode_on_writes_one_row (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_ledger_write_failure_propagates_to_the_caller (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_observation_never_updates_or_deletes_ledger_rows (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_only_the_boolean_is_stored_not_the_raw_value_or_secrets (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_restart_with_same_value_writes_nothing (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n======================================================================\nERROR: test_startup_wraps_the_observation_so_failure_is_logged_not_fatal (__main__.SoloModeLedger)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 104, in setUp\n    self.review = load_review(self.ledger)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\solo_mode_ledger_check.py\", line 88, in load_review\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\review.py\", line 13, in <module>\n    from datetime import UTC, datetime, timedelta\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\n\n----------------------------------------------------------------------\nRan 8 tests in 0.036s\n\nFAILED (errors=8)\n",
+    "finished_at": "2026-10-21T04:55:45.424618+00:00"
+  },
+  {
+    "name": "dispatch_recheck_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/dispatch_recheck_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:45.425619+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "test_cancellation_rolls_back_and_releases_all_locks (__main__.Checks) ... ok\ntest_consent_scope_and_grade_query_bindings (__main__.Checks) ... ok\ntest_db_lock_flow_and_commit_failures_never_send (__main__.Checks) ... Executing <Task pending name='Task-9' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:101> wait_for=<Future pending cb=[_chain_future.<locals>._call_check_cancel() at C:\\Program Files\\Python310\\lib\\asyncio\\futures.py:384, Task.task_wakeup()] created at C:\\Program Files\\Python310\\lib\\asyncio\\base_events.py:429> created at C:\\Program Files\\Python310\\lib\\unittest\\async_case.py:117> took 0.141 seconds\nok\ntest_existing_sources_remain_permitted_and_content_mode_does_not_overblock (__main__.Checks) ... ok\ntest_expiry_at_final_insert_uses_wall_clock_and_rolls_back (__main__.Checks) ... ok\ntest_important_read_publisher_takes_advisory_before_chain (__main__.Checks) ... ok\ntest_intent_first_blocks_later_suspend_and_revoke_until_commit (__main__.Checks) ... ok\ntest_new_read_commits_during_advisory_wait (__main__.Checks) ... ok\ntest_provider_read_rechecks_sources_but_internal_read_does_not_cross (__main__.Checks) ... ok\ntest_revoke_commits_before_consent_lock (__main__.Checks) ... ok\ntest_revoke_commits_during_server_wait (__main__.Checks) ... ok\ntest_same_server_new_uncomparable_read_invalidates_content_decision (__main__.Checks) ... ok\ntest_suspend_commits_before_dispatch_enters (__main__.Checks) ... ok\ntest_suspend_commits_later_than_dispatch_start_during_server_wait (__main__.Checks) ... ok\ntest_uncommitted_suspend_holds_principal_then_dispatch_sees_commit (__main__.Checks) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.846s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:46.422211+00:00"
+  },
+  {
+    "name": "upstream_session_reuse_test",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/upstream_session_reuse_test.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:46.423417+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "........................................\n----------------------------------------------------------------------\nRan 40 tests in 0.781s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:47.378573+00:00"
+  },
+  {
+    "name": "outcome_axes_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/outcome_axes_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.378573+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "test_http_statuses_are_separate_from_generic_errors (__main__.OutcomeAxes) ... ok\ntest_independent_confirmation_only (__main__.OutcomeAxes) ... ok\ntest_legacy_is_not_rewritten_or_guessed_successful (__main__.OutcomeAxes) ... ok\ntest_new_chain_covers_snapshot_and_old_versions_stay_stable (__main__.OutcomeAxes) ... ok\ntest_representative_cases (__main__.OutcomeAxes) ... ok\ntest_audit_projection_discards_private_diagnostic (__main__.OutcomePersistence) ... ok\ntest_insert_snapshot_hash_and_sql_arity (__main__.OutcomePersistence) ... ok\ntest_nested_http_status_survives_redaction (__main__.OutcomePersistence) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.073s\n\nOK\n",
+    "finished_at": "2026-10-21T04:55:47.610808+00:00"
+  },
+  {
+    "name": "schema_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/schema_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.611819+00:00",
+    "returncode": 0,
+    "stdout": "PASS 기동마다 다시 만드는 CHECK 제약 12개가 파일 사이에서 같다\n",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:47.652470+00:00"
+  },
+  {
+    "name": "local_run_manifest_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/local_run_manifest_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.653976+00:00",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\local_run_manifest_check.py\", line 5, in <module>\n    import pwd\nModuleNotFoundError: No module named 'pwd'\n",
+    "finished_at": "2026-10-21T04:55:47.695683+00:00"
+  },
+  {
+    "name": "dev73_rework_pg_check",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/dev73_rework_pg_check.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.696659+00:00",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\dev73_rework_pg_check.py\", line 16, in <module>\n    from app import db, endpoint_plane, local_jobs, registry\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\gateway\\app\\db.py\", line 9, in <module>\n    import psycopg\nModuleNotFoundError: No module named 'psycopg'\n",
+    "finished_at": "2026-10-21T04:55:47.846111+00:00"
+  },
+  {
+    "name": "pyflakes",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "-m",
+      "pyflakes",
+      "endpoint-agent/local-runner.py",
+      "endpoint-agent/managed-linux.py",
+      "full_stack_lab/field/sign-local-manifest.py",
+      "full_stack_lab/gateway/app/agent_service.py",
+      "full_stack_lab/gateway/app/core.py",
+      "full_stack_lab/gateway/app/decommission.py",
+      "full_stack_lab/gateway/app/endpoint_plane.py",
+      "full_stack_lab/gateway/app/idp.py",
+      "full_stack_lab/gateway/app/local_jobs.py",
+      "full_stack_lab/gateway/app/main.py",
+      "full_stack_lab/gateway/app/ops_response.py",
+      "full_stack_lab/gateway/app/upstream.py",
+      "full_stack_lab/tests/dev73_rework_check.py",
+      "full_stack_lab/tests/dev73_rework_pg_check.py",
+      "full_stack_lab/tests/local_jobs_pg_check.py",
+      "full_stack_lab/tests/local_run_manifest_check.py",
+      "research/llm-wiki/analysis/dev73-rework/capture_evidence.py",
+      "research/llm-wiki/analysis/dev73-rework/final_checks.py",
+      "research/llm-wiki/analysis/dev73-rework/run_checks.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.847110+00:00",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n",
+    "finished_at": "2026-10-21T04:55:47.886612+00:00"
+  },
+  {
+    "name": "build_wiki",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "research/llm-wiki/tools/build_wiki.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.887123+00:00",
+    "returncode": 0,
+    "stdout": "{\"format\": \"markdown\", \"pages\": 618, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 9, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\n",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:47.988155+00:00"
+  },
+  {
+    "name": "check_wiki",
+    "command": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-X",
+      "utf8",
+      "research/llm-wiki/tools/check_wiki.py"
+    ],
+    "cwd": "C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol",
+    "started_at": "2026-10-21T04:55:47.989166+00:00",
+    "returncode": 1,
+    "stdout": "{\n  \"ok\": false,\n  \"counts\": {\n    \"endpoint-permission-references\": 12,\n    \"experiments\": 13,\n    \"imports\": 22,\n    \"local-tool-risks\": 13,\n    \"papers\": 264,\n    \"solutions\": 9,\n    \"threats\": 24,\n    \"sources_evidence_records\": 3,\n    \"solutions_evidence_records\": 21,\n    \"reviewed_local_tools\": 92,\n    \"markdown_documents\": 618\n  },\n  \"warnings\": [],\n  \"errors\": [\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/review.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/review.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/upstream.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/endpoint_plane.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/idp.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/upstream.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/review.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/decommission.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/idp.py; review and run map_threats.py\",\n    \"Code changed after mapping: full_stack_lab/gateway/app/decommission.py; review and run map_threats.py\"\n  ]\n}\n",
+    "stderr": "",
+    "finished_at": "2026-10-21T04:55:49.598552+00:00"
+  }
+]

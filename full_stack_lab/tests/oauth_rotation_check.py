@@ -128,6 +128,8 @@ class RotationDB:
             identity, family, user, client, digest, expires = params
             state["refresh"][digest] = {"id": identity, "family_id": family, "user_id": user, "client_id": client,
                                          "expires_at": expires, "rotated_at": None, "revoked_at": None}
+        elif "FROM local_jobs" in compact or compact.startswith("UPDATE local_jobs"):
+            pass  # DEV-73: no local job exists for these tokens; the stop is a no-op and finds nothing to wait for
         elif compact.startswith("UPDATE oauth_refresh_tokens SET revoked_at"):
             for row in state["refresh"].values():
                 if row["family_id"] == params[0]:

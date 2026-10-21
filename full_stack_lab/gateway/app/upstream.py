@@ -325,7 +325,13 @@ class ContractClient:
 
 @asynccontextmanager
 async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: str | None = None,
-                  protocol: str | None = None, server_id: str | None = None):
+                  protocol: str | None = None, server_id: str | None = None, device_id: str | None = None):
+    if endpoint.startswith("local:"):
+        # An approved local server runs on the caller's own device; there is no HTTP session to pool.
+        from . import local_jobs
+        async with local_jobs.session(endpoint, timeout, device_id, discovery=principal is None, principal=principal) as client:
+            yield client
+        return
     if principal:
         await _sweep()
     generation = _sessions.generation

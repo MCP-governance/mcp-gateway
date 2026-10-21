@@ -223,6 +223,8 @@ async def _revoke_family(family_id, connection=None) -> None:
         "SELECT jti,expires_at FROM oauth_issued_tokens WHERE family_id=%s", (family_id,))).fetchall()
     refreshes = await (await connection.execute(
         "SELECT token_sha256 FROM oauth_refresh_tokens WHERE family_id=%s", (family_id,))).fetchall()
+    from . import local_jobs
+    await local_jobs.prepare_token_revocation(connection,tokens)
     for token in tokens:
         disposal.remember_token(token["jti"], token["expires_at"])
     for token in refreshes:
@@ -241,6 +243,8 @@ async def revoke_principal_tokens(user_id: str) -> None:
             "SELECT jti,expires_at FROM oauth_issued_tokens WHERE user_id=%s AND expires_at>now()", (user_id,))).fetchall()
         refreshes = await (await connection.execute(
             "SELECT token_sha256 FROM oauth_refresh_tokens WHERE user_id=%s AND revoked_at IS NULL", (user_id,))).fetchall()
+        from . import local_jobs
+        await local_jobs.prepare_token_revocation(connection,tokens)
         for token in tokens:
             disposal.remember_token(token["jti"], token["expires_at"])
         for token in refreshes:
@@ -263,6 +267,8 @@ async def revoke_device_tokens(device_id: str) -> None:
             """SELECT DISTINCT r.token_sha256 FROM oauth_refresh_tokens r
                  JOIN oauth_issued_tokens i USING (family_id)
                 WHERE i.device_id=%s AND r.revoked_at IS NULL""", (device_id,))).fetchall()
+        from . import local_jobs
+        await local_jobs.prepare_token_revocation(connection,tokens)
         for token in tokens:
             disposal.remember_token(token["jti"], token["expires_at"])
         for token in refreshes:
@@ -288,9 +294,12 @@ async def revoke(token: str = Form(...), token_type_hint: str | None = Form(None
         try:
             claims = jwt.decode(token, public_key(), algorithms=[ALGORITHM], audience=AUDIENCE, issuer=ISSUER,
                                 options={"verify_exp": False})
-            disposal.remember_token(claims["jti"], datetime.fromtimestamp(claims["exp"], UTC))
-            await db.execute("INSERT INTO agent_revoked_tokens(jti, expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING",
-                             (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
+            from . import local_jobs
+            async with db.transaction() as connection:
+                await local_jobs.prepare_token_revocation(connection,[claims])
+                disposal.remember_token(claims["jti"], datetime.fromtimestamp(claims["exp"], UTC))
+                await connection.execute("INSERT INTO agent_revoked_tokens(jti, expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING",
+                                         (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
         except jwt.PyJWTError:
             pass
     return JSONResponse({}, status_code=200, headers={"Cache-Control": "no-store"})

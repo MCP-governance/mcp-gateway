@@ -509,6 +509,8 @@ class WiringTests(unittest.IsolatedAsyncioTestCase):
             "_scope": lambda ctx: "a", "_client_context": lambda *args: {},
             "_conversation": lambda *args: ("chat", "jwt"), "upstream_sessions": sessions,
             "execute_call": execute, "_render": lambda outcome, protocol=None: outcome,
+            # A remote server: no local-run parameter check is involved.
+            "registry": NS(server=lambda server_id: {}), "local_jobs": NS(validate_params=lambda params: None),
         })
         facade = ns["build_mcp"]()
         for failed in (False, True):

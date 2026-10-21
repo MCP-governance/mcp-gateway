@@ -119,6 +119,10 @@ class ImageScan(unittest.TestCase):
 
 class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
+        # These servers are remote: the local-run check must not load the registry or wait on a device.
+        local = patch.object(ops.local_jobs, "is_local", return_value=False)
+        local.start()
+        self.addCleanup(local.stop)
         corpus = json.loads((LAB / "opa/replay_cases_pac15.json").read_text(encoding="utf-8"))["pac15_replay"]
         self.base = {**corpus["base"], **corpus["cases"][0]["patch"]}
         self.info = {"matches": True, "loaded_sha256": "a", "loaded_data_sha256": "b", "capabilities_sha256": "c"}

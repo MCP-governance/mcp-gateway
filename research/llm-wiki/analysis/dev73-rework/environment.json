@@ -1,0 +1,126 @@
+{
+  "captured_at": "2026-10-21T04:55:42.609948+00:00",
+  "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "tools": {
+    "python": "C:\\Program Files\\Python310\\python.EXE",
+    "python3": null,
+    "node": "C:\\Program Files\\nodejs\\node.EXE",
+    "git": "C:\\Program Files\\Git\\mingw64\\bin\\git.EXE",
+    "rg": null,
+    "wsl": "C:\\Windows\\system32\\wsl.EXE",
+    "docker": null,
+    "podman": null,
+    "openssl": "C:\\Program Files\\Git\\mingw64\\bin\\openssl.EXE"
+  },
+  "packages": {
+    "mcp": false,
+    "psycopg": false,
+    "pydantic": false,
+    "cryptography": false,
+    "pyflakes": false,
+    "pglast": false
+  },
+  "commands": [
+    {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD",
+        "origin/main",
+        "origin/10/20-dev73-impl"
+      ],
+      "at": "2026-10-21T04:55:42.657455+00:00",
+      "returncode": 0,
+      "stdout": "7151de41b228676f5ecd33dddc57cec06465cc6c\n7151de41b228676f5ecd33dddc57cec06465cc6c\n217da74ed4731eb006ce3c167b17fec835b66155\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "branch",
+        "--show-current"
+      ],
+      "at": "2026-10-21T04:55:42.675972+00:00",
+      "returncode": 0,
+      "stdout": "10/20-intake-one-click\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "fetch",
+        "origin",
+        "main",
+        "10/20-dev73-impl"
+      ],
+      "at": "2026-10-21T04:55:42.707701+00:00",
+      "returncode": 255,
+      "stdout": "",
+      "stderr": "error: cannot open '.git/FETCH_HEAD': Permission denied\n"
+    },
+    {
+      "command": [
+        "git",
+        "ls-remote",
+        "--symref",
+        "origin",
+        "HEAD"
+      ],
+      "at": "2026-10-21T04:55:42.804497+00:00",
+      "returncode": 128,
+      "stdout": "",
+      "stderr": "fatal: unable to access 'https://github.com/MCP-governance/mcp-gateway.git/': Failed to connect to github.com:443 after 52 ms: Could not connect to server\n"
+    },
+    {
+      "command": [
+        "git",
+        "checkout",
+        "-B",
+        "10/21-dev73-rework",
+        "origin/main"
+      ],
+      "at": "2026-10-21T04:55:42.822673+00:00",
+      "returncode": 128,
+      "stdout": "",
+      "stderr": "fatal: Unable to create 'C:/Users/bobysg/bob/프로젝트/mcp-gw-codex-sol/.git/index.lock': Permission denied\n"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "at": "2026-10-21T04:55:42.878656+00:00",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--name-only",
+        "--",
+        "full_stack_lab/tests"
+      ],
+      "at": "2026-10-21T04:55:42.894640+00:00",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "wsl.exe",
+        "-d",
+        "kali-linux",
+        "--",
+        "python3",
+        "--version"
+      ],
+      "at": "2026-10-21T04:55:42.936580+00:00",
+      "returncode": 4294967295,
+      "stdout": "액세스가 거부되었습니다. \r\n오류 코드: Wsl/Service/E_ACCESSDENIED\r\n",
+      "stderr": ""
+    }
+  ]
+}
