@@ -31,6 +31,10 @@ UTC = timezone.utc
 POLL_SECONDS = 0.05
 MAX_RESULT_BODY = 262144
 MAX_PARAMS_BYTES = int(os.getenv("LOCAL_PARAMS_MAX_BYTES", "65536"))
+# Stored-state ceilings. Defaults are the reviewed values; an environment value lets a lab check the real boundary.
+ACTIVE_TOTAL_LIMIT = int(os.getenv("LOCAL_JOBS_PENDING_MAX", "64"))
+ROW_LIMIT = int(os.getenv("LOCAL_JOBS_ROWS_MAX", "10000"))
+RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 1024 * 1024)))
 CLAIM_SECONDS = 5
 RUN_SECONDS = 20
 QUEUE_LIMIT = 8
@@ -241,9 +245,9 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
                      FROM local_jobs WHERE {column}=%s""", (value,))).fetchone()
             if counts['queued'] >= QUEUE_LIMIT or counts['active'] >= ACTIVE_LIMIT or counts['rate'] >= RATE_LIMIT:
                 raise NotStarted("로컬 실행 대기열 또는 생성률 상한입니다.", 'P-RATE-003')
-        if (await (await connection.execute('SELECT count(*) AS n FROM local_jobs')).fetchone())['n'] >= 10000:
+        if (await (await connection.execute('SELECT count(*) AS n FROM local_jobs')).fetchone())['n'] >= ROW_LIMIT:
             raise NotStarted("로컬 실행 저장 상한입니다.", 'P-RATE-003')
-        if (await (await connection.execute("SELECT count(*) AS n FROM local_jobs WHERE state IN ('queued','claimed')")).fetchone())['n']>=64:
+        if (await (await connection.execute("SELECT count(*) AS n FROM local_jobs WHERE state IN ('queued','claimed')")).fetchone())['n']>=ACTIVE_TOTAL_LIMIT:
             raise NotStarted('로컬 실행 전체 대기열 상한입니다.','P-RATE-003')
         await connection.execute(
             """INSERT INTO local_jobs(id,device_id,user_token,server_id,manifest_sha256,manifest,signature,method,params,deadline,
@@ -426,10 +430,17 @@ async def claim(device: dict, wait: float) -> dict | None:
                 """SELECT * FROM local_jobs WHERE device_id=%s AND state='queued' AND deadline>clock_timestamp()
                    AND NOT EXISTS(SELECT 1 FROM local_jobs a WHERE a.device_id=%s AND
                        (a.state='claimed' OR (a.started_at IS NOT NULL AND a.stopped_at IS NULL)))
-                   ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED""", (device['endpoint_id'],device['endpoint_id']))).fetchone()
+                   ORDER BY created_at LIMIT 1""", (device['endpoint_id'],device['endpoint_id']))).fetchone()
             if row:
+                # Lock order (D-175): execution locks first, the job row last. The candidate was chosen without a
+                # lock, so it is read again under the locks; if it was cancelled or changed meanwhile, nothing is claimed.
+                # The per-device claim lock above already serializes claimers, so SKIP LOCKED is not needed.
                 await admission_locks(connection,device,row['server_id'])
                 await lock_execution(connection,row)
+                row = await (await connection.execute(
+                    """SELECT * FROM local_jobs WHERE id=%s AND state='queued' AND deadline>clock_timestamp()
+                       AND NOT stop_requested AND started_at IS NULL FOR UPDATE""", (row['id'],))).fetchone()
+            if row:
                 allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                            generation=row['policy_generation'])
                 active = await (await connection.execute("""SELECT count(*) AS n FROM local_jobs WHERE
@@ -534,7 +545,7 @@ async def complete(device: dict, job_id: str, result: dict | None, error: str | 
     async with db.transaction() as connection:
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext('local:results'))")
         stored=await (await connection.execute('SELECT COALESCE(sum(pg_column_size(result)),0) AS bytes FROM local_jobs')).fetchone()
-        if result is not None and stored['bytes']+len(canonical(result))>64*1024*1024:
+        if result is not None and stored['bytes']+len(canonical(result))>RESULT_STORE_BYTES:
             result,error=None,'로컬 실행 결과 저장 상한입니다.'
         digest = hashlib.sha256(canonical(result if result is not None else {'error':error})).hexdigest()
         row = await (await connection.execute(
