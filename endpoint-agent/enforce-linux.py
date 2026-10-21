@@ -90,7 +90,13 @@ TOOLS = "cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoa
 
 
 def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper: bool, managed: bool = False,
-            extras: dict[str, list[Path]] | None = None) -> str:
+            extras: dict[str, list[Path]] | None = None, binding_mode: str = "warn") -> str:
+    if binding_mode not in {"warn", "enforce"}:
+        raise ValueError("지원하지 않는 헤더 브로커 결속 모드")
+    if binding_mode == "enforce" and not managed:
+        raise ValueError("프로세스 결속은 관리형 Linux 브로커에서만 지원합니다")
+    if managed and binding_mode == "enforce":
+        return bound_profile(name, shell, home, binaries, extras or {})
     def common(shells: str) -> str:
         return f"""
   #include <abstractions/base>
@@ -157,6 +163,90 @@ profile {name}-{key}-tool {{
   {python} ix,
   {f'network unix stream, /run/{name}.sock rw,' if managed else ''}
 }}
+"""
+    return text
+
+
+def bound_profile(name: str, shell: Path, home: str, binaries: dict[str, Path],
+                  extras: dict[str, list[Path]]) -> str:
+    """Strict stage: only a harness can delegate to the fixed native header helper.
+
+    Shell-based header commands cannot work in this stage. Do not restore dash ix
+    to repair compatibility: it would give arbitrary shell children the credential.
+    """
+    def common() -> str:
+        return f"""
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{{,32,64}}/** mr,
+  /dev/tty rw,
+  /dev/pts/** rw,
+  /proc/** r,
+  deny /proc/*/{{mem,environ}} r,
+  deny /proc/*/task/*/{{mem,environ}} r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  /run/systemd/resolve/{{stub-resolv.conf,resolv.conf}} r,
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+  /sys/fs/cgroup/**/cpu.max r,
+  /sys/fs/cgroup/**/memory.{{max,high}} r,
+  owner {home}/** rwk,
+  owner {home}/ r,
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  network inet stream,
+  network inet6 stream,
+  signal (receive, send) peer={name}*,
+"""
+
+    def no_broker() -> str:
+        return f"""
+  deny {BASE}/{name}/header-helper x,
+  deny /run/{name}.sock rw,
+  deny unix (connect, send, receive) type=stream peer=(addr="/run/{name}.sock"),
+"""
+
+    socket_rules = f"""
+  /run/{name}.sock rw,
+  unix (create, getattr, getopt, setopt, shutdown) type=stream,
+  unix (connect, send, receive) type=stream peer=(addr="/run/{name}.sock", label=unconfined),
+"""
+    clients = "".join(f"  {BASE}/{name}/{key} px -> {name}-{key}-entry,\n" for key in binaries)
+    text = (f"#include <tunables/global>\nprofile {name} {shell} {{\n{common()}"
+            f"  /usr/{{bin,sbin}}/{{bash,dash,sh,{TOOLS}}} ix,\n{no_broker()}{clients}}}\n")
+    for key, binary in binaries.items():
+        harness, tool = f"{name}-bound-{key}", f"{name}-bound-{key}-tool"
+        children = "".join(f"  {extra} mrpx -> {tool},\n" for extra in extras.get(key, []))
+        tools = "".join(f"  {extra} mrix,\n" for extra in extras.get(key, []))
+        text += f"""profile {name}-{key}-entry {{
+{common()}{no_broker()}
+  {binary} px -> {harness},
+}}
+profile {harness} {{
+{common()}{socket_rules}
+  {binary} mr,
+  /usr/{{bin,sbin}}/{{bash,dash,sh,{TOOLS}}} px -> {tool},
+{children}
+  {BASE}/{name}/header-helper px -> {name}-bound-credential,
+}}
+profile {tool} {{
+{common()}{no_broker()}
+  /usr/{{bin,sbin}}/{{bash,dash,sh,{TOOLS}}} ix,
+{tools}}}
+"""
+    text += f"""profile {name}-bound-credential {{
+  #include <abstractions/base>
+  /etc/** r,
+  /usr/** mr,
+  /lib{{,32,64}}/** mr,
+  /proc/** r,
+  deny ptrace (trace, read, tracedby, readby),
+  deny capability sys_ptrace,
+  deny /proc/*/{{mem,environ}} r,
+  deny /proc/*/task/*/{{mem,environ}} r,
+  /usr/bin/python3{{,.[0-9]*}} ix,
+{socket_rules}}}
 """
     return text
 
@@ -272,6 +362,7 @@ def main() -> None:
     parser.add_argument("--client", action="append", default=[], help="codex=/root-owned/native/binary")
     parser.add_argument("--helper-source", help="root 소유 직원 PC 키트 mcpgw_pc.py")
     parser.add_argument("--managed-agent", help="root 관리형 엔드포인트 서비스의 header 명령")
+    parser.add_argument("--broker-binding", choices=("warn", "enforce"), default="warn")
     parser.add_argument("--rollback", action="store_true")
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
@@ -309,6 +400,8 @@ def main() -> None:
                 assert done.stdout == "--no-daemon exec say hi\n", done
         print("enforcement rule self-check OK")
         return
+    if args.broker_binding == "enforce" and not args.managed_agent:
+        parser.error("프로세스 결속은 --managed-agent를 지정한 관리형 Linux에서만 지원합니다")
     if os.geteuid() != 0 or not re.fullmatch(r"[a-z_][a-z0-9_-]{0,30}", args.user):
         parser.error("root로 실행하고 실제 일반 계정 이름을 지정하세요")
     person = pwd.getpwnam(args.user)
@@ -397,7 +490,9 @@ def main() -> None:
     rules.write_text(rendered_rules)
     run("nft", "-c", "-f", str(rules))
     policy.write_text(profile(name, shell, person.pw_dir, binaries, bool(args.helper_source or args.managed_agent),
-                              bool(args.managed_agent), extras))
+                              bool(args.managed_agent), extras, args.broker_binding))
+    # Syntax failure must occur before changing the kernel's loaded policy.
+    run("apparmor_parser", "-Q", "-T", str(policy))
     run("apparmor_parser", "-r", str(policy))
     # An atomic batch replaces only this UID's table, never the host's ruleset.
     run("nft", "-f", str(rules))

@@ -2,8 +2,9 @@
 """Administrator-installed ordinary-user enrollment, policy service and header broker.
 
 The installer needs root, systemd, AppArmor, nft and native (ELF) Codex/Claude.
-Only the root service holds the device key. SO_PEERCRED binds the local token socket
-to the enrolled UID. This is not remote attestation against compromised root.
+Only the root service holds the device key. SO_PEERCRED and, in the enforcement
+stage, SO_PEERSEC bind the token socket to the enrolled UID and AppArmor identity.
+This is not remote attestation against compromised root.
 """
 import argparse
 import grp
@@ -16,7 +17,6 @@ import secrets
 import shutil
 import socket
 import socketserver
-import struct
 import subprocess
 import sys
 import threading
@@ -122,7 +122,10 @@ def checks(config, policy, *, findings=None):
             return [stable(item) for item in value if not (isinstance(item, dict) and set(item) <= {"counter", "metainfo"})]
         return value
     hashes = {name: hashlib.sha256(target.read_bytes()).hexdigest() for name, target in FILES.items()}
-    return hashes, {"apparmor_enforcing": all(f"{name}{suffix} (enforce)" in profiles for suffix in ("", "-codex", "-claude", "-credential")),
+    suffixes = (("", "-codex-entry", "-claude-entry", "-bound-codex", "-bound-claude",
+                 "-bound-codex-tool", "-bound-claude-tool", "-bound-credential")
+                if config.get("broker_binding", "warn") == "enforce" else ("", "-codex", "-claude", "-credential"))
+    return hashes, {"apparmor_enforcing": all(f"{name}{suffix} (enforce)" in profiles for suffix in suffixes),
                     "nftables_active": expected.returncode == 0 and stable(json.loads(nft.stdout)) == stable(baseline),
                     "protected_configs": all(protected(p) and not p.is_symlink() and p.stat().st_mode & 0o777 == 0o644 for p in FILES.values()),
                     "user_command_helpers": commands_ok,
@@ -204,7 +207,7 @@ def install(args):
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
         raise ValueError("프로그램 경로가 root 관리 경로가 아닙니다")
-    for name in ("managed-linux.py", "enforce-linux.py", "agent.py", "os-observer.py", "offline_buffer.py"):
+    for name in ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py"):
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
     folder = STATE / args.user
@@ -226,6 +229,7 @@ def install(args):
         ca_path.chmod(0o644)
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=args.owner_uid,
+                  broker_binding=args.broker_binding,
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     policy = request(config, "/api/endpoint/managed-policy")
@@ -247,6 +251,7 @@ def install(args):
                       if policy.get("proxy_port") else []),
                     *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
                     *[part for name, binary in binaries.items() for part in ("--client", name + "=" + binary)],
+                    "--broker-binding", args.broker_binding,
                     "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True)
     baseline = subprocess.check_output(["nft", "-j", "list", "table", "inet", f"mcpgw_uid_{person.pw_uid}"], text=True)
     private_write(Path(config["nft_baseline"]), baseline)
@@ -267,12 +272,13 @@ def serve(args):
         raise ValueError("root 관리 서비스와 비밀 설정이 필요합니다")
     config = json.loads(args.config.read_text())
     verify_transport(config)
+    binding = load_module("broker_binding", Path(__file__).with_name("broker_binding.py"))
     cache, lock = {}, threading.Lock()
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
-            _, uid, _ = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+            permitted = binding.authorize_peer(self.request, config)
             with lock:
-                if uid != config["uid"] or time.monotonic() >= cache.get("until", 0):
+                if not permitted or time.monotonic() >= cache.get("until", 0):
                     answer = {"error": "엔드포인트 활성화·정책 연결이 필요합니다"}
                 else:
                     answer = {"Authorization": "Bearer " + cache["token"]}
@@ -417,6 +423,7 @@ def main():
     setup.add_argument("--owner-uid", type=int, help="연결을 시작할 수 있는 직원 계정 UID")
     setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.add_argument("--client", action="append", default=[])
+    setup.add_argument("--broker-binding", choices=("warn", "enforce"), default="warn")
     setup.set_defaults(run=install)
     service = commands.add_parser("serve")
     service.add_argument("--config", type=Path, required=True)

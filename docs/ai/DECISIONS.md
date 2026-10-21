@@ -1906,6 +1906,15 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 한계: 새 스냅샷 기록 전의 과거 세대는 증거를 추정하지 않으므로 선택할 수 없다. 이전 이미지가 로컬 엔진에 남아 있어야 하며 레시피 판본이 현재 고정 설정과 다르면 실행을 거부한다. PostgreSQL 다중 작업자 경합·실제 이미지 재기동·MCP 호출 판정·실기기/PJ1은 별도 검증 전까지 미실행이다.
 - 정정 (2026-10-21, 결함 처리 [판단 문서](../../research/llm-wiki/analysis/runtime-rollback/defects-1021.md)): **이 결정이 말하는 「철회·종료·공급망 중지 판본 거부」 중 `runtime-revoked`·`runtime-terminated`·`runtime-supply-chain-stop` 사건을 읽는 가드(`runtime_rollback_options`·요청 API·worker `approval_problem`·reconcile, 4곳)는 현재 동작하지 않는다.** 이 사건을 기록하는 코드가 저장소 어디에도 없어 가드가 찾을 행이 생기지 않는다(시험에서 사건을 직접 넣을 때만 막는다). 실제 차단은 서버 상태 검사(`DISABLED`·`BLOCKED_SUPPLY_CHAIN`, 수명주기 `TERMINATING`·`TERMINATED`·`RETIRED`, 열린 중지, 종료·종료 중인 이용 관계)가 한다. 사건 기록은 판정 경로를 바꾸므로 이 정정에서 추가하지 않고 별도 작업으로 둔다. 같은 처리에서 실행기 `import uuid` 누락, 되돌림 세대의 소스 지문 읽기(없으면 `Refused`), 거부·차단으로 멈춘 되돌림 세대의 재큐잉 금지(`stop_refused` 표식, 중단은 기존대로 복구), `runtime-rollback-queued` 사건의 세대 행 ID, 요청 쪽 거부의 원장 기록(`runtime-rollback-request-refused`)을 고쳤다. 기기 재배포와 되돌리기 1회 실행을 확인하기 전까지 「기기 확인」으로 올리지 않는다.
 
+## D-183 관리형 Linux 헤더 브로커를 AppArmor 신원에 결속하며 정상군 확인 전에는 경고 단계를 유지한다 (2026-10-21, DEV-81 F1)
+
+- 문제: 같은 관리 UID의 다른 프로세스가 헤더 헬퍼/소켓으로 활성 bearer를 받아 하네스의 명령 표면·설정·훅 통제를 건너뛸 수 있다. 게이트웨이 정책은 계속 적용된다. UID·PID·실행 파일 경로 확인만으로 같은 OS 보안 주체 안의 프로세스 경계를 만들지 않는다.
+- 결정: 강제 단계의 브로커는 UID와 accepted socket의 `SO_PEERSEC`를 함께 확인한다. 커널 AppArmor 활성화·필수 프로필 enforce·Unix/ptrace 중재 기능을 요청마다 재확인하며 오류·불일치·미로드는 캐시 토큰이 있어도 거부한다. PID는 감사에만 쓰고 `/proc/<pid>` fallback을 두지 않아 PID 재사용을 인증 근거로 삼지 않는다. 승인 레이블은 `mcpgw-<user>-bound-codex`, `-bound-claude` 및 이 두 프로필에서만 직접 `px` 전이 가능한 고정 native 헤더 헬퍼 `-bound-credential`이다. 이 고정 헬퍼는 stdout으로 하네스에 헤더를 전달하는 최소 위임 예외다.
+- 프로세스 경계: 강제 프로필에서 하네스의 bash/dash/sh·허용 명령·Codex companion은 모두 자격 없는 도구 프로필로 `px` 전이한다. 도구·로그인·진입 프로필은 헬퍼 실행과 브로커 소켓을 거부하고 자기 주도 `change_profile` 권한은 없다. 모든 강제 프로필에 ptrace trace/read/tracedby/readby·sys_ptrace·proc mem/environ 읽기 거부를 둔다. Yama는 확인만 하고 전역 설정을 변경하지 않는다. fork만 하고 exec하지 않은 하네스 내부 작업까지 별도 신원으로 분리하는 것은 아니다.
+- 전환: root 전용 설정 `broker_binding`은 `warn|enforce`, 기본·기존 키 누락은 `warn`. 경고는 UID 경계를 유지하고 레이블·고정 사유만 journal에 남기며 F1을 해결한 것으로 표시하지 않는다. 잘못된 값은 거부한다. 강제 모드의 새 이름은 구 credential 프로필을 승인하지 않는다. 다운로드 매니페스트·설치 복사 목록에 검사 모듈을 넣고 프로필 적용 전에 `apparmor_parser -Q -T`를 호출한다.
+- **승격 보류**: 기존 헤더 명령은 `sh -c`를 쓴다. 모든 셸 자식을 분리하면 정상 인증도 막힌다. `dash ix`를 남기거나 셸 중계 프로필에 헬퍼 권한을 주면 같은 셸 명령이 다시 bearer를 받을 수 있으므로 채택하지 않는다. 현재 경고 단계에서 유지하고 직접 실행 또는 다른 인증 전달 경로를 공식 구현/판본에서 확인한 뒤 PJ1 두 실제 하네스 정상군·공격군·복구군이 모두 통과해야 강제로 전환한다. **이번 작업은 부분 구현이며 DEV-81은 열림이다.**
+- 근거·범위: [분석 정본](../../research/llm-wiki/analysis/local-endpoints-1021/README.md#구현-2026-10-21-d-183-미커밋), [명령·출력과 전환 절차](../../research/llm-wiki/status/reports/2026-10-21-broker-process-binding.md). 새 대역/정적 시험 20건 통과. AppArmor parser·커널·배포·PJ1은 미검증이다. Windows 구현과 직원 PC 키트는 이번에 변경하지 않는다. 키트는 같은 사용자 프로세스의 토큰 취득을 막지 못하며 조직 통제 의존이다.
+
 ## D-178 저장된 SBOM 요약으로 영향 세대를 찾고 서버 중지는 기존 운영 경로를 쓴다 (2026-10-21, DEV-76)
 
 - 문제: 취약 구성요소 판본이 공개되면 등록 서버와 실행 세대를 찾아 즉시 격리할 필요가 있다. 현재 Syft 검사는 소스 트리 CycloneDX를 만들지만 서버/실행 세대별 영향 조회는 없다.

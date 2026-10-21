@@ -1,0 +1,438 @@
+{
+  "generated_utc": "2026-10-21T05:16:05.384445+00:00",
+  "environment": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "scope": "local static and substituted unit checks; no kernel, device, harness or MCP execution",
+  "checks": [
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "header_broker_label_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:03.256316+00:00",
+      "finished_utc": "2026-10-21T05:16:03.483669+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_default_warning_keeps_legacy_helper_path_and_shell_policy (header_broker_label_check.BoundProfiles) ... ok\ntest_every_shell_and_companion_leaves_harness (header_broker_label_check.BoundProfiles) ... ok\ntest_memory_access_denied_in_every_profile (header_broker_label_check.BoundProfiles) ... ok\ntest_nonmanaged_kit_cannot_claim_enforcement (header_broker_label_check.BoundProfiles) ... ok\ntest_only_harness_can_delegate_to_fixed_helper (header_broker_label_check.BoundProfiles) ... ok\ntest_credentials_failure_cannot_be_warning_allow (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_exact_approved_labels_receive_active_token (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_expired_and_empty_cache_never_return_token (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_kernel_failures_deny_cached_token (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_label_read_failure_unsupported_and_malformed_denied (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_mismatch_complain_stack_prefix_and_other_user_denied (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_missing_mode_is_legacy_warning_invalid_mode_denies (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_so_peersec_is_used_without_proc_pid_lookup (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_uid_mismatch_is_denied_even_in_warning_mode (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_warning_allows_and_records_failures_without_token_in_log (header_broker_label_check.HeaderBrokerLabel) ... ok\ntest_extracted_checks_need_no_new_namespace_and_follow_stage (header_broker_label_check.Integration) ... ok\ntest_linux_download_contains_broker_module_and_installer_copies_it (header_broker_label_check.Integration) ... ok\ntest_complain_instead_of_enforce_fails (header_broker_label_check.KernelReadiness) ... ok\ntest_disabled_unreadable_and_removed_profile (header_broker_label_check.KernelReadiness) ... ok\ntest_loaded_enforcing_complete_policy (header_broker_label_check.KernelReadiness) ... ok\n\n----------------------------------------------------------------------\nRan 20 tests in 0.058s\n\nOK\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "managed_token_cache_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:03.483669+00:00",
+      "finished_utc": "2026-10-21T05:16:03.588357+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_cache_covers_observers_and_active_poll_sleep (managed_token_cache_check.ManagedTokenCache) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.005s\n\nOK\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "managed_helper_unavailable_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:03.588357+00:00",
+      "finished_utc": "2026-10-21T05:16:03.760079+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_linux_helper_without_service_prints_rejected_credential (managed_helper_unavailable_check.ManagedHelperUnavailable) ... skipped 'Linux 소켓 필요'\ntest_windows_helper_without_broker_prints_rejected_credential (managed_helper_unavailable_check.ManagedHelperUnavailable) ... ok\n\n----------------------------------------------------------------------\nRan 2 tests in 0.010s\n\nOK (skipped=1)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "user_command_settings_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:03.760079+00:00",
+      "finished_utc": "2026-10-21T05:16:04.250939+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "test_five_checks_findings_and_reject_command_values (user_command_settings_check.HeartbeatInput) ... skipped 'Pydantic 2 필요'\ntest_both_platforms_healthy_missing_false_wrong_hash_and_recovery (user_command_settings_check.ManagedFlow) ... ok\ntest_findings_persisted_and_inconsistent_true_does_not_pass (user_command_settings_check.ManagedFlow) ... ok\ntest_policy_revision_changes_hash_without_configuration_drift (user_command_settings_check.ManagedFlow) ... ok\ntest_all_keys_report_only_file_and_names (user_command_settings_check.UserSettings) ... ok\ntest_each_claude_key_in_both_files_and_empty_values (user_command_settings_check.UserSettings) ... ok\ntest_invalid_json_toml_encoding_and_shape_fail_without_values (user_command_settings_check.UserSettings) ... ok\ntest_missing_files_and_normal_json (user_command_settings_check.UserSettings) ... ok\ntest_missing_parser_is_failure (user_command_settings_check.UserSettings) ... ok\ntest_normal_toml_and_comments_are_not_keys (user_command_settings_check.UserSettings) ... skipped 'Python 3.11+ tomllib 필요'\ntest_notify_in_config_and_profile_files (user_command_settings_check.UserSettings) ... skipped 'Python 3.11+ tomllib 필요'\ntest_platform_checks_use_enrolled_home_not_service_home (user_command_settings_check.UserSettings) ... ERROR\ntest_special_path_oversize_and_recovery (user_command_settings_check.UserSettings) ... ok\ntest_symlink_and_broken_link_fail_closed (user_command_settings_check.UserSettings) ... skipped '링크 생성 권한 없음'\ntest_unreadable_file_and_directory_fail_closed (user_command_settings_check.UserSettings) ... ok\n\n======================================================================\nERROR: test_platform_checks_use_enrolled_home_not_service_home (user_command_settings_check.UserSettings)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\user_command_settings_check.py\", line 199, in test_platform_checks_use_enrolled_home_not_service_home\n    _, checks = module.checks(config, {}, findings=findings)\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-windows.py\", line 355, in checks\n    spec.loader.exec_module(observer)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\agent.py\", line 827, in <module>\n    LISTENER_COLLECTOR = {\"Linux\": \"proc-socket\", \"Windows\": \"windows-netstat\"}.get(platform.system(), \"lsof\")\n  File \"C:\\Program Files\\Python310\\lib\\platform.py\", line 908, in system\n    return uname().system\n  File \"C:\\Program Files\\Python310\\lib\\platform.py\", line 843, in uname\n    release, version, csd, ptype = win32_ver()\n  File \"C:\\Program Files\\Python310\\lib\\platform.py\", line 403, in win32_ver\n    with winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, cvkey) as key:\nAttributeError: 'types.SimpleNamespace' object has no attribute 'OpenKeyEx'\n\n----------------------------------------------------------------------\nRan 15 tests in 0.329s\n\nFAILED (errors=1, skipped=4)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "managed_enforcement_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:04.250939+00:00",
+      "finished_utc": "2026-10-21T05:16:04.507262+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "test_linux_complain_profile_fails_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_linux_different_profiles_cannot_impersonate_account (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_linux_exact_enforcing_profiles (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_disabled_rule_even_in_baseline_fail_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_empty_profiles_fail_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_foreign_account_rule_fail_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_healthy (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_missing_rules_even_in_baseline_fail_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_windows_unknown_profile_values_fail_closed (managed_enforcement_check.ManagedChecks) ... ERROR\ntest_mark_removed_and_links_not_followed (managed_enforcement_check.StaleSignIn) ... ERROR\n\n======================================================================\nERROR: test_linux_complain_profile_fails_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_linux_different_profiles_cannot_impersonate_account (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_linux_exact_enforcing_profiles (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_disabled_rule_even_in_baseline_fail_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_empty_profiles_fail_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_foreign_account_rule_fail_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_healthy (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_missing_rules_even_in_baseline_fail_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_windows_unknown_profile_values_fail_closed (managed_enforcement_check.ManagedChecks)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 24, in setUp\n    self.linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n======================================================================\nERROR: test_mark_removed_and_links_not_followed (managed_enforcement_check.StaleSignIn)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 110, in test_mark_removed_and_links_not_followed\n    linux = load(\"managed-linux\")\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\managed_enforcement_check.py\", line 17, in load\n    spec.loader.exec_module(module)\n  File \"<frozen importlib._bootstrap_external>\", line 883, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 241, in _call_with_frames_removed\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\endpoint-agent\\managed-linux.py\", line 10, in <module>\n    import grp\nModuleNotFoundError: No module named 'grp'\n\n----------------------------------------------------------------------\nRan 10 tests in 0.100s\n\nFAILED (errors=10)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "loopback_owner_replies_test.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:04.507262+00:00",
+      "finished_utc": "2026-10-21T05:16:04.925511+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_bootstrap_selects_employee_uid_only_for_a_separate_managed_account (loopback_owner_replies_test.Installer) ... ok\ntest_device_code_command_on_success_failure_and_interrupt (loopback_owner_replies_test.Installer) ... ok\ntest_invalid_owner_fails_before_enrollment (loopback_owner_replies_test.Installer) ... ok\ntest_owner_uid_is_forwarded_without_ambient_sudo_identity (loopback_owner_replies_test.Installer) ... ok\ntest_only_logged_denials_are_classified (loopback_owner_replies_test.Observer) ... ok\ntest_invalid_or_managed_owner_is_rejected (loopback_owner_replies_test.OwnerReplies) ... ok\ntest_mark_is_one_bit_and_preserves_tailscale_and_other_bits (loopback_owner_replies_test.OwnerReplies) ... ok\ntest_no_owner_keeps_complete_loopback_denial (loopback_owner_replies_test.OwnerReplies) ... ok\ntest_only_owner_original_new_marks_and_managed_reply_accepts (loopback_owner_replies_test.OwnerReplies) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.255s\n\nOK\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "full_stack_lab/tests",
+        "-p",
+        "launcher_pin_check.py",
+        "-v"
+      ],
+      "started_utc": "2026-10-21T05:16:04.926511+00:00",
+      "finished_utc": "2026-10-21T05:16:05.174640+00:00",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "test_delimiters_and_exact_claude_settings_matching (launcher_pin_check.LinuxLauncherPinCheck) ... skipped 'Linux gcc가 필요합니다'\ntest_long_value_options_do_not_hide_a_later_override (launcher_pin_check.LinuxLauncherPinCheck) ... skipped 'Linux gcc가 필요합니다'\ntest_real_config_options_and_clusters_are_rejected (launcher_pin_check.LinuxLauncherPinCheck) ... skipped 'Linux gcc가 필요합니다'\ntest_short_value_options_consume_attached_and_separate_values (launcher_pin_check.LinuxLauncherPinCheck) ... skipped 'Linux gcc가 필요합니다'\ntest_ca_launchers_execute_native_with_child_scoped_trust (launcher_pin_check.WindowsLauncherRollbackCheck) ... ok\ntest_launch_cli_and_python_harness_entry_are_removed (launcher_pin_check.WindowsLauncherRollbackCheck) ... ok\ntest_user_path_is_appended_and_alternate_homes_are_untouched (launcher_pin_check.WindowsLauncherRollbackCheck) ... ok\ntest_without_ca_returns_native_directory_without_creating_launchers (launcher_pin_check.WindowsLauncherRollbackCheck) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.065s\n\nOK (skipped=4)\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/broker_binding.py",
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/enforce-linux.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/tests/header_broker_label_check.py"
+      ],
+      "started_utc": "2026-10-21T05:16:05.174640+00:00",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+    }
+  ],
+  "compile": {
+    "status": "pass",
+    "files": [
+      "endpoint-agent/broker_binding.py",
+      "endpoint-agent/managed-linux.py",
+      "endpoint-agent/enforce-linux.py",
+      "full_stack_lab/gateway/app/agent_service.py",
+      "full_stack_lab/tests/header_broker_label_check.py"
+    ]
+  },
+  "apparmor_parser": {
+    "available": false,
+    "status": "incomplete"
+  },
+  "extraction_inventory": [
+    {
+      "path": "full_stack_lab/tests/endpoint_evidence_check.py",
+      "line": 205
+    },
+    {
+      "path": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+      "line": 128
+    },
+    {
+      "path": "full_stack_lab/tests/endpoint_evidence_pg_check.py",
+      "line": 205
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 32
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 57
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 238
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 246
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 254
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 256
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "line": 259
+    },
+    {
+      "path": "full_stack_lab/tests/launcher_pin_check.py",
+      "line": 135
+    },
+    {
+      "path": "full_stack_lab/tests/managed_enforcement_check.py",
+      "line": 30
+    },
+    {
+      "path": "full_stack_lab/tests/managed_enforcement_check.py",
+      "line": 39
+    },
+    {
+      "path": "full_stack_lab/tests/managed_kernel_proof.py",
+      "line": 60
+    },
+    {
+      "path": "full_stack_lab/tests/termination_lab_support.py",
+      "line": 49
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 166
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 179
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 185
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 188
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 219
+    },
+    {
+      "path": "full_stack_lab/tests/user_command_settings_check.py",
+      "line": 239
+    },
+    {
+      "path": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 65
+    },
+    {
+      "path": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 70
+    },
+    {
+      "path": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 75
+    },
+    {
+      "path": "full_stack_lab/tests/windows_config_env_check.py",
+      "line": 143
+    },
+    {
+      "path": "endpoint-agent/enforce-linux.py",
+      "line": 507
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "line": 320
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "line": 362
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "line": 428
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 200
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 238
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 356
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 392
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 552
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 569
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 584
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 633
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 662
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 713
+    },
+    {
+      "path": "endpoint-agent/managed-windows.py",
+      "line": 791
+    },
+    {
+      "path": "endpoint-agent/os-observer.py",
+      "line": 76
+    },
+    {
+      "path": "endpoint-agent/os-observer.py",
+      "line": 78
+    }
+  ],
+  "code_symbols": [
+    {
+      "path": "endpoint-agent/broker_binding.py",
+      "symbol": "enforcing_profiles",
+      "line": 12,
+      "end_line": 16
+    },
+    {
+      "path": "endpoint-agent/broker_binding.py",
+      "symbol": "kernel_ready",
+      "line": 19,
+      "end_line": 32
+    },
+    {
+      "path": "endpoint-agent/broker_binding.py",
+      "symbol": "peer_label",
+      "line": 35,
+      "end_line": 40
+    },
+    {
+      "path": "endpoint-agent/broker_binding.py",
+      "symbol": "authorize_peer",
+      "line": 43,
+      "end_line": 71
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "symbol": "checks",
+      "line": 102,
+      "end_line": 133
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "symbol": "install",
+      "line": 173,
+      "end_line": 267
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "symbol": "serve",
+      "line": 270,
+      "end_line": 369
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "symbol": "Header",
+      "line": 277,
+      "end_line": 285
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "symbol": "handle",
+      "line": 278,
+      "end_line": 285
+    },
+    {
+      "path": "endpoint-agent/enforce-linux.py",
+      "symbol": "profile",
+      "line": 92,
+      "end_line": 167
+    },
+    {
+      "path": "endpoint-agent/enforce-linux.py",
+      "symbol": "bound_profile",
+      "line": 170,
+      "end_line": 251
+    },
+    {
+      "path": "full_stack_lab/tests/header_broker_label_check.py",
+      "symbol": "handle",
+      "line": 67,
+      "end_line": 70
+    }
+  ],
+  "sha256": {
+    "endpoint-agent/broker_binding.py": "d946046be1fa6f4175122b9360b03bb0da68cd5553301164eea5e38f5191e9fd",
+    "endpoint-agent/managed-linux.py": "c7d2562f6cb171444084b97fb91a77751b1e7d1ca5e2e3b009e35663db029535",
+    "endpoint-agent/enforce-linux.py": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+    "full_stack_lab/gateway/app/agent_service.py": "122fc00371e7983324ad35159f4e631639aa119d2c6dc327720152a9e174e3ba",
+    "full_stack_lab/tests/header_broker_label_check.py": "49bb6f1942dfe51832ff1035386d444c1ce7160124c1d576de72e38cb54828d3"
+  }
+}
