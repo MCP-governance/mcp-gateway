@@ -299,3 +299,138 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
   3. `os-observer-windows.py`도 같은 `offline_buffer.py`를 쓰므로 같은 수정을 받는다. Windows 시험은 없다.
   4. 실제 PostgreSQL 시험과 기기 시험은 하지 않았다.
 - 커밋: `fix(v2): 폐기 건수 중복 집계와 재보고 버림 수정 (D-182)`.
+
+## 8. 2회차 감사 (D-176·D-177·D-178·D-189)
+
+- 성격: 읽기 전용 감사. 제품 코드, 시험, 기존 문서를 고치지 않았다. 새 시험을 만들지 않았다. 이 절만 덧붙였다.
+- 기준: `origin/main` be09c97, 브랜치 `10/21-criteria-audit-2`. 1회차 이후 main에 들어온 변경: D-176 `e6684c0`, D-177 시험 보정 `ff629e5`, D-189 `882c390`·`e870a2b`, D-182 정정 `ee4470b`·`097f27e`.
+- 완료 조건 출처: `research/llm-wiki/status/backlog.md` 85~87행(DEV-74·75·76). D-189는 `research/llm-wiki/analysis/review-1020/d189-approval-method.md`의 결론 1~3과 추가 판단 1~3.
+- 판정 기준: 1회차와 같다. 「실행 못 함」은 돌리지 못한 시험이며 통과로 세지 않았다. 「경로 누락」은 시험이 실행하지 않는 분기다.
+
+### 8.1 항목별 결과
+
+#### DEV-74 / D-176 반복 위반 자동 일시 중지
+
+| 완료 조건 문구 | 고정하는 시험 (파일:시험) | 이번 실행 결과 | 대역/실제 | 판정 |
+| --- | --- | --- | --- | --- |
+| 임계 도달 다음 호출부터 중지 | `user_auto_suspend_check.py`: `test_threshold_creates_one_d181_state_row_and_complete_automatic_record`(행 1건, 원장 1건). 「다음 호출 차단」은 `user_server_suspend_check.py`의 관리자 행 시험으로 대신함 | 두 파일 통과 (10건, 24건) | 대역(`FakeConnection`). 자동 행이 실제 Block 기록에서 만들어진 뒤 차단되는 연결은 실행 안 됨 | 부분 |
+| 임계 판정이 실제 Block 기록에서 일어남 | `dest_pin_credential_redaction_check.py:289-304` (`core._record_decision` 추출) | **실패 (exit 1)**: `NameError: name 'AUTO_SUSPEND_POLICIES' is not defined` (`core.py:1927`). 16건 중 1건 ERROR | 실행 0회 | **실행 실패** |
+| 해제 후 정상 | `user_auto_suspend_check.py:test_expiry_releases_state_and_records_automatic_resume` | 통과 | 대역. `_expire_locked`만 호출. `execute_call`의 만료 처리(`core.py:2076-2081`)는 미실행 | 부분 |
+| 임계·기간 설정값 | `user_auto_suspend_check.py:test_threshold_window_and_duration_are_environment_settings` | 통과 | 문자열 검사(`os.getenv("AUTO_SUSPEND_THRESHOLD"` 포함 여부)뿐 | 부분 |
+| (보강) 동시 임계에서 삽입 1회 | `user_auto_suspend_check.py:test_concurrent_threshold_has_one_insert_and_one_event` | 통과 | 대역(`asyncio.Lock`). 실제 직렬화는 `pg_advisory_xact_lock` 문자열 검사(`:182`) | 부분 |
+
+- PostgreSQL 시험 없음. `auto_suspend_pg_check.py`는 D-122 서버 단위 시험(머리말 1~2행)이며 D-176의 직원×서버 조합을 다루지 않는다.
+- 종합: **부분**. 임계 판정 기록 경로는 한 번도 실행되지 않았다.
+
+#### DEV-75 / D-177 미사용 도구 자동 비활성
+
+| 완료 조건 문구 | 고정하는 시험 (파일:시험) | 이번 실행 결과 | 대역/실제 | 판정 |
+| --- | --- | --- | --- | --- |
+| 기한 도달 도구가 목록에서 빠짐 | `tool_sunset_check.py:test_expired_tool_appends_automatic_sunset`(규칙과 `active=False` 사건). `:test_list_and_call_use_sunset_state_and_existing_policy`의 168행(`listable` 사전 입력) | 통과 | 대역 저장소. `mcp_facade.py:144-146` 목록 루프는 실행 안 됨. 165행은 문자열 | 부분 |
+| 기한 도달 도구가 호출에서 빠짐 | 같은 시험의 169~170행(`call_verdict` 사전 입력), 167행(문자열) | 통과 | `core.py:2133-2136` 실제 경로는 실행 안 됨. `fresh_requester_check.py:125`와 `user_server_suspend_check.py:241`은 `tool_sunset`을 `check→{}`, `call_verdict→None`으로 대역해 판정이 한 번도 실제로 돌지 않음 | 부분 |
+| 자동 연장에 사용 이력 반영 | `tool_sunset_check.py:test_recent_window_appends_extension`(연장 사건). 서버 승인 기한 연장 `core.py:893-948`의 `recently_used` 연결은 `intake_identity_pg_check.py:294-318`(PG)뿐 | 연장 사건 통과. PG는 실행 못 함 | 대역 | 부분 |
+| 재심사 승인 후 복귀 | `tool_sunset_check.py:test_reapproval_is_an_append_only_human_event` | 통과 | 대역. 재심사 뒤 목록·호출 복귀는 실행 안 됨 | 부분 |
+
+- 종합: **부분**. 목록과 호출 두 경로는 모두 사전 입력 대역 또는 문자열 검사로만 덮인다.
+- 백로그 DEV-75 행은 「미착수」지만 판정 규칙과 시험은 main에 있다(8.6).
+
+#### DEV-76 / D-178 SBOM 영향 조회
+
+| 완료 조건 문구 | 고정하는 시험 (파일:시험) | 이번 실행 결과 | 대역/실제 | 판정 |
+| --- | --- | --- | --- | --- |
+| 합성 취약 판본의 영향 서버 목록이 SBOM과 일치 | `sbom_impact_check.py:test_query_separates_affected_unaffected_unknown_and_missing`(행 6건 주입), `:test_semver_range_boundaries_and_unknown_versions` | 통과 | 대역. `db.fetch_all` 주입. `sbom_impact.py:79-99`의 SQL은 실행 안 됨 | 부분 |
+| 차단 조작이 원장에 남음 | `sbom_impact_check.py:test_existing_server_stop_writes_batch_on_append_only_event`(`ops_response.suspend`를 AST로 추출, 가짜 연결) | 통과 | 대역. 신규 중지 행에 대해서만 | 충족(대역). 건너뜀의 원장은 시험 없음 |
+| 일괄 중지의 부분 실패 격리 | `sbom_impact_check.py:test_stop_deduplicates_server_and_reports_partial_failure_with_batch` | 통과 | 대역(`ops_response.suspend` 교체). 건너뜀 0건을 고정(121행) | 부분 (건너뜀 분기 미시험) |
+
+- 종합: **부분**. 「자료 없음」 분기 일부와 건너뜀 분기가 시험되지 않았다(8.2).
+
+#### D-189 도입 위험 등급 승인 방식
+
+| 완료 조건 문구 | 고정하는 시험 (파일:시험) | 이번 실행 결과 | 대역/실제 | 판정 |
+| --- | --- | --- | --- | --- |
+| 결론 1·2: high는 2명, reason 대안 폐지, very_high는 2명과 사유 | `intake_d189_check.py:TableCheck`, `:test_a_reason_never_replaces_an_approver`; `intake_risk_tier_check.py:test_approval_method_per_tier` | 통과 | 순수 함수 대역 | 충족(대역) |
+| 적용 1: `risk_tier_gate`(`/approve`) 2명·사유 | `intake_risk_tier_check.py:211`, `:228`, `:235`, `:242` (`approve_mcp_request`를 실제 호출, DB만 교체) | 통과 (25건 중 4건이 이 경로) | 대역 | 충족(대역) |
+| 적용 2: `approve_and_register` 2명·사유 | `intake_d189_check.py:OneClickVeryHighCheck` 5건 | 통과 (skip 0) | 대역 | 충족(대역) |
+| 적용 3: `core.register_server` 2명·사유 | 행위 시험 없음. 문자열 검사만 `intake_d189_check.py:56-60` | 통과 (문자열) | 실행 시험 없음 | **시험 없음 (행위)** |
+| 결론 3: 치명적 발견 수용은 `accept_risk`로 별도 | 전용 시험을 찾지 못함. `accept_risk`는 `intake_one_click_ast_check.py:84` 대역 이름과 `intake_identity_test.py:112` patch뿐 | — | — | 시험 없음 (확인 미완) |
+| 표시 방식 = 강제 방식 | `intake_d189_check.py:test_the_displayed_method_is_the_enforced_one` | 통과 | 대역 | 충족(대역) |
+| 추가 판단 1: root_solo 기대값을 `cosign`으로 | `root_solo_check.py:test_risk_tier_still_requires_second_approver_where_required` 56~58행 | 통과 | 순수 함수 | 충족(대역). 1회차 3절 충돌 해소 |
+| 추가 판단 2: 근거 없는 신청은 보류, 목록 칩도 보류 | `intake_blocked_proposal_check.py`(AST 추출 `with_risk`), `intake_risk_tier_check.py:test_request_without_stated_input_is_held`, `intake_d189_ui_check.mjs` 4건 | 통과 (node 4/4) | 대역 | 충족(대역) |
+| 추가 판단 3: 공급자 선택 입력, 받지 못한 항목은 「확인 안 됨」 | `supplier_assurance_check.py:test_items_not_received_are_named_unconfirmed_and_never_recorded_as_provided`(88행), `intake_d189_ui_check.mjs:63` | 통과 | 대역 | 충족(대역) |
+
+- 종합: **부분**. 두 경로(`risk_tier_gate`, `approve_and_register`)는 행위 시험이 있다. `core.register_server`의 2명·사유 강제와 결론 3은 시험이 없다.
+
+### 8.2 경로 누락 (시험이 실행하지 않는 분기, 가장 위험해 보이는 순)
+
+| 순위 | 기능 | 분기 (파일:행) | 조건 | 실행하는 시험 | 판정 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | D-176 | `core.py:1926-1931`, `:1976-1978` | Block이고 목록 정책이며 신원이 unknown이 아닐 때 임계 판정 | 없음. `dest_pin_credential_redaction_check.py:304`에서 NameError로 중단 | 실행 0회 |
+| 2 | D-176 | `core.py:1976-1978` → `automatic_suspend.py:43-51` → `core.py:2407`(보호 없음) → `mcp_facade.py:251-252` | 임계 판정의 집계 SELECT 실패, 또는 설정값 `threshold<1`(`automatic_suspend.py:43-44`) | `user_auto_suspend_check.py:147-152`는 예외 전파만 확인. 판정 행 롤백, `P-CONTROL-FAIL-CLOSED` 기록, 응답 형태는 시험 없음(`:152`는 문자열) | 시험 없음. 코드 독해: Block 판정 행이 같은 트랜잭션에서 롤백되고 호출자는 일반 오류를 받음(미재현) |
+| 3 | D-189 | `core.py:682`, `:685-686`, `:687-688` | 승인자에 신청자 포함 / 승인자 2명 미만 / very_high인데 사유 기록 없음 | 행위 시험 없음. `intake_d189_check.py:56-60` 문자열만 | 시험 없음 (최종 관문) |
+| 4 | D-189 | `core.py:675` | 승인 때 입력 해시와 현재 입력 해시가 다름 | 없음. 「승인 때 확인한 영향평가 입력」 시험 0건 | 시험 없음 |
+| 5 | D-177 | `tool_sunset.py:99-102` | 재심사 전에 `held` 사건이 있으면 다음 `check()`도 비활성이어야 함 | 없음. `test_reapproval...`(150~158행)은 승인 뒤에만 다시 확인 | 시험 없음 |
+| 6 | D-177 | `tool_sunset.py:24-27` → `mcp_facade.py:145`, `:226-231` | `available=False`이면 `listable`이 RuntimeError, tools/list 전체 실패 | 없음. 168행은 `available=True`만 | 시험 없음 (가용성) |
+| 7 | D-177 | `tool_sunset.py:72-81` | 원장 봉인 구간과 관측 창 겹침, 원장 건수 불일치 | 없음. `Connection`은 entries=0, retained=0 고정(`:38-39`), `current_seal`은 None 고정(`:80`) | 시험 없음 |
+| 8 | D-177 | `core.py:913-915` → `tool_sunset.py:170-191` | 보존 구간 부족 또는 봉인 겹침이면 recently_used가 None이어서 자동 연장 금지 | 없음 (PG 시험뿐, 실행 못 함) | 시험 없음 |
+| 9 | D-178 | `sbom_impact.py:143` + `ops_response.py:74-75` | 이미 중지된 서버를 다시 중지하면 skipped인데 `status_reason`과 상태가 덮어써짐 | 시험은 `skipped` 0건으로 고정(`sbom_impact_check.py:121`) | 시험 없음. 「건너뛰고」 문구와 어긋날 수 있음(코드 독해) |
+| 10 | D-178 | `sbom_impact.py:103-105` | 세대는 있는데 커밋 불일치, 검사 상태가 DONE 아님, 세대 없음 | 없음. `row()` 헬퍼는 항상 `source_match=True`, `scan_status=DONE`, 세대 지정(`sbom_impact_check.py:42-47`) | 시험 없음 |
+| 11 | D-176 | `automatic_suspend.py:61-62` | 이미 활성 중지(관리자 중지 또는 이전 자동 중지)가 있을 때 임계 도달 → 원장 없이 False | 없음 | 시험 없음 |
+| 12 | D-176 | `core.py:2107-2111` | 만료 처리(`expire`) 실패 → P-CONTROL-FAIL-CLOSED | 없음. `user_server_suspend_check.py:391-393`은 디스패치 시점 상태 읽기 실패 | 시험 없음 |
+| 13 | D-176 | `dispatch.py:153` | 자동 행의 `expires_at`이 지났는데 만료 처리 전 | 문자열만(`user_auto_suspend_check.py:155-156`) | 부분 |
+| 14 | D-189 | `agent_service.py:2069-2070` | 위험 등급 산정 실패(tier 없음) → 409 | 없음. 「산정하지 못했습니다」 시험 0건 | 시험 없음 |
+| 15 | D-177 | `tool_sunset.py:106-112`, `:133-134` | 같은 관측 창 「자료 없음」 사건 중복 방지, 같은 기한 연장 중복 방지 | 없음 | 시험 없음 (낮음) |
+| 16 | D-176 | `automatic_suspend.py:26-34` | 전역 `expire()`(사용자·서버 없음) | 시험 없음. 호출자도 없음(`user_suspend.py:19`은 쌍 단위만 호출) | 죽은 분기 |
+| 17 | D-178 | `sbom_impact.py:46-50` | 범위 토큰 4개 초과, 빈 토큰 | `latest`, `1.2.3,`만 시험 | 낮음 |
+
+- 덮인 분기(참고): `risk_tier_gate` 보류 1555행(`intake_risk_tier_check.py:196`), 같은 관리자 재클릭 중복 기록 방지(`agent_service.py:1576`, `intake_risk_tier_check.py:222`), D-178 판단 불가·자료 없음 구분(`sbom_impact_check.py:97-99`).
+
+### 8.3 AST(함수 추출) 시험 이름공간 점검
+
+- 명령: `git grep -l -E "exec\(compile\(|production\("` 결과 27개 파일을 각각 `python tests/<파일>`로 실행하고 `NameError` 개수를 셌다.
+- exit 0: 26개. 그중 skip이 있는 파일은 `high_impact_check.py`(7, gateway image 필요), `incident_pack_check.py`(1), `managed_helper_unavailable_check.py`(1), `user_command_settings_check.py`(1), `user_command_settings_review_check.py`(1).
+- exit 1: `dest_pin_credential_redaction_check.py`. `NameError: name 'AUTO_SUSPEND_POLICIES' is not defined`. 도입 커밋은 `e6684c0`(D-176)다. 이 시험의 `_record_decision` 추출 이름공간(`:289-298`)에 `AUTO_SUSPEND_POLICIES`와 `user_suspend`가 없다. 시험 16건 중 15건은 통과했다.
+- D-177 `tool_sunset` NameError는 남아 있지 않다. `fresh_requester_check.py`와 `user_server_suspend_check.py`는 통과했다. 다만 두 시험 모두 `tool_sunset`을 대역해 실제 판정을 타지 않는다(8.2 5번·6번 근거).
+- `outcome_axes_check.py:137`도 `_record_decision`을 추출하지만 입력이 기본 `Allow`(`:33-36`)라 같은 결함이 가려져 있다.
+
+### 8.4 실행 못 한 시험과 증거 없는 부분
+
+- PostgreSQL 필요 시험은 실행 못 함. 이유: `DATABASE_URL` 미설정, docker와 psql 없음. 대상: `intake_identity_pg_check.py`(승인·등록·`renew_approvals` DB 경로), `auto_suspend_pg_check.py`(D-122이며 D-176 아님). D-176 전용 PG 시험은 존재하지 않는다.
+- gateway image 필요: `high_impact_check.py` 7건 skip.
+- 기기·PJ1: 실행 안 함. 감사 범위 밖.
+- 대역 한계: 집계 SQL(`automatic_suspend.py:46-51`), 중지 SQL(`automatic_suspend.py:55-61`), `impact()` SQL(`sbom_impact.py:79-99`)은 전부 실행되지 않았다.
+- 기존 실패: `intake_identity_test.py` 19건 중 7건 ERROR. `KeyError: 'high_count'`. 픽스처 `reports()`에 `high_count`가 없고 `review.py:174`가 `report["high_count"]`를 직접 읽는다. 제품 결함인지 픽스처 누락인지는 메인이 판단한다. 이 시험은 도입 게이트(`review.intake_gate`) 시험이다.
+
+### 8.5 실행한 명령과 종료 코드
+
+공통: 작업 디렉터리 `full_stack_lab`. `PY=C:/Users/bobysg/bob/프로젝트/.venv-mcpgw/Scripts/python.exe`(Python 3.12.10). `PYTHONIOENCODING=utf-8`, `PYTHONPATH=runtime;gateway/app;supply_chain`. 의존성 확인 `"$PY" -c "import fastapi, psycopg, cryptography, pydantic"` 종료 0.
+
+| 명령 | 종료 코드 | 건수 |
+| --- | --- | --- |
+| `git fetch origin main` | 0 (f5fa6fd..be09c97) | — |
+| `git checkout -B 10/21-criteria-audit-2 origin/main` | 0 | — |
+| `"$PY" tests/user_auto_suspend_check.py` | 0 | 10 |
+| `"$PY" tests/user_server_suspend_check.py` | 0 | 24 |
+| `"$PY" tests/user_suspend_all_check.py` | 0 | 13 |
+| `"$PY" tests/tool_sunset_check.py` | 0 | 7 |
+| `"$PY" tests/fresh_requester_check.py` | 0 | 10 |
+| `"$PY" tests/sbom_impact_check.py` | 0 | 5 |
+| `"$PY" tests/intake_d189_check.py` | 0 | 9 (OneClick 5 포함, skip 0) |
+| `"$PY" tests/root_solo_check.py` | 0 | 6 |
+| `"$PY" tests/intake_risk_tier_check.py` | 0 | 25 |
+| `"$PY" tests/intake_one_click_check.py` | 0 | 19 |
+| `"$PY" tests/intake_one_click_ast_check.py` | 0 | 11 |
+| `"$PY" tests/supplier_assurance_check.py` | 0 | 8 |
+| `"$PY" tests/solo_mode_ledger_check.py` | 0 | 8 |
+| `"$PY" tests/high_impact_check.py` | 0 | 24 (7 skip) |
+| `"$PY" tests/intake_identity_test.py` | 1 | 19 (7 ERROR, KeyError high_count) |
+| `node --test tests/intake_d189_ui_check.mjs` | 0 | 4 |
+| 8.3의 추출 시험 27개 (`"$PY" tests/<파일>`, timeout 180초) | 26개 0, `dest_pin_credential_redaction_check.py` 1 | 해당 파일 16건 중 1 ERROR |
+| `"$PY" tests/intake_blocked_proposal_check.py` (추출 배치 안) | 0 | — |
+
+### 8.6 판단 필요 (수정하지 않음)
+
+- 백로그와 main 불일치: DEV-74 행은 「미커밋·미통합」인데 `e6684c0`이 main에 있다. DEV-75 행은 「미착수(D-177 예약)」인데 판정 규칙과 시험이 main에 있다. D-178 행은 「로컬 구현」인데 `sbom_impact.py`와 시험이 main에 있다.
+- 1회차 3절 충돌은 해소됐다. `root_solo_check.py:56-58`이 `cosign`으로 바뀌어 통과한다.
+- `ff629e5`는 D-177 회귀 2건(`fresh_requester_check.py`, `user_server_suspend_check.py`)을 고쳤다. 같은 종류(이름공간 누락)의 D-176 회귀(`dest_pin_credential_redaction_check.py`)는 남아 있다.
+- D-189 결론 3(치명적 발견 수용 분리)과 `core.register_server`의 2명·사유 강제는 실행 시험이 없다. 이 둘을 시험으로 고정하려면 메인이 시험 추가 여부를 정해야 한다.
+- 8.2 1번과 2번은 시험 실행 실패와 집계 실패 롤백이 겹친 것이다. 롤백 결과는 코드 독해이며 재현하지 않았다.
