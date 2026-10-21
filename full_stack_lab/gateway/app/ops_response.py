@@ -140,8 +140,9 @@ async def resume(server_id, actor, note):
             "UPDATE mcp_servers SET status='PENDING',status_reason='관리자 복귀 승인 · 계약 확인 대기' WHERE id=%s", (server_id,))
         await review.record_event("automatic-suspension-resume", "approved", "server", server_id, actor,
                                   reason=note, connection=connection)
-        await connection.execute(
-            "DELETE FROM local_run_stops WHERE server_id=%s AND user_token='' AND device_id=''", (server_id,))
+        if local_jobs.is_local(server_id):
+            await connection.execute(
+                "DELETE FROM local_run_stops WHERE server_id=%s AND user_token='' AND device_id=''", (server_id,))
     return {"server_id": server_id, "status": "PENDING"}
 
 

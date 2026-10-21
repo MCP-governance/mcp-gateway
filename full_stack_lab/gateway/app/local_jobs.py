@@ -551,10 +551,17 @@ async def complete(device: dict, job_id: str, result: dict | None, error: str | 
     return row is not None
 
 
+def is_local(server_id: str) -> bool:
+    from . import registry
+    return bool((registry.server(server_id) or {}).get('local'))
+
+
 async def quiesce(*, server_id='', user_token='', device_id=''):
     """Close admission first, then require a device stop receipt before the final state transition."""
     if not any((server_id,user_token,device_id)):
         raise ValueError('중지 범위가 필요합니다.')
+    if server_id and not is_local(server_id):
+        return  # a remote server has nothing running on a device: no stop row, no wait
     async with db.transaction() as connection:
         await connection.execute("""INSERT INTO local_run_stops(server_id,user_token,device_id) VALUES(%s,%s,%s)
             ON CONFLICT DO NOTHING""",(server_id,user_token,device_id))
@@ -573,6 +580,8 @@ async def quiesce(*, server_id='', user_token='', device_id=''):
 
 
 async def resume(*, server_id='', user_token='', device_id=''):
+    if server_id and not is_local(server_id):
+        return
     await db.execute('DELETE FROM local_run_stops WHERE server_id=%s AND user_token=%s AND device_id=%s',
                      (server_id,user_token,device_id))
 
