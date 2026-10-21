@@ -562,3 +562,7 @@ raw 키와 event_id 키는 journal에서 거의 같은 사건을 가리킨다. j
 - 이 PC의 Python 3.10.5에서 `python full_stack_lab/tests/tool_sunset_paths_check.py -v`는 8건 중 **4 통과·4 건너뜀**이다. AST 추출 목록 격리 시험과 기존 순수 분기 3건은 통과했다. 앱 통합 4건은 제품의 `datetime.UTC` import 오류로 실행하지 못했다. 지원 의존성이 있는 Python 3.12에서 최종 전체 실행은 메인 재검증 대기다. `intake_identity_test.py`도 같은 `ImportError: cannot import name 'UTC' from 'datetime'`로 실행 못 함. Python 3.12 실행파일 후보 경로는 깨진 venv launcher를 가리켰고, 이 PC에서 확인된 인터프리터는 Python 3.10뿐이다.
 - 민감도 확인: 목록 격리 예외 처리를 잠시 되돌리고 AST 추출 시험 하나만 실행하자 `RuntimeError`로 **실패**했다. 예외 처리를 복구한 뒤 전체 새 시험을 다시 실행해 위 결과를 확인했다.
 - `python -m py_compile`(수정한 파사드·두 시험 파일) 및 `git diff --check` 통과. 도구 정의나 상태 저장소 전체 장애에 대한 별도 DB 실험, 솔루션 기기 배포·PJ1 시험은 실행하지 않았다.
+
+## 9. 이후 해소 (메인, 2026-10-21 저녁)
+
+- 8절의 「D-189 `core.register_server` 거부 3분기 — 문자열 검사뿐」은 감사 뒤 병합된 `root_solo_behavior_check.py`(`RegisterServerRoute`)로 해소됐다. 거부 줄 변이 3종이 각각 시험을 실패시킨다(`10/21-register-server-cov`). 위 절은 감사 시점 기록으로 그대로 둔다.
