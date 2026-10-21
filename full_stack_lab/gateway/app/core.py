@@ -108,6 +108,21 @@ AUTO_SUSPEND_POLICIES = (
 DENIAL_POLICIES = AUTO_SUSPEND_POLICIES
 
 
+def check_auto_suspend_settings(threshold: int, window_seconds: int, duration_seconds: int,
+                                policies: tuple[str, ...]) -> None:
+    """D-176: a wrong setting stops the gateway at start. Quietly disabling the control would be worse."""
+    for name, value in (("AUTO_SUSPEND_THRESHOLD", threshold), ("AUTO_SUSPEND_WINDOW_SECONDS", window_seconds),
+                        ("AUTO_SUSPEND_DURATION_SECONDS", duration_seconds)):
+        if value < 1:
+            raise RuntimeError(f"{name}은(는) 1 이상이어야 합니다(현재 {value}). 게이트웨이를 시작하지 않습니다.")
+    if not policies:
+        raise RuntimeError("자동 중지 대상 정책 목록이 비어 있습니다. 게이트웨이를 시작하지 않습니다.")
+
+
+check_auto_suspend_settings(AUTO_SUSPEND_THRESHOLD, AUTO_SUSPEND_WINDOW_SECONDS,
+                            AUTO_SUSPEND_DURATION_SECONDS, AUTO_SUSPEND_POLICIES)
+
+
 class ResultRejected(RuntimeError):
     """Upstream answered, but its output failed the gateway's output control."""
 
@@ -1984,6 +1999,19 @@ async def _record_decision(event: dict) -> int:
             except Exception:
                 logging.getLogger(__name__).exception(
                     "automatic suspension check failed; decision %s stays Block", row["id"])
+                # The failure is a ledger fact: an append after the rolled-back savepoint, with its own
+                # savepoint so that a failure to write it cannot roll back the Block row either.
+                try:
+                    async with connection.transaction():
+                        await review.record_event(
+                            "auto-suspend-count-failed", "recorded", "decision", row["id"], "automatic",
+                            reason="자동 중지 집계 실패",
+                            scope={"decision_id": int(row["id"]), "user": record["user_token"],
+                                   "server": record["server_id"], "policy_id": record["policy_id"]},
+                            connection=connection)
+                except Exception:
+                    logging.getLogger(__name__).exception(
+                        "automatic suspension failure not recorded; decision %s stays Block", row["id"])
     return int(row["id"])
 
 

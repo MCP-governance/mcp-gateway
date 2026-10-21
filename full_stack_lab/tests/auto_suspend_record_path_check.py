@@ -12,9 +12,12 @@ from datetime import UTC, datetime, timedelta
 import hashlib
 import importlib.util
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 import re
+import subprocess
+import sys
 from types import SimpleNamespace
 import unittest
 
@@ -58,39 +61,49 @@ class Cursor:
 
 
 class Connection:
-    """One transaction's working copy. A nested transaction is a savepoint: an error inside it restores
-    the copy taken when it started, then propagates."""
+    """One transaction's working copy, with PostgreSQL's rule: after an SQL error the transaction is
+    aborted and nothing more can run in it, except after a savepoint is rolled back. A nested
+    transaction is a savepoint: an error inside it restores the copy taken when it started."""
 
     def __init__(self, ledger):
         self.ledger = ledger
         self.state = copy.deepcopy(ledger.committed)
+        self.aborted = False
 
     @asynccontextmanager
     async def transaction(self):
-        saved = copy.deepcopy(self.state)
+        saved, was_aborted = copy.deepcopy(self.state), self.aborted
         try:
             yield self
         except BaseException:
-            self.state = saved
+            self.state, self.aborted = saved, was_aborted
             raise
 
     async def execute(self, query, params=()):
-        return self.ledger.sql(self.state, query, tuple(params))
+        if self.aborted:
+            raise OSError("current transaction is aborted, commands ignored until end of transaction block")
+        try:
+            return self.ledger.sql(self.state, query, tuple(params))
+        except Exception:
+            self.aborted = True
+            raise
 
 
 class Ledger:
-    """Committed rows plus the aggregate failure switch. A failing top-level transaction commits nothing."""
+    """Committed rows plus failure switches. A top-level transaction that ended aborted commits nothing."""
 
     def __init__(self):
         self.committed = {"decisions": [], "suspensions": [], "events": [], "head": GENESIS}
         self.count_fails = False
+        self.event_fails = False
         self.count_calls = 0
 
     @asynccontextmanager
     async def transaction(self):
         connection = Connection(self)
         yield connection
-        self.committed = connection.state
+        if not connection.aborted:
+            self.committed = connection.state
 
     def sql(self, state, query, params):
         if "pg_advisory_xact_lock" in query:
@@ -130,22 +143,29 @@ class Ledger:
             return Cursor({"id": row["id"], "suspended_at": row["suspended_at"], "expires_at": row["expires_at"]})
         if "SELECT count(*) FILTER (WHERE i.request_id IS NULL)" in query:
             return Cursor({"unsent": 0, "sent": 0})
+        if "INSERT INTO approval_events" in query:
+            kind, outcome, target_kind, target_id, actor, reason, scope = params
+            if self.event_fails and kind == "auto-suspend-count-failed":
+                raise OSError("approval_events unavailable")
+            state["events"].append({"kind": kind, "outcome": outcome, "target_kind": target_kind,
+                                    "target_id": target_id, "actor": actor, "reason": reason, "scope": scope})
+            return Cursor({"id": len(state["events"])})
         raise AssertionError(f"unexpected SQL: {query.strip()[:80]}")
 
 
 def build_core(ledger: Ledger):
-    async def record_event(kind, outcome, target_kind, target_id, actor, *, reason=None, scope=None, connection=None):
-        connection.state["events"].append({"kind": kind, "outcome": outcome, "actor": actor, "scope": scope})
-        return len(connection.state["events"])
+    async def record_event(kind, outcome, target_kind, target_id, actor, *, applicant=None, reason=None, scope=None,
+                           connection=None):
+        # Same shape as review.record_event: one INSERT through the transaction's connection.
+        params = (kind, outcome, target_kind, str(target_id), actor, reason, scope)
+        return (await (await connection.execute("INSERT INTO approval_events", params)).fetchone())["id"]
 
+    review = SimpleNamespace(record_event=record_event)
     auto = selected(APP / "automatic_suspend.py", ["_expire_locked", "suspend"],
-                    {"TARGET": "user-server-suspension", "review": SimpleNamespace(record_event=record_event)})
+                    {"TARGET": "user-server-suspension", "review": review})
 
     async def redact_error(error):
         return error
-
-    async def audit_fingerprint_free(record):
-        return contract.audit_fingerprint(record)
 
     namespace = {
         "__name__": "core_under_test", "logging": logging, "hashlib": hashlib,
@@ -155,7 +175,7 @@ def build_core(ledger: Ledger):
         "response_disposition": lambda e: "not_executed", "Jsonb": lambda v: v,
         "db": SimpleNamespace(transaction=ledger.transaction),
         "secret_scan": SimpleNamespace(redact_error=redact_error),
-        "user_suspend": SimpleNamespace(auto_suspend=auto.suspend),
+        "user_suspend": SimpleNamespace(auto_suspend=auto.suspend), "review": review,
         "AUTO_SUSPEND_THRESHOLD": 2, "AUTO_SUSPEND_WINDOW_SECONDS": 600, "AUTO_SUSPEND_DURATION_SECONDS": 900,
     }
     return selected(APP / "core.py", ["_record_decision", "_storable", "AUTO_SUSPEND_POLICIES"], namespace)
@@ -226,7 +246,59 @@ class DecisionRecordPath(unittest.IsolatedAsyncioTestCase):
         await self.core._record_decision(block_event(3))
         self.assertEqual(len(self.decisions()), 3)
         self.assertEqual(len(self.suspensions()), 1)
-        self.assertEqual(self.ledger.committed["events"][0]["scope"]["violations"], 3)
+        events = [e for e in self.ledger.committed["events"] if e["kind"] == "user-server-suspend"]
+        self.assertEqual(events[0]["scope"]["violations"], 3)
+
+    async def test_failed_check_is_appended_to_the_ledger_without_exception_text(self):
+        self.ledger.count_fails = True
+        await self.core._record_decision(block_event(1))
+        failed, = [e for e in self.ledger.committed["events"] if e["kind"] == "auto-suspend-count-failed"]
+        self.assertEqual((failed["outcome"], failed["actor"], failed["target_kind"], failed["target_id"]),
+                         ("recorded", "automatic", "decision", "1"))
+        self.assertEqual(failed["scope"], {"decision_id": 1, "user": "employee", "server": "wiki",
+                                           "policy_id": "P-DLP-001"})
+        self.assertNotIn("aggregate unavailable", repr(self.ledger.committed["events"]))
+
+    async def test_failure_to_append_the_failure_event_keeps_the_block_row(self):
+        self.ledger.count_fails = True
+        self.ledger.event_fails = True
+        with self.assertLogs("core_under_test", level="ERROR") as logs:
+            returned = await self.core._record_decision(block_event(1))  # must neither raise nor drop the row
+        self.assertEqual(returned, 1)
+        self.assertEqual([d["decision"] for d in self.decisions()], ["Block"])
+        self.assertEqual(self.ledger.committed["events"], [])
+        self.assertTrue(any("not recorded" in line for line in logs.output))
+
+
+class StartupSettings(unittest.TestCase):
+    AUTO_KEYS = ("AUTO_SUSPEND_THRESHOLD", "AUTO_SUSPEND_WINDOW_SECONDS", "AUTO_SUSPEND_DURATION_SECONDS")
+
+    def start(self, **overrides):
+        env = {key: value for key, value in os.environ.items() if key not in self.AUTO_KEYS}
+        env.update(overrides)
+        env["PYTHONIOENCODING"] = "utf-8"
+        return subprocess.run([sys.executable, "-c", "import app.core"], cwd=LAB / "gateway", env=env,
+                              capture_output=True, encoding="utf-8", errors="replace", timeout=180)
+
+    def test_default_settings_start_the_gateway(self):
+        result = self.start()
+        self.assertEqual(result.returncode, 0, result.stderr[-800:])
+
+    def test_wrong_settings_refuse_to_start_with_a_named_message(self):
+        for key, value in [("AUTO_SUSPEND_THRESHOLD", "0"), ("AUTO_SUSPEND_WINDOW_SECONDS", "0"),
+                           ("AUTO_SUSPEND_DURATION_SECONDS", "-1")]:
+            with self.subTest(key=key, value=value):
+                result = self.start(**{key: value})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("RuntimeError", result.stderr)
+                self.assertIn(key, result.stderr)
+                self.assertIn("시작하지 않습니다", result.stderr)
+
+    def test_empty_policy_list_refuses_to_start(self):
+        checker = selected(APP / "core.py", ["check_auto_suspend_settings"], {})
+        with self.assertRaisesRegex(RuntimeError, "정책 목록"):
+            checker.check_auto_suspend_settings(5, 600, 900, ())
+        checker.check_auto_suspend_settings(5, 600, 900, EXPECTED_POLICIES)
 
 
 if __name__ == "__main__":
