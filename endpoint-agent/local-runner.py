@@ -68,7 +68,11 @@ class PinnedMounts:
                 absolute = Path(home).joinpath(*parts)
                 parent = None
                 for part in absolute.parts:
-                    descriptor = os.open(part,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=parent)
+                    try:
+                        descriptor = os.open(part,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=parent)
+                    except OSError as exc:
+                        # A missing directory or a symlink anywhere on the path is a refused mount, not a fault.
+                        raise ValueError('허용하지 않는 마운트 경로') from exc
                     self.stack.callback(os.close,descriptor)
                     parent=descriptor
                 self._inspect(parent)

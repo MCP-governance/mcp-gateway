@@ -164,7 +164,7 @@ class MountRaces(unittest.TestCase):
     def test_F4_parent_symlink_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             home=Path(folder)/'home';home.mkdir();(home/'real').mkdir();(home/'link').symlink_to(home/'real',target_is_directory=True)
-            with self.assertRaises(OSError):runner.PinnedMounts({'mounts':[{'path':'link','mode':'ro'}]},str(home))
+            with self.assertRaises((OSError,ValueError)):runner.PinnedMounts({'mounts':[{'path':'link','mode':'ro'}]},str(home))
 
     def test_F4_repeated_replacement_never_redirects_pinned_source(self):
         with tempfile.TemporaryDirectory() as folder:
