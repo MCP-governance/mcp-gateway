@@ -1813,3 +1813,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지가 같은 상태를 쓰는 확장은 하지 않았다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+## D-179 출처 증명은 신뢰 키로 검증하고 미제공만 통과시킨다 (2026-10-21, DEV-77)
+
+- 문제: DEV-73 F3에서 이미지 서명·출처 증명은 DEV-77로 분리했다. 기존 소스 해시·라이선스·SBOM 분석은 누가 무엇을 빌드했는지 서명으로 증명하지 않으며, D-114 실행기는 내부 미러 commit·고정 레시피를 별도로 보장한다.
+- 결정: 승인 때 저장된 in-toto Statement v1 / SLSA Provenance v1 DSSE envelope를 확인한다. 서명은 설정 파일의 Ed25519 키와 허용 builder ID로 검증하고 subject SHA-256은 intake의 기록된 artifact digest와 대조한다. 불일치 또는 검증 불가면 `MCP-SUPPLY-001`로 보류하고, 증명이 없으면 `확인 안 됨`을 저장·표시한 채 진행한다. 처음 관찰한 키는 신뢰하지 않는다. 승인된 envelope와 digest를 실행기 evidence에 보존하고 시작·재조정에서 같은 digest와 현재 신뢰 설정으로 재검증한다. 도입 후 현재 이미지 ID는 D-114 실행기가 기록한 이미지 ID와 계속 대조한다.
+- 적용: `registry/provenance-trust-keys.json`은 공개 키 ID별 PEM과 허용 builder URI를 보유한다. `agent-service`와 `runtime-worker`만 읽기 전용으로 받는다. 새 의존성은 추가하지 않고 고정 `cryptography==50.0.1`을 사용한다. Console은 상태 라벨·값만 표시한다.
+- 분담: DEV-73은 내부 미러 allowlist·digest 고정·사전 반입을 수행하고, OCI 이미지 서명·증명 검증은 DEV-77 책임이다. DEV-73 코드 파일은 이 변경에서 수정하지 않았다. D-137 공급자 보증 값은 운영자 제출 보증으로 그대로 유지하며 암호학 증명과 합치지 않는다.
+- 한계: 현재 코드는 사전 저장된 Ed25519 DSSE envelope만 검증하며 Cosign OCI referrer 자동 조회, Sigstore bundle/keyless/Rekor, RSA/ECDSA, 실제 OCI manifest digest 및 공급자 서명 자동 수집은 미구현이다. 실제 배포·기기·PJ1 시험은 하지 않았다. TC260 6.2.2는 방향 원문 인용을 근거로 삼았고 이 작업에서는 표준 원문 사본을 재검증하지 않았다.
+- 근거: [DEV-77 분석과 규격·도구 범위](../../research/llm-wiki/analysis/provenance-verify/README.md), [DEV-73 F3 분담](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-provenance-verify.md).

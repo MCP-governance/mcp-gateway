@@ -105,6 +105,7 @@ services:
       corp-git: {condition: service_healthy}
     # 직원이 Console에서 PC 키트를 직접 받는다(/static/kit/mcpgw_pc.py). 관리자가 파일을 따로 전달하지 않는다.
     volumes:
+      - ./registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
       - ${FIELD_DISPOSAL_VOLUME:-field_disposal_journal}:/disposal
       - ./field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
       - ../endpoint-agent:/endpoint-kit:ro
@@ -112,6 +113,7 @@ services:
       - ./runtime/recipes:/runtime-recipes:ro
       - ./field/ca:/field-ca:ro
     environment:
+      MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       # D-188: 한 사람이 운영하는 현장 기본값. 0으로 끄면 서로 다른 관리자 요건이 그대로 돈다.
       ROOT_SOLO_APPROVAL: ${ROOT_SOLO_APPROVAL:-1}
@@ -133,6 +135,7 @@ services:
     image: mcpgw/runtime-worker:1.0
     restart: unless-stopped
     environment:
+      MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       REGISTRY_RUNTIME_DIR: /registry-runtime
       GITEA_ADMIN_URL: http://corp-git:3000
@@ -147,6 +150,7 @@ services:
       db: {condition: service_healthy}
       corp-git: {condition: service_healthy}
     volumes:
+      - ./registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
       - /var/run/docker.sock:/var/run/docker.sock
       - registry_runtime:/registry-runtime:ro
       - runtime_trivy_cache:/trivy-cache

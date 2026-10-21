@@ -30,7 +30,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import connections, consent, core, db, idp, oidc, provenance, review, upstream
+from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, review, upstream
 from . import risk_tier, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
@@ -1508,6 +1508,18 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     declared = approval.license.strip() if approval else ""
     if declared and record and not (record.get("license") or {}).get("spdx"):
         record["license"] = {"spdx": declared, "source": "operator", "by": user["principal"]}
+    try:
+        keys = (artifact_provenance.trust_keys(os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+                if (record.get("verification") or {}).get("attestation") else {})
+        proof = artifact_provenance.verify_source_attestation(
+            record, str((record.get("artifact") or {}).get("sha256") or ""), keys)
+    except (OSError, ValueError, TypeError):
+        proof = {"status": artifact_provenance.UNAVAILABLE, "reason": "신뢰 키 설정을 읽을 수 없습니다."}
+    if reason := artifact_provenance.blocking_reason(proof):
+        await hold_intake(request_id, {**pending, "provenance": record}, user, [reason], kind="provenance-mismatch")
+        raise HTTPException(409, f"출처 증명 검증에서 보류했습니다: {reason}")
+    record["verification"] = {**(record.get("verification") or {}), "provenance_status": proof["status"],
+                              "provenance_reason": proof["reason"], "provenance_keyid": proof.get("keyid")}
     pending = {**pending, "provenance": record, "supplier_assurance": assurance}
     gate = await review.intake_gate(pending)
     if gate["blockers"]:
@@ -1518,7 +1530,8 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     except ProvenanceMismatch as exc:
         await hold_intake(request_id, pending, user, [str(exc)], kind="provenance-mismatch")
         raise HTTPException(409, f"배포 파일이 검증한 것과 달라 보류했습니다: {exc}") from exc
-    record["verification"] = {**checked, "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
+    record["verification"] = {**(record.get("verification") or {}), **checked,
+                              "by": user["principal"], "at": datetime.now(UTC).isoformat(timespec="seconds")}
     critical = gate["critical"] or {}
     evidence = {**(pending.get("evidence") or {}), "supplier_assurance": assurance, "risk_assessment": risk_record}
     row = await review.transition(
