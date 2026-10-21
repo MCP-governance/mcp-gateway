@@ -49,7 +49,7 @@
 
 ### 기기 배포 판본
 
-- 마지막 배포: 기기 **`bcc38f9`**(10-21 저녁, **DEV-73 포함**). 구성요소 6개 정상, 실행 세대 ACTIVE 1 유지, DEV-73 표 3개(`local_jobs`·`local_run_stops`·`local_job_events`) 생성·빈 상태, 게이트웨이 오류 로그 0, 관리형 엔드포인트가 새 `/api/endpoint/local-jobs` 경로를 200으로 폴링. 배포 전 기기(Linux)에서 `local_run_manifest_check`가 **없는 경로·심볼릭 링크 마운트를 OS 오류로 올리는 것**을 잡아 거부(`ValueError`)로 고쳤다(`ae5d4e8` 계열, 실행기는 Exception을 잡아 차단은 유지됐다). 이전: `3eb802c`(첫 시도는 기기 Docker 자격 도우미 오류, 재시도 성공).
+- 마지막 배포: 기기 **`bcc38f9`**(10-21 저녁, **DEV-73 포함**). 구성요소 6개 정상, 실행 세대 ACTIVE 1 유지, DEV-73 표 3개(`local_jobs`·`local_run_stops`·`local_job_events`) 생성·빈 상태, 게이트웨이 오류 로그 0, 관리형 엔드포인트가 새 `/api/endpoint/local-jobs` 경로를 200으로 폴링. 배포 전 기기(Linux)에서 `local_run_manifest_check`가 **없는 경로·심볼릭 링크 마운트를 OS 오류로 올리는 것**을 잡아 거부(`ValueError`)로 고쳤다(`f17bf1b`, 실행기는 Exception을 잡아 차단은 유지됐다). 이전: `3eb802c`(첫 시도는 기기 Docker 자격 도우미 오류, 재시도 성공).
 - 메인이 Python 3.12(의존성 있는 venv)에서 직접 실행해 통과를 확인한 시험(보고서에 결과가 없던 것): `provenance_referrer_check` 8, `runtime_rollback_provenance_check` 3, `intake_identity_test` 19, `tool_sunset_paths_check` 8. 로컬 시험 전체는 `tests/run_local_suite.py` 기준 통과 85 · 실패 1(설계상 `threat_trace_mapping_check`) · 외부 의존 생략 18.
 - 이전 배포 기록: `848545f`(D-179 실행기 이미지에 `cryptography` 고정 후 구성요소 6개 정상, 실행 세대 1개 유지, 기기 단위 시험 opa 119/119 · 주요 시험 전부 통과) → `cc01e35`(D-177) → `be09c97`(D-180 결함 수정, D-189, 한 화면 승인) → `679ae03`(D-179 referrer) → `0c26ed7`(D-176 기록 경로) → `ded7f6e`(한 화면 승인 덮어쓰기 수정) → `293ada9`(D-176 후속) → `3eb802c`.
 - 병합 시점과 배포 순서 대조: D-182 건수 수정은 `cc01e35`부터, D-177 목록 격리와 한 화면 승인 표식은 `ded7f6e`부터, D-183 경고 단계와 콘솔 한글 라벨은 `3eb802c`부터 기기에 있다. DEV-73은 `bcc38f9`부터 기기에 있다(실제 PG 경합 시험 29/29·12/12 통과 뒤 병합).
