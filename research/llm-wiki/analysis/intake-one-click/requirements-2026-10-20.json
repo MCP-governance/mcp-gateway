@@ -1,0 +1,261 @@
+{
+  "basis_commit": "217da74ed4731eb006ce3c167b17fec835b66155",
+  "decisions": [
+    "D-184",
+    "D-185",
+    "D-186",
+    "D-187"
+  ],
+  "product_dependencies_added": [],
+  "live_mcp_samples": 0,
+  "requirements": [
+    {
+      "id": "INTAKE-01",
+      "requirement": "신청 등급 보존·필요 도구 선택",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "create_mcp_request",
+        "line": 1083,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_applicant_grade_preserved_and_other_inputs_derived",
+        "line": 68,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-02",
+      "requirement": "표시한 계약·검사·신청 지문을 승인과 등록에서 재대조",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "preview_intake_approval",
+        "line": 1751,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_contract_change_is_refused_without_registration",
+        "line": 249,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-03",
+      "requirement": "전송 신원의 신청자와 승인자 분리",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "approval_row",
+        "line": 1736,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_same_person_cannot_approve",
+        "line": 242,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-04",
+      "requirement": "검사 실패·누락·낡음은 승인 불가",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/review.py",
+        "symbol": "intake_gate",
+        "line": 107,
+        "sha256": "6ce85daa435dd321ad098e7d224b74d4d499af7d9203953a729d7a8783fb4226"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_failed_scan_disables_preview_and_refuses_forged_click",
+        "line": 257,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-05",
+      "requirement": "높음·매우 높음은 별개 관리자 2명",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "approve_and_register",
+        "line": 1828,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_high_tier_waits_and_alias_is_not_a_second_person",
+        "line": 266,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-06",
+      "requirement": "체크한 도구만 자동 범위·확인자와 함께 고정",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "register_server",
+        "line": 568,
+        "sha256": "79d6acd74aeb791210a04d27f9377146794f68e7c697b520bddebcebe9df6382"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_gateway_scope_guard_accepts_exact_review_and_refuses_edits",
+        "line": 214,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-07",
+      "requirement": "보증은 선택·유효 EOL 상한 유지",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/supplier_assurance.py",
+        "symbol": "validate",
+        "line": 24,
+        "sha256": "1d01191a3c0260f0c3fa99c85fe6c185f2f4fafae3f8c58bb6e151b6763bea30"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_assurance_optional_but_invalid_or_expired_eol_refused",
+        "line": 93,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-08",
+      "requirement": "관할 팩 기본 비활성·명시 활성 시 위치 필수",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/residency.py",
+        "symbol": "facts",
+        "line": 60,
+        "sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_pack_default_disabled_and_opt_in_missing_location_refused",
+        "line": 100,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-09",
+      "requirement": "고정 소스 메타데이터를 실행 없이 수집",
+      "implementation": {
+        "path": "full_stack_lab/supply_chain/supplier_metadata.py",
+        "symbol": "collect",
+        "line": 14,
+        "sha256": "ce002196b49ba9bcad4f79753cd764be2a4bc119fc270709981fcd33792f9f73"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_supplier_files_are_bounded_untrusted_data",
+        "line": 107,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-10",
+      "requirement": "저장소의 서명 실행 묶음과 미제공 차단",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "preview_intake_approval",
+        "line": 1751,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_repository_one_approval_publishes_and_registers",
+        "line": 202,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    },
+    {
+      "id": "INTAKE-11",
+      "requirement": "2차 검토와 재시도는 첫 범위 유지·변경 시 승인 폐기",
+      "implementation": {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "preview_intake_approval",
+        "line": 1751,
+        "sha256": "000a1b5b79e6f7dc9897f648fa20f133a31336fd93e138abda8ec1a8a7503f7e"
+      },
+      "unit_case": {
+        "path": "full_stack_lab/tests/intake_one_click_check.py",
+        "symbol": "test_second_review_keeps_scope_but_contract_drift_discards_first_approval",
+        "line": 230,
+        "sha256": "d3d969357e1e5e092cf2429e197e855b42cd71de56bd941c99d0ebec116db08f"
+      },
+      "local_evidence": "verification.json",
+      "status": "implemented_local_unit_only",
+      "gateway_image_verified": false,
+      "device_verified": false
+    }
+  ],
+  "opa_cases": [
+    {
+      "path": "full_stack_lab/opa/policy_test.rego",
+      "symbol": "test_intake_disabled_jurisdiction_pack_allows_missing_location",
+      "line": 1386,
+      "sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912"
+    },
+    {
+      "path": "full_stack_lab/opa/policy_test.rego",
+      "symbol": "test_intake_enabled_jurisdiction_pack_still_blocks_missing_location",
+      "line": 1396,
+      "sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912"
+    },
+    {
+      "path": "full_stack_lab/opa/policy_test.rego",
+      "symbol": "test_intake_disabled_location_pack_does_not_bypass_contract_gate",
+      "line": 1406,
+      "sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912"
+    }
+  ],
+  "opa_status": "not_run",
+  "blocking_regression": {
+    "path": "full_stack_lab/tests/intake_risk_tier_check.py",
+    "failed_unchanged_tests": [
+      "test_approval_method_per_tier",
+      "test_impact_package_maps_the_stated_input_to_assessment_items"
+    ]
+  }
+}

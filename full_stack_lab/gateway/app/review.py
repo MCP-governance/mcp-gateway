@@ -169,7 +169,9 @@ async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None
         for name in SCANNERS:
             state, report = (states.get(name.lower()) or {}).get("status"), reports.get(name)
             gate["scanners"].append({"scanner": name, "version": report and report["scanner_version"],
-                                     "status": state, "scanned_at": report and report["imported_at"]})
+                                     "status": state, "scanned_at": report and report["imported_at"],
+                                     "critical_count": report and report["critical_count"],
+                                     "high_count": report and report["high_count"]})
             if state != "DONE":
                 block("scan-incomplete", f"{name} 검사 미완료")
             elif not report:

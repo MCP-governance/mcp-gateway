@@ -46,7 +46,7 @@ DEV-75 도구 비활성도 기존 `P-APPROVAL-EXPIRY-001`을 쓴다. 원장 사�
 | 45 | MCP-DATA-EGRESS-001 | 차단 | 외부 목적지로 중요 등급 자료나 Presidio가 찾은 개인정보를 보냄(역할 무관, 예외 불가) |
 | 46 | P-CHAIN-001 | 차단 | 같은 주체가 최근 10분 안에 중요정보를 읽고 외부로 보냄(`request.sequence_flags`, 관찰 모드에서도 집행) |
 | 47 | P-FLOW-001 | 차단 | 같은 주체가 최근 10분 안에 다른 서버에서 중요정보를 읽은 뒤 쓰기·실행·공급자 호스팅 호출을 하는데 받는 도구가 그 서버를 심사받지 않음(`request.flow_sources`·`tool.accepts_from`, 공급자 호스팅은 심사로도 못 풂, 관찰 모드에서도 집행, D-133). 설정 `FLOW_MATCH_MODE`가 기본 `coarse`면 읽은 모든 서버가 출처이고, `content`면 호출 내용이 읽은 내용과 같거나 비교할 수 없는 서버만 출처다. 대조 결과는 `request.flow_observed`, 모드는 `request.flow_match_mode`에 기록(D-142) |
-| 48 | P-RESIDENCY-001 | 차단 | 처리·저장 위치나 국외 이전 규칙 확인 불가, 또는 이전 금지(D-138) |
+| 48 | P-RESIDENCY-001 | 차단 | 활성 관할 팩에서 처리·저장 위치나 국외 이전 규칙 확인 불가, 또는 이전 금지(D-138·D-186) |
 | 50 | MCP-CATALOG-001 | 차단 | 승인 계약(설명·입력/출력 스키마·버전 해시) 불일치 |
 | 55 | P-APPROVAL-EXPIRY-001 | 차단 | 승인 유효기간 만료 자산 |
 | 60 | P-CLASSIFICATION-001 | 차단 | 분류 근거 없는 데이터 |
@@ -57,7 +57,7 @@ DEV-75 도구 비활성도 기존 `P-APPROVAL-EXPIRY-001`을 쓴다. 원장 사�
 | 78 | P-DLP-001 | 차단 | 민감정보(주민번호·카드 등) 외부 전송 |
 | 79~89 | INPUT_CONTRACT, POLICY_BUNDLE, PAC-01~15 | 차단·승인 | 사실 계약·정책 버전·승인 실행 범위 검사 |
 | 80 | PAC-05-DELEGATION-UNSUPPORTED | 차단 | 대리 실행을 주장하는데 전송 계층에서 검증한 에이전트 신원이 없음(D-94). Console에는 "지원 안 함"으로 표시 |
-| 83 | P-RESIDENCY-002 | 추가 승인 | 처리·저장 국가 규칙이나 국외 이전 근거에 따라 건별 승인 필요(D-138) |
+| 83 | P-RESIDENCY-002 | 추가 승인 | 활성 관할 팩의 처리·저장 국가 규칙이나 국외 이전 근거에 따라 건별 승인 필요(D-138·D-186) |
 | 90 | P-X-APPROVAL-001 | 승인 | 중요정보의 고위험 실행(x) — 내부 목적지. 외부 반출은 MCP-DATA-EGRESS-001이 먼저 막는다 |
 | 95 | P-UNTRUSTED-CONTENT-001 | 승인 | 비신뢰 콘텐츠 기반 고위험 실행 |
 | 100 | P-VOLUME-001 | 승인 | 중요정보 누적 접근 |
@@ -137,6 +137,8 @@ Console 정책 화면은 현재 capability와 검토된 원격 승인 범위를 
 7. 새 판정이 업무 흐름에 보이면 `workstation/scenarios/*.toml`에 한 건 추가.
 
 ## 처리·저장 위치 규칙 (D-138 / DEV-69)
+
+D-186부터 `[organization].jurisdiction_pack_enabled=false`가 기본값이다. 게이트웨이가 레지스트리에서 생성한 `pac.facts.residency.enabled=false`에서만 아래 위치 규칙을 생략한다. `true` 배치에서는 아래 동작이 유지되고, 공개 외 등급 등록 시 위치 근거도 필수다. 설정값이 잘못되었거나 기존 OPA 입력에 `enabled`가 없으면 비활성으로 해석하지 않는다. 개인정보·목적·외부 반출·계약 정책은 별도로 계속 적용한다.
 
 | 번호 | 정책 | 결과 |
 | --- | --- | --- |

@@ -66,7 +66,17 @@ def facts(spec: dict, organization: dict, cls, pack: dict) -> dict:
         except ValueError:
             target = normalize(None)
         targets.append({"id": host, **target})
-    return {"grade": cls.data_class, "targets": targets, "pack_sha256": sha256(pack)}
+    return {"enabled": enabled(organization), "grade": cls.data_class, "targets": targets, "pack_sha256": sha256(pack)}
+
+
+def enabled(organization: dict) -> bool:
+    return organization.get("jurisdiction_pack_enabled", False) is not False
+
+
+def require_location(value: dict, grade: str, organization: dict) -> None:
+    if enabled(organization) and grade != "public" and not all(value.get(key) for key in (
+            "processing_countries", "storage_countries", "processor", "evidence_ref")):
+        raise ValueError("처리·저장 위치가 없습니다. 추가 정보에서 위치와 근거를 입력하세요.")
 
 
 def validate_pack(pack: dict) -> None:

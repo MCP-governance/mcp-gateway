@@ -464,7 +464,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
-                                                                    "allowed_principals", "supplier_assurance", "residency", "residency_review", "risk_assessment")}
+                                                                    "allowed_principals", "supplier_assurance", "supplier_assurance_unconfirmed", "residency", "residency_review", "risk_assessment")}
                                   | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
@@ -839,6 +839,19 @@ async def registry_discover(request: RegistryDiscover, user: dict = Depends(admi
         raise HTTPException(422, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(502, f"MCP 서버에 연결하지 못했습니다: {core._root_cause(exc)}") from exc
+
+
+@app.post("/api/registry/intake-discover")
+async def registry_intake_discover(request: RegistryDiscover, user: dict = Depends(caller)) -> dict:
+    try:
+        endpoint = core.registration_endpoint(request.endpoint)
+        if not endpoint.startswith("https://"):
+            raise ValueError("신청 도구 목록은 HTTPS 원격 서비스에서만 조회할 수 있습니다.")
+        return await core.discover_for_registration(endpoint, principal=user["principal"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(502, "도구 목록을 불러오지 못했습니다. 주소와 제공자 연결을 확인하세요.") from exc
 
 
 @app.post("/api/registry/servers", status_code=201)
