@@ -1,5 +1,6 @@
 """Local DEV-78 checks for approved contract history, fail-closed rollback, and transition ordering."""
 import hashlib
+import importlib
 import json
 import datetime
 import sys
@@ -12,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "gateway" / "app")]
 # The workstation has Python 3.10; the worker image uses 3.12. These checks do not parse recipes.
 try:
-    import tomllib  # noqa: F401
+    importlib.import_module("tomllib")
 except ModuleNotFoundError:
     sys.modules["tomllib"] = types.SimpleNamespace(loads=lambda _text: {})
 if not hasattr(datetime, "UTC"):
