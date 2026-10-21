@@ -1657,7 +1657,7 @@ async def endpoint_observation_status(request: ObservationReport,
     if request.state in {"success", "partial"} and required and required not in device["scopes"]:
         raise HTTPException(403, "이 관측 채널의 보고 권한이 없습니다.")
     if bool(request.dropped_count) != bool(request.buffer_event_uid and request.buffer_reason):
-        raise HTTPException(422, "버퍼 폐기 보고의 식별자·사유·건수가 필요합니다.")
+        raise HTTPException(422, "버퍼 미적재·만료 건수 보고의 식별자·사유·건수가 필요합니다.")
     return await endpoint_plane.observation_status(
         request.endpoint_id, request.channel, request.state, request.accepted_count, request.error_code,
         buffer_event_uid=request.buffer_event_uid, dropped_count=request.dropped_count,
