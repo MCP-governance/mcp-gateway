@@ -92,7 +92,7 @@
       "sha256": "65af1d2092b4a1b2bd11a500d26ea0d53f3f8bc93aea21ff513dff528db01d0f"
     },
     "commits": {
-      "rows": 741,
+      "rows": 745,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -169,7 +169,7 @@
           "missing": []
         }
       },
-      "sha256": "0ee1edc548c5da39f74b044e70dbf2907569615520e5cd83b08132f0e6d000cd"
+      "sha256": "d90d020dbc6f08b56eb9599e9db7d07e13fb187d3717d196f8f6c017e8eb1e63"
     },
     "deploys": {
       "rows": 18,
@@ -355,7 +355,7 @@
           "missing": []
         }
       },
-      "sha256": "b7b4072d399f4a7dfad2404e1f057cad841afcf6c8ade32f303ff2c556235982"
+      "sha256": "0327d951983dc960b763b1fdb5cb14d8c7d1766e2c556c49caaccf4c487431ec"
     },
     "local-tool-risks": {
       "rows": 13,
@@ -577,7 +577,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "38cdf3ae9d5f49aff26fb5a4cd93f7ce763976aebcc28ab3a83000b53118c206"
+      "sha256": "bfe730dd4f58446615856d0b261fc4e03c2127ca1bfe3adec11cfa4236a4a7db"
     },
     "code-structure": {
       "rows": 801,
@@ -617,7 +617,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "de3e1f667fcdee164406d0c0c16acce12499d7a62209942e5612f7a80620b691"
+      "sha256": "403896d0855ef3ab73aec4a694e82db74656ce2dedeb7b757c87fdea5e8ccd1e"
     },
     "mcp-candidates": {
       "rows": 14,
@@ -702,7 +702,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "beb40620c8c12c0b1501d36ced53da4081ec0efab424bfa516f5b3bf0a923c52"
+      "sha256": "7d8eb4371caf0b7c6f0f0130d1d209b0b4b0f01259519267ec603ce4e830890d"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -716,7 +716,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "0d70a722c88fbe8cd8d266894c0b59fe03f196f44b64ef577f99adc12d9e3da7"
+      "sha256": "c97c143fafadeee13223f17caf82f674a39c03fdf1953426e247b2922e416d61"
     }
   },
   "duplicate_ids": 0,
