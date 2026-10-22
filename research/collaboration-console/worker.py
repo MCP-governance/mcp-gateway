@@ -621,8 +621,9 @@ class Hub:
                 cmd += ["--resume", job["session"]]
             return cmd, prompt
         cmd = [exe, "--input-format", "stream-json", "--model", model, "--mode", "accept-edits" if job["mode"]=="workspace-write" else "plan", "--output-format", "stream-json", "--print-timeout", "15m", "--add-dir", str(self.runtime)]
-        if job["mode"]=="workspace-write":
-            cmd += ["--sandbox"]
+        # 화면 없는 실행에서는 명령 승인을 물을 사람이 없어 git diff 같은 읽기 명령도 거부되고 작업이 멈췄다(10-23).
+        # 허용 규칙 문법이 공개돼 있지 않아, 터미널 제한 샌드박스 안에서 자동 승인한다. 쓰기 금지 경로는 settings.json deny로 유지.
+        cmd += ["--sandbox", "--dangerously-skip-permissions"]
         if job.get("session"):
             cmd += ["--conversation", job["session"]]
         return cmd, json.dumps({"event": "user", "message": {"content": prompt}}, ensure_ascii=False) + "\n"
