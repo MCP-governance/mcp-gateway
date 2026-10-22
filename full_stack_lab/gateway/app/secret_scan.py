@@ -15,7 +15,7 @@ import ctypes
 import json
 import os
 import re
-from urllib.parse import parse_qsl, unquote, urlsplit
+from urllib.parse import parse_qsl, unquote
 
 from .privacy import InspectionUnavailable
 from .classify import SECRET_PATTERNS
@@ -61,8 +61,10 @@ def rule_ids(data: bytes) -> list[str]:
 def scan_text(text: str) -> str:
     # Gitleaks token boundaries do not include URL query delimiters.
     # Inspect decoded query values as separate lines as well as the raw input.
+    # The query is cut by hand: urlsplit raises on malformed hosts such as "http://[x",
+    # and one such link in a document must not make the whole output uninspectable.
     query_values = [value for url in re.findall(r"https?://[^\s<>\"']+", text)
-                    for _, value in parse_qsl(urlsplit(url).query, keep_blank_values=True)]
+                    for _, value in parse_qsl(url.partition("#")[0].partition("?")[2], keep_blank_values=True)]
     return "\n".join([text, *query_values])
 
 
