@@ -2,6 +2,8 @@
 
 이 문서는 지금 상태만 담는다. 지난 서술은 [이력 목차](history/README.md)로 옮겨 보존했다(내용 변경 없음). 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)의 「WBS」·「백로그」 탭이다.
 
+- Windows 원클릭(W11, D-197): 한 파일·UAC 1회 설치를 main에 병합. Codex 독립 검토는 코드 결함 없음, 실제 Windows 설치·UAC·활성화는 pj3 접속 불가로 미실행([보고](reports/2026-10-23-windows-oneclick.md)).
+
 ## 한눈에 보기
 
 **수치** WBS 57개 작업의 다섯 단계 가중 진척 63.3%, 최종 검수 완료 0개, 구현 완료(검수 전) 56개·일부 구현 1개, 실제 환경 단계는 57개 중 21.5개 상당이다(시트 WBS 57행을 10-23에 직접 읽은 값이며 협업 웹 `/api/wbs`와 일치). 10-21 이후 이미 완료인 구현·회귀에는 점수를 다시 주지 않았다.

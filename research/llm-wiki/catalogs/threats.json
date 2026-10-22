@@ -42,10 +42,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
+        "sha256": "aae5eae5ce92d9c90b3c3a4902edad6ae4147b3654f9445acdaf26576221ea4f",
         "committed_sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
-        "normalized_sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
-        "worktree_modified": false
+        "normalized_sha256": "aae5eae5ce92d9c90b3c3a4902edad6ae4147b3654f9445acdaf26576221ea4f",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -182,10 +182,10 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
+        "sha256": "aae5eae5ce92d9c90b3c3a4902edad6ae4147b3654f9445acdaf26576221ea4f",
         "committed_sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
-        "normalized_sha256": "4aa0acc6d05812c80d6369df3fcd4cfa059d51fb923685606c5373a31951a194",
-        "worktree_modified": false
+        "normalized_sha256": "aae5eae5ce92d9c90b3c3a4902edad6ae4147b3654f9445acdaf26576221ea4f",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
@@ -846,10 +846,10 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "afc562dcabc670596adc1c3e9a5f8184ee67f8e8de127e7fa18b2511396af39b",
+        "sha256": "b1b6bb94d27ddd221b3aa82faccde6a23850c93f4973e7211633714a1ec07c8c",
         "committed_sha256": "afc562dcabc670596adc1c3e9a5f8184ee67f8e8de127e7fa18b2511396af39b",
-        "normalized_sha256": "afc562dcabc670596adc1c3e9a5f8184ee67f8e8de127e7fa18b2511396af39b",
-        "worktree_modified": false
+        "normalized_sha256": "b1b6bb94d27ddd221b3aa82faccde6a23850c93f4973e7211633714a1ec07c8c",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",

@@ -227,9 +227,11 @@ try {
     Invoke-EndpointPython $python @((Join-Path $root 'runtime-check.py')) | Out-Null
     Set-EndpointResult 50 '실행 파일 점검'
     if ($managed) {
-        Set-EndpointResult 60 '관리자 등록 · 대상 계정 로그아웃 확인'
-        $text = Invoke-EndpointPython $python @((Join-Path $root 'managed-windows.py'), 'install', '--user', $request.user,
+        Set-EndpointResult 60 '관리 계정 준비 · 등록'
+        $managedArguments = @((Join-Path $root 'managed-windows.py'), 'install', '--user', $request.user,
             '--enrollment', $request.enrollment)
+        if ($request.isolated_account -eq $true) { $managedArguments += '--isolated-account' }
+        $text = Invoke-EndpointPython $python $managedArguments
         $summary = ($text -split "`n" | Where-Object { $_.StartsWith('{') } | Select-Object -Last 1) | ConvertFrom-Json
         $user = $summary.managed_account
         $person = (New-Object Security.Principal.NTAccount($user)).Translate([Security.Principal.SecurityIdentifier]).Value
@@ -277,7 +279,9 @@ try {
     Set-EndpointAcl $root $sid -Managed:$managed
     Register-EndpointTray $script:settingsPath $person $root
     if ($person -eq $sid) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
-    Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed) { '조직 활성화 대기 · 대상 계정 로그온 시 트레이 시작' } else { '트레이 실행' })
+    Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed) {
+        "조직 활성화 대기`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
+    } else { '트레이 실행' })
 } catch {
     $known = @('경로 형식 오류', '설치 폴더 권한 적용 실패', '설치 경로 연결 파일 확인 필요', '게이트웨이 주소 형식 오류',
         '암호화 연결 또는 승인된 사내망 주소 필요', '게이트웨이 연결 시간 초과', '게이트웨이 이름 또는 포트 연결 실패',

@@ -494,7 +494,7 @@ if (-not $existing) { New-LocalUser -Name $in.name -NoPassword -FullName 'MCP ma
 HARNESS = ("codex.exe", "codex-code-mode-host.exe", "claude.exe")
 
 
-def managed_user(name):
+def managed_user(name, *, isolated=False):
     """The employee's own account when it is a standard one, else a created standard companion.
 
     An administrator cannot be confined by rules they can remove, and Windows has no way to run a
@@ -503,7 +503,7 @@ def managed_user(name):
     accounts to console sign-in, and the employee sets one at first sign-in.
     """
     person = account(name)
-    if not person["admin"]:
+    if not person["admin"] and not isolated:
         return name, person, False
     companion = ("mcpgw-" + name)[:20]
     powershell(CREATE_ACCOUNT, {"name": companion})
@@ -511,6 +511,24 @@ def managed_user(name):
     if created["admin"]:
         raise ValueError(f"{companion} 계정에 관리자 권한이 있어 통제를 설치할 수 없습니다")
     return companion, created, True
+
+
+def prepare_profile(name, person):
+    """Create the companion's hive without a password or an interactive first sign-in."""
+    if person.get("profile") and (Path(person["profile"]) / "NTUSER.DAT").is_file():
+        return person
+    userenv = ctypes.WinDLL("userenv", use_last_error=True)
+    create = userenv.CreateProfile
+    create.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
+    create.restype = ctypes.c_int32
+    profile = ctypes.create_unicode_buffer(32768)
+    result = create(person["sid"], name, profile, len(profile))
+    if result < 0:
+        raise ValueError("관리 계정 프로필 생성 실패")
+    ready = account(name)
+    if not ready.get("profile") or not (Path(ready["profile"]) / "NTUSER.DAT").is_file():
+        raise ValueError("관리 계정 프로필 확인 실패")
+    return ready
 
 
 def place_harnesses(source_profile):
@@ -551,7 +569,13 @@ def install(args):
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,31}", args.user):
         raise ValueError("일반 사용자 계정 이름을 지정하세요")
     employee = args.user
-    args.user, person, companion = managed_user(employee)
+    isolated = getattr(args, "isolated_account", False)
+    source_person = account(employee) if isolated else None
+    if isolated:
+        args.user, person, companion = managed_user(employee, isolated=True)
+        person = prepare_profile(args.user, person)
+    else:
+        args.user, person, companion = managed_user(employee)
     if not person["profile"] or not (Path(person["profile"]) / "NTUSER.DAT").exists():
         if not companion:
             raise ValueError("해당 계정으로 한 번 로그인해 사용자 프로필을 만든 뒤 설치하세요")
@@ -569,7 +593,7 @@ def install(args):
     powershell(". $in.trust; New-EndpointProtectedDirectory $in.base; New-EndpointProtectedDirectory $in.tray $in.sid",
                {"trust": str(PROGRAMS / "windows-trust.ps1"), "base": str(PROGRAM_DATA / "MCPGatewayManagedTray"),
                 "tray": str(PROGRAM_DATA / "MCPGatewayManagedTray" / person["sid"]), "sid": person["sid"]})
-    harness_folder, harnesses = place_harnesses(person["profile"])
+    harness_folder, harnesses = place_harnesses(source_person["profile"] if isolated else person["profile"])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
@@ -621,6 +645,7 @@ Start-ScheduledTask -TaskName $in.name
     if companion:
         print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
     print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")
+    print("Claude 모델 로그인: claude auth login")
 
 
 def serve(args):
@@ -803,6 +828,7 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("install")
     setup.add_argument("--user", required=True)
+    setup.add_argument("--isolated-account", action="store_true")
     setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.set_defaults(run=install)
     service = commands.add_parser("serve")

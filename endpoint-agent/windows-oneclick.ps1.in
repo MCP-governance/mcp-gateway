@@ -1,0 +1,122 @@
+# This ASCII template is decoded as UTF-8 and executed from the UAC-approved artifact, never with -File.
+param($Context, [string]$ArchiveBase64)
+$ErrorActionPreference = 'Stop'
+$env:SystemRoot = [Environment]::GetFolderPath('Windows')
+$env:ProgramFiles = [Environment]::GetFolderPath('ProgramFiles')
+$env:ProgramData = [Environment]::GetFolderPath('CommonApplicationData')
+$env:PSModulePath = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\Modules'
+$env:PATH = (Join-Path $env:SystemRoot 'System32') + ';' + (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0')
+Set-Location -LiteralPath (Join-Path $env:SystemRoot 'System32')
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    throw 'Administrator approval required'
+}
+if ((Get-ExecutionPolicy) -eq 'AllSigned') { throw 'A signed organization installer is required' }
+Add-Type -AssemblyName System.Windows.Forms
+function Read-EndpointOneclickArchive([string]$ArchiveBase64) {
+    Add-Type -AssemblyName System.IO.Compression
+    $memory = [IO.MemoryStream]::new([Convert]::FromBase64String($ArchiveBase64))
+    $archive = [IO.Compression.ZipArchive]::new($memory, [IO.Compression.ZipArchiveMode]::Read)
+    try {
+        $files = @{}
+        foreach ($entry in $archive.Entries) {
+            if ($entry.FullName -notmatch '^[A-Za-z0-9_.-]+$' -or $files.ContainsKey($entry.FullName)) { throw 'Invalid installer file list' }
+            $inputStream = $entry.Open(); $output = New-Object IO.MemoryStream
+            try { $inputStream.CopyTo($output); $files[$entry.FullName] = $output.ToArray() }
+            finally { $inputStream.Dispose(); $output.Dispose() }
+        }
+        $manifest = [Text.Encoding]::UTF8.GetString($files['windows-kit-manifest.json']) | ConvertFrom-Json
+        $required = @('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
+            'runtime-check.py', 'windows_status.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
+            'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
+        if ($manifest.schema -ne 1 -or ([uri]$manifest.gateway_url).Scheme -ne 'https' -or
+            (Compare-Object ($required | Sort-Object) (@($manifest.files.PSObject.Properties.Name) | Sort-Object)) -or
+            (Compare-Object (($required + @('windows-kit-manifest.json', 'enrollment.json')) | Sort-Object) (@($files.Keys) | Sort-Object))) {
+            throw 'Invalid installer file list'
+        }
+        $sha = [Security.Cryptography.SHA256]::Create()
+        foreach ($name in $required) {
+            $digest = ([BitConverter]::ToString($sha.ComputeHash($files[$name]))).Replace('-', '').ToLowerInvariant()
+            if ($manifest.files.$name -cne $digest) { throw 'Installer integrity check failed' }
+        }
+        return ,$files
+    } finally { $archive.Dispose(); $memory.Dispose() }
+}
+
+$mutex = New-Object Threading.Mutex($false, 'Global\MCPGatewayWindowsBootstrap')
+$owns = $false
+$private = $null
+try {
+    try { $owns = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owns = $true }
+    if (-not $owns) { throw 'Another installation is running' }
+    $files = Read-EndpointOneclickArchive $ArchiveBase64
+    $manifest = [Text.Encoding]::UTF8.GetString($files['windows-kit-manifest.json']) | ConvertFrom-Json
+    $required = @($manifest.files.PSObject.Properties.Name)
+    # UAC approves this complete artifact. Load helpers from the same in-memory snapshot only after all hashes agree.
+    . ([scriptblock]::Create([Text.Encoding]::UTF8.GetString($files['windows-trust.ps1']).TrimStart([char]0xFEFF)))
+    $paths = Get-EndpointInstallerPaths
+    foreach ($path in @($paths.code, $paths.state)) {
+        Assert-EndpointNoLinks $path
+        if (Test-Path -LiteralPath $path) { Assert-EndpointProtectedPath $path; continue }
+        $acl = New-EndpointAccessDescriptor '' $true
+        $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+            (New-Object Security.Principal.SecurityIdentifier('S-1-5-32-545')), 'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow')))
+        [IO.Directory]::CreateDirectory($path, $acl) | Out-Null
+        Set-Acl -LiteralPath $path -AclObject $acl
+        Assert-EndpointProtectedPath $path
+    }
+    $approvalPath = Join-Path $paths.state 'approved-windows-kit.json'
+    if (Test-Path -LiteralPath $approvalPath) {
+        # A staff download cannot replace an IT approval or repair a damaged trusted installation.
+        $approved = Get-EndpointApprovedKit
+        if ($approved.gateway_url -cne $manifest.gateway_url -or $approved.tailscale_node_id -cne $manifest.tailscale_node_id -or
+            (Compare-Object -ReferenceObject @($approved.files.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value }) -DifferenceObject @($manifest.files.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value }))) {
+            throw 'IT must update the approved installer'
+        }
+    } else {
+        if (Get-ChildItem -LiteralPath $paths.code -Force) { throw 'IT must inspect the approved installer' }
+        $fileAcl = New-EndpointAccessDescriptor '' $false
+        $fileAcl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+            (New-Object Security.Principal.SecurityIdentifier('S-1-5-32-545')), 'ReadAndExecute', 'None', 'None', 'Allow')))
+        foreach ($name in $required + @('windows-kit-manifest.json')) {
+            $destination = Join-Path $paths.code $name
+            [IO.File]::WriteAllBytes($destination, $files[$name])
+            Set-Acl -LiteralPath $destination -AclObject $fileAcl
+        }
+        [IO.File]::WriteAllBytes($approvalPath, $files['windows-kit-manifest.json'])
+        Set-Acl -LiteralPath $approvalPath -AclObject $fileAcl
+        $null = Get-EndpointApprovedKit
+    }
+    $profile = (Get-ItemProperty -LiteralPath ('HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\' + $Context.sid)).ProfileImagePath
+    if ($Context.sid -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$' -or $Context.user -notmatch '^[A-Za-z0-9_][A-Za-z0-9._-]{0,31}$') { throw 'Invalid employee account' }
+    $actualSid = (New-Object Security.Principal.NTAccount($Context.user)).Translate([Security.Principal.SecurityIdentifier]).Value
+    if ($actualSid -ne $Context.sid) { throw 'Invalid employee account' }
+    $workBase = Join-Path $profile 'AppData\Local\MCPGatewaySetup'
+    Assert-EndpointNoLinks $workBase
+    $private = Join-Path $workBase ([Guid]::NewGuid().ToString('N'))
+    [IO.Directory]::CreateDirectory($private, (New-EndpointAccessDescriptor '' $true)) | Out-Null
+    $enrollment = Join-Path $private 'enrollment.json'
+    [IO.File]::WriteAllBytes($enrollment, $files['enrollment.json'])
+    $requestPath = Join-Path $private 'request.json'
+    $request = @{ action='install'; mode='managed'; user=$Context.user; requester_sid=$Context.sid;
+        isolated_account=$true; enrollment=$enrollment }
+    [IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
+    $exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $arguments = '-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File "' + (Join-Path $paths.code 'windows-worker.ps1') +
+        '" -RequestPath "' + $requestPath + '" -RequesterSid "' + $Context.sid + '"'
+    $process = Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
+    $resultPath = Join-Path $paths.state ('results\' + (Split-Path $private -Leaf) + '\result.json')
+    $result = Get-Content -LiteralPath $resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $message = (@($result.steps) + @($result.detail) + @($result.account | Where-Object { $_ })) -join "`r`n"
+    [void][Windows.Forms.MessageBox]::Show($message, 'MCP')
+    if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { throw 'Installation did not complete' }
+} finally {
+    if ($private) {
+        foreach ($name in @('request.json', 'enrollment.json')) {
+            $path = Join-Path $private $name
+            if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+        }
+        if (-not (Get-ChildItem -LiteralPath $private -Force)) { Remove-Item -LiteralPath $private }
+    }
+    if ($owns) { $mutex.ReleaseMutex() }
+    $mutex.Dispose()
+}

@@ -2545,14 +2545,16 @@ const ACTIONS = {
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
-    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${os === "macos" ? "&delivery=command" : ""}`,
+    const query = os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "";
+    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const r = await response.json();
       throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a"); link.href = url; link.download = os === "macos" ? "mcp-connect-macos.command" : `mcp-managed-kit-${os}.zip`;
+    const link = document.createElement("a"); link.href = url;
+    link.download = os === "macos" ? "mcp-connect-macos.command" : os === "windows" ? "mcp-managed-setup-windows.cmd" : `mcp-managed-kit-${os}.zip`;
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
     toast("설치 파일을 받았습니다.");
   },
