@@ -361,6 +361,11 @@ class Hub:
             if previous and reserve_blocked(previous,self.policy["reserve_percent"]) and permitted["remaining_percent"] is None and permitted["status"]!="exhausted":
                 return
             db.execute("UPDATE providers SET quota=? WHERE name=?",(json.dumps(permitted),provider))
+            if permitted["remaining_percent"] is not None and not reserve_blocked(permitted,self.policy["reserve_percent"]):
+                waiting=db.execute("SELECT id FROM jobs WHERE provider=? AND state='waiting_budget' AND error='계정 잔여 사용량이 복구 예비분 이하'",(provider,)).fetchall()
+                for job in waiting:
+                    db.execute("UPDATE jobs SET state='queued',next_at=?,error='',updated=? WHERE id=?",(time.time(),time.time(),job["id"]))
+                    self.event(db,job["id"],"queued","새 사용량 관측에서 예비량 회복 확인; 대기열 재개")
 
     def refresh_usage(self, provider):
         """Refresh stale usage before admission, at most once per account every five minutes."""
@@ -660,9 +665,14 @@ class Hub:
                 "SELECT id,task_id,provider,cwd,state FROM jobs WHERE state IN ('running','orphan_running','needs_attention') ORDER BY updated DESC LIMIT 8")]
             quotas = {row["name"]:visible_quota(json.loads(row["quota"]) if row["quota"] else None,self.policy["quota_fresh_seconds"])
                       for row in db.execute("SELECT name,quota FROM providers")}
-        head = subprocess.run(["git","-C",job["cwd"],"rev-parse","--verify","HEAD"],capture_output=True,text=True,timeout=5,
-                              creationflags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0)
-        baseline = head.stdout.strip() if head.returncode==0 else None
+        baseline = None
+        if (Path(job["cwd"])/".git").exists():
+            try:
+                head = subprocess.run(["git","-C",job["cwd"],"rev-parse","--verify","HEAD"],capture_output=True,text=True,timeout=5,
+                                      creationflags=subprocess.CREATE_NO_WINDOW if os.name=="nt" else 0)
+                baseline = head.stdout.strip() if head.returncode==0 else None
+            except (OSError,subprocess.SubprocessError):
+                pass
         facts = {"job":job["id"], "task":task, "cwd":job["cwd"], "inbox_source":str(log.path),
                  "head":baseline,"last_event_id":inbox["cursor"],"observed_at":stamp(),
                  "timeout_seconds":self.config.get("timeout_seconds",1200),

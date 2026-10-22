@@ -78,6 +78,19 @@ class Checks(unittest.TestCase):
         self.hub.config['providers']['codex']['model'] = 'changed-later'
         self.assertEqual(self.hub.snapshot()['jobs'][0]['model'], 'test')
 
+    def test_fresh_recovery_wakes_quota_wait_without_waiting_for_old_reset(self):
+        self.queue()
+        d.dispatch(self.hub,{})
+        job_id=self.hub.snapshot()['jobs'][0]['id']
+        with self.hub.db() as db:
+            db.execute("UPDATE jobs SET state='waiting_budget',next_at=?,error='계정 잔여 사용량이 복구 예비분 이하' WHERE id=?",(time.time()+86400,job_id))
+        self.hub.observe_quota('codex',{'status':'unknown','remaining_percent':None,'observed_at':time.time(),'source':'test'})
+        self.assertEqual(self.hub.snapshot()['jobs'][0]['state'],'waiting_budget')
+        self.hub.observe_quota('codex',{'status':'known','remaining_percent':50,'observed_at':time.time()+1,'source':'test'})
+        row=self.hub.snapshot()['jobs'][0]
+        self.assertEqual(row['state'],'queued')
+        self.assertLess(row['next_at'],time.time()+2)
+
     def test_restart_waits_for_running_cli(self):
         path = self.root / 'prompt.md'
         path.write_text('inspect')
