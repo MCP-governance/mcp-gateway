@@ -505,6 +505,10 @@ def execute_job(config, job, request, account):
     except Exception as exc:
         reason='timeout' if isinstance(exc,TimeoutError) else 'failed'
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
+        # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
+        # The runner's own ValueError messages carry no data; other exceptions keep their type only.
+        print(json.dumps({'local_runner':'job_failed','job':job['id'],'error':type(exc).__name__,
+                          'detail':str(exc)[:200] if type(exc) is ValueError else ''},ensure_ascii=False),flush=True)
     finally:
         cancelled.set()
         if isolation:
