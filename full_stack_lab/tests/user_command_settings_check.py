@@ -260,7 +260,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
         self.policy = {"policy_hash": "new", "configuration_hashes": {"settings": "digest"}}
         self.device = {"endpoint_id": "managed-check", "owner_token": "owner", "managed_state": "active", "detail": {}}
         self.plane = selected(LAB / "gateway/app/endpoint_plane.py",
-                              {"MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_platform", "managed_checks", "heartbeat"},
+                              {"MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_platform", "managed_checks", "heartbeat", "_held_policy"},
                               {"managed_policy": AsyncMock(return_value=self.policy), "Jsonb": lambda value: value,
                                "datetime": datetime, "UTC": timezone.utc,
                                "db": SimpleNamespace(transaction=Transaction)})

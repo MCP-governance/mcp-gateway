@@ -2001,3 +2001,19 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **근거·검증**: [분석](../../research/llm-wiki/analysis/kit-macos/README.md),
   [보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md). 새 오프라인11건·기존 콘솔15건 통과,
   구문/공개 엔드포인트 검사 통과. pyflakes는 도구 부재·네트워크 제약으로 미실행. 독립 검토의 판본·경로 fixture·umask 지적 수정.
+
+## D-198 서버 추가만 있는 정책 변경은 장치가 가진 서버를 막지 않는다 (2026-10-23)
+
+- **문제**: 관리자가 서버 하나를 승인하면 관리형 정책 해시가 바뀌어(`endpoint_plane.managed_policy`가 서버 경로·허용 목록을
+  해시에 넣는다), PC가 새 정책을 받는 최대 60초 동안 그 직원의 모든 MCP가 `ENDPOINT-MANAGED-001`로 끊겼다.
+  `managed_failure`가 장치 보고 해시·토큰의 `device_policy`를 현재 해시와 통째로 비교하기 때문이다.
+- **결정**: 장치가 설치한 서버 목록(heartbeat가 해시 일치 때 `detail.policy_servers`로 기록)으로 정책을 다시 렌더링해
+  보고 해시와 같고, 그 목록이 현재 서버의 부분집합이면 "서버 추가만"으로 본다. 이때 이미 가진 서버는 통과하고 새 서버는
+  `server` 인자로 막는다("PC가 새 정책을 적용하면 사용"). 재렌더링이 보고 해시와 다르면(방화벽 허용 목록·보호 설정·헤더 도우미·
+  게이트웨이 주소 변경) 또는 제거된 서버가 있거나 기록이 없으면 지금처럼 전부 막는다(fail-closed). 토큰 발급(`mint`)은
+  정확 일치만 허용한다. heartbeat도 같은 판정으로 구성 해시를 비교해 갱신 직전의 보고가 격리로 이어지지 않는다.
+- **범위 밖**: 로컬 작업(`local_jobs`)의 정책 비교, 키트의 60초 갱신 주기. 갱신 주기·즉시 갱신 신호는 키트 파일이라
+  재설치로만 반영되며 이 변경에 넣지 않았다.
+- **근거·시험**: `full_stack_lab/tests/managed_policy_gap_check.py` 4건(서버 추가 허용·새 서버 보류, 허용 목록·프록시·헬퍼 변경 차단,
+  제거·기록 없음·낡은 토큰 차단, heartbeat). 기존 시험 기대값 불변,
+  [보고](../../research/llm-wiki/status/reports/2026-10-23-policy-refresh-gap.md).
