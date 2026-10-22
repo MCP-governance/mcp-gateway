@@ -14,8 +14,8 @@
 | 근거 (위 기준 commit) | 사실 / 한계 |
 | --- | --- |
 | `openbao/prepare.py:27-50` | 새 runtime만 허용. CA 30일, server 7일, 음성 시험 wrong CA 7일. 기존 디렉터리 재실행으로 갱신 불가 |
-| `openbao/server.hcl:12-20` | TLS 1.3, 파일 경로 고정, ACME 꺼짐. 자동 파일 reload 설정 없음 |
-| `openbao/compose.openbao.yaml:4-8,21-33` | 판본·digest 고정, bao가 직접 실행됨. TLS 디렉터리 read-only mount, healthcheck는 검증하는 `bao status` |
+| `openbao/server.hcl:11-19` | TLS 1.3, 파일 경로 고정, ACME 꺼짐. 자동 파일 reload 설정 없음 |
+| `openbao/compose.openbao.yaml:3-31` | 판본·digest 고정, `/usr/bin/bao` 직접 entrypoint 설정. TLS 디렉터리 read-only mount, healthcheck는 검증하는 `bao status`. 실제 PID1은 미확인 |
 | `provision_appliance.py:11,46-49` | 기본 runtime은 `/home/user/mcpgw-interop-lab-20261013/openbao/runtime`. 복사는 갱신 구현이 아님 |
 | `Caddyfile:13-19` | backend 신뢰 파일은 OpenBao 공개 CA. 외부 Caddy CA와 분리 |
 
@@ -97,3 +97,46 @@ reload 전에 실패하면 보존한 이전 파일을 같은 경로에 atomic re
 ## 참조와 확인 범위
 
 확인일 2026-10-22. [OpenSSL x509 공식 문서](https://docs.openssl.org/3.0/man1/openssl-x509/)의 `-dates`/`-checkend`와 OpenBao 2.7.x listener 문서의 reload 절을 확인했다. 위 reload 장애는 구판 issue이며 2.7.1 적용 여부는 미확인이다. 기존 [provenance](provenance.json)는 OpenBao 2.7.1 commit `a5db72cef75c24b920ade02065b18dd8eb666bac` / MPL-2.0을 기록하지만 이번 고정 source URL 조회는 실패해 고정판 reload 구현을 읽지 못했다. 공개 GitHub 관련 skill/OSS 탐색에서 채택할 판본 고정 skill을 확보하지 못해 외부 스크립트는 채택·실행하지 않았다. 새 의존성·비밀 저장소·자동 renewer는 추가하지 않는다. 실행 검사와 한계는 [작업 보고](../../../status/reports/2026-10-22-ops-tls-recovery-r2.md)에 기록한다.
+
+## OPS-TLS-RELOAD-SOURCE 후속 — 고정 구현 확보 차단
+
+2026-10-22, 로컬 기준 `ca368bff78b12608b132bdc98851b035bce542b6`, 기존 `10/22-runtime-recovery` 유지. 공식 공개 자료와 아래 로컬 파일만 대조했다. **고정 reload 구현을 확보하지 못했으므로 signal 적용 보류를 해제하지 않는다.** 이전 검토 PASS는 이 후속의 소스·실기기 검증을 뜻하지 않는다.
+
+### 판본·출처와 실제 읽은 범위
+
+- [공식 v2.7.1 릴리스](https://github.com/openbao/openbao/releases/tag/v2.7.1)의 tag와 commit 표시 `a5db72c`를 확인했다. 전체 commit `a5db72cef75c24b920ade02065b18dd8eb666bac`는 기존 provenance의 값이며, 이번 공개 소스 본문으로 독립 재확인하지 못했다.
+- [고정 Dockerfile URL](https://raw.githubusercontent.com/openbao/openbao/a5db72cef75c24b920ade02065b18dd8eb666bac/Dockerfile)의 기존 보존본 [Dockerfile.raw.txt](evidence/Dockerfile.raw.txt)에서 `USER` L48-49, `COPY`·`ENTRYPOINT` L51-54를 읽었다. 기본 이미지는 `docker-entrypoint.sh`를 지정하며, 주석은 dumb-init을 설명한다. 스크립트 본문·signal 전달 구현은 미확보다. SHA-256 `2aab522e524ca90e3342cb31f53668d6ff517e920c609732477c4e3e6c7cc826`은 provenance와 일치했다.
+- 라이선스는 [고정 LICENSE URL](https://raw.githubusercontent.com/openbao/openbao/a5db72cef75c24b920ade02065b18dd8eb666bac/LICENSE)의 기존 보존본 [LICENSE.raw.txt](evidence/LICENSE.raw.txt) L1-3의 MPL-2.0 표기다. SHA-256 `d6b1a865f1c8c697d343bd4e0ce61025f91898486a1f00d727f32e8644af77d3`은 provenance와 일치했다. 소스를 새로 복제·실행·재배포하지 않았다.
+- 로컬 [Compose](compose.openbao.yaml) L3-6은 이미지 digest·사용자·직접 entrypoint와 server 인자, L20-23은 mount, L26-31은 healthcheck다. [listener](server.hcl) L11-19는 cert/key 경로·TLS 1.3·ACME 비활성이다. 이 설정대로 생성됐다면 기본 스크립트를 대체하는 구성이라는 해석이며, 실제 기기의 Compose override·init·PID1·실행 image 증거는 아니다. `restart: unless-stopped`(L7)도 있어 프로세스 종료를 무중단 reload 실패로 취급할 수 없다.
+
+### 고정 source 확보 실패 기록
+
+| 공식 URL / 접근 | 실제 결과 | 확인하지 못한 것 |
+| --- | --- | --- |
+| [commit의 listenerutil/listener.go raw](https://raw.githubusercontent.com/openbao/openbao/a5db72cef75c24b920ade02065b18dd8eb666bac/internalshared/listenerutil/listener.go), PowerShell `Invoke-WebRequest` (20초 제한) | 원격 서버 연결 실패 | 본문·경로 존재 여부 |
+| 같은 raw URL, 공개 웹 조회 | Cache miss | 본문·행·기호 |
+| [같은 commit의 GitHub blob](https://github.com/openbao/openbao/blob/a5db72cef75c24b920ade02065b18dd8eb666bac/internalshared/listenerutil/listener.go) | Cache miss | 본문·행·기호 |
+| [tag의 command/server.go raw](https://raw.githubusercontent.com/openbao/openbao/v2.7.1/command/server.go) | 조회 도구가 404 Not Found 반환 | 경로 이동·자료 접근 문제와 실제 부재를 구분 불가 |
+| [공식 tag tree](https://github.com/openbao/openbao/tree/v2.7.1), 릴리스 링크에서 조회 | Cache miss | 고정 트리·실제 reload 파일 경로 |
+
+위 결과는 기능 부재의 증거가 아니다. 이 범위에서 재시도를 중단했다. reload 등록·signal dispatch·인증서/키 파싱·캐시 교체·오류 반환/로그·audit reload의 **2.7.1 기호와 행은 모두 미확보**다. 현재 main 소스나 구판 stack trace로 대신하지 않았다.
+
+### 조건별 판단 — 문서 지원과 구현 보증 분리
+
+공식 [TCP listener 문서](https://openbao.org/docs/configuration/listener/tcp/)의 `tls_cert_file`·`tls_key_file`·`tls_auto_reload` 절(조회 화면 L108-113)을 읽었다. 이는 변경 가능한 현재 문서이며 고정 v2.7.1 소스 증거가 아니다.
+
+| 조건 | 지원되는 판단 / 적용 한계 |
+| --- | --- |
+| 시작 시 경로에 새 PEM을 놓고 같은 키·승인 CA를 유지 | 문서는 SIGHUP 재독해를 지원한다. 재발급·검증 성공과 reload 성공은 별개이며, 2.7.1 무중단 안전성은 보증하지 못함 |
+| 실행 중 HCL의 cert/key 경로만 변경 | 문서는 시작 시 경로를 다시 사용한다고 명시. 경로 변경을 reload 복구 방법으로 사용하지 않음 |
+| 암호화 키의 passphrase 변경 | 문서는 reload 간 같은 passphrase를 요구. 변경하는 복구는 지원 전제 밖 |
+| 누락·권한 오류·잘못된 PEM·키 불일치·만료 leaf | 2.7.1의 반환 오류·기존 인증서 보존·프로세스 생존 여부 미확인. 안전한 실패를 가정하지 않고 적용 보류 |
+| 파일 rename 또는 파일 기간 검사만 성공 | 실제 제공 leaf 교체·연결 성공·health 복귀를 입증하지 못함 |
+| 자동 reload 기대 | 현재 문서는 별도 `tls_auto_reload` 옵션을 설명하지만 로컬 listener는 설정하지 않음. 기기 활성화나 2.7.1 구현을 추정하지 않음 |
+| SIGHUP의 인증서 외 영향 | [issue #3138](https://github.com/openbao/openbao/issues/3138)는 2.5.0 `Core.ReloadAuditLogs`·`MountTable.shallowClone` crash 제보이고 Closed/`cannot reproduce` 표시다. 제보의 기호·행은 2.7.1 소스 검사 결과가 아니며, 해결·잔존 어느 쪽도 입증하지 않음 |
+
+### 다음 운영자 확인 — 하나만
+
+운영자가 대상 컨테이너의 **실제 PID1 실행 경로와 server 인자**를 읽기 전용으로 확인해 로컬 Compose L5-6과 대조하고, 민감 값 없이 일치 여부를 기록한다. 이 확인만으로 고정 구현 공백이 해소되거나 signal이 승인되지는 않는다. 이 작업에서는 기기 접속·컨테이너 호출·signal·인증서/비밀 읽기를 하지 않았다.
+
+후속 상태: `WORK_STATUS: BLOCKED` — 고정 release reload 본문 미확보, 실기기 PID1 미검증.

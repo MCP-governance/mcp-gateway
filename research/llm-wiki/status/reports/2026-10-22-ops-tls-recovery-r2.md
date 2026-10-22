@@ -32,7 +32,7 @@
 
 ## 다음 작업
 
-고정 OpenBao 판본의 reload 구현·전제와 기존 실행 설정을 추가 대조한다. 실제 기기 적용은 별도다.
+운영자가 실제 PID1 실행 경로·server 인자를 읽기 전용으로 확인해 저장소 Compose와 대조한다. 아래 후속의 고정 구현 공백과 signal 보류는 유지한다.
 
 ## 사용자에게 필요한 입력
 
@@ -44,3 +44,34 @@
 고정 manifest의 source fingerprint가 현재 미커밋 변경과 같음을 다시 확인했다. Gemini PASS 뒤 Opus 구독 대기 중의 Sol 대행이 원문·diff·기존 provisioning/listener/Compose/Caddy를 읽기 전용으로 대조해 PASS했다. 첫 Sol 판정은 이전 Claude용 셸 금지와 도구 구성 차이로 BLOCK이었고 원본을 보존했다. 같은 Sol·같은 읽기 전용 권한에서 파일 조회 명령만 허용한 후속 판정은 `loop/agent-hub/runtime/results/TLS-R2-SOL-READ-0239e35b.md`다. 안전 거절·실행 정책을 우회하지 않았다.
 
 조정자가 Windows의 Git OpenSSL 경로를 해당 검사 프로세스 PATH에만 추가하고 `python -X utf8 full_stack_lab/tests/openbao_expiry_test.py`를 실행해10건 통과했다. 기본 PATH의 첫 실행은 OpenSSL 미발견으로9통과/1실패였으며 실패 기록은 그대로 둔다. 위의 최초 구현 기록과 달리 현재는 소스 통합·커밋 대상이다. 인증서 갱신·신뢰 저장소 변경·원격 배포·재시작·PJ1 검증은 하지 않았다.
+
+## OPS-TLS-RELOAD-SOURCE 후속 구현 기록
+
+- 담당: sol, implement, job `wf-OPS-TLS-RELOAD-SOURCE-implement-0`.
+- 기준 commit: `ca368bff78b12608b132bdc98851b035bce542b6`, branch `10/22-runtime-recovery`, 시작 clean. 이전 검토 보고는 증거로만 취급했다.
+- 변경: 기존 [복구 정본](../../integrations/lab/openbao/tls-recovery.md)·[분석 README](../../analysis/ops-tls-recovery-r2/README.md)·이 보고만 수정, 미커밋. 새 branch·보고·의존성·서비스 없음.
+
+### 실제 결과
+
+[공식 v2.7.1 릴리스](https://github.com/openbao/openbao/releases/tag/v2.7.1)의 tag·`a5db72c` 표시를 확인했다. 기존 provenance의 전체 commit은 `a5db72cef75c24b920ade02065b18dd8eb666bac`, 라이선스는 MPL-2.0이다. 기존 보존 Dockerfile의 `USER` L48-49·`COPY`/`ENTRYPOINT` L51-54, LICENSE L1-3을 읽고 SHA-256 두 건이 provenance와 일치함을 확인했다. 정확한 공식 URL·전체 hash·실패 URL/접근별 결과는 복구 정본의 후속 절에 남겼다.
+
+로컬 Compose L3-7은 고정 image·UID/GID·직접 `/usr/bin/bao server` 설정·`unless-stopped`이며, 기본 이미지 Dockerfile의 스크립트 entrypoint와 구분된다. 실제 실행 중인 PID1·override/init·image는 확인하지 않았다. listener L11-19의 고정 cert/key 경로·TLS 1.3·ACME 비활성·자동 reload 미설정을 확인했다.
+
+현재 [공식 TCP 문서](https://openbao.org/docs/configuration/listener/tcp/)는 SIGHUP에서 시작 시 cert/key 경로를 사용하고 암호화 키 passphrase를 유지하도록 설명한다. 이 문서는 변경 가능하므로 고정 release 구현으로 세지 않았다. 누락·잘못된 PEM·키 불일치·권한·만료 시 기존 인증서 유지/오류 반환/프로세스 생존은 단정하지 않았다. 구판 [issue #3138](https://github.com/openbao/openbao/issues/3138)의 Closed/`cannot reproduce` 표시는 2.7.1 수정 또는 재현 증거가 아니다.
+
+### 실제 검사·공백
+
+| 검사 | 결과 |
+| --- | --- |
+| 보존 공식 Dockerfile·LICENSE SHA-256 대조 | 2건 모두 기존 provenance와 일치 |
+| 고정 commit listenerutil raw / blob 조회 | PowerShell 연결 실패, 공개 웹 raw/blob Cache miss. 본문 미확보 |
+| tag command/server.go raw / 공식 tag tree | 각각 조회 도구 404 / Cache miss. 실제 파일 경로·구현 부재를 뜻하지 않음 |
+| 허용 문서 로컬 링크·변경 파일 범위·공백 검사 | 통과, `git diff --check` 종료 0. 이 후속에서 새 검사 산출물 파일은 만들지 않음 |
+| reload 등록·dispatch·pair 파싱·캐시 교체·audit 실패 경로의 2.7.1 기호/행 | 미확보. 현재 main·구판 trace로 대체하지 않고 재시도 중단 |
+| 실기기 PID1·제공 leaf·reload·복구 효과 | 미실행. SSH·컨테이너/서비스 호출·signal·인증서/비밀 읽기·자격 변경·배포 없음 |
+
+허용 파일 제한에 따라 status/current·backlog·전체 위키 capture/build/check·협업 기록기는 변경/실행하지 않았다. 기존 회귀 10건은 앞선 작업의 결과이며 이 문서 후속에서 재실행하지 않았다. signal 보류는 유지한다.
+
+다음 행동은 운영자의 **실제 PID1 실행 경로·server 인자 읽기 전용 대조** 하나다. 고정 release 소스 공백은 별도로 미해결이며 이 확인이 signal 적용을 승인하지 않는다.
+
+`WORK_STATUS: BLOCKED` — 고정 OpenBao 2.7.1 reload 본문을 확보하지 못해 정확한 구현과 실패 동작을 입증할 수 없음.
