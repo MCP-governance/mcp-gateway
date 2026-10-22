@@ -179,6 +179,18 @@ jobs:
 
       # Rego, classification self-check, gateway acceptance, the scripted workday of
       # four workstations, the termination judgment, security regression, E1-E3.
+      - name: 화면 수용 시험 탐침
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          docker compose exec -T gateway python -m app.acceptance > reports/acceptance-probe.json || true
+          python3 - <<'EOP'
+          import json
+          r = json.load(open("reports/acceptance-probe.json"))
+          print({k: r[k] for k in ("PASS", "FAIL", "SKIP")})
+          for c in r["checks"]:
+              print(c["status"], c["name"], "|", c["details"][:500])
+          EOP
       - name: ./console.sh test
         run: TERMINATION_DISPOSABLE_LAB=1 ./console.sh test
 
