@@ -774,7 +774,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 
-async def managed_policy(device: dict) -> dict:
+async def managed_policy(device: dict, servers: list | None = None) -> dict:
     from . import pac
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
@@ -791,7 +791,8 @@ async def managed_policy(device: dict) -> dict:
     # in tools/list, not about every operating server.
     owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],))
     usable = set(pac.servers_for(owner)) if owner else set()
-    servers = [r["id"] for r in rows if r["id"] in usable]
+    current = [r["id"] for r in rows if r["id"] in usable]
+    servers = current if servers is None else list(servers)  # servers: re-render what a device installed earlier (D-198)
     windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
@@ -857,9 +858,23 @@ def json_document(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 
+async def _held_policy(device: dict, policy: dict, reported_hash: str) -> dict | None:
+    """The policy a device installed earlier, when it differs from the current one only by servers added since.
+
+    Control changes (allow-list, protection settings, header helper, removed servers) change the rendering for the
+    servers the device already holds, so they never match here and stay fail-closed (D-198)."""
+    held = (device.get("detail") or {}).get("policy_servers")
+    if reported_hash == policy["policy_hash"] or not held or not set(held) <= set(policy["servers"]):
+        return None
+    old = await managed_policy(device, servers=held)
+    return old if old["policy_hash"] == reported_hash else None
+
+
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
                     quality: dict | None = None, user_command_settings: list | None = None) -> dict:
-    policy = await managed_policy(device)
+    latest = await managed_policy(device)
+    # A device one policy behind only because servers were added since is judged against what it installed (D-198).
+    policy = await _held_policy(device, latest, policy_hash) or latest
     if user_command_settings:
         checks = {**checks, "user_command_helpers": False}
     compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
@@ -871,6 +886,8 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     # must not keep standing in for a check that is no longer made.
     detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
     detail["user_command_settings"] = user_command_settings or []
+    if policy_hash == policy["policy_hash"]:
+        detail["policy_servers"] = policy.get("servers")
     if "user_command_helpers" in checks:
         detail["command_settings_checked"] = True
     # What the Gateway rendered (provider artifact) beside what the device says is installed.
@@ -904,7 +921,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  "policy_match": policy_hash == policy["policy_hash"],
                  "mismatched_files": sorted(name for name, expected in policy["configuration_hashes"].items()
                                             if hashes.get(name) != expected)})))
-    return {"state": row["managed_state"], "compliant": compliant, "policy_hash": policy["policy_hash"]}
+    return {"state": row["managed_state"], "compliant": compliant, "policy_hash": latest["policy_hash"]}
 
 
 async def network_quality() -> dict:
@@ -966,7 +983,7 @@ async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, not
     return {"endpoint_id": endpoint_id, "managed_state": "active"}
 
 
-async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) -> str | None:
+async def managed_failure(principal: dict, claims: dict, *, mint: bool = False, server: str | None = None) -> str | None:
     if not principal.get("managed_required") and not claims.get("device_id"):
         return None
     if not claims.get("device_id") or (not mint and "mcp" not in str(claims.get("scope", "")).split()):
@@ -979,7 +996,13 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False) 
         return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
     if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
-        return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
+        # Servers added since the device's policy: the ones it holds keep working until it applies the new one,
+        # the new ones wait (D-198). Anything else that differs is a control change and stops everything.
+        held = None if mint else await _held_policy(device, policy, device["policy_hash"])
+        if not held or claims.get("device_policy") != device["policy_hash"]:
+            return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
+        if server and server not in held["servers"]:
+            return "새로 승인된 서버입니다. PC가 새 정책을 적용하면 사용할 수 있습니다."
     return None
 
 

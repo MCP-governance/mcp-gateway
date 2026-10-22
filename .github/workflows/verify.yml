@@ -106,6 +106,7 @@ jobs:
         run: |
           python3 tests/field_kit_check.py
           python3 tests/managed_enforcement_check.py
+          python3 tests/managed_policy_gap_check.py
       - name: 시스템 자원·연결 지표와 관리자 경계
         run: |
           python -m pip install --quiet -r gateway/requirements.txt

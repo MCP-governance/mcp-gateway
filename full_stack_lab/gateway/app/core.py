@@ -1714,7 +1714,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
             if problem is None:
                 person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
                 from .endpoint_plane import managed_failure
-                failure = await managed_failure(person or {}, pac_payload.get("transport_claims") or {})
+                failure = await managed_failure(person or {}, pac_payload.get("transport_claims") or {}, server=server_id)
                 if failure:
                     problem = failure
                     blocked_verdict = local_verdict("ENDPOINT-MANAGED-001", "Block", failure)
@@ -2256,7 +2256,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             return await _decision_payload(base_event, laps)
 
         from .endpoint_plane import managed_failure
-        failure = await managed_failure(principal, payload.get("transport_claims") or {})
+        failure = await managed_failure(principal, payload.get("transport_claims") or {}, server=server_id)
         if failure:
             base_event.update(local_verdict("ENDPOINT-MANAGED-001", "Block", failure))
             return await _decision_payload(base_event, laps)
