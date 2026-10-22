@@ -1,13 +1,15 @@
 {
-  "captured_at": "2026-10-22T18:46:03+09:00",
-  "head": "6982e2ba1c1d92adff4aa216d3bbd00fca1d53e0",
+  "captured_at": "2026-10-22T18:56:19+09:00",
+  "head": "441371372661ef253f743cb6ab201ab8b81c71b7",
   "branch": "10/22-hierarchical-agents",
   "status": [
-    "M research/collaboration-console/COORDINATION.md",
-    " M research/collaboration-console/test_worker.py",
-    " M research/collaboration-console/worker.py",
-    " M research/llm-wiki/AGENTS.md",
+    "M docs/ai/DECISIONS.md",
+    " M research/collaboration-console/COORDINATION.md",
     " M research/llm-wiki/analysis/agent-coordination-20261022/checks.json",
+    " M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.json",
+    " M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.md",
+    " M research/llm-wiki/status/backlog.md",
+    " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/reports/2026-10-22-hierarchical-agents.md"
   ],
   "scope": "local-code-only",

@@ -197,5 +197,14 @@
       "actual_release_verified": false
     },
     "previous_antigravity_observation": "quota_observation is retained as the 14:15 historical snapshot; its Claude/GPT 100 percent is not current"
+  },
+  "owner_requested_profile": {
+    "mythos": {
+      "enabled": true,
+      "availability": "unverified",
+      "reason": "Explicit owner request; do not infer account access from general limited availability",
+      "execution": "one brief Opus-authorized consultation only, high effort maximum; stop on refusal or access denial",
+      "actual_inference": "not run"
+    }
   }
 }

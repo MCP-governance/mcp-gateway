@@ -107,7 +107,7 @@ Windows CLI에는 명시적인 `default_permissions=":workspace"`와 기존 elev
 | 판단 대행 | Sol | Opus의 계정 한도·사용 불가 시 계획·최종 판단을 대리한다. Opus 직접 투입 요청도 Sol이 판단한다. |
 | 주력 작업 | Sol·Sonnet·Gemini | 계획에 따른 코딩·일상 문제 해결·독립 검토. 실제 쓰기 가능 여부와 검증 상태를 구분한다. |
 | 보조 | Luna·Haiku | 주력 에이전트가 요청한 작은 읽기·분류·분석. 기본 읽기 전용이며 상향 판단 권한은 없다. |
-| 짧은 고급 자문 | GPT-6 Astra·Fable 5.1·Mythos 5.1 | 반복 난제에 대해 Opus만 1회 선택한다. 읽기 전용, effort high 이하, 짧은 답변. Mythos는 계정 접근 확인 전 비활성이다. |
+| 짧은 고급 자문 | GPT-6 Astra·Fable 5.1·Mythos 5.1 | 반복 난제에 대해 Opus만 1회 선택한다. 읽기 전용, effort high 이하, 짧은 답변. Mythos는 사용자 지정 프로필이며 실제 계정 접근은 미확인이다. |
 
 모델 이름·effort·enabled·접근 확인 상태는 `loop/agent-hub/config.json`의 `agent_policy.profiles`에서 관리한다. 공개 모델 목록이나 CLI가 요청 모델명을 되돌려준 것만으로 실제 응답 모델을 확인했다고 쓰지 않는다. 응답 불일치·접근 거부는 해당 모델의 확인 필요 상태로 남기며 다른 고급 모델로 자동 우회하지 않는다.
 

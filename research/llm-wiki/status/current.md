@@ -2,7 +2,7 @@
 
 ## 10-22 협업 역할·사용량 개편
 
-[운영 보고](reports/2026-10-22-hierarchical-agents.md), [정본](../../collaboration-console/COORDINATION.md). Opus 지휘·Sol 대행·주력/보조/짧은 자문 권한, 실제 사용량 관측·예비량·유한 단계 규칙과 기존 1000번 화면에 적용했다. 설치·단위 검사·실제 모델 호출·장시간 운전은 보고서에서 구분한다. 기존 제품 작업과 미커밋 변경은 보존한다.
+[운영 보고](reports/2026-10-22-hierarchical-agents.md), [정본](../../collaboration-console/COORDINATION.md). Opus 지휘·Sol 대행·주력/보조/짧은 자문 권한, 실제 사용량 관측·예비량·유한 단계 규칙과 기존 1000번 화면에 적용했다. 설치·단위 검사·실제 모델 호출·장시간 운전은 보고서에서 구분한다. 기존 제품 소스 작업은 검토 후 별도 10/22-runtime-recovery 브랜치에 푸시했다. TLS-R2는 Gemini·Sol 대행 판단과10건 검사를 통과했으며 실제 인증서 복구는 미실행이다.
 
 
 ## 협업 운영 갱신 — 2026-10-22

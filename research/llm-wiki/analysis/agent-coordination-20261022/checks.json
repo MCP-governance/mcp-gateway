@@ -135,6 +135,16 @@
         }
       },
       "model_response": "unreported; requested identity is not provider response proof"
+    },
+    "final_runtime": {
+      "checked_at": "2026-10-22T18:56:18+09:00",
+      "heartbeat_age": 0.1,
+      "policy_enabled": true,
+      "effective_lead": "sol",
+      "mythos_access": "configured per owner request, unverified, not invoked",
+      "product_source_commit": "ca368bf",
+      "continuing_task": "OPS-TLS-RELOAD-SOURCE",
+      "completed_followup": "OPS-COORD-OUTPUT-DIAGNOSTICS parent independent108 tests after native readonly fixture BLOCK; TLS-R2 Sol readonly follow-upPASS and10 tests"
     }
   }
 }

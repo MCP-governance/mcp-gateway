@@ -1,19 +1,21 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-22T18:46:03+09:00
+확인 시각: 2026-10-22T18:56:19+09:00
 
-HEAD: `6982e2ba1c1d92adff4aa216d3bbd00fca1d53e0` · 로컬 브랜치: `10/22-hierarchical-agents`
+HEAD: `441371372661ef253f743cb6ab201ab8b81c71b7` · 로컬 브랜치: `10/22-hierarchical-agents`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/collaboration-console/COORDINATION.md
- M research/collaboration-console/test_worker.py
- M research/collaboration-console/worker.py
- M research/llm-wiki/AGENTS.md
+M docs/ai/DECISIONS.md
+ M research/collaboration-console/COORDINATION.md
  M research/llm-wiki/analysis/agent-coordination-20261022/checks.json
+ M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.json
+ M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.md
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/current.md
  M research/llm-wiki/status/reports/2026-10-22-hierarchical-agents.md
 ```
 
