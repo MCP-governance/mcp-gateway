@@ -55,7 +55,8 @@ class PolicyGap(unittest.IsolatedAsyncioTestCase):
         self.plane = load({"__name__": "gap_under_test", "__package__": package.__name__, "os": os, "urlsplit": urlsplit,
                            "ipaddress": ipaddress, "hashlib": hashlib, "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,
                            "db": self.db, "datetime": datetime, "UTC": timezone.utc, "Jsonb": lambda v: v})
-        env = patch.dict(os.environ, {"IDP_ISSUER": "https://gateway.example", "ENDPOINT_GATEWAY_IPS": "100.64.0.2"})
+        # MODEL_PROXY_PORT is cleared: a gateway image already sets it, which would make the change below no change.
+        env = patch.dict(os.environ, {"IDP_ISSUER": "https://gateway.example", "ENDPOINT_GATEWAY_IPS": "100.64.0.2", "MODEL_PROXY_PORT": ""})
         env.start()
         self.addCleanup(env.stop)
         modules = patch.dict(sys.modules, {package.__name__: package})

@@ -1,0 +1,2197 @@
+{
+  "task": "W14-LOCAL-RUNNER",
+  "baseline": "0f57d0c9c0994faf849544616c6e66939b113fd8",
+  "scope": "offline-unit-and-static-only",
+  "device_connections": false,
+  "deployment": false,
+  "job_timeout_seconds": 3600,
+  "inbox_ids": [
+    8265,
+    8279,
+    8280,
+    8292
+  ],
+  "inbox_last_event_id": 8294,
+  "checks": [
+    {
+      "name": "new-unit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/local_runner_usability_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:06.419370+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": 28,
+      "skipped": 0,
+      "output": "test_diagnostic_inspection_failure_does_not_skip_removal (__main__.DiagnosticCapture) ... ok\r\ntest_display_never_exposes_a_fragment_of_a_line_over_the_limit (__main__.DiagnosticCapture) ... ok\r\ntest_known_secrets_and_credential_lines_are_masked_before_length_limit (__main__.DiagnosticCapture) ... ok\r\ntest_permission_error_is_korean_classifiable_and_keeps_container_exit_code (__main__.DiagnosticCapture) ... ok\r\ntest_stderr_ring_and_display_are_bounded_even_with_unterminated_lines (__main__.DiagnosticCapture) ... ok\r\ntest_stop_collects_container_status_before_removal_and_is_idempotent (__main__.DiagnosticCapture) ... ok\r\ntest_truncated_first_line_and_control_characters_are_discarded (__main__.DiagnosticCapture) ... ok\r\ntest_legacy_errors_remain_opaque_and_inspected_failure_gets_typed_exception (__main__.ExchangeBudget) ... ok\r\ntest_only_initialize_gets_preparation_budget_and_original_runtime_is_stored (__main__.ExchangeBudget) ... ok\r\ntest_ordinary_calls_and_health_checks_keep_their_original_total_timeout (__main__.ExchangeBudget) ... ok\r\ntest_preparation_control_precedes_start_and_execution_uses_started_deadline (__main__.ExecutionSequence) ... ok\r\ntest_session_start_failure_reports_engine_exit_without_root_retry (__main__.ExecutionSequence) ... ok\r\ntest_complete_hashes_and_appends_the_same_scrubbed_diagnostic (__main__.GatewayControl) ... ok\r\ntest_control_renews_unstarted_lease_only_after_authorization (__main__.GatewayControl) ... ok\r\ntest_diagnostic_instruction_or_inspection_failure_is_withheld (__main__.GatewayControl) ... ok\r\ntest_gateway_reason_is_allowlisted_and_diagnostic_is_bounded (__main__.GatewayControl) ... ok\r\ntest_gateway_scanner_failure_hides_stderr_but_keeps_reason_and_exit_code (__main__.GatewayControl) ... ok\r\ntest_lost_renewal_race_is_a_failure (__main__.GatewayControl) ... ok\r\ntest_only_inspected_local_error_crosses_core_public_boundary (__main__.GatewayControl) ... ok\r\ntest_revocation_epoch_policy_lease_and_stop_fail_without_renewal (__main__.GatewayControl) ... ok\r\ntest_running_job_is_not_renewed_and_start_returns_shorter_deadline (__main__.GatewayControl) ... ok\r\ntest_short_requested_run_budget_is_not_extended_by_preparation (__main__.GatewayControl) ... ok\r\ntest_cached_image_does_not_pull (__main__.ImagePreparation) ... ok\r\ntest_cold_pull_polls_control_and_pins_digest (__main__.ImagePreparation) ... ok\r\ntest_manifest_volume_or_version_mismatch_stays_blocked (__main__.ImagePreparation) ... ok\r\ntest_pull_has_absolute_timeout_and_is_reaped (__main__.ImagePreparation) ... ok\r\ntest_revocation_or_control_outage_kills_pull_without_container_start (__main__.ImagePreparation) ... ok\r\ntest_unapproved_repository_or_mutable_tag_cannot_pull (__main__.ImagePreparation) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 28 tests in 0.475s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "dev73-rework",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_rework_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:07.122919+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": 23,
+      "skipped": 4,
+      "output": "test_D192_empty_setting_measures_engine (__main__.ControlChecks) ... ok\r\ntest_F2_current_generation_accepts_then_each_change_blocks (__main__.ControlChecks) ... ok\r\ntest_F2_signed_expiry_and_generation_are_required (__main__.ControlChecks) ... ok\r\ntest_F3_both_sides_restrict_exact_mirror_and_digest (__main__.ControlChecks) ... ok\r\ntest_F3_container_uses_preimported_digest_and_no_log_disk (__main__.ControlChecks) ... ok\r\ntest_F5_actual_host_mapping_cannot_pass_as_userns (__main__.ControlChecks) ... ok\r\ntest_F5_missing_or_wrong_engine_mapping_is_blocked (__main__.ControlChecks) ... ok\r\ntest_F4_concurrent_parent_replacement_never_selects_secret_inode (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F4_parent_symlink_is_refused (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F4_repeated_replacement_never_redirects_pinned_source (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_mount_target_is_fixed_workspace_not_home (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F10_claimed_unknown_result_is_not_retried (__main__.OutcomeAndQueue) ... ok\r\ntest_F10_restart_only_removes_orphans_and_never_executes_them (__main__.OutcomeAndQueue) ... ok\r\ntest_F7_queue_and_rate_saturation_block_before_insert (__main__.OutcomeAndQueue) ... ok\r\ntest_F8_bound_observer_survives_a_newer_device_heartbeat (__main__.OutcomeAndQueue) ... ok\r\ntest_F9_F10_dispatch_outcomes_keep_not_executed_and_unconfirmed_separate (__main__.OutcomeAndQueue) ... ok\r\ntest_F9_result_evidence_retains_uuid_timestamps_state_hash (__main__.OutcomeAndQueue) ... ok\r\ntest_F2_stop_receipt_is_idempotent_and_requires_engine_confirmation (__main__.OutputBounds) ... ok\r\ntest_F6_line_count_bound_is_independent (__main__.OutputBounds) ... ok\r\ntest_F6_queue_bound_stops_without_unbounded_growth (__main__.OutputBounds) ... ok\r\ntest_F6_silent_stdout_read_deadline_stops (__main__.OutputBounds) ... ok\r\ntest_F6_single_line_bound_stops_and_discards_session (__main__.OutputBounds) ... ok\r\ntest_F6_total_byte_bound_is_independent (__main__.OutputBounds) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 23 tests in 0.135s\r\n\r\nOK (skipped=4)\r\n"
+    },
+    {
+      "name": "dev73-review2",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_review2_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:07.444103+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": 5,
+      "skipped": 0,
+      "output": "test_cancel_control_reads_recorded_stop_before_token_lock (__main__.ReviewFixes) ... ok\r\ntest_registration_view_uses_measured_mapping_and_d189_screen (__main__.ReviewFixes) ... ok\r\ntest_request_params_limit_has_exact_boundary_and_both_guards (__main__.ReviewFixes) ... ok\r\ntest_result_hash_is_for_value_after_storage_cap (__main__.ReviewFixes) ... ok\r\ntest_resume_removes_server_stop_inside_transition_transaction (__main__.ReviewFixes) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 5 tests in 0.043s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "dev73-integration",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_integration_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:07.583251+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": 7,
+      "skipped": 0,
+      "output": ".......\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.114s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "manifest",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/local_run_manifest_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:07.851685+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "tests": null,
+      "skipped": 0,
+      "output": "Traceback (most recent call last):\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\local_run_manifest_check.py\", line 17, in <module>\r\n    from cryptography.hazmat.primitives import serialization\r\nModuleNotFoundError: No module named 'cryptography'\r\n"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/local-runner.py",
+        "full_stack_lab/gateway/app/local_jobs.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/tests/local_runner_usability_check.py"
+      ],
+      "started_at": "2026-10-22T18:02:08.000911+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "tests": null,
+      "skipped": 0,
+      "output": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\r\n"
+    },
+    {
+      "name": "syntax",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-c",
+        "import ast; from pathlib import Path; paths=['endpoint-agent/local-runner.py', 'full_stack_lab/gateway/app/local_jobs.py', 'full_stack_lab/gateway/app/core.py', 'full_stack_lab/gateway/app/main.py', 'full_stack_lab/tests/local_runner_usability_check.py']; [ast.parse(Path(p).read_text(encoding=\"utf-8\"), filename=p) for p in paths]; print(\"AST syntax: PASS (5 files)\")"
+      ],
+      "started_at": "2026-10-22T18:02:08.038121+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": null,
+      "skipped": 0,
+      "output": "AST syntax: PASS (5 files)\r\n"
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "started_at": "2026-10-22T18:02:08.127130+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": null,
+      "skipped": 0,
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 97개 (그중 장치 자격 13개: GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\r\n"
+    },
+    {
+      "name": "console-syntax",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "started_at": "2026-10-22T18:02:08.195761+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": null,
+      "skipped": 0,
+      "output": ""
+    },
+    {
+      "name": "console-state",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "started_at": "2026-10-22T18:02:08.252081+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": null,
+      "skipped": 0,
+      "output": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.9928ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (1.6854ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.1522ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.432ms)\n✔ the status phrase never presents a failed poll as fresh (2.9724ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (2.0697ms)\n✔ splitBy counts per key with a decision split, largest first (0.3148ms)\n✔ sankey layers never merge a server with a harness of the same name (0.2379ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.4916ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.4043ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (1.0704ms)\n✔ latency values read as durations and never invent a measurement (0.2692ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.2113ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (32.2971ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2405ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 120.5036\n"
+    },
+    {
+      "name": "git-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-22T18:02:08.436657+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "tests": null,
+      "skipped": 0,
+      "output": ""
+    },
+    {
+      "name": "wiki-strict",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py"
+      ],
+      "started_at": "2026-10-22T18:02:10.886508+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "output": "{\r\n  \"ok\": false,\r\n  \"counts\": {\r\n    \"endpoint-permission-references\": 12,\r\n    \"experiments\": 13,\r\n    \"imports\": 22,\r\n    \"local-tool-risks\": 13,\r\n    \"papers\": 264,\r\n    \"solutions\": 15,\r\n    \"threats\": 24,\r\n    \"sources_evidence_records\": 3,\r\n    \"solutions_evidence_records\": 21,\r\n    \"reviewed_local_tools\": 92,\r\n    \"markdown_documents\": 684\r\n  },\r\n  \"warnings\": [],\r\n  \"errors\": [\r\n    \"Missing local file: local-sources/compliance/LIB-L05/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-L06/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-L09/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-L10/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-L11/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-L12/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M04/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M08/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M17/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M20/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M21/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M22/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M28/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M31/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M32/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M34/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M36/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M37/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M38/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M39/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M40/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M44/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M45/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M48/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M49/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M13/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M14/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M15/provenance.json\",\r\n    \"Missing local file: local-sources/compliance/LIB-M43/provenance.json\"\r\n  ]\r\n}\r\n",
+      "error_count": 29,
+      "warning_count": 0
+    },
+    {
+      "name": "wiki-ci-ignored",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "started_at": "2026-10-22T18:02:13.076180+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "{\r\n  \"ok\": true,\r\n  \"counts\": {\r\n    \"endpoint-permission-references\": 12,\r\n    \"experiments\": 13,\r\n    \"imports\": 22,\r\n    \"local-tool-risks\": 13,\r\n    \"papers\": 264,\r\n    \"solutions\": 15,\r\n    \"threats\": 24,\r\n    \"sources_evidence_records\": 3,\r\n    \"solutions_evidence_records\": 21,\r\n    \"reviewed_local_tools\": 92,\r\n    \"markdown_documents\": 684\r\n  },\r\n  \"warnings\": [\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\extracts\\\\LIB-L05.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\originals\\\\pipc-genai-privacy-guide-2025-08.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\extracts\\\\LIB-L06.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\originals\\\\kisa-ai-red-teaming-guide-2026-07.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\extracts\\\\LIB-L09.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\originals\\\\bs-iso-iec-42001-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\extracts\\\\LIB-L10.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\originals\\\\iso-iec-27001-2022.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\extracts\\\\LIB-L11.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\originals\\\\azs-iso-iec-tr-24028-2024-az.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\extracts\\\\LIB-L12.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\originals\\\\iso-iec-5230-2020.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\extracts\\\\LIB-M04.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\originals\\\\imda-mgf-agentic-ai-v1-5.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\extracts\\\\LIB-M08.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\originals\\\\csa-securing-agentic-ai-addendum.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\extracts\\\\LIB-M13.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\originals\\\\ca-tbs-directive-automated-decision-making.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\extracts\\\\LIB-M14.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\originals\\\\ccpa-admt-risk-cyber-approved-text.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\extracts\\\\LIB-M15.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\originals\\\\co-sb26-189-session-law.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\extracts\\\\LIB-M17.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\originals\\\\nist-ai-600-1.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\extracts\\\\LIB-M20.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\originals\\\\nist-ai-100-2e2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\extracts\\\\LIB-M21.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\originals\\\\nist-ir-8596-iprd.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\extracts\\\\LIB-M22.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\originals\\\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\extracts\\\\LIB-M28.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\originals\\\\cn-network-data-security-regulations-790.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\extracts\\\\LIB-M31.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\originals\\\\tc260-ai-safety-governance-framework-2-0.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\extracts\\\\LIB-M32.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\originals\\\\gbt-45654-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\extracts\\\\LIB-M34.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\originals\\\\sg-pdpa-2012.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\extracts\\\\LIB-M36.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\originals\\\\quebec-law-25-2021.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\extracts\\\\LIB-M37.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\originals\\\\sg-mas-ai-risk-management-guidelines-2026.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\extracts\\\\LIB-M38.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\originals\\\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\extracts\\\\LIB-M39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\originals\\\\csa-guidelines-on-securing-ai-systems-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\extracts\\\\LIB-M40.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\originals\\\\etsi-en-304-223.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\extracts\\\\LIB-M43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\originals\\\\au-guidance-ai-adoption-implementation.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\extracts\\\\LIB-M44.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\originals\\\\india-dpdp-rules-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\extracts\\\\LIB-M45.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\originals\\\\india-dpdp-act-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\extracts\\\\LIB-M48.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\originals\\\\au-poa-act-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\extracts\\\\LIB-M49.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\originals\\\\india-ai-governance-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\extracts\\\\P39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\originals\\\\P39.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\extracts\\\\P43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\originals\\\\P43.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\extracts\\\\P46.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\originals\\\\P46.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\extracts\\\\P47.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\originals\\\\P47.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\extracts\\\\P54.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\originals\\\\P54.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\extracts\\\\P58.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\originals\\\\P58.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\extracts\\\\P60.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\originals\\\\P60.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\extracts\\\\P63.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\originals\\\\P63.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth_security.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth_security.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\extracts\\\\T02_mcp_tools.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\originals\\\\T02_mcp_tools.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\extracts\\\\T04_web.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\originals\\\\T04.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_cheat.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_mcp.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_cheat.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_mcp.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\extracts\\\\T21_mcp_best.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\originals\\\\T21_mcp_best.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\extracts\\\\T22_supplement.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\originals\\\\T22_supplement.html\"\r\n  ],\r\n  \"errors\": []\r\n}\r\n",
+      "error_count": 0,
+      "warning_count": 119
+    },
+    {
+      "name": "wiki-inventory",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "started_at": "2026-10-22T18:02:14.980699+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "{\"format\": \"markdown\", \"pages\": 684, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 15, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\r\n"
+    },
+    {
+      "name": "trace-self-test",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_trace.py",
+        "--self-test"
+      ],
+      "started_at": "2026-10-22T18:02:15.082736+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "self-test: PASS (정의·중복·정의 없는 참조·형식·묶음 표기·시점 보존·관련 ID)\r\n"
+    }
+  ],
+  "files": [
+    {
+      "path": "endpoint-agent/local-runner.py",
+      "sha256": "56154fed79946f3ba11dd56b4175118fe539eb9197048231da1837bfda5dcc7f",
+      "symbols": [
+        {
+          "name": "canonical",
+          "line": 38,
+          "end_line": 40
+        },
+        {
+          "name": "signed",
+          "line": 43,
+          "end_line": 53
+        },
+        {
+          "name": "image_allowed",
+          "line": 56,
+          "end_line": 57
+        },
+        {
+          "name": "PinnedMounts",
+          "line": 60,
+          "end_line": 116
+        },
+        {
+          "name": "container_command",
+          "line": 119,
+          "end_line": 155
+        },
+        {
+          "name": "detect_engine",
+          "line": 158,
+          "end_line": 172
+        },
+        {
+          "name": "engine_configuration",
+          "line": 175,
+          "end_line": 216
+        },
+        {
+          "name": "masked_stderr",
+          "line": 219,
+          "end_line": 240
+        },
+        {
+          "name": "Session",
+          "line": 243,
+          "end_line": 416
+        },
+        {
+          "name": "check_control",
+          "line": 419,
+          "end_line": 426
+        },
+        {
+          "name": "execute_job",
+          "line": 429,
+          "end_line": 528
+        },
+        {
+          "name": "recover",
+          "line": 531,
+          "end_line": 550
+        },
+        {
+          "name": "run",
+          "line": 553,
+          "end_line": 570
+        },
+        {
+          "name": "__init__",
+          "line": 62,
+          "end_line": 88
+        },
+        {
+          "name": "_inspect",
+          "line": 90,
+          "end_line": 100
+        },
+        {
+          "name": "recheck",
+          "line": 102,
+          "end_line": 113
+        },
+        {
+          "name": "close",
+          "line": 115,
+          "end_line": 116
+        },
+        {
+          "name": "__init__",
+          "line": 244,
+          "end_line": 282
+        },
+        {
+          "name": "_read_stderr",
+          "line": 284,
+          "end_line": 296
+        },
+        {
+          "name": "diagnostic",
+          "line": 298,
+          "end_line": 305
+        },
+        {
+          "name": "mapping",
+          "line": 307,
+          "end_line": 324
+        },
+        {
+          "name": "_read",
+          "line": 326,
+          "end_line": 349
+        },
+        {
+          "name": "_send",
+          "line": 351,
+          "end_line": 355
+        },
+        {
+          "name": "request",
+          "line": 357,
+          "end_line": 380
+        },
+        {
+          "name": "stop",
+          "line": 382,
+          "end_line": 416
+        },
+        {
+          "name": "check",
+          "line": 443,
+          "end_line": 448
+        },
+        {
+          "name": "stop_at_deadline",
+          "line": 450,
+          "end_line": 454
+        },
+        {
+          "name": "watch",
+          "line": 455,
+          "end_line": 463
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/local_jobs.py",
+      "sha256": "130d7001abd43686cc257aeb28b7c09529022760634c04cb9771f21029a87442",
+      "symbols": [
+        {
+          "name": "NotStarted",
+          "line": 58,
+          "end_line": 62
+        },
+        {
+          "name": "LocalExecutionError",
+          "line": 65,
+          "end_line": 66
+        },
+        {
+          "name": "failure_message",
+          "line": 69,
+          "end_line": 92
+        },
+        {
+          "name": "manifest_errors",
+          "line": 95,
+          "end_line": 128
+        },
+        {
+          "name": "approval_window",
+          "line": 131,
+          "end_line": 140
+        },
+        {
+          "name": "mirror_image",
+          "line": 143,
+          "end_line": 144
+        },
+        {
+          "name": "canonical",
+          "line": 147,
+          "end_line": 148
+        },
+        {
+          "name": "validate_params",
+          "line": 151,
+          "end_line": 157
+        },
+        {
+          "name": "verify",
+          "line": 160,
+          "end_line": 172
+        },
+        {
+          "name": "applicant_device",
+          "line": 175,
+          "end_line": 195
+        },
+        {
+          "name": "local_block",
+          "line": 198,
+          "end_line": 205
+        },
+        {
+          "name": "approve_manifest",
+          "line": 208,
+          "end_line": 234
+        },
+        {
+          "name": "server_of",
+          "line": 237,
+          "end_line": 239
+        },
+        {
+          "name": "control_generation",
+          "line": 242,
+          "end_line": 244
+        },
+        {
+          "name": "_device",
+          "line": 247,
+          "end_line": 253
+        },
+        {
+          "name": "exchange",
+          "line": 256,
+          "end_line": 332
+        },
+        {
+          "name": "remember",
+          "line": 335,
+          "end_line": 342
+        },
+        {
+          "name": "record_evidence",
+          "line": 345,
+          "end_line": 351
+        },
+        {
+          "name": "cleanup",
+          "line": 354,
+          "end_line": 370
+        },
+        {
+          "name": "authorized",
+          "line": 373,
+          "end_line": 400
+        },
+        {
+          "name": "LocalClient",
+          "line": 403,
+          "end_line": 442
+        },
+        {
+          "name": "session",
+          "line": 446,
+          "end_line": 462
+        },
+        {
+          "name": "claim",
+          "line": 467,
+          "end_line": 510
+        },
+        {
+          "name": "lock_execution",
+          "line": 513,
+          "end_line": 523
+        },
+        {
+          "name": "admission_locks",
+          "line": 526,
+          "end_line": 530
+        },
+        {
+          "name": "current_job",
+          "line": 533,
+          "end_line": 541
+        },
+        {
+          "name": "validate_job",
+          "line": 544,
+          "end_line": 594
+        },
+        {
+          "name": "complete",
+          "line": 597,
+          "end_line": 628
+        },
+        {
+          "name": "is_local",
+          "line": 631,
+          "end_line": 633
+        },
+        {
+          "name": "quiesce",
+          "line": 636,
+          "end_line": 656
+        },
+        {
+          "name": "resume",
+          "line": 659,
+          "end_line": 663
+        },
+        {
+          "name": "resume_user_stop",
+          "line": 666,
+          "end_line": 674
+        },
+        {
+          "name": "prepare_token_revocation",
+          "line": 677,
+          "end_line": 692
+        },
+        {
+          "name": "recoverable",
+          "line": 695,
+          "end_line": 698
+        },
+        {
+          "name": "__init__",
+          "line": 60,
+          "end_line": 62
+        },
+        {
+          "name": "__init__",
+          "line": 406,
+          "end_line": 410
+        },
+        {
+          "name": "bind_evidence",
+          "line": 412,
+          "end_line": 415
+        },
+        {
+          "name": "_send",
+          "line": 417,
+          "end_line": 424
+        },
+        {
+          "name": "start",
+          "line": 426,
+          "end_line": 429
+        },
+        {
+          "name": "list_tools",
+          "line": 431,
+          "end_line": 432
+        },
+        {
+          "name": "call_tool",
+          "line": 434,
+          "end_line": 442
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "a2705b586faaf333fd2cb1671785f19dddd18a86b07b08a9fdd5fdfd047e52e8",
+      "symbols": [
+        {
+          "name": "_flow_match_mode",
+          "line": 79,
+          "end_line": 82
+        },
+        {
+          "name": "check_auto_suspend_settings",
+          "line": 111,
+          "end_line": 119
+        },
+        {
+          "name": "ResultRejected",
+          "line": 126,
+          "end_line": 134
+        },
+        {
+          "name": "response_evidence",
+          "line": 143,
+          "end_line": 154
+        },
+        {
+          "name": "response_disposition",
+          "line": 157,
+          "end_line": 163
+        },
+        {
+          "name": "_Laps",
+          "line": 166,
+          "end_line": 183
+        },
+        {
+          "name": "DispatchRejected",
+          "line": 186,
+          "end_line": 191
+        },
+        {
+          "name": "_configure_tracing",
+          "line": 194,
+          "end_line": 206
+        },
+        {
+          "name": "_discover",
+          "line": 212,
+          "end_line": 216
+        },
+        {
+          "name": "refresh_catalog",
+          "line": 219,
+          "end_line": 382
+        },
+        {
+          "name": "approve_contract",
+          "line": 385,
+          "end_line": 467
+        },
+        {
+          "name": "bootstrap",
+          "line": 470,
+          "end_line": 494
+        },
+        {
+          "name": "refresh_all_catalogs",
+          "line": 497,
+          "end_line": 509
+        },
+        {
+          "name": "check_server",
+          "line": 512,
+          "end_line": 535
+        },
+        {
+          "name": "registration_endpoint",
+          "line": 547,
+          "end_line": 554
+        },
+        {
+          "name": "suggested_action",
+          "line": 557,
+          "end_line": 560
+        },
+        {
+          "name": "discover_for_registration",
+          "line": 563,
+          "end_line": 612
+        },
+        {
+          "name": "register_server",
+          "line": 615,
+          "end_line": 877
+        },
+        {
+          "name": "deregister_server",
+          "line": 880,
+          "end_line": 901
+        },
+        {
+          "name": "review_tool_scopes",
+          "line": 904,
+          "end_line": 947
+        },
+        {
+          "name": "review_server_residency",
+          "line": 950,
+          "end_line": 985
+        },
+        {
+          "name": "renew_approvals",
+          "line": 993,
+          "end_line": 1051
+        },
+        {
+          "name": "apply_risk_grace",
+          "line": 1054,
+          "end_line": 1086
+        },
+        {
+          "name": "catalog_watch",
+          "line": 1089,
+          "end_line": 1105
+        },
+        {
+          "name": "_cleanup_expired_flow_fingerprints",
+          "line": 1108,
+          "end_line": 1110
+        },
+        {
+          "name": "_contract",
+          "line": 1113,
+          "end_line": 1176
+        },
+        {
+          "name": "enforcement_mode",
+          "line": 1179,
+          "end_line": 1187
+        },
+        {
+          "name": "set_enforcement_mode",
+          "line": 1190,
+          "end_line": 1198
+        },
+        {
+          "name": "monitor_summary",
+          "line": 1201,
+          "end_line": 1221
+        },
+        {
+          "name": "untrusted_markers",
+          "line": 1227,
+          "end_line": 1234
+        },
+        {
+          "name": "_endpoint_host",
+          "line": 1243,
+          "end_line": 1250
+        },
+        {
+          "name": "transport_secure",
+          "line": 1253,
+          "end_line": 1261
+        },
+        {
+          "name": "egress_allowed",
+          "line": 1264,
+          "end_line": 1290
+        },
+        {
+          "name": "_outbound_text",
+          "line": 1293,
+          "end_line": 1308
+        },
+        {
+          "name": "_privacy_ignore",
+          "line": 1311,
+          "end_line": 1321
+        },
+        {
+          "name": "_sequence_flags",
+          "line": 1324,
+          "end_line": 1334
+        },
+        {
+          "name": "_flow_sources",
+          "line": 1337,
+          "end_line": 1366
+        },
+        {
+          "name": "_dispatch_flow_recheck",
+          "line": 1369,
+          "end_line": 1378
+        },
+        {
+          "name": "_remember_flow",
+          "line": 1381,
+          "end_line": 1401
+        },
+        {
+          "name": "_relationship_scope",
+          "line": 1404,
+          "end_line": 1418
+        },
+        {
+          "name": "_risk_score",
+          "line": 1421,
+          "end_line": 1428
+        },
+        {
+          "name": "_reserve_call",
+          "line": 1431,
+          "end_line": 1516
+        },
+        {
+          "name": "_release_call",
+          "line": 1519,
+          "end_line": 1537
+        },
+        {
+          "name": "_opa",
+          "line": 1544,
+          "end_line": 1545
+        },
+        {
+          "name": "opa_document",
+          "line": 1548,
+          "end_line": 1555
+        },
+        {
+          "name": "policy_ledger",
+          "line": 1558,
+          "end_line": 1576
+        },
+        {
+          "name": "local_verdict",
+          "line": 1579,
+          "end_line": 1604
+        },
+        {
+          "name": "_policy",
+          "line": 1607,
+          "end_line": 1618
+        },
+        {
+          "name": "_call_upstream",
+          "line": 1621,
+          "end_line": 1821
+        },
+        {
+          "name": "_root_cause",
+          "line": 1824,
+          "end_line": 1831
+        },
+        {
+          "name": "_storable",
+          "line": 1834,
+          "end_line": 1842
+        },
+        {
+          "name": "_decoded_strings",
+          "line": 1845,
+          "end_line": 1856
+        },
+        {
+          "name": "_upstream_failure",
+          "line": 1859,
+          "end_line": 1896
+        },
+        {
+          "name": "body_of",
+          "line": 1899,
+          "end_line": 1900
+        },
+        {
+          "name": "_validate_output",
+          "line": 1903,
+          "end_line": 1921
+        },
+        {
+          "name": "_guarded_result",
+          "line": 1924,
+          "end_line": 1952
+        },
+        {
+          "name": "_inspected_result",
+          "line": 1955,
+          "end_line": 1969
+        },
+        {
+          "name": "_audit_payload",
+          "line": 1972,
+          "end_line": 1986
+        },
+        {
+          "name": "_record_decision",
+          "line": 1992,
+          "end_line": 2109
+        },
+        {
+          "name": "record_connection_denial",
+          "line": 2116,
+          "end_line": 2150
+        },
+        {
+          "name": "verify_audit_chain",
+          "line": 2153,
+          "end_line": 2172
+        },
+        {
+          "name": "_decision_payload",
+          "line": 2175,
+          "end_line": 2187
+        },
+        {
+          "name": "execute_call",
+          "line": 2190,
+          "end_line": 2557
+        },
+        {
+          "name": "approve_request",
+          "line": 2560,
+          "end_line": 2613
+        },
+        {
+          "name": "approval_evidence",
+          "line": 2616,
+          "end_line": 2638
+        },
+        {
+          "name": "_require_explanation",
+          "line": 2641,
+          "end_line": 2646
+        },
+        {
+          "name": "revoke_approval",
+          "line": 2649,
+          "end_line": 2667
+        },
+        {
+          "name": "_trivy_summary",
+          "line": 2670,
+          "end_line": 2691
+        },
+        {
+          "name": "_store_trivy",
+          "line": 2694,
+          "end_line": 2701
+        },
+        {
+          "name": "supply_chain_coverage",
+          "line": 2704,
+          "end_line": 2720
+        },
+        {
+          "name": "reject_request",
+          "line": 2723,
+          "end_line": 2758
+        },
+        {
+          "name": "import_supply_chain_reports",
+          "line": 2761,
+          "end_line": 2824
+        },
+        {
+          "name": "__init__",
+          "line": 129,
+          "end_line": 134
+        },
+        {
+          "name": "__init__",
+          "line": 173,
+          "end_line": 175
+        },
+        {
+          "name": "lap",
+          "line": 177,
+          "end_line": 180
+        },
+        {
+          "name": "view",
+          "line": 182,
+          "end_line": 183
+        },
+        {
+          "name": "__init__",
+          "line": 189,
+          "end_line": 191
+        },
+        {
+          "name": "walk",
+          "line": 1297,
+          "end_line": 1305
+        },
+        {
+          "name": "ignore",
+          "line": 1318,
+          "end_line": 1320
+        },
+        {
+          "name": "shrink",
+          "line": 1978,
+          "end_line": 1985
+        },
+        {
+          "name": "recheck",
+          "line": 1746,
+          "end_line": 1748
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/main.py",
+      "sha256": "b282e8827ae532febfdff818c694c2a2ed00480490473ab9a04617692253ac1b",
+      "symbols": [
+        {
+          "name": "_error_detail",
+          "line": 65,
+          "end_line": 68
+        },
+        {
+          "name": "RequireBearer",
+          "line": 71,
+          "end_line": 129
+        },
+        {
+          "name": "ServerPath",
+          "line": 132,
+          "end_line": 215
+        },
+        {
+          "name": "StrictModel",
+          "line": 218,
+          "end_line": 219
+        },
+        {
+          "name": "RejectRequest",
+          "line": 222,
+          "end_line": 224
+        },
+        {
+          "name": "ApprovalEvidence",
+          "line": 227,
+          "end_line": 229
+        },
+        {
+          "name": "IntentResolve",
+          "line": 232,
+          "end_line": 234
+        },
+        {
+          "name": "EnforcementRequest",
+          "line": 237,
+          "end_line": 238
+        },
+        {
+          "name": "SessionRequest",
+          "line": 241,
+          "end_line": 243
+        },
+        {
+          "name": "caller",
+          "line": 246,
+          "end_line": 253
+        },
+        {
+          "name": "admin_caller",
+          "line": 256,
+          "end_line": 266
+        },
+        {
+          "name": "AddonDecision",
+          "line": 269,
+          "end_line": 275
+        },
+        {
+          "name": "AddonResult",
+          "line": 278,
+          "end_line": 283
+        },
+        {
+          "name": "lifespan",
+          "line": 287,
+          "end_line": 303
+        },
+        {
+          "name": "public_http_error",
+          "line": 310,
+          "end_line": 311
+        },
+        {
+          "name": "public_validation_error",
+          "line": 315,
+          "end_line": 317
+        },
+        {
+          "name": "OpsResume",
+          "line": 320,
+          "end_line": 321
+        },
+        {
+          "name": "ops_status",
+          "line": 325,
+          "end_line": 331
+        },
+        {
+          "name": "ops_resume",
+          "line": 335,
+          "end_line": 339
+        },
+        {
+          "name": "SuspendRequest",
+          "line": 342,
+          "end_line": 345
+        },
+        {
+          "name": "suspensions",
+          "line": 349,
+          "end_line": 350
+        },
+        {
+          "name": "suspend_use",
+          "line": 354,
+          "end_line": 360
+        },
+        {
+          "name": "resume_use",
+          "line": 364,
+          "end_line": 368
+        },
+        {
+          "name": "UserSuspendAllRequest",
+          "line": 371,
+          "end_line": 373
+        },
+        {
+          "name": "UserResumeAllRequest",
+          "line": 376,
+          "end_line": 378
+        },
+        {
+          "name": "suspend_all_use",
+          "line": 382,
+          "end_line": 386
+        },
+        {
+          "name": "resume_all_use",
+          "line": 390,
+          "end_line": 391
+        },
+        {
+          "name": "_absent",
+          "line": 394,
+          "end_line": 396
+        },
+        {
+          "name": "_probe",
+          "line": 399,
+          "end_line": 405
+        },
+        {
+          "name": "health",
+          "line": 409,
+          "end_line": 433
+        },
+        {
+          "name": "state",
+          "line": 437,
+          "end_line": 453
+        },
+        {
+          "name": "registry_view",
+          "line": 457,
+          "end_line": 487
+        },
+        {
+          "name": "registry_export",
+          "line": 491,
+          "end_line": 499
+        },
+        {
+          "name": "overview",
+          "line": 503,
+          "end_line": 580
+        },
+        {
+          "name": "latency",
+          "line": 591,
+          "end_line": 643
+        },
+        {
+          "name": "activity_feed",
+          "line": 647,
+          "end_line": 658
+        },
+        {
+          "name": "activity_analysis",
+          "line": 662,
+          "end_line": 671
+        },
+        {
+          "name": "protected_resource_metadata",
+          "line": 675,
+          "end_line": 681
+        },
+        {
+          "name": "policy_matrix",
+          "line": 685,
+          "end_line": 691
+        },
+        {
+          "name": "policy_ledger_view",
+          "line": 695,
+          "end_line": 710
+        },
+        {
+          "name": "session",
+          "line": 714,
+          "end_line": 738
+        },
+        {
+          "name": "addon_mcp_decision",
+          "line": 742,
+          "end_line": 743
+        },
+        {
+          "name": "addon_mcp_result",
+          "line": 747,
+          "end_line": 748
+        },
+        {
+          "name": "approve",
+          "line": 752,
+          "end_line": 757
+        },
+        {
+          "name": "reject",
+          "line": 761,
+          "end_line": 765
+        },
+        {
+          "name": "approval_evidence",
+          "line": 769,
+          "end_line": 773
+        },
+        {
+          "name": "approval_revoke",
+          "line": 777,
+          "end_line": 781
+        },
+        {
+          "name": "dispatch_intents",
+          "line": 785,
+          "end_line": 787
+        },
+        {
+          "name": "dispatch_intent_resolve",
+          "line": 791,
+          "end_line": 795
+        },
+        {
+          "name": "catalog_refresh",
+          "line": 799,
+          "end_line": 800
+        },
+        {
+          "name": "ContractApproval",
+          "line": 805,
+          "end_line": 806
+        },
+        {
+          "name": "registry_approve_contract",
+          "line": 810,
+          "end_line": 822
+        },
+        {
+          "name": "registry_check",
+          "line": 826,
+          "end_line": 831
+        },
+        {
+          "name": "LocalRun",
+          "line": 835,
+          "end_line": 838
+        },
+        {
+          "name": "RegistryDiscover",
+          "line": 841,
+          "end_line": 844
+        },
+        {
+          "name": "RegistryRegister",
+          "line": 849,
+          "end_line": 867
+        },
+        {
+          "name": "registry_discover",
+          "line": 871,
+          "end_line": 879
+        },
+        {
+          "name": "registry_intake_discover",
+          "line": 883,
+          "end_line": 892
+        },
+        {
+          "name": "registry_register",
+          "line": 896,
+          "end_line": 904
+        },
+        {
+          "name": "ToolReviews",
+          "line": 907,
+          "end_line": 908
+        },
+        {
+          "name": "ResidencyReview",
+          "line": 911,
+          "end_line": 924
+        },
+        {
+          "name": "registry_tool_reviews",
+          "line": 928,
+          "end_line": 936
+        },
+        {
+          "name": "registry_residency_review",
+          "line": 940,
+          "end_line": 949
+        },
+        {
+          "name": "registry_deregister",
+          "line": 953,
+          "end_line": 957
+        },
+        {
+          "name": "supply_chain_import",
+          "line": 961,
+          "end_line": 965
+        },
+        {
+          "name": "supply_chain_cover",
+          "line": 969,
+          "end_line": 973
+        },
+        {
+          "name": "enforcement",
+          "line": 977,
+          "end_line": 978
+        },
+        {
+          "name": "enforcement_update",
+          "line": 982,
+          "end_line": 987
+        },
+        {
+          "name": "monitor",
+          "line": 991,
+          "end_line": 993
+        },
+        {
+          "name": "audit_verify",
+          "line": 997,
+          "end_line": 999
+        },
+        {
+          "name": "RetentionRequest",
+          "line": 1002,
+          "end_line": 1004
+        },
+        {
+          "name": "audit_retention",
+          "line": 1008,
+          "end_line": 1009
+        },
+        {
+          "name": "audit_retention_update",
+          "line": 1013,
+          "end_line": 1018
+        },
+        {
+          "name": "AuditAnnotation",
+          "line": 1021,
+          "end_line": 1024
+        },
+        {
+          "name": "audit_annotate",
+          "line": 1028,
+          "end_line": 1033
+        },
+        {
+          "name": "audit_annotation_list",
+          "line": 1037,
+          "end_line": 1038
+        },
+        {
+          "name": "audit_filters",
+          "line": 1041,
+          "end_line": 1047
+        },
+        {
+          "name": "audit_events",
+          "line": 1051,
+          "end_line": 1053
+        },
+        {
+          "name": "audit_export",
+          "line": 1057,
+          "end_line": 1059
+        },
+        {
+          "name": "audit_siem",
+          "line": 1063,
+          "end_line": 1064
+        },
+        {
+          "name": "audit_event",
+          "line": 1068,
+          "end_line": 1069
+        },
+        {
+          "name": "IncidentCreate",
+          "line": 1072,
+          "end_line": 1085
+        },
+        {
+          "name": "IncidentReport",
+          "line": 1088,
+          "end_line": 1092
+        },
+        {
+          "name": "IncidentSupplement",
+          "line": 1095,
+          "end_line": 1099
+        },
+        {
+          "name": "audit_incidents",
+          "line": 1103,
+          "end_line": 1104
+        },
+        {
+          "name": "audit_incident_create",
+          "line": 1108,
+          "end_line": 1109
+        },
+        {
+          "name": "audit_incident_detail",
+          "line": 1113,
+          "end_line": 1114
+        },
+        {
+          "name": "audit_incident_report",
+          "line": 1118,
+          "end_line": 1119
+        },
+        {
+          "name": "audit_incident_supplement",
+          "line": 1123,
+          "end_line": 1125
+        },
+        {
+          "name": "TerminationOpen",
+          "line": 1135,
+          "end_line": 1140
+        },
+        {
+          "name": "TargetCreate",
+          "line": 1143,
+          "end_line": 1152
+        },
+        {
+          "name": "TargetUpdate",
+          "line": 1155,
+          "end_line": 1157
+        },
+        {
+          "name": "EvidenceCreate",
+          "line": 1160,
+          "end_line": 1168
+        },
+        {
+          "name": "CaseClose",
+          "line": 1171,
+          "end_line": 1173
+        },
+        {
+          "name": "CaseReopen",
+          "line": 1176,
+          "end_line": 1177
+        },
+        {
+          "name": "EvidenceCollect",
+          "line": 1180,
+          "end_line": 1182
+        },
+        {
+          "name": "termination_relationships",
+          "line": 1186,
+          "end_line": 1189
+        },
+        {
+          "name": "termination_collect",
+          "line": 1193,
+          "end_line": 1198
+        },
+        {
+          "name": "termination_revoke_credential",
+          "line": 1202,
+          "end_line": 1208
+        },
+        {
+          "name": "lab_restore",
+          "line": 1212,
+          "end_line": 1222
+        },
+        {
+          "name": "termination_cases",
+          "line": 1226,
+          "end_line": 1227
+        },
+        {
+          "name": "termination_open",
+          "line": 1231,
+          "end_line": 1238
+        },
+        {
+          "name": "termination_detail",
+          "line": 1242,
+          "end_line": 1246
+        },
+        {
+          "name": "termination_add_target",
+          "line": 1250,
+          "end_line": 1257
+        },
+        {
+          "name": "termination_update_target",
+          "line": 1261,
+          "end_line": 1267
+        },
+        {
+          "name": "termination_add_evidence",
+          "line": 1271,
+          "end_line": 1284
+        },
+        {
+          "name": "termination_probe",
+          "line": 1288,
+          "end_line": 1293
+        },
+        {
+          "name": "termination_assess",
+          "line": 1297,
+          "end_line": 1301
+        },
+        {
+          "name": "termination_close",
+          "line": 1305,
+          "end_line": 1311
+        },
+        {
+          "name": "termination_reopen",
+          "line": 1315,
+          "end_line": 1320
+        },
+        {
+          "name": "termination_report",
+          "line": 1324,
+          "end_line": 1329
+        },
+        {
+          "name": "termination_disclosure",
+          "line": 1333,
+          "end_line": 1343
+        },
+        {
+          "name": "termination_drill",
+          "line": 1347,
+          "end_line": 1356
+        },
+        {
+          "name": "EndpointDeviceCreate",
+          "line": 1367,
+          "end_line": 1373
+        },
+        {
+          "name": "EndpointEnroll",
+          "line": 1376,
+          "end_line": 1382
+        },
+        {
+          "name": "Provenance",
+          "line": 1385,
+          "end_line": 1390
+        },
+        {
+          "name": "EndpointEntry",
+          "line": 1393,
+          "end_line": 1398
+        },
+        {
+          "name": "EndpointReport",
+          "line": 1401,
+          "end_line": 1405
+        },
+        {
+          "name": "ObservationReport",
+          "line": 1408,
+          "end_line": 1416
+        },
+        {
+          "name": "EndpointOSEvent",
+          "line": 1419,
+          "end_line": 1425
+        },
+        {
+          "name": "EndpointOSReport",
+          "line": 1428,
+          "end_line": 1430
+        },
+        {
+          "name": "HostAccount",
+          "line": 1433,
+          "end_line": 1436
+        },
+        {
+          "name": "HostReport",
+          "line": 1439,
+          "end_line": 1443
+        },
+        {
+          "name": "NetworkQuality",
+          "line": 1446,
+          "end_line": 1465
+        },
+        {
+          "name": "UserCommandSetting",
+          "line": 1468,
+          "end_line": 1473
+        },
+        {
+          "name": "ManagedHeartbeat",
+          "line": 1476,
+          "end_line": 1482
+        },
+        {
+          "name": "ManagedActivation",
+          "line": 1485,
+          "end_line": 1487
+        },
+        {
+          "name": "ListenerFinding",
+          "line": 1490,
+          "end_line": 1500
+        },
+        {
+          "name": "ListenerReport",
+          "line": 1503,
+          "end_line": 1517
+        },
+        {
+          "name": "ScanPolicyUpdate",
+          "line": 1520,
+          "end_line": 1527
+        },
+        {
+          "name": "endpoint_device",
+          "line": 1530,
+          "end_line": 1537
+        },
+        {
+          "name": "endpoint_device_create",
+          "line": 1541,
+          "end_line": 1554
+        },
+        {
+          "name": "endpoint_device_revoke",
+          "line": 1558,
+          "end_line": 1562
+        },
+        {
+          "name": "endpoint_device_list",
+          "line": 1566,
+          "end_line": 1567
+        },
+        {
+          "name": "endpoint_managed_policy",
+          "line": 1571,
+          "end_line": 1576
+        },
+        {
+          "name": "endpoint_heartbeat",
+          "line": 1580,
+          "end_line": 1597
+        },
+        {
+          "name": "LocalJobDiagnostics",
+          "line": 1600,
+          "end_line": 1603
+        },
+        {
+          "name": "LocalJobResult",
+          "line": 1606,
+          "end_line": 1611
+        },
+        {
+          "name": "endpoint_local_job",
+          "line": 1615,
+          "end_line": 1617
+        },
+        {
+          "name": "endpoint_local_job_result",
+          "line": 1621,
+          "end_line": 1631
+        },
+        {
+          "name": "endpoint_local_recovery",
+          "line": 1635,
+          "end_line": 1636
+        },
+        {
+          "name": "endpoint_local_control",
+          "line": 1640,
+          "end_line": 1644
+        },
+        {
+          "name": "endpoint_local_start",
+          "line": 1648,
+          "end_line": 1652
+        },
+        {
+          "name": "endpoint_managed_activate",
+          "line": 1656,
+          "end_line": 1661
+        },
+        {
+          "name": "endpoint_enroll",
+          "line": 1665,
+          "end_line": 1679
+        },
+        {
+          "name": "endpoint_scan_policy_read",
+          "line": 1683,
+          "end_line": 1689
+        },
+        {
+          "name": "endpoint_scan_policy_admin",
+          "line": 1693,
+          "end_line": 1694
+        },
+        {
+          "name": "endpoint_scan_policy_update",
+          "line": 1698,
+          "end_line": 1704
+        },
+        {
+          "name": "endpoint_report",
+          "line": 1708,
+          "end_line": 1723
+        },
+        {
+          "name": "endpoint_listener_report",
+          "line": 1727,
+          "end_line": 1742
+        },
+        {
+          "name": "endpoint_observation_status",
+          "line": 1746,
+          "end_line": 1758
+        },
+        {
+          "name": "endpoint_inventory",
+          "line": 1762,
+          "end_line": 1786
+        },
+        {
+          "name": "endpoint_inventory_entries",
+          "line": 1795,
+          "end_line": 1797
+        },
+        {
+          "name": "endpoint_inventory_listeners",
+          "line": 1801,
+          "end_line": 1803
+        },
+        {
+          "name": "endpoint_inventory_os_events",
+          "line": 1807,
+          "end_line": 1811
+        },
+        {
+          "name": "endpoint_observations",
+          "line": 1815,
+          "end_line": 1817
+        },
+        {
+          "name": "endpoint_record",
+          "line": 1821,
+          "end_line": 1826
+        },
+        {
+          "name": "endpoint_correlation",
+          "line": 1830,
+          "end_line": 1841
+        },
+        {
+          "name": "endpoint_network_quality",
+          "line": 1845,
+          "end_line": 1846
+        },
+        {
+          "name": "endpoint_os_report",
+          "line": 1850,
+          "end_line": 1856
+        },
+        {
+          "name": "risk_catalog",
+          "line": 1860,
+          "end_line": 1867
+        },
+        {
+          "name": "console",
+          "line": 1874,
+          "end_line": 1876
+        },
+        {
+          "name": "__init__",
+          "line": 72,
+          "end_line": 73
+        },
+        {
+          "name": "__call__",
+          "line": 75,
+          "end_line": 129
+        },
+        {
+          "name": "__init__",
+          "line": 138,
+          "end_line": 139
+        },
+        {
+          "name": "__call__",
+          "line": 141,
+          "end_line": 215
+        },
+        {
+          "name": "ms",
+          "line": 627,
+          "end_line": 628
+        },
+        {
+          "name": "validate_location",
+          "line": 919,
+          "end_line": 924
+        },
+        {
+          "name": "plausible",
+          "line": 1456,
+          "end_line": 1465
+        },
+        {
+          "name": "source_scope",
+          "line": 1511,
+          "end_line": 1517
+        },
+        {
+          "name": "dependency",
+          "line": 1532,
+          "end_line": 1536
+        },
+        {
+          "name": "response",
+          "line": 109,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/local_run_tables.sql",
+      "sha256": "6a322caad39f24566b5188d490beb49186fafd18870b0b1a549b6ce1d949eadf",
+      "symbols": []
+    },
+    {
+      "path": "full_stack_lab/tests/local_runner_usability_check.py",
+      "sha256": "f42ed792331f902391452be0532fe88c1f52b1dbacc0048999db4a55bcf1e527",
+      "symbols": [
+        {
+          "name": "ExchangeBudget",
+          "line": 15,
+          "end_line": 61
+        },
+        {
+          "name": "ImagePreparation",
+          "line": 64,
+          "end_line": 116
+        },
+        {
+          "name": "DiagnosticCapture",
+          "line": 119,
+          "end_line": 182
+        },
+        {
+          "name": "GatewayControl",
+          "line": 188,
+          "end_line": 321
+        },
+        {
+          "name": "ExecutionSequence",
+          "line": 324,
+          "end_line": 390
+        },
+        {
+          "name": "setUp",
+          "line": 16,
+          "end_line": 33
+        },
+        {
+          "name": "test_only_initialize_gets_preparation_budget_and_original_runtime_is_stored",
+          "line": 35,
+          "end_line": 44
+        },
+        {
+          "name": "test_legacy_errors_remain_opaque_and_inspected_failure_gets_typed_exception",
+          "line": 46,
+          "end_line": 52
+        },
+        {
+          "name": "test_ordinary_calls_and_health_checks_keep_their_original_total_timeout",
+          "line": 54,
+          "end_line": 61
+        },
+        {
+          "name": "setUp",
+          "line": 65,
+          "end_line": 68
+        },
+        {
+          "name": "test_cached_image_does_not_pull",
+          "line": 70,
+          "end_line": 74
+        },
+        {
+          "name": "test_cold_pull_polls_control_and_pins_digest",
+          "line": 76,
+          "end_line": 86
+        },
+        {
+          "name": "test_revocation_or_control_outage_kills_pull_without_container_start",
+          "line": 88,
+          "end_line": 95
+        },
+        {
+          "name": "test_pull_has_absolute_timeout_and_is_reaped",
+          "line": 97,
+          "end_line": 103
+        },
+        {
+          "name": "test_unapproved_repository_or_mutable_tag_cannot_pull",
+          "line": 105,
+          "end_line": 110
+        },
+        {
+          "name": "test_manifest_volume_or_version_mismatch_stays_blocked",
+          "line": 112,
+          "end_line": 116
+        },
+        {
+          "name": "session",
+          "line": 120,
+          "end_line": 125
+        },
+        {
+          "name": "test_permission_error_is_korean_classifiable_and_keeps_container_exit_code",
+          "line": 127,
+          "end_line": 136
+        },
+        {
+          "name": "test_stderr_ring_and_display_are_bounded_even_with_unterminated_lines",
+          "line": 138,
+          "end_line": 143
+        },
+        {
+          "name": "test_known_secrets_and_credential_lines_are_masked_before_length_limit",
+          "line": 145,
+          "end_line": 151
+        },
+        {
+          "name": "test_truncated_first_line_and_control_characters_are_discarded",
+          "line": 153,
+          "end_line": 156
+        },
+        {
+          "name": "test_display_never_exposes_a_fragment_of_a_line_over_the_limit",
+          "line": 158,
+          "end_line": 160
+        },
+        {
+          "name": "test_stop_collects_container_status_before_removal_and_is_idempotent",
+          "line": 162,
+          "end_line": 174
+        },
+        {
+          "name": "test_diagnostic_inspection_failure_does_not_skip_removal",
+          "line": 176,
+          "end_line": 182
+        },
+        {
+          "name": "setUp",
+          "line": 189,
+          "end_line": 216
+        },
+        {
+          "name": "test_control_renews_unstarted_lease_only_after_authorization",
+          "line": 218,
+          "end_line": 224
+        },
+        {
+          "name": "test_revocation_epoch_policy_lease_and_stop_fail_without_renewal",
+          "line": 226,
+          "end_line": 237
+        },
+        {
+          "name": "test_running_job_is_not_renewed_and_start_returns_shorter_deadline",
+          "line": 239,
+          "end_line": 247
+        },
+        {
+          "name": "test_short_requested_run_budget_is_not_extended_by_preparation",
+          "line": 249,
+          "end_line": 254
+        },
+        {
+          "name": "test_lost_renewal_race_is_a_failure",
+          "line": 256,
+          "end_line": 259
+        },
+        {
+          "name": "test_gateway_scanner_failure_hides_stderr_but_keeps_reason_and_exit_code",
+          "line": 261,
+          "end_line": 268
+        },
+        {
+          "name": "test_gateway_reason_is_allowlisted_and_diagnostic_is_bounded",
+          "line": 270,
+          "end_line": 276
+        },
+        {
+          "name": "test_diagnostic_instruction_or_inspection_failure_is_withheld",
+          "line": 278,
+          "end_line": 286
+        },
+        {
+          "name": "test_only_inspected_local_error_crosses_core_public_boundary",
+          "line": 288,
+          "end_line": 295
+        },
+        {
+          "name": "test_complete_hashes_and_appends_the_same_scrubbed_diagnostic",
+          "line": 297,
+          "end_line": 321
+        },
+        {
+          "name": "test_session_start_failure_reports_engine_exit_without_root_retry",
+          "line": 325,
+          "end_line": 358
+        },
+        {
+          "name": "test_preparation_control_precedes_start_and_execution_uses_started_deadline",
+          "line": 360,
+          "end_line": 390
+        },
+        {
+          "name": "execute",
+          "line": 18,
+          "end_line": 20
+        },
+        {
+          "name": "transaction",
+          "line": 22,
+          "end_line": 22
+        },
+        {
+          "name": "engine",
+          "line": 166,
+          "end_line": 170
+        },
+        {
+          "name": "execute",
+          "line": 200,
+          "end_line": 205
+        },
+        {
+          "name": "transaction",
+          "line": 207,
+          "end_line": 207
+        },
+        {
+          "name": "ExceptionGroupDouble",
+          "line": 289,
+          "end_line": 290
+        },
+        {
+          "name": "execute",
+          "line": 302,
+          "end_line": 306
+        },
+        {
+          "name": "transaction",
+          "line": 308,
+          "end_line": 308
+        },
+        {
+          "name": "command",
+          "line": 337,
+          "end_line": 342
+        },
+        {
+          "name": "NoThread",
+          "line": 343,
+          "end_line": 345
+        },
+        {
+          "name": "request",
+          "line": 368,
+          "end_line": 370
+        },
+        {
+          "name": "prepare",
+          "line": 371,
+          "end_line": 372
+        },
+        {
+          "name": "NoThread",
+          "line": 379,
+          "end_line": 381
+        },
+        {
+          "name": "SessionDouble",
+          "line": 382,
+          "end_line": 383
+        },
+        {
+          "name": "__init__",
+          "line": 344,
+          "end_line": 344
+        },
+        {
+          "name": "start",
+          "line": 345,
+          "end_line": 345
+        },
+        {
+          "name": "__init__",
+          "line": 380,
+          "end_line": 380
+        },
+        {
+          "name": "start",
+          "line": 381,
+          "end_line": 381
+        },
+        {
+          "name": "__new__",
+          "line": 383,
+          "end_line": 383
+        }
+      ]
+    }
+  ],
+  "not_run": [
+    {
+      "name": "dev73_rework_pg_check.py / local_jobs_pg_check.py",
+      "reason": "No disposable PostgreSQL in authorized local environment; no device or PJ1 access permitted"
+    },
+    {
+      "name": "real-engine / official-images / real-harness / browser",
+      "reason": "Leader measurement only; not performed here"
+    }
+  ],
+  "recorded_at": "2026-10-22T18:02:15.208645+00:00",
+  "head": "0f57d0c9c0994faf849544616c6e66939b113fd8",
+  "branch": "10/23-output-fp",
+  "file_hashes_match": true
+}
