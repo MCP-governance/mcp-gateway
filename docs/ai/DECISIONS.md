@@ -1917,7 +1917,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **승격 보류**: 기존 헤더 명령은 `sh -c`를 쓴다. 모든 셸 자식을 분리하면 정상 인증도 막힌다. `dash ix`를 남기거나 셸 중계 프로필에 헬퍼 권한을 주면 같은 셸 명령이 다시 bearer를 받을 수 있으므로 채택하지 않는다. 현재 경고 단계에서 유지하고 직접 실행 또는 다른 인증 전달 경로를 공식 구현/판본에서 확인한 뒤 PJ1 두 실제 하네스 정상군·공격군·복구군이 모두 통과해야 강제로 전환한다. **이번 작업은 부분 구현이며 DEV-81은 열림이다.**
 - 근거·범위: [분석 정본](../../research/llm-wiki/analysis/local-endpoints-1021/README.md#구현-2026-10-21-d-183-미커밋), [명령·출력과 전환 절차](../../research/llm-wiki/status/reports/2026-10-21-broker-process-binding.md). 새 대역/정적 시험 20건 통과. AppArmor parser·커널·배포·PJ1은 미검증이다. Windows 구현과 직원 PC 키트는 이번에 변경하지 않는다. 키트는 같은 사용자 프로세스의 토큰 취득을 막지 못하며 조직 통제 의존이다.
 
-## D-190 CI TLS fetch 시험 경로의 목적지를 egress 허용 목록에 둔다 (2026-10-22)
+## D-195 CI TLS fetch 시험 경로의 목적지를 egress 허용 목록에 둔다 (2026-10-22)
 
 - 문제: CI 전용 TLS 경로(PR #36)가 CI 사본 카탈로그의 `fetch` endpoint를 `https://mcp-fetch-tls:8443/mcp`로 바꿨으나 `opa/data.json`의 `egress.allowed_hosts`에 이 호스트가 없어 모든 `fetch` 호출이 `MCP-EGRESS-001`로 차단됐다. 전체 검증의 `read-then-send-chain-blocked`는 차단은 맞지만 기대한 `P-CHAIN-001`이 아니어서 실패했다. 국외 처리 심사 변경과는 무관하다.
 - 결정: 허용 목록에 `mcp-fetch-tls`를 추가한다. 시험 기대값과 정책 순서는 바꾸지 않는다. `acceptance_tls_check.py`가 시험 경로 호스트가 목록에 있는지 확인한다. 이 호스트는 `compose.acceptance.yaml`에서만 존재하며 기본 `compose.yaml`에는 없다.
