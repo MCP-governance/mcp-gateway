@@ -1,0 +1,2081 @@
+{
+  "task_id": "RES-REGS",
+  "job_id": "7223c686a477",
+  "baseline_commit": "3a1b2a198ff381a36146a3f84219eb8a304f8a2b",
+  "reviewed_on": "2026-10-23",
+  "scope": "static code and selected official sources; not legal conformity or deployment validation",
+  "sources": [
+    {
+      "id": "PIPC",
+      "title": "개인정보위 생성형 AI 개인정보 처리 안내서(2025.8)",
+      "wiki_id": "LIB-L05",
+      "url": "https://pipc.go.kr/np/cop/bbs/selectBoardArticle.do?bbsId=BS074&mCode=C020010000&nttId=11410",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "발표·첨부명 확인; 개별 쪽 본문은 미확인",
+      "limitation": "위키 note 재사용. 이 PC에 local-only 원문 없음. 보도자료를 조항 검증으로 세지 않음.",
+      "existing_note": "analysis/compliance/notes/LIB-L05.json",
+      "preserved_files": [
+        {
+          "path": "local-sources/compliance/LIB-L05/originals/pipc-genai-privacy-guide-2025-08.pdf",
+          "exists": false,
+          "sha256": null
+        },
+        {
+          "path": "local-sources/compliance/LIB-L05/extracts/LIB-L05.md",
+          "exists": false,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "KR-ACT",
+      "title": "인공지능기본법 2026.7.21 판본",
+      "wiki_id": "LIB-L04",
+      "url": "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=282791&efYd=20260721",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "limitation": "사용자 제공 ZIP의 법제처 인쇄본·보존 추출본 제31~35조 대조. 공식 직접 취득본으로 세지 않음. 최신 개정 완전성은 미확인.",
+      "existing_note": "analysis/compliance/notes/LIB-L04.json",
+      "preserved_files": [
+        {
+          "path": "sources/compliance/LIB-L04/originals/ai-basic-act-21311-20260721.pdf",
+          "exists": true,
+          "sha256": "721ae11655528b719abd5a168675d5d1e6d0037dc4a86618ed227680207ba32e"
+        },
+        {
+          "path": "sources/compliance/LIB-L04/extracts/LIB-L04.md",
+          "exists": true,
+          "sha256": "89febbada7f96262b014b68917d5c384138d25d979de0e088e894255eb0019ca"
+        }
+      ]
+    },
+    {
+      "id": "KR-DECREE",
+      "title": "인공지능기본법 시행령·시행령(안)",
+      "wiki_id": null,
+      "url": "https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lspttninfSeq=198073",
+      "previous_acquired_on": null,
+      "checked_on": "2026-10-23",
+      "web_verification": "2026.8.20 시행 판본·제22조 확인; 요청한 안 및 핵심 위임 조항 미확인",
+      "limitation": "2025년 안과 현재 시행령을 혼동하지 않음. 공포본 안내는 https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=282879&viewCls=lsRvsDocInfoR 에서 표제만 확인.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "FSC",
+      "title": "금융분야 AI 가이드라인 2021.7.8",
+      "wiki_id": null,
+      "url": "https://www.fsc.go.kr/no010101/76206",
+      "previous_acquired_on": null,
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 보도자료 주요내용 확인; 첨부 PDF 열기 실패",
+      "limitation": "법률 자체가 아닌 모범규준. 원문 세부 조항 번호는 미확인; 보도자료의 항목명만 사용.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "FSC-DRAFT",
+      "title": "금융분야 AI 가이드라인 개정방향 2025.12.22",
+      "wiki_id": null,
+      "url": "https://www.fsc.go.kr/no010101/85908",
+      "previous_acquired_on": null,
+      "checked_on": "2026-10-23",
+      "web_verification": "개정방향·가이드라인(안) 게시 확인; 최종본·효력 미확인",
+      "limitation": "2021판을 최신 확정판이라 부르지 않음. 개정안과 현행 적용 문서는 구분.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "NIS",
+      "title": "국가정보원 생성형 AI 활용 보안 가이드",
+      "wiki_id": null,
+      "url": "https://www.nis.go.kr/",
+      "previous_acquired_on": null,
+      "checked_on": "2026-10-23",
+      "web_verification": "미확인",
+      "limitation": "공식 홈페이지 본문 공백 및 공식 도메인 검색으로 요청 원문 특정 실패. 외부 재게시 PDF는 채택하지 않음. NIS는 국가정보원의 영문 약칭으로 중복 기관 계산 안 함.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "KISA",
+      "title": "AI 보안 레드티밍 가이드 2026.7",
+      "wiki_id": "LIB-L06",
+      "url": "https://www.krcert.or.kr/kr/bbs/view.do?bbsId=B0000127&menuNo=205021&nttId=72125&pageIndex=1",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 게시·목차 확인; 개별 쪽 본문 미확인",
+      "limitation": "기존 https://www.kisa.or.kr/401/form?postSeq=3713 은 502. 보호나라 등록일은 7.8, 위키 KISA 본사이트 기록은 7.7이므로 같은 게시일로 합치지 않음. local-only 원문 없음.",
+      "existing_note": "analysis/compliance/notes/LIB-L06.json",
+      "preserved_files": [
+        {
+          "path": "local-sources/compliance/LIB-L06/originals/kisa-ai-red-teaming-guide-2026-07.pdf",
+          "exists": false,
+          "sha256": null
+        },
+        {
+          "path": "local-sources/compliance/LIB-L06/extracts/LIB-L06.md",
+          "exists": false,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "EU",
+      "title": "EU AI Act 2024/1689 고위험 의무",
+      "wiki_id": "LIB-M01",
+      "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-26",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "limitation": "EUR-Lex는 JS 봇 차단. EC article-9·article-14도 확인. 공식 서비스의 설명 요약과 조문 본문을 구별.",
+      "existing_note": "analysis/compliance/notes/LIB-M01.json",
+      "preserved_files": [
+        {
+          "path": "sources/compliance/LIB-M01/originals/eu-ai-act-2024-1689.pdf",
+          "exists": true,
+          "sha256": "bba630444b3278e881066774002a1d7824308934f49ccfa203e65be43692f55e"
+        },
+        {
+          "path": "sources/compliance/LIB-M01/extracts/LIB-M01.md",
+          "exists": true,
+          "sha256": "31a90d807e505443b43109de1e4c14ef35bad9fed82e6bcadde27ad3acd2fe6b"
+        }
+      ]
+    },
+    {
+      "id": "EU-GPAI",
+      "title": "EU AI Act GPAI 의무",
+      "wiki_id": "LIB-M01",
+      "url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-53",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "EC 제53·55조 본문 확인",
+      "limitation": "추가 URL https://ai-act-service-desk.ec.europa.eu/en/ai-act/article-55 . 오픈소스 예외·체계적 위험 해당성을 별도 확인해야 함.",
+      "existing_note": "analysis/compliance/notes/LIB-M01.json",
+      "preserved_files": [
+        {
+          "path": "sources/compliance/LIB-M01/originals/eu-ai-act-2024-1689.pdf",
+          "exists": true,
+          "sha256": "bba630444b3278e881066774002a1d7824308934f49ccfa203e65be43692f55e"
+        },
+        {
+          "path": "sources/compliance/LIB-M01/extracts/LIB-M01.md",
+          "exists": true,
+          "sha256": "31a90d807e505443b43109de1e4c14ef35bad9fed82e6bcadde27ad3acd2fe6b"
+        }
+      ]
+    },
+    {
+      "id": "EU-DATE",
+      "title": "위키의 EU 개정·적용일 기록",
+      "wiki_id": "LIB-M16",
+      "url": "https://data.europa.eu/eli/reg/2026/1744/oj",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "미확인(JS 봇 차단)",
+      "limitation": "위키가 적은 개정 사실과 2027.12.2/2028.8.2 일정은 이번에 공식 본문 재확인 못 함. 본 분석에서 확정 적용일·제품 기한으로 사용하지 않음.",
+      "existing_note": "analysis/compliance/notes/LIB-M16.json",
+      "preserved_files": [
+        {
+          "path": "sources/compliance/LIB-M16/originals/eu-2026-1744-ai-omnibus.html",
+          "exists": true,
+          "sha256": "9d754652b867722807e4219c85912ce354233e58a1b4eb8c7752b4d1922993db"
+        },
+        {
+          "path": "sources/compliance/LIB-M16/extracts/LIB-M16.md",
+          "exists": true,
+          "sha256": "1cb6dd62bb8ce3f8ad37ae158c04053b0e3ece83e71389794524a2ca450ca8d1"
+        }
+      ]
+    },
+    {
+      "id": "NIST",
+      "title": "NIST AI RMF 1.0 (2023.1)",
+      "wiki_id": "LIB-M07",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 소개 확인·보존 공식 PDF 추출본 대조",
+      "limitation": "자발적 프레임워크. 이번 읽기는 GOVERN 1.6·1.7·3.2, MEASURE 2.7, MANAGE 4.1 및 관련 단락.",
+      "existing_note": "analysis/compliance/notes/LIB-M07.json",
+      "preserved_files": [
+        {
+          "path": "sources/compliance/LIB-M07/originals/nist-ai-100-1-ai-rmf-1-0.pdf",
+          "exists": true,
+          "sha256": "7576edb531d9848825814ee88e28b1795d3a84b435b4b797d3670eafdc4a89f1"
+        },
+        {
+          "path": "sources/compliance/LIB-M07/extracts/LIB-M07.md",
+          "exists": true,
+          "sha256": "6fe942de1e2d3725ef9df23c5e268c0545430996cece0516d0eadc12d45b7142"
+        }
+      ]
+    },
+    {
+      "id": "NIST-GAI",
+      "title": "NIST AI 600-1 (2024.7)",
+      "wiki_id": "LIB-M17",
+      "url": "https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 PDF 선택 절 확인",
+      "limitation": "64쪽 PDF. GV-1.7, GV-6.1, MS-2.7, MG-2.4 대조. 나머지 전 항목 충족 평가 아님.",
+      "existing_note": "analysis/compliance/notes/LIB-M17.json",
+      "preserved_files": [
+        {
+          "path": "local-sources/compliance/LIB-M17/originals/nist-ai-600-1.pdf",
+          "exists": false,
+          "sha256": null
+        },
+        {
+          "path": "local-sources/compliance/LIB-M17/extracts/LIB-M17.md",
+          "exists": false,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "ISO",
+      "title": "ISO/IEC 42001:2023",
+      "wiki_id": "LIB-L09",
+      "url": "https://www.iso.org/standard/42001",
+      "previous_acquired_on": "2026-10-17",
+      "checked_on": "2026-10-23",
+      "web_verification": "표준 명칭·경영시스템 범위 확인; 조항 본문 미확인",
+      "limitation": "기존 note는 local-only OCR 기반. 이 PC에 원문 없음. 유료 표준 전문을 재배포하거나 공개 소개만으로 조항 검증·인증 충족을 선언하지 않음.",
+      "existing_note": "analysis/compliance/notes/LIB-L09.json",
+      "preserved_files": [
+        {
+          "path": "local-sources/compliance/LIB-L09/originals/bs-iso-iec-42001-2023.pdf",
+          "exists": false,
+          "sha256": null
+        },
+        {
+          "path": "local-sources/compliance/LIB-L09/extracts/LIB-L09.md",
+          "exists": false,
+          "sha256": null
+        }
+      ]
+    },
+    {
+      "id": "LLM",
+      "title": "OWASP LLM Top 10 2025",
+      "wiki_id": "LIB-I04",
+      "url": "https://genai.owasp.org/llm-top-10/",
+      "previous_acquired_on": "2026-10-14",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 10항목 명칭·개요 확인",
+      "limitation": "목록을 법적 의무로 바꾸지 않음. 세부 완화책 전부를 읽은 것은 아님; 아래 통제는 MINT에 대한 분석 제안.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "ASI",
+      "title": "OWASP Agentic Top 10 2026",
+      "wiki_id": "LIB-I01",
+      "url": "https://genai.owasp.org/download/52117/?tmstv=1765059207",
+      "previous_acquired_on": "2026-10-14",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "limitation": "December 2025, Version 2026. ASI01~10 명칭을 PDF에서 확인해 기존 LIB-I01의 명칭 미확인을 이번 분석 범위에서 보완. 항목별 모든 완화책 검증 아님. CC BY-SA 4.0 표기; 전문 복제 없음.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "CSA",
+      "title": "CSA MAESTRO 2025.2.6",
+      "wiki_id": "LIB-I14",
+      "url": "https://cloudsecurityalliance.org/blog/2025/02/06/agentic-ai-threat-modeling-framework-maestro",
+      "previous_acquired_on": "2026-10-14",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 글 §3.2 A~D 확인",
+      "limitation": "www 호스트 접근 실패 후 비-www 공식 URL 성공. 산업 위협 모델링 블로그이며 법령·인증 표준·독립 효과 연구가 아님.",
+      "existing_note": null,
+      "preserved_files": []
+    },
+    {
+      "id": "MCP",
+      "title": "MCP 보안 모범사례 2026-07-28 경로",
+      "wiki_id": "T21",
+      "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+      "previous_acquired_on": "2026-10-13",
+      "checked_on": "2026-10-23",
+      "web_verification": "공식 본문 선택 절 확인",
+      "limitation": "Token Passthrough, SSRF, State Handle Hijacking, Confused Deputy, Scope Minimization. URL에 포함된 판본과 최신 명세 동일성을 추정하지 않음.",
+      "existing_note": null,
+      "preserved_files": [
+        {
+          "path": "local-sources/policy/T21/originals/T21_mcp_best.html",
+          "exists": false,
+          "sha256": null
+        },
+        {
+          "path": "local-sources/policy/T21/extracts/T21_mcp_best.md",
+          "exists": false,
+          "sha256": null
+        }
+      ]
+    }
+  ],
+  "code": {
+    "identity": {
+      "path": "full_stack_lab/gateway/app/mcp_facade.py",
+      "line": 46,
+      "symbol": "_caller",
+      "meaning": "HTTP bearer 신원 검증; stdio는 실행 시 결속 주체",
+      "line_text": "async def _caller(ctx: Any) -> dict:",
+      "sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2"
+    },
+    "execute": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 2188,
+      "symbol": "execute_call",
+      "meaning": "분류→개인정보→정책→승인→실행",
+      "line_text": "async def execute_call(payload: dict, approval_granted: bool = False, approval_id: str | None = None) -> dict:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "inspect": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 2330,
+      "symbol": "execute_call/input inspection",
+      "meaning": "공급자 호스팅의 읽기 인자까지 검사·검사 실패 차단",
+      "line_text": "        try:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "output": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1922,
+      "symbol": "_guarded_result",
+      "meaning": "형식·크기·스키마·알려진 지시문 검사",
+      "line_text": "def _guarded_result(payload: dict, protocol_version: str | None = None, output_schema=None) -> dict:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "mask": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1953,
+      "symbol": "_inspected_result",
+      "meaning": "응답 마스킹·잔여 비밀 검사",
+      "line_text": "async def _inspected_result(payload: dict, ignore: privacy.Ignore | None = None) -> tuple[dict, list[str]]:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "pii": {
+      "path": "full_stack_lab/gateway/app/privacy.py",
+      "line": 117,
+      "symbol": "analyze",
+      "meaning": "Presidio 및 추가 recognizer; 오류 시 InspectionUnavailable",
+      "line_text": "async def analyze(text: str, ignore: Ignore | None = None) -> list[dict]:",
+      "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1"
+    },
+    "audit": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1990,
+      "symbol": "_record_decision",
+      "meaning": "판정·정책·실행·응답 digest 기록",
+      "line_text": "async def _record_decision(event: dict) -> int:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "preview": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1970,
+      "symbol": "_audit_payload",
+      "meaning": "긴 요청 문자열의 일부 미리보기 보존; 모든 본문 제거 아님",
+      "line_text": "def _audit_payload(payload: dict) -> dict:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "retention": {
+      "path": "full_stack_lab/gateway/app/retention.py",
+      "line": 31,
+      "symbol": "floor",
+      "meaning": "보존 하한 및 구간 봉인 검증; 실제 삭제 보류",
+      "line_text": "def floor(jurisdictions) -> int:",
+      "sha256": "3471e9faf85be04055c649d1d93f976405bc565313254a6bb59a982c6b827ce3"
+    },
+    "incident": {
+      "path": "full_stack_lab/gateway/app/incidents.py",
+      "line": 155,
+      "symbol": "detail",
+      "meaning": "원장 스냅샷·해시·승인/중지 이력·보고 기한 패키지",
+      "line_text": "async def detail(incident_id: UUID | str) -> dict:",
+      "sha256": "7cdc94956246479950faea0061473c39986a7d2dd8d1641fb775cc827ebc3c7e"
+    },
+    "report": {
+      "path": "full_stack_lab/gateway/app/incidents.py",
+      "line": 235,
+      "symbol": "report",
+      "meaning": "관할별 보고 완료 수기 기록; 당국 제출 아님",
+      "line_text": "async def report(incident_id: UUID, jurisdiction: str, stage: str, actor: str, note: str,",
+      "sha256": "7cdc94956246479950faea0061473c39986a7d2dd8d1641fb775cc827ebc3c7e"
+    },
+    "risk": {
+      "path": "full_stack_lab/gateway/app/risk_tier.py",
+      "line": 77,
+      "symbol": "assess",
+      "meaning": "신고 입력에 따른 제품 위험 등급; 법정 고위험 판정 아님",
+      "line_text": "def assess(raw: Any) -> dict[str, Any]:",
+      "sha256": "ac9457cee362353746dcbb6e0801ffdab1a4f0acfa1d8b91814814e2d985583b"
+    },
+    "impact": {
+      "path": "full_stack_lab/gateway/app/high_impact.py",
+      "line": 25,
+      "symbol": "explanation",
+      "meaning": "호출 설명 묶음; 모델 최종 결과 설명 아님",
+      "line_text": "def explanation(approval_id: str, arguments: dict, item: dict, verdict: dict, data_class: str, action: str,",
+      "sha256": "b028192f3c923a8d49f967107dcc68cf5b9ebe84f15b5f48de75b255d975b602"
+    },
+    "impactbind": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1636,
+      "symbol": "_call_upstream/high-impact binding",
+      "meaning": "전송 전 개별 승인·범위 해시 재확인",
+      "line_text": "    impact = (spec.get(\"tool_reviews\") or {}).get(tool) or {}",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "independent": {
+      "path": "full_stack_lab/gateway/app/review.py",
+      "line": 64,
+      "symbol": "require_independent",
+      "meaning": "같은 사람 승인 거절; 별도 root 단독 모드 고려 필요",
+      "line_text": "async def require_independent(kind: str, target_kind: str, target_id: Any, actor: str, applicant: str | None,",
+      "sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
+    },
+    "solo": {
+      "path": "full_stack_lab/gateway/app/review.py",
+      "line": 85,
+      "symbol": "solo_mode_enabled",
+      "meaning": "ROOT_SOLO_APPROVAL 환경 설정 경계",
+      "line_text": "def solo_mode_enabled() -> bool:",
+      "sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
+    },
+    "supplier": {
+      "path": "full_stack_lab/gateway/app/supplier_assurance.py",
+      "line": 25,
+      "symbol": "validate",
+      "meaning": "공급자·연락처·지원 종료·취약점 정책 자료 검증",
+      "line_text": "def validate(value: dict[str, Any] | None, *, today: date | None = None, required: bool = True) -> list[str]:",
+      "sha256": "b10055632901617b79b06fca9b80b6da0e7a45678bdeb6af95392f3ffab00656"
+    },
+    "export": {
+      "path": "full_stack_lab/gateway/app/supplier_assurance.py",
+      "line": 94,
+      "symbol": "export_rows",
+      "meaning": "공급자 대장 내보내기",
+      "line_text": "def export_rows(runtime_doc: dict[str, Any]) -> list[dict[str, Any]]:",
+      "sha256": "b10055632901617b79b06fca9b80b6da0e7a45678bdeb6af95392f3ffab00656"
+    },
+    "residency": {
+      "path": "full_stack_lab/gateway/app/residency.py",
+      "line": 60,
+      "symbol": "facts",
+      "meaning": "서버와 인자 목적지 처리/저장 국가를 분리",
+      "line_text": "def facts(spec: dict, organization: dict, cls, pack: dict) -> dict:",
+      "sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
+    },
+    "pack": {
+      "path": "full_stack_lab/gateway/app/residency.py",
+      "line": 94,
+      "symbol": "enabled",
+      "meaning": "관할 팩 기본 비활성 가능; 설정 확인 필수",
+      "line_text": "def enabled(organization: dict) -> bool:",
+      "sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
+    },
+    "contract": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1662,
+      "symbol": "_call_upstream/contract recheck",
+      "meaning": "같은 연결에서 승인 설명·입출력 스키마 재확인",
+      "line_text": "            listed = await upstream.list_all_tools(client)",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "policyfail": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 2396,
+      "symbol": "execute_call/policy failure",
+      "meaning": "정책 불능 시 P-CONTROL-FAIL-CLOSED",
+      "line_text": "        try:",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "monitor": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 2411,
+      "symbol": "execute_call/monitor mode",
+      "meaning": "관찰 모드에서 일부 비허용 판정이 허용으로 전환",
+      "line_text": "        policy_basis = result",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "credential": {
+      "path": "full_stack_lab/gateway/app/upstream.py",
+      "line": 40,
+      "symbol": "credential_headers",
+      "meaning": "upstream 전용 자격의 resource·principal·expiry 결속",
+      "line_text": "def credential_headers(endpoint: str, principal: str | None = None) -> dict:",
+      "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c"
+    },
+    "dns": {
+      "path": "full_stack_lab/gateway/app/destination.py",
+      "line": 20,
+      "symbol": "PinnedBackend.connect_tcp",
+      "meaning": "TCP 연결 직전 DNS/IP 검사 및 고정",
+      "line_text": "    async def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):",
+      "sha256": "d22a3e6b71d8a19bf63041248ab1bac1c2bc67d5824d448088f6ee8f8bba4210"
+    },
+    "session": {
+      "path": "full_stack_lab/gateway/app/mcp_sessions.py",
+      "line": 21,
+      "symbol": "active",
+      "meaning": "세션×사용자×장치×서버 결속",
+      "line_text": "async def active(session_id: str, principal: str, device_id: str | None, server_id: str | None) -> bool:",
+      "sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
+    },
+    "scope": {
+      "path": "full_stack_lab/gateway/app/pac.py",
+      "line": 69,
+      "symbol": "scope",
+      "meaning": "도구·동작·자산·인자 범위",
+      "line_text": "def scope(principal: dict, server: str, tool: str, action: str, resources: list, arguments: dict | None = None) -> dict:",
+      "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe"
+    },
+    "delegation": {
+      "path": "full_stack_lab/gateway/app/pac.py",
+      "line": 30,
+      "symbol": "delegation",
+      "meaning": "신고 위임과 검증 위임 구별",
+      "line_text": "def delegation(payload: dict) -> dict:",
+      "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe"
+    },
+    "reserve": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1431,
+      "symbol": "_reserve_call",
+      "meaning": "호출 예약·사용량 경쟁 경계",
+      "line_text": "async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: str,",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "flow": {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "line": 1337,
+      "symbol": "_flow_sources",
+      "meaning": "교차 호출 데이터 지문·흐름 판정 입력",
+      "line_text": "async def _flow_sources(user_token: str, server_id: str, cls: classify.Classification,",
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+    },
+    "termination": {
+      "path": "full_stack_lab/gateway/app/decommission.py",
+      "line": 717,
+      "symbol": "assess",
+      "meaning": "종료 증거·타깃·잔존 접근 판정",
+      "line_text": "async def assess(case_id: str, actor: str) -> dict:",
+      "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1"
+    }
+  },
+  "requirements": [
+    {
+      "id": "KR01",
+      "source_id": "PIPC",
+      "clause": "쪽 8~9 목적 설정",
+      "requirement": "처리 목적과 최소 수집 범위를 명시",
+      "code": [
+        "scope",
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 도구별 업무 목적·적법근거·담당자 증빙을 승인 자료와 결속",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR02",
+      "source_id": "PIPC",
+      "clause": "쪽 16 PbD·쪽 30 입출력 필터",
+      "requirement": "개인정보 입력·출력 최소화",
+      "code": [
+        "inspect",
+        "mask",
+        "pii"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 한국어 정상 유사값과 민감정보의 오탐·미탐을 함께 측정",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR03",
+      "source_id": "PIPC",
+      "clause": "쪽 19 서비스형 LLM",
+      "requirement": "공급자 데이터 보관·재이용 조건 검토",
+      "code": [
+        "supplier",
+        "credential"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: LLM 공급자 학습 재이용·보존·하위처리자 계약 근거까지 확장",
+      "validation_profile": "V3",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L05-10",
+          "req_key": "51bee2f3",
+          "ref": "쪽 19 서비스형 LLM"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR04",
+      "source_id": "PIPC",
+      "clause": "쪽 17~18 영향평가",
+      "requirement": "개인정보 흐름과 새로운 침해요인 평가",
+      "code": [
+        "risk",
+        "residency"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: MCP·모델·메모리·최종 수신자까지 흐름 증빙 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR05",
+      "source_id": "PIPC",
+      "clause": "쪽 35 권리 행사·쪽 37 대화 이력",
+      "requirement": "정보주체 삭제·처리정지 및 보관 정책 지원",
+      "code": [
+        "retention",
+        "preview"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P4: 원장·대화·학습 데이터별 보존/삭제 책임과 증거 구분",
+      "validation_profile": "V4",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR06",
+      "source_id": "PIPC",
+      "clause": "쪽 36 자동화된 결정",
+      "requirement": "설명·인적 개입·재검토 권리 지원",
+      "code": [
+        "impact",
+        "impactbind"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 업무 결정 ID와 설명·이의신청·재처리 증빙 연결",
+      "validation_profile": "V5",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L05-28",
+          "req_key": "e8fe86c5",
+          "ref": "쪽 36 자동화된 결정"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR07",
+      "source_id": "KR-ACT",
+      "clause": "제31조제1항",
+      "requirement": "AI 기반 서비스임을 사전 고지",
+      "code": [
+        "impact"
+      ],
+      "assessment": "미충족",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "갭",
+      "proposal": "P5: 고객 서비스의 고지 증빙 참조를 대장에 연결; 호출 승인과 구분",
+      "validation_profile": "V5",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-04",
+          "req_key": "84bae4fb",
+          "ref": "제31조제1항"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR08",
+      "source_id": "KR-ACT",
+      "clause": "제31조제2항",
+      "requirement": "생성형 AI 결과물 표시",
+      "code": [
+        "output"
+      ],
+      "assessment": "미충족",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "갭",
+      "proposal": "P5: 생성물 표시는 결과물을 제공하는 앱에서 구현하고 증빙 연결",
+      "validation_profile": "V5",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-05",
+          "req_key": "bff43af6",
+          "ref": "제31조제2항"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR09",
+      "source_id": "KR-ACT",
+      "clause": "제33조제1항",
+      "requirement": "고영향 AI 해당성 사전 검토",
+      "code": [
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 법정 해당성 검토자·판본·근거를 제품 위험 점수와 별도 저장",
+      "validation_profile": "V3",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-07",
+          "req_key": "0f77f5c1",
+          "ref": "제33조제1항"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR10",
+      "source_id": "KR-ACT",
+      "clause": "제34조제1항제1호",
+      "requirement": "고영향 AI 위험관리 방안 운영",
+      "code": [
+        "risk",
+        "incident",
+        "termination"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 시스템 전체 위험 등록부와 정기 재평가 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-08",
+          "req_key": "114d1462",
+          "ref": "제34조제1항제1호"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR11",
+      "source_id": "KR-ACT",
+      "clause": "제34조제1항제2호",
+      "requirement": "최종결과 주요 기준·학습 데이터 개요 설명",
+      "code": [
+        "impact"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 호출 정책 사유와 모델/업무 결과의 설명을 구분해 제공",
+      "validation_profile": "V5",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-09",
+          "req_key": "f27a6c25",
+          "ref": "제34조제1항제2호"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR12",
+      "source_id": "KR-ACT",
+      "clause": "제34조제1항제4호",
+      "requirement": "사람의 관리·감독",
+      "code": [
+        "impactbind",
+        "independent",
+        "solo"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 감독자 역량·번복·실제 중단 효과 및 단독 모드 조건 확인",
+      "validation_profile": "V1",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-10",
+          "req_key": "b96794ac",
+          "ref": "제34조제1항제4호"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR13",
+      "source_id": "KR-ACT",
+      "clause": "제34조제1항제5호",
+      "requirement": "안전성·신뢰성 조치 문서 보관",
+      "code": [
+        "audit",
+        "export",
+        "incident"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 모델/서비스 판본·평가 문서·조치 책임자까지 증빙 묶음 확장",
+      "validation_profile": "V4",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-11",
+          "req_key": "738bada8",
+          "ref": "제34조제1항제5호"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR14",
+      "source_id": "KR-ACT",
+      "clause": "제35조제1항",
+      "requirement": "기본권 영향평가 노력 및 취약계층 고려",
+      "code": [
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 영향받는 집단·취약계층·구제수단을 영향평가 입력에 추가",
+      "validation_profile": "V3",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-12",
+          "req_key": "1afc7f0c",
+          "ref": "제35조제1항"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR15",
+      "source_id": "KR-DECREE",
+      "clause": "시행령(안) 핵심 위임 조항",
+      "requirement": "안·공포본·현행본 및 안전성 기준 구분",
+      "code": [
+        "risk"
+      ],
+      "assessment": "미확인",
+      "provisional": false,
+      "source_detail_status": "2026.8.20 시행 판본·제22조 확인; 요청한 안 및 핵심 위임 조항 미확인",
+      "relation": "갭",
+      "proposal": "P0: 공식 안/공포본/현행본 확보 후 위임 조항별 delta 확정",
+      "validation_profile": "V0",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR16",
+      "source_id": "FSC",
+      "clause": "주요내용 ❶ 내부통제",
+      "requirement": "책임·조직·위험관리 정책 수립",
+      "code": [
+        "risk",
+        "independent"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 보도자료 주요내용 확인; 첨부 PDF 열기 실패",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 금융기관의 책임 조직·경영진 보고·정기 심사 자료 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR17",
+      "source_id": "FSC",
+      "clause": "주요내용 ❷ 학습 데이터",
+      "requirement": "학습 데이터 조사·검증 및 오남용 방지",
+      "code": [
+        "supplier",
+        "scope"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 보도자료 주요내용 확인; 첨부 PDF 열기 실패",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 모델 데이터 출처·사용권·품질 증빙을 공급자 자료로 수집",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR18",
+      "source_id": "FSC",
+      "clause": "주요내용 ❸ 공정성",
+      "requirement": "불합리한 소비자 차별 점검",
+      "code": [
+        "risk"
+      ],
+      "assessment": "미충족",
+      "provisional": false,
+      "source_detail_status": "공식 보도자료 주요내용 확인; 첨부 PDF 열기 실패",
+      "relation": "갭",
+      "proposal": "P5: 금융 업무별 집단 성능·편향 평가를 외부 모델 평가와 연결",
+      "validation_profile": "V5",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR19",
+      "source_id": "FSC",
+      "clause": "주요내용 ❹ 설명·권리",
+      "requirement": "소비자 설명과 권리 행사 보장",
+      "code": [
+        "impact"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 보도자료 주요내용 확인; 첨부 PDF 열기 실패",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 소비자 설명·이의신청·재심 처리 기록 연결",
+      "validation_profile": "V5",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR20",
+      "source_id": "FSC-DRAFT",
+      "clause": "2025.12.22 개정방향",
+      "requirement": "최종 통합본과 적용 범위 확인",
+      "code": [
+        "supplier"
+      ],
+      "assessment": "미확인",
+      "provisional": false,
+      "source_detail_status": "개정방향·가이드라인(안) 게시 확인; 최종본·효력 미확인",
+      "relation": "갭",
+      "proposal": "P0: 공식 최종 가이드라인 게시 여부와 2021판 대체 관계 확인",
+      "validation_profile": "V0",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR21",
+      "source_id": "NIS",
+      "clause": "원문 조항 미확인",
+      "requirement": "국정원 생성형 AI 보안 요구를 확정해야 함",
+      "code": [
+        "inspect",
+        "dns"
+      ],
+      "assessment": "미확인",
+      "provisional": false,
+      "source_detail_status": "미확인",
+      "relation": "갭",
+      "proposal": "P0: 공식 원문 확보 후 조항을 확정; 일반 보안 기능을 NIS 충족으로 세지 않음",
+      "validation_profile": "V0",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR22",
+      "source_id": "KISA",
+      "clause": "쪽 22~24 교전 규칙·범위",
+      "requirement": "레드티밍 허용 범위·중단 조건 합의",
+      "code": [
+        "scope",
+        "termination"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: 실제 OSS MCP 시험 계획에 승인 범위·금지 행위·복구 조건 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR23",
+      "source_id": "KISA",
+      "clause": "쪽 25~29 평가·시나리오",
+      "requirement": "정상/공격 성능과 재현 조건을 함께 기록",
+      "code": [
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 판정·정책 ID·독립 효과·지연·반복 결과를 원자 요구와 연결",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR24",
+      "source_id": "KISA",
+      "clause": "쪽 36 영향 분석",
+      "requirement": "실행 전 권한·실행 경계·추적 가능성 검증",
+      "code": [
+        "execute",
+        "scope",
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: 실제 MCP 부작용·측면이동·복구를 원장 밖 수신자에서도 검증",
+      "validation_profile": "V6",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L06-18",
+          "req_key": "c963b023",
+          "ref": "쪽 36 영향 분석 — 에이전트형 AI"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR25",
+      "source_id": "PIPC",
+      "clause": "쪽 20 국외이전",
+      "requirement": "국외 처리 근거와 수신자·위치를 심사",
+      "code": [
+        "residency",
+        "pack"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 위치 신고와 실제 처리 국가·이전 적법근거 확인을 분리",
+      "validation_profile": "V3",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L05-13",
+          "req_key": "4dad7d94",
+          "ref": "쪽 20 국외이전"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "KR26",
+      "source_id": "KR-ACT",
+      "clause": "제32조제1항·제2항",
+      "requirement": "기준 이상 학습 연산량 시스템의 위험관리와 결과 제출",
+      "code": [
+        "risk",
+        "incident",
+        "report"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 판본 표제 확인; 온라인 조항 본문 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 모델 공급자의 적용성·안전성 평가·제출 근거 연결; 연산량 기준 미확인",
+      "validation_profile": "V6",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-L04-06",
+          "req_key": "b3a04227",
+          "ref": "제32조제1항"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU01",
+      "source_id": "EU",
+      "clause": "Art.9(1)~(7)",
+      "requirement": "고위험 시스템 생애주기 위험관리·시험",
+      "code": [
+        "risk",
+        "contract"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 용도·예견 오용·잔여 위험·정기 재평가 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU02",
+      "source_id": "EU",
+      "clause": "Art.12(1)~(3)",
+      "requirement": "고위험 시스템의 자동 기록 기능",
+      "code": [
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P4: MCP 호출 밖 모델·업무 사건의 추적과 로그 완전성 확인",
+      "validation_profile": "V4",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU03",
+      "source_id": "EU",
+      "clause": "Art.13(1)~(3)",
+      "requirement": "배치자가 이해할 사용 지침·한계 제공",
+      "code": [
+        "supplier",
+        "export"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 의도된 사용·정확도·금지 용도·변경 통지의 공급자 문서 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU04",
+      "source_id": "EU",
+      "clause": "Art.14(1)~(4)",
+      "requirement": "사람 감독·중단·번복 지원",
+      "code": [
+        "impactbind",
+        "termination"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 자동화 편향·감독자 권한·정지 후 업무 영향까지 검증",
+      "validation_profile": "V5",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU05",
+      "source_id": "EU",
+      "clause": "Art.15(1)~(5)",
+      "requirement": "정확도·강건성·사이버보안",
+      "code": [
+        "output",
+        "inspect",
+        "policyfail"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 정책 차단 성능과 모델 정확도/편향/견고성의 측정 분리",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU06",
+      "source_id": "EU",
+      "clause": "Art.17(1)",
+      "requirement": "제공자의 품질관리시스템",
+      "code": [
+        "audit",
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 조직 QMS·책임·공급자·시정조치 문서와 연결; 제품 인증 주장 금지",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU07",
+      "source_id": "EU",
+      "clause": "Art.26(6)",
+      "requirement": "통제 가능한 자동 로그를 원칙상 최소 6개월 보관",
+      "code": [
+        "retention",
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P4: 관할·대상 로그·다른 법의 예외와 실제 백업 복구 보존을 검증",
+      "validation_profile": "V4",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU08",
+      "source_id": "EU",
+      "clause": "Art.27(1)",
+      "requirement": "해당 배치자의 기본권 영향평가",
+      "code": [
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 조문 9·14·26 확인; 나머지는 보존 원문 대조, 최신성 미확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 영향 집단·피해·감독·구제수단·법정 서식 차이를 보완",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU09",
+      "source_id": "EU-GPAI",
+      "clause": "Art.53(1)(a)~(b)",
+      "requirement": "GPAI 제공자 기술문서와 하류 통합자 정보",
+      "code": [
+        "supplier",
+        "export"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 제53·55조 본문 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: Annex XI/XII 항목별 모델 공급자 자료·판본·갱신 근거 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU10",
+      "source_id": "EU-GPAI",
+      "clause": "Art.53(1)(c)~(d)",
+      "requirement": "저작권 정책과 학습 콘텐츠 공개 요약",
+      "code": [
+        "supplier"
+      ],
+      "assessment": "미충족",
+      "provisional": false,
+      "source_detail_status": "EC 제53·55조 본문 확인",
+      "relation": "갭",
+      "proposal": "P1: GPAI 제공자 책임 문서를 수집; MCP 라이선스 심사로 대체하지 않음",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU11",
+      "source_id": "EU-GPAI",
+      "clause": "Art.55(1)(a)~(b)",
+      "requirement": "체계적 위험 GPAI의 모델 적대 평가·위험 완화",
+      "code": [
+        "risk",
+        "output"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 제53·55조 본문 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 모델 공급자의 평가 보고서·기준·재검증 증거 연결",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "EU12",
+      "source_id": "EU-GPAI",
+      "clause": "Art.55(1)(c)~(d)",
+      "requirement": "중대 사고 추적·보고와 모델/인프라 보안",
+      "code": [
+        "incident",
+        "report"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "EC 제53·55조 본문 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: 공급자·당국 통지 책임과 실제 보고 증빙 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NI01",
+      "source_id": "NIST",
+      "clause": "GOVERN 1.6·1.7",
+      "requirement": "자산 목록 및 안전한 단계적 종료",
+      "code": [
+        "export",
+        "termination"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 소개 확인·보존 공식 PDF 추출본 대조",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: MCP 외 모델·하네스·메모리·하류 시스템 의존성 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NI02",
+      "source_id": "NIST",
+      "clause": "GOVERN 3.2·MANAGE 4.1",
+      "requirement": "감독 역할·사후 모니터링·피드백·복구",
+      "code": [
+        "independent",
+        "incident"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 소개 확인·보존 공식 PDF 추출본 대조",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 책임자·이의제기·복구 훈련과 정기 검토 기록 연결",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NI03",
+      "source_id": "NIST",
+      "clause": "MEASURE 2.7",
+      "requirement": "보안·복원력 평가 문서화",
+      "code": [
+        "audit",
+        "policyfail"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 소개 확인·보존 공식 PDF 추출본 대조",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 정상 사용 성공률·장애·복구와 효과 근거를 함께 보존",
+      "validation_profile": "V2",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-M07-21",
+          "req_key": "8d130f5b",
+          "ref": "MEASURE 2.7 (p.30)"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NG01",
+      "source_id": "NIST-GAI",
+      "clause": "GV-1.7-001·002",
+      "requirement": "비활성화와 폐기 후 데이터·의존성 위험 고려",
+      "code": [
+        "termination",
+        "retention"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 선택 절 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: 진행 호출·자격 회수·외부 잔존 데이터 효과를 독립 확인",
+      "validation_profile": "V6",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-M17-06",
+          "req_key": "e2d9037b",
+          "ref": "GV-1.7-001"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NG02",
+      "source_id": "NIST-GAI",
+      "clause": "GV-6.1-006·007·009",
+      "requirement": "공급자 목록·조달 실사·계약상 평가 근거",
+      "code": [
+        "supplier",
+        "contract"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 선택 절 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 모델 공급자 데이터/지재권/평가 근거를 MCP 심사와 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "NG03",
+      "source_id": "NIST-GAI",
+      "clause": "MS-2.7-004·007·009",
+      "requirement": "보안 지표·레드팀·정기 효과 검증",
+      "code": [
+        "inspect",
+        "output",
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 선택 절 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 실제 하네스·실제 OSS MCP·정상 대조군의 반복 및 오탐/미탐 측정",
+      "validation_profile": "V2",
+      "existing_requirements": [
+        {
+          "req_id": "REQ-M17-14",
+          "req_key": "ff87147b",
+          "ref": "MS-2.7-004"
+        }
+      ],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "IS01",
+      "source_id": "ISO",
+      "clause": "6.1.2·6.1.3·6.1.4(기존 note)",
+      "requirement": "위험 평가·처리·영향평가 문서화",
+      "code": [
+        "risk"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 조직 위험 기준·잔여 위험 승인·적용 통제와 SoA 연결(조항 미확인)",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "IS02",
+      "source_id": "ISO",
+      "clause": "A.5.2·9.2.1·10.2(기존 note)",
+      "requirement": "영향평가·내부감사·시정조치",
+      "code": [
+        "audit",
+        "incident"
+      ],
+      "assessment": "부분",
+      "provisional": true,
+      "source_detail_status": "미확인(기존 요약 전제의 잠정 대응)",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 조직 운영의 감사/검토/시정 증빙 연결(조항 미확인)",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL01",
+      "source_id": "LLM",
+      "clause": "LLM01 프롬프트 인젝션",
+      "requirement": "외부 지시가 도구 행동을 바꾸는 위험 축소",
+      "code": [
+        "output",
+        "scope"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 우회·인코딩·한국어·멀티턴 공격과 정상 문서 대조",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL02",
+      "source_id": "LLM",
+      "clause": "LLM02 민감정보 노출",
+      "requirement": "도구 입력·응답 개인정보·비밀 노출 축소",
+      "code": [
+        "inspect",
+        "mask",
+        "preview"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 원장·오류·짧은 문자열까지 잔여 개인정보 검사",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL03",
+      "source_id": "LLM",
+      "clause": "LLM03 공급망",
+      "requirement": "승인하지 않은 도구·구성요소 변경 제한",
+      "code": [
+        "supplier",
+        "contract"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: SBOM·출처 증명·공급자 변경과 승인 재사용 불가 검증",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL04",
+      "source_id": "LLM",
+      "clause": "LLM04 데이터·모델 오염",
+      "requirement": "학습·검색·메모리 오염 통제",
+      "code": [
+        "contract",
+        "output"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: MCP 계약 검사와 학습/벡터 데이터 오염 검증을 구분해 연동",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL05",
+      "source_id": "LLM",
+      "clause": "LLM05 부적절한 출력 처리",
+      "requirement": "도구 결과 형식·크기·콘텐츠 검증",
+      "code": [
+        "output",
+        "mask"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 최종 소비 앱의 SQL/HTML/명령 실행 경계도 별도 검증",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL06",
+      "source_id": "LLM",
+      "clause": "LLM06 과도한 자율성",
+      "requirement": "도구·자산·동작 최소 권한 및 승인",
+      "code": [
+        "scope",
+        "impactbind"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 기본 권한·동적 도구·승인 경합·도구 밖 우회 비교",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL07",
+      "source_id": "LLM",
+      "clause": "LLM07 시스템 프롬프트 유출",
+      "requirement": "프롬프트 내 비밀과 인가 의존 축소",
+      "code": [
+        "credential",
+        "mask"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 모델 프롬프트·대화 저장소 유출을 별도 평가; 토큰 분리와 구분",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL08",
+      "source_id": "LLM",
+      "clause": "LLM08 벡터·임베딩 취약점",
+      "requirement": "검색 저장소 권한·오염 경계 검증",
+      "code": [
+        "scope"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 검색 객체별 ACL·메타데이터 출처·교차 사용자 검색 시험 연동",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL09",
+      "source_id": "LLM",
+      "clause": "LLM09 허위정보",
+      "requirement": "모델 최종 답변 사실성 평가",
+      "code": [
+        "impact",
+        "output"
+      ],
+      "assessment": "미충족",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "갭",
+      "proposal": "P5: 출처 대조·업무 정답·사용자 정정 절차를 모델/앱에서 검증",
+      "validation_profile": "V5",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "LL10",
+      "source_id": "LLM",
+      "clause": "LLM10 무제한 자원 소비",
+      "requirement": "도구 호출·결과 자원 상한",
+      "code": [
+        "reserve",
+        "output"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 10항목 명칭·개요 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: MCP 상한과 LLM 토큰·비용·반복 루프 예산을 분리 검증",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS01",
+      "source_id": "ASI",
+      "clause": "ASI01 목표 탈취",
+      "requirement": "목표 조작의 실행 피해 제한",
+      "code": [
+        "output",
+        "scope"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 다단계 업무의 목적 이탈·정상 수행률 검증",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS02",
+      "source_id": "ASI",
+      "clause": "ASI02 도구 오용",
+      "requirement": "호출 권한·인자·실행 경계 적용",
+      "code": [
+        "scope",
+        "contract"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 허용 도구 안의 위험한 조합·독립 효과 검증",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS03",
+      "source_id": "ASI",
+      "clause": "ASI03 신원·권한 남용",
+      "requirement": "검증 신원과 최소 권한 사용",
+      "code": [
+        "identity",
+        "credential",
+        "delegation"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: bearer 탈취·주체 혼동·위임 위조 및 관리 계정 우회 검증",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS04",
+      "source_id": "ASI",
+      "clause": "ASI04 에이전트 공급망",
+      "requirement": "도구·서버·연동 변경 심사",
+      "code": [
+        "supplier",
+        "contract"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 모델·스킬·프레임워크 의존성까지 별도 공급망 책임 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS05",
+      "source_id": "ASI",
+      "clause": "ASI05 예기치 않은 코드 실행",
+      "requirement": "미승인 실행 효과 제한",
+      "code": [
+        "scope",
+        "impactbind"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 게이트웨이 밖 셸·SDK와 MCP 실행기 격리 경계를 구분 검증",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS06",
+      "source_id": "ASI",
+      "clause": "ASI06 메모리·문맥 오염",
+      "requirement": "지속 기억과 교차 호출 문맥 오염 방지",
+      "code": [
+        "flow",
+        "output"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 원문/변환/요약 후 재사용과 외부 메모리 변조 정상 대조",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS07",
+      "source_id": "ASI",
+      "clause": "ASI07 에이전트 간 통신",
+      "requirement": "에이전트 간 상호 인증·신뢰 경계 확보",
+      "code": [
+        "identity",
+        "delegation"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: MCP 직원 신원을 A2A 에이전트 신원으로 세지 않음; 표준/EDR 연동 검토",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS08",
+      "source_id": "ASI",
+      "clause": "ASI08 연쇄 장애",
+      "requirement": "격리·상한·장애 대응과 복구",
+      "code": [
+        "reserve",
+        "policyfail",
+        "incident"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: 검사기 장애·지연·중복 호출의 하류 효과·복구 훈련",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS09",
+      "source_id": "ASI",
+      "clause": "ASI09 사람-에이전트 신뢰 악용",
+      "requirement": "승인자를 속이는 요청과 자동화 편향 축소",
+      "code": [
+        "impact",
+        "independent"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P5: 승인 요약 진실성·피로·근거 확인과 정상 승인 소요 검증",
+      "validation_profile": "V5",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "AS10",
+      "source_id": "ASI",
+      "clause": "ASI10 일탈 에이전트",
+      "requirement": "지속 이탈의 탐지·중지·책임 추적",
+      "code": [
+        "flow",
+        "termination",
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 PDF 57쪽 중 표지·목차·요약·선택 정의 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P6: MCP 밖 행동 가시성 한계와 OS/업무 연동 증거 구분",
+      "validation_profile": "V6",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "CS01",
+      "source_id": "CSA",
+      "clause": "§3.2 A 계층별 분석",
+      "requirement": "7계층별 자산·신뢰 경계·위협 분해",
+      "code": [
+        "scope",
+        "audit"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 글 §3.2 A~D 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 기반 모델·데이터·프레임워크·인프라·평가·보안·생태계 책임 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "CS02",
+      "source_id": "CSA",
+      "clause": "§3.2 B 교차 계층 위협",
+      "requirement": "관측·데이터·권한 경계를 넘는 공격 분석",
+      "code": [
+        "flow",
+        "preview"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 글 §3.2 A~D 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P2: 도구 결과→메모리→후속 도구 및 로그 유출 사슬 검증",
+      "validation_profile": "V2",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "CS03",
+      "source_id": "CSA",
+      "clause": "§3.2 D 구현·모니터링",
+      "requirement": "위험 우선순위와 지속 재검토",
+      "code": [
+        "risk",
+        "incident"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 글 §3.2 A~D 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P1: 계층별 잔여 위험·담당·시험 근거를 기존 대장과 연결",
+      "validation_profile": "V3",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "MC01",
+      "source_id": "MCP",
+      "clause": "Token Passthrough",
+      "requirement": "직원 토큰을 upstream으로 넘기지 않음",
+      "code": [
+        "identity",
+        "credential"
+      ],
+      "assessment": "충족",
+      "provisional": false,
+      "source_detail_status": "공식 본문 선택 절 확인",
+      "relation": "이미 있음(정적 범위)",
+      "proposal": "P3: 전용 자격 resource/principal/expiry와 잘못된 audience 음성 회귀 유지",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "MC02",
+      "source_id": "MCP",
+      "clause": "SSRF",
+      "requirement": "연결 직전 목적지 DNS/IP 검증",
+      "code": [
+        "dns"
+      ],
+      "assessment": "충족",
+      "provisional": false,
+      "source_detail_status": "공식 본문 선택 절 확인",
+      "relation": "이미 있음(정적 범위)",
+      "proposal": "P3: 승인 내부 목적지·외부 DNS 재결속·IPv6·메타데이터 주소 회귀 유지",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "MC03",
+      "source_id": "MCP",
+      "clause": "State Handle Hijacking",
+      "requirement": "세션을 인증 주체·장치·서버와 결속",
+      "code": [
+        "session"
+      ],
+      "assessment": "충족",
+      "provisional": false,
+      "source_detail_status": "공식 본문 선택 절 확인",
+      "relation": "이미 있음(정적 범위)",
+      "proposal": "P3: 세션 재사용·철회·종료 경합과 복구를 실제 전송 경계에서 확인",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "MC04",
+      "source_id": "MCP",
+      "clause": "Confused Deputy·Scope Minimization",
+      "requirement": "클라이언트별 동의와 최소 scope 확인",
+      "code": [
+        "scope",
+        "credential"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 본문 선택 절 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: MINT의 OAuth 역할별 동의·redirect/state/issuer 경계를 별도 점검",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    },
+    {
+      "id": "MC05",
+      "source_id": "MCP",
+      "clause": "Local MCP Server Compromise·stdio Transport Security",
+      "requirement": "로컬 서버의 실행·환경·권한 경계 보호",
+      "code": [
+        "identity",
+        "scope"
+      ],
+      "assessment": "부분",
+      "provisional": false,
+      "source_detail_status": "공식 본문 선택 절 확인",
+      "relation": "이미 있음 + 갭",
+      "proposal": "P3: 관리형 실행기·OS 강제와 비관리 계정·다른 셸의 우회를 구분 검증",
+      "validation_profile": "V1",
+      "existing_requirements": [],
+      "current_execution": "미실행",
+      "evidence_level": "local-source-review; source verification separately qualified"
+    }
+  ],
+  "validation_profiles": {
+    "V0": "문서 확인: 공식 원문·판본·조항·시행 상태 대조. 차단/미열람이면 미확인 유지.",
+    "V1": "권한: 정상 승인 호출 성공 / 잘못된 주체·범위 거부 / 만료 직전·직후 / IdP·정책 장애 차단 / 승인·철회·전송 경쟁 / 재인증·재승인 후 복구. decision와 policy_id, 독립 수신 효과 확인.",
+    "V2": "검사·성능: 정상 한국어·업무 문서 / PII·비밀·주입 공격 / 길이·건수·유사값 경계 / 검사기 오류·시간초과 / 동시 호출·예산 소진 / 정상 복구. 반복·오탐·미탐·지연·업무 성공과 독립 노출 건수 기록.",
+    "V3": "도입·변경: 승인된 고정 OSS 정상 / 미승인 commit·계약·근거 누락 거부 / 만료·지원 종료 경계 / scanner·메타데이터 장애 / 심사 중 변경·철회 경쟁 / 새 판본 재심사 복구. 판본·license·hash·검토자 연결.",
+    "V4": "증거·보존: 정상 원장/내보내기 / 변조·미리보기 개인정보 노출 / 보존 하한·구간 경계 / DB·서명목록 장애 / 수집 중 내보내기·봉인 경쟁 / 백업 복구 후 부활 탐지. 삭제는 현재 보류이므로 실행 성공 주장 금지.",
+    "V5": "사람·업무: 정상 고지·승인·설명 / 자가 승인·허위 설명·권리 누락 / 영향 등급·만료 경계 / 설명 자료 불능 / 승인·범위 변경 경쟁 / 번복·재검토 후 업무 효과. 모델 평가와 호출 정책을 별도 측정.",
+    "V6": "운영·종료: 정상 도구 업무 / 비정상 연쇄·접근 잔존 / 진행 호출·기한 경계 / 네트워크·관측·폐기 장애 / cutover·중복 실행 경쟁 / 독립 자격 거부·하류 데이터·복구 확인. 실제 OSS와 격리 계정·합성 데이터만 사용."
+  }
+}
