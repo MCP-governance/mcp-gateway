@@ -1921,6 +1921,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 
 - 문제: CI 전용 TLS 경로(PR #36)가 CI 사본 카탈로그의 `fetch` endpoint를 `https://mcp-fetch-tls:8443/mcp`로 바꿨으나 `opa/data.json`의 `egress.allowed_hosts`에 이 호스트가 없어 모든 `fetch` 호출이 `MCP-EGRESS-001`로 차단됐다. 전체 검증의 `read-then-send-chain-blocked`는 차단은 맞지만 기대한 `P-CHAIN-001`이 아니어서 실패했다. 국외 처리 심사 변경과는 무관하다.
 - 결정: 허용 목록에 `mcp-fetch-tls`를 추가한다. 시험 기대값과 정책 순서는 바꾸지 않는다. `acceptance_tls_check.py`가 시험 경로 호스트가 목록에 있는지 확인한다. 이 호스트는 `compose.acceptance.yaml`에서만 존재하며 기본 `compose.yaml`에는 없다.
+- 후속(전체 검증 업무일 시나리오): 수용 시험이 통과해 도달한 하네스 업무일 시나리오의 입력은 조회량 통제(`P-VOLUME-002`)에 맞췄다(SQL에 `LIMIT 20`, 전체 키 조회 대신 `session:*` 접두사). 그 결과 중요정보 열람(`customer-pii`·`salaries`·`session-keys`)이 경보로 통과하며, 같은 주체의 10분 안 뒤따르는 다른 서버 쓰기 `write-report`(filesystem)·`record-finding`(memory)이 `P-FLOW-001`로 차단된다. D-133/D-142의 기본 `coarse` 모드 설계 동작이며(창 안에서 중요 등급을 읽은 모든 서버가 출처로 남고 받는 도구가 `accepts_from`에서 심사되지 않았으면 차단), 두 시나리오의 기대를 Allow에서 Block으로 바꿨다. 통제는 약화하지 않았고 이전에는 열람이 조회량 통제로 막혀 흐름 통제에 도달하지 못했을 뿐이다. 내용 대조(`content`) 모드나 `accepts_from` 심사로 통과시키는 것은 운영자 결정이다.
 - 한계: 허용 목록이 네트워크 평면의 허용 목록과 같아야 한다는 조직 배치 조건에 CI 호스트가 한 줄 더 들어간다. 조직 배치에서는 이 항목을 뺀다. 원격 CI 재검증 전까지는 해소를 입증하지 않았다.
 
 ## D-178 저장된 SBOM 요약으로 영향 세대를 찾고 서버 중지는 기존 운영 경로를 쓴다 (2026-10-21, DEV-76)
