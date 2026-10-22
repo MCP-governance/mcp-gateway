@@ -18,10 +18,11 @@ form.addEventListener("submit", async (event) => {
   button.disabled = true;
   try {
     const body = Object.fromEntries(new FormData(form));
+    body.username = body.username.trim().toLowerCase();
     if (invitationToken) body.invitation_token = invitationToken;
     const response = await fetch("/auth/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const result = await response.json();
-    message.textContent = response.ok ? result.message : result.detail || "가입 요청에 실패했습니다.";
+    message.textContent = response.ok ? result.message : typeof result.detail === "string" ? result.detail : "입력값을 확인하세요.";
     message.classList.toggle("ok", response.ok);
     if (response.ok) {
       form.reset();
