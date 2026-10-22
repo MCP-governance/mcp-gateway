@@ -2,7 +2,8 @@
 # No published ports, new MCP implementation, or changes to reviewed tool contracts.
 services:
   mcp-fetch-tls:
-    image: caddy:2.11.4-alpine
+    image: mcpgw/acceptance-caddy:2.11.4
+    build: {context: ./tests/fixtures/acceptance-tls}
     # Match the CI host owner of the mode-0600 leaf key; no DAC bypass capability.
     user: "${ACCEPTANCE_TLS_UID:-10001}:${ACCEPTANCE_TLS_GID:-10001}"
     depends_on:

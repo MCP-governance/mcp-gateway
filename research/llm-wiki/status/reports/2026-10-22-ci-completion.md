@@ -47,3 +47,9 @@ DEV-10의 전체 CI를 끝까지 확인하고, DEV-03의 현재 참조를 실제
 ## 사용자에게 필요한 입력
 
 현재 CI 수정에는 없음. 지정 솔루션 기기와 PJ1의 승인된 SSH 인증 수단은 실제 배포/검수의 선행 조건이다.
+
+## 원격 실행과 현재 보완 상태
+
+`4c25711`의 연구/정적 검사와 PR CodeQL은 성공했다. [PR 전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/39757405073) 및 [push 전체 CI](https://github.com/MCP-governance/mcp-gateway/actions/runs/39757278783)는 환경 준비 단계에서 실패했다. TLS 프록시 로그는 `exec /usr/bin/caddy: operation not permitted`였다. 이 실행에서는 수용 시험에 도달하지 못했다.
+
+공식 Caddy 이미지의 실행 파일 capability가 비root/빈 capability bounding set과 충돌하는 경로를 보완했다. CI 전용 파생 이미지에서 높은 포트 8443에 불필요한 file capability를 제거하고 제거 여부와 실행을 빌드 중 확인한다. 컨테이너의 `cap_drop: ALL`, 개인키 권한과 TLS 검증은 유지한다. Compose 구성 검사와 diff 검사는 통과했으나 새 이미지의 실제 원격 빌드와 전체 회귀는 아직 미검증이다. 이 상태를 초안 PR #36에 반영하며 완료/병합으로 표시하지 않는다.
