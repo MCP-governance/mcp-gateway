@@ -120,6 +120,10 @@ services:
     environment: &gateway-env
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
+      MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
+      MINT_LITELLM_SYNC_BINDINGS_FILE: ${MINT_LITELLM_SYNC_BINDINGS_FILE:-/registry/litellm-sync.json}
+      MINT_LITELLM_SYNC_KEY_FILE: ${MINT_LITELLM_SYNC_KEY_FILE:-}
+      MINT_LITELLM_ADMIN_KEY: ${MINT_LITELLM_ADMIN_KEY:-}
       TERMINATION_SLA_DAYS: ${TERMINATION_SLA_DAYS:-14}
       REPORT_DIR: /reports
       REGISTRY_DIR: /registry
@@ -191,7 +195,9 @@ services:
     restart: unless-stopped
     build: *gateway-build
     command: ["python", "-m", "app.sse_entry"]
-    environment: *gateway-env
+    environment:
+      <<: *gateway-env
+      MINT_LITELLM_SYNC_WORKER: "0"
     depends_on:
       db: {condition: service_healthy}
       opa: {condition: service_healthy}
@@ -234,6 +240,7 @@ services:
       MCP_PROVENANCE_REGISTRY_ALLOWLIST: ${MCP_PROVENANCE_REGISTRY_ALLOWLIST:-}
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance
       GATEWAY_URL: http://gateway:8080
+      MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
       LOCAL_MANIFEST_PUBKEY: ${LOCAL_MANIFEST_PUBKEY:-}
       LOCAL_ENGINE_SETTINGS: ${LOCAL_ENGINE_SETTINGS:-}
       IDP_ISSUER: ${IDP_ISSUER:-http://agent-service:8000}

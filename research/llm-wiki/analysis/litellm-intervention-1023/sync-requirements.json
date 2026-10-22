@@ -1,0 +1,90 @@
+{
+  "task": "AIG-01-LITELLM-SYNC",
+  "decision": "D-208",
+  "baseline_commit": "e30be961a9a00d7982dd8565e4412c7289e85f4d",
+  "product_evidence": "not_run",
+  "source": {
+    "repository": "https://github.com/BerriAI/litellm",
+    "tag": "v1.105.0",
+    "release_commit": "80b9556dd312d18c535ae06884faa97d1fdb8f46",
+    "release_url": "https://github.com/BerriAI/litellm/releases/tag/v1.105.0",
+    "source_reading": "Official tag source via web; symbols and one-based lines in sync-implementation.md",
+    "source_sha256": null,
+    "immutable_commit_bytes_verified": false,
+    "limitation": "Local download and immutable raw commit fetch were unavailable; release-to-commit mapping verified on official release page",
+    "license": "MIT outside enterprise directory; enterprise license and customer deployment permissions not verified"
+  },
+  "requirements": [
+    {
+      "id": "LSYNC-R01",
+      "requirement": "Unconfigured installation performs no schema, queue, config, secret or HTTP operation",
+      "symbols": ["litellm_sync.enabled", "litellm_sync.initialize", "litellm_sync.enqueue", "litellm_sync.reconcile", "litellm_sync.statuses", "litellm_sync.watch"],
+      "conditions": {"normal": "URL absent", "negative": "assert if config or secret is read", "boundary": "empty URL", "failure": "irrelevant missing dependencies"},
+      "tests": ["test_disabled_installation_does_not_read_config_database_or_secrets"],
+      "evidence": "local_unit"
+    },
+    {
+      "id": "LSYNC-R02",
+      "requirement": "Only completed human registration, current operating status, live scope and approved enabled tools may be mirrored",
+      "symbols": ["core.register_server", "litellm_sync.desired", "litellm_sync.propagate"],
+      "conditions": {"normal": "READY/OPERATING and matching intake approval", "negative": "other intake approval or unapproved tool", "boundary": "expired valid_until", "failure": "unusable local or credentialed endpoint"},
+      "tests": ["test_desired_state_requires_completed_registration_and_current_mint_scope", "test_local_or_embedded_credentials_are_never_sent_to_litellm", "test_create_update_readback_and_preserve_unrelated_permissions"],
+      "evidence": "local_unit_and_static_wiring",
+      "remaining": "Real one-click registration through gateway database and LiteLLM"
+    },
+    {
+      "id": "LSYNC-R03",
+      "requirement": "Explicit user/key/team bindings must not widen identity or credential boundaries",
+      "symbols": ["litellm_sync.configuration", "litellm_sync.subjects", "litellm_sync.merged_permissions", "litellm_sync._propagate"],
+      "conditions": {"normal": "key owner and exact team population match", "negative": "other owner or team member", "boundary": "unapproved MINT user gets empty tool list", "failure": "require_key_mcp_access_defined is not true"},
+      "tests": ["test_wrong_key_owner_and_team_membership_never_receive_tools", "test_unapproved_user_gets_explicit_empty_tools", "test_open_default_and_unowned_server_are_not_adopted", "test_configuration_rejects_plain_keys_and_missing_worker_inventory", "test_permission_update_preserves_existing_authentication_and_credentials"],
+      "evidence": "local_unit",
+      "remaining": "Organization policy, access group interactions and direct call denial on actual LiteLLM"
+    },
+    {
+      "id": "LSYNC-R04",
+      "requirement": "Deregister, supply chain stop, termination and retirement propagate deletion and explicit empty grants",
+      "symbols": ["core.deregister_server", "ops_response.suspend", "decommission.open_case", "decommission.close_case", "litellm_sync.reconcile", "litellm_sync._propagate"],
+      "conditions": {"normal": "server DELETE and key/team empty tools", "negative": "deleted server still present", "boundary": "already absent server", "recovery": "lost DELETE response and idempotent retry"},
+      "tests": ["test_delete_credentials_sessions_and_readback_including_unknown_credential_owner", "test_delete_readback_mismatch_never_completes", "test_desired_state_requires_completed_registration_and_current_mint_scope"],
+      "evidence": "local_unit_and_static_wiring",
+      "remaining": "Real supply-chain and disposal transaction propagation"
+    },
+    {
+      "id": "LSYNC-R05",
+      "requirement": "Enumerate credential owners before delete, remove BYOK/OAuth credentials and terminate scoped sessions on each listed worker",
+      "symbols": ["litellm_sync._propagate"],
+      "conditions": {"normal": "known bindings and additional credential owner", "negative": "remaining credential or session", "boundary": "server deletion cascades credentials", "failure": "lost owner population stays unknown", "recovery": "retry cannot substitute empty inventory for missing evidence"},
+      "tests": ["test_credentials_and_sessions_are_verified_independently", "test_credential_owners_are_enumerated_before_server_cascade_delete", "test_lost_population_evidence_cannot_turn_into_completion_after_retry"],
+      "evidence": "local_unit",
+      "remaining": "Actual multi-worker inventory, credential cache eviction and upstream token revocation are separate"
+    },
+    {
+      "id": "LSYNC-R06",
+      "requirement": "Only independently read-back state becomes append-only G5 evidence; failures remain retryable",
+      "symbols": ["litellm_sync.reconcile", "litellm_sync._reconcile", "litellm_sync._propagate", "litellm_sync.retry_seconds", "review.record_event"],
+      "conditions": {"normal": "state matches and short ledger transaction commits", "negative": "successful HTTP response with wrong server or permission state", "boundary": "retry before deadline does nothing; pool needs at least two connections", "failure": "HTTP 503", "recovery": "persisted job retries and adds another event", "concurrency": "HTTP runs outside DB transactions; MINT withdrawal invalidates stale approval; newer queued revision remains pending; session lock release on cancellation"},
+      "tests": ["test_success_response_with_server_readback_mismatch_fails", "test_success_response_with_permissions_mismatch_removes_partial_server", "test_failed_job_waits_retries_after_restart_and_appends_evidence", "test_writer_session_lock_is_released_on_cancellation_and_busy"],
+      "evidence": "http_double_and_in_memory_queue",
+      "remaining": "PostgreSQL advisory lock/transaction rollback and actual process kill/restart not executed"
+    },
+    {
+      "id": "LSYNC-R07",
+      "requirement": "Secrets use file/env references and are refreshed without leaking to logs, queue or evidence",
+      "symbols": ["litellm_sync.management_key", "litellm_sync.ManagementAPI", "litellm_sync.reconcile"],
+      "conditions": {"normal": "management key only in request auth", "negative": "raw virtual key and credentialed origin rejected", "failure": "HTTP response body never copied into errors", "recovery": "environment secret rotation", "concurrency": "shutdown waits for in-flight write before releasing writer lock"},
+      "tests": ["test_secret_rotation_and_error_bodies_are_not_exposed", "test_origins_do_not_allow_credentials_redirects_or_paths", "test_shutdown_waits_for_inflight_management_write"],
+      "evidence": "local_unit",
+      "remaining": "Real secret store rotation and management key revocation not executed"
+    },
+    {
+      "id": "LSYNC-R08",
+      "requirement": "Configured registry shows Korean synchronization state including a removed registration",
+      "symbols": ["main.registry_view", "litellm_sync.statuses", "console.js:ROUTES.servers", "console.js:showServer"],
+      "conditions": {"normal": "pending/failed/verified label", "negative": "no raw status enum in new UI", "boundary": "removed registered server retains job status", "failure": "config or job query failure maps to failure"},
+      "tests": ["node --check console.js", "node --test console-state.test.mjs", "open_endpoints.py"],
+      "evidence": "static_only_for_new_rendering",
+      "remaining": "Browser rendering and refresh behavior not executed"
+    }
+  ]
+}

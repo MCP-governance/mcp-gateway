@@ -111,6 +111,8 @@ async def lifespan(_: FastAPI):
     await db.execute((Path(__file__).parent / "oidc_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "local_run_tables.sql").read_text())
+    from . import litellm_sync
+    await litellm_sync.initialize()
     from . import disposal
     await disposal.capture_existing()
     await disposal.reconcile()

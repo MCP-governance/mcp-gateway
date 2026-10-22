@@ -35,7 +35,7 @@ from .contract import (  # re-exported: older callers import these from core
     audit_fingerprint as _audit_fingerprint, walk_chain,
 )
 
-from . import intake_proposal, review  # noqa: E402  (approval records, intake gate; see review.py)
+from . import intake_proposal, litellm_sync, review  # noqa: E402  (approval records, intake gate; see review.py)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
 # 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
@@ -476,6 +476,7 @@ async def bootstrap() -> None:
     await db.execute((Path(__file__).parent / "ops_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "local_run_tables.sql").read_text())
     await db.execute((Path(__file__).parent / "siem_tables.sql").read_text())
+    await litellm_sync.initialize()
     await registry.sync()
     await disposal.capture_existing()
     await disposal.reconcile()
@@ -883,6 +884,9 @@ async def register_server(request: dict, actor: str) -> dict:
     await upstream.release_pool(endpoint, None, "registration")
     if local:
         await local_jobs.approve_manifest(local, str(intake_id), observed=True)
+    synchronizer = globals().get("litellm_sync")
+    if synchronizer is not None:
+        await synchronizer.enqueue(server_id)
     return {"server_id": server_id, "status": refreshed["status"], "valid_until": valid_until,
             "tools": spec["tools"], "relationship_id": relationship["id"], "gateway_path": f"/mcp/{server_id}/"}
 
@@ -904,6 +908,9 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
         await registry.sync()
     await upstream.release_pool(endpoint, None, "deregister")
     await review.record_event("server-deregister", "recorded", "server", server_id, actor, reason=reason)
+    synchronizer = globals().get("litellm_sync")
+    if synchronizer is not None:
+        await synchronizer.enqueue(server_id)
     # Last: ServerPath already refuses the removed path, so a failure here costs no access
     # but must not cost the audit record above.
     from . import mcp_sessions

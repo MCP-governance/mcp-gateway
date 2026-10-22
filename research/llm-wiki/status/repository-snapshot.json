@@ -1,26 +1,37 @@
 {
-  "captured_at": "2026-10-23T01:57:15+09:00",
-  "head": "48bb19ec52de0e1e2198d19e75b1f62e7aab2014",
-  "branch": "10/23-windows-oneclick",
+  "captured_at": "2026-10-23T07:16:33+09:00",
+  "head": "e30be961a9a00d7982dd8565e4412c7289e85f4d",
+  "branch": "10/23-litellm-sync",
   "status": [
-    "M docs/ai/CONSOLE_UI.md",
+    "M addons/litellm/README.md",
+    " M docs/ai/AI_GATEWAY_ADDON.md",
+    " M docs/ai/DATA_MODEL.md",
     " M docs/ai/DECISIONS.md",
-    " M endpoint-agent/README.md",
-    " M endpoint-agent/managed-windows.py",
-    " M endpoint-agent/windows-worker.ps1",
+    " M full_stack_lab/compose.yaml",
     " M full_stack_lab/gateway/app/agent_service.py",
     " M full_stack_lab/gateway/app/agent_static/console.js",
+    " M full_stack_lab/gateway/app/core.py",
+    " M full_stack_lab/gateway/app/decommission.py",
+    " M full_stack_lab/gateway/app/main.py",
+    " M full_stack_lab/gateway/app/ops_response.py",
+    " M research/llm-wiki/README.md",
+    " M research/llm-wiki/analysis/litellm-intervention-1023/README.md",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json",
     " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/repository-snapshot.json",
     " M research/llm-wiki/status/repository-snapshot.md",
-    " M research/llm-wiki/threats/control-map.md",
-    "?? endpoint-agent/tests-windows/test_windows_oneclick.py",
-    "?? endpoint-agent/windows-oneclick.ps1.in",
-    "?? full_stack_lab/gateway/app/windows_oneclick.py",
-    "?? research/llm-wiki/analysis/windows-oneclick-2026-10-23.md",
-    "?? research/llm-wiki/status/reports/2026-10-23-windows-oneclick.md"
+    "?? addons/litellm/sync-bindings.example.json",
+    "?? docs/ai/LITELLM_SYNC.md",
+    "?? full_stack_lab/gateway/app/litellm_sync.py",
+    "?? full_stack_lab/gateway/app/litellm_sync_tables.sql",
+    "?? full_stack_lab/tests/litellm_sync_check.py",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-evidence.json",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-requirements.json",
+    "?? research/llm-wiki/status/reports/2026-10-23-litellm-sync.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -28,11 +39,11 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
+      "sha256": "e103f09cd4e4eacd93ad0dd3c271938ce2d0a65a13d9440f430c3956ef9e3a71"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
-      "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe"
+      "sha256": "cae8716e4ff17a9f417019bb529fd515c166c5c3595693a3cc991e8c9b3363e9"
     },
     {
       "path": "full_stack_lab/gateway/app/poisoning.py",
@@ -40,15 +51,15 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
+      "sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
-      "sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1"
+      "sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e"
     },
     {
       "path": "full_stack_lab/gateway/app/secret_scan.py",
-      "sha256": "c6d981869e476d64d8b3e646c307f29d223942333fad84eb7e147a05593750db"
+      "sha256": "daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951"
     },
     {
       "path": "full_stack_lab/opa/pac15.rego",
@@ -56,15 +67,15 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
+      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "99f22350efc0a9017a9352ce8e6fe03a4213773e6eb8f6ee4d52a7d2193f8893"
+      "sha256": "1a87609297cd312b102f912ee2e617baba0732fe474d3d1c03efee5e45dd485b"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "1cae888ddaa2e5b839a4339130fbce0a5907359aabb64c6933ba8c7ba8b61365"
+      "sha256": "0ee2acafb280b14c1f0d39b457a4dc2d68565e1ebabc6dd2afccfd90da30482c"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

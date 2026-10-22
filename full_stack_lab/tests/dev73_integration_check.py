@@ -130,6 +130,7 @@ class RemoteServerKeepsItsBehavior(unittest.IsolatedAsyncioTestCase):
         ops_db = Database()
         local_db = Database(running=True)
         runner = local_runner({**REMOTE, **LOCAL}, local_db)
+        register(litellm_sync=SimpleNamespace(enqueue=AsyncMock()))  # the optional add-on is off in this check
         ops = extract("ops_response.py", {"suspend"}, {
             "db": ops_db, "local_jobs": runner, "Jsonb": lambda value: value})
         self.assertTrue(await ops.suspend("github", "drift", "자동 중지", {"findings": []}))
