@@ -2025,6 +2025,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **결정**: 승인 화면의 도구마다 분류를 고를 수 있다. 제안값보다 **낮추기만** 받는다(위험 등급은 제안 분류로 산정했으므로 올리면
   등급이 낮게 남는다). 바꾼 값만 `one_click_scope.actions`에 남겨 공동 승인 범위 비교와 감사 기록에 쓰고, 게이트웨이 등록 범위
   가드(`core.register_server`)도 같은 규칙으로 다시 확인한다. 기본 제안 규칙(`suggested_action`·`intake_proposal.action`)은 그대로다.
+- **재신청**: 이미 등록된 서버의 분류를 고치려면 철회 후 새 신청이 필요하다(`core.register_server`가 승인 하나에 서버 하나만 허용).
+  그런데 중복 신청 검사가 철회된(DISABLED) 서버의 승인 신청까지 진행 중으로 세어 재신청이 영구히 409였다. 철회된 등록은 대상을
+  비운다. 새 신청은 검사·승인을 처음부터 다시 거친다.
 - **범위 밖**: 주석 없는 도구를 입력 스키마·설명으로 읽기 후보로 추정해 표시하는 것. 확정은 사람이 한다는 원칙만 우선 반영했다.
 - **시험**: `full_stack_lab/tests/intake_one_click_check.py`의 `test_admin_may_lower_tool_action_only_and_gateway_accepts_it`
   (게이트웨이 이미지에서 20건 통과). `intake_one_click_ast_check.py`는 main에서도 `discovery` 미정의로 9건 실패하는 기존 결함이다.
