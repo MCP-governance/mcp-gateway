@@ -110,5 +110,38 @@
     "license": "Apache-2.0",
     "verified_on": "2026-10-15",
     "runtime_verified": false
+  },
+  {
+    "id": "crowdstrike-falcon-guardian",
+    "title": "CrowdStrike Falcon Guardian",
+    "kind": "commercial",
+    "url": "https://www.crowdstrike.com/en-us/press-releases/crowdstrike-unveils-falcon-guardian-ai-agent-security/",
+    "verification": "official_vendor_description",
+    "summary": "엔드포인트 센서 기반 AI 에이전트 발견·런타임 가시성·실행 허용 통제·SIEM 연계. 호출 단위 MCP 통제와 화면 구성은 미확인, AI Gateway는 pre-beta.",
+    "path": "solutions/crowdstrike-falcon-guardian.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "genailabs-ai-native-dev",
+    "title": "젠아이랩스 AI-native 개발 사례",
+    "kind": "case_study",
+    "url": "https://gensapps.com/case-studies/ai-native-company",
+    "verification": "vendor_self_reported_case",
+    "summary": "사람 승인·AI 실행·기계 확인 구조, 공용 규약·표준 CI, 실수 전수조사→막힌 순간 규칙·검사 전환, 틀린 가설 기록. 수치는 자체 기록. 코드 미공개.",
+    "path": "solutions/genailabs-ai-native-dev.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "genailabs-gensops",
+    "title": "GensOps 전사 운영 관제 플랫폼",
+    "kind": "commercial",
+    "url": "https://gensapps.com/gensops",
+    "verification": "official_vendor_description",
+    "summary": "서버·배포·테스트·비용·AI 코딩 세션 한 화면(2D·3D), 조치는 제안→승인→실행→기록. 사내 운영, 외부 가입 없음, 데모는 가상 데이터. 코드 미공개.",
+    "path": "solutions/genailabs-gensops.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
   }
 ]

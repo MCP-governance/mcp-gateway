@@ -17,6 +17,9 @@
 | 상용 | [BeyondTrust Pathfinder MCP](beyondtrust-pathfinder.md) | 공식 문서 재확인 | 사이트 활성화·기한 있는 사용자 토큰 |
 | 상용+OSS 생태계 | [Lunar MCPX + AI Gateway](lunar-mcpx.md) · [MCPX·스캐너 심층](../analysis/oss-deep/mcpx-cisco-scanner.md) | 공급자 공식 설명 | MCP 서버가 실행한 외부 API 호출의 별도 통제 |
 | OSS 후보 | [ToolHive runtime](toolhive-runtime.md) · [런타임 심층](../analysis/oss-deep/toolhive-runtime.md) | v0.54.0(`1ce13bbb`) 고정 소스 L3 | DEV-38 수명 관리와 명시적 목적지 제한. 설치·실행 미검증 |
+| 상용 | [CrowdStrike Falcon Guardian](crowdstrike-falcon-guardian.md) | 공식 보도자료·블로그 읽기(10-23) | 엔드포인트 에이전트 인벤토리, 프롬프트→실행 인과 조사, 허용 에이전트 종류 통제. 호출 단위 MCP 통제는 미확인 |
+| 사례 | [젠아이랩스 AI-native 개발](genailabs-ai-native-dev.md) | 회사 사례 글(자체 기록, 10-23) | 승인 지점·규약 저장소·실수 전수조사를 검사로 전환·틀린 가설 기록. 코드 미공개 |
+| 상용 | [GensOps 운영 관제](genailabs-gensops.md) | 제품 페이지·데모 첫 화면(10-23) | 한 화면 관제, 제안→승인→실행→기록 조치 흐름. 사내 운영·데모는 가상 데이터, 코드 미공개 |
 
 ## 증거 파일을 다시 확인하는 방법
 
