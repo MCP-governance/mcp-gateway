@@ -390,6 +390,10 @@ def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
     for name in harnesses:
         credential, command = LOGINS[name]
         if (home / credential).is_file():
+            # The file only proves a sign-in once happened: a session the provider has since revoked
+            # (PJ1, 10-22) still reports "Logged in" and then fails every model call with 401.
+            print(f"기존 {name} 로그인을 그대로 씁니다. 모델 응답이 401·로그인 오류면 다시 로그인하세요: "
+                  f"sudo -u {account} {shell} -c '{command}'")
             signed[name] = True
             continue
         step("Codex 장치 코드 로그인" if name == "codex" else f"{name} 모델 로그인")

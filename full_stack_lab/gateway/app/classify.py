@@ -315,7 +315,10 @@ def address_arguments(args: dict, depth: int = 0) -> list[str]:
         values = value if isinstance(value, list) else [value]
         for item in values[:50]:
             if isinstance(item, str) and ADDRESS_ARG.search(str(key)):
-                found.append(item)
+                # A data: URI carries its own bytes and names no host, so there is no destination to judge
+                # (the content is still read by dlp_scan); markitdown's convert_to_markdown takes one.
+                if not item.lstrip()[:5].lower() == "data:":
+                    found.append(item)
             elif isinstance(item, dict) and depth < 4:
                 found.extend(address_arguments(item, depth + 1))
     return found
