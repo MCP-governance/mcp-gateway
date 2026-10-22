@@ -43,6 +43,7 @@ MCP_URL = API + "/mcp/"
 USERS = {"employee": "ysg@bob.local", "partner": "nkk@bob.local", "admin": "kkg@bob.local", "privacy": "ysg@bob.local"}
 PRINCIPAL = {"employee": "emp-ysg", "partner": "partner-demo", "admin": "admin-demo"}
 TOKENS: dict[str, str] = {}
+MCP_TOKENS: dict[str, str] = {}
 RESULTS: list[dict] = []
 # What an intake approval requires, with synthetic values: supplier assurance and an impact input that scores "low"
 # (one administrator approves). The same values as tests/intake_fixture.py, which this image does not carry.
@@ -71,16 +72,27 @@ async def sign_in() -> None:
                SELECT %s,%s,%s,role,true,department,password_hash,%s FROM principals WHERE email=%s""",
             (principal, email, principal, str(uuid4()), template))
         USERS[who], PRINCIPAL[who] = email, principal
+    issuer = os.getenv("IDP_INTERNAL_URL", os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
     async with httpx.AsyncClient(timeout=15) as client:
         for who, email in USERS.items():
             response = await client.post(API + "/api/session", json={"email": email, "password": password})
             response.raise_for_status()
             TOKENS[who] = response.json()["access_token"]
+            # Console sessions cannot authorize MCP ingress. Obtain the actor's MCP
+            # grant through the same IdP path used by the workstation clients.
+            granted = await client.post(issuer + "/oauth/token", data={
+                "grant_type": "password", "client_id": "acceptance-ws", "username": email, "password": password})
+            granted.raise_for_status()
+            MCP_TOKENS[who] = granted.json()["access_token"]
+
+
+def _mcp_headers(who: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {MCP_TOKENS[who]}",
+            "X-Agent-Name": "acceptance", "X-Workstation-Id": "acceptance"}
 
 
 def _http(who: str) -> httpx2.AsyncClient:
-    return httpx2.AsyncClient(timeout=90, headers={
-        "Authorization": f"Bearer {TOKENS[who]}", "X-Agent-Name": "acceptance", "X-Workstation-Id": "acceptance"})
+    return httpx2.AsyncClient(timeout=90, headers=_mcp_headers(who))
 
 
 async def list_tools(who: str, url: str = MCP_URL) -> list:
@@ -169,7 +181,7 @@ async def per_server_endpoint() -> str:
         unknown = await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": 1,
             "method": "initialize", "params": {"protocolVersion": "2025-03-26", "capabilities": {},
             "clientInfo": {"name": "connection-regression", "version": "1"}}},
-            headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+            headers=_mcp_headers("employee"))
     expect(unknown.status_code == 404, f"등록되지 않은 서버 경로가 {unknown.status_code}")
     refused = unknown.json()
     expect(refused.get("policy_id") == "MCP-REGISTRY-001" and refused.get("decision") == "Block", refused)
@@ -179,7 +191,7 @@ async def per_server_endpoint() -> str:
            and not row["upstream_attempted"] and not row["upstream_executed"], "미등록 연결의 차단 증적 누락")
     before = (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"]
     # A harness start (initialize, GET, discovery) or a retry loop is one refusal a minute.
-    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+    async with httpx.AsyncClient(timeout=10, headers=_mcp_headers("employee")) as client:
         again = [await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": i, "method": "initialize"}) for i in range(3)]
         again.append(await client.get(API + "/mcp/nope/"))
     expect(all(r.status_code == 404 and r.json().get("decision_id") == refused.get("decision_id") for r in again)
@@ -187,7 +199,7 @@ async def per_server_endpoint() -> str:
     # A refused connection is not a call: it must not use up the caller's ceilings.
     first, second = str(uuid4()), str(uuid4())
     a = await _reserve_call(first, PRINCIPAL["employee"], "acceptance", "probe", {"n": 1}, "public")
-    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+    async with httpx.AsyncClient(timeout=10, headers=_mcp_headers("employee")) as client:
         await client.post(API + "/mcp/nope-ceiling/", json={"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     b = await _reserve_call(second, PRINCIPAL["employee"], "acceptance", "probe", {"n": 2}, "public")
     await _release_call(first); await _release_call(second)
@@ -422,14 +434,14 @@ async def relationship_scope_alerts() -> str:
     """D-39: UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
     another table runs but is flagged; a read inside the relationship stays a plain Allow."""
     await operating("postgres")
-    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees"})
+    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees LIMIT 1"})
     expect(outside.get("decision") == "Alert" and outside.get("policy_id") == "P-SCOPE-001" and not outside["is_error"],
            f"이용 관계 밖 테이블: {outside.get('decision')} {outside.get('policy_id')} {outside['text'][:120]}")
     row = await db.fetch_one("SELECT policy_input FROM decisions WHERE id=%s", (outside.get("decision_id"),))
     scope = (row["policy_input"] or {}).get("relationship") or {}
     expect(scope.get("ids") == ["UR-PG-ANALYTICS"] and scope.get("outside") == ["hr.employees"],
            f"정책 입력의 relationship: {scope}")
-    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders"})
+    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders LIMIT 1"})
     expect(inside.get("decision") == "Allow" and inside.get("policy_id") == "P-AUTHZ-ALLOW-001" and not inside["is_error"],
            f"이용 관계 안 테이블: {inside.get('decision')} {inside.get('policy_id')}")
     return "hr.employees → P-SCOPE-001 경보 · sales.orders → 허용"
@@ -460,7 +472,9 @@ async def console_registration_expires() -> str:
     approval ends on a date (P-APPROVAL-EXPIRY-001); deregistering takes the path away.
     The lab's fetch server stands in under another id, so no outside network is needed."""
     await operating("fetch")
-    server_id, endpoint = "acceptance-fetch", "http://mcp-fetch:8000/mcp"
+    server_id = "acceptance-fetch"
+    endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
+    expect(urlsplit(endpoint).scheme == "https", "ACCEPTANCE_FETCH_ENDPOINT에 신뢰된 HTTPS fetch 시험 경로가 필요합니다.")
     url = f"{API}/mcp/{server_id}/"
     headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
     arguments = {"url": "http://intranet.bob.local/", "max_length": 200}
@@ -477,6 +491,7 @@ async def console_registration_expires() -> str:
         console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
         requested = await client.post(console + "/api/mcp-requests", headers={"Authorization": f"Bearer {TOKENS['employee']}"},
             json={"display_name": "Acceptance fetch", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+                  "requested_tools": ["fetch"],
                   "requested_transport": "streamable-http", "purpose": "실제 공급자 fetch 서버의 계약과 신청 승인 경계를 확인합니다.",
                   "risk_input": IMPACT_INPUT})
         requested.raise_for_status();intake_id = requested.json()["request"]["id"]
@@ -497,6 +512,7 @@ async def console_registration_expires() -> str:
         # Separation of duties: the admin's own request for the same endpoint cannot be
         # approved by that admin (an APPROVED remote intake does not block a new one).
         own = await client.post(console + "/api/mcp-requests", json={"display_name": "Acceptance fetch (self)",
+            "requested_tools": ["fetch"],
             "intake_kind": "remote-endpoint", "endpoint_url": endpoint, "requested_transport": "streamable-http",
             "purpose": "관리자 본인 신청은 본인이 승인할 수 없는지 확인합니다."})
         own.raise_for_status(); own_id = own.json()["request"]["id"]
@@ -532,7 +548,7 @@ async def console_registration_expires() -> str:
         finally:
             removed = await client.delete(f"{API}/api/registry/servers/{server_id}")
         expect(removed.status_code == 200, f"등록 해제: {removed.status_code}")
-        gone = await client.post(url, json={})
+        gone = await client.post(url, json={}, headers=_mcp_headers("employee"))
     expect(gone.status_code == 404, f"해제한 서버 경로가 {gone.status_code}")
     return f"/mcp/{server_id}/ 도구 1개 · 직접 등록 409 · 자기 승인 403 · 주체 범위 차단 · 기한 만료 차단 · 해제 후 404"
 

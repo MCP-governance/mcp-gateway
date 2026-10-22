@@ -7,6 +7,25 @@
 FROM docker.gitea.com/gitea-mcp-server:1.7.0 AS gitea_mcp
 FROM node:22-bookworm-slim AS node
 
+# postgres-mcp 0.3.0 requires pglast==7.2.0 (PEP 440 equivalent to 7.2).
+# PyPI no longer serves that release. Build its exact upstream source, preserving
+# the server's dependency contract rather than substituting a newer parser.
+# pglast v7.2: GPL-3.0-or-later; libpg_query is its pinned upstream submodule.
+# Compiler and source checkout stay in this build stage.
+FROM python:3.12-slim-bookworm AS pglast_builder
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends build-essential git ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && git init /src/pglast \
+ && git -C /src/pglast remote add origin https://github.com/lelit/pglast.git \
+ && git -C /src/pglast fetch --depth 1 origin eed764e2160222e40499061b02870328e4a3ed33 \
+ && git -C /src/pglast checkout --detach FETCH_HEAD \
+ && test "$(git -C /src/pglast rev-parse HEAD)" = eed764e2160222e40499061b02870328e4a3ed33 \
+ && git -C /src/pglast submodule update --init --depth 1 \
+ && test "$(git -C /src/pglast/libpg_query rev-parse HEAD)" = 27b2af9474003da843fb93bba59fe4297841291b \
+ && python -m pip install --no-cache-dir setuptools==80.9.0 wheel==0.45.1 \
+ && python -m pip wheel --use-pep517 --no-build-isolation --no-deps --wheel-dir /wheelhouse /src/pglast
+
 FROM python:3.12-slim-bookworm
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ripgrep ca-certificates curl \
@@ -14,6 +33,9 @@ RUN apt-get update \
 
 COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=pglast_builder /wheelhouse /opt/pglast-wheels
+COPY --from=pglast_builder /src/pglast/README.rst /usr/local/share/doc/pglast/README.rst
+COPY --from=pglast_builder /src/pglast/libpg_query/LICENSE /usr/local/share/doc/pglast/libpg_query-LICENSE
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
@@ -30,8 +52,10 @@ RUN set -eux; \
                 postgres:postgres-mcp==0.3.0 redis:redis-mcp-server==0.5.1 email:mcp-email-server==1.9.1; do \
       name="${spec%%:*}"; pkg="${spec#*:}"; \
       python -m venv "/opt/venvs/$name"; \
-      "/opt/venvs/$name/bin/pip" install --no-cache-dir "$pkg" "mcp>=1.17,<2"; \
-    done
+      "/opt/venvs/$name/bin/pip" install --no-cache-dir --find-links=/opt/pglast-wheels "$pkg" "mcp>=1.17,<2"; \
+      "/opt/venvs/$name/bin/pip" check; \
+    done; \
+    /opt/venvs/postgres/bin/python -c 'from importlib.metadata import version; from pglast import parse_sql; assert version("pglast") == "7.2"; assert parse_sql("SELECT 1")'
 
 # mcp-server-fetch uses readabilipy, which runs `npm install` *at request time* the
 # first time it sees node without its JavaScript dependencies. Inside the internal

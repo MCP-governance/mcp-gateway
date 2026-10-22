@@ -109,6 +109,10 @@ jobs:
       - name: 시스템 자원·연결 지표와 관리자 경계
         run: |
           python -m pip install --quiet -r gateway/requirements.txt
+          PYTHONPATH=gateway REGISTRY_DIR="$PWD/registry" python -m app.integrations
+          python3 tests/acceptance_identity_check.py
+          python3 tests/acceptance_tls_check.py
+          python3 tests/fixture_mcp_identity_test.py
           python3 tests/system_metrics_check.py
           python3 tests/catalog_refresh_check.py
           python3 tests/oauth_rotation_check.py
@@ -175,6 +179,15 @@ jobs:
       - name: ./console.sh up --no-llm
         run: |
           ./console.sh init-disposal
+          # Keep dependency resolver errors in Actions; console.sh's quiet build
+          # otherwise reports only the failed Dockerfile instruction.
+          docker compose --progress plain build
+          ./console.sh prepare-acceptance-tls
+          export COMPOSE_FILE=compose.yaml:compose.acceptance.yaml
+          export ACCEPTANCE_TLS_UID="$(id -u)" ACCEPTANCE_TLS_GID="$(id -g)"
+          echo "COMPOSE_FILE=$COMPOSE_FILE" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_UID=$ACCEPTANCE_TLS_UID" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_GID=$ACCEPTANCE_TLS_GID" >> "$GITHUB_ENV"
           ./console.sh up --no-llm
 
       # Rego, classification self-check, gateway acceptance, the scripted workday of
@@ -199,12 +212,15 @@ jobs:
       - name: 실기기 오버레이 — ./console.sh field up
         run: |
           echo "APPLIANCE_BIND=127.0.0.1" >> .env
+          # Caddy now also publishes the browser-console port (D-129) on APPLIANCE_BIND; on the runner that is the same
+          # loopback address as the base stack's Console port. Move the base one (an appliance binds a Tailscale IP, so no clash there).
+          echo "CONSOLE_PORT=18000" >> .env
           # A.I.G 로컬 모델(D-47)은 실기기에서 받는다. CI는 검사 품질을 볼 수 없으므로 내려받지 않는다.
           echo "AIG_LOCAL_MODEL=none" >> .env
           APPLIANCE_BIND=127.0.0.1 ./console.sh field init-disposal --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field up --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field status
-          FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' ./console.sh field ca
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field ca
           echo "FIELD_CA=$PWD/field/ca/root.crt" >> "$GITHUB_ENV"
           echo "FIELD_CA_SHA256=$(cat field/ca/root.sha256)" >> "$GITHUB_ENV"
 
@@ -263,4 +279,4 @@ jobs:
 
       - name: 정리
         if: always()
-        run: APPLIANCE_BIND=127.0.0.1 FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' docker compose -f compose.yaml -f compose.field.yaml --profile llm down -v
+        run: APPLIANCE_BIND=127.0.0.1 FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' docker compose -f compose.yaml -f compose.acceptance.yaml -f compose.field.yaml --profile llm down -v --remove-orphans

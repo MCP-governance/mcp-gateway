@@ -27,11 +27,29 @@ def post(path, body, token=None):
         return json.load(response)
 
 
+def mcp_token(email, password):
+    # The IdP is reachable from the gateway container; the host's /api/session
+    # grant is scoped to Console management and cannot authorize MCP ingress.
+    code = """import json,os,sys,urllib.parse,urllib.request
+identity=json.load(sys.stdin)
+issuer=(os.getenv('IDP_INTERNAL_URL') or os.getenv('IDP_ISSUER','http://agent-service:8000')).rstrip('/')
+body=urllib.parse.urlencode({'grant_type':'password','client_id':'reservation-check-ws',
+                             'username':identity['email'],'password':identity['password']}).encode()
+request=urllib.request.Request(issuer+'/oauth/token',body,
+                               {'Content-Type':'application/x-www-form-urlencoded'})
+with urllib.request.urlopen(request,timeout=15) as response:
+    print(json.load(response)['access_token'])
+"""
+    return subprocess.check_output(
+        ['docker', 'compose', 'exec', '-T', 'gateway', 'python', '-c', code],
+        input=json.dumps({'email': email, 'password': password}), text=True, timeout=30).strip()
+
+
 def mcp_write(token, statement):
     code = """import asyncio,json,sys
 from app import acceptance
 request=json.load(sys.stdin)
-acceptance.TOKENS['race']=request['token']
+acceptance.MCP_TOKENS['race']=request['token']
 out=asyncio.run(acceptance.call('race','execute_sql',{'sql':request['sql']},'http://127.0.0.1:8080/mcp/postgres/'))
 print(json.dumps({k:out.get(k) for k in ('decision','policy_id','decision_id')}))
 """
@@ -94,7 +112,11 @@ FROM principals WHERE email='ysg@bob.local' ON CONFLICT(token) DO UPDATE SET sta
 """
     subprocess.check_call(['docker', 'compose', 'exec', '-T', 'gateway', 'python', '-c', setup])
     try:
-        token = post('/api/session', {'email': 'reservation-check@bob.local', 'password': os.getenv('MOCK_SSO_PASSWORD', 'test-password')})['access_token']
+        email = 'reservation-check@bob.local'
+        password = os.getenv('MOCK_SSO_PASSWORD', 'test-password')
+        console_token = post('/api/session', {'email': email, 'password': password})['access_token']
+        token = mcp_token(email, password)
+        assert token and token != console_token, 'MCP grant must be separate from the Console session'
         before = sql('SELECT price FROM public.products WHERE id=1')
         denied = mcp_write(token, 'UPDATE public.products SET price=0 WHERE id=1')
         assert denied['decision'] == 'Block' and denied['policy_id'] == 'PAC-01' and not denied['upstream_attempted'], denied

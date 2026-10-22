@@ -966,16 +966,22 @@ async def review_server_residency(server_id: str, location: dict, actor: str) ->
         reviewed_at = datetime.now(UTC).isoformat(timespec="seconds")
         await review.require_independent("residency-review", "server", server_id, actor, applicant,
                                          {"residency": normalized, "previous_sha256": residency.sha256(previous)})
+        binding = residency.transfer_review_digest(server_id, spec, normalized, residency.load_pack())
+        # This decision must be durable before a file-backed grant can take effect.
+        # A later registry failure may delay activation, never create an unaudited grant.
+        await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
+                                  scope={"residency": normalized, "previous_sha256": residency.sha256(previous),
+                                         "approval_sha256": binding})
         spec["residency"] = normalized
         spec["residency_review"] = {"reviewed_by": actor, "reviewed_at": reviewed_at,
-                                    "previous_sha256": residency.sha256(previous)}
+                                    "previous_sha256": residency.sha256(previous),
+                                    "approval_sha256": binding}
         doc["history"].append({"type": "residency-reviewed", "server_id": server_id, "actor": actor,
                                "at": reviewed_at, "residency": normalized,
-                               "previous_sha256": residency.sha256(previous)})
+                               "previous_sha256": residency.sha256(previous),
+                               "approval_sha256": spec["residency_review"]["approval_sha256"]})
         registry.save_runtime(doc)
         await registry.sync()
-    await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
-                              scope={"residency": normalized, "previous_sha256": residency.sha256(previous)})
     return {"server_id": server_id, "residency": normalized, "reviewed_by": actor, "reviewed_at": reviewed_at}
 
 

@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "mode": "historical",
+  "log_sha256": "ce33a626c815df9a18164835462b50ff0534a1514b000f2f2ecf9de2d4357339",
+  "selected": {
+    "bootstrap_self_check": {
+      "line": 39,
+      "row_sha256": "36cdcde796a27745e39e54c10d1469ad83a5dd8fa13de28997bb7dbdab5e0fbf"
+    },
+    "catalog_refresh_check.py": {
+      "line": 21,
+      "row_sha256": "38f446d2f318f25bcb195dfad53650c5769996aeb04f55a81aefda76a663fb77"
+    },
+    "console-state.test.mjs": {
+      "line": 30,
+      "row_sha256": "31ed18377f3925672d2298899a0e462f7bd3abafbaa0efd8c39ade4085ad5642"
+    },
+    "console_copy_check.py": {
+      "line": 33,
+      "row_sha256": "1def4d92dab6d383a1a40a2fa455a4782ba29170cfc07f138a78ad03d3ca1c67"
+    },
+    "credential_binding_check.py": {
+      "line": 6,
+      "row_sha256": "47380eb806f34c6dcd81a45d2c4a1d207a27beb5929cf27300e3ffaed1f926fe"
+    },
+    "dispatch_effect_lab.py": {
+      "line": 2,
+      "row_sha256": "59a5e052d033b2840a0f0c811151fb47353d9c06eab60d14ff5ebe9031014db1"
+    },
+    "dispatch_intent_pg_check.py": {
+      "line": 1,
+      "row_sha256": "ae721610c03464561630dd1557b9363bc3c86c3f691d6e443f83af5ee6ac57b5"
+    },
+    "endpoint_collector_check.py": {
+      "line": 17,
+      "row_sha256": "84572f65a4fbb28e0ab0fce35b2d3005bb13d3f6081a3ec90a6248ef5b93aafb"
+    },
+    "endpoint_evidence_check.py": {
+      "line": 15,
+      "row_sha256": "91a54e114a97161ac71a44cdb0a42bdb243b2c0efd763f994e23c7e53ab06e27"
+    },
+    "endpoint_evidence_pg_check.py": {
+      "line": 8,
+      "row_sha256": "d1a28434eec4d65b61ed05b137f00d01e55dd3199548d9358b7fec0b5b7839b0"
+    },
+    "endpoint_inventory_check.py": {
+      "line": 16,
+      "row_sha256": "e9e5734118b87721e73f29a3121fbcc3b399e46ae5a539491b24986435513f92"
+    },
+    "endpoint_snapshot_check.py": {
+      "line": 18,
+      "row_sha256": "7b24e0d9f536d1e437e1c72cc91b1203c68eb7d6898b6df05123449d633089c8"
+    },
+    "field_kit_check.py": {
+      "line": 26,
+      "row_sha256": "c2ecfe11ee766c29588f7feffcedebc283c6d4ea11b2fdb20b469a195aa5fed0"
+    },
+    "intake_identity_pg_check.py": {
+      "line": 7,
+      "row_sha256": "45cbc1113a0043512d7e4e5bab226b70235574a85804f254d0594e8a58e3d5f8"
+    },
+    "intake_identity_test.py": {
+      "line": 38,
+      "row_sha256": "1df99bd8528a3d86fc361d13c74f299f6980b6f47799ca17e08a2aa7fcb48ea2"
+    },
+    "intake_validation_test.py": {
+      "line": 14,
+      "row_sha256": "262849a926bed7841128bbc3ec0366bddffec1ea567e325a161079f4ad09fcbc"
+    },
+    "korean_pii_eval.py": {
+      "line": 11,
+      "row_sha256": "2e8e5bd7f8df2af4c8faf07b1194ea19b9db91b350a60001b09a3317b35cf197"
+    },
+    "managed_enforcement_check.py": {
+      "line": 35,
+      "row_sha256": "d1d7f71a9e7bc6fd03b28f5b8f2579e3be6b59f440ff2f946084c3f8be6f1eb1"
+    },
+    "mcp_result_contract_check.py": {
+      "line": 37,
+      "row_sha256": "8fae4f1376eabf8415d4f296707adf51f8929191ce6c87c28aa505f9001265ec"
+    },
+    "mcp_result_services_check.py": {
+      "line": 10,
+      "row_sha256": "726abe8c7dd2e31165d1bdb2f7ae29c945dd0f1290f9b3ac9dc37ae5285527d5"
+    },
+    "oauth_rotation_check.py": {
+      "line": 22,
+      "row_sha256": "4ed54aaca6c67a87720d08024372be87ea871e34af377f9de66ded89e3be2024"
+    },
+    "oauth_rotation_pg_check.py": {
+      "line": 5,
+      "row_sha256": "787ecb439680221bf7a2f29491a586850e372e12052e19fcba7aec5e290713d5"
+    },
+    "opa_test": {
+      "line": 36,
+      "row_sha256": "df1dcfd8c4da6767d9bd358321d656d24abb74b356204a1ca231beb2bc5b12fb"
+    },
+    "open_endpoints.py": {
+      "line": 34,
+      "row_sha256": "fa8e98da1f8852107024b39b5e8ad1d8d407d5a2c4f65e3493f27c8995996128"
+    },
+    "oss_audit_test.py": {
+      "line": 27,
+      "row_sha256": "9add2a3ed7e921516dd1b6387aa037832c97ee983bc2af2cf8e51ce13e8df4ff"
+    },
+    "pac_boundary_check.py": {
+      "line": 29,
+      "row_sha256": "0ab6271b5848e68d1ebf028ea18017f842ee9522c1933fb6c893d2c1d1b847a6"
+    },
+    "pac_delegation_check.py": {
+      "line": 13,
+      "row_sha256": "c20e029977414823d326b6027f881060fc383f01ca3a1fdf233229569e6508db"
+    },
+    "provenance_check.py": {
+      "line": 9,
+      "row_sha256": "13428d8e1aa60b222f74b69ef0fdb935e0938638830d05ac1890a07f2bd9d7ec"
+    },
+    "pyflakes": {
+      "line": 32,
+      "row_sha256": "a7ca828c46161094be7df0612d30c7372687f55838cd0659ff62a55d8d1417f1"
+    },
+    "schema_check.py": {
+      "line": 25,
+      "row_sha256": "bf1138b51f53015dedf11955484e1e5bf67797cafe1ca7ae18be47e9d7f7b52c"
+    },
+    "security_edges_check.py": {
+      "line": 20,
+      "row_sha256": "a22a1245a710f4058b77b3fdf5f57b4bb0ac41872d89e523b9c666951268c2b7"
+    },
+    "self_checks": {
+      "line": 28,
+      "row_sha256": "6052cb53af9a2540b20c855c337c999cc359dd1a7ca44bbb27175f6c480349f7"
+    },
+    "system_metrics_check.py": {
+      "line": 24,
+      "row_sha256": "f548e98ae213fdcc3d4004edfe6e67ca369af8288d016802a5c8fa0cd83cc879"
+    },
+    "termination_lab.py": {
+      "line": 3,
+      "row_sha256": "e108dc2178dc09fb07c684d4807fb79a01bb67a9a93a241d6284880f1fa14b0d"
+    },
+    "test_console.py": {
+      "line": 31,
+      "row_sha256": "6d539108ac97b3fcc60d1f7fb1d097ff9b14a9bf38e2a0c3828ae6b38add3e24"
+    },
+    "token_revocation_pg_check.py": {
+      "line": 4,
+      "row_sha256": "b7441a15795bf207c16ae9101d65120f70292fce69738507204b4b43d7e58699"
+    }
+  }
+}

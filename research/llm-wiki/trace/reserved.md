@@ -11,7 +11,6 @@
 | D-38 | 예약 | Proxy 브랜치 | Proxy 브랜치의 LiteLLM 조사 결정(D-36과 같은 묶음). LiteLLM 비교 문서가 이 번호를 부른다 |
 | D-160 | 예약 | 10/20-enrollment-pg | 10/20-enrollment-pg 브랜치의 장치 재등록·오래된 heartbeat 처리 결정. 병합되기 전 |
 | D-171 | 예약 | 방향 갱신 10-20 | RM-01용으로 잡아 두고 아직 쓰지 않았다 |
-| D-173 | 예약 | 10/21-sheet-runtime-completion | 10/21-sheet-runtime-completion 브랜치의 RM-03 국외 처리 심사 결속 결정. 병합되기 전 |
 | D-174 | 예약 | 10/20-dev72-design | 10/20-dev72-design 브랜치의 DEV-72 사용자 확인 단계 결정. 병합되기 전 |
 | D-190 | 충돌 | 원격 브랜치 세 곳 | 원격 세 브랜치(10/21-sheet-runtime-completion·10/22-hierarchical-agents·10/22-runtime-recovery)가 서로 다른 결정을 이 번호로 정의했다. 쓰지 않고, 각 브랜치는 병합 전에 다음 빈 번호로 옮긴다 |
 | P-AUTHZ-DENY-001 | 폐기 | D-25 · D-66 | 333 권한 시절 정책. 과거 감사 기록의 id는 그대로 남는다 |

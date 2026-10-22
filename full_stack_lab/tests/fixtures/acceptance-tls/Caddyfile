@@ -1,0 +1,11 @@
+{
+	admin off
+	auto_https off
+}
+https://mcp-fetch-tls:8443 {
+	tls /certs/server.pem /certs/server.key
+	reverse_proxy mcp-fetch:8000 {
+		header_up Host mcp-fetch:8000
+		flush_interval -1
+	}
+}

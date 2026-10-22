@@ -59,6 +59,16 @@ residency_country(target) := {country |
 
 residency_rule(country) := object.get(residency_pack.rules[residency_grade], country, residency_pack.rules[residency_grade]["*"])
 
+# This fact comes from the registry review bound to location, endpoint and policy pack.
+# It cannot exempt important data, missing evidence or a tool's downstream target.
+residency_transfer_reviewed(target) if {
+    residency_grade == "nonimportant"
+    residency_known(target)
+    object.get(target, "transfer_reviewed", false) == true
+    is_string(target.transfer_basis)
+    trim_space(target.transfer_basis) != ""
+}
+
 residency_denials contains "위치 규칙 확인 불가" if {
     residency_required
     not residency_pack_valid
@@ -81,6 +91,7 @@ residency_approvals contains "목적지 국가 승인 필요" if {
     some target in residency_fact.targets
     some country in residency_country(target)
     residency_rule(country) == "approval"
+    not residency_transfer_reviewed(target)
 }
 residency_approvals contains "국외 이전 근거 확인 필요" if {
     residency_required

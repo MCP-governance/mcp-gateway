@@ -164,7 +164,8 @@ if GATEWAY:
 
         async def test_remote_location_substitution_rejected_before_network(self):
             request = {"server_id": "residency", "endpoint": "https://service.example/mcp",
-                       "intake_id": "00000000-0000-0000-0000-000000000069", "residency": LOCATION}
+                       "intake_id": "00000000-0000-0000-0000-000000000069", "residency": LOCATION,
+                       "data_class": "nonimportant"}
             approved_location = {**LOCATION, "storage_countries": ["US"]}
             contract = {"registration": {"residency": approved_location}, "allowed_principals": ["employee"]}
             intake = {"status": "APPROVED", "submitted_by": "employee", "reviewed_by": "admin",
@@ -204,7 +205,8 @@ if GATEWAY:
         async def test_same_intake_cannot_replace_active_location(self):
             request = {"server_id": "residency", "endpoint": "https://service.example/mcp",
                        "source_url": "https://service.example/mcp", "commit_sha": "",
-                       "intake_id": "00000000-0000-0000-0000-000000000069", "residency": LOCATION}
+                       "intake_id": "00000000-0000-0000-0000-000000000069", "residency": LOCATION,
+                       "data_class": "nonimportant"}
             contract = {"registration": {"residency": LOCATION}, "allowed_principals": ["employee"],
                         "valid_until": "2030-01-01T00:00:00+00:00"}
             intake = {"status": "APPROVED", "submitted_by": "employee", "reviewed_by": "admin",

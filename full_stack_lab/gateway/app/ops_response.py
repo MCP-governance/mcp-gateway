@@ -65,30 +65,42 @@ def selected(server_id, source):
 
 
 async def suspend(server_id, source, reason, evidence, batch=None):
+    existing = await db.fetch_one(
+        """SELECT s.status, EXISTS(SELECT 1 FROM ops_suspensions x
+               WHERE x.server_id=s.id AND x.resumed_at IS NULL) AS suspended
+             FROM mcp_servers s WHERE s.id=%s""", (server_id,))
+    if not existing:
+        raise LookupError("등록되지 않은 서버입니다.")
+    if existing["suspended"] or existing["status"] in ("DISABLED", "BLOCKED_SUPPLY_CHAIN"):
+        return False
     local_runner = globals().get("local_jobs")
     if local_runner is not None:
         await local_runner.quiesce(server_id=server_id)
     async with db.transaction() as connection:
-        await connection.execute("SELECT id FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))
+        server = await (await connection.execute(
+            "SELECT status FROM mcp_servers WHERE id=%s FOR UPDATE", (server_id,))).fetchone()
+        if not server or server["status"] in ("DISABLED", "BLOCKED_SUPPLY_CHAIN"):
+            return False
         row = await (await connection.execute(
             """INSERT INTO ops_suspensions(server_id,source,reason,evidence) VALUES (%s,%s,%s,%s)
                ON CONFLICT (server_id) WHERE resumed_at IS NULL DO NOTHING RETURNING id""",
             (server_id, source, reason, Jsonb(evidence)))).fetchone()
+        if not row:
+            return False
         await connection.execute(
             "UPDATE mcp_servers SET status='DISABLED',status_reason=%s WHERE id=%s", (reason, server_id))
         await connection.execute(
             """UPDATE mcp_runtimes SET status='STOPPING',error=%s,updated_at=now()
                WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
                  AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (reason, server_id))
-        if row:
-            scope = {"source": source, **evidence}
-            if batch:
-                scope["batch"] = batch
-            await connection.execute(
-                """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
-                   VALUES ('automatic-suspension','held','server',%s,'system',%s,%s)""",
-                (server_id, reason, Jsonb(scope)))
-    return bool(row)
+        scope = {"source": source, **evidence}
+        if batch:
+            scope["batch"] = batch
+        await connection.execute(
+            """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
+               VALUES ('automatic-suspension','held','server',%s,'system',%s,%s)""",
+            (server_id, reason, Jsonb(scope)))
+    return True
 
 
 async def contain_drift(server_id, findings):

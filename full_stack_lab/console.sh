@@ -567,6 +567,15 @@ case "${1:-up}" in
       gateway python -m app.replay --limit "${2:-100}" | tee reports/policy-replay.json
     python3 tests/replay_check.py reports/policy-replay.json
     ;;
+  prepare-acceptance-tls)
+    [[ "${GITHUB_ACTIONS:-}" == "true" ]] || { echo "TLS fixture preparation is restricted to GitHub CI." >&2; exit 2; }
+    mkdir -p .acceptance-tls
+    # Use the built gateway's public trust store and installed cryptography. No service starts.
+    docker compose -f compose.yaml run --rm --no-deps -T --user "$(id -u):$(id -g)" --entrypoint python \
+      -v "$LAB_DIR/tests/fixtures/acceptance-tls:/fixture-source:ro" \
+      -v "$LAB_DIR/.acceptance-tls:/fixture-output" \
+      gateway /fixture-source/prepare.py /registry /fixture-output
+    ;;
   test)
     [[ "${TERMINATION_DISPOSABLE_LAB:-}" == "1" ]] || {
       echo '영구 폐기 시험을 포함합니다. 일회용 랩에서만 TERMINATION_DISPOSABLE_LAB=1로 실행하세요.' >&2; exit 2;
