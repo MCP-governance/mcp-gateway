@@ -142,6 +142,52 @@
     "summary": "서버·배포·테스트·비용·AI 코딩 세션 한 화면(2D·3D), 조치는 제안→승인→실행→기록. 사내 운영, 외부 가입 없음, 데모는 가상 데이터. 코드 미공개.",
     "path": "solutions/genailabs-gensops.md",
     "verified_on": "2026-10-23",
-    "runtime_verified": false
+    "runtime_verified": false,
+    "id": "aws-cloudtrail-bedrock-agentcore",
+    "title": "AWS CloudTrail · Bedrock Guardrails · AgentCore",
+    "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html",
+    "summary": "관리/데이터 이벤트 분리, 서명 digest 체인, 조직 trail, Insights, Guardrails 판본·조직 강제, AgentCore Policy LOG_ONLY. Lake 신규 고객 중단 표시.",
+    "kind": "commercial",
+    "verification": "official_docs_selected_read",
+    "path": "solutions/cloud-control-planes.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false,
+    "license": "관리형 상용 서비스(가격·계약 미확인)"
+  },
+  {
+    "id": "azure-monitor-foundry-apim",
+    "title": "Azure Monitor · Prompt Shields · API Management MCP",
+    "url": "https://learn.microsoft.com/en-us/azure/api-management/mcp-server-overview",
+    "summary": "활동 로그(제어 평면 90일), Prompt Shields, APIM MCP 정책(도구 일괄 적용), Foundry 제어 평면의 온프레미스 에이전트·도구 등록(미리보기).",
+    "kind": "commercial",
+    "verification": "official_docs_selected_read",
+    "path": "solutions/cloud-control-planes.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false,
+    "license": "관리형 상용 서비스(가격·계약 미확인)"
+  },
+  {
+    "id": "gcp-audit-model-armor",
+    "title": "Google Cloud Audit Logs · Model Armor · Agent Platform",
+    "url": "https://cloud.google.com/logging/docs/audit",
+    "summary": "Admin Activity 항상 기록, Data Access 기본 꺼짐, MCP 서버 Data Access 로그, Model Armor Inspect only/block·floor 설정.",
+    "kind": "commercial",
+    "verification": "official_docs_selected_read",
+    "path": "solutions/cloud-control-planes.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false,
+    "license": "관리형 상용 서비스(가격·계약 미확인)"
+  },
+  {
+    "id": "cloudflare-ai-gateway-mcp-portals",
+    "title": "Cloudflare AI Gateway · MCP 서버 포털",
+    "url": "https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/",
+    "summary": "요청별 로그·본문 저장 헤더, Guardrails flag/block, 포털별 도구 큐레이션·별칭·Code Mode.",
+    "kind": "commercial",
+    "verification": "official_docs_selected_read",
+    "path": "solutions/cloud-control-planes.md",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false,
+    "license": "관리형 상용 서비스(가격·계약 미확인)"
   }
 ]

@@ -3,6 +3,9 @@
 ## 레퍼런스 3종 조사 (10-23)
 
 CrowdStrike Falcon Guardian, 젠아이랩스 AI-native 개발 사례, GensOps를 공식 자료로 특정하고 솔루션 카드 3개와 비교 분석을 추가했다(모두 코드 미공개, 공급자 주장, 시험 없음). 방향 제안 R-1~R-7은 구현·승인이 아니다. [작업 보고](reports/2026-10-23-references-3.md), [비교 분석](../analysis/references-1023/README.md).
+## 최신: 클라우드 감사·AI 통제 벤치마크 (10-23)
+
+사용자 질문(클라우드 방식을 온프레미스에 차용할 수 있는가)에 대해 CloudTrail·Azure·Google·Bedrock·AgentCore·Model Armor·Cloudflare의 공식 문서를 선택 열람하고 MINT 코드와 대조했다. 기록 모델과 서명 digest 체인은 차용 가능, 관리형 레이크와 클라우드 분류 API는 부적합이다. 차용 제안 5개(제어 평면 변경 이벤트 완전 기록, 서명 정기 digest, 정책 단위 그림자 모드, 기준선 이상 탐지, what-if 조회)를 [벤치마크](../analysis/cloud-control-benchmark-1023/README.md)에 정리했다. 구현·배포·클라우드 서비스 시험은 하지 않았다. 코드 대조는 정적 읽기이며 `enforcement` 전환 이력 부재와 체인 head 외부 앵커 부재는 "미발견"이다. [작업 보고](reports/2026-10-23-cloud-control-benchmark.md)
 
 ## 최신: 전체 CI 실패 후속 검증 (10-22)
 

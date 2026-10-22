@@ -14,6 +14,7 @@
 | OSS | [Microsoft Wassette](ms-wassette.md) | 고정 커밋 Rust 코드 | 도구 실행의 Wasm/WASI 자원 경계 |
 | OSS | [LiteLLM](litellm.md) · [MCP 경로 심층](../analysis/oss-deep/litellm-mcp-path.md) | 고정 커밋 Python 코드 | 명시한 MCP 서버 범위가 넓어지지 않는 처리 |
 | 상용 | [Kong AI Gateway MCP](kong-ai-gateway.md) | 공식 문서 재확인 | 도구 ACL·토큰 audience·프로토콜 호환성 |
+| 상용(클라우드) | [AWS CloudTrail·Bedrock·AgentCore, Azure Monitor·Foundry·APIM, Google Audit Logs·Model Armor, Cloudflare AI Gateway·MCP 포털](cloud-control-planes.md) · [온프레미스 차용 벤치마크](../analysis/cloud-control-benchmark-1023/README.md) | 공식 문서 선택 열람(2026-10-23) | 제어/데이터 평면 기록 분리, 서명 digest 체인, 정책 그림자 모드, 기준선 이상 탐지 |
 | 상용 | [BeyondTrust Pathfinder MCP](beyondtrust-pathfinder.md) | 공식 문서 재확인 | 사이트 활성화·기한 있는 사용자 토큰 |
 | 상용+OSS 생태계 | [Lunar MCPX + AI Gateway](lunar-mcpx.md) · [MCPX·스캐너 심층](../analysis/oss-deep/mcpx-cisco-scanner.md) | 공급자 공식 설명 | MCP 서버가 실행한 외부 API 호출의 별도 통제 |
 | OSS 후보 | [ToolHive runtime](toolhive-runtime.md) · [런타임 심층](../analysis/oss-deep/toolhive-runtime.md) | v0.54.0(`1ce13bbb`) 고정 소스 L3 | DEV-38 수명 관리와 명시적 목적지 제한. 설치·실행 미검증 |
