@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-22
 
+## 최신: 클라우드 감사·AI 통제 벤치마크 (10-23)
+
+사용자 질문(클라우드 방식을 온프레미스에 차용할 수 있는가)에 대해 CloudTrail·Azure·Google·Bedrock·AgentCore·Model Armor·Cloudflare의 공식 문서를 선택 열람하고 MINT 코드와 대조했다. 기록 모델과 서명 digest 체인은 차용 가능, 관리형 레이크와 클라우드 분류 API는 부적합이다. 차용 제안 5개(제어 평면 변경 이벤트 완전 기록, 서명 정기 digest, 정책 단위 그림자 모드, 기준선 이상 탐지, what-if 조회)를 [벤치마크](../analysis/cloud-control-benchmark-1023/README.md)에 정리했다. 구현·배포·클라우드 서비스 시험은 하지 않았다. 코드 대조는 정적 읽기이며 `enforcement` 전환 이력 부재와 체인 head 외부 앵커 부재는 "미발견"이다. [작업 보고](reports/2026-10-23-cloud-control-benchmark.md)
+
 ## 최신: 전체 CI 실패 후속 검증 (10-22)
 
 사용자 요청으로 작업 브랜치를 재개하고 main `62bafc4`까지의 독립 검토 기록을 통합했다. SQL 집계 시험에 고정 LIMIT을 명시하고, 후속 예약 효과/적대 시험의 Console 토큰과 MCP OAuth 토큰을 구분했다. 실제 OSS fetch MCP를 HTTPS로 검증하기 위한 CI 전용 Caddy/임시 CA 구성을 추가했다. 제품의 HTTPS, scope, 조회량 조건은 유지한다. 현재 위협 참조는 새 독립 변경 검토로 갱신했고 과거 검토 원본을 보존했다.

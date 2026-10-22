@@ -1,0 +1,458 @@
+{
+  "checked_at": "2026-10-23",
+  "mint_commit": "7b7ad6d",
+  "method": "curl로 공개 페이지 원본 HTML(또는 API JSON)을 저장하고 SHA-256을 계산한 뒤, 텍스트 추출본(.txt, 파생물)에서 필요한 절을 읽었다. 열람 범위는 항목별 reading에 기록한다.",
+  "warning": "공식 문서는 계속 바뀌는 자료다. 이 파일의 확보 시각 이후 변경된 내용은 반영하지 않는다. 확보는 전문 정독이나 실제 기능 시험을 뜻하지 않는다. AWS 페이지는 문서 날짜를 표시하지 않아 확보 시각만 기준이다.",
+  "sources": [
+    {
+      "id": "A1",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-intro.html",
+      "fetched_at": "2026-10-22T16:26:19Z",
+      "sha256": "b1917d40b0be876c6af91a9983d645593755372d6621c9b5a6152bd73346403d",
+      "bytes": 17209,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A1.html",
+      "document_date": null,
+      "reading": "본문 전체 읽음"
+    },
+    {
+      "id": "A2",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-data-events-with-cloudtrail.html",
+      "fetched_at": "2026-10-22T16:26:20Z",
+      "sha256": "fdf0bc537d91d3874fd7d31ab473ad1aaa9bd9be92c962ac6d517a9091afde66",
+      "bytes": 220421,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A2.html",
+      "document_date": null,
+      "reading": "도입부와 리소스 유형 표(Bedrock·AgentCore·MCP 항목)만 읽음"
+    },
+    {
+      "id": "A3",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-management-events-with-cloudtrail.html",
+      "fetched_at": "2026-10-22T16:26:20Z",
+      "sha256": "50263f0e2e3b92c4fa67bbf2528aff67d4028efe8e6ffc49a893491c97fa917c",
+      "bytes": 77877,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A3.html",
+      "document_date": null,
+      "reading": "도입부·읽기/쓰기 구분 절만 읽음"
+    },
+    {
+      "id": "A4",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-lake.html",
+      "fetched_at": "2026-10-22T16:26:20Z",
+      "sha256": "4ad47948bc6cd7f990ab48e073c6e7fde4e601472138de6c5a96ff6bc181fa2d",
+      "bytes": 28482,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A4.html",
+      "document_date": null,
+      "reading": "본문 전체 읽음(가용성 변경 공지 포함)"
+    },
+    {
+      "id": "A5",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/logging-insights-events-with-cloudtrail.html",
+      "fetched_at": "2026-10-22T16:26:20Z",
+      "sha256": "5eb7178c01888bdf0043ee81c5c28ffa110a1de1a5b5450495d434726f3a070e",
+      "bytes": 16217,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A5.html",
+      "document_date": null,
+      "reading": "본문 전체 읽음"
+    },
+    {
+      "id": "A7",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-user-guide.html",
+      "fetched_at": "2026-10-22T16:26:21Z",
+      "sha256": "92ca8fba6b9e4f419348db66902346b18bcc188ac401a6c6974de66f950f22d2",
+      "bytes": 24839,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A7.html",
+      "document_date": null,
+      "reading": "도입부 읽음"
+    },
+    {
+      "id": "B1",
+      "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log",
+      "fetched_at": "2026-10-22T16:26:22Z",
+      "sha256": "bc6efe59f3b40680a7d3d2fdb1a71e3c3683a6a8b6659301d39655d3d729daa9",
+      "bytes": 104752,
+      "local_path": "local-sources/cloud-control-benchmark-1023/B1.html",
+      "document_date": "ms.date 2026-05-04 / updated_at 2026-10-19",
+      "reading": "도입부·보존 절 읽음"
+    },
+    {
+      "id": "B2",
+      "url": "https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-audit-logs",
+      "fetched_at": "2026-10-22T16:26:22Z",
+      "sha256": "e15e8eb60a226b00c18ad44a482f9aafc39979a465871abfdb2b7bf193bff5e6",
+      "bytes": 53940,
+      "local_path": "local-sources/cloud-control-benchmark-1023/B2.html",
+      "document_date": "ms.date 2026-06-05 / updated_at 2026-06-16",
+      "reading": "도입부만 읽음(보존 기간 미확인)"
+    },
+    {
+      "id": "C1",
+      "url": "https://cloud.google.com/logging/docs/audit",
+      "fetched_at": "2026-10-22T16:26:24Z",
+      "sha256": "fd637d53aa0b60bb86c59838616fdd3097c1959413eadc6f2a76d99580543917",
+      "bytes": 212728,
+      "local_path": "local-sources/cloud-control-benchmark-1023/C1.html",
+      "document_date": "Last updated 2026-10-21 UTC",
+      "reading": "로그 종류 절과 MCP 서버 항목 읽음(보존 수치는 이 페이지에 없어 미확인)"
+    },
+    {
+      "id": "C2",
+      "url": "https://cloud.google.com/logging/docs/routing/overview",
+      "fetched_at": "2026-10-22T16:26:26Z",
+      "sha256": "918974e03b249dadef926c09c2c30f8983d01a4c072364c9da3cec373b30a2b4",
+      "bytes": 207533,
+      "local_path": "local-sources/cloud-control-benchmark-1023/C2.html",
+      "document_date": "Last updated 2026-10-21 UTC",
+      "reading": "싱크·계층 절을 grep으로만 확인"
+    },
+    {
+      "id": "D1",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html",
+      "fetched_at": "2026-10-22T16:26:27Z",
+      "sha256": "9f9eb0332227e270e420081565d0da2c331fc227c4f98f0fce32b4615896031e",
+      "bytes": 19585,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D1.html",
+      "document_date": null,
+      "reading": "본문 전체 읽음"
+    },
+    {
+      "id": "D2",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway.html",
+      "fetched_at": "2026-10-22T16:26:27Z",
+      "sha256": "0c6975c750ba11904e583c6a933bd9ffffea3675e3e77b5dfec695b7c070b983",
+      "bytes": 19713,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D2.html",
+      "document_date": null,
+      "reading": "도입부·핵심 기능 읽음"
+    },
+    {
+      "id": "D3",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy.html",
+      "fetched_at": "2026-10-22T16:26:27Z",
+      "sha256": "710a3b8ca6698bf71d0e0b4b4195cb9db063677a6d7f4ead078c9a078a0c300e",
+      "bytes": 20052,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D3.html",
+      "document_date": null,
+      "reading": "도입부·핵심 기능 읽음"
+    },
+    {
+      "id": "D4",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/model-invocation-logging.html",
+      "fetched_at": "2026-10-22T16:26:27Z",
+      "sha256": "ec696d06f55df5cfc838f8ac511a16ff5cfe4cf154848b7fdf0e7b99e26b19d8",
+      "bytes": 37499,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D4.html",
+      "document_date": null,
+      "reading": "도입부·지원 API 절 읽음"
+    },
+    {
+      "id": "D5",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/identity.html",
+      "fetched_at": "2026-10-22T16:26:28Z",
+      "sha256": "b9083396a095a0bfb8de328596d9dda73d2ef064af75dc4dc0a91581841a9cbe",
+      "bytes": 13921,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D5.html",
+      "document_date": null,
+      "reading": "도입부만 읽음"
+    },
+    {
+      "id": "E1",
+      "url": "https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection",
+      "fetched_at": "2026-10-22T16:26:29Z",
+      "sha256": "f8ea70a0cc668e1674a096e43968b2eb824591c6c84c92944542961589a6c856",
+      "bytes": 65593,
+      "local_path": "local-sources/cloud-control-benchmark-1023/E1.html",
+      "document_date": "ms.date 2026-08-28 / updated_at 2026-10-14",
+      "reading": "도입부·탐지 유형 읽음"
+    },
+    {
+      "id": "E2",
+      "url": "https://learn.microsoft.com/en-us/azure/api-management/mcp-server-overview",
+      "fetched_at": "2026-10-22T16:26:30Z",
+      "sha256": "c390b9390d5d9bede9c44cd1601b073bdde00ea9a5137332646f470b7300c432",
+      "bytes": 58946,
+      "local_path": "local-sources/cloud-control-benchmark-1023/E2.html",
+      "document_date": "ms.date 2026-09-11 / updated_at 2026-10-20",
+      "reading": "MCP 통제 절 읽음"
+    },
+    {
+      "id": "E3",
+      "url": "https://learn.microsoft.com/en-us/azure/api-management/genai-gateway-capabilities",
+      "fetched_at": "2026-10-22T16:26:30Z",
+      "sha256": "2bd8372d1d3085a6c5cfb36b5b6dc9c7a86ff71ce38abc892c1aa2eb7358f96a",
+      "bytes": 71924,
+      "local_path": "local-sources/cloud-control-benchmark-1023/E3.html",
+      "document_date": "ms.date 2026-05-29 / updated_at 2026-06-25",
+      "reading": "MCP·Foundry 통합·관측 절 읽음"
+    },
+    {
+      "id": "E4",
+      "url": "https://learn.microsoft.com/en-us/azure/ai-foundry/what-is-azure-ai-foundry",
+      "fetched_at": "2026-10-22T16:26:32Z",
+      "sha256": "088144754fed76fe45a1914da862b58890b7b07bdfea71592ca8c03bc744c3af",
+      "bytes": 60534,
+      "local_path": "local-sources/cloud-control-benchmark-1023/E4.html",
+      "document_date": null,
+      "reading": "저장만 하고 읽지 않음"
+    },
+    {
+      "id": "F1",
+      "url": "https://cloud.google.com/security-command-center/docs/model-armor-overview",
+      "fetched_at": "2026-10-22T16:26:34Z",
+      "sha256": "f2186c8f9e0c0b9810b71fc93a00ec64e680e3cce2d9969320698dba1a6e73f2",
+      "bytes": 160486,
+      "local_path": "local-sources/cloud-control-benchmark-1023/F1.html",
+      "document_date": "Last updated 2026-10-13 UTC",
+      "reading": "도입부·집행 유형·floor 절 읽음"
+    },
+    {
+      "id": "F2",
+      "url": "https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview",
+      "fetched_at": "2026-10-22T16:26:36Z",
+      "sha256": "9dcee450bb1618d9c4a2c23a9a77e022f42ab879698818e259e7afa8b86974d4",
+      "bytes": 293512,
+      "local_path": "local-sources/cloud-control-benchmark-1023/F2.html",
+      "document_date": "Last updated 2026-10-21 UTC",
+      "reading": "목차 수준만 읽음"
+    },
+    {
+      "id": "G1",
+      "url": "https://developers.cloudflare.com/ai-gateway/",
+      "fetched_at": "2026-10-22T16:26:37Z",
+      "sha256": "651281bb189be0704041d51dbf695e231449c9005abd0c835420793e8215d5a4",
+      "bytes": 132463,
+      "local_path": "local-sources/cloud-control-benchmark-1023/G1.html",
+      "document_date": "Last updated Apr 20, 2026",
+      "reading": "본문 읽음"
+    },
+    {
+      "id": "G2",
+      "url": "https://developers.cloudflare.com/ai-gateway/features/guardrails/",
+      "fetched_at": "2026-10-22T16:26:37Z",
+      "sha256": "dfd5990da914817cc028a726f00488b29ea28e908200bb6874584a5294f1f9cd",
+      "bytes": 116161,
+      "local_path": "local-sources/cloud-control-benchmark-1023/G2.html",
+      "document_date": "Last updated Sep 30, 2026",
+      "reading": "본문 전체 읽음"
+    },
+    {
+      "id": "G3",
+      "url": "https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/",
+      "fetched_at": "2026-10-22T16:26:37Z",
+      "sha256": "93e7c7a218a23192bd95716ad2d706fd2ca73ba109765d5ee2c1f7d15db372d5",
+      "bytes": 543260,
+      "local_path": "local-sources/cloud-control-benchmark-1023/G3.html",
+      "document_date": "Last updated Oct 12, 2026",
+      "reading": "핵심 기능·흐름 절 읽음"
+    },
+    {
+      "id": "G4",
+      "url": "https://developers.cloudflare.com/ai-gateway/observability/logging/",
+      "fetched_at": "2026-10-22T16:26:37Z",
+      "sha256": "9f71ef9de26966dd8328cf3c177d1965587b277ec8bfa7c46ff185b24c687762",
+      "bytes": 132821,
+      "local_path": "local-sources/cloud-control-benchmark-1023/G4.html",
+      "document_date": "Last updated Sep 24, 2026",
+      "reading": "로그 구성 절 읽음"
+    },
+    {
+      "id": "H1",
+      "url": "https://developer.konghq.com/plugins/ai-mcp-proxy/",
+      "fetched_at": "2026-10-22T16:26:40Z",
+      "sha256": "95ba9faf6a7762d27cb2effc014aced6238d204c806fb1dfff85296927bade49",
+      "bytes": 394851,
+      "local_path": "local-sources/cloud-control-benchmark-1023/H1.html",
+      "document_date": null,
+      "reading": "기능 개요·ACL 절 읽음"
+    },
+    {
+      "id": "H2",
+      "url": "https://developer.konghq.com/plugins/file-log/",
+      "fetched_at": "2026-10-22T16:26:41Z",
+      "sha256": "0ac2bafe267848dae4f875299326d36641b0c1b32524f347b8c0f3718d6b695e",
+      "bytes": 396068,
+      "local_path": "local-sources/cloud-control-benchmark-1023/H2.html",
+      "document_date": null,
+      "reading": "머리말만 읽음"
+    },
+    {
+      "id": "A6",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/creating-trail-organization.html",
+      "fetched_at": "2026-10-22T16:27:19Z",
+      "sha256": "4210d0e1ac13294428e19fa98de74dd2ad8f193a000460d9086239e63655f2bb",
+      "bytes": 25959,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A6.html",
+      "document_date": null,
+      "reading": "도입부 읽음"
+    },
+    {
+      "id": "A8",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-delegated-administrator.html",
+      "fetched_at": "2026-10-22T16:27:19Z",
+      "sha256": "e8e72173f65784a6e3f3a5f4c7234064c7099006f9f365f757226e323128d854",
+      "bytes": 30676,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A8.html",
+      "document_date": null,
+      "reading": "도입부 읽음"
+    },
+    {
+      "id": "A9",
+      "url": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-validation-digest-file-structure.html",
+      "fetched_at": "2026-10-22T16:27:19Z",
+      "sha256": "764fbdee524317db2400c73851256438b4853679c5b1963a012880c77b574dff",
+      "bytes": 39007,
+      "local_path": "local-sources/cloud-control-benchmark-1023/A9.html",
+      "document_date": null,
+      "reading": "digest 필드 목록만 읽음"
+    },
+    {
+      "id": "D7",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-validate-policies.html",
+      "fetched_at": "2026-10-22T16:27:29Z",
+      "sha256": "5976e79e2c24bb8f44c3b417a93e8d7242cd91973081ba607902fe4eaa181fbf",
+      "bytes": 12949,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D7.html",
+      "document_date": null,
+      "reading": "본문(목차 수준) 읽음"
+    },
+    {
+      "id": "D8",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-temporal.html",
+      "fetched_at": "2026-10-22T16:27:29Z",
+      "sha256": "7aaf6ce394dde776d383bb5ab2c6b3b9527d7fb4c2a383864f5e56b7b58b8f1c",
+      "bytes": 36864,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D8.html",
+      "document_date": null,
+      "reading": "도입부·관측 절 읽음"
+    },
+    {
+      "id": "D9",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-use-policies.html",
+      "fetched_at": "2026-10-22T16:27:29Z",
+      "sha256": "9fc33a8af38aa36dec96ba7db45d03c8f1ac04c01ee68d7b51303c05a7a3e9a1",
+      "bytes": 12103,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D9.html",
+      "document_date": null,
+      "reading": "목차 수준만 읽음"
+    },
+    {
+      "id": "D10",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-rules.html",
+      "fetched_at": "2026-10-22T16:27:29Z",
+      "sha256": "36d92e07464a5e8a29e202290a875a19fde443aad307e8b4b58e422242242d73",
+      "bytes": 29028,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D10.html",
+      "document_date": null,
+      "reading": "규칙 구성 절 읽음"
+    },
+    {
+      "id": "D11",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-core-concepts.html",
+      "fetched_at": "2026-10-22T16:27:30Z",
+      "sha256": "74d4830c20fdcc85364f463cf1e61808818fd1d84b04d350256df8461b6fc4cc",
+      "bytes": 23043,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D11.html",
+      "document_date": null,
+      "reading": "저장만 하고 읽지 않음"
+    },
+    {
+      "id": "D12",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-enforcement-modes.html",
+      "fetched_at": "2026-10-22T16:27:37Z",
+      "sha256": "93aadbe169bc0148d87fca5d3e41064c47c8bd1d86f5ca999393fd8f0c27cb04",
+      "bytes": 13430,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D12.html",
+      "document_date": null,
+      "reading": "본문 전체 읽음"
+    },
+    {
+      "id": "D13",
+      "url": "https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-test-a-policy.html",
+      "fetched_at": "2026-10-22T16:27:37Z",
+      "sha256": "1f7c295aa0b2815d3a81c15fec922e3daa69e2b46b4c6b4a78907567f9bf10ed",
+      "bytes": 48104,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D13.html",
+      "document_date": null,
+      "reading": "모드 설명 절 읽음"
+    },
+    {
+      "id": "D14",
+      "url": "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-enforcements.html",
+      "fetched_at": "2026-10-22T16:27:41Z",
+      "sha256": "6ac663b5d854513fe9efe4160a024770e9e329c0c2fbeeb925e4b4c8c66a610f",
+      "bytes": 46130,
+      "local_path": "local-sources/cloud-control-benchmark-1023/D14.html",
+      "document_date": null,
+      "reading": "핵심 기능·다중 부착 절 읽음"
+    },
+    {
+      "id": "O1",
+      "url": "https://api.github.com/repos/sigstore/rekor",
+      "fetched_at": "2026-10-22T16:29:38Z",
+      "sha256": "fc00cca0c69077e7925d1577f6faf194d0a2d80dcb11a512718849509c33cbe1",
+      "bytes": 6783,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O1.json",
+      "document_date": null,
+      "reading": "API 응답(라이선스·최신 릴리스)"
+    },
+    {
+      "id": "O2",
+      "url": "https://api.github.com/repos/google/trillian",
+      "fetched_at": "2026-10-22T16:29:39Z",
+      "sha256": "e997dac0b9867522900f4521cb5c08af01833b0585a0b1d30e2ce0841d5f74a7",
+      "bytes": 6978,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O2.json",
+      "document_date": null,
+      "reading": "API 응답"
+    },
+    {
+      "id": "O3",
+      "url": "https://api.github.com/repos/cedar-policy/cedar",
+      "fetched_at": "2026-10-22T16:29:39Z",
+      "sha256": "70ecc8c8da0adf5b6cbc3bd5b0a213f19894cac07d8ca2cf48eebbff70d899e4",
+      "bytes": 13807,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O3.json",
+      "document_date": null,
+      "reading": "API 응답"
+    },
+    {
+      "id": "O4",
+      "url": "https://api.github.com/repos/open-policy-agent/opa",
+      "fetched_at": "2026-10-22T16:29:39Z",
+      "sha256": "b06ba4e13b40bd3df7f9d2b6656f2af8aa98eec48b868e3213ee5866330605e0",
+      "bytes": 7417,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O4.json",
+      "document_date": null,
+      "reading": "API 응답"
+    },
+    {
+      "id": "O5",
+      "url": "https://api.github.com/repos/opensearch-project/anomaly-detection",
+      "fetched_at": "2026-10-22T16:29:40Z",
+      "sha256": "b5bfd8bc669e327dc82c420a2fb3d092f7d372c00b75973052b8e09246d01427",
+      "bytes": 14455,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O5.json",
+      "document_date": null,
+      "reading": "API 응답"
+    },
+    {
+      "id": "O6",
+      "url": "https://api.github.com/repos/codenotary/immudb",
+      "fetched_at": "2026-10-22T16:29:40Z",
+      "sha256": "7818aa81572345ce9189ecb0d2aed563c147b57005328d33b4549d39d3f3ec93",
+      "bytes": 7230,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O6.json",
+      "document_date": null,
+      "reading": "API 응답(라이선스 NOASSERTION)"
+    },
+    {
+      "id": "O7",
+      "url": "https://raw.githubusercontent.com/codenotary/immudb/master/LICENSE",
+      "fetched_at": "2026-10-22T16:29:40Z",
+      "sha256": "0997cd51dbe76ba1a56c9d0863d90a28551d2302290b6db7a281d2d1db6542ed",
+      "bytes": 4787,
+      "local_path": "local-sources/cloud-control-benchmark-1023/O7.txt",
+      "document_date": null,
+      "reading": "LICENSE 첫 12줄 읽음"
+    }
+  ]
+}
