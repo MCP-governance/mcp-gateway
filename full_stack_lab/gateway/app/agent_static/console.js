@@ -215,7 +215,7 @@ const REVIEW_KIND = {
   "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지", "runtime-egress": "외부 통신", "runtime-image-scan": "이미지 검사",
   "solo-mode": "단독 운영 모드", "ledger-retention": "보존 기간 변경", "audit-annotate": "감사 주석",
-  "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인",
+  "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인", "addon-result": "외부 게이트웨이 실행 결과",
   "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
   "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개",
   "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
