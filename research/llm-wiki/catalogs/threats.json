@@ -854,9 +854,9 @@
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
         "sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
-        "committed_sha256": "8df6ec5dedab0b640e35cda02923800c880b7cc44c58e80083fcbf075dc91259",
+        "committed_sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
         "normalized_sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -1339,9 +1339,9 @@
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
         "sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "committed_sha256": "4236fc438a3679a9bc0694be00758a30c5b89c78915030cdae2f94fee0edc3d5",
+        "committed_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
         "normalized_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -3034,9 +3034,9 @@
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
         "sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "committed_sha256": "4236fc438a3679a9bc0694be00758a30c5b89c78915030cdae2f94fee0edc3d5",
+        "committed_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
         "normalized_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/user_suspend.py",
@@ -3239,9 +3239,9 @@
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
         "sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "committed_sha256": "4236fc438a3679a9bc0694be00758a30c5b89c78915030cdae2f94fee0edc3d5",
+        "committed_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
         "normalized_sha256": "37973f8271eaa61f7eef3840ee63d5866adebe398c8da895a6334dccbc6d3618",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [

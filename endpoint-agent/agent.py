@@ -644,6 +644,37 @@ def sealed_listener(finding: dict, raw: dict, collector: str) -> dict:
     return finding
 
 
+CONTAINER_ID = re.compile(r"(?:docker|libpod)-([0-9a-f]{64})\.scope|/docker/([0-9a-f]{64})")
+
+
+def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
+    """A process inside a container the kit's local runner started for an approved local MCP.
+
+    Without this every call to an approved local server raised MCP-SHADOW-002 for its own container
+    (10-23 PJ1). The runner's containers carry the label mcpgw.local=1; only root or the engine's group
+    can create a labelled container, and either could already do anything on this PC."""
+    try:
+        found = CONTAINER_ID.search((pid_dir / "cgroup").read_text(errors="replace"))
+    except OSError:
+        return False
+    if not found:
+        return False
+    container = found.group(1) or found.group(2)
+    if container not in seen:
+        seen[container] = False
+        for binary in ("/usr/bin/docker", "/usr/bin/podman"):
+            if os.path.isfile(binary):
+                try:
+                    label = subprocess.run([binary, "inspect", "--format", '{{index .Config.Labels "mcpgw.local"}}', container],
+                                           capture_output=True, text=True, timeout=5, check=False).stdout.strip()
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if label == "1":
+                    seen[container] = True
+                    break
+    return seen[container]
+
+
 def stdio_processes() -> list[dict]:
     """설정에 없이 직접 실행된 stdio MCP 서버.
 
@@ -668,6 +699,7 @@ def stdio_processes() -> list[dict]:
                           "process_name": parts[1][:120], "command_line": command_digest(parts[2]),
                           "mcp_evidence": "suspected"}, {"process_name": parts[1], "command_line": parts[2]}, "process-table"))
         return found
+    containers: dict = {}
     for pid_dir in Path("/proc").iterdir():
         if not pid_dir.name.isdigit():
             continue
@@ -680,7 +712,7 @@ def stdio_processes() -> list[dict]:
         except OSError:
             SCAN_ERRORS.add("process_unreadable")
             continue
-        if not raw or not PROCESS_MARKERS.search(raw):
+        if not raw or not PROCESS_MARKERS.search(raw) or _approved_local_run(pid_dir, containers):
             continue
         found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                       "process_name": raw.split(" ")[0].rsplit("/", 1)[-1][:120],

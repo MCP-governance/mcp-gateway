@@ -74,9 +74,14 @@ class Collector(unittest.TestCase):
             def stat(self):return SimpleNamespace(st_uid=self.uid)
             def __truediv__(self,name):return self
             def read_bytes(self):return b'/opt/ghidramcp\x00--token\x00fixture-secret'
+            def read_text(self,errors=None):
+                return '0::/system.slice/docker-'+'c'*64+'.scope' if self.name=='333' else '0::/user.slice'
+        labelled=SimpleNamespace(stdout='1\n')  # the local runner's container for an approved MCP (mcpgw.local=1)
         with patch.object(agent.platform,'system',return_value='Linux'), \
              patch.object(agent,'PROCESS_UID','1001'), \
-             patch.object(agent.Path,'iterdir',return_value=iter([Pid('111',1000),Pid('222',1001)])):
+             patch.object(agent.os.path,'isfile',return_value=True), \
+             patch.object(agent.subprocess,'run',return_value=labelled), \
+             patch.object(agent.Path,'iterdir',return_value=iter([Pid('111',1000),Pid('222',1001),Pid('333',1001)])):
             rows=agent.stdio_processes()
         self.assertEqual(len(rows),1)
         self.assertEqual(rows[0]['process_name'],'ghidramcp')
