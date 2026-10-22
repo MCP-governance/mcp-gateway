@@ -646,12 +646,16 @@ async def register_server(request: dict, actor: str) -> dict:
     if proposal:
         scope = evidence.get("one_click_scope") or {}
         selected = scope.get("tools") or []
+        # 승인자가 낮춘 도구 분류만 반영한다. 올린 값은 위험 등급 산정과 어긋나므로 받지 않는다.
+        actions = scope.get("actions") or {}
+        lowered = set(actions) <= set(selected) and all(
+            a in {"r", "w", "x"} and "rwx".index(a) <= "rwx".index(proposal["tools"][n]) for n, a in actions.items())
         expected = {"server_id": proposal["server_id"], "endpoint": proposal["endpoint"],
                     "catalog_hash": (proposal.get("catalog") or {}).get("catalog_hash"),
-                    "tools": {n: proposal["tools"][n] for n in selected}, "data_class": proposal["data_class"],
+                    "tools": {n: actions.get(n, proposal["tools"][n]) for n in selected}, "data_class": proposal["data_class"],
                     "valid_days": scope.get("valid_days"), "supplier_assurance": scope.get("supplier_assurance"),
                     "residency": scope.get("residency")}
-        if (scope.get("proposal_sha256") != intake_proposal.digest(proposal) or not selected
+        if (scope.get("proposal_sha256") != intake_proposal.digest(proposal) or not selected or not lowered
                 or intake_proposal.basis(intake) != proposal["basis"]
                 or intake.get("risk_input") != proposal["risk_input"]
                 or any(request.get(k) != v for k, v in expected.items())

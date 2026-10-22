@@ -2017,3 +2017,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **근거·시험**: `full_stack_lab/tests/managed_policy_gap_check.py` 4건(서버 추가 허용·새 서버 보류, 허용 목록·프록시·헬퍼 변경 차단,
   제거·기록 없음·낡은 토큰 차단, heartbeat). 기존 시험 기대값 불변,
   [보고](../../research/llm-wiki/status/reports/2026-10-23-policy-refresh-gap.md).
+
+## D-199 원클릭 승인에서 관리자가 도구 분류를 제안값 이하로 낮출 수 있다 (2026-10-23)
+
+- **문제**: 공식 `mcp/filesystem` 이미지는 도구에 `readOnlyHint`를 달지 않아 `read_file`·`list_directory`·`directory_tree` 같은
+  읽기 도구가 쓰기(w)로 제안·등록됐다. 쓰기 중복 실행 방지(P-RATE-003)가 같은 인자로 다시 부른 읽기를 막아 PJ1 실사용이 멈췄다.
+- **결정**: 승인 화면의 도구마다 분류를 고를 수 있다. 제안값보다 **낮추기만** 받는다(위험 등급은 제안 분류로 산정했으므로 올리면
+  등급이 낮게 남는다). 바꾼 값만 `one_click_scope.actions`에 남겨 공동 승인 범위 비교와 감사 기록에 쓰고, 게이트웨이 등록 범위
+  가드(`core.register_server`)도 같은 규칙으로 다시 확인한다. 기본 제안 규칙(`suggested_action`·`intake_proposal.action`)은 그대로다.
+- **범위 밖**: 주석 없는 도구를 입력 스키마·설명으로 읽기 후보로 추정해 표시하는 것. 확정은 사람이 한다는 원칙만 우선 반영했다.
+- **시험**: `full_stack_lab/tests/intake_one_click_check.py`의 `test_admin_may_lower_tool_action_only_and_gateway_accepts_it`
+  (게이트웨이 이미지에서 20건 통과). `intake_one_click_ast_check.py`는 main에서도 `discovery` 미정의로 9건 실패하는 기존 결함이다.
