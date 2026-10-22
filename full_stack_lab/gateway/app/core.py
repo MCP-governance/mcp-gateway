@@ -499,6 +499,12 @@ async def refresh_all_catalogs() -> dict:
     which the policy path reads as an unverifiable contract (MCP-CATALOG-001)."""
     results = {}
     for server_id in registry.servers():
+        if (registry.server(server_id) or {}).get("deployment") == "local":
+            # 로컬 실행 서버는 호출하는 직원 PC의 실행기가 승인 계약을 호출마다 대조한다(local-runner control contracts).
+            # 관찰 PC 한 대가 정책 갱신 중이라 거절한 것을 서버 전체 ERROR로 내리면, ERROR는 로컬 실행 허가에서 빠져
+            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다(10-23 실측).
+            results[server_id] = "LOCAL"
+            continue
         try:
             results[server_id] = (await refresh_catalog(server_id))["status"]
         except Exception as exc:

@@ -636,15 +636,58 @@ f17bf1b,2026-10-21 15:31,bobysg,fix,v2,없는 경로·심볼릭 링크 마운트
 bcc38f9,2026-10-21 15:32,bobysg,docs,v2,위협 매핑 재생성 (local-runner 마운트 거부),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/bcc38f95ac60755dad95430e9c71c7710d96a828
 7149f92,2026-10-21 15:34,bobysg,docs,v2,현황 — DEV-73 포함 기기 배포 bcc38f9,,DEV-73,,,,https://github.com/MCP-governance/mcp-gateway/commit/7149f9254adeb5c819fd6d8fb9297062aae48c00
 2045799,2026-10-21 15:34,bobysg,docs,v2,현황의 잘못 적은 커밋 해시 정정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/204579981ac02956a3ee40301f251ee99af9de6e
+01b34aa,2026-10-21 18:42,정원재,fix,v2,중복 SBOM 중지에서 기존 상태 보존,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/01b34aaed08ccef3c765218d8b815039cb6319f2
+8544289,2026-10-21 18:46,정원재,feat,v2,실행 근거 선택과 최신성 검증 결속,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/85442891136b9a7f504eb92ddfea0011e18a655f
+34bbd33,2026-10-21 18:46,정원재,test,v2,중지 상태 조회 대역을 실제 경로에 맞춤,,DEV-73,,,,https://github.com/MCP-governance/mcp-gateway/commit/34bbd33b2f1467a8de4f36063b039aa36abc3fd4
+b5137cb,2026-10-21 18:47,정원재,fix,v2,현재 근거 검사와 과거 진척 재생 분리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b5137cb9dd6e5e1fdb8ceb473fc9ffc28a0e8c60
+b11bc92,2026-10-21 18:48,정원재,feat,v2,국외 처리 심사를 현재 등록과 정책에 결속,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b11bc92096185f6be5cf8a0dfc32538c26b7aa4a
+e2e1060,2026-10-21 18:50,정원재,test,v2,로컬 회귀 입력과 Linux 시험 조건 정정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e2e1060b4579089a126dd652e6efb4b1df5be830
+e2a7e02,2026-10-21 18:57,정원재,fix,v2,reject empty current evidence selection,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e2a7e0288084f8b503ceacec906fb5f5e294c458
+f09c245,2026-10-21 19:00,정원재,feat,v2,사용자별 로컬 중지와 재개를 단일 잠금 경로로 통합,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f09c245f072b95f7f5ef0ad9e60b4465a5fccf82
+262f5eb,2026-10-21 19:03,정원재,docs,v2,최신 시트 기준선과 로컬 구현 검증 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/262f5ebcce4634429adc7e39074e429fa220c9e5
+69ae6bd,2026-10-21 19:08,정원재,fix,v2,CI 전체 Python 정적 검사 오류 수정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/69ae6bd7442cee741b16a79058a82f7ce9cc7395
+1842f62,2026-10-21 19:08,정원재,fix,v2,배포 가능한 pglast 버전으로 고정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1842f62d6b39da4e8a074c500556c365b85ffbdf
+9e51e0f,2026-10-21 19:08,정원재,test,v2,결과 계약 시험의 만료 처리 경계 격리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9e51e0f36865ce0dd87a6fab8f3fcf6533339522
+9b66cca,2026-10-21 19:09,정원재,fix,ci,기업 분석의 현재 소스 참조만 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9b66ccafe671dff0ae9d282599086a31414f5dac
+4a7fa42,2026-10-21 19:09,정원재,test,v2,관리형 경계 시험의 임시 경로 정규화,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4a7fa42d08b78a4cdcfd9f850d1d954637585ddb
+0dfd6fd,2026-10-21 19:11,정원재,test,ci,시트 병합의 입력 불변성을 전체 스냅샷으로 확인,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0dfd6fde5536838675067b8fed220821504a8de5
+6e46483,2026-10-21 19:13,정원재,docs,v2,GitHub CI 실패 원인과 수정 검증 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6e464831aa5eb415c9e5c6a9fdf2f3979180b300
+12660fb,2026-10-21 19:15,정원재,test,ci,CSV 캐시 만료를 고정 시계로 검증,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/12660fbe117058dc2e4cc18e06409ec9c9490709
+6df34f7,2026-10-21 19:16,정원재,docs,v2,원격 CI 캐시 시험 실패와 재현 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6df34f7b7cc1c8d7802a85579779373af6c298d2
+09eb889,2026-10-21 19:26,정원재,fix,build,PostgreSQL MCP의 고정 pglast를 공식 소스로 빌드,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/09eb889697e5cee8e2d9d7e3a84d7d29f9c14cfe
+05365c0,2026-10-21 19:27,정원재,fix,ci,이미지 빌드 오류를 보존하고 의존성 복구 근거 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/05365c0f96becac6887e73b3b8cb7e21efd01989
+0c229eb,2026-10-21 19:35,정원재,fix,v2,도입 검증 워커에 공급자 메타데이터 모듈 포함,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0c229ebc9058c4f293090908dc30cdac78af8c3b
+a319286,2026-10-21 19:36,정원재,test,ci,통합 현황 자체 검사의 관리형 점검 표식 보완,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a319286dd4ff3a4f745c9079b570f60bc677a217
+3258141,2026-10-21 19:36,정원재,test,ci,통합 자체 검사를 사전 실행하고 원격 결과 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/32581419b87f2c2e670d120de7fcd877cf85cd83
+b604cb6,2026-10-21 19:49,정원재,test,ci,수용 시험의 MCP 권한과 필수 도구 선택을 분리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b604cb6d26413c7f897c98c363198fceb63d1b4a
+4dbb417,2026-10-21 19:49,정원재,docs,v2,원격 수용 시험 실패와 권한 입력 정정 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4dbb4171e58c6a6fb3aed3c740ebfff721fdaeba
 50825a9,2026-10-21 22:50,Codex sol,docs,v2,refresh threat trace review against current boundaries,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/50825a9299dc1da4a2eb57a036c568d6ed15d123
 217b706,2026-10-21 22:58,Codex sol,docs,v2,record independent threat review acceptance,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/217b706bef4cb94c442fc4cb9727dc5a2a9c23b0
 62bafc4,2026-10-21 22:58,Codex sol,docs,v2,integrate reviewed threat trace refresh,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/62bafc49ec3f360415d229e24ee10b519c7cbe94
+2641fc6,2026-10-22 18:26,정원재,,,Merge remote-tracking branch 'origin/main' into 10/21-sheet-runtime-completion,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/2641fc6734992fa9d4adecbc787e8d9cd006ef29
+06a3142,2026-10-22 18:27,정원재,test,v2,이용 관계 시험을 SQL 조회량 조건과 정합화,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/06a3142cf822a40096cedd732b9d34da447fcb4d
+85f2e1d,2026-10-22 18:31,정원재,test,v2,설정 링크 회귀의 macOS 임시 홈 경로 정규화,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/85f2e1de35974f8c27e6e127574b237f30ad3b3d
+fbd1fc4,2026-10-22 18:33,정원재,fix,v2,MCP 시험 fixture의 OAuth 토큰 경계 복구,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fbd1fc4c30e7cc44a543ad6a243e086362322b9f
+4022ca7,2026-10-22 18:35,정원재,test,v2,exercise remote intake with a trusted HTTPS fetch fixture,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4022ca7dc5693d50e3fb238a282dc7ea2e08671a
+a151c48,2026-10-22 18:37,정원재,docs,v2,independently review current threat trace delta,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a151c48702b1d559a5721c0a126da5a1eee56dc3
+4c25711,2026-10-22 18:40,정원재,fix,ci,신뢰된 TLS 시험을 전체 검증에 연결하고 결과 기록,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4c25711660a098dbed5c4bc37260eb386fbb1c24
+d39837e,2026-10-22 18:50,정원재,fix,ci,TLS 프록시의 불필요한 실행 파일 권한 제거,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d39837e9815f079ba67600fc0a020f41ebef6f24
 d6cbafe,2026-10-22 19:26,pokochy,fix,v2,"회원가입 — 거절 후 재신청, 승인 대기 안내, 대문자 아이디, 접속 주소별 시도 제한",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d6cbafe3b070b696c93be809a4033bf89a8cad0c
 1c59a00,2026-10-22 19:26,pokochy,,,Merge 10/22-signup-fixes: 회원가입 재신청·승인 대기 안내·접속 주소별 제한,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/1c59a00c91727dfbd9faab37870f274b11e448f5
+06c007e,2026-10-22 19:29,pokochy,,,Merge remote-tracking branch 'origin/main' into 10/21-sheet-runtime-completion,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/06c007e7458969c1858626728704794f20c7dae5
+a14564a,2026-10-22 19:31,pokochy,fix,v2,CI TLS fetch 경로의 목적지를 egress 허용 목록에 추가,D-190,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a14564a7aaba7db00736dd29d819cef02f8d292c
+d482c34,2026-10-22 19:33,pokochy,fix,v2,main 병합으로 바뀐 agent_service.py의 위협 매핑 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d482c340364c6b88e4773cc895ded0a34a0d971a
+9194887,2026-10-22 19:43,pokochy,test,v2,토큰 회전 PostgreSQL 시험에 local_jobs 격리 테이블 추가,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/919488706cba81585c5e1911511a92dfe160f7af
 a41bbc1,2026-10-22 19:53,pokochy,feat,v2,외부 AI 게이트웨이(LiteLLM) 애드온 — 업스트림 생성기·호출 직전 판정 API·가드레일,D-191,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a41bbc19676101dc2305e39d3855cb28c3988999
 db8cb13,2026-10-22 19:54,pokochy,,,Merge 10/22-ai-gateway-addon: LiteLLM·외부 AI 게이트웨이 애드온 (D-191),D-191,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/db8cb131a1e873bfba116baaa1a3132401c66ae5
+9ed5a7e,2026-10-22 19:57,pokochy,test,v2,업무일 시나리오 입력을 조회량 통제에 맞춤,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9ed5a7e964a4356c034d8031b40828838e894ef7
 46d9a68,2026-10-22 20:07,pokochy,feat,v2,"로컬 MCP를 원클릭 승인에서 — 기기 서명 키, digest 자동 고정, PC 엔진 측정·이미지 수신 (D-192)",D-192,DEV-73,,,,https://github.com/MCP-governance/mcp-gateway/commit/46d9a6825179849cc5286b85ad9d330742ab84d5
 f591d1c,2026-10-22 20:08,pokochy,,,Merge 10/22-local-mcp-oneclick: 로컬 MCP 원클릭 (D-192),D-192,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f591d1c4602ce16c75a598a7855b329fecf3ff4a
+a4885cf,2026-10-22 20:10,pokochy,test,v2,업무일 시나리오의 흐름 통제 기대를 설계 동작에 맞춤,D-133 · D-142 · D-190,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a4885cfe5b6b85b86d0bd70eb1feb33207d105d4
+0e0f8ca,2026-10-22 20:11,pokochy,fix,ci,pyflakes 미사용 import 3건 정리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0e0f8ca0075d48b97a24f8e0b3de71fe6c28097d
+175e0f9,2026-10-22 20:13,pokochy,test,ci,협업 콘솔 시험의 오래된 입력과 시계 의존 정정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/175e0f9f941823e60351f6fbc190f3aa614160e6
+8f183c8,2026-10-22 20:13,pokochy,fix,v2,기업 분석의 현재 소스 참조를 갱신(실행 기록 보존),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8f183c8c30a8bfe7bfeffffc90a6c17759168bd0
+0b71ead,2026-10-22 20:13,pokochy,docs,v2,바뀐 코드의 위협 매핑 해시 재생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0b71ead08066c2dfeccc6cff8156c99531d0c6b0
 d9f5eb6,2026-10-22 20:20,pokochy,fix,v2,로컬 실행 계약 관찰을 승인 전 신청에도 허용 (D-192),D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d9f5eb63aa9b377fa170611803cb6e6d21c19ab7
 bf6cea1,2026-10-22 20:20,pokochy,,,Merge 10/22-local-mcp-oneclick: 승인 전 계약 관찰 허용,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/bf6cea1bfb86f865da569fb7a3a9f92217281b3f
 3d4fa7d,2026-10-22 20:22,pokochy,feat,v2,"ID 정의·참조 추적 검사기와 번호 발급, 추적표, 위반 정리 (D-194, WIKI-04)",D-194 · D-175 · D-193 · D-190 · D-191,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/3d4fa7d50d1dfbdb177d880efe6fbc06c4a7ef33
@@ -653,10 +696,47 @@ f4d842f,2026-10-22 20:24,pokochy,fix,v2,"data: URI를 SSRF 목적지로 오판�
 4df3218,2026-10-22 20:24,pokochy,feat,v2,"시트 추적 탭(47)과 갱신된 내보내기, 예약 번호 설명 정리 (D-194, WIKI-04)",D-194 · D-193,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/4df3218ec8602abae28eb2a0e531b70f41c2e74f
 1e31007,2026-10-22 20:25,pokochy,docs,v2,10-22 엔드포인트 키트 정상 경로 실측 보고,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1e3100712e12c4c7a7f72cf9732215812d6188ef
 cbd49fa,2026-10-22 20:25,pokochy,docs,v2,ID 추적 작업 보고 수치 정정 (WIKI-04),,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/cbd49fa649b59f4d573c14794909a3c028420c46
+6e0f66a,2026-10-22 20:26,pokochy,test,v2,보안 회귀 프로브를 MCP OAuth 토큰 경로에 맞춤,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6e0f66ae7aa76fee19e2c729905a5626aa994971
+571ca4c,2026-10-22 20:26,pokochy,fix,ci,gateway 의존성 pglast를 설치 가능한 7.21로 고정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/571ca4ca2d8f389464dba2a223db642e068406ac
 2de9176,2026-10-22 20:31,pokochy,fix,v2,"로컬 실행기 — docker에서 폴더를 경로로 바인드, 측정한 엔진 판본 보존 (D-192)",D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2de91763c786b3fff811224b8cb30e1b8135c1c3
 38ee658,2026-10-22 20:31,pokochy,,,Merge 10/22-local-mcp-oneclick: docker 바인드·엔진 판본 보존,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/38ee6581d203e8838400e8820a19ed616c4b5281
 4a57a15,2026-10-22 20:33,pokochy,fix,v2,"키트 재설치 — 이전 장치 폐기, 로컬 실행 관찰 PC를 현재 장치로 다시 묶음 (D-192)",D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4a57a154b86a7166b9ce3f536beead99e3c24cad
 85ead96,2026-10-22 20:33,pokochy,,,Merge 10/22-local-mcp-oneclick: 재설치 장치 정리·관찰 PC 재결속,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/85ead9603ca973fa3b08318ab1691f11c7eb81ef
+3ca6a3b,2026-10-22 20:39,pokochy,fix,v2,계약 잠금에 서버가 광고하는 출력 스키마 해시를 고정,D-149,,,,,https://github.com/MCP-governance/mcp-gateway/commit/3ca6a3bcff1ba230453dc96cf32b62b92017b392
 378f619,2026-10-22 20:39,pokochy,docs,v2,로컬 MCP 원클릭 실측 보고 (D-192),D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/378f619d56060a79dfd2cc4f3706e43cc6a04bf5
+834e1fa,2026-10-22 20:39,pokochy,test,ci,결과 계약 시험에서 만료 처리의 DB 경계를 격리,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/834e1fa253fc9ea2d7b45822c3aa842f97d25c8f
 969d80d,2026-10-22 20:40,pokochy,,,Merge 10/22-kit-e2e: 키트 실측 회귀 — data: URI 오판·폐기된 Codex 로그인 안내,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/969d80d8cf107263fd359c2c1cc0b68ccc4f39d6
 f42ea03,2026-10-22 20:40,pokochy,,,Merge 10/22-id-trace: ID 추적 검사기·추적표·번호 정정,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f42ea030f4c55cb57306d45fcd3898a34cdf342f
+47d2c2b,2026-10-22 20:40,pokochy,docs,v2,시트 내보내기 재생성 — 추적표(47)·결정·커밋·자료 탭을 병합 기준으로,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/47d2c2b0f4240030cb75b692691a3d1029b9c4cb
+a7822d4,2026-10-22 20:54,pokochy,test,v2,적대 입력 시험이 자동 중지 한도를 넘지 않도록 공격자 계정을 나눔,D-176,,,,,https://github.com/MCP-governance/mcp-gateway/commit/a7822d42389b9fd32f604afd13dd9624c173e692
+93c36e6,2026-10-22 20:54,pokochy,fix,v2,등록부 내려받기 경로 정정·화면 수용 시험 추가,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/93c36e66416ff2ff71e0bb1569175f37ce0f1be3
+21d260f,2026-10-22 20:55,pokochy,,,"Merge 10/22-main-ci-fix: main 정적·연구 CI 복구(미사용 import, pglast 판본, 위협·기업 분석 해시 재생성)",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/21d260fe71086ce9b22b53c9a0bf7b389253f312
+db2e2d0,2026-10-22 21:05,pokochy,docs,v2,계약 잠금 출력 스키마 고정의 소유자 승인 기록,D-190,,,,,https://github.com/MCP-governance/mcp-gateway/commit/db2e2d007f84c3207bac3c52204cb04016312691
+90b4767,2026-10-22 21:09,pokochy,test,v2,종료 판정 시험의 관리형 설정 재렌더에 격리 랩 URL 지정,D-124,,G08.05,,,https://github.com/MCP-governance/mcp-gateway/commit/90b47672fa06ae09dea8a7b6e900088d3460962d
+771a0fa,2026-10-22 21:10,pokochy,,,Merge origin/main into 10/21-sheet-runtime-completion,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/771a0fa100817758e6f0544fdccbb36b97971d33
+d50bf0f,2026-10-22 21:10,pokochy,docs,v2,main 병합 뒤 기업 분석 참조와 위협 매핑 해시 재생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d50bf0fbda625f708c7f9752a2dee78521da4f5b
+facb142,2026-10-22 21:11,pokochy,docs,v2,CI TLS fetch 결정을 D-195로 재번호하고 예약표 정리,D-195 · D-190 · D-173,,,,,https://github.com/MCP-governance/mcp-gateway/commit/facb1420b408ddb3a459e8ec1ee3e9dd0767565c
+e44f089,2026-10-22 21:16,pokochy,docs,v2,콘솔 정상 기능 점검(W7) 보고,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e44f0898e93f8c5d8a53888f24830b8932d9ac9b
+ad96586,2026-10-22 21:17,pokochy,,,"Merge 10/22-w7-console-fixes: 콘솔 등록부 내려받기 404·영어 판정값·영어 보고서 이름, 메뉴 전체 조회 수용 시험",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/ad96586039efe35f70fcc12609947c09c55e7fa0
+94a58a4,2026-10-22 21:21,pokochy,fix,v2,"로컬 MCP 승인 화면 격리 구성을 PC 측정값으로, 마운트를 /workspace 고정 경로로",D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/94a58a4445185b1befbca7c6ad84df63d06d52cd
+6a6c2af,2026-10-22 21:21,pokochy,,,"Merge 10/22-local-mcp-followup: 격리 구성 측정값 표시, /workspace 고정 마운트",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/6a6c2aff58f0daf5922c1582d6e6dc314af70f9c
+fae3851,2026-10-22 21:29,pokochy,fix,ci,실기기 오버레이 CI에서 Console 기본 게시 포트를 옮김,D-129,,,,,https://github.com/MCP-governance/mcp-gateway/commit/fae385199a317d17f6707e75a8e5a0f991adc588
+ab6594e,2026-10-22 21:46,pokochy,fix,ci,field ca 호출에 APPLIANCE_BIND를 지정,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/ab6594ec7e99081469443c17f27936f22d041b8f
+0b099cc,2026-10-22 22:05,pokochy,fix,v2,포트 없는 공개 Host도 MCP 전송 보안이 허용하게 함,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0b099cc0faadeeb91919ac53b7071e16f332851f
+316128e,2026-10-22 22:22,pokochy,,,Merge remote-tracking branch 'origin/main' into 10/21-sheet-runtime-completion,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/316128e64e8283b80003d4e5769f507e6bb671df
+b4c571b,2026-10-22 22:23,pokochy,docs,v2,main 병합과 전송 보안 수정 뒤 위협 매핑·기업 분석 해시 재생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/b4c571b48e186755331f907fa55b8674bf44ddeb
+0000c05,2026-10-22 22:41,pokochy,,,Merge pull request #36 from MCP-governance/10/21-sheet-runtime-completion,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/0000c0505c678b4cd3a9e9a4cf5ed5a7635da86d
+9ce32ae,2026-10-22 22:51,pokochy,fix,v2,"PAC-01 차단 사유에 범위를 벗어난 인자 표시, 활성화 직후 연결 지연 제거",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9ce32ae34304d746c49aecad64f2f3f03406e39d
+2d96b6d,2026-10-22 22:52,pokochy,docs,v2,사유·장치 서비스 변경 뒤 위협 매핑·기업 분석 해시 재생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2d96b6d88ad144e81def1f9d914b6d6c79b23150
+e27d3ca,2026-10-22 23:12,pokochy,,,"Merge 10/22-w10-ux: PAC-01 차단 사유에 인자 표시, 활성화 직후 연결 지연(관측기 분리·Windows 주기·토큰 캐시)",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e27d3ca6bd633e8a90527928c12dd59424243f20
+48bb19e,2026-10-22 23:13,pokochy,fix,v2,콘솔 기록 종류 라벨에 외부 게이트웨이 실행 결과 추가 (D-191),D-191,,,,,https://github.com/MCP-governance/mcp-gateway/commit/48bb19ec52de0e1e2198d19e75b1f62e7aab2014
+f7e2f99,2026-10-23 00:47,pokochy,feat,v2,"macOS 원클릭 키트 — 관리 계정·pf·launchd·shim, 일회용 설치 명령, 콘솔 OS 우선 표시 (W5)",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f7e2f996893b03de1582a7fe3c1b97cdf263aecf
+05b9e35,2026-10-23 00:48,pokochy,,,"Merge origin/main into 10/22-kit-macos: W10 관측기 스레드 위에 macOS 건너뛰기, 결정 번호 D-196",D-196,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/05b9e35302ef5b00d9da10f2421f7dbaf97275bd
+2b1ad47,2026-10-23 01:06,pokochy,docs,v2,기업 분석 코드 해시 재생성 (macOS 키트 idp.py 변경),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2b1ad4743181a47aa9f1dadceeed3a93ed1b5b76
+7b7ad6d,2026-10-23 01:06,pokochy,,,"Merge 10/22-kit-macos: macOS 원클릭 키트 (W5, D-196)",D-196,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/7b7ad6da2c6060c3cf3250da78913b6917f06194
+0743e04,2026-10-23 01:25,pokochy,docs,v2,LiteLLM이 MCP를 통제할 때 MINT의 개입 지점 — 솔루션·애드인 적용 설계,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0743e0449b0929af5b60b8b897eab9c168e5dbdb
+4968d7b,2026-10-23 01:25,pokochy,,,Merge 10/23-litellm-intervention: LiteLLM 개입 지점 설계,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/4968d7b77f8e5d132dc1b08efabcd41949a128cd
+d89f083,2026-10-23 01:29,pokochy,docs,v2,레퍼런스 3종(Falcon Guardian·젠아이랩스·GensOps) 조사와 MINT 비교,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d89f083d3a91f1a1af5c7e5141cec04ad04b4da3
+8d3b1a8,2026-10-23 01:30,pokochy,,,Merge 10/23-references-3: Falcon Guardian·젠아이랩스 AI-native·GensOps 레퍼런스,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/8d3b1a89106cdf48907b215b0263040a78b8c4a2
+d7b0938,2026-10-23 01:32,pokochy,fix,v2,한 저장소의 여러 MCP를 따로 도입 신청 — github.com/조직/저장소/tree/<브랜치>/<경로>,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d7b0938548dd2c7d949f8f4a63272786b43d7f80
+3a1b2a1,2026-10-23 01:32,pokochy,,,Merge 10/23-repo-subpath: 저장소 하위 경로 단위 도입 신청,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/3a1b2a198ff381a36146a3f84219eb8a304f8a2b

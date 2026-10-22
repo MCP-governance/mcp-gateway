@@ -2,19 +2,41 @@
 
 MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증거를 연결하는 Markdown·JSON 정본입니다. Claude Code와 Codex가 같은 자료를 읽고 갱신합니다. 제품 설계의 정본은 [docs/ai](../../docs/ai/README.md)입니다.
 
-## 지금 이어서 작업하려면
+## 지금 상태 (2026-10-23)
 
-1. 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)(정본)의 「요약」·「WBS」·「백로그」 탭에서 진척과 담당을 확인합니다. 탭 구성과 ID 연결은 [시트 안내](sheet/README.md).
-2. [현재 상태](status/current.md)에서 코드·배포·검수 기준을 확인합니다.
-3. [단일 백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고릅니다(상태·담당은 시트 「백로그」 탭이 정본).
-4. [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)와 [통합본 검토](analysis/review-2026-10-15/README.md)에서 근거·반례·시험 조건을 읽습니다.
-5. [작업별 레퍼런스 지도](papers/development-reading-guide.md)에서 필요한 명세·논문·OSS 판본을 찾습니다.
+- **수치**: WBS 57개 작업의 단계 가중 진척 63.3%, 최종 검수 완료 0개. 「구현 완료(검수 전)」는 검수 끝이 아니다.
+- **되는 것**(main 병합·기기 배포·실제 호출 기록 있음): 직원 PC 키트 Linux·Windows 설치→활성화, Linux에서 Claude 하네스로 승인 MCP 호출, 로컬 MCP 원클릭 승인, 회원가입, LiteLLM 애드온(판정 API 배포까지).
+- **안 되는 것·미확인**: macOS 키트 실설치, Windows·Codex 하네스 모델 호출, MINT↔LiteLLM 실제 연동 시험, 실제 PostgreSQL 경합 일부, 같은 사용자 프로세스의 로컬 수신 지점 접근(DEV-81 열림).
+- **진행 중**: Windows 직원 단독 원클릭(W11), LiteLLM 승인·철회 동기화(설계 끝, 구현 전).
+- **어디서 확인하나**: 상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이고, 근거와 한계는 [현황](status/current.md)에 한 쪽으로 정리했다.
 
-## 자료 지도
+## 주제별 입구
+
+| 알고 싶은 것 | 여기서 시작 |
+| --- | --- |
+| 지금 무엇이 되고 안 되는가 | [현황](status/current.md), [이력 목차](status/history/README.md) |
+| 해야 할 일·완료 조건 | [백로그](status/backlog.md), 시트 「백로그」 탭 |
+| 시트 탭과 ID 연결 | [시트 안내](sheet/README.md), [ID 추적 규칙](trace/README.md) |
+| 구조와 코드 호출 경로 | [아키텍처 구조도](../../docs/ai/architecture/README.md), [호출 경로](analysis/README-code.md) |
+| 정책·위협·규제 근거 | [위협·정책](threats/README.md), [컴플라이언스 근거](analysis/compliance/README.md) |
+| 시험과 증거 기준 | [실험 카드](experiments/README.md), [검증 방법](methodology/evidence-methodology.md) |
+| 경쟁·OSS·레퍼런스 제품 | [제품 분석](solutions/README.md), [OSS 심층 분석](analysis/oss-deep/README.md) |
+| 논문·명세·보안 문서 | [논문 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
+| 에이전트 작업 규칙·보고 양식 | [AGENTS](AGENTS.md), [보고 양식](templates/work-report.md) |
+| 개발 협업 화면 | [협업 콘솔](../collaboration-console/README.md) |
+
+## 이어서 작업하려면
+
+1. 위 「지금 상태」와 [현황](status/current.md)을 읽는다(5분).
+2. [백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고른다. 번호는 [`check_trace.py --next`](trace/README.md)로만 받는다.
+3. 근거·반례·시험 조건은 [검토 결과](analysis/review-2026-10-15/README.md)와 [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)에서 읽는다.
+4. 작업이 끝나면 보고서를 쓰고, 상태·담당은 시트에 반영한다. 시트가 저장소보다 늦을 수 있으니 의심되면 시트 「요약」 탭의 행 수와 [내보내기 안내](sheet/README.md)를 대조한다.
+
+## 전체 자료 지도 (상세)
 
 | 찾는 내용 | 정본 |
 | --- | --- |
-| 개발 관리 전체(WBS·백로그·결정·개발이력·배포·자료·기능·구성요소·정책·규제·기업 연동 46탭) | 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit), [탭·ID 안내](sheet/README.md) |
+| 개발 관리 전체(WBS·백로그·결정·개발이력·배포·자료·기능·구성요소·정책·규제·기업 연동 50개 탭) | 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit), [탭·ID 안내](sheet/README.md) |
 | 아키텍처 구조도(전체·망·엔드포인트 키트) | [draw.io 원본과 미리보기](../../docs/ai/architecture/README.md) |
 | 현재 결과·미완료·다음 작업 | [현황](status/current.md), [백로그](status/backlog.md), [통합 보고](status/reports/2026-10-15-wiki-consolidation.md) |
 | 코드 검토·목표 기능 보강 | [검토 결과와 구조화 레코드](analysis/review-2026-10-15/README.md), [DEV-38 실행 경로](analysis/review-2026-10-15/dev38-runtime-plan.md) |
@@ -31,9 +53,9 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | 출처·판본·라이선스·원본 | [자료 보존](sources/README.md), [확보 규칙](methodology/source-protocol.md), [카탈로그](catalogs/papers.json) |
 | 에이전트 작업 규칙 | [AGENTS](AGENTS.md), [보고 양식](templates/work-report.md), [작업 지시 양식](templates/task-prompt.md) |
 
-## 현재 수치과 증거를 읽는 기준
+## 수치와 증거를 읽는 기준
 
-[2026-10-15 WBS](analysis/development-wbs/README.md)의 57.5%는 40개 작업의 구현·회귀·배포·실제환경·검수 단계 가중 점수입니다. 구현 완료 35개와 최종 검수 완료 0개는 다른 값입니다. 문서 통합이나 레퍼런스 수 증가로 점수를 올리지 않습니다.
+현재 WBS는 57개 작업이며 63.3%는 구현·회귀·배포·실제환경·검수 다섯 단계의 가중 평균입니다(정본은 시트 「WBS」 탭, 첫 점수 산정은 [2026-10-15 WBS](analysis/development-wbs/README.md)). 구현 완료 56개와 최종 검수 완료 0개는 다른 값입니다. 문서 통합이나 레퍼런스 수 증가로 점수를 올리지 않습니다.
 
 Drive 판본의 정책 50개는 기존 50개와 이름·본문의 공백 제거 대조에서 모두 같습니다. 서로 다른 원본 바이트와 출처는 보존하고 신규 정책 50개로 합산하지 않습니다. POL50, 독스용 PAC50, 원본 PAC24, 런타임 PAC15, G01~G10 검수40은 번호로 대응시키지 않습니다.
 
@@ -55,4 +77,4 @@ python -B -X utf8 research/llm-wiki/tools/check_policy_id_mapping.py
 
 ## 개발 협업 화면
 
-실제 공개 메시지·담당 작업·검사 결과는 [협업 콘솔](../collaboration-console/README.md)에 기록합니다. `python -X utf8 research/collaboration-console/console.py serve`로 실행하며 주소는 `http://127.0.0.1:18766`입니다. 제품 운영 콘솔과 별도입니다. 이 위키의 웹 번들을 만들지 않습니다.
+실제 공개 메시지·담당 작업·검사 결과는 [협업 콘솔](../collaboration-console/README.md)에 기록합니다. `python -X utf8 research/collaboration-console/console.py serve`로 실행하며 기본 포트는 1000이고 팀 공용 화면은 Tailscale 주소 `http://100.111.15.33:1000`(읽기 전용)입니다. 제품 운영 콘솔과 별도입니다. 이 위키의 웹 번들을 만들지 않습니다.
