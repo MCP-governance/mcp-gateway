@@ -1,0 +1,97 @@
+{
+  "checked_at": "2026-10-22",
+  "mint_commit": "62bafc49ec3f360415d229e24ee10b519c7cbe94",
+  "litellm_source_commit": "f8e456d105af921213267d0ef801ca08b8fdbc0b",
+  "litellm_source_package_version": "1.102.0",
+  "warning": "Current official docs are mutable and not equivalent to the pinned source or deployed version. W6 explicitly describes a 1.104.0 snapshot; later feature guides take precedence for their scopes.",
+  "sources": [
+    {
+      "id": "W1",
+      "url": "https://docs.litellm.ai/docs/mcp_control",
+      "resolved_url": "https://docs.litellm.ai/docs/mcp_control",
+      "fetched_at": "2026-10-22T04:54:39.646294+00:00",
+      "sha256": "13f44aa978fb8a2033c9464ca68d9939e4b3367e7130bc444c662b6a477f8710",
+      "bytes": 223713,
+      "local_path": "local-sources\\litellm-mint-20261022\\W1.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W2",
+      "url": "https://docs.litellm.ai/docs/mcp_guardrail",
+      "resolved_url": "https://docs.litellm.ai/docs/mcp_guardrail",
+      "fetched_at": "2026-10-22T04:54:39.869147+00:00",
+      "sha256": "a33d37a444ca867cf05e3f1a01c2758411620744e796b4f51b7080776325a6a1",
+      "bytes": 78712,
+      "local_path": "local-sources\\litellm-mint-20261022\\W2.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W3",
+      "url": "https://docs.litellm.ai/docs/mcp_server_submissions",
+      "resolved_url": "https://docs.litellm.ai/docs/mcp_server_submissions",
+      "fetched_at": "2026-10-22T04:54:39.904614+00:00",
+      "sha256": "f3b8af487fd2cadf5e1e8890303c16e649c82f913b9b94197ace381252d8e5b3",
+      "bytes": 75139,
+      "local_path": "local-sources\\litellm-mint-20261022\\W3.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W4",
+      "url": "https://docs.litellm.ai/docs/mcp_per_user_auth",
+      "resolved_url": "https://docs.litellm.ai/docs/mcp_per_user_auth",
+      "fetched_at": "2026-10-22T04:54:39.637149+00:00",
+      "sha256": "dac7c22ade15f0b25d26f91e39e43d59d6f648d7fb4c7caf5ebe7844c0904aab",
+      "bytes": 66280,
+      "local_path": "local-sources\\litellm-mint-20261022\\W4.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W5",
+      "url": "https://docs.litellm.ai/docs/proxy/tool_policies",
+      "resolved_url": "https://docs.litellm.ai/docs/proxy/tool_policies",
+      "fetched_at": "2026-10-22T04:54:39.733450+00:00",
+      "sha256": "5c921e7df1a586109aea31efbe28c84f82a59ff0a724fa5c1f4304510c7b0f28",
+      "bytes": 78912,
+      "local_path": "local-sources\\litellm-mint-20261022\\W5.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W6",
+      "url": "https://docs.litellm.ai/docs/proxy/security_owasp_llm_top10",
+      "resolved_url": "https://docs.litellm.ai/docs/proxy/security_owasp_llm_top10",
+      "fetched_at": "2026-10-22T04:54:40.036216+00:00",
+      "sha256": "aad024b1fce409c8a439ecb5fa015eb1c50ec09302e39c30fb99d5b1320652a5",
+      "bytes": 87212,
+      "local_path": "local-sources\\litellm-mint-20261022\\W6.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W7",
+      "url": "https://docs.litellm.ai/release_notes/v1.103.0/v1-103-0",
+      "resolved_url": "https://docs.litellm.ai/release_notes/v1.103.0/v1-103-0",
+      "fetched_at": "2026-10-22T04:54:39.825987+00:00",
+      "sha256": "a484261c8e374cbf611a7d46f655587341e554d793507f7e5f598fa55ca20cd9",
+      "bytes": 235984,
+      "local_path": "local-sources\\litellm-mint-20261022\\W7.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    },
+    {
+      "id": "W8",
+      "url": "https://docs.litellm.ai/docs/mcp/",
+      "resolved_url": "https://docs.litellm.ai/docs/mcp/",
+      "fetched_at": "2026-10-22T04:54:39.911968+00:00",
+      "sha256": "01c0c4f7b7fa613b94225dabc30407e3512c44ecd75af2dc218d05cfe0b6c020",
+      "bytes": 371458,
+      "local_path": "local-sources\\litellm-mint-20261022\\W8.html",
+      "status": "saved_html",
+      "reading": "Relevant sections read using browser tool; saved HTML is provenance, not a claim of full text review."
+    }
+  ]
+}

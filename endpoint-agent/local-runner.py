@@ -138,12 +138,38 @@ def container_command(engine, manifest, account, *, mount_options=None, namespac
                        for v in ('--mount',f'type=bind,source={source},target={target},{mode},idmap')]
     elif namespace not in ('docker-remap','host'):
         raise ValueError('엔진별 사용자 매핑 설정이 없습니다')
+    else:
+        # runc 1.2+는 다른 프로세스의 /proc/<pid>/fd 링크를 바인드 원천으로 받지 않는다(EINVAL, 10-22 PJ1 docker 29.8.1).
+        # 경로로 바인드하고 생성 직전 recheck()가 고정한 inode와 같은지 확인한다.
+        # ponytail: 생성~시작 사이 폴더 교체 경쟁은 남는다. 막으려면 open_tree 지원 엔진의 FD 마운트로 옮긴다.
+        mount_options=[v for binding in mount_options[1::2]
+                       for _,target,mode in [binding.rsplit(':',2)]
+                       for v in ('-v',f'{target}:{target}:{mode}')]
     args += [v for k,value in sorted(env.items()) for v in ('-e',f'{k}={value}')]
     return name,args+mount_options+[manifest['image']]+command
 
 
+def detect_engine(setting):
+    """PC마다 설치된 엔진과 판본이 다르다. 기기가 한 값을 강제하면 대부분의 PC가 거부되므로 여기서 측정한다."""
+    for engine in ('podman','docker'):
+        binary='/usr/bin/'+engine
+        if not os.path.isfile(binary):
+            continue
+        argv=[binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
+        version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
+        if engine=='podman':
+            namespace='podman-auto'
+        else:
+            options=subprocess.run(argv+['info','--format','{{json .SecurityOptions}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout
+            namespace='docker-remap' if b'name=userns' in options else 'host'
+        return {**setting,'engine':engine,'namespace':namespace,'version':version}
+    raise ValueError('컨테이너 엔진이 없습니다')
+
+
 def engine_configuration(config, manifest):
     setting=config.get('local_engine') or {}
+    if not setting.get('engine'):
+        setting=config['local_engine']=detect_engine(setting)
     engine,namespace=setting.get('engine'),setting.get('namespace')
     if engine not in ('podman','docker') or namespace not in ('podman-auto','docker-remap','host'):
         raise ValueError('엔진별 사용자 매핑 설정이 없습니다')
@@ -158,8 +184,12 @@ def engine_configuration(config, manifest):
     version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
     if not setting.get('version') or version!=setting['version']:
         raise ValueError('측정 대상으로 지정한 엔진 판본과 다릅니다')
-    image=subprocess.run(argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']],capture_output=True,
-                         timeout=5,check=True,env=ENGINE_ENV)
+    inspect=argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']]
+    image=subprocess.run(inspect,capture_output=True,timeout=5,env=ENGINE_ENV)
+    if image.returncode:
+        # 허용 저장소의 digest 고정 이미지만 여기까지 온다. 받은 내용이 digest와 다르면 엔진이 거부한다.
+        subprocess.run(argv+['pull',manifest['image']],capture_output=True,timeout=600,check=True,env=ENGINE_ENV)
+        image=subprocess.run(inspect,capture_output=True,timeout=5,check=True,env=ENGINE_ENV)
     if len(image.stdout)>16384 or json.loads(image.stdout or b'null'):
         raise ValueError('이미지의 추가 볼륨은 허용하지 않습니다')
     return argv,namespace

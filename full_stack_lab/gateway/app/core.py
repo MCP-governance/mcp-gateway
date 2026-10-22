@@ -565,7 +565,8 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
     if local:
         server_id = local_jobs.server_of(endpoint) or ""
         try:
-            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status='APPROVED' AND reviewed_by IS NOT NULL", (uuid.UUID(intake_id),))
+            # 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다. 관찰은 관리자만 부르고(admin_caller), 등록은 여전히 승인 뒤다.
+            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status IN ('HOLD','VALIDATED','APPROVED')", (uuid.UUID(intake_id),))
         except ValueError:
             intake = None
         if not intake:
@@ -2443,7 +2444,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 span.set_attribute("mcp.decision", result["decision"])
                 span.set_attribute("mcp.policy_id", result["policy_id"])
 
-        if result["decision"] == "Approval":
+        # D-191: 외부 AI 게이트웨이 애드온은 판정만 받고 전송은 호출한 쪽이 한다. 승인 대기 행도 만들지 않는다 —
+        # 승인되면 이 게이트웨이가 같은 호출을 직접 보내 이중 실행되기 때문이다.
+        decide_only = bool(payload.get("_decide_only"))
+        if result["decision"] == "Approval" and not decide_only:
             new_approval_id = str(uuid.uuid4())
             stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client", "transport_claims")}
             stored.update(pac_request_id=request_id, pac_digest=pac.digest(policy_input["pac"]))
@@ -2464,6 +2468,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         applicant=user_token, scope={"explanation": explanation, "request_fingerprint": canonical_hash(stored)},
                         connection=connection)
             base_event["approval_id"] = new_approval_id
+        elif result["decision"] in {"Allow", "Alert", "Restrict"} and decide_only:
+            base_event["effective_arguments"], base_event["restrictions_applied"] = classify.apply_restrictions(
+                cls, outbound, result.get("restrictions") or {})
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
             effective, applied = classify.apply_restrictions(cls, outbound, result.get("restrictions") or {})
             base_event["restrictions_applied"] = applied

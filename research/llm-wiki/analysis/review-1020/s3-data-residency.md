@@ -42,7 +42,7 @@ git merge-tree는 읽기 전용으로 실행했다. 공통 조상 기준 양쪽�
 - full_stack_lab/gateway/app/agent_service.py, full_stack_lab/gateway/app/agent_static/console.js, full_stack_lab/gateway/app/core.py, full_stack_lab/gateway/app/main.py
 - research/llm-wiki/status/backlog.md
 
-DEV-136 결과 네 축, DEV-67의 보존/만료, DEV-68의 공급자 보증 변경을 main에서 유지하면서 D-138과 두 위치 정책 항목을 추가한다. 게이트웨이 파일은 main의 실행 결과·보증 필드 변경을 보존한 뒤 DEV-69 위치 생성/표시/재판정 변경만 재적용한다. DECISIONS.md·POLICY.md는 양쪽 끝부분의 새 섹션을 모두 보존하고 번호·정책 목록을 확인한다. backlog는 DEV-69 상태 셀만 반영한다. OPA·레지스트리·신규 시험 파일은 이 비교에서 main의 동시 변경 파일이 아니었다.
+D-136(DEV-48) 결과 네 축, DEV-67의 보존/만료, DEV-68의 공급자 보증 변경을 main에서 유지하면서 D-138과 두 위치 정책 항목을 추가한다. 게이트웨이 파일은 main의 실행 결과·보증 필드 변경을 보존한 뒤 DEV-69 위치 생성/표시/재판정 변경만 재적용한다. DECISIONS.md·POLICY.md는 양쪽 끝부분의 새 섹션을 모두 보존하고 번호·정책 목록을 확인한다. backlog는 DEV-69 상태 셀만 반영한다. OPA·레지스트리·신규 시험 파일은 이 비교에서 main의 동시 변경 파일이 아니었다.
 
 ## 검증 범위와 한계
 

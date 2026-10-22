@@ -119,6 +119,10 @@ class AddressArgumentsTest(unittest.TestCase):
         self.assertEqual(sorted(classify.address_arguments(args)),
                          ["https://a.example.org/c", "https://docs.example.com/b", "https://learn.microsoft.com/a"])
 
+    def test_an_inline_data_uri_names_no_destination(self):
+        args = {"uri": "data:text/html;base64,PGgxPkhpPC9oMT4=", "url": "file:///etc/passwd"}
+        self.assertEqual(classify.address_arguments(args), ["file:///etc/passwd"])
+
     def test_a_non_web_address_is_infrastructure(self):
         self.assertEqual(classify.url_destination("file:///etc/passwd").category, "infrastructure")
         self.assertTrue(classify.url_destination("https://learn.microsoft.com/a").external)
