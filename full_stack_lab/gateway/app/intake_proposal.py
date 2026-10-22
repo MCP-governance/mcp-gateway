@@ -1,6 +1,7 @@
 """Deterministic suggestions; only the recorded human approval enables them."""
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import re
@@ -76,3 +77,29 @@ def scan_basis(gate: dict) -> str:
     critical = gate.get("critical") or {}
     return digest({"scanners": gate.get("scanners"), "vuln_db": (gate.get("vuln_db") or {}).get("updated_at"),
                    "critical": {"count": critical.get("count"), "ids": critical.get("ids")}})
+
+
+# 공식 modelcontextprotocol/servers 이미지의 PC 격리 실행 기본값. 승인 화면이 미리 채울 뿐이며 관리자가 바꾼다.
+# 서명 전 검사(local_jobs.manifest_errors)·이미지 저장소 허용은 그대로 적용돼 승인 범위는 넓어지지 않는다.
+OFFICIAL_SERVERS = "https://github.com/modelcontextprotocol/servers"
+_LOCAL = {"image": "", "command": [], "mounts": [], "env": {}, "reason_kind": "local_tool", "reason_text": ""}
+LOCAL_RUN_PRESETS = {
+    "src/filesystem": {**_LOCAL, "image": "mcp/filesystem", "command": ["/workspace/mcp-docs"],
+                       "mounts": [{"path": "mcp-docs", "mode": "ro"}], "reason_kind": "local_file",
+                       "reason_text": "PC 문서 폴더 읽기 전용 접근"},
+    "src/memory": {**_LOCAL, "image": "mcp/memory", "mounts": [{"path": "mcp-memory", "mode": "rw"}],
+                   "env": {"MEMORY_FILE_PATH": "/workspace/mcp-memory/memory.json"}, "reason_kind": "local_file",
+                   "reason_text": "PC 폴더에 지식 그래프 영구 저장"},
+    "src/sequentialthinking": {**_LOCAL, "image": "mcp/sequentialthinking", "reason_text": "PC 안에서 도는 단계별 사고 도구"},
+    "src/git": {**_LOCAL, "image": "mcp/git", "command": ["--repository", "/workspace/mcp-repo"],
+                "mounts": [{"path": "mcp-repo", "mode": "ro"}], "reason_kind": "local_file",
+                "reason_text": "PC 저장소 폴더 읽기 전용 조회"},
+    "src/time": {**_LOCAL, "image": "mcp/time", "reason_text": "PC 안에서 도는 시각 변환 도구"},
+}
+
+
+def local_run_preset(row: dict) -> dict:
+    """공식 저장소의 알려진 경로만 제안한다. 같은 경로라도 다른 저장소의 서버에는 공식 이미지를 제안하지 않는다."""
+    if (row.get("repository_url") or "").rstrip("/").removesuffix(".git").lower() != OFFICIAL_SERVERS:
+        return {}
+    return copy.deepcopy(LOCAL_RUN_PRESETS.get((row.get("repository_path") or "").strip("/"), {}))

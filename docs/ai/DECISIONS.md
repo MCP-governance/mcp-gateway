@@ -2105,3 +2105,20 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **계정**: 새 경로는 표준 직원에게도 별도 비관리자 계정을 사용한다. `CreateProfile`로 프로필을 만들고 직원 프로필에서 하네스를 복사한다. 기존 관리 계정의 실행 중 프로세스 거부·SID 방화벽·보호 설정·SYSTEM 헤더 도우미·로그온 트레이 작업은 그대로다. 설치 종료는 조직 활성화 대기이고, 실제 하네스 사용과 모델 로그인은 관리 계정에서 한다.
 - **안내**: 설치 결과에 관리 계정과 `claude auth login`, `codex login --device-auth`만 표시한다. 모델 자격 수집·전달·로그 기록을 추가하지 않는다.
 - **검증/한계**: 기존 Windows 16개와 새 오프라인 9개 시험 통과. 실제 UAC·프로필 생성·Windows 실설치·장치 활성화·모델 로그인은 미실행이며 리더의 pj3 검수가 남는다. 공식 하네스 사전 설치와 신뢰된 콘솔 다운로드는 필요하다. 초기 실패로 남은 보호 설치물·기존 승인판 갱신·재설치는 자동 덮어쓰기하지 않는다. [분석](../../research/llm-wiki/analysis/windows-oneclick-2026-10-23.md) · [보고](../../research/llm-wiki/status/reports/2026-10-23-windows-oneclick.md).
+
+## D-206 공식 MCP의 PC 격리 실행 기본값을 승인 화면이 미리 채운다 (2026-10-23)
+
+- **문제**: 도입 신청한 stdio 공식 MCP를 승인하려면 관리자가 「PC 격리 실행」 창에 이미지·실행 인자·폴더·환경 변수를 손으로 넣어야 했다.
+  10-23 실사용에서 memory는 호출마다 새 컨테이너라 `/tmp` 저장이 사라져 그래프가 비었고, 영구 폴더와 `MEMORY_FILE_PATH`를 넣어 다시 승인했다.
+  환경 변수 입력란은 화면에 아예 없어(`env: {}` 고정) 화면만으로는 그 설정을 할 수도 없었다.
+- **결정**: `intake_proposal.LOCAL_RUN_PRESETS`(한 곳의 작은 표)가 공식 저장소(`modelcontextprotocol/servers`)의 알려진 경로만 제안한다.
+  filesystem `/workspace/mcp-docs`·`mcp-docs:ro`, memory `mcp-memory:rw`+`MEMORY_FILE_PATH=/workspace/mcp-memory/memory.json`,
+  git `--repository /workspace/mcp-repo`·`mcp-repo:ro`, sequentialthinking·time은 마운트·환경 없음. 승인 미리보기가 `local_run_preset`으로 돌려주고,
+  `askLocalRun`은 저장된 값이 없을 때만 미리 채운다(환경 변수 입력란 추가). 값은 라벨과 입력란에 그대로 보이며 관리자가 바꾼다.
+  다른 저장소의 같은 경로·모르는 경로는 빈 제안이다.
+- **불변**: 제안은 화면 초기값일 뿐이다. 저장은 기존 `LocalRunSpec`·`local_jobs.manifest_errors`·허용 이미지 저장소·digest 고정·서명 흐름을 그대로 거친다.
+  쓰기 가능(rw) 기본값은 저장형 memory 하나뿐이다(시험이 고정).
+- **근거와 한계**: 공식 README 5개의 판본·행은 `research/llm-wiki/analysis/local-run-presets-1023/`. 폴더 이름(`mcp-docs`·`mcp-repo`·`mcp-memory`)은 PC 홈의 관례 이름이라
+  실제 문서·저장소 폴더 이름이 다르면 관리자가 고친다. README의 memory 예시 파일은 `.jsonl`이고 표는 PJ1에서 통과한 `memory.json`을 쓴다.
+  git은 읽기 전용 마운트라 쓰기 도구(add·commit)는 실패하고, 읽기 전용에서의 `git status`·소유자 불일치 동작은 기기에서 확인한다.
+- **시험**: `local_run_presets_check.py`(선택·빈 제안·표의 모든 값이 기존 요청 모델과 매니페스트 검사를 통과), `console-state` 노드 시험, 기존 승인·실행기 시험.
