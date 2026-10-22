@@ -70,7 +70,8 @@ class ReviewFixes(unittest.TestCase):
 
     def test_registration_view_uses_measured_mapping_and_d189_screen(self):
         source = function_source(APP / "core.py", "discover_for_registration")
-        self.assertIn("LOCAL_ENGINE_SETTINGS", source)
+        self.assertNotIn("LOCAL_ENGINE_SETTINGS", source)
+        self.assertIn("isolation.get('engine_version')", source)
         self.assertIn("if namespace == \"host\":", source)
         self.assertIn("탈출 시 호스트 root", source)
         self.assertIn("WHERE server_id=%s AND device_id=%s AND evidence ? 'isolation'", source)

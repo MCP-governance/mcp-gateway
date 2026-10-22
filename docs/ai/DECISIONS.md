@@ -1953,6 +1953,8 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 바뀐 기대값: `dev73_rework_check.test_F5`의 빈 엔진 설정 = 거부 → 빈 설정 = 측정(`test_D192_empty_setting_measures_engine`). 잘못된 조합(docker+podman-auto, 위험 수용 없는 host)은 여전히 거부.
 - 남은 한계: docker에 userns-remap이 없으면 격리 구성이 「탈출 시 호스트 root」로 표시되고 키트가 그 위험 수용을 기본값으로 싣는다(승인 화면의 격리 구성에 표시). 비밀이 필요한 로컬 서버는 범위 밖. 이미지 서명(DEV-77)은 `확인 안 됨`.
 - 되돌릴 조건: 고객이 오프라인 서명·내부 미러만 허용하면 `.env`에 공개 키·미러만 넣고 개인 키를 비운다(승인 화면 서명은 409로 멈춘다).
+- 후속(10-22): ① 승인 화면 「격리 구성」을 기기 환경변수 `LOCAL_ENGINE_SETTINGS`가 아니라 관찰 PC 실행기가 보고해 `local_job_events.evidence->'isolation'`에 남긴 최신 값(엔진·판본·사용자 매핑 범위, `engine` 항목 추가)으로 표시한다. 측정이 없을 때만 「확인 안 됨」. ② 마운트 대상을 관리 계정 홈 절대경로에서 컨테이너 안 고정 경로 `/workspace/<상대경로>`로 바꿨다(podman idmap `--mount`·docker `-v` 둘 다; docker는 원천만 고정한 홈 경로). 같은 서버의 실행 인자(`/workspace/mcp-docs`)가 PC 계정 이름과 무관해져 여러 직원 PC에서 한 서버를 쓴다. 호스트 쪽 검사(홈 아래 상대 경로·점 시작 거부·심볼릭 링크 거부·inode 재확인)는 그대로다.
+- 바뀐 기대값(후속): `dev73_rework_check.test_F3`의 podman 마운트 목적지 `/home/u/work` → `/workspace/work`(docker 분기 단언 추가), `dev73_review2_check`는 `LOCAL_ENGINE_SETTINGS`를 읽는다는 단언 → 읽지 않고 측정 판본을 쓴다는 단언, `local_run_manifest_check`는 매니페스트 인자 `/home/u/work` → `/workspace/work`와 docker 마운트 문자열(`<홈>/work:/workspace/work:ro`). 이유: 목적지가 홈 경로이던 때의 단언이라 새 계약과 정면으로 충돌한다. `local_run_manifest_check`의 docker 옵션 단언은 경로 바인드 전환(10-22) 때 갱신이 빠져 이미 맞지 않던 것을 함께 고쳤다.
 
 ## D-194 ID는 정의 정본 하나를 두고, 번호는 `--next`로만 받으며, CI가 정의·참조를 검사한다 (2026-10-22, WIKI-04)
 

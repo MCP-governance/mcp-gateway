@@ -29,7 +29,7 @@ IMAGE = "docker.io/mcp/filesystem@sha256:" + "b" * 64
 
 
 def manifest(**change):
-    base = {"server_id": "fs-local", "image": IMAGE, "command": ["/home/u/work"],
+    base = {"server_id": "fs-local", "image": IMAGE, "command": ["/workspace/work"],
             "mounts": [{"path": "work", "mode": "ro"}], "env": {"LOG_LEVEL": "info"},
             "reason": {"kind": "local_file", "text": "사내 문서 폴더를 읽어 요약해야 한다"}}
     return {**base, **change}
@@ -83,12 +83,14 @@ class RunnerCommand(unittest.TestCase):
 
     def test_fixed_isolation_options(self):
         name, command = runner.container_command("/usr/bin/docker", {**manifest(), "command": ["serve"]}, self.account,
-                                                 mount_options=self.pinned.options)
+                                                 mount_options=self.pinned.options,
+                                                 host_paths=[str(path) for path, *_ in self.pinned.paths])
         for flag in ("--network=none", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--pull=never", "--rm", "-i"):
             self.assertIn(flag, command)
         self.assertEqual(command[command.index("--user") + 1], "2001:2001")
-        for option in self.pinned.options:
-            self.assertIn(option, command)
+        # docker는 홈 경로를 계정 이름과 무관한 컨테이너 경로 /workspace/<상대경로>에 바인드한다.
+        self.assertIn(f"{self.home}/work:/workspace/work:ro", command)
+        self.assertNotIn(f"{self.home}/work:{self.home}/work:ro", command)
         self.assertEqual(command[-2:], [IMAGE, "serve"])
         self.assertNotIn("--privileged", command)
         self.assertEqual(name, "mcpgw-local-fs-local-2001")
