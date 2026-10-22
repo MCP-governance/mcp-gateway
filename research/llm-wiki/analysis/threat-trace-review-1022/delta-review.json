@@ -1,0 +1,306 @@
+{
+  "from_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+  "to_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
+  "previous_review_sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
+  "files": [
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "old_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
+      "new_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a",
+      "assessment": "위치 재심사의 감사 기록을 등록부 grant 저장보다 먼저 완료한다. 기록 해시는 공급자 서버, 엔드포인트, 신청, 위치, 전체 관할 규칙을 결속한다. 이 파일의 기존 매핑 함수 본문은 변경되지 않았다.",
+      "references": [
+        {
+          "symbol": "register_server",
+          "anchor": "",
+          "old_line": 615,
+          "old_end_line": 877,
+          "new_line": 615,
+          "new_end_line": 877,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "execute_call",
+          "anchor": "",
+          "old_line": 2182,
+          "old_end_line": 2535,
+          "new_line": 2188,
+          "new_end_line": 2541,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_contract",
+          "anchor": "",
+          "old_line": 1107,
+          "old_end_line": 1170,
+          "new_line": 1113,
+          "new_end_line": 1176,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_call_upstream",
+          "anchor": "",
+          "old_line": 1615,
+          "old_end_line": 1815,
+          "new_line": 1621,
+          "new_end_line": 1821,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_dispatch_flow_recheck",
+          "anchor": "",
+          "old_line": 1363,
+          "old_end_line": 1372,
+          "new_line": 1369,
+          "new_end_line": 1378,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_flow_sources",
+          "anchor": "",
+          "old_line": 1331,
+          "old_end_line": 1360,
+          "new_line": 1337,
+          "new_end_line": 1366,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "approve_request",
+          "anchor": "",
+          "old_line": 2538,
+          "old_end_line": 2591,
+          "new_line": 2544,
+          "new_end_line": 2597,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_reserve_call",
+          "anchor": "",
+          "old_line": 1425,
+          "old_end_line": 1510,
+          "new_line": 1431,
+          "new_end_line": 1516,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "untrusted_markers",
+          "anchor": "",
+          "old_line": 1221,
+          "old_end_line": 1228,
+          "new_line": 1227,
+          "new_end_line": 1234,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_guarded_result",
+          "anchor": "",
+          "old_line": 1916,
+          "old_end_line": 1944,
+          "new_line": 1922,
+          "new_end_line": 1950,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_inspected_result",
+          "anchor": "",
+          "old_line": 1947,
+          "old_end_line": 1961,
+          "new_line": 1953,
+          "new_end_line": 1967,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "refresh_catalog",
+          "anchor": "",
+          "old_line": 219,
+          "old_end_line": 382,
+          "new_line": 219,
+          "new_end_line": 382,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "approve_contract",
+          "anchor": "",
+          "old_line": 385,
+          "old_end_line": 467,
+          "new_line": 385,
+          "new_end_line": 467,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_record_decision",
+          "anchor": "",
+          "old_line": 1984,
+          "old_end_line": 2101,
+          "new_line": 1990,
+          "new_end_line": 2107,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "_audit_payload",
+          "anchor": "",
+          "old_line": 1964,
+          "old_end_line": 1978,
+          "new_line": 1970,
+          "new_end_line": 1984,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "verify_audit_chain",
+          "anchor": "",
+          "old_line": 2145,
+          "old_end_line": 2164,
+          "new_line": 2151,
+          "new_end_line": 2170,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "deregister_server",
+          "anchor": "",
+          "old_line": 880,
+          "old_end_line": 901,
+          "new_line": 880,
+          "new_end_line": 901,
+          "ast_unchanged": true
+        }
+      ],
+      "added_references": [
+        {
+          "symbol": "review_server_residency",
+          "line": 950,
+          "end_line": 985
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/managed_enforcement_check.py",
+      "old_sha256": "763020a29f8675b0ed83a2b77e14513159d43584098d6ae330f5c6560765e36f",
+      "new_sha256": "41cad59967fda467a8e6c949576eab4ab71e329334f3429db33459b8bfcc16f8",
+      "assessment": "macOS 임시 경로의 심볼릭 링크를 해소하는 시험 준비만 추가됐다. 관리형 강제의 실제 기기 증거는 아니다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "",
+          "old_line": 1,
+          "old_end_line": 141,
+          "new_line": 1,
+          "new_end_line": 142,
+          "ast_unchanged": false
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/local_jobs.py",
+      "old_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+      "new_sha256": "8a29a8ff01bc1633003ed195a8870bb3854cc4e8180e7e1ba78044f668c63bae",
+      "assessment": "재개는 정확한 직원과 서버의 로컬 중지 표식만 같은 DB 거래에서 삭제한다. 서버 전체, 직원 전체, 장치 표식은 지우지 않는다. 기존 매핑 함수 본문은 동일하고 새 함수가 추가됐다.",
+      "references": [
+        {
+          "symbol": "session",
+          "anchor": "",
+          "old_line": 399,
+          "old_end_line": 415,
+          "new_line": 399,
+          "new_end_line": 415,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "quiesce",
+          "anchor": "",
+          "old_line": 570,
+          "old_end_line": 590,
+          "new_line": 570,
+          "new_end_line": 590,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "prepare_token_revocation",
+          "anchor": "",
+          "old_line": 600,
+          "old_end_line": 615,
+          "new_line": 611,
+          "new_end_line": 626,
+          "ast_unchanged": true
+        }
+      ],
+      "added_references": [
+        {
+          "symbol": "resume_user_stop",
+          "line": 600,
+          "end_line": 608
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/residency.py",
+      "old_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1",
+      "new_sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723",
+      "assessment": "공급자 서버의 유효한 독립 위치 심사만 현재 등록과 규칙 판본에 결속한다. 도구의 외부 목적지는 심사를 상속하지 않고, 비중요 등급의 국가별 approval 면제에만 표식이 쓰인다. 국가별 deny, 중요 등급, 근거 누락, 팩 비활성의 한계가 남는다.",
+      "references": [
+        {
+          "symbol": "enabled",
+          "anchor": "",
+          "old_line": 72,
+          "old_end_line": 73,
+          "new_line": 94,
+          "new_end_line": 95,
+          "ast_unchanged": true
+        },
+        {
+          "symbol": "require_location",
+          "anchor": "",
+          "old_line": 76,
+          "old_end_line": 79,
+          "new_line": 98,
+          "new_end_line": 101,
+          "ast_unchanged": true
+        }
+      ],
+      "added_references": [
+        {
+          "symbol": "facts",
+          "line": 60,
+          "end_line": 76
+        },
+        {
+          "symbol": "transfer_review_digest",
+          "line": 79,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/reservation_effect_check.py",
+      "old_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+      "new_sha256": "949973f3c0d56d71b65bf97d5e3dceb202f1ddd06eb100b4c2745b20e5b99961",
+      "assessment": "Console 세션과 MCP OAuth 토큰을 분리해 race 시험의 MCP 호출 자격을 맞췄다. 실제 PostgreSQL 및 MCP 쓰기 효과 시험을 이 검토에서 실행하지 않았다.",
+      "references": [
+        {
+          "symbol": "race",
+          "anchor": "",
+          "old_line": 47,
+          "old_end_line": 83,
+          "new_line": 65,
+          "new_end_line": 101,
+          "ast_unchanged": true
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/mcp_result_contract_check.py",
+      "old_sha256": "d12acf0e0231127e4876b12f864aef43404ef4c99cabd7e82f576ab0ab14fda2",
+      "new_sha256": "6e68e97bc912675e5c77908f6cbb278daa02dfd1ef6cd43eb2c45e090700936f",
+      "assessment": "직원 중지 만료가 신원 조회에 선행하는 현재 순서에 맞춰 대역을 격리했다. 예외가 span에 비밀값을 남기지 않는 단언은 유지된다. 실제 검사기 또는 SDK 실행 증거는 아니다.",
+      "references": [
+        {
+          "symbol": "",
+          "anchor": "",
+          "old_line": 1,
+          "old_end_line": 213,
+          "new_line": 1,
+          "new_end_line": 218,
+          "ast_unchanged": false
+        }
+      ]
+    }
+  ]
+}
