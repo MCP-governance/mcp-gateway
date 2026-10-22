@@ -1,10 +1,12 @@
 """Offline TLS fixture checks: no containers, sockets, or replacement MCP server."""
 import importlib.util
+import json
 from pathlib import Path
 import ssl
 import tempfile
 import tomllib
 import unittest
+from urllib.parse import urlsplit
 
 import certifi
 from cryptography import x509
@@ -56,6 +58,11 @@ class AcceptanceTLSFixtureTests(unittest.TestCase):
         self.assertEqual(original, generated)
         self.assertEqual((LAB / "registry/contracts.lock.json").read_bytes(),
                          (self.output / "registry/contracts.lock.json").read_bytes())
+
+    def test_fixture_host_is_in_the_egress_allowlist(self):
+        # The CI catalog points fetch at this host; MCP-EGRESS-001 blocks every fetch call if it is missing.
+        allowed = json.loads((LAB / "opa/data.json").read_text(encoding="utf-8"))["egress"]["allowed_hosts"]
+        self.assertIn(urlsplit(prepare.ENDPOINT).hostname, allowed)
 
     def test_trusted_ca_and_hostname_complete_real_tls_handshake_in_memory(self):
         self.assertIn(handshake(self.output, "mcp-fetch-tls", True), {"TLSv1.2", "TLSv1.3"})
