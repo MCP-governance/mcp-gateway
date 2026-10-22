@@ -37,6 +37,7 @@ ROW_LIMIT = int(os.getenv("LOCAL_JOBS_ROWS_MAX", "10000"))
 RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 1024 * 1024)))
 CLAIM_SECONDS = 5
 RUN_SECONDS = 20
+PREPARE_SECONDS = 180
 QUEUE_LIMIT = 8
 ACTIVE_LIMIT = 1
 RATE_LIMIT = 30
@@ -59,6 +60,36 @@ class NotStarted(ConnectionError):
     def __init__(self, message, policy_id='MCP-CATALOG-001'):
         super().__init__(message)
         self.local_policy=policy_id
+
+
+class LocalExecutionError(RuntimeError):
+    """Only a persisted, inspected device diagnostic may cross the public error boundary."""
+
+
+async def failure_message(error, diagnostics=None):
+    from . import poisoning, secret_scan
+    if diagnostics is None:
+        return error
+    messages={'permission':'이미지 실행 파일의 권한 때문에 관리 계정으로 실행할 수 없습니다',
+              'exited':'로컬 MCP 컨테이너가 종료되었습니다',
+              'timeout':'로컬 MCP 준비 또는 실행 기한이 지났습니다',
+              'failed':'로컬 MCP 실행을 완료하지 못했습니다'}
+    message=messages.get(diagnostics.get('kind'),messages['failed'])
+    code=diagnostics.get('exit_code')
+    if type(code) is int and 0<=code<=255:
+        message+=f' · 종료 코드 {code}'
+    tail=diagnostics.get('stderr_tail')
+    if isinstance(tail,str) and tail:
+        tail=''.join(c for c in tail if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
+        # Diagnostics also reach MCP callers; keep the existing output inspection boundary.
+        try:
+            tail='[오류 본문 숨김]' if poisoning.result_findings(tail) else await secret_scan.redact_error(tail)
+        except Exception:
+            tail='[오류 본문 숨김]'
+        if tail==secret_scan.ERROR_REDACTED:
+            tail='[비밀 숨김]'
+        message+=' · 표준 오류: '+tail
+    return message[:500]
 
 
 def manifest_errors(manifest: dict, server_id: str) -> list[str]:
@@ -230,7 +261,13 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
         raise NotStarted('전송 신원과 실행 엔드포인트 소유자가 다릅니다.')
     approval_window(local['manifest'])
     job = str(uuid.uuid4())
-    timeout = min(timeout, RUN_SECONDS)
+    run_timeout = min(timeout, RUN_SECONDS)
+    # Registration's HTTP proxy already reserves 240 seconds for the first image. Ordinary
+    # calls/checks keep their caller's total timeout (and therefore their reservation bound).
+    prepare_timeout=0
+    if method=='initialize':
+        prepare_timeout=PREPARE_SECONDS if registering.get() else min(PREPARE_SECONDS,max(0,timeout-run_timeout))
+    timeout = run_timeout + prepare_timeout
     server = local['manifest']['server_id']
     event = evidence_context.get()
     async with db.transaction() as connection:
@@ -255,13 +292,13 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
             raise NotStarted('로컬 실행 전체 대기열 상한입니다.','P-RATE-003')
         await connection.execute(
             """INSERT INTO local_jobs(id,device_id,user_token,server_id,manifest_sha256,manifest,signature,method,params,deadline,
-                                     policy_generation,device_epoch,device_policy,request_id,token_jti,control_sha256,policy_version)
+                                     policy_generation,device_epoch,device_policy,request_id,token_jti,control_sha256,policy_version,run_seconds)
                SELECT %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,a.policy_generation,%s,%s,%s,%s,%s,
-                 (SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1)
+                 (SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1),%s
                  FROM local_approvals a WHERE a.server_id=%s""",
             (job,device_id,device['owner_token'],server,local['manifest_sha256'],Jsonb(local['manifest']),local['signature'],
              method,Jsonb(params),datetime.now(UTC)+timedelta(seconds=timeout),device['device_epoch'],device['policy_hash'],
-             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(),server))
+             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(),run_timeout,server))
     if event is not None and method=='tools/call':
         # An unreadable job is uncertain until a durable row proves it was never claimed.
         event['upstream_attempted']=True
@@ -272,6 +309,10 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
         if row["state"] == "done":
             await record_evidence(row, event)
             if row["error"]:
+                diagnostic=await db.fetch_one("""SELECT evidence->>'failure' AS failure FROM local_job_events
+                    WHERE job_id=%s AND evidence ? 'failure' ORDER BY id DESC LIMIT 1""",(job,))
+                if diagnostic:
+                    raise LocalExecutionError(diagnostic['failure'])
                 raise RuntimeError(row["error"])
             return row["result"]
         if row['state'] == 'expired':
@@ -415,7 +456,7 @@ async def session(endpoint: str, timeout: float, device_id: str | None, *, disco
     target = local.get("observer_device") if discovery else device_id
     if not target:
         raise NotStarted("로컬 실행은 관리형 엔드포인트에서 호출해야 합니다.")
-    client = LocalClient(target, local, min(timeout, RUN_SECONDS))
+    client = LocalClient(target, local, timeout)
     client.principal=principal
     await client.start()
     yield client
@@ -521,10 +562,24 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
                 or not await current_job(connection,row,device) or device['policy_hash']!=policy['policy_hash']):
             raise NotStarted("정책·서명 세대·철회 상태가 바뀌었거나 실행 기한이 지났습니다.")
         if start:
-            changed = await connection.execute("""UPDATE local_jobs SET started_at=clock_timestamp(),lease_until=deadline
-                WHERE id=%s AND started_at IS NULL AND state='claimed' AND NOT stop_requested""",(job_id,))
-            if changed.rowcount!=1:
+            run_seconds=min(RUN_SECONDS,row['run_seconds'])
+            started = await (await connection.execute("""UPDATE local_jobs SET started_at=clock_timestamp(),
+                deadline=LEAST(deadline,clock_timestamp()+make_interval(secs=>%s)),
+                lease_until=LEAST(deadline,clock_timestamp()+make_interval(secs=>%s))
+                WHERE id=%s AND started_at IS NULL AND state='claimed' AND NOT stop_requested
+                AND lease_until>clock_timestamp() AND deadline>clock_timestamp() RETURNING *""",
+                (run_seconds,run_seconds,job_id))).fetchone()
+            if not started:
                 raise NotStarted("이미 실행을 시작한 요청입니다. 다시 실행하지 않습니다.")
+            row=started
+        elif row['started_at'] is None:
+            # A renewal is valid only after every authorization/epoch/expiry check above passed.
+            renewed=await connection.execute("""UPDATE local_jobs SET lease_until=LEAST(deadline,
+                clock_timestamp()+make_interval(secs=>%s)) WHERE id=%s AND state='claimed'
+                AND started_at IS NULL AND NOT stop_requested AND lease_until>clock_timestamp()
+                AND deadline>clock_timestamp()""",(CLAIM_SECONDS,job_id))
+            if renewed.rowcount!=1:
+                raise NotStarted('로컬 실행 수령 임대를 갱신하지 못했습니다.')
         spec = registry.server(row['server_id']) or {}
         if allowed['observed'] and (spec.get('local') or {}).get('manifest_sha256')!=row['manifest_sha256']:
             raise NotStarted("현재 승인 매니페스트와 다릅니다.")
@@ -539,13 +594,15 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
                 'contracts':{t['name']:{'description_sha256':t['approved_description_hash'],'schema_sha256':t['approved_schema_hash'],'output_schema_sha256':t['approved_output_schema_hash']} for t in await db.fetch_all('SELECT * FROM mcp_tools WHERE server_id=%s AND enabled',(row['server_id'],))} if allowed['observed'] else {}}
 
 
-async def complete(device: dict, job_id: str, result: dict | None, error: str | None, *, stopped: bool = False, isolation=None) -> bool:
+async def complete(device: dict, job_id: str, result: dict | None, error: str | None, *, stopped: bool = False, isolation=None, diagnostics=None) -> bool:
     if (result is None) == (error is None):
         raise ValueError("결과와 오류 중 하나만 보냅니다.")
     if result is not None and len(json.dumps(result)) > MAX_RESULT_BODY:
         result, error = None, "로컬 실행 결과가 상한을 넘었습니다."
     if not stopped:
         raise ValueError("컨테이너 정지 확인이 필요합니다.")
+    if error is not None and diagnostics is not None:
+        error=await failure_message(error,diagnostics)
     if isolation is not None and len(canonical(isolation))>4096:
         raise ValueError('사용자 매핑 증거 상한입니다.')
     async with db.transaction() as connection:
@@ -562,6 +619,9 @@ async def complete(device: dict, job_id: str, result: dict | None, error: str | 
             (Jsonb(result) if result is not None else None, error and error[:500],digest,job_id,device['endpoint_id']))).fetchone()
         if row:
             await record_evidence(row,connection=connection)
+            if diagnostics is not None and error is not None:
+                await connection.execute("""INSERT INTO local_job_events(job_id,request_id,device_id,server_id,evidence)
+                    VALUES(%s,%s,%s,%s,%s)""",(job_id,row['request_id'],row['device_id'],row['server_id'],Jsonb({'failure':error})))
             if isolation:
                 await connection.execute("""INSERT INTO local_job_events(job_id,request_id,device_id,server_id,evidence)
                      VALUES(%s,%s,%s,%s,%s)""",(job_id,row['request_id'],row['device_id'],row['server_id'],Jsonb({'isolation':isolation})))

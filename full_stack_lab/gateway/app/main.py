@@ -1597,11 +1597,18 @@ async def endpoint_heartbeat(request: ManagedHeartbeat,
     return {**report, "network_quality": verdict}
 
 
+class LocalJobDiagnostics(BaseModel):
+    kind: Literal['permission','exited','timeout','failed']
+    exit_code: int | None = Field(default=None, ge=0, le=255)
+    stderr_tail: str = Field(default='', max_length=500)
+
+
 class LocalJobResult(BaseModel):
     result: dict | None = None
     error: str | None = Field(default=None, max_length=500)
     stopped: bool = False
     isolation: dict | None = None
+    diagnostics: LocalJobDiagnostics | None = None
 
 
 @app.get("/api/endpoint/local-jobs")
@@ -1615,7 +1622,8 @@ async def endpoint_local_job_result(job_id: uuid.UUID, request: LocalJobResult,
                                     device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:
         accepted = await local_jobs.complete(device, str(job_id), request.result, request.error,
-                                             stopped=request.stopped, isolation=request.isolation)
+                                             stopped=request.stopped, isolation=request.isolation,
+                                             diagnostics=request.diagnostics.model_dump() if request.diagnostics else None)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     if not accepted:

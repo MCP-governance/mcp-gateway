@@ -489,7 +489,7 @@ function rememberTab(key) {
 
 async function refreshBadges() {
   try {
-    badges.consent = (await api("/api/consents")).consents.filter((c) => c.status === "PENDING").length;
+    badges.consent = new Set((await api("/api/consents")).consents.filter((c) => c.status === "PENDING").map((c) => c.server_id)).size;
   } catch { /* same as below */ }
   if (!viewer.pages.includes("overview")) return renderNav($("#view").dataset.page);
   try {
@@ -1442,22 +1442,30 @@ ROUTES.consent = async (_, tab) => {
   const { consents } = await api("/api/consents");
   const pending = consents.filter((c) => c.status === "PENDING");
   const decided = consents.filter((c) => c.status !== "PENDING");
-  badges.consent = pending.length;
+  const servers = new Map();
+  for (const c of pending) {
+    if (!servers.has(c.server_id)) servers.set(c.server_id, []);
+    servers.get(c.server_id).push(c);
+  }
+  badges.consent = servers.size;
   const button = (c, decision, label, tone = "") => html`<button class="btn sm ${tone}" data-act="consent" data-id="${c.id}" data-decision="${decision}">${label}</button>`;
+  const serverButton = (id, rows, decision, label, tone) => html`<button class="btn sm ${tone}" data-act="consent-server" data-id="${id}" data-consents="${rows.map((c) => c.id).join(",")}" data-decision="${decision}">${label}</button>`;
   const table = (rows) => html`<table class="data"><thead><tr><th>도구</th><th>데이터 등급</th><th>목적</th><th>상태</th><th>시각</th><th></th></tr></thead><tbody>
-    ${rows.map((c) => html`<tr><td><code>${c.server_id}.${c.tool_name}</code></td><td>${DATA_CLASS[c.grade] || c.grade}</td>
+    ${rows.map((c) => html`<tr><td><code>${c.server_id}.${c.tool_name}</code></td><td>${DATA_CLASS[c.grade] || NONE}</td>
       <td>${c.purpose || NONE}<span class="sub">외부 목적지 ${destinationText(c.terms?.destinations)}${c.terms?.inputs ? ` · 입력 ${c.terms.inputs.join(", ") || "없음"}` : ""}</span></td>
-      <td>${chip(...(CONSENT_STATUS[c.status] || ["", c.status]))}</td>
+      <td>${chip(...(CONSENT_STATUS[c.status] || ["", "—"]))}</td>
       <td class="small">${when(c.decided_at || c.requested_at)}${c.status === "GRANTED" && c.expires_at ? html`<span class="sub">${when(c.expires_at)}까지</span>` : ""}</td>
-      <td class="num nowrap">${c.status === "PENDING" ? html`${button(c, "deny", "거부", "danger")}${button(c, "grant", "동의", "primary")}`
+      <td class="num nowrap">${c.status === "PENDING" ? ""
         : c.status === "GRANTED" ? button(c, "revoke", "철회") : ["DENIED", "REVOKED"].includes(c.status) ? button(c, "grant", "동의") : ""}</td></tr>`)}
     </tbody></table>`;
   return page({
     head: head("이용 동의"),
     active: tab || "pending",
     tabs: [
-      { key: "pending", label: "확인 필요", n: pending.length, hot: pending.length > 0,
-        body: panel("동의 요청", pending.length ? table(pending) : empty("확인할 요청 없음"), { flush: true }) },
+      { key: "pending", label: "확인 필요", n: servers.size, hot: servers.size > 0,
+        body: servers.size ? html`<div class="stack">${[...servers].map(([id, rows]) => panel(id, html`
+          <div class="row-actions">${chip("alert", `요청 ${rows.length}건`)}${serverButton(id, rows, "deny", "모두 거부", "danger")}${serverButton(id, rows, "grant", "모두 허용", "primary")}</div>
+          ${table(rows)}`))}</div>` : empty("확인할 요청 없음") },
       { key: "history", label: "기록", n: decided.length, body: panel("동의 기록", decided.length ? table(decided) : empty("기록 없음"), { flush: true }) },
     ],
   });
@@ -2173,6 +2181,13 @@ const ACTIONS = {
   async consent(el) {
     await api(`/api/consents/${el.dataset.id}`, { method: "POST", body: { decision: el.dataset.decision } });
     toast({ grant: "동의함", deny: "거부함", revoke: "철회함" }[el.dataset.decision]);
+    reload(); refreshBadges();
+  },
+  async "consent-server"(el) {
+    await api(`/api/consents/server/${encodeURIComponent(el.dataset.id)}`, { method: "POST", body: {
+      decision: el.dataset.decision, consent_ids: el.dataset.consents.split(",").map(Number),
+    } });
+    toast(el.dataset.decision === "grant" ? "허용함" : "거부함");
     reload(); refreshBadges();
   },
   async "audit-event"(el) {

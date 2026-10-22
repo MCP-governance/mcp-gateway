@@ -12,6 +12,7 @@ ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS result_sha256 text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS token_jti uuid;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS policy_version text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS control_sha256 text;
+ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS run_seconds double precision NOT NULL DEFAULT 20 CHECK (run_seconds>0 AND run_seconds<=20);
 CREATE INDEX IF NOT EXISTS local_jobs_owner ON local_jobs(user_token,created_at);
 CREATE INDEX IF NOT EXISTS local_jobs_server ON local_jobs(server_id,created_at);
 CREATE TABLE IF NOT EXISTS local_approvals (

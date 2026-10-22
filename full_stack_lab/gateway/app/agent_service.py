@@ -2409,6 +2409,21 @@ class ConsentDecision(StrictModel):
     decision: Literal["grant", "deny", "revoke"]
 
 
+class ServerConsentDecision(ConsentDecision):
+    consent_ids: list[int] = Field(min_length=1)
+
+
+@app.post("/api/consents/server/{server_id}")
+async def decide_server_consent(server_id: str, request: ServerConsentDecision,
+                                authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    try:
+        rows = await consent.decide_server(server_id, request.consent_ids, user["principal"], request.decision)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {"consents": rows}
+
+
 @app.post("/api/consents/{consent_id}")
 async def decide_consent(consent_id: int, request: ConsentDecision, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
