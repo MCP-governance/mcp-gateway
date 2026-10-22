@@ -119,5 +119,17 @@ class SecurityEdges(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(await core.egress_allowed(endpoint), expected)
 
 
+class TransportHosts(unittest.TestCase):
+    def test_public_name_allows_hosts_with_and_without_port(self):
+        from app import mcp_facade
+        with patch.dict("os.environ", {"GATEWAY_PUBLIC_MCP_URL": "https://127.0.0.1:443/mcp/", "FIELD_PUBLIC_NAME": ""}):
+            hosts = mcp_facade.transport_security().allowed_hosts
+        # The port-less form is what a client sends to 443; it is not covered by "127.0.0.1:*".
+        self.assertIn("127.0.0.1", hosts)
+        self.assertEqual(len(hosts), len(set(hosts)))
+        with patch.dict("os.environ", {"GATEWAY_PUBLIC_MCP_URL": "", "FIELD_PUBLIC_NAME": ""}):
+            self.assertNotIn("127.0.0.1", mcp_facade.transport_security().allowed_hosts)
+
+
 if __name__ == "__main__":
     unittest.main()
