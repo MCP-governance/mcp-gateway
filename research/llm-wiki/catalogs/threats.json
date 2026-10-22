@@ -42,9 +42,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "committed_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+        "sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
+        "committed_sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
+        "normalized_sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
         "worktree_modified": false
       }
     ],
@@ -152,8 +152,10 @@
       "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/agent_service.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-22",
@@ -180,9 +182,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "committed_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
-        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+        "sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
+        "committed_sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
+        "normalized_sha256": "a93ec9d99ac30b3feacfb19e2cbc657fdf3bb28a2289620c45fd35e8d45b6c2d",
         "worktree_modified": false
       },
       {
@@ -293,8 +295,10 @@
       "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
-      "files_match_review": true,
-      "changed_review_files": []
+      "files_match_review": false,
+      "changed_review_files": [
+        "full_stack_lab/gateway/app/agent_service.py"
+      ]
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-22",
