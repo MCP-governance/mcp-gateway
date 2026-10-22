@@ -84,6 +84,7 @@ const DECISION = {
   Allow: ["allow", "허용"], Alert: ["alert", "경보"], Restrict: ["restrict", "제한 실행"],
   Approval: ["approval", "승인 대기"], Block: ["block", "차단"],
 };
+const ARTIFACT_KIND = { sbom: "SBOM", trivy: "Trivy", semgrep: "Semgrep", gitleaks: "Gitleaks", "exit-terms": "종료 조건" };
 const NONE = html`<span class="muted">—</span>`;
 const SERVER_STATUS = { READY: "정상", DRIFT: "계약 변경", PENDING: "확인 대기", DISABLED: "사용 중지", ERROR: "연결 오류" };
 const LIFECYCLE = { OPERATING: "운영", TERMINATING: "종료 중", RETIRED: "폐기" };
@@ -1975,7 +1976,7 @@ async function showIntakeReport(id) {
         <tbody>${scanners.map(([name, s]) => html`<tr><td>${name}</td><td>${chip(s.status === "DONE" ? "allow" : "block", s.status === "DONE" ? "완료" : "실패")}</td><td>${s.error || "—"}</td></tr>`)}</tbody></table>` : empty("검사 대기"))}
       ${panel("검사 기준", gateView(report.gate))}
       ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
-        <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
+        <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${ARTIFACT_KIND[a.kind] || a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
     </div>` },
     { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: html`${(report.runtimes || []).length ? html`<table class="data">
       <thead><tr><th>세대</th><th>상태</th><th>이미지</th><th>주소</th><th>시각</th></tr></thead><tbody>
@@ -2161,7 +2162,7 @@ async function caseView(caseId, tab) {
 function evidenceResult(e) {
   const d = e.detail || {};
   switch (e.kind) {
-    case "gateway-denial": return d.blocked ? chip("allow", `실행 전 차단 · ${d.policy_id}`) : chip("block", `차단 안 됨 · ${d.decision} ${d.policy_id || ""}`);
+    case "gateway-denial": return d.blocked ? chip("allow", `실행 전 차단 · ${d.policy_id}`) : chip("block", `차단 안 됨 · ${DECISION[d.decision]?.[1] || d.decision || "—"} ${d.policy_id || ""}`);
     case "credential-check": return d.present === false ? chip("allow", "자격 없음") : d.present ? chip("block", "자격 남음") : chip("alert", `확인 실패 · HTTP ${d.http_status}`);
     case "resource-rejection": return d.rejected ? chip("allow", `자원 서버 거부 · ${d.http_status}`) : chip("block", `자원 서버 수락 · ${d.http_status}`);
     case "endpoint-inventory": return d.absent ? chip("allow", "설정 사라짐") : chip("block", `설정 남음 · ${when(d.last_report)}`);
@@ -2756,7 +2757,7 @@ const ACTIONS = {
   },
   async "registry-export"(el) {
     const format = el.dataset.format;
-    const response = await fetch(`/api/registry/export?format=${encodeURIComponent(format)}`, { headers: { authorization: `Bearer ${token}` } });
+    const response = await fetch(`/gw/registry/export?format=${encodeURIComponent(format)}`, { headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(detailText(body.detail) || `등록부 내보내기 실패 (${response.status})`);
