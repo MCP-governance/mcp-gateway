@@ -2051,3 +2051,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 심사 조건 변경·등급 상승·만료·철회는 다시 동의해야 한다. 도구·등급·조건 해시 단위 저장 및 전송 직전 공유 잠금 재검증은 유지한다. 서버 전체에 무기한·미래 도구 포괄 동의를 부여하지 않는다.
 - 이유: PJ1 Claude 실사용에서 filesystem 도구 6개를 처음 사용할 때 각각 중단됐다. UI 상호작용을 합치되 정책·데이터 권한은 그대로 둔다. 신규 라이브러리 없이 기존 psycopg 트랜잭션·PAC·심사 범위를 재사용한다.
 - 근거·시험·한계: [분석](../../research/llm-wiki/analysis/consent-per-server-1023/README.md), [보고](../../research/llm-wiki/status/reports/2026-10-23-consent-per-server.md). 오프라인 대역 시험이며 실제 DB·MCP·PJ1·브라우저 검수는 미실행이다. 커밋·기기 접속 없음.
+
+## D-202 출력 자격 증명 보류는 구조화된 `키=값`에만 적용하고 문서 속 예시는 문자열 단위로 가린다 (2026-10-23)
+
+- **문제**: PJ1 실사용에서 MCP Python SDK 문서 5개를 읽는 `read_multiple_files` 결과가 `MCP-OUTPUT-001`
+  ("Credential in structured key/value context is withheld")로 통째 보류됐다. `privacy.mask_payload`가 문자열 값을
+  `text=<문서 전체>`로 이어 자격 증명 탐지기를 돌리는데, 문서 본문 속 OAuth 예시가 걸렸다.
+- **결정**: 탐지 범위가 합성한 `키=` 경계를 넘는 경우만 구조화 자격 증명으로 보고 결과를 보류한다. 문자열 값 안에서 끝나는
+  탐지는 기존 문자열 마스킹이 가린다. Codex 출력 오탐 작업(같은 날, 미병합)의 같은 판정 방식을 가져왔다. 자리표시 값 제외와
+  Gitleaks·개인정보 잔여 검사, 실패 시 보류는 그대로다.
+- **시험**: `full_stack_lab/tests/output_credential_span_check.py`(게이트웨이 이미지, 2건). 기존 `mcp_result_contract_check`·
+  `output_contract_check`·`response_cap_boundary_check`·`secret_engine_parity_check` 통과.
