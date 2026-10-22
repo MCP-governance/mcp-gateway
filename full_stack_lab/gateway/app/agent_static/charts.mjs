@@ -100,28 +100,6 @@ export function redraw(id, build) {
   pending.set(id, build);
 }
 
-/** Replace chart data without replacing its canvas during an intake refresh. */
-export function update(id, build) {
-  for (const [el, entry] of live) {
-    if (el.id !== id) continue;
-    if (!el.isConnected) {
-      entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
-      break;
-    }
-    const { onClick, option } = chartOption(build);
-    // An empty state has no canvas to update, and a chart whose data went to zeros becomes one: draw anew.
-    if (!entry.chart || !values(option).some((v) => Number(v) > 0)) {
-      entry.observer?.disconnect(); entry.chart?.dispose(); live.delete(el);
-      draw(el, build);
-      return;
-    }
-    entry.build = build;
-    entry.chart.setOption({ ...base(), ...option }, { notMerge: true, lazyUpdate: true });
-    return;
-  }
-  pending.set(id, build);
-}
-
 /** Theme switch: rebuild with the new tokens. */
 export function redrawAll() {
   // Iterate a copy: draw() puts the same element back into `live`, and a Map iterator visits
@@ -205,18 +183,5 @@ export function sankey({ nodes, links }) {
       data: nodes.map((n) => ({ name: n.name, itemStyle: { color: decisionColor[n.name] || layerColor[n.layer] || css("--ink-3") } })),
       links,
     }],
-  };
-}
-
-/** Columns by category without a decision split (e.g. requests per status). */
-export function columns(items, { tone = "--brand" } = {}) {
-  return {
-    legend: { show: false },
-    tooltip: { ...base().tooltip, trigger: "axis", axisPointer: { type: "shadow" } },
-    grid: { ...base().grid, top: 16 },
-    xAxis: axis({ type: "category", data: items.map((i) => i.name), axisLabel: { color: css("--ink-2"), fontSize: 15, interval: 0 } }),
-    yAxis: axis({ type: "value", minInterval: 1 }),
-    series: [{ type: "bar", barMaxWidth: 36, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
-      label: { show: true, position: "top", color: css("--ink-2") } }],
   };
 }
