@@ -152,6 +152,8 @@ def main() -> int:
         broken_input_ok = True
     except ValueError:
         broken_input_ok = False
+    # A malformed link (urlsplit raises "Invalid IPv6 URL") must not make a document uninspectable.
+    malformed_link_ok = secret_scan.scan_text('see http://[::1 or "https://h/p?k=v"').endswith("\nv")
 
     def stats(values: list[float]) -> dict:
         ordered = sorted(values)
@@ -160,9 +162,10 @@ def main() -> int:
 
     print(json.dumps({"samples": len(samples), "with_findings": detected, "differences": differences,
                       "binary": stats(old_ms), "library": stats(new_ms), "non_utf8_input_scanned": broken_input_ok,
+                      "malformed_link_scanned": malformed_link_ok,
                       "slots": slots},
                      ensure_ascii=False, indent=1))
-    return 1 if differences or not detected or not slots_ok else 0
+    return 1 if differences or not detected or not slots_ok or not malformed_link_ok else 0
 
 
 if __name__ == "__main__":
