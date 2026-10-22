@@ -565,7 +565,8 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
     if local:
         server_id = local_jobs.server_of(endpoint) or ""
         try:
-            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status='APPROVED' AND reviewed_by IS NOT NULL", (uuid.UUID(intake_id),))
+            # 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다. 관찰은 관리자만 부르고(admin_caller), 등록은 여전히 승인 뒤다.
+            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status IN ('HOLD','VALIDATED','APPROVED')", (uuid.UUID(intake_id),))
         except ValueError:
             intake = None
         if not intake:

@@ -91,11 +91,23 @@ class ControlChecks(unittest.TestCase):
             self.assertFalse(check(self.body['image'],[]))
 
     def test_F5_missing_or_wrong_engine_mapping_is_blocked(self):
-        for setting in ({},{'engine':'docker','namespace':'podman-auto'},
+        # D-192: 빈 설정은 거부가 아니라 그 PC의 엔진 측정이다(test_D192_empty_setting_measures_engine).
+        for setting in ({'engine':'docker','namespace':'podman-auto'},
                         {'engine':'docker','namespace':'host'}):
             with self.subTest(setting=setting),self.assertRaises(ValueError),patch.object(runner.subprocess,'run') as command:
                 runner.engine_configuration({'local_engine':setting},self.body)
             command.assert_not_called()
+
+    def test_D192_empty_setting_measures_engine(self):
+        def fake(argv,**_):
+            out=b'29.8.1' if 'version' in argv else b'["name=seccomp"]'
+            return SimpleNamespace(stdout=out,returncode=0)
+        with patch.object(runner.os.path,'isfile',side_effect=lambda p:p=='/usr/bin/docker'),patch.object(runner.subprocess,'run',side_effect=fake):
+            measured=runner.detect_engine({'mirrors':['mirror.corp/mcp']})
+        self.assertEqual((measured['engine'],measured['namespace'],measured['version']),('docker','host','29.8.1'))
+        self.assertEqual(measured['mirrors'],['mirror.corp/mcp'])
+        with patch.object(runner.os.path,'isfile',return_value=False),self.assertRaises(ValueError):
+            runner.detect_engine({})
 
     def test_F5_actual_host_mapping_cannot_pass_as_userns(self):
         session=runner.Session.__new__(runner.Session)
