@@ -572,10 +572,12 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
         await lock_execution(connection,row)
         allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                    generation=row['policy_generation'])
-        policy = await endpoint_plane.managed_policy(device)
+        # The job was made under the device's policy (current_job). A policy that differs from the latest only by
+        # servers added or removed elsewhere keeps the job; any control change stops it (D-198, 10-23 PJ1: one
+        # approval or one upstream in ERROR made every local job on the PC fail until the kit refreshed).
         if (not allowed or row['stop_requested'] or row['state']!='claimed' or row['deadline']<=datetime.now(UTC)
-                or row['lease_until']<=datetime.now(UTC) or row['device_policy']!=policy['policy_hash']
-                or not await current_job(connection,row,device) or device['policy_hash']!=policy['policy_hash']):
+                or row['lease_until']<=datetime.now(UTC) or row['device_policy']!=device['policy_hash']
+                or not await current_job(connection,row,device) or not await endpoint_plane.policy_accepted(device)):
             raise NotStarted("정책·서명 세대·철회 상태가 바뀌었거나 실행 기한이 지났습니다.")
         if start:
             run_seconds=min(RUN_SECONDS,row['run_seconds'])
@@ -601,7 +603,7 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
             raise NotStarted("현재 승인 매니페스트와 다릅니다.")
         return {'policy_generation':allowed['policy_generation'],'manifest_sha256':allowed['manifest_sha256'],
                 'signature_generation':allowed['signature_generation'],'revoked':False,'lifecycle':allowed['lifecycle'] or 'OBSERVING',
-                'device_epoch':device['device_epoch'],'device_policy':policy['policy_hash'],
+                'device_epoch':device['device_epoch'],'device_policy':row['device_policy'],
                 'account_uid':device['local_uid'],
                 'policy_version':row['policy_version'],
                 'control_sha256':row['control_sha256'],
