@@ -90,6 +90,17 @@ ensure_env() {
     grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env
     grep -q "^ENDPOINT_KEY_WS_${up}=" .env || echo "ENDPOINT_KEY_WS_${up}=ek-${ws}-$(openssl rand -hex 20)" >> .env
   done
+  # 로컬 실행 매니페스트 서명 키(DEV-73). 운영자가 오프라인 키의 공개 키만 넣어 두었으면 그대로 둔다.
+  # 게이트웨이 침해는 위협 모델 밖이라(D-175 판단) 기기가 승인 시 서명해도 보장 범위가 줄지 않는다.
+  if [[ -z "$(env_value LOCAL_MANIFEST_PUBKEY)" && -z "$(env_value LOCAL_MANIFEST_PRIVATE_KEY)" ]]; then
+    local key; key="$(openssl genpkey -algorithm ed25519)"
+    sed -i '/^LOCAL_MANIFEST_P\(RIVATE_KEY\|UBKEY\)=/d' .env
+    printf 'LOCAL_MANIFEST_PRIVATE_KEY=%s\nLOCAL_MANIFEST_PUBKEY=%s\n' \
+      "$(printf '%s\n' "$key" | awk '{printf "%s\\n", $0}')" \
+      "$(printf '%s\n' "$key" | openssl pkey -pubout | awk '{printf "%s\\n", $0}')" >> .env
+  fi
+  # digest로 고정한 공식 MCP 카탈로그 이미지(Docker Hub mcp/*)만 직원 PC에서 실행한다.
+  env_default LOCAL_IMAGE_MIRRORS "docker.io/mcp,mcp"
   if ! grep -qE '^DISPOSAL_PRIVATE_KEY=.+' .env; then
     if grep -qE '^DISPOSAL_PUBLIC_KEY=.+' .env; then
       echo '폐기 서명 개인 키가 없습니다. 기존 키를 복구하세요.' >&2; return 1

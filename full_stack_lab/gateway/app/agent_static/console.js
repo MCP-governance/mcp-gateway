@@ -1775,8 +1775,35 @@ function intakeApprovalFields(out) {
   </details>`;
 }
 
+const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구", device: "장치" };
+
+async function askLocalRun(id, request) {
+  const cur = request.evidence?.local_run || {};
+  const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
+    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"', cur.image || "")}
+    ${field.text("command", "실행 인자", 'maxlength="2000"', (cur.command || []).join(" "))}
+    ${field.text("mounts", "폴더 (홈 기준, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000"',
+      (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
+    ${field.select("reason_kind", "실행 위치 근거", LOCAL_REASON, cur.reason_kind || "local_file")}
+    ${field.text("reason_text", "근거 설명", 'required minlength="10" maxlength="500"', cur.reason_text || "")}` });
+  if (!fd) return false;
+  const mounts = String(fd.get("mounts") || "").split(",").map((v) => v.trim()).filter(Boolean).map((v) => {
+    const [path, mode = "ro"] = v.split(":");
+    return { path: path.trim().replace(/^~\//, ""), mode: mode.trim() || "ro" };
+  });
+  const result = await api(`/api/mcp-requests/${id}/local-run`, { method: "POST", body: {
+    image: String(fd.get("image")).trim(), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
+    mounts, env: {}, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
+  toast(result.message);
+  return true;
+}
+
 async function showIntakeApproval(id) {
-  const out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  let out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  if (out.request.requested_transport === "stdio" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
+    if (!(await askLocalRun(id, out.request))) return;
+    out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  }
   const fd = await ask({ title: `도입 승인 · ${out.request.display_name}`, fields: intakeApprovalFields(out),
     confirm: "승인", disabled: out.proposal.blockers.length > 0, reject: true });
   if (!fd) return;
