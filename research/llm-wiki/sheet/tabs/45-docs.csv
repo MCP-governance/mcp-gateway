@@ -679,7 +679,9 @@ DOC-692,"2026-10-21 직원별 MCP 서버 이용 중지·재개 (DEV-79, D-181)",
 DOC-693,위키 검사 실행 결과와 경고 분류 (10-21),보고,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-21-wiki-check.md,D-157,기록
 DOC-694,2026-10-22 AI 게이트웨이 애드온 (LiteLLM 중앙 MCP 연동),보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-ai-gateway-addon.md,D-191 · D-190,기록
 DOC-695,2026-10-22 ID 추적 규칙·검사기·추적표,보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-id-trace.md,D-190 · D-194 · D-175 · DEV-73 · D-193 · D-36 · D-38 · D-160 · D-173 · D-174 · D-171 · D-191 · D-136 · E14 · E19,기록
+DOC-699,2026-10-22 엔드포인트 키트 정상 경로 실측,보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-kit-e2e.md,D-192 · D-68,기록
 DOC-696,2026-10-22 LiteLLM 중앙 MCP에서 MINT 추가 역할 분석,보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-litellm-mint-opportunities.md,DEV-47 · DEV-43 · DEV-38,기록
+DOC-700,2026-10-22 로컬 MCP(PC 격리 실행) 원클릭 — 구현·실측,보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-local-mcp-oneclick.md,D-192 · DEV-73,기록
 DOC-532,저장소 코드 스냅샷,현황,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/repository-snapshot.md,,기록
 DOC-533,"Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/team-agi-deliverables-2026-10-15.md,POL-01,정본
 DOC-534,Claude/Codex 공통 작업 지시,양식,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/templates/task-prompt.md,,정본

@@ -647,3 +647,16 @@ db8cb13,2026-10-22 19:54,pokochy,,,Merge 10/22-ai-gateway-addon: LiteLLM·외부
 f591d1c,2026-10-22 20:08,pokochy,,,Merge 10/22-local-mcp-oneclick: 로컬 MCP 원클릭 (D-192),D-192,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f591d1c4602ce16c75a598a7855b329fecf3ff4a
 d9f5eb6,2026-10-22 20:20,pokochy,fix,v2,로컬 실행 계약 관찰을 승인 전 신청에도 허용 (D-192),D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d9f5eb63aa9b377fa170611803cb6e6d21c19ab7
 bf6cea1,2026-10-22 20:20,pokochy,,,Merge 10/22-local-mcp-oneclick: 승인 전 계약 관찰 허용,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/bf6cea1bfb86f865da569fb7a3a9f92217281b3f
+3d4fa7d,2026-10-22 20:22,pokochy,feat,v2,"ID 정의·참조 추적 검사기와 번호 발급, 추적표, 위반 정리 (D-194, WIKI-04)",D-194 · D-175 · D-193 · D-190 · D-191,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/3d4fa7d50d1dfbdb177d880efe6fbc06c4a7ef33
+0a90a90,2026-10-22 20:22,pokochy,,,Merge origin/main into 10/22-id-trace,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/0a90a90c39c839e7de7d04d7aeb3bf3891992f65
+f4d842f,2026-10-22 20:24,pokochy,fix,v2,"data: URI를 SSRF 목적지로 오판하지 않고, 재설치 시 기존 모델 로그인 안내",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f4d842fefcd9c8a413263bee19ee04f2b7f59e44
+4df3218,2026-10-22 20:24,pokochy,feat,v2,"시트 추적 탭(47)과 갱신된 내보내기, 예약 번호 설명 정리 (D-194, WIKI-04)",D-194 · D-193,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/4df3218ec8602abae28eb2a0e531b70f41c2e74f
+1e31007,2026-10-22 20:25,pokochy,docs,v2,10-22 엔드포인트 키트 정상 경로 실측 보고,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/1e3100712e12c4c7a7f72cf9732215812d6188ef
+cbd49fa,2026-10-22 20:25,pokochy,docs,v2,ID 추적 작업 보고 수치 정정 (WIKI-04),,WIKI-04,,,,https://github.com/MCP-governance/mcp-gateway/commit/cbd49fa649b59f4d573c14794909a3c028420c46
+2de9176,2026-10-22 20:31,pokochy,fix,v2,"로컬 실행기 — docker에서 폴더를 경로로 바인드, 측정한 엔진 판본 보존 (D-192)",D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/2de91763c786b3fff811224b8cb30e1b8135c1c3
+38ee658,2026-10-22 20:31,pokochy,,,Merge 10/22-local-mcp-oneclick: docker 바인드·엔진 판본 보존,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/38ee6581d203e8838400e8820a19ed616c4b5281
+4a57a15,2026-10-22 20:33,pokochy,fix,v2,"키트 재설치 — 이전 장치 폐기, 로컬 실행 관찰 PC를 현재 장치로 다시 묶음 (D-192)",D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/4a57a154b86a7166b9ce3f536beead99e3c24cad
+85ead96,2026-10-22 20:33,pokochy,,,Merge 10/22-local-mcp-oneclick: 재설치 장치 정리·관찰 PC 재결속,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/85ead9603ca973fa3b08318ab1691f11c7eb81ef
+378f619,2026-10-22 20:39,pokochy,docs,v2,로컬 MCP 원클릭 실측 보고 (D-192),D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/378f619d56060a79dfd2cc4f3706e43cc6a04bf5
+969d80d,2026-10-22 20:40,pokochy,,,Merge 10/22-kit-e2e: 키트 실측 회귀 — data: URI 오판·폐기된 Codex 로그인 안내,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/969d80d8cf107263fd359c2c1cc0b68ccc4f39d6
+f42ea03,2026-10-22 20:40,pokochy,,,Merge 10/22-id-trace: ID 추적 검사기·추적표·번호 정정,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f42ea030f4c55cb57306d45fcd3898a34cdf342f

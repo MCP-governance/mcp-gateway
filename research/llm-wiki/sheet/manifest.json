@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-22T20:22:29+09:00",
-  "source_head": "0a90a90c39c839e7de7d04d7aeb3bf3891992f65",
+  "generated_at": "2026-10-22T20:40:02+09:00",
+  "source_head": "f42ea030f4c55cb57306d45fcd3898a34cdf342f",
   "raw_base": "https://raw.githubusercontent.com/MCP-governance/mcp-gateway/<커밋>/research/llm-wiki/sheet/tabs/",
   "tabs": [
     {
@@ -263,7 +263,7 @@
       "group": "관리",
       "kind": "참조",
       "csv": "tabs/05-commits.csv",
-      "rows": 648,
+      "rows": 661,
       "columns": [
         {
           "name": "커밋",
@@ -503,7 +503,9 @@
         "research/llm-wiki/status/reports/2026-10-21-wiki-check.md",
         "research/llm-wiki/status/reports/2026-10-22-ai-gateway-addon.md",
         "research/llm-wiki/status/reports/2026-10-22-id-trace.md",
-        "research/llm-wiki/status/reports/2026-10-22-litellm-mint-opportunities.md"
+        "research/llm-wiki/status/reports/2026-10-22-kit-e2e.md",
+        "research/llm-wiki/status/reports/2026-10-22-litellm-mint-opportunities.md",
+        "research/llm-wiki/status/reports/2026-10-22-local-mcp-oneclick.md"
       ]
     },
     {
@@ -2970,7 +2972,7 @@
       "group": "관리",
       "kind": "관리",
       "csv": "tabs/45-docs.csv",
-      "rows": 698,
+      "rows": 700,
       "columns": [
         {
           "name": "ID",
@@ -3675,7 +3677,9 @@
         "research/llm-wiki/status/reports/2026-10-21-wiki-check.md",
         "research/llm-wiki/status/reports/2026-10-22-ai-gateway-addon.md",
         "research/llm-wiki/status/reports/2026-10-22-id-trace.md",
+        "research/llm-wiki/status/reports/2026-10-22-kit-e2e.md",
         "research/llm-wiki/status/reports/2026-10-22-litellm-mint-opportunities.md",
+        "research/llm-wiki/status/reports/2026-10-22-local-mcp-oneclick.md",
         "research/llm-wiki/status/repository-snapshot.md",
         "research/llm-wiki/team-agi-deliverables-2026-10-15.md",
         "research/llm-wiki/templates/task-prompt.md",
@@ -3742,7 +3746,7 @@
       "group": "관리",
       "kind": "참조",
       "csv": "tabs/47-trace.csv",
-      "rows": 1450,
+      "rows": 1452,
       "columns": [
         {
           "name": "ID",
@@ -4513,7 +4517,9 @@
       "research/llm-wiki/status/reports/2026-10-22-id-trace.md": "DOC-695",
       "research/llm-wiki/status/reports/2026-10-22-litellm-mint-opportunities.md": "DOC-696",
       "research/llm-wiki/trace/README.md": "DOC-697",
-      "research/llm-wiki/trace/reserved.md": "DOC-698"
+      "research/llm-wiki/trace/reserved.md": "DOC-698",
+      "research/llm-wiki/status/reports/2026-10-22-kit-e2e.md": "DOC-699",
+      "research/llm-wiki/status/reports/2026-10-22-local-mcp-oneclick.md": "DOC-700"
     },
     "backlog_aliases": {
       "RES-01": "WIKI-02"
