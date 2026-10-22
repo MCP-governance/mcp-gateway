@@ -19,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
+from . import addon, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -264,6 +264,23 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
     if "admin" not in user["roles"]:
         raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
     return user
+
+
+class AddonDecision(StrictModel):
+    server_id: str = Field(min_length=1, max_length=120)
+    tool: str = Field(min_length=1, max_length=200)
+    arguments: dict = Field(default_factory=dict)
+    gateway: str = Field(default="unknown", max_length=40)
+    asserted: dict[str, str] = Field(default_factory=dict, max_length=10)
+    call_ref: str | None = Field(default=None, max_length=80)
+
+
+class AddonResult(StrictModel):
+    decision_id: int
+    outcome: Literal["executed", "not_executed"]
+    is_error: bool = False
+    result_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    result_bytes: int | None = Field(default=None, ge=0)
 
 
 @asynccontextmanager
@@ -722,6 +739,16 @@ async def session(request: SessionRequest) -> dict:
     if response.status_code != 200:
         raise HTTPException(401, "아이디와 비밀번호를 확인하세요.")
     return response.json()
+
+
+@app.post("/api/addon/v1/mcp-decision")
+async def addon_mcp_decision(request: AddonDecision, user: dict = Depends(caller)) -> dict:
+    return await addon.decide(user, request.model_dump())
+
+
+@app.post("/api/addon/v1/mcp-result")
+async def addon_mcp_result(request: AddonResult, user: dict = Depends(caller)) -> dict:
+    return await addon.record_result(user, request.model_dump())
 
 
 @app.post("/api/approvals/{approval_id}/approve")
