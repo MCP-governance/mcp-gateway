@@ -32,7 +32,7 @@ SEP = " · "
 MAX_CELL = 45_000
 PATTERNS = {
     "wbs": r"G\d{2}\.\d{2}", "features": r"F-\d{2}",
-    "policies": r"POL-\d{2}", "backlog": r"(?:DEV|WIKI)-\d{2}",
+    "policies": r"POL-\d{2}", "backlog": r"(?:DEV|WIKI|AIG|OPS|RM)-\d{2}",
     "decisions": r"D-\d+", "experiments": r"E\d{2}",
     "components": r"CMP-\d{2}", "oss-reuse": r"OSS-\d{2}", "docs": r"DOC-\d{3,}",
     "deploys": r"DEP-\d{2,}", "commits": r"[0-9a-f]{7}",
@@ -961,6 +961,11 @@ class Export:
         rows = [{"ID": mapping[key], **record} for key, record in sorted(records.items())]
         self.add("docs", rows, [*sorted(paths), drive_source])
 
+    def trace(self):
+        import check_trace  # 같은 폴더. 문서·코드·룰셋의 ID 정의와 참조를 훑은 추적표
+        info, _, _ = check_trace.analyze_tree()
+        self.add("trace", check_trace.rows_of(info), sorted({p for row in info.values() for p, _ in row["defs"]}), check_trace.HEADERS)
+
     def build(self):
         self.management()
         self.originals_and_policies()
@@ -969,6 +974,7 @@ class Export:
         self.compliance()
         self.references()
         self.documents()
+        self.trace()
         return self
 
 
@@ -1043,8 +1049,12 @@ def output(export, flat):
                 "raw_base": RAW, "tabs": [], "id_registry": export.registry, "flat": flat}
     payloads = {}
     extras = [slug for slug in export.tables if slug not in {t[2] for t in TABS}]
-    tab_specs = [*TABS, *[(46 + i, "기업 현황" if slug == "enterprise-summary" else slug, slug, "기업", "참조")
-                          for i, slug in enumerate(extras)]]
+    extra_tabs = {"enterprise-summary": ("기업 현황", "기업"), "trace": ("추적", "관리")}
+
+    def extra(i, slug):
+        title, group = extra_tabs.get(slug, (slug, "기업"))
+        return 46 + i, title, slug, group, "참조"
+    tab_specs = [*TABS, *[extra(i, slug) for i, slug in enumerate(extras)]]
     for order, title, slug, group, kind in tab_specs:
         table = export.tables.get(slug)
         tab = {"order": order, "title": title, "slug": slug, "group": group, "kind": kind,
@@ -1073,7 +1083,7 @@ def output(export, flat):
         if len(sources) > 3:
             display.append(f"외 {len(sources) - 3}개(manifest)")
         lines.append(f"| {tab['order']:02d} {tab['title']} | {tab['kind'] or '—'} | {tab['rows']} | {'; '.join(display) or '—'} | {tab['id_column']} |")
-    lines += ["", "ID: 작업 G01.01, 기능 F-01(원본 순서), 정책 POL-01, 백로그 DEV-01/WIKI-01, 결정은 제목의 D-번호(선행 0 포함), 시험 E01, OSS OSS-01, 자료 DOC-001, 배포 DEP-01, 커밋 7자 SHA. 참조표는 원본 ID를 보존한다. 여러 ID는 ` · `로 구분한다.",
+    lines += ["", "ID: 작업 G01.01, 기능 F-01(원본 순서), 정책 POL-01, 백로그 DEV-01/WIKI-01/AIG-01/RM-01/OPS-01, 결정은 제목의 D-번호(선행 0 포함), 시험 E01, OSS OSS-01, 자료 DOC-001, 배포 DEP-01, 커밋 7자 SHA. 참조표는 원본 ID를 보존한다. 여러 ID는 ` · `로 구분한다. 추적 탭은 모든 계열 ID의 정의 위치·참조 위치·관련 ID이며 규칙은 research/llm-wiki/trace/README.md다.",
               "", "자료·배포 번호는 manifest의 id_registry에 보존하며 새 항목에만 번호를 추가한다. 이 파일과 스냅샷을 함께 보존한다. 원 계획은 원본 행 번호, MVP는 기능 순번, 코드 구조는 파일::함수, 규제 근거는 능력:요구 ID를 쓴다.",
               "", "연구 백로그의 원본 RES-01은 관리 번호 WIKI-02로 옮기고 근거 자료·id_registry에 원본 번호를 보존한다. 규제 개발 제안의 A열은 RES-01을 유지하며 백로그 열로 WIKI-02에 연결한다.",
               "", "연결 열:"]

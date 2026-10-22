@@ -106,7 +106,7 @@ class GatewayDecideOnly(unittest.IsolatedAsyncioTestCase):
 
     async def test_approval_writes_no_pending_row_and_block_stays_block(self):
         result, connection, upstream_call = await self.run_call(
-            {"decision": "Approval", "policy_id": "P-APPROVAL-001", "reason": "승인 필요"})
+            {"decision": "Approval", "policy_id": "P-X-APPROVAL-001", "reason": "승인 필요"})
         self.assertEqual(result["decision"], "Approval")
         # 승인되면 MINT가 같은 호출을 한 번 더 보내므로 승인 대기 행을 만들지 않는다.
         self.assertFalse([c for c in connection.execute.await_args_list if "approvals" in str(c.args[0])])
@@ -198,7 +198,7 @@ class Guardrail(unittest.IsolatedAsyncioTestCase):
 
     async def test_block_missing_token_and_every_failure_stop_the_call(self):
         cases = [(self.reply({"allow": False, "decision": "Block", "policy_id": "MCP-REGISTRY-003", "reason": "x"}), {}),
-                 (self.reply({"allow": False, "decision": "Approval", "policy_id": "P-APPROVAL-001", "reason": "x"}), {}),
+                 (self.reply({"allow": False, "decision": "Approval", "policy_id": "P-X-APPROVAL-001", "reason": "x"}), {}),
                  (self.reply({"detail": "no"}, 401), {}), (self.reply({"detail": "boom"}, 500), {}),
                  (lambda request: httpx.Response(200, content=b"not json"), {}),
                  (lambda request: (_ for _ in ()).throw(httpx.ConnectError("down")), {}),
