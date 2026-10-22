@@ -32,6 +32,20 @@
         "committed_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
         "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/artifact_provenance.py",
+        "sha256": "6316852034f011898125ee5d7a154a8920510131d42a3f743483cd212b239129",
+        "committed_sha256": "6316852034f011898125ee5d7a154a8920510131d42a3f743483cd212b239129",
+        "normalized_sha256": "6316852034f011898125ee5d7a154a8920510131d42a3f743483cd212b239129",
+        "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+        "committed_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -45,33 +59,57 @@
         "path": "full_stack_lab/gateway/app/review.py",
         "symbol": "intake_gate",
         "anchor": "",
-        "line": 107,
-        "end_line": 159,
-        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+        "line": 144,
+        "end_line": 198,
+        "normalized_sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
       },
       {
         "path": "full_stack_lab/supply_chain/intake_worker.py",
         "symbol": "validate",
         "anchor": "",
-        "line": 215,
-        "end_line": 327,
-        "normalized_sha256": "0ee5401c1c61bb9feb73882ecc7ac0dc4b7d0b436d01b88526e5a9d51e6ef04c"
+        "line": 216,
+        "end_line": 329,
+        "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd"
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
         "symbol": "fetch_source",
         "anchor": "",
-        "line": 301,
-        "end_line": 327,
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+        "line": 381,
+        "end_line": 411,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
         "symbol": "build",
         "anchor": "",
-        "line": 330,
-        "end_line": 348,
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+        "line": 445,
+        "end_line": 463,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/artifact_provenance.py",
+        "symbol": "verify_source_attestation",
+        "anchor": "",
+        "line": 163,
+        "end_line": 226,
+        "normalized_sha256": "6316852034f011898125ee5d7a154a8920510131d42a3f743483cd212b239129"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "collect_proposal_provenance",
+        "anchor": "",
+        "line": 1960,
+        "end_line": 1987,
+        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4"
+      },
+      {
+        "path": "full_stack_lab/runtime/worker.py",
+        "symbol": "verify_rollback_provenance",
+        "anchor": "",
+        "line": 441,
+        "end_line": 442,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       }
     ],
     "regression_tests": [
@@ -89,9 +127,9 @@
         "path": "full_stack_lab/tests/intake_identity_test.py",
         "symbol": "test_scanner_outage_fails_closed",
         "anchor": "",
-        "line": 68,
-        "end_line": 74,
-        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "line": 69,
+        "end_line": 75,
+        "normalized_sha256": "0dfdbc84f534182f2ed8fa69d85c21f3f7249a1da288bb3a7013cf99980a813a",
         "coverage": "스캐너 장애 보류",
         "execution_in_this_review": "미실행"
       },
@@ -101,7 +139,7 @@
         "anchor": "test_block_unapproved_supplier if",
         "line": 356,
         "end_line": 364,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "미승인 공급자 차단",
         "execution_in_this_review": "미실행"
       }
@@ -111,21 +149,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/review.py",
-        "full_stack_lab/opa/policy_test.rego",
-        "full_stack_lab/runtime/worker.py",
-        "full_stack_lab/supply_chain/intake_worker.py",
-        "full_stack_lab/tests/intake_identity_test.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "출처·미러 해시·스캔 결과와 승인 절차를 연결한다. 배포자 서명 신뢰/모든 의존성 출처 보증, 모든 도입 유형의 실기기 증거는 부족하다. 스캐너 시험 파일 자체는 공급망 집행 코드가 아니다.",
+    "limitations": "출처·미러 해시·스캔과 저장된 Ed25519 DSSE/in-toto SLSA 증명을 승인·실행·재조정에서 확인한다. 미제공은 확인 안 됨이며 차단이 아니다. 소스 아카이브 digest로 OCI referrer를 선택 조회하며 허용 목록 기본은 비어 있다. OCI 이미지 digest·Cosign/Rekor·모든 의존성 출처 보증·실제 수집 효과는 미확인이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-07"
@@ -166,6 +198,13 @@
         "committed_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
+        "committed_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -178,25 +217,25 @@
         "path": "full_stack_lab/gateway/app/agent_service.py",
         "symbol": "approve_mcp_request",
         "anchor": "",
-        "line": 1402,
-        "end_line": 1531,
-        "normalized_sha256": "bffb996c12d43bb4d72a543ca07597a4426794816bc68e0baae74ce59d8b253a"
+        "line": 1604,
+        "end_line": 1753,
+        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4"
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
         "symbol": "normalize_tool_reviews",
         "anchor": "",
-        "line": 211,
-        "end_line": 245,
-        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+        "line": 250,
+        "end_line": 284,
+        "normalized_sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
         "symbol": "derived_constraints",
         "anchor": "",
-        "line": 265,
-        "end_line": 303,
-        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+        "line": 304,
+        "end_line": 342,
+        "normalized_sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -205,6 +244,22 @@
         "line": 69,
         "end_line": 115,
         "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/agent_service.py",
+        "symbol": "approve_and_register",
+        "anchor": "",
+        "line": 2061,
+        "end_line": 2201,
+        "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/core.py",
+        "symbol": "register_server",
+        "anchor": "",
+        "line": 615,
+        "end_line": 877,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       }
     ],
     "regression_tests": [
@@ -212,9 +267,9 @@
         "path": "full_stack_lab/tests/intake_identity_test.py",
         "symbol": "test_every_approved_tool_needs_a_review_and_the_action_comes_from_the_approval",
         "anchor": "",
-        "line": 135,
-        "end_line": 141,
-        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "line": 136,
+        "end_line": 142,
+        "normalized_sha256": "0dfdbc84f534182f2ed8fa69d85c21f3f7249a1da288bb3a7013cf99980a813a",
         "coverage": "도구별 범위·행위 검토",
         "execution_in_this_review": "미실행"
       },
@@ -222,9 +277,9 @@
         "path": "full_stack_lab/tests/intake_identity_test.py",
         "symbol": "test_gaps_are_refused",
         "anchor": "",
-        "line": 143,
-        "end_line": 153,
-        "normalized_sha256": "1d5ce888e481da1bfbf54978b5785a68182ecf30d022928f17bbd86c67a702a1",
+        "line": 144,
+        "end_line": 154,
+        "normalized_sha256": "0dfdbc84f534182f2ed8fa69d85c21f3f7249a1da288bb3a7013cf99980a813a",
         "coverage": "심사 누락 거부",
         "execution_in_this_review": "미실행"
       }
@@ -235,19 +290,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/agent_service.py",
-        "full_stack_lab/gateway/app/review.py",
-        "full_stack_lab/tests/intake_identity_test.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "필요 권한·목적·등급·목적지를 사람이 승인한다. 새 위험 등급은 신청자 입력의 표 산정이다. 적법 근거/고영향 해당 여부와 공급자 실제 권한은 사람의 확인이 필요하며 전체 도입 적정성을 자동 증명하지 않는다.",
+    "limitations": "필요 권한·목적·등급·목적지를 사람이 승인한다. 한 화면 경로는 도구/신청 입력에서 위험 입력과 범위를 제안하므로 신청자 직접 입력만으로 산정한다고 볼 수 없다. D-189 높음은 2인, 매우 높음은 2인·서면 사유이고 단독 모드가 수를 대체하지 않는다. 선택 공급자 보증의 확인 안 됨은 적법성·실제 공급자 권한 검증이 아니다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -305,9 +356,9 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/consent.py",
@@ -329,9 +380,9 @@
         "path": "full_stack_lab/gateway/app/dispatch.py",
         "symbol": "record",
         "anchor": "",
-        "line": 64,
-        "end_line": 162,
-        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+        "line": 66,
+        "end_line": 169,
+        "normalized_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855"
       }
     ],
     "regression_tests": [
@@ -341,7 +392,7 @@
         "anchor": "test_block_expired_asset_approval if",
         "line": 397,
         "end_line": 405,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "만료 차단",
         "execution_in_this_review": "미실행"
       },
@@ -351,7 +402,7 @@
         "anchor": "test_allow_valid_asset_approval if",
         "line": 403,
         "end_line": 411,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "유효기간 정상",
         "execution_in_this_review": "미실행"
       },
@@ -382,15 +433,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/dispatch.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -448,17 +495,17 @@
         "path": "full_stack_lab/runtime/worker.py",
         "symbol": "mcp_run_args",
         "anchor": "",
-        "line": 118,
-        "end_line": 129,
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+        "line": 120,
+        "end_line": 131,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
         "symbol": "egress_run_args",
         "anchor": "",
-        "line": 132,
-        "end_line": 138,
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+        "line": 134,
+        "end_line": 140,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       }
     ],
     "regression_tests": [
@@ -478,13 +525,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/runtime/worker.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -559,7 +604,7 @@
         "anchor": "",
         "line": 101,
         "end_line": 111,
-        "normalized_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609"
+        "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c"
       },
       {
         "path": "full_stack_lab/gateway/app/oidc.py",
@@ -575,7 +620,7 @@
         "anchor": "",
         "line": 274,
         "end_line": 304,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       }
     ],
     "regression_tests": [
@@ -595,7 +640,7 @@
         "anchor": "test_ssrf_destination_blocks_even_admin if",
         "line": 550,
         "end_line": 558,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "인자 SSRF 음성",
         "execution_in_this_review": "미실행"
       },
@@ -605,7 +650,7 @@
         "anchor": "test_intranet_destination_is_not_ssrf if",
         "line": 559,
         "end_line": 567,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "내부 정상",
         "execution_in_this_review": "미실행"
       }
@@ -616,15 +661,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/classify.py",
-        "full_stack_lab/gateway/app/upstream.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -682,25 +723,25 @@
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
         "symbol": "_approved_tools",
         "anchor": "",
-        "line": 119,
-        "end_line": 160,
-        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+        "line": 121,
+        "end_line": 171,
+        "normalized_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
         "symbol": "build_mcp",
         "anchor": "",
-        "line": 221,
-        "end_line": 259,
-        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+        "line": 232,
+        "end_line": 272,
+        "normalized_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_contract",
         "anchor": "",
-        "line": 957,
-        "end_line": 1020,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1107,
+        "end_line": 1170,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
@@ -750,18 +791,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/mcp_facade.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "서버+도구 키와 승인 해시로 Tool 목록/호출을 제한한다. facade는 tools/list·tools/call만 등록하므로 Resource·Prompt 허용목록 구현으로 확대할 수 없다. 동명 기능 간 승인 비재사용의 실제 두 서버 교차 음성은 추가 검증 대상이다.",
+    "limitations": "서버+도구 키와 승인 해시로 Tool 목록/호출을 제한한다. facade는 tools/list·tools/call만 등록하므로 Resource·Prompt 허용목록 구현으로 확대할 수 없다. 동명 기능 간 승인 비재사용의 실제 두 서버 교차 음성은 추가 검증 대상이다. 미사용 도구는 목록·호출·최종 계약 경계에서 제한하며 조회 장애의 목록 제외는 전체 기능 검수와 다르다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-05"
@@ -816,23 +854,23 @@
         "anchor": "",
         "line": 67,
         "end_line": 86,
-        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+        "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
       },
       {
         "path": "endpoint-agent/enforce-linux.py",
         "symbol": "profile",
         "anchor": "",
         "line": 92,
-        "end_line": 161,
-        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+        "end_line": 167,
+        "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
       },
       {
         "path": "endpoint-agent/enforce-linux.py",
         "symbol": "wrapper",
         "anchor": "",
-        "line": 164,
-        "end_line": 260,
-        "normalized_sha256": "57bfb1309921abb33b1d2f8d25837ccaec058ba53ef6d9379db09cd28748b455"
+        "line": 254,
+        "end_line": 350,
+        "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
       },
       {
         "path": "endpoint-agent/managed-windows.py",
@@ -840,15 +878,23 @@
         "anchor": "",
         "line": 351,
         "end_line": 394,
-        "normalized_sha256": "61d33705240ad15da5e3b0fc18d75607c875f552caf40f5902755eceda820ff6"
+        "normalized_sha256": "1f4155dab5441e6f66589bc69e0e63f5b6b7472007e0e55367c2b04bd5b5bf2b"
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
         "symbol": "managed_failure",
         "anchor": "",
-        "line": 939,
-        "end_line": 953,
-        "normalized_sha256": "c583ce1df783d35c31cfa32ac714bc1da0194d43ede44128d273ef468b79d5f8"
+        "line": 955,
+        "end_line": 969,
+        "normalized_sha256": "00a19c1c555270025df461bb130d46600838bb02f9383817ce7fcdd854ddb9d2"
+      },
+      {
+        "path": "endpoint-agent/enforce-linux.py",
+        "symbol": "bound_profile",
+        "anchor": "",
+        "line": 170,
+        "end_line": 251,
+        "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
       }
     ],
     "regression_tests": [
@@ -889,19 +935,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "endpoint-agent/enforce-linux.py",
-        "endpoint-agent/managed-windows.py",
-        "full_stack_lab/gateway/app/endpoint_plane.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "SHADOW 정책은 경보이고 직접 차단은 관리 OS 정책과 managed_failure가 맡는다. Linux PJ1 확인을 Windows/full-OS로 확대하지 않는다. Windows 원본 바이너리 직접 실행·loopback·하이브 미탑재 허용·검사 사이 경쟁과 구형 장치 전환 유예가 남는다.",
+    "limitations": "SHADOW 정책은 경보이고 직접 차단은 관리 OS 정책과 managed_failure가 맡는다. Linux PJ1 확인을 Windows/full-OS로 확대하지 않는다. Windows 원본 바이너리 직접 실행·loopback·하이브 미탑재 허용·검사 사이 경쟁과 구형 장치 전환 유예가 남는다. D-183 프로세스 결속 기본은 경고 단계라 같은 UID 노출이 남고 강제 후보는 parser·헤더 직접 실행·커널 검증 전이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -1018,7 +1060,7 @@
         "anchor": "",
         "line": 1,
         "end_line": 278,
-        "normalized_sha256": "916c29ec2d05b71641ed0ad65a24c455f918d1632ad4248b93332a1cf7764dca",
+        "normalized_sha256": "eb0831db859e194b452f74a035bd38a9e30b46f4f426aa66ac66589952d0510d",
         "coverage": "주체/장치 결속과 토큰 교체",
         "execution_in_this_review": "미실행"
       }
@@ -1030,13 +1072,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/tests/session_termination_check.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1100,7 +1140,7 @@
         "anchor": "test_delegation_from_client_reported_agent_is_unsupported if",
         "line": 700,
         "end_line": 708,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "자기 신고 위임 거부",
         "execution_in_this_review": "미실행"
       },
@@ -1110,7 +1150,7 @@
         "anchor": "test_delegation_with_verified_actor_still_uses_the_intersection if",
         "line": 691,
         "end_line": 699,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "합성 verified actor 권한 교집합",
         "execution_in_this_review": "미실행"
       }
@@ -1118,13 +1158,11 @@
     "evidence_ids": [],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1185,9 +1223,9 @@
         "path": "full_stack_lab/gateway/app/idp.py",
         "symbol": "introspection",
         "anchor": "",
-        "line": 299,
-        "end_line": 338,
-        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+        "line": 308,
+        "end_line": 347,
+        "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1195,7 +1233,7 @@
         "anchor": "",
         "line": 40,
         "end_line": 77,
-        "normalized_sha256": "5609242ce9ec6b9b8065f5789bdd06a43b3844ce75fc792794865c088e8fa609"
+        "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c"
       }
     ],
     "regression_tests": [
@@ -1226,14 +1264,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/idp.py",
-        "full_stack_lab/gateway/app/upstream.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1273,6 +1308,13 @@
         "committed_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855",
         "normalized_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "committed_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -1284,33 +1326,41 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_call_upstream",
         "anchor": "",
-        "line": 1465,
-        "end_line": 1659,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1615,
+        "end_line": 1815,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_dispatch_flow_recheck",
         "anchor": "",
-        "line": 1213,
-        "end_line": 1222,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1363,
+        "end_line": 1372,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/dispatch.py",
         "symbol": "record",
         "anchor": "",
-        "line": 64,
-        "end_line": 162,
-        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+        "line": 66,
+        "end_line": 169,
+        "normalized_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "symbol": "session",
+        "anchor": "",
+        "line": 399,
+        "end_line": 415,
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
       }
     ],
     "regression_tests": [
@@ -1340,7 +1390,7 @@
         "anchor": "",
         "line": 224,
         "end_line": 227,
-        "normalized_sha256": "7bc3d0f954ab9070c2c25073c77f20c504d0f0724a2ae0d7c9810b3ce842eb72",
+        "normalized_sha256": "b6eac7df89ee6417921e9bde2b0353c5577b3a64d1f28da518bef0f20f2b5799",
         "coverage": "승인 후 요청자 철회",
         "execution_in_this_review": "미실행"
       }
@@ -1352,19 +1402,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/dispatch.py",
-        "full_stack_lab/tests/fresh_requester_check.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "호출마다 정책 평가 후 라이브 계약/토큰/주체·동의/흐름과 intent를 재확인한다. PAC-09 하나가 전부를 수행하는 것은 아니다. intent commit과 실제 송신 사이 취소·이미 전송된 호출 회수·다중 인스턴스 장애 효과는 미검증이다.",
+    "limitations": "호출마다 정책 평가 후 라이브 계약/토큰/주체·동의/흐름과 intent를 재확인한다. PAC-09 하나가 전부를 수행하는 것은 아니다. intent commit과 실제 송신 사이 취소·이미 전송된 호출 회수·다중 인스턴스 장애 효과는 미검증이다. 직원×서버 중지를 인입과 최종 intent에서 확인하며 집계 장애는 SAVEPOINT로 Block 원장을 보존한다. 로컬 실행은 별도 작업 승인·장치 결속 경로를 가진다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-01",
@@ -1410,9 +1456,9 @@
         "path": "full_stack_lab/gateway/app/classify.py",
         "symbol": "classify",
         "anchor": "",
-        "line": 808,
-        "end_line": 830,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "line": 809,
+        "end_line": 831,
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
@@ -1420,7 +1466,7 @@
         "anchor": "",
         "line": 482,
         "end_line": 501,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1448,7 +1494,7 @@
         "anchor": "test_pac_scope_denies_unapproved_action if",
         "line": 674,
         "end_line": 682,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "승인 밖 작업 거부",
         "execution_in_this_review": "미실행"
       }
@@ -1458,14 +1504,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/classify.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1525,17 +1568,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_call_upstream",
         "anchor": "",
-        "line": 1465,
-        "end_line": 1659,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1615,
+        "end_line": 1815,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1551,7 +1594,7 @@
         "anchor": "",
         "line": 209,
         "end_line": 230,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       }
     ],
     "regression_tests": [
@@ -1592,14 +1635,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/classify.py",
-        "full_stack_lab/gateway/app/core.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1652,7 +1692,7 @@
         "anchor": "",
         "line": 209,
         "end_line": 230,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
@@ -1660,15 +1700,15 @@
         "anchor": "",
         "line": 538,
         "end_line": 542,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       },
       {
         "path": "full_stack_lab/gateway/app/classify.py",
         "symbol": "classify",
         "anchor": "",
-        "line": 808,
-        "end_line": 830,
-        "normalized_sha256": "15a2fa664bf48eb6cce80c125e16c2aba3fef1f6a2bc346deb9b588f4eb22e8c"
+        "line": 809,
+        "end_line": 831,
+        "normalized_sha256": "7601204a8eb984ed1b20111a76bc044f183e524bd1355b012facd82880e9742f"
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1686,7 +1726,7 @@
         "anchor": "test_block_required_classification_without_source if",
         "line": 381,
         "end_line": 389,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "분류 근거 없음 차단",
         "execution_in_this_review": "미실행"
       },
@@ -1696,7 +1736,7 @@
         "anchor": "test_allow_required_manual_classification if",
         "line": 386,
         "end_line": 394,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "수동 분류 정상",
         "execution_in_this_review": "미실행"
       },
@@ -1716,14 +1756,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/classify.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -1775,6 +1812,13 @@
         "committed_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
         "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/residency.py",
+        "sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1",
+        "committed_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1",
+        "normalized_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -1796,17 +1840,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_flow_sources",
         "anchor": "",
-        "line": 1181,
-        "end_line": 1210,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1331,
+        "end_line": 1360,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/consent.py",
@@ -1815,6 +1859,22 @@
         "line": 33,
         "end_line": 55,
         "normalized_sha256": "edf4286c675b1fcce8746d1182efa21d490c7670f4f371e1cf598c495603f425"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/residency.py",
+        "symbol": "enabled",
+        "anchor": "",
+        "line": 72,
+        "end_line": 73,
+        "normalized_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/residency.py",
+        "symbol": "require_location",
+        "anchor": "",
+        "line": 76,
+        "end_line": 79,
+        "normalized_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1"
       }
     ],
     "regression_tests": [
@@ -1844,7 +1904,7 @@
         "anchor": "test_residency_foreign_storage_cannot_hide_behind_domestic_processing if",
         "line": 1277,
         "end_line": 1285,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "저장국 누락 우회 거부",
         "execution_in_this_review": "미실행"
       },
@@ -1867,18 +1927,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다.",
+    "limitations": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다. 관할 팩은 기본 비활성이므로 위치 미제공 자체의 기본 차단을 주장하지 않는다. 활성화한 경우의 위치·등급 규칙만 해당한다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06",
@@ -1938,9 +1995,9 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "approve_request",
         "anchor": "",
-        "line": 2319,
-        "end_line": 2372,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2538,
+        "end_line": 2591,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
@@ -1962,9 +2019,9 @@
         "path": "full_stack_lab/gateway/app/dispatch.py",
         "symbol": "record",
         "anchor": "",
-        "line": 64,
-        "end_line": 162,
-        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+        "line": 66,
+        "end_line": 169,
+        "normalized_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855"
       }
     ],
     "regression_tests": [
@@ -2004,7 +2061,7 @@
         "anchor": "",
         "line": 224,
         "end_line": 227,
-        "normalized_sha256": "7bc3d0f954ab9070c2c25073c77f20c504d0f0724a2ae0d7c9810b3ce842eb72",
+        "normalized_sha256": "b6eac7df89ee6417921e9bde2b0353c5577b3a64d1f28da518bef0f20f2b5799",
         "coverage": "요청자 철회 재확인",
         "execution_in_this_review": "미실행"
       }
@@ -2016,15 +2073,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/dispatch.py",
-        "full_stack_lab/tests/fresh_requester_check.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2075,25 +2128,25 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_reserve_call",
         "anchor": "",
-        "line": 1275,
-        "end_line": 1360,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1425,
+        "end_line": 1510,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/dispatch.py",
         "symbol": "record",
         "anchor": "",
-        "line": 64,
-        "end_line": 162,
-        "normalized_sha256": "a185a27a5d741d4b23b192319e17cdc2624d5f60bf9b78b05bfcbaf0535f104a"
+        "line": 66,
+        "end_line": 169,
+        "normalized_sha256": "a4e45bb79513f09db1bdb6ffeff8dc1b3831693d747b932fbf4d93e08b677855"
       }
     ],
     "regression_tests": [
@@ -2113,7 +2166,7 @@
         "anchor": "test_rate_limit_blocks_at_limit if",
         "line": 431,
         "end_line": 439,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "빈도 상한",
         "execution_in_this_review": "미실행"
       },
@@ -2123,7 +2176,7 @@
         "anchor": "test_concurrency_allows_at_limit if",
         "line": 454,
         "end_line": 462,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "동시 정확 경계",
         "execution_in_this_review": "미실행"
       },
@@ -2144,15 +2197,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/dispatch.py",
-        "full_stack_lab/opa/policy_test.rego"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2216,17 +2265,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "untrusted_markers",
         "anchor": "",
-        "line": 1071,
-        "end_line": 1078,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1221,
+        "end_line": 1228,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       }
     ],
     "regression_tests": [
@@ -2246,7 +2295,7 @@
         "anchor": "test_untrusted_marker_on_write_requires_approval if",
         "line": 1123,
         "end_line": 1131,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "표지 기반 고위험 승인",
         "execution_in_this_review": "미실행"
       },
@@ -2266,19 +2315,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/opa/policy_test.rego",
-        "research/llm-wiki/status/reports/2026-10-20-poisoning-corpus.md"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "권한 원천은 토큰/등록부이고 외부 텍스트로 확장하지 않는다. 표지·정규식/해독 탐지는 의미적 주입 탐지와 다르다. 공개 재현율 미측정·독립 다국어 정상/공격군 부족·LLM 내부 판단은 범위 밖이다.",
+    "limitations": "권한 원천은 토큰/등록부이고 외부 텍스트로 확장하지 않는다. 표지·정규식/해독 탐지는 의미적 주입 탐지와 다르다. 후속 보고의 catalog dev 0.5278·held-out 0.5178은 D-158 전후 동일하며 result 오탐 66건(3.3%) 보고가 있다. 후속 BOM·건수 수정 뒤 현재 재실행은 없고 독립 다국어 효과·LLM 내부 판단은 범위 밖이다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-06"
@@ -2338,17 +2383,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
         "anchor": "",
-        "line": 1990,
-        "end_line": 2316,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2182,
+        "end_line": 2535,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
         "symbol": "check_inputs",
         "anchor": "",
-        "line": 256,
-        "end_line": 262,
-        "normalized_sha256": "198f93c7ea532eccb39b2ebc7f23650870159532d277f8b154e3e2be50651ad8"
+        "line": 295,
+        "end_line": 301,
+        "normalized_sha256": "230b3790c6dfeb325a8f82767a0de100490d6cf14244e56b94806c7828d5b79f"
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
@@ -2404,14 +2449,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/review.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2473,17 +2515,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_guarded_result",
         "anchor": "",
-        "line": 1756,
-        "end_line": 1784,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1916,
+        "end_line": 1944,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_inspected_result",
         "anchor": "",
-        "line": 1787,
-        "end_line": 1801,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1947,
+        "end_line": 1961,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
@@ -2505,9 +2547,9 @@
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
         "symbol": "_render",
         "anchor": "",
-        "line": 172,
-        "end_line": 218,
-        "normalized_sha256": "63cee152111cbf6fddaa522d4176491ea1c2fe1fe3ade4c2831719d25b09e8ef"
+        "line": 183,
+        "end_line": 229,
+        "normalized_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e"
       }
     ],
     "regression_tests": [
@@ -2537,7 +2579,7 @@
         "anchor": "",
         "line": 1,
         "end_line": 386,
-        "normalized_sha256": "8b67c15e1d3549074da251acf8681217fcb6045e4cc815181d0189a0646e6dfe",
+        "normalized_sha256": "90563ea5d098ba97f4a0961d4627256184a3b3bb17fb20b38647427f323656ee",
         "coverage": "오류/인자/원장의 자격 비노출",
         "execution_in_this_review": "미실행"
       }
@@ -2547,15 +2589,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/mcp_facade.py",
-        "full_stack_lab/tests/dest_pin_credential_redaction_check.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2604,17 +2642,17 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "refresh_catalog",
         "anchor": "",
-        "line": 201,
-        "end_line": 364,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 219,
+        "end_line": 382,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "approve_contract",
         "anchor": "",
-        "line": 367,
-        "end_line": 449,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 385,
+        "end_line": 467,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
@@ -2681,13 +2719,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2738,25 +2774,25 @@
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_record_decision",
         "anchor": "",
-        "line": 1824,
-        "end_line": 1911,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1984,
+        "end_line": 2101,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_audit_payload",
         "anchor": "",
-        "line": 1804,
-        "end_line": 1818,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 1964,
+        "end_line": 1978,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "verify_audit_chain",
         "anchor": "",
-        "line": 1955,
-        "end_line": 1974,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 2145,
+        "end_line": 2164,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
       },
       {
         "path": "full_stack_lab/gateway/app/audit.py",
@@ -2824,13 +2860,11 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
@@ -2886,6 +2920,13 @@
         "committed_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a",
         "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "committed_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -2901,16 +2942,16 @@
         "symbol": "open_case",
         "anchor": "",
         "line": 221,
-        "end_line": 273,
-        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+        "end_line": 275,
+        "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1"
       },
       {
         "path": "full_stack_lab/gateway/app/decommission.py",
         "symbol": "assess",
         "anchor": "",
-        "line": 715,
-        "end_line": 760,
-        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+        "line": 717,
+        "end_line": 762,
+        "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_sessions.py",
@@ -2924,17 +2965,25 @@
         "path": "full_stack_lab/runtime/worker.py",
         "symbol": "reconcile",
         "anchor": "",
-        "line": 504,
-        "end_line": 542,
-        "normalized_sha256": "08a6ecc3d38109c5133814ea6679b29a7df73110debc372cf3ea208bcdf75779"
+        "line": 641,
+        "end_line": 753,
+        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "deregister_server",
         "anchor": "",
-        "line": 748,
-        "end_line": 768,
-        "normalized_sha256": "71375a1144bdd7781c84c2fc411872585ed98854e148a8c51983915ec82ffccb"
+        "line": 880,
+        "end_line": 901,
+        "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "symbol": "quiesce",
+        "anchor": "",
+        "line": 570,
+        "end_line": 590,
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
       }
     ],
     "regression_tests": [
@@ -2954,7 +3003,7 @@
         "anchor": "",
         "line": 1,
         "end_line": 278,
-        "normalized_sha256": "916c29ec2d05b71641ed0ad65a24c455f918d1632ad4248b93332a1cf7764dca",
+        "normalized_sha256": "eb0831db859e194b452f74a035bd38a9e30b46f4f426aa66ac66589952d0510d",
         "coverage": "주체/장치 세션 종료·토큰 교체",
         "execution_in_this_review": "미실행"
       },
@@ -2974,7 +3023,7 @@
         "anchor": "test_terminating_engagement_is_blocked if",
         "line": 979,
         "end_line": 987,
-        "normalized_sha256": "db562587e2de0cb5f8b9693016b50271ea499c65b955f955e10e0587bf7e4fca",
+        "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
         "coverage": "종료 중 호출 거부",
         "execution_in_this_review": "미실행"
       }
@@ -2987,21 +3036,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/decommission.py",
-        "full_stack_lab/opa/policy_test.rego",
-        "full_stack_lab/runtime/worker.py",
-        "full_stack_lab/tests/session_termination_check.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다.",
+    "limitations": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다. 로컬 작업 정지 확인이 계정·장치·서버 종료 전에 연결됐지만 실제 컨테이너/PJ1 검증과 사용자 이용 중지의 진행 중 작업 정지 연결은 별도다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-02",
@@ -3045,6 +3088,13 @@
         "committed_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
         "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
         "worktree_modified": false
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "committed_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6",
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -3057,25 +3107,25 @@
         "path": "full_stack_lab/gateway/app/idp.py",
         "symbol": "revoke_principal_tokens",
         "anchor": "",
-        "line": 237,
-        "end_line": 254,
-        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+        "line": 239,
+        "end_line": 258,
+        "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
         "symbol": "revoke_device_tokens",
         "anchor": "",
-        "line": 257,
-        "end_line": 277,
-        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+        "line": 261,
+        "end_line": 283,
+        "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
         "symbol": "introspection",
         "anchor": "",
-        "line": 299,
-        "end_line": 338,
-        "normalized_sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+        "line": 308,
+        "end_line": 347,
+        "normalized_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
       },
       {
         "path": "full_stack_lab/gateway/app/disposal.py",
@@ -3089,9 +3139,17 @@
         "path": "full_stack_lab/gateway/app/decommission.py",
         "symbol": "_judge_target",
         "anchor": "",
-        "line": 626,
-        "end_line": 696,
-        "normalized_sha256": "0c9389da6a2ce4791ed668f7c3f768cf487b8c98e6d14c69d08e0a25c63453ae"
+        "line": 628,
+        "end_line": 698,
+        "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1"
+      },
+      {
+        "path": "full_stack_lab/gateway/app/local_jobs.py",
+        "symbol": "prepare_token_revocation",
+        "anchor": "",
+        "line": 600,
+        "end_line": 615,
+        "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
       }
     ],
     "regression_tests": [
@@ -3133,18 +3191,15 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
+      "sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
       "reviewer": "Codex sol",
-      "reviewed_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-      "files_match_review": false,
-      "changed_review_files": [
-        "full_stack_lab/gateway/app/decommission.py",
-        "full_stack_lab/gateway/app/idp.py"
-      ]
+      "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+      "files_match_review": true,
+      "changed_review_files": []
     },
     "verification": "static-candidate-mapping",
     "verified_on": "2026-10-21",
-    "limitations": "C3/C4는 종료 판정 기준이며 런타임 정책 ID에서 분리했다. DB 밖 서명 기록이 복원된 자격을 막지만 DB+서명 볼륨/키 동시 복원·외부 JWT 캐시·복제/미고지 공급자 자격은 보장하지 않는다. D-154 회전 순서 후보 수용과 새 자원 서버 시험은 별도다.",
+    "limitations": "C3/C4는 종료 판정 기준이며 런타임 정책 ID에서 분리했다. DB 밖 서명 기록이 복원된 자격을 막지만 DB+서명 볼륨/키 동시 복원·외부 JWT 캐시·복제/미고지 공급자 자격은 보장하지 않는다. D-154 회전 순서 후보 수용과 새 자원 서버 시험은 별도다. 로컬 토큰 철회는 같은 토큰 잠금과 정지 확인을 거치며 현재 DB 경합 보고를 외부 자격 폐기 성공으로 합산하지 않는다.",
     "experiment_index": "experiments/README.md",
     "local_tool_risk_ids": [
       "LOCAL-RISK-07",
