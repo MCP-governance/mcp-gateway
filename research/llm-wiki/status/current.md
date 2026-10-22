@@ -3,6 +3,7 @@
 이 문서는 지금 상태만 담는다. 지난 서술은 [이력 목차](history/README.md)로 옮겨 보존했다(내용 변경 없음). 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit)의 「WBS」·「백로그」 탭이다.
 
 - Windows 원클릭(W11, D-197): 한 파일·UAC 1회 설치를 main에 병합. Codex 독립 검토는 코드 결함 없음, 실제 Windows 설치·UAC·활성화는 pj3 접속 불가로 미실행([보고](reports/2026-10-23-windows-oneclick.md)).
+- 발표용 경쟁·갭 매트릭스(RES-GAP): [10개 기능·9개 제품](../analysis/gap-matrix-1023/README.md)의 구현·배포·실측 270개 단계를 분리했다. MINT는 코드·DECISIONS·지정 10-23 실사용 보고만 사용하며 엔드포인트 우회 차단·종료 효과·AI 게이트웨이 연동 실측은 미확인이다. 문서 종합이며 새 제품 시험은 하지 않았다. 검증·검토 인계는 [보고](reports/2026-10-23-gap-matrix.md) 참조.
 
 ## 한눈에 보기
 
