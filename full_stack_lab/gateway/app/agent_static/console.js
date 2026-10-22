@@ -1626,7 +1626,9 @@ function intakeApprovalFields(out) {
   ${p.blockers.map((b) => html`<div class="note warn">${b.message}</div>`)}
   <fieldset class="tool-pick"><legend>승인 도구</legend>${(p.catalog?.tools || []).filter((t) => t.name in p.tools).map((t) => html`<label>
     <input type="checkbox" name="approved_tool" value="${t.name}" ${selected.includes(t.name) ? raw("checked") : ""} ${pending ? raw("disabled") : ""} />
-    <span><b>${t.name}</b><span>${ACTION[p.tools[t.name]]}</span><span class="sub">${t.description || "—"}</span>
+    <span><b>${t.name}</b>${pending ? html`<span>${ACTION[scope.actions?.[t.name] || p.tools[t.name]]}</span>`
+      : html`<select name="action_${t.name}">${Object.entries(ACTION).slice(0, "rwx".indexOf(p.tools[t.name]) + 1).map(([k, v]) =>
+        html`<option value="${k}" ${k === p.tools[t.name] ? raw("selected") : ""}>${v}</option>`)}</select>`}<span class="sub">${t.description || "—"}</span>
       ${(t.warnings || []).length ? chip("alert", "도구 설명 경고") : ""}
       <details><summary>계약·인자 제한</summary><pre>${JSON.stringify({ input: t.input_schema, output: t.output_schema,
         constraints: p.parameter_constraints[t.name], scope: p.tool_reviews[t.name] }, null, 2)}</pre></details></span></label>`)}</fieldset>
@@ -1687,6 +1689,8 @@ async function showIntakeApproval(id) {
   const scope = out.pending?.scope;
   const selected = scope?.tools || fd.getAll("approved_tool");
   if (!selected.length) { toast("도구를 하나 이상 선택하세요.", true); return; }
+  const actions = scope ? scope.actions || {} : Object.fromEntries(selected.map((name) => [name, fd.get(`action_${name}`)])
+    .filter(([name, action]) => action && action !== out.proposal.tools[name]));
   const assurance = scope?.supplier_assurance || Object.fromEntries(Object.keys(ASSURANCE_LABELS)
     .map((key) => [key, String(fd.get(`assurance_${key}`) || "").trim()]).filter(([, value]) => value));
   const location = scope?.residency || Object.fromEntries(Object.keys(LOCATION_LABELS).map((key) => {
@@ -1695,7 +1699,7 @@ async function showIntakeApproval(id) {
   }));
   const result = await api(`/api/mcp-requests/${id}/approve-and-register`, { method: "POST", body: {
     proposal_sha256: out.proposal_sha256, tools: selected, valid_days: scope?.valid_days || Number(fd.get("valid_days")),
-    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location } });
+    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions } });
   toast(result.message); reload();
 }
 

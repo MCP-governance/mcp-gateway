@@ -2004,6 +2004,8 @@ class OneClickApproval(StrictModel):
     risk_reason: str = Field(default="", max_length=1000)
     supplier_assurance: dict = Field(default_factory=dict)
     residency: dict = Field(default_factory=dict)
+    # 관리자가 제안된 읽기/쓰기 분류를 낮춘 도구만. 주석이 없는 공개 MCP는 읽기 도구도 쓰기로 제안된다.
+    actions: dict[str, Literal["r", "w", "x"]] = Field(default_factory=dict, max_length=300)
 
 
 async def approval_row(request_id: UUID, user: dict) -> dict:
@@ -2231,6 +2233,10 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         selected = sorted(set(request.tools))
         if not selected or not set(selected) <= set(proposal["tools"]):
             raise HTTPException(422, "신청 범위 안에서 도구를 하나 이상 선택하세요.")
+        actions = {name: action for name, action in request.actions.items() if action != proposal["tools"].get(name)}
+        # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
+        if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
+            raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
         assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
         if set(assurance) - set(supplier_assurance.ASSURANCE_FIELDS):
             raise HTTPException(422, "공급자 정보 항목을 확인하세요.")
@@ -2242,7 +2248,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             errors.append(str(exc))
         if errors:
             raise HTTPException(422, " / ".join(errors))
-        scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, "valid_days": request.valid_days,
+        scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
+                 "valid_days": request.valid_days,
                  "supplier_assurance": assurance, "residency": location,
                  "valid_until": pending["scope"]["valid_until"] if pending else (
                      datetime.now(UTC) + timedelta(days=request.valid_days)).isoformat()}
@@ -2306,7 +2313,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             return {"pending": True, "message": "다른 관리자의 승인을 기다리고 있습니다."}
         if critical and not (gate.get("critical") or {}).get("covered"):
             await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
-        tools = {name: proposal["tools"][name] for name in selected}
+        tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
         reviews = {name: proposal["tool_reviews"][name] for name in selected}
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,

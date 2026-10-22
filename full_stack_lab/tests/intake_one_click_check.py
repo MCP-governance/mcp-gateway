@@ -224,6 +224,28 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(ValueError):
                     await service.core.register_server({**body, **change}, "admin-a")
 
+    async def test_admin_may_lower_tool_action_only_and_gateway_accepts_it(self):
+        # 공개 MCP가 readOnlyHint를 달지 않으면 읽기 도구도 쓰기로 제안된다.
+        self.catalog["tools"][0] = {**TOOL, "annotations": {}, "suggested": "w"}
+        preview = await self.preview()
+        self.assertEqual(preview["proposal"]["tools"], {"lookup": "w"})
+        with self.assertRaises(service.HTTPException) as raised:
+            await service.approve_and_register(REQUEST_ID, self.approval(preview, actions={"lookup": "x"}), self.admin, "console-token")
+        self.assertEqual(raised.exception.status_code, 422)
+        await service.approve_and_register(REQUEST_ID, self.approval(preview, actions={"lookup": "r"}), self.admin, "console-token")
+        body = self.registered[0]
+        self.assertEqual(body["tools"], {"lookup": "r"})
+        self.assertEqual(self.state["evidence"]["one_click_scope"]["actions"], {"lookup": "r"})
+
+        class ReachedGate(Exception):
+            pass
+
+        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(service.core.registry, "catalog", return_value={}):
+            with self.assertRaises(ReachedGate):
+                await service.core.register_server(body, "admin-a")
+            with self.assertRaises(ValueError):
+                await service.core.register_server({**body, "tools": {"lookup": "w"}}, "admin-a")
+
     async def test_second_review_keeps_scope_but_contract_drift_discards_first_approval(self):
         self.state = row(grade="important")
         preview = await self.preview()
