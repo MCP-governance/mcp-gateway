@@ -12,7 +12,7 @@ param(
     [int]$Port = 1000
 )
 
-foreach ($removeTask in @($TaskName, 'Local-Agent-Hub') | Select-Object -Unique) {
+foreach ($removeTask in @($TaskName, 'Local-Agent-Hub', 'MINT-AutoDispatch') | Select-Object -Unique) {
     if (Get-ScheduledTask -TaskName $removeTask -ErrorAction SilentlyContinue) {
         Unregister-ScheduledTask -TaskName $removeTask -Confirm:$false
         Write-Host "제거 완료: 예약 작업 $removeTask"

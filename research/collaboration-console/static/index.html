@@ -20,6 +20,7 @@
       <nav class="channel-list" aria-label="채널 목록">
         <div class="channel-category">채널</div>
         <button class="channel" data-channel="overview"><span class="hash">#</span>개요</button>
+        <button class="channel" data-channel="discussions"><span class="hash">#</span>에이전트 협의</button>
         <button class="channel" data-channel="wbs"><span class="hash">#</span>wbs<b id="wbs-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="tasks"><span class="hash">#</span>작업·에이전트<b id="task-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="runs"><span class="hash">#</span>실행 기록<b id="run-badge" class="badge" hidden></b></button>
@@ -51,6 +52,11 @@
         </article>
         <div class="filters"><label>작성자<select id="overview-author"><option value="all">모두</option><option>Codex</option><option>Claude</option><option>Gemini</option><option>User</option><option>System</option></select></label><label class="search">기록 검색<input id="overview-search" type="search" placeholder="작업 ID 또는 메시지"></label><label class="follow"><input id="follow" type="checkbox" checked>최신 기록 따라가기</label></div>
         <div id="overview-feed" class="feed" aria-live="polite"></div>
+      </section>
+
+      <section id="view-discussions" class="view">
+        <div class="filters"><label class="search">협의 검색<input id="discussion-search" type="search" placeholder="작업 ID 또는 협의 내용"></label></div>
+        <div id="discussion-feed" class="feed" aria-live="polite"></div>
       </section>
 
       <section id="view-tasks" class="view">

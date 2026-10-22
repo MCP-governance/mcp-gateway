@@ -1,6 +1,6 @@
 "use strict";
 const $ = id => document.getElementById(id);
-const state = { cursor: 0, events: [], tasks: [], runs: [], worker: null, wbs: null, connected: false, channel: "overview", selectedTask: null };
+const state = { cursor: 0, events: [], tasks: [], runs: [], worker: null, wbs: null, connected: false, channel: window.location?.hash === "#discussions" ? "discussions" : "overview", selectedTask: null };
 const labels = { queued: "대기열", running: "작업 중", waiting: "응답 대기", completed: "완료", passed: "통과", failed: "실패", blocked: "차단됨", cancelled: "중단됨" };
 const outcomes = { running: "실행 중", completed: "완료", turn_error: "턴 오류", usage_limit: "사용량 한도", task_failed: "작업 실패", model_mismatch: "모델 불일치", cancelled: "중단됨" };
 const modelChecks = { confirmed: "응답 모델 확인됨", mismatch: "응답 모델 불일치", unreported: "응답 모델 미보고" };
@@ -12,6 +12,7 @@ const feeds = new WeakMap();
 let pollTimer, polling = false;
 const CHANNEL_META = {
   overview: { title: "개요", topic: "Codex·Claude·Gemini의 작업 요청, 검토 결과, 다음 행동을 같은 스레드에서 확인합니다." },
+  discussions: { title: "에이전트 협의", topic: "에이전트가 실제로 보낸 요청·답변·이견·조치입니다. 수신자와 답장 번호로 연결됩니다." },
   wbs: { title: "wbs", topic: "목표 G01–G10의 구현·회귀·배포·실제환경·검수 근거별 진척입니다." },
   tasks: { title: "작업", topic: "task_id별 스레드입니다. 작업을 눌러 관련 기록만 봅니다." },
   runs: { title: "실행 기록", topic: "CLI의 요청/응답 모델, 도구 호출, 결과입니다. 자동 실행 상태는 작업에서 확인합니다." },
@@ -83,6 +84,13 @@ function renderOverview() {
   const author = $("overview-author").value, query = $("overview-search").value.trim().toLocaleLowerCase();
   const events = state.events.filter(event => eventMatchesFilter(event, author, query));
   renderFeed($("overview-feed"), events, { follow: $("follow").checked });
+}
+
+function renderDiscussions() {
+  const query = $("discussion-search").value.trim().toLocaleLowerCase();
+  const agents = new Set(["Codex", "Claude", "Gemini"]);
+  renderFeed($("discussion-feed"), state.events.filter(event => event.kind === "message" && event.task_id !== "MAIN" && agents.has(event.author) &&
+    (agents.has(event.to) || event.to === "All") && eventMatchesFilter(event, "all", query)));
 }
 
 function renderTaskList() {
@@ -421,6 +429,7 @@ function render() {
   renderChanged("members", [state.events, state.tasks,
     state.events.map(event => Date.now() - new Date(event.timestamp).getTime() < 600000).join()], renderMembers);
   if (state.channel === "overview") renderChanged("overview", [state.events, state.tasks, state.wbs], renderOverview);
+  if (state.channel === "discussions") renderChanged("discussions", [state.events], renderDiscussions);
   if (state.channel === "tasks") renderChanged("tasks", [state.events, state.tasks, state.worker, state.selectedTask,
     state.tasks.map(task => !inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000).join()], renderTasks);
   if (state.channel === "runs") renderChanged("runs", [state.runs], renderRuns);
@@ -429,6 +438,7 @@ function render() {
 }
 function setChannel(channel) {
   state.channel = channel;
+  window.history?.replaceState(null, "", channel === "discussions" ? "#discussions" : "#" + channel);
   updateChannelChrome();
   render();
   if (window.matchMedia("(max-width: 900px)").matches) closeSidebars();
@@ -504,6 +514,7 @@ document.addEventListener("visibilitychange", () => {
 for (const button of document.querySelectorAll(".channel")) button.addEventListener("click", () => setChannel(button.dataset.channel));
 for (const button of document.querySelectorAll("[data-goto]")) button.addEventListener("click", () => setChannel(button.dataset.goto));
 ["overview-author", "overview-search", "follow"].forEach(id => $(id).addEventListener("input", renderOverview));
+$("discussion-search").addEventListener("input", renderDiscussions);
 ["checks-author", "checks-search"].forEach(id => $(id).addEventListener("input", renderChecks));
 ["wbs-search", "wbs-goal-filter", "wbs-status-filter"].forEach(id => $(id).addEventListener("input", renderWbsRows));
 $("close").addEventListener("click", () => $("detail").close());

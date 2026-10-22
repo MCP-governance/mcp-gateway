@@ -69,6 +69,11 @@ $workerAction = New-ScheduledTaskAction -Execute $Pythonw -Argument "-X utf8 `"$
 Register-ScheduledTask -TaskName 'Local-Agent-Hub' -Action $workerAction -Trigger @($triggerLogon, $triggerWatch) -Settings $settings -User $currentUser -ErrorAction Stop `
     -Force -Description "MINT 계층 협업 실행기. 기존 1000번 콘솔과 SQLite 상태를 사용합니다." | Out-Null
 
+$dispatchAction = New-ScheduledTaskAction -Execute $Pythonw -Argument "-X utf8 `"$(Join-Path $Root 'dispatcher.py')`"" -WorkingDirectory $Root
+$dispatchTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 1)
+Register-ScheduledTask -TaskName 'MINT-AutoDispatch' -Action $dispatchAction -Trigger @($triggerLogon, $dispatchTrigger) -Settings $settings -User $currentUser -ErrorAction Stop `
+    -Force -Description '기존 큐 선제 배정·사용량 보고. 1분 확인, 실제 모델 호출은 작업당 제한.' | Out-Null
+
 Write-Host "등록 완료: $TaskName (호스트 $BindHost, 포트 $Port)"
 Write-Host "등록 완료: Local-Agent-Hub (모델 호출·한도·체크포인트 관리)"
 Write-Host "지금 바로 실행: Start-ScheduledTask -TaskName '$TaskName'"
