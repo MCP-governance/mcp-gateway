@@ -2074,3 +2074,13 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   승인 전 관찰·등록(`discovery`)은 지금처럼 실제 서버에 묻는다.
 - **시험**: `local_jobs_pg_check.py`에 "호출은 initialize·tools/list 작업을 만들지 않는다" 추가(운영 DB를 비우는 시험이라
   기기에서는 돌리지 않음). 오프라인 `dev73_*`·`local_runner_usability_check` 통과. 실증은 PJ1 실제 호출.
+
+## D-204 인자 이름 `to`만으로 메일 수신자로 보지 않는다 (2026-10-23)
+
+- **문제**: PAC 매개변수 사실(`pac.facts`)이 `to`·`cc`·`bcc`·`recipient` 이름의 모든 문자열을 수신자 대상으로 보고 조직 메일 도메인
+  목록과 대조했다. memory MCP의 `create_relations`(`{"from": "MCP Python SDK", "to": "stdio"}`)가 PAC-10으로 막혔다.
+- **결정**: 값이 주소 형태(`@` 포함)이거나 분류기가 이 호출에서 메일 목적지(`Destination.kind == "email"`)를 찾은 경우만 수신자다.
+  파일 경로가 "이 서버의 검토된 추출기가 경로로 분류한 것만 대상"인 것과 같은 원칙이다. 주소 형태 값은 지금처럼 도메인 검사를 받는다.
+- **한계**: 주소가 아닌 수신자 식별자(채팅 채널 등)를 받는 도구는 분류기가 메일로 읽지 않으면 수신자 범위 검사 대상이 아니다.
+  이전에는 그런 값이 도메인 목록을 통과할 수 없어 항상 막혔다. 목적지·외부 전송 통제는 그대로 적용된다.
+- **시험**: PJ1 실사용(memory `create_relations`), 게이트웨이 이미지 `pac_boundary_check`·`adversarial_check`.
