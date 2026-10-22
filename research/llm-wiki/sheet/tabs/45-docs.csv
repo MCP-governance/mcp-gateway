@@ -45,7 +45,7 @@ DOC-041,MCP_보안정책50.xlsm,외부,2026-10-15,https://drive.google.com/file/
 DOC-042,AGI.drawio.png,외부,2026-10-15,https://drive.google.com/file/d/1imsKu4hyqNH9_IBmwRU9VV9kMi6FgGat/view,,기록
 DOC-043,개발 연구 위키를 사용하는 에이전트 규칙,안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/AGENTS.md,,정본
 DOC-044,CLAUDE.md,안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/CLAUDE.md,,정본
-DOC-045,MINT 개발 연구 위키,안내,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/README.md,DEV-81 · DEV-38,정본
+DOC-045,MINT 개발 연구 위키,안내,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/README.md,DEV-81 · DEV-38,정본
 DOC-046,코드 구조와 실제 호출 경로,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/README-code.md,,기록
 DOC-047,기업 제공 요구사항과 호환성 분석,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/README.md,DEV-29,정본
 DOC-550,codex-sol-review.md,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/arch-review-1018/codex-sol-review.md,D-129 · POL-08 · POL-33 · E01 · E02 · E03 · E04 · E05 · E06 · E07 · E08 · E09 · E10 · E11 · E12,기록
@@ -712,7 +712,7 @@ DOC-722,"2026-10-22 정상 사용 불편 두 가지 수정 (PAC-01 사유, 활�
 DOC-723,2026-10-22 콘솔 정상 기능 점검 (W7),보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-w7-console-check.md,,기록
 DOC-724,2026-10-23 클라우드 감사·AI 통제 벤치마크,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-cloud-control-benchmark.md,,기록
 DOC-725,2026-10-23 레퍼런스 3종 조사 (Falcon Guardian · 젠아이랩스 · GensOps),보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-references-3.md,,기록
-DOC-731,2026-10-23 시트·위키 동기 점검과 위키 첫 화면 정리,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-wiki-sheet-sync.md,DEV-72 · D-130 · D-131 · D-176 · DEV-82 · DEV-83 · DEV-84 · DEV-85 · DEV-86 · DEV-87 · DEV-88 · DEV-78 · G01.05 · G08.01 · G08.04,기록
+DOC-731,2026-10-23 시트·위키 동기 점검과 위키 첫 화면 정리,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-wiki-sheet-sync.md,G01.05 · G08.01 · G08.04 · DEV-72 · D-130 · D-131 · D-176 · DEV-82 · DEV-83 · DEV-84 · DEV-85 · DEV-86 · DEV-87 · DEV-88 · DEV-78,기록
 DOC-532,저장소 코드 스냅샷,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/repository-snapshot.md,,기록
 DOC-533,"Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/team-agi-deliverables-2026-10-15.md,POL-01,정본
 DOC-534,Claude/Codex 공통 작업 지시,양식,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/templates/task-prompt.md,,정본
