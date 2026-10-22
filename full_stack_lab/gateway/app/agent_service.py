@@ -1189,12 +1189,15 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     # 실제로 워커의 semgrep이 깨져 있던 동안 들어온 요청이 전부 그렇게 됐다.
     # 실패한 시도의 행과 사유는 그대로 남으므로 증적이 사라지지는 않는다.
     # A source approval made before impact input existed does not block a new request: that is how it is
-    # approved again with the input it lacks (DEV-71).
+    # approved again with the input it lacks (DEV-71). A registration taken back out (DISABLED) frees the
+    # target too: the new request goes through the full review again, and without this the source could
+    # never be approved a second time, e.g. to correct a tool's read/write class (D-199).
     existing = await db.fetch_one(
-        "SELECT id, status FROM mcp_intake_requests"
+        "SELECT id, status FROM mcp_intake_requests r"
         " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND repository_path=%s"
         " AND status NOT IN ('REJECTED', 'FAILED')"
-        " AND (status <> 'APPROVED' OR (intake_kind='repository' AND jsonb_typeof(evidence->'risk_assessment')='object'))",
+        " AND (status <> 'APPROVED' OR (intake_kind='repository' AND jsonb_typeof(evidence->'risk_assessment')='object'))"
+        " AND NOT EXISTS (SELECT 1 FROM mcp_servers s WHERE s.id=r.registered_server_id AND s.status='DISABLED')",
         (request.intake_kind, endpoint or repository_url, "" if endpoint else repository_path),
     )
     if existing:
