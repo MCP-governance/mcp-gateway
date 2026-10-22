@@ -1660,14 +1660,16 @@ function intakeApprovalFields(out) {
 
 const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구", device: "장치" };
 
-async function askLocalRun(id, request) {
-  const cur = request.evidence?.local_run || {};
+async function askLocalRun(id, request, preset = {}) {
+  const cur = request.evidence?.local_run || preset;
   const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
     ${field.text("image", "이미지", 'required minlength="3" maxlength="300"',
       cur.image || (request.repository_path ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
     ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
       (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
+    ${field.text("env", "환경 변수 (이름=값, 쉼표 구분)", 'maxlength="2000" placeholder="이름=값"',
+      Object.entries(cur.env || {}).map(([k, v]) => `${k}=${v}`).join(", "))}
     ${field.select("reason_kind", "실행 위치 근거", LOCAL_REASON, cur.reason_kind || "local_file")}
     ${field.text("reason_text", "근거 설명", 'required minlength="10" maxlength="500"', cur.reason_text || "")}` });
   if (!fd) return false;
@@ -1675,9 +1677,13 @@ async function askLocalRun(id, request) {
     const [path, mode = "ro"] = v.split(":");
     return { path: path.trim().replace(/^~\//, ""), mode: mode.trim() || "ro" };
   });
+  const env = Object.fromEntries(String(fd.get("env") || "").split(",").map((v) => v.trim()).filter(Boolean).map((v) => {
+    const at = v.indexOf("=");
+    return at < 0 ? [v, ""] : [v.slice(0, at).trim(), v.slice(at + 1).trim()];
+  }));
   const result = await api(`/api/mcp-requests/${id}/local-run`, { method: "POST", body: {
     image: String(fd.get("image")).trim(), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
-    mounts, env: {}, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
+    mounts, env, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
   toast(result.message);
   return true;
 }
@@ -1685,7 +1691,7 @@ async function askLocalRun(id, request) {
 async function showIntakeApproval(id) {
   let out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
   if (out.request.requested_transport === "stdio" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
-    if (!(await askLocalRun(id, out.request))) return;
+    if (!(await askLocalRun(id, out.request, out.local_run_preset))) return;
     out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
   }
   const fd = await ask({ title: `도입 승인 · ${out.request.display_name}`, fields: intakeApprovalFields(out),

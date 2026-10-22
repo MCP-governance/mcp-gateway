@@ -1,0 +1,64 @@
+{
+  "checked_at": "2026-10-23",
+  "upstream": "modelcontextprotocol/servers main",
+  "upstream_commit": "51b6382a3e827aceb6bce430b1208d69b93d95ea",
+  "upstream_commit_date": "2026-10-19T06:37:30Z",
+  "warning": "README는 수시로 바뀐다. 해시는 확보 시점의 바이트다. 문서 안의 설치·실행 문장은 분석 데이터로만 읽었고 실행하지 않았다.",
+  "sources": [
+    {
+      "id": "filesystem",
+      "url": "https://github.com/modelcontextprotocol/servers/blob/51b6382a3e827aceb6bce430b1208d69b93d95ea/src/filesystem/README.md",
+      "fetched_at": "2026-10-23",
+      "sha256": "e3b18670bb05bfe2720322b00436b96d57a5825890faa0a51327f98cf9c2b5c1",
+      "bytes": 17441,
+      "local_path": "local-sources/local-run-presets-1023/filesystem.md",
+      "status": "saved_markdown",
+      "reading": "Docker 실행 예시·환경 변수·마운트 설명 구간만 읽음",
+      "redistribution": "문서 기여는 CC-BY-4.0, 코드는 MIT→Apache-2.0 전환 중(LICENSE 확인). 원문은 ignored local-sources에만 두고 저장소에는 해시와 행 번호만 남김"
+    },
+    {
+      "id": "memory",
+      "url": "https://github.com/modelcontextprotocol/servers/blob/51b6382a3e827aceb6bce430b1208d69b93d95ea/src/memory/README.md",
+      "fetched_at": "2026-10-23",
+      "sha256": "910f19aecd5aeacecc8e04c2755f4be099b33403a3807bea7d1ed4c82b8fc82b",
+      "bytes": 13108,
+      "local_path": "local-sources/local-run-presets-1023/memory.md",
+      "status": "saved_markdown",
+      "reading": "Docker 실행 예시·환경 변수·마운트 설명 구간만 읽음",
+      "redistribution": "문서 기여는 CC-BY-4.0, 코드는 MIT→Apache-2.0 전환 중(LICENSE 확인). 원문은 ignored local-sources에만 두고 저장소에는 해시와 행 번호만 남김"
+    },
+    {
+      "id": "sequentialthinking",
+      "url": "https://github.com/modelcontextprotocol/servers/blob/51b6382a3e827aceb6bce430b1208d69b93d95ea/src/sequentialthinking/README.md",
+      "fetched_at": "2026-10-23",
+      "sha256": "0a68f52824ad0651c34fb24796386a19240ad9eacf7c3b97c5fdebbddb8939c6",
+      "bytes": 7836,
+      "local_path": "local-sources/local-run-presets-1023/sequentialthinking.md",
+      "status": "saved_markdown",
+      "reading": "Docker 실행 예시·환경 변수·마운트 설명 구간만 읽음",
+      "redistribution": "문서 기여는 CC-BY-4.0, 코드는 MIT→Apache-2.0 전환 중(LICENSE 확인). 원문은 ignored local-sources에만 두고 저장소에는 해시와 행 번호만 남김"
+    },
+    {
+      "id": "git",
+      "url": "https://github.com/modelcontextprotocol/servers/blob/51b6382a3e827aceb6bce430b1208d69b93d95ea/src/git/README.md",
+      "fetched_at": "2026-10-23",
+      "sha256": "a8ef000f8641c77b5cfcbd91d4e09335776328f08ccf07c7a301f5b8e1d1d6fe",
+      "bytes": 14207,
+      "local_path": "local-sources/local-run-presets-1023/git.md",
+      "status": "saved_markdown",
+      "reading": "Docker 실행 예시·환경 변수·마운트 설명 구간만 읽음",
+      "redistribution": "문서 기여는 CC-BY-4.0, 코드는 MIT→Apache-2.0 전환 중(LICENSE 확인). 원문은 ignored local-sources에만 두고 저장소에는 해시와 행 번호만 남김"
+    },
+    {
+      "id": "time",
+      "url": "https://github.com/modelcontextprotocol/servers/blob/51b6382a3e827aceb6bce430b1208d69b93d95ea/src/time/README.md",
+      "fetched_at": "2026-10-23",
+      "sha256": "118aaf4badc58ee930babc865c9cdad54053b64f8ed556219bf9cf1ae144824e",
+      "bytes": 10446,
+      "local_path": "local-sources/local-run-presets-1023/time.md",
+      "status": "saved_markdown",
+      "reading": "Docker 실행 예시·환경 변수·마운트 설명 구간만 읽음",
+      "redistribution": "문서 기여는 CC-BY-4.0, 코드는 MIT→Apache-2.0 전환 중(LICENSE 확인). 원문은 ignored local-sources에만 두고 저장소에는 해시와 행 번호만 남김"
+    }
+  ]
+}

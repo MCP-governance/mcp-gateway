@@ -2225,7 +2225,8 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
                 "approval_proposal": proposal}), request_id, Jsonb(evidence), row["status"]))
     if not changed:
         raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
-    return {"proposal": proposal, "proposal_sha256": intake_proposal.digest(proposal), "request": row, "gate": gate}
+    return {"proposal": proposal, "proposal_sha256": intake_proposal.digest(proposal), "request": row, "gate": gate,
+            "local_run_preset": intake_proposal.local_run_preset(row)}
 
 
 @app.post("/api/mcp-requests/{request_id}/approve-and-register")
