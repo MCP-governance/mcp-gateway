@@ -1933,3 +1933,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **보존한 기능**: D-181 직원별 중지, D-182 오프라인 버퍼, D-188 root 단독 모드. C1~C4/T1~T3 판정 기준은 바꾸지 않는다. 새 적대 검토 전까지 배포·PJ1 시험을 하지 않는다.
 - **전역 잠금 순서(실제 DB 시험에서 교착 2건을 찾아 고침)**: `local:admission` → 계정·장치·서버 범위 잠금(정렬) → `local:claim:<장치>` → `local:policy` → 토큰 → 사용자 → 서버·계정·장치·승인 행(읽기 `FOR SHARE`, 쓰기는 자기 행 먼저) → **작업 행은 항상 마지막**. claim은 후보를 잠금 없이 고르고 위 잠금을 잡은 뒤 같은 조건으로 `FOR UPDATE` 재조회하며, 후보가 취소·변경됐으면 수령하지 않는다. 서버 등 전환 trigger는 자기 행 → 작업 행 → 승인 행 순이고 자기 행이 claim의 `FOR SHARE`와 충돌해 먼저 막히므로 순환하지 않는다. 토큰 철회는 토큰 잠금을 쥔 채 별도 연결로 작업을 취소하므로 작업 행을 쥔 채 토큰 잠금을 기다리는 경로가 없어야 한다. 이 순서를 어기는 변경은 `dev73_rework_pg_check`의 교착 체크가 막는다. 전체 대기·행 수·결과 저장 상한은 환경 변수(`LOCAL_JOBS_PENDING_MAX`·`LOCAL_JOBS_ROWS_MAX`·`LOCAL_RESULTS_STORE_MAX_BYTES`, 기본 64·10000·64MiB)로 뺐다.
 - **검증·되돌릴 조건**: [재작업 보고](../../research/llm-wiki/status/reports/2026-10-21-dev73-rework.md). 기존 시험 기대값·AST는 보존했다. 실제 DB 잠금/경합·Linux 반복 교체·엔진 매핑/정지·OSS MCP 검증이 실패하면 지원 엔진/실행 경로를 열지 않는다. 메시지별 컨테이너의 상태 있는 MCP 호환성은 검증 후 별도 결정한다.
+
+## D-191 외부 AI 게이트웨이(LiteLLM 등)는 업스트림 방식을 주력으로, 호출 직전 판정 API를 애드온으로 둔다 (2026-10-22)
+
+- 문제: 기업이 LiteLLM 같은 AI 게이트웨이로 MCP를 중앙 연결하면 직원 PC의 하네스가 MINT를 거치지 않는다. 평가에서 「LiteLLM 쪽에서 MCP를 연동하는 경우는 커버되지 않느냐」는 지적이 있었고, 애드온만으로 방어할 수 있다는 방향이 주어졌다.
+- 결정 A(주력): AI 게이트웨이의 MCP 서버가 MINT `/mcp/<서버>/`를 업스트림으로 가리키고 직원이 자기 MINT 토큰을 서버별 헤더로 보낸다. MINT의 판정·전송 직전 재검사·승인·출력 통제가 그대로 적용된다. `addons/litellm/gen_mcp_servers.py`가 운영 중인 서버 목록으로 LiteLLM `mcp_servers`(`oauth_delegate`)를 만든다. 공유 서비스 키를 쓰지 않는다.
+- 결정 B·C: MCP를 게이트웨이에 직접 등록한 경우를 위해 `POST /api/addon/v1/mcp-decision`(호출 직전 판정)과 `/mcp-result`(사후 기록)를 둔다. 판정은 `core.execute_call`의 기존 경로에 `_decide_only`를 주어 upstream 전송만 건너뛴다. 신원은 직원 MCP 토큰에서만 정하고 게이트웨이가 주장하는 사용자는 기록만 한다. 라우트는 `Depends(caller)`이고 `mcp` scope를 요구한다. LiteLLM용 가드레일은 `addons/litellm/mint_guardrail.py`, 다른 게이트웨이는 [HTTP 계약](AI_GATEWAY_ADDON.md)을 쓴다.
+- 결정: 승인 대기 건은 이 경로에서 만들지 않는다(승인되면 MINT가 같은 호출을 직접 한 번 더 보내 이중 실행된다). 사후 기록은 `approval_events`에 덧붙이고 판정 행을 고치지 않는다. MINT가 답하지 못하거나 허용이 아니면 호출자는 차단한다.
+- 이유: B 방식은 판정과 전송 사이를 MINT가 쥐지 못해 A보다 보장이 약하다. 그래서 A를 권하고 B는 이미 직접 등록된 MCP를 위한 보완으로 둔다. 새 의존성·새 테이블 없이 기존 판정 함수와 원장을 재사용한다.
+- 앞단 변경: `field/Caddyfile`의 HTTPS 사이트에 `/api/addon/v1/*`를 추가했고(적용에는 스택 재기동 필요), `llm/standalone/Caddyfile` 출구에 같은 경로를 허용했다.
+- 되돌릴 조건: 평가자가 B를 요구하지 않거나 모든 대상 게이트웨이가 A를 쓸 수 있으면 B 라우트와 `_decide_only`를 제거한다. B로 사람 승인·출력 통제까지 요구받으면 A만 권고한다.
+- 근거·시험·한계: [연동 문서](AI_GATEWAY_ADDON.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-22-ai-gateway-addon.md), [분석](../../research/llm-wiki/analysis/litellm-mint-opportunities-20261022.md). 판정 API는 제품 스택에 배포되지 않아 실제 MINT와의 B 연동은 미실행이다.
