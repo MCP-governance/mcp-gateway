@@ -198,7 +198,7 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
         if isinstance(item, dict):
             keys.update(item)
             pending.extend(item.values())
-            assignments.extend(f"{key}={child}" for key, child in item.items() if isinstance(child, str))
+            assignments.extend((str(key), child) for key, child in item.items() if isinstance(child, str))
         elif isinstance(item, list):
             pending.extend(item)
         elif isinstance(item, (int, float)) and not isinstance(item, bool):
@@ -220,9 +220,17 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
                                     + ", ".join(sorted(set(found))))
     # Low-entropy passwords can evade Gitleaks. Preserve assignment context for
     # Presidio's credential recognizer rather than inspect the value in isolation.
-    joined = "\n".join(assignments)
+    # Only a match that crosses a synthetic "key=" prefix is a structured credential. One wholly inside a
+    # text value (a document quoting client_secret=...) is masked with that string below, not withheld
+    # with the whole result (10-23 PJ1: five SDK documents withheld).
+    joined = "\n".join(f"{key}={child}" for key, child in assignments)
+    prefixes, offset = [], 0
+    for key, child in assignments:
+        prefixes.append((offset, offset + len(key) + 1))
+        offset += len(key) + len(child) + 2
     credentials = [f for f in (await analyze(joined, ignore) if assignments else [])
                    if f["entity_type"] in {"CREDENTIAL", "SECRET_TOKEN"}
+                   and any(start <= f["start"] < end < f["end"] for start, end in prefixes)
                    and not PLACEHOLDER.match(joined[f["start"]:f["end"]].split("=", 1)[-1].split(":", 1)[-1])]
     if credentials:
         raise InspectionUnavailable("Credential in structured key/value context is withheld: "

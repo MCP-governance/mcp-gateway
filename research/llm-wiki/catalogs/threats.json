@@ -2457,10 +2457,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
+        "sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e",
         "committed_sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
-        "normalized_sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
-        "worktree_modified": false
+        "normalized_sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/secret_scan.py",
@@ -2588,10 +2588,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
-        "sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
+        "sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e",
         "committed_sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
-        "normalized_sha256": "b680539a0d0bbac16026eb9ed1c69d0e6ea3b222ee550100e7dfca235dd9f73d",
-        "worktree_modified": false
+        "normalized_sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/secret_scan.py",
