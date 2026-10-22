@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "reviewer": "Codex sol",
-  "reviewed_on": "2026-10-21",
-  "reviewed_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+  "reviewer": "Codex 독립 변경 검토",
+  "reviewed_on": "2026-10-22",
+  "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
   "source_sha256": "c4ebd824cc8e355347ef0fc05b1cf866f621d05ff45352d30351c3827feb3141",
-  "review_type": "기존 독립 검토의 현 판본 정적 재대조; 외부 독립 적대 검토는 작업 보고 참조",
+  "review_type": "2026-10-21 독립 검토 이후 제품 및 시험 변경의 정적 의미 재대조",
   "evidence": [
     {
       "id": "E01",
@@ -429,7 +429,7 @@
           "anchor": "",
           "line": 615,
           "end_line": 877,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         }
       ],
       "regression_tests": [
@@ -482,9 +482,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/consent.py",
@@ -744,9 +744,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_contract",
           "anchor": "",
-          "line": 1107,
-          "end_line": 1170,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1113,
+          "end_line": 1176,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/registry.py",
@@ -869,8 +869,8 @@
           "symbol": "",
           "anchor": "",
           "line": 1,
-          "end_line": 141,
-          "normalized_sha256": "763020a29f8675b0ed83a2b77e14513159d43584098d6ae330f5c6560765e36f",
+          "end_line": 142,
+          "normalized_sha256": "41cad59967fda467a8e6c949576eab4ab71e329334f3429db33459b8bfcc16f8",
           "coverage": "관리 Linux 네트워크/실행 통제 검사",
           "execution_in_this_review": "미실행"
         },
@@ -1140,25 +1140,25 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
           "anchor": "",
-          "line": 1615,
-          "end_line": 1815,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1621,
+          "end_line": 1821,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_dispatch_flow_recheck",
           "anchor": "",
-          "line": 1363,
-          "end_line": 1372,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1369,
+          "end_line": 1378,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -1174,7 +1174,7 @@
           "anchor": "",
           "line": 399,
           "end_line": 415,
-          "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
+          "normalized_sha256": "8a29a8ff01bc1633003ed195a8870bb3854cc4e8180e7e1ba78044f668c63bae"
         }
       ],
       "regression_tests": [
@@ -1304,17 +1304,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
           "anchor": "",
-          "line": 1615,
-          "end_line": 1815,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1621,
+          "end_line": 1821,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/pac.py",
@@ -1493,17 +1493,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_flow_sources",
           "anchor": "",
-          "line": 1331,
-          "end_line": 1360,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1337,
+          "end_line": 1366,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/consent.py",
@@ -1517,17 +1517,41 @@
           "path": "full_stack_lab/gateway/app/residency.py",
           "symbol": "enabled",
           "anchor": "",
-          "line": 72,
-          "end_line": 73,
-          "normalized_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1"
+          "line": 94,
+          "end_line": 95,
+          "normalized_sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
         },
         {
           "path": "full_stack_lab/gateway/app/residency.py",
           "symbol": "require_location",
           "anchor": "",
-          "line": 76,
-          "end_line": 79,
-          "normalized_sha256": "a587cf7952aa2a40ebcfd9fc5b35b616a3731f8dfb22121f4dc2f3196b9245b1"
+          "line": 98,
+          "end_line": 101,
+          "normalized_sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/core.py",
+          "symbol": "review_server_residency",
+          "anchor": "",
+          "line": 950,
+          "end_line": 985,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/residency.py",
+          "symbol": "facts",
+          "anchor": "",
+          "line": 60,
+          "end_line": 76,
+          "normalized_sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/residency.py",
+          "symbol": "transfer_review_digest",
+          "anchor": "",
+          "line": 79,
+          "end_line": 91,
+          "normalized_sha256": "cfb963081e32da6b94a6be3bcb00116149bd0ab0ac7db6cb8cca64bfd3d46723"
         }
       ],
       "regression_tests": [
@@ -1570,6 +1594,26 @@
           "normalized_sha256": "2a0ea80cab6a8259b14ab36ffc87dac341f3bbbc834749935d4e58c6c0eac011",
           "coverage": "새 흐름 출처 선게시 차단",
           "execution_in_this_review": "미실행"
+        },
+        {
+          "path": "full_stack_lab/tests/residency_transfer_review_check.py",
+          "symbol": "TransferReviewTest",
+          "anchor": "",
+          "line": 35,
+          "end_line": 76,
+          "normalized_sha256": "1acbe38d6a2f4b610d05f78661512fc5f70576034fe98f3dd73126acd32bc321",
+          "coverage": "서버 심사 결속과 목적지 비상속, 규칙 변경 및 누락",
+          "execution_in_this_review": "미실행"
+        },
+        {
+          "path": "full_stack_lab/tests/residency_transfer_review_check.py",
+          "symbol": "TransferReviewRouteTest",
+          "anchor": "",
+          "line": 79,
+          "end_line": 158,
+          "normalized_sha256": "1acbe38d6a2f4b610d05f78661512fc5f70576034fe98f3dd73126acd32bc321",
+          "coverage": "독립 심사, 감사 선기록, 파일 및 동기화 실패",
+          "execution_in_this_review": "미실행"
         }
       ],
       "evidence_ids": [
@@ -1578,7 +1622,7 @@
         "E10",
         "E18"
       ],
-      "limitations": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다. 관할 팩은 기본 비활성이므로 위치 미제공 자체의 기본 차단을 주장하지 않는다. 활성화한 경우의 위치·등급 규칙만 해당한다.",
+      "limitations": "실행기 프록시의 서버 전체 허용 호스트가 도구 심사 안에 들어가야 최종 목적지로 인정한다. 제3자 SaaS outbound·재시도/자격·독립 수신은 미관측이다. 국가/법적 근거는 선언·잠정 규칙이며 개인정보 적법성 확인 자동화가 아니다. LLM 모델 프롬프트 경로는 별도다. 관할 팩은 기본 비활성이므로 위치 미제공 자체의 기본 차단을 주장하지 않는다. 활성화한 경우의 위치·등급 규칙만 해당한다. 공급자 서버 위치 재심사는 독립 승인 감사가 먼저 기록되고 현재 등록, 근거, 규칙 팩 해시가 일치할 때만 비중요 등급의 국가별 승인 요구를 면제한다. 도구 외부 목적지는 상속하지 않으며 감사 사건만으로 등록부 반영이나 배포 성공을 뜻하지 않는다.",
       "conclusion": "부분 근거; 전체 충족 판정 아님"
     },
     {
@@ -1601,9 +1645,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "approve_request",
           "anchor": "",
-          "line": 2538,
-          "end_line": 2591,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2544,
+          "end_line": 2597,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/pac.py",
@@ -1701,17 +1745,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_reserve_call",
           "anchor": "",
-          "line": 1425,
-          "end_line": 1510,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1431,
+          "end_line": 1516,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -1727,9 +1771,9 @@
           "path": "full_stack_lab/tests/reservation_effect_check.py",
           "symbol": "race",
           "anchor": "",
-          "line": 47,
-          "end_line": 83,
-          "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65",
+          "line": 65,
+          "end_line": 101,
+          "normalized_sha256": "949973f3c0d56d71b65bf97d5e3dceb202f1ddd06eb100b4c2745b20e5b99961",
           "coverage": "실제 PostgreSQL MCP 동시 상한/중복·업무 DB 효과 관측용",
           "execution_in_this_review": "미실행"
         },
@@ -1808,17 +1852,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "untrusted_markers",
           "anchor": "",
-          "line": 1221,
-          "end_line": 1228,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1227,
+          "end_line": 1234,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         }
       ],
       "regression_tests": [
@@ -1880,9 +1924,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/review.py",
@@ -1964,17 +2008,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
           "anchor": "",
-          "line": 1916,
-          "end_line": 1944,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1922,
+          "end_line": 1950,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_inspected_result",
           "anchor": "",
-          "line": 1947,
-          "end_line": 1961,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1953,
+          "end_line": 1967,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
@@ -2007,8 +2051,8 @@
           "symbol": "",
           "anchor": "",
           "line": 1,
-          "end_line": 213,
-          "normalized_sha256": "d12acf0e0231127e4876b12f864aef43404ef4c99cabd7e82f576ab0ab14fda2",
+          "end_line": 218,
+          "normalized_sha256": "6e68e97bc912675e5c77908f6cbb278daa02dfd1ef6cd43eb2c45e090700936f",
           "coverage": "SDK content·structuredContent 보존/출력 보류",
           "execution_in_this_review": "미실행"
         },
@@ -2061,7 +2105,7 @@
           "anchor": "",
           "line": 219,
           "end_line": 382,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
@@ -2069,7 +2113,7 @@
           "anchor": "",
           "line": 385,
           "end_line": 467,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/registry.py",
@@ -2154,25 +2198,25 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
           "anchor": "",
-          "line": 1984,
-          "end_line": 2101,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1990,
+          "end_line": 2107,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_audit_payload",
           "anchor": "",
-          "line": 1964,
-          "end_line": 1978,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1970,
+          "end_line": 1984,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "verify_audit_chain",
           "anchor": "",
-          "line": 2145,
-          "end_line": 2164,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2151,
+          "end_line": 2170,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/audit.py",
@@ -2297,7 +2341,7 @@
           "anchor": "",
           "line": 880,
           "end_line": 901,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/local_jobs.py",
@@ -2305,7 +2349,23 @@
           "anchor": "",
           "line": 570,
           "end_line": 590,
-          "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
+          "normalized_sha256": "8a29a8ff01bc1633003ed195a8870bb3854cc4e8180e7e1ba78044f668c63bae"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/local_jobs.py",
+          "symbol": "resume_user_stop",
+          "anchor": "",
+          "line": 600,
+          "end_line": 608,
+          "normalized_sha256": "8a29a8ff01bc1633003ed195a8870bb3854cc4e8180e7e1ba78044f668c63bae"
+        },
+        {
+          "path": "full_stack_lab/gateway/app/user_suspend.py",
+          "symbol": "resume",
+          "anchor": "",
+          "line": 82,
+          "end_line": 104,
+          "normalized_sha256": "4786a40a504fcd127795a63ca00abe0bbe3f1cda47d94c8fcf8c1459b62492af"
         }
       ],
       "regression_tests": [
@@ -2348,6 +2408,16 @@
           "normalized_sha256": "93d0518a4618139c9b5ddbb9bac7b3ab9bcd7d5ec0e344ddcc570beab6f24912",
           "coverage": "종료 중 호출 거부",
           "execution_in_this_review": "미실행"
+        },
+        {
+          "path": "full_stack_lab/tests/user_local_suspend_check.py",
+          "symbol": "LocalStopChecks",
+          "anchor": "",
+          "line": 58,
+          "end_line": 187,
+          "normalized_sha256": "5e059c9d3b81faeae70a6bd4a43c2a64bbc249d71f67b649f83def9e78fddd82",
+          "coverage": "로컬 중지 ACK와 같은 거래의 직원별 재개, 실패 및 경합 대역",
+          "execution_in_this_review": "미실행"
         }
       ],
       "evidence_ids": [
@@ -2356,7 +2426,7 @@
         "E13",
         "E17"
       ],
-      "limitations": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다. 로컬 작업 정지 확인이 계정·장치·서버 종료 전에 연결됐지만 실제 컨테이너/PJ1 검증과 사용자 이용 중지의 진행 중 작업 정지 연결은 별도다.",
+      "limitations": "DB 경계 종료·설정/경로 제거·프로세스 제거·자원 거부를 분리한다. 집계 MCP 세션은 한 서버 종료로 전체 종료하지 않는다. 실제 지속 세션/실행기 잔존·Windows·현재 PJ1 종료 재접근은 미검증이다. 설정 소멸은 C4 상태 증거 일부이며 외부 효과 철회 증거가 아니다. 로컬 작업 정지 확인이 계정·장치·서버 종료 전에 연결됐지만 실제 컨테이너/PJ1 검증과 사용자 이용 중지의 진행 중 작업 정지 연결은 별도다. 직원별 로컬 재개는 해당 직원과 서버의 stop 한 건만 중지 행 갱신과 같은 거래에서 삭제한다. 실제 PostgreSQL 경합과 실행기 ACK는 이번 검토에서 재실행하지 않았다.",
       "conclusion": "부분 근거; 전체 충족 판정 아님"
     },
     {
@@ -2418,9 +2488,9 @@
           "path": "full_stack_lab/gateway/app/local_jobs.py",
           "symbol": "prepare_token_revocation",
           "anchor": "",
-          "line": 600,
-          "end_line": 615,
-          "normalized_sha256": "fffed5138daa6c272b6dd327bb979850d18dbdc6d049d424016574b8c4eceab6"
+          "line": 611,
+          "end_line": 626,
+          "normalized_sha256": "8a29a8ff01bc1633003ed195a8870bb3854cc4e8180e7e1ba78044f668c63bae"
         }
       ],
       "regression_tests": [
@@ -2536,9 +2606,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/consent.py",
@@ -2719,9 +2789,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_contract",
           "anchor": "",
-          "line": 1107,
-          "end_line": 1170,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1113,
+          "end_line": 1176,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/registry.py",
@@ -2890,17 +2960,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "approve_request",
           "anchor": "",
-          "line": 2538,
-          "end_line": 2591,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2544,
+          "end_line": 2597,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/tests/reservation_effect_check.py",
           "symbol": "race",
           "anchor": "",
-          "line": 47,
-          "end_line": 83,
-          "normalized_sha256": "6115f0f19a2e5af4f43c92ba7fcefcbe4e0c1b01908cbfcdfc1556dd8d259e65"
+          "line": 65,
+          "end_line": 101,
+          "normalized_sha256": "949973f3c0d56d71b65bf97d5e3dceb202f1ddd06eb100b4c2745b20e5b99961"
         }
       ],
       "original_mapping": [
@@ -2932,9 +3002,9 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/review.py",
@@ -2991,17 +3061,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
           "anchor": "",
-          "line": 1916,
-          "end_line": 1944,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1922,
+          "end_line": 1950,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_inspected_result",
           "anchor": "",
-          "line": 1947,
-          "end_line": 1961,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1953,
+          "end_line": 1967,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
@@ -3033,7 +3103,7 @@
           "anchor": "",
           "line": 219,
           "end_line": 382,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
@@ -3041,7 +3111,7 @@
           "anchor": "",
           "line": 385,
           "end_line": 467,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/registry.py",
@@ -3105,25 +3175,25 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
           "anchor": "",
-          "line": 1984,
-          "end_line": 2101,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1990,
+          "end_line": 2107,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_audit_payload",
           "anchor": "",
-          "line": 1964,
-          "end_line": 1978,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1970,
+          "end_line": 1984,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "verify_audit_chain",
           "anchor": "",
-          "line": 2145,
-          "end_line": 2164,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2151,
+          "end_line": 2170,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/audit.py",
@@ -3271,25 +3341,25 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
           "anchor": "",
-          "line": 1615,
-          "end_line": 1815,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1621,
+          "end_line": 1821,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_dispatch_flow_recheck",
           "anchor": "",
-          "line": 1363,
-          "end_line": 1372,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1369,
+          "end_line": 1378,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -3311,17 +3381,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_flow_sources",
           "anchor": "",
-          "line": 1331,
-          "end_line": 1360,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1337,
+          "end_line": 1366,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/consent.py",
@@ -3335,17 +3405,17 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_reserve_call",
           "anchor": "",
-          "line": 1425,
-          "end_line": 1510,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1431,
+          "end_line": 1516,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
           "anchor": "",
-          "line": 2182,
-          "end_line": 2535,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2188,
+          "end_line": 2541,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/dispatch.py",
@@ -3359,25 +3429,25 @@
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
           "anchor": "",
-          "line": 1984,
-          "end_line": 2101,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1990,
+          "end_line": 2107,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_audit_payload",
           "anchor": "",
-          "line": 1964,
-          "end_line": 1978,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 1970,
+          "end_line": 1984,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "verify_audit_chain",
           "anchor": "",
-          "line": 2145,
-          "end_line": 2164,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "line": 2151,
+          "end_line": 2170,
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/audit.py",
@@ -3433,7 +3503,7 @@
           "anchor": "",
           "line": 880,
           "end_line": 901,
-          "normalized_sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
+          "normalized_sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
         },
         {
           "path": "full_stack_lab/gateway/app/idp.py",
@@ -3575,12 +3645,13 @@
     }
   ],
   "refresh": {
-    "previous_commit": "22238b54f2a5ce1a18c19e0f3968658d264c6c72",
-    "previous_snapshot": "../threat-trace-review-1021/review-2026-10-20.json",
-    "previous_sha256": "b4ee7cbfbe739dac5dd320dc3496d81afaaf9423a8271a6b0e7a08d4a739ebe3",
-    "analysis": "../threat-trace-review-1021/README.md",
-    "changed_files": 20,
-    "stale_unique_references": 71,
-    "external_review": "작업 보고 참조; 정적 추적 재대조와 실행 검수는 별개"
+    "previous_commit": "204579981ac02956a3ee40301f251ee99af9de6e",
+    "previous_snapshot": "../threat-trace-review-1022/review-2026-10-21.json",
+    "previous_sha256": "4b523739e902c4348ea96ff019be36341ed729cbc860c0f8e86debc43e7f217d",
+    "analysis": "../threat-trace-review-1022/README.md",
+    "changed_files": 6,
+    "stale_unique_references": 25,
+    "external_review": "이 검토는 구현자와 다른 에이전트의 독립 정적 변경 검토다. 실기기 실행 검수는 별도다",
+    "added_current_references": 4
   }
 }

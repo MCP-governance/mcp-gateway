@@ -5,7 +5,12 @@
     "branch": "10/15-wbs-implementation",
     "scope": "structural_inventory_and_curated_acceptance_conditions",
     "deployment_inferred": false,
-    "runtime_test_results_inferred": false
+    "runtime_test_results_inferred": false,
+    "code_observation": {
+      "commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d",
+      "scope": "current_structural_source_only",
+      "runtime_test_results_inferred": false
+    }
   },
   "records": [
     {
@@ -21,12 +26,13 @@
           "path": "full_stack_lab/supply_chain/intake_worker.py",
           "symbol": "module/config",
           "line_start": 1,
-          "line_end": 434,
-          "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+          "line_end": 411,
+          "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "head_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -51,12 +57,13 @@
           "path": "full_stack_lab/supply_chain/intake_worker.py",
           "symbol": "module/config",
           "line_start": 1,
-          "line_end": 434,
-          "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+          "line_end": 411,
+          "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "head_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -81,12 +88,13 @@
           "path": "full_stack_lab/supply_chain/intake_worker.py",
           "symbol": "module/config",
           "line_start": 1,
-          "line_end": 434,
-          "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+          "line_end": 411,
+          "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "head_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -111,12 +119,13 @@
           "path": "full_stack_lab/supply_chain/intake_worker.py",
           "symbol": "module/config",
           "line_start": 1,
-          "line_end": 434,
-          "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+          "line_end": 411,
+          "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "head_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -141,12 +150,13 @@
           "path": "full_stack_lab/supply_chain/intake_worker.py",
           "symbol": "module/config",
           "line_start": 1,
-          "line_end": 434,
-          "sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "head_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
-          "normalized_sha256": "fd6c03f59d1525391fc08d66dfed152d88ef064658c25512372219e36c639cb6",
+          "line_end": 411,
+          "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "head_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
+          "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -170,13 +180,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 183,
-          "line_end": 321,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 219,
+          "line_end": 382,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -200,13 +211,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 183,
-          "line_end": 321,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 219,
+          "line_end": 382,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -230,13 +242,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 183,
-          "line_end": 321,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 219,
+          "line_end": 382,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -260,13 +273,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 183,
-          "line_end": 321,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 219,
+          "line_end": 382,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -290,13 +304,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "refresh_catalog",
-          "line_start": 183,
-          "line_end": 321,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 219,
+          "line_end": 382,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -320,13 +335,14 @@
         {
           "path": "full_stack_lab/gateway/app/agent_contract.py",
           "symbol": "authenticated_user",
-          "line_start": 113,
-          "line_end": 154,
-          "sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "head_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+          "line_start": 142,
+          "line_end": 188,
+          "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -350,13 +366,14 @@
         {
           "path": "full_stack_lab/gateway/app/agent_contract.py",
           "symbol": "authenticated_user",
-          "line_start": 113,
-          "line_end": 154,
-          "sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "head_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+          "line_start": 142,
+          "line_end": 188,
+          "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -380,13 +397,14 @@
         {
           "path": "full_stack_lab/gateway/app/agent_contract.py",
           "symbol": "authenticated_user",
-          "line_start": 113,
-          "line_end": 154,
-          "sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "head_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+          "line_start": 142,
+          "line_end": 188,
+          "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -410,13 +428,14 @@
         {
           "path": "full_stack_lab/gateway/app/agent_contract.py",
           "symbol": "authenticated_user",
-          "line_start": 113,
-          "line_end": 154,
-          "sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "head_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+          "line_start": 142,
+          "line_end": 188,
+          "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -440,13 +459,14 @@
         {
           "path": "full_stack_lab/gateway/app/agent_contract.py",
           "symbol": "authenticated_user",
-          "line_start": 113,
-          "line_end": 154,
-          "sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "head_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
-          "normalized_sha256": "7a4abeed40c0a106181c62bd4aed162962900a0899a388d493a0ea57b9d8be0c",
+          "line_start": 142,
+          "line_end": 188,
+          "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+          "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -471,12 +491,13 @@
           "path": "full_stack_lab/gateway/app/pac.py",
           "symbol": "scope",
           "line_start": 69,
-          "line_end": 112,
-          "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+          "line_end": 115,
+          "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "head_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "normalized_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -501,12 +522,13 @@
           "path": "full_stack_lab/gateway/app/pac.py",
           "symbol": "scope",
           "line_start": 69,
-          "line_end": 112,
-          "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+          "line_end": 115,
+          "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "head_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "normalized_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -531,12 +553,13 @@
           "path": "full_stack_lab/gateway/app/pac.py",
           "symbol": "scope",
           "line_start": 69,
-          "line_end": 112,
-          "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+          "line_end": 115,
+          "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "head_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "normalized_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -561,12 +584,13 @@
           "path": "full_stack_lab/gateway/app/pac.py",
           "symbol": "scope",
           "line_start": 69,
-          "line_end": 112,
-          "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+          "line_end": 115,
+          "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "head_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "normalized_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -591,12 +615,13 @@
           "path": "full_stack_lab/gateway/app/pac.py",
           "symbol": "scope",
           "line_start": 69,
-          "line_end": 112,
-          "sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "head_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
-          "normalized_sha256": "a292041f40d1b972607dc766a9daf641452e46f685a079e76b009694f18ec86f",
+          "line_end": 115,
+          "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "head_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
+          "normalized_sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -620,13 +645,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1630,
-          "line_end": 1890,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 2188,
+          "line_end": 2555,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -650,13 +676,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1630,
-          "line_end": 1890,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 2188,
+          "line_end": 2555,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -680,13 +707,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1630,
-          "line_end": 1890,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 2188,
+          "line_end": 2555,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -710,13 +738,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1630,
-          "line_end": 1890,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 2188,
+          "line_end": 2555,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -740,13 +769,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 1630,
-          "line_end": 1890,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 2188,
+          "line_end": 2555,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -776,7 +806,8 @@
           "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -806,7 +837,8 @@
           "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -836,7 +868,8 @@
           "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -884,7 +917,8 @@
           "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -914,7 +948,8 @@
           "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "normalized_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -938,13 +973,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -968,13 +1004,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -998,13 +1035,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1028,13 +1066,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1058,13 +1097,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1088,13 +1128,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "session",
-          "line_start": 188,
-          "line_end": 205,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 327,
+          "line_end": 356,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1118,13 +1159,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "session",
-          "line_start": 188,
-          "line_end": 205,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 327,
+          "line_end": 356,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1148,13 +1190,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "session",
-          "line_start": 188,
-          "line_end": 205,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 327,
+          "line_end": 356,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1178,13 +1221,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "session",
-          "line_start": 188,
-          "line_end": 205,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 327,
+          "line_end": 356,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1208,13 +1252,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "session",
-          "line_start": 188,
-          "line_end": 205,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 327,
+          "line_end": 356,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1238,13 +1283,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1211,
-          "line_end": 1335,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1621,
+          "line_end": 1821,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1268,13 +1314,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1211,
-          "line_end": 1335,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1621,
+          "line_end": 1821,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1298,13 +1345,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1211,
-          "line_end": 1335,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1621,
+          "line_end": 1821,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1328,13 +1376,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1211,
-          "line_end": 1335,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1621,
+          "line_end": 1821,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1358,13 +1407,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1211,
-          "line_end": 1335,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1621,
+          "line_end": 1821,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1388,13 +1438,14 @@
         {
           "path": "full_stack_lab/gateway/app/mcp_facade.py",
           "symbol": "_render",
-          "line_start": 136,
-          "line_end": 180,
-          "sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "head_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "normalized_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
+          "line_start": 183,
+          "line_end": 229,
+          "sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "head_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "normalized_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1437,13 +1488,14 @@
         {
           "path": "full_stack_lab/gateway/app/mcp_facade.py",
           "symbol": "_render",
-          "line_start": 136,
-          "line_end": 180,
-          "sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "head_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "normalized_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
+          "line_start": 183,
+          "line_end": 229,
+          "sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "head_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "normalized_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1483,13 +1535,14 @@
         {
           "path": "full_stack_lab/gateway/app/mcp_facade.py",
           "symbol": "_render",
-          "line_start": 136,
-          "line_end": 180,
-          "sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "head_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "normalized_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
+          "line_start": 183,
+          "line_end": 229,
+          "sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "head_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "normalized_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1533,13 +1586,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1386,
-          "line_end": 1418,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1922,
+          "line_end": 1950,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1592,13 +1646,14 @@
         {
           "path": "full_stack_lab/gateway/app/mcp_facade.py",
           "symbol": "_render",
-          "line_start": 136,
-          "line_end": 180,
-          "sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "head_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
-          "normalized_sha256": "40e668d870e36e5410afbd176d2c7cbd673e0d7abfa8477dd05606fa88ea772c",
+          "line_start": 183,
+          "line_end": 229,
+          "sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "head_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
+          "normalized_sha256": "1ba64ac41d76c2a2c26ad2ae1aa1621181e706b5ab886500b135a19eac5572d2",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1622,13 +1677,14 @@
         {
           "path": "endpoint-agent/enforce-linux.py",
           "symbol": "profile",
-          "line_start": 83,
-          "line_end": 152,
-          "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+          "line_start": 92,
+          "line_end": 167,
+          "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "head_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1652,13 +1708,14 @@
         {
           "path": "endpoint-agent/enforce-linux.py",
           "symbol": "profile",
-          "line_start": 83,
-          "line_end": 152,
-          "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+          "line_start": 92,
+          "line_end": 167,
+          "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "head_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1682,13 +1739,14 @@
         {
           "path": "endpoint-agent/enforce-linux.py",
           "symbol": "profile",
-          "line_start": 83,
-          "line_end": 152,
-          "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+          "line_start": 92,
+          "line_end": 167,
+          "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "head_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1712,13 +1770,14 @@
         {
           "path": "endpoint-agent/enforce-linux.py",
           "symbol": "profile",
-          "line_start": 83,
-          "line_end": 152,
-          "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+          "line_start": 92,
+          "line_end": 167,
+          "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "head_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1742,13 +1801,14 @@
         {
           "path": "endpoint-agent/enforce-linux.py",
           "symbol": "profile",
-          "line_start": 83,
-          "line_end": 152,
-          "sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "head_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
-          "normalized_sha256": "1252105f172ce246ce60a5fde9cf832e433bb136b21ac68d35c41527e54d84f4",
+          "line_start": 92,
+          "line_end": 167,
+          "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "head_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
+          "normalized_sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1772,13 +1832,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1455,
-          "line_end": 1534,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1990,
+          "line_end": 2107,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1802,13 +1863,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1455,
-          "line_end": 1534,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1990,
+          "line_end": 2107,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1832,13 +1894,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1455,
-          "line_end": 1534,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1990,
+          "line_end": 2107,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1862,13 +1925,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1455,
-          "line_end": 1534,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1990,
+          "line_end": 2107,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1892,13 +1956,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 1455,
-          "line_end": 1534,
-          "sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "head_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
-          "normalized_sha256": "e9fa88eb76814bb22375c8a5326a1e7d17053d0dd2124248cf16050452f41046",
+          "line_start": 1990,
+          "line_end": 2107,
+          "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "head_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+          "normalized_sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1922,13 +1987,14 @@
         {
           "path": "full_stack_lab/gateway/app/decommission.py",
           "symbol": "assess",
-          "line_start": 709,
-          "line_end": 754,
-          "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+          "line_start": 717,
+          "line_end": 762,
+          "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "head_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1952,13 +2018,14 @@
         {
           "path": "full_stack_lab/gateway/app/decommission.py",
           "symbol": "assess",
-          "line_start": 709,
-          "line_end": 754,
-          "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+          "line_start": 717,
+          "line_end": 762,
+          "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "head_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -1982,13 +2049,14 @@
         {
           "path": "full_stack_lab/gateway/app/decommission.py",
           "symbol": "assess",
-          "line_start": 709,
-          "line_end": 754,
-          "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+          "line_start": 717,
+          "line_end": 762,
+          "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "head_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2012,13 +2080,14 @@
         {
           "path": "full_stack_lab/gateway/app/decommission.py",
           "symbol": "assess",
-          "line_start": 709,
-          "line_end": 754,
-          "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+          "line_start": 717,
+          "line_end": 762,
+          "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "head_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2042,13 +2111,14 @@
         {
           "path": "full_stack_lab/gateway/app/decommission.py",
           "symbol": "assess",
-          "line_start": 709,
-          "line_end": 754,
-          "sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "head_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
-          "normalized_sha256": "34110e2499be6a9c6f4ecb1f1810dd23ee113aee34bcdfb0b8e1a6ff72ed121a",
+          "line_start": 717,
+          "line_end": 762,
+          "sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "head_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
+          "normalized_sha256": "47f8382e2b313155b00df176bec3cacfe0bc7175ae608cb556a905d4973362b1",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2078,7 +2148,8 @@
           "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2108,7 +2179,8 @@
           "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2138,7 +2210,8 @@
           "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2168,7 +2241,8 @@
           "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2198,7 +2272,8 @@
           "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2222,13 +2297,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "credential_headers",
-          "line_start": 37,
-          "line_end": 74,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 40,
+          "line_end": 77,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2252,13 +2328,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "credential_headers",
-          "line_start": 37,
-          "line_end": 74,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 40,
+          "line_end": 77,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2282,13 +2359,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "credential_headers",
-          "line_start": 37,
-          "line_end": 74,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 40,
+          "line_end": 77,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2312,13 +2390,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "credential_headers",
-          "line_start": 37,
-          "line_end": 74,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 40,
+          "line_end": 77,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2342,13 +2421,14 @@
         {
           "path": "full_stack_lab/gateway/app/upstream.py",
           "symbol": "credential_headers",
-          "line_start": 37,
-          "line_end": 74,
-          "sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "head_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
-          "normalized_sha256": "4d4ba797466de2dfc71450fd8b9b06452a6b0418605410af58ab78f0248f1362",
+          "line_start": 40,
+          "line_end": 77,
+          "sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
+          "normalized_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2378,7 +2458,8 @@
           "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2408,7 +2489,8 @@
           "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2438,7 +2520,8 @@
           "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2468,7 +2551,8 @@
           "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],
@@ -2498,7 +2582,8 @@
           "head_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
-          "symbol_found": true
+          "symbol_found": true,
+          "source_commit": "9ce32ae34304d746c49aecad64f2f3f03406e39d"
         }
       ],
       "test_evidence": [],

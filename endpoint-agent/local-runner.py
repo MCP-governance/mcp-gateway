@@ -28,6 +28,7 @@ MAX_BYTES = 1048576
 MAX_LINES = 1024
 MAX_QUEUE = 32
 READ_SECONDS = 20
+WORKSPACE = '/workspace'  # 컨테이너 안 고정 마운트 위치: 실행 인자가 PC 계정 이름에 묶이지 않는다
 ENGINE_ENV = {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin','HOME':'/root','LANG':'C.UTF-8'}
 
 
@@ -78,7 +79,7 @@ class PinnedMounts:
                 self._inspect(parent)
                 info=os.fstat(parent)
                 self.paths.append((absolute,parent,info.st_dev,info.st_ino))
-                self.options += ['-v',f'/proc/{os.getpid()}/fd/{parent}:{absolute}:{mode}']
+                self.options += ['-v',f'/proc/{os.getpid()}/fd/{parent}:{WORKSPACE}/{relative}:{mode}']
         except BaseException:
             self.stack.close()
             raise
@@ -112,7 +113,7 @@ class PinnedMounts:
         self.stack.close()
 
 
-def container_command(engine, manifest, account, *, mount_options=None, namespace='host', name=None):
+def container_command(engine, manifest, account, *, mount_options=None, namespace='host', name=None, host_paths=None):
     if account.pw_uid<=0 or account.pw_gid<=0:
         raise ValueError('관리 계정은 root로 실행할 수 없습니다')
     if not IMAGE.fullmatch(manifest['image']):
@@ -138,12 +139,40 @@ def container_command(engine, manifest, account, *, mount_options=None, namespac
                        for v in ('--mount',f'type=bind,source={source},target={target},{mode},idmap')]
     elif namespace not in ('docker-remap','host'):
         raise ValueError('엔진별 사용자 매핑 설정이 없습니다')
+    else:
+        # runc 1.2+는 다른 프로세스의 /proc/<pid>/fd 링크를 바인드 원천으로 받지 않는다(EINVAL, 10-22 PJ1 docker 29.8.1).
+        # 경로로 바인드하고 생성 직전 recheck()가 고정한 inode와 같은지 확인한다.
+        # ponytail: 생성~시작 사이 폴더 교체 경쟁은 남는다. 막으려면 open_tree 지원 엔진의 FD 마운트로 옮긴다.
+        if host_paths is None or len(host_paths)!=len(mount_options)//2:
+            raise ValueError('경로 바인드에는 고정한 홈 경로가 필요합니다')
+        mount_options=[v for binding,host in zip(mount_options[1::2],host_paths)
+                       for _,target,mode in [binding.rsplit(':',2)]
+                       for v in ('-v',f'{host}:{target}:{mode}')]
     args += [v for k,value in sorted(env.items()) for v in ('-e',f'{k}={value}')]
     return name,args+mount_options+[manifest['image']]+command
 
 
+def detect_engine(setting):
+    """PC마다 설치된 엔진과 판본이 다르다. 기기가 한 값을 강제하면 대부분의 PC가 거부되므로 여기서 측정한다."""
+    for engine in ('podman','docker'):
+        binary='/usr/bin/'+engine
+        if not os.path.isfile(binary):
+            continue
+        argv=[binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
+        version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
+        if engine=='podman':
+            namespace='podman-auto'
+        else:
+            options=subprocess.run(argv+['info','--format','{{json .SecurityOptions}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout
+            namespace='docker-remap' if b'name=userns' in options else 'host'
+        return {**setting,'engine':engine,'namespace':namespace,'version':version}
+    raise ValueError('컨테이너 엔진이 없습니다')
+
+
 def engine_configuration(config, manifest):
     setting=config.get('local_engine') or {}
+    if not setting.get('engine'):
+        setting=config['local_engine']=detect_engine(setting)
     engine,namespace=setting.get('engine'),setting.get('namespace')
     if engine not in ('podman','docker') or namespace not in ('podman-auto','docker-remap','host'):
         raise ValueError('엔진별 사용자 매핑 설정이 없습니다')
@@ -158,8 +187,12 @@ def engine_configuration(config, manifest):
     version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
     if not setting.get('version') or version!=setting['version']:
         raise ValueError('측정 대상으로 지정한 엔진 판본과 다릅니다')
-    image=subprocess.run(argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']],capture_output=True,
-                         timeout=5,check=True,env=ENGINE_ENV)
+    inspect=argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']]
+    image=subprocess.run(inspect,capture_output=True,timeout=5,env=ENGINE_ENV)
+    if image.returncode:
+        # 허용 저장소의 digest 고정 이미지만 여기까지 온다. 받은 내용이 digest와 다르면 엔진이 거부한다.
+        subprocess.run(argv+['pull',manifest['image']],capture_output=True,timeout=600,check=True,env=ENGINE_ENV)
+        image=subprocess.run(inspect,capture_output=True,timeout=5,check=True,env=ENGINE_ENV)
     if len(image.stdout)>16384 or json.loads(image.stdout or b'null'):
         raise ValueError('이미지의 추가 볼륨은 허용하지 않습니다')
     return argv,namespace
@@ -178,7 +211,8 @@ class Session:
         self.process=None
         self.pinned=PinnedMounts(manifest,account.pw_dir)
         try:
-            _,command=container_command(engine,manifest,account,mount_options=self.pinned.options,namespace=namespace,name=name)
+            _,command=container_command(engine,manifest,account,mount_options=self.pinned.options,namespace=namespace,name=name,
+                                         host_paths=[str(path) for path,*_ in self.pinned.paths])
             check()
             self.pinned.recheck()
             command[command.index('run')]='create'
@@ -346,6 +380,7 @@ def execute_job(config, job, request, account):
         session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check)
         isolation=session.mapping(namespace)
         isolation['engine_version']=config['local_engine']['version']
+        isolation['engine']=config['local_engine']['engine']
         check()
         hello=session.request('initialize',{'protocolVersion':PROTOCOL,'capabilities':{},
                               'clientInfo':{'name':'mint-local-runner','version':'1'}},deadline-time.time())

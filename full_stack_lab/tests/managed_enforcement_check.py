@@ -109,6 +109,7 @@ class StaleSignIn(unittest.TestCase):
     def test_mark_removed_and_links_not_followed(self):
         linux = load("managed-linux")
         with tempfile.TemporaryDirectory(prefix="mcpgw-signin-") as raw:
+            raw = str(Path(raw).resolve())  # macOS temp roots may themselves be symlinks.
             home = Path(raw) / "home"
             (home / ".claude").mkdir(parents=True)
             mark = home / ".claude" / "mcp-needs-auth-cache.json"

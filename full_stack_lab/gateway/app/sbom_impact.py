@@ -101,7 +101,8 @@ async def impact(package: str, version_range: str) -> dict:
     for row in rows:
         inventory = row.get("inventory")
         if (row.get("sbom_status") != "IMPORTED" or row.get("scan_status") != "DONE"
-                or (row.get("generation") is not None and row.get("source_match") is not True)
+                or row.get("runtime_id") is None or row.get("generation") is None
+                or row.get("source_match") is not True
                 or not isinstance(inventory, list)):
             judgement, evidence = "자료 없음", []
         else:

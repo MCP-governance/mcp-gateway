@@ -91,11 +91,23 @@ class ControlChecks(unittest.TestCase):
             self.assertFalse(check(self.body['image'],[]))
 
     def test_F5_missing_or_wrong_engine_mapping_is_blocked(self):
-        for setting in ({},{'engine':'docker','namespace':'podman-auto'},
+        # D-192: 빈 설정은 거부가 아니라 그 PC의 엔진 측정이다(test_D192_empty_setting_measures_engine).
+        for setting in ({'engine':'docker','namespace':'podman-auto'},
                         {'engine':'docker','namespace':'host'}):
             with self.subTest(setting=setting),self.assertRaises(ValueError),patch.object(runner.subprocess,'run') as command:
                 runner.engine_configuration({'local_engine':setting},self.body)
             command.assert_not_called()
+
+    def test_D192_empty_setting_measures_engine(self):
+        def fake(argv,**_):
+            out=b'29.8.1' if 'version' in argv else b'["name=seccomp"]'
+            return SimpleNamespace(stdout=out,returncode=0)
+        with patch.object(runner.os.path,'isfile',side_effect=lambda p:p=='/usr/bin/docker'),patch.object(runner.subprocess,'run',side_effect=fake):
+            measured=runner.detect_engine({'mirrors':['mirror.corp/mcp']})
+        self.assertEqual((measured['engine'],measured['namespace'],measured['version']),('docker','host','29.8.1'))
+        self.assertEqual(measured['mirrors'],['mirror.corp/mcp'])
+        with patch.object(runner.os.path,'isfile',return_value=False),self.assertRaises(ValueError):
+            runner.detect_engine({})
 
     def test_F5_actual_host_mapping_cannot_pass_as_userns(self):
         session=runner.Session.__new__(runner.Session)
@@ -107,10 +119,16 @@ class ControlChecks(unittest.TestCase):
     def test_F3_container_uses_preimported_digest_and_no_log_disk(self):
         account=SimpleNamespace(pw_uid=2001,pw_gid=2001)
         _,argv=runner.container_command(['podman'],self.body,account,namespace='podman-auto',
-                                        mount_options=['-v','/proc/123/fd/4:/home/u/work:ro'])
+                                        mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'])
         for flag in ('--pull=never','--network=none','--read-only','--log-driver=none','--userns=auto'):
             self.assertIn(flag,argv)
-        self.assertIn('type=bind,source=/proc/123/fd/4,target=/home/u/work,ro,idmap',argv)
+        self.assertIn('type=bind,source=/proc/123/fd/4,target=/workspace/work,ro,idmap',argv)
+        # docker는 같은 컨테이너 경로에 홈 경로를 바인드한다(10-22: 목적지는 계정 이름과 무관).
+        _,docker=runner.container_command(['docker'],self.body,account,namespace='docker-remap',
+                                          mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'],host_paths=['/home/u/work'])
+        self.assertIn('/home/u/work:/workspace/work:ro',docker)
+        with self.assertRaises(ValueError):
+            runner.container_command(['docker'],self.body,account,namespace='docker-remap',mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'])
 
 
 class OutputBounds(unittest.TestCase):
@@ -161,11 +179,21 @@ class OutputBounds(unittest.TestCase):
 
 @unittest.skipUnless(os.name=='posix' and hasattr(os,'O_NOFOLLOW'),'Linux openat/FD bind 실측 필요')
 class MountRaces(unittest.TestCase):
+    def test_mount_target_is_fixed_workspace_not_home(self):
+        with tempfile.TemporaryDirectory() as folder:
+            home=Path(folder)/'managed-a';(home/'mcp-docs'/'sub').mkdir(parents=True)
+            held=runner.PinnedMounts({'mounts':[{'path':'mcp-docs/sub','mode':'ro'}]},str(home))
+            try:
+                self.assertTrue(held.options[1].endswith(':/workspace/mcp-docs/sub:ro'))
+                self.assertNotIn('managed-a',held.options[1])
+            finally:held.close()
+
     def test_F4_parent_symlink_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             home=Path(folder)/'home';home.mkdir();(home/'real').mkdir();(home/'link').symlink_to(home/'real',target_is_directory=True)
             with self.assertRaises((OSError,ValueError)):runner.PinnedMounts({'mounts':[{'path':'link','mode':'ro'}]},str(home))
 
+    @unittest.skipUnless(os.path.isdir('/proc/self/fd'), 'Linux procfs FD path required')
     def test_F4_repeated_replacement_never_redirects_pinned_source(self):
         with tempfile.TemporaryDirectory() as folder:
             home=Path(folder)/'home';home.mkdir();work=home/'work';work.mkdir()

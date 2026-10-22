@@ -1,0 +1,47 @@
+# Opt-in CI fixture, prepared by console.sh prepare-acceptance-tls before lab up.
+# No published ports, new MCP implementation, or changes to reviewed tool contracts.
+services:
+  mcp-fetch-tls:
+    image: mcpgw/acceptance-caddy:2.11.4
+    build: {context: ./tests/fixtures/acceptance-tls}
+    # Match the CI host owner of the mode-0600 leaf key; no DAC bypass capability.
+    user: "${ACCEPTANCE_TLS_UID:-10001}:${ACCEPTANCE_TLS_GID:-10001}"
+    depends_on:
+      mcp-fetch: {condition: service_healthy}
+    volumes:
+      - ./tests/fixtures/acceptance-tls/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.acceptance-tls/server.pem:/certs/server.pem:ro
+      - ./.acceptance-tls/server.key:/certs/server.key:ro
+    networks: [tools]
+    read_only: true
+    tmpfs: [/data:mode=1777, /config:mode=1777, /tmp:mode=1777]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8443"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  gateway:
+    environment:
+      ACCEPTANCE_FETCH_ENDPOINT: https://mcp-fetch-tls:8443/mcp
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+    volumes:
+      - ./.acceptance-tls/registry:/registry:ro
+      - ./.acceptance-tls/ca-bundle.pem:/etc/ssl/certs/ca-certificates.crt:ro
+    depends_on:
+      mcp-fetch-tls: {condition: service_healthy}
+
+  gateway-sse:
+    environment:
+      SSL_CERT_FILE: /etc/ssl/certs/ca-certificates.crt
+    volumes:
+      - ./.acceptance-tls/registry:/registry:ro
+      - ./.acceptance-tls/ca-bundle.pem:/etc/ssl/certs/ca-certificates.crt:ro
+    depends_on:
+      mcp-fetch-tls: {condition: service_healthy}
+
+  agent-service:
+    volumes:
+      - ./.acceptance-tls/registry:/registry:ro

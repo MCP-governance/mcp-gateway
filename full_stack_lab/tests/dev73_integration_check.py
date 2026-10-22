@@ -44,13 +44,16 @@ class Database:
 
     async def run(self, query, params=None):
         self.statements.append(" ".join(query.split()))
-        return SimpleNamespace(fetchone=AsyncMock(return_value={"id": 1}))
+        result = {"status": "READY"} if "SELECT status FROM mcp_servers" in query else {"id": 1}
+        return SimpleNamespace(fetchone=AsyncMock(return_value=result))
 
     async def execute(self, query, params=None):
         await self.run(query, params)
 
     async def fetch_one(self, query, params=None):
         self.statements.append(" ".join(query.split()))
+        if "FROM mcp_servers s WHERE s.id=" in query:
+            return {"status": "READY", "suspended": False}
         return {"id": "job"} if self.running else None
 
     @asynccontextmanager

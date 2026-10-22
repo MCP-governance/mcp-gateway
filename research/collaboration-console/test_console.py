@@ -1,6 +1,7 @@
 import concurrent.futures
 import csv
 from contextlib import redirect_stderr, redirect_stdout
+from copy import deepcopy
 import importlib.util
 import io
 import json
@@ -54,6 +55,7 @@ class SheetSyncTests(unittest.TestCase):
                "완료 조건": "완료 확인", "남은 일": "후속 확인"}
         self.write_csv([new, row], list(reversed(self.headers)))
         rows, meta = self.source.get("wbs")
+        original = deepcopy(self.snapshot)
         data, changed = sheet_pull.overlay_wbs(self.snapshot, rows)
         old = data["items"][0]
         self.assertEqual(old["id"], row["ID"])
@@ -62,7 +64,7 @@ class SheetSyncTests(unittest.TestCase):
         self.assertEqual((old["owner"], old["memo"], old["planned_schedule"]),
                          ("담당자", "쉼표, 줄바꿈\n메모", "10/20"))
         self.assertEqual(old["evidence"], self.snapshot["items"][0]["evidence"])
-        self.assertNotIn("owner", self.snapshot["items"][0])
+        self.assertEqual(self.snapshot, original)
         self.assertEqual(data["items"][-1]["title"], "추가 작업")
         self.assertEqual(data["items"][-1]["completion_condition"], "완료 확인")
         self.assertEqual(data["items"][-1]["known_gap"], "후속 확인")
@@ -127,15 +129,25 @@ class SheetSyncTests(unittest.TestCase):
         self.assertTrue(meta["error"])
 
     def test_invalid_csv_does_not_replace_cache(self):
-        first, _ = self.source.get("wbs")
-        for invalid in ("2", "NaN", "-0.5", "잘못된 값"):
-            with self.subTest(invalid=invalid):
-                self.rows[0]["구현"] = invalid
-                self.write_csv()
-                self.source.cache[("wbs", self.csv.as_uri())]["checked"] = 0
-                rows, meta = self.source.get("wbs")
-                self.assertEqual(rows, first)
-                self.assertTrue(meta["error"])
+        # A monotonic clock may start below 300 on a fresh CI runner. Setting a
+        # cached timestamp to zero does not necessarily expire its 300-second TTL.
+        with patch.object(sheet_pull.time, "monotonic", return_value=0) as clock, \
+                patch.object(sheet_pull, "fetch_csv", wraps=sheet_pull.fetch_csv) as fetch:
+            first, initial = self.source.get("wbs")
+            self.assertEqual(fetch.call_count, 1)
+            for index, invalid in enumerate(("2", "NaN", "-0.5", "잘못된 값")):
+                with self.subTest(invalid=invalid):
+                    self.rows[0]["구현"] = invalid
+                    self.write_csv()
+                    clock.return_value = (index + 1) * 300 - 1
+                    self.assertEqual(self.source.get("wbs")[0], first)
+                    self.assertEqual(fetch.call_count, index + 1)
+                    clock.return_value += 1
+                    rows, meta = self.source.get("wbs")
+                    self.assertEqual(fetch.call_count, index + 2)
+                    self.assertEqual(rows, first)
+                    self.assertEqual(meta["fetched_at"], initial["fetched_at"])
+                    self.assertTrue(meta["error"])
         self.csv.write_text("<html>not CSV</html>", encoding="utf-8")
         source = sheet_pull.SheetSource(self.config)
         self.assertIsNone(source.get("wbs")[0])

@@ -62,7 +62,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 
 ## 3. 직원 PC — 하네스와 관리형 설정
 
-macOS 키트(D-190)는 기존 관리형 정책과 Linux 브로커 루프를 재사용하고 dscl 일반 계정·pf 하위 anchor·launchd를
+macOS 키트(D-196)는 기존 관리형 정책과 Linux 브로커 루프를 재사용하고 dscl 일반 계정·pf 하위 anchor·launchd를
 어댑터로 연결한다. `/auth/me`의 `kit.platforms`와 개인별 다운로드는 macOS를 포함한다. 브라우저에서 받은 연결 파일을
 한 줄 터미널 명령으로 실행하며 5분·1회용 다운로드 자격은 파일로만 전달한다. Claude 파일은 macOS 공식 관리 경로,
 Codex 파일은 `/etc/codex`를 사용한다. 플랫폼은 관측 열과 별도로 등록 detail에 보존하고 macOS의 실제 점검 항목만 요구한다.

@@ -1885,6 +1885,8 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 재사용: D-122의 `ops_suspensions` 구조(복귀 필드를 채우는 상태 행)·`review.record_event`·D-140 최종 dispatch 잠금 순서. 서버 단위 중지(D-122)·계정 상태·종료 절차는 독립이며 서로 되돌리지 않는다. 콘솔은 사용자·엔드포인트 화면의 사용자 행(MCP 이용 중지)과 「이용 중지」 탭(재개)이다.
 - 근거: [방향 갱신 10-20](../../research/llm-wiki/analysis/direction-1020/README.md) 3장 DEV-79, [통제 검토](../../research/llm-wiki/analysis/direction-1020/control-review.md) 105행(근거 M05 **제2항**·TC260 4.2.3(b)-(c), README의 제3항은 정정), [원자 요구사항·근거](../../research/llm-wiki/analysis/user-server-suspend/README.md).
 - 한계: 이미 전송된 호출은 취소하지 않는다(기록만). `tools/list`는 그대로 보이고 호출만 거부한다. 재개에 독립 승인은 요구하지 않는다(관리자 1명 운영). DEV-74 자동 중지는 아래 D-176에서 같은 상태를 재사용한다. 기기 배포·PJ1 실제 하네스 시험은 미실행이다.
+- 10-21 후속 구현: DEV-73 로컬 서버의 수동 중지는 단일 및 일괄 API가 공유하는 서비스에서 정지 ACK 뒤 상태와 원장을 기록한다. 별도 pair advisory lock을 ACK 대기부터 커밋까지 유지하고 기존 직원 dispatch 잠금은 ACK 뒤 취득한다. 재개는 같은 pair 잠금 안에서 상태 갱신과 정확한 `(server,user,빈 device)` stop 삭제를 한 트랜잭션으로 처리한다. ACK 실패나 취소 뒤 표식만 남으면 중지를 재시도해 완료한 다음 재개한다. Python 대역 시험을 통과했지만 실제 PG 경합과 장치 효과는 미검증이다. [보고](../../research/llm-wiki/status/reports/2026-10-21-user-local-suspend.md).
+
 ## D-179 출처 증명은 신뢰 키로 검증하고 미제공만 통과시킨다 (2026-10-21, DEV-77)
 
 - 문제: DEV-73 F3에서 이미지 서명·출처 증명은 DEV-77로 분리했다. 기존 소스 해시·라이선스·SBOM 분석은 누가 무엇을 빌드했는지 서명으로 증명하지 않으며, D-114 실행기는 내부 미러 commit·고정 레시피를 별도로 보장한다.
@@ -1915,6 +1917,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **승격 보류**: 기존 헤더 명령은 `sh -c`를 쓴다. 모든 셸 자식을 분리하면 정상 인증도 막힌다. `dash ix`를 남기거나 셸 중계 프로필에 헬퍼 권한을 주면 같은 셸 명령이 다시 bearer를 받을 수 있으므로 채택하지 않는다. 현재 경고 단계에서 유지하고 직접 실행 또는 다른 인증 전달 경로를 공식 구현/판본에서 확인한 뒤 PJ1 두 실제 하네스 정상군·공격군·복구군이 모두 통과해야 강제로 전환한다. **이번 작업은 부분 구현이며 DEV-81은 열림이다.**
 - 근거·범위: [분석 정본](../../research/llm-wiki/analysis/local-endpoints-1021/README.md#구현-2026-10-21-d-183-미커밋), [명령·출력과 전환 절차](../../research/llm-wiki/status/reports/2026-10-21-broker-process-binding.md). 새 대역/정적 시험 20건 통과. AppArmor parser·커널·배포·PJ1은 미검증이다. Windows 구현과 직원 PC 키트는 이번에 변경하지 않는다. 키트는 같은 사용자 프로세스의 토큰 취득을 막지 못하며 조직 통제 의존이다.
 
+## D-195 CI TLS fetch 시험 경로의 목적지를 egress 허용 목록에 둔다 (2026-10-22)
+
+- 문제: CI 전용 TLS 경로(PR #36)가 CI 사본 카탈로그의 `fetch` endpoint를 `https://mcp-fetch-tls:8443/mcp`로 바꿨으나 `opa/data.json`의 `egress.allowed_hosts`에 이 호스트가 없어 모든 `fetch` 호출이 `MCP-EGRESS-001`로 차단됐다. 전체 검증의 `read-then-send-chain-blocked`는 차단은 맞지만 기대한 `P-CHAIN-001`이 아니어서 실패했다. 국외 처리 심사 변경과는 무관하다.
+- 결정: 허용 목록에 `mcp-fetch-tls`를 추가한다. 시험 기대값과 정책 순서는 바꾸지 않는다. `acceptance_tls_check.py`가 시험 경로 호스트가 목록에 있는지 확인한다. 이 호스트는 `compose.acceptance.yaml`에서만 존재하며 기본 `compose.yaml`에는 없다.
+- 후속(전체 검증 업무일 시나리오): 수용 시험이 통과해 도달한 하네스 업무일 시나리오의 입력은 조회량 통제(`P-VOLUME-002`)에 맞췄다(SQL에 `LIMIT 20`, 전체 키 조회 대신 `session:*` 접두사). 그 결과 중요정보 열람(`customer-pii`·`salaries`·`session-keys`)이 경보로 통과하며, 같은 주체의 10분 안 뒤따르는 다른 서버 쓰기 `write-report`(filesystem)·`record-finding`(memory)이 `P-FLOW-001`로 차단된다. D-133/D-142의 기본 `coarse` 모드 설계 동작이며(창 안에서 중요 등급을 읽은 모든 서버가 출처로 남고 받는 도구가 `accepts_from`에서 심사되지 않았으면 차단), 두 시나리오의 기대를 Allow에서 Block으로 바꿨다. 통제는 약화하지 않았고 이전에는 열람이 조회량 통제로 막혀 흐름 통제에 도달하지 못했을 뿐이다. 내용 대조(`content`) 모드나 `accepts_from` 심사로 통과시키는 것은 운영자 결정이다.
+- 후속(계약 잠금 출력 스키마 고정, 리더 지시): `security_regression.sh`의 계약 잠금 일치가 98건 `output_schema 변경`으로 실패했다. 2026-09-24 잠금에는 출력 해시가 없고(D-149 전환), 서버가 지금 출력 스키마를 광고하는 도구 98개(email 17·filesystem 14·memory 9·postgres 9·redis 49)가 대조에서 차이로 나온다. CI 증적 `contracts.now.json`을 읽고 대조했다: 10개 서버 222개 도구의 패키지·서버 판본·프로토콜 판본·도구 설명 해시·입력 스키마 해시는 모두 같고 출력 스키마만 달랐다. 이 차이를 승인해 `registry/contracts.lock.json`에 출력 해시를 고정했다(스키마가 없는 124개도 "없음"으로 고정). 이후 출력 스키마 변경은 MCP-CATALOG-001 대상이다. 응답이 승인된 스키마와 다르면 MCP-OUTPUT-001로 보류되므로 실제 서버 호출에서 오탐이 나는지는 기기·PJ1에서 확인해야 하며 원격 CI는 대표 호출만 본다. 승인: 2026-10-22 저장소 소유자가 이 잠금 고정을 승인했다(근거: CI 증적 `contracts.now.json` 대조에서 판본·설명·입력 스키마 동일). 되돌리려면 이 잠금 커밋(`3ca6a3b`)만 되돌린다.
+- 한계: 허용 목록이 네트워크 평면의 허용 목록과 같아야 한다는 조직 배치 조건에 CI 호스트가 한 줄 더 들어간다. 조직 배치에서는 이 항목을 뺀다. 원격 CI 재검증 전까지는 해소를 입증하지 않았다.
+
 ## D-178 저장된 SBOM 요약으로 영향 세대를 찾고 서버 중지는 기존 운영 경로를 쓴다 (2026-10-21, DEV-76)
 
 - 문제: 취약 구성요소 판본이 공개되면 등록 서버와 실행 세대를 찾아 즉시 격리할 필요가 있다. 현재 Syft 검사는 소스 트리 CycloneDX를 만들지만 서버/실행 세대별 영향 조회는 없다.
@@ -1923,7 +1933,7 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 저장 범위: Intake Syft 원본 CycloneDX는 `intake_reports` named volume에 있으며, DB의 `supply_chain_reports.summary.inventory`는 최대 200개 구성요소 요약이다. 200개를 넘으면 `truncated=true`이고 부재 판정을 확정하지 않는다. `workspace` SBOM은 단순 구성요소 수만 DB에 저장되며 intake 서버와 세대에 연결되지 않으므로 조회하지 않는다.
 - 근거·시험·한계: [SBOM 영향 조회 분석](../../research/llm-wiki/analysis/sbom-impact/README.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-sbom-impact.md). 비교 불가 판본과 사용자/엔드포인트 연결은 미지원이다. Syft 대상은 빌드 이미지가 아닌 intake source tree이므로 실제 실행 이미지 구성요소와 다를 수 있다. 로컬 합성 단위 시험과 정적 검사만 수행하며 실제 PostgreSQL·운영 서버 중지·게이트웨이 판정·기기/PJ1 확인은 하지 않았다.
 
-## D-175 DEV-73 반려 판단 반영 재작업 (2026-10-21)
+## D-193 DEV-73 반려 판단 반영 재작업 (2026-10-21, D-175 둘째 정의에서 재번호 10-22)
 
 - **정본**: [항목별 처리 판단](../../research/llm-wiki/analysis/review-1020/d175-arbitration.md). 1차 구현 217da74의 C 반려 이력은 유지한다. 아래는 소스 재작업이며 수용·배포·실기기 검증 완료가 아니다.
 - **경계**: 장치 실행기는 게이트웨이가 발행한 작업을 신뢰하며, 로컬 격리는 침해된 게이트웨이를 막지 않는다. 별도 작업 서명 키·1회용 증명은 만들지 않는다. 내부 미러 allowlist·digest·사전 반입만 강제하고 OCI/cosign 검증은 DEV-77에 둔다. 미제공 표시는 `확인 안 됨`이다.
@@ -1933,7 +1943,48 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **보존한 기능**: D-181 직원별 중지, D-182 오프라인 버퍼, D-188 root 단독 모드. C1~C4/T1~T3 판정 기준은 바꾸지 않는다. 새 적대 검토 전까지 배포·PJ1 시험을 하지 않는다.
 - **전역 잠금 순서(실제 DB 시험에서 교착 2건을 찾아 고침)**: `local:admission` → 계정·장치·서버 범위 잠금(정렬) → `local:claim:<장치>` → `local:policy` → 토큰 → 사용자 → 서버·계정·장치·승인 행(읽기 `FOR SHARE`, 쓰기는 자기 행 먼저) → **작업 행은 항상 마지막**. claim은 후보를 잠금 없이 고르고 위 잠금을 잡은 뒤 같은 조건으로 `FOR UPDATE` 재조회하며, 후보가 취소·변경됐으면 수령하지 않는다. 서버 등 전환 trigger는 자기 행 → 작업 행 → 승인 행 순이고 자기 행이 claim의 `FOR SHARE`와 충돌해 먼저 막히므로 순환하지 않는다. 토큰 철회는 토큰 잠금을 쥔 채 별도 연결로 작업을 취소하므로 작업 행을 쥔 채 토큰 잠금을 기다리는 경로가 없어야 한다. 이 순서를 어기는 변경은 `dev73_rework_pg_check`의 교착 체크가 막는다. 전체 대기·행 수·결과 저장 상한은 환경 변수(`LOCAL_JOBS_PENDING_MAX`·`LOCAL_JOBS_ROWS_MAX`·`LOCAL_RESULTS_STORE_MAX_BYTES`, 기본 64·10000·64MiB)로 뺐다.
 - **검증·되돌릴 조건**: [재작업 보고](../../research/llm-wiki/status/reports/2026-10-21-dev73-rework.md). 기존 시험 기대값·AST는 보존했다. 실제 DB 잠금/경합·Linux 반복 교체·엔진 매핑/정지·OSS MCP 검증이 실패하면 지원 엔진/실행 경로를 열지 않는다. 메시지별 컨테이너의 상태 있는 MCP 호환성은 검증 후 별도 결정한다.
-## D-190 macOS 키트는 기존 정책·브로커를 재사용하고 계정·pf·launchd만 어댑터로 연결한다 (2026-10-22, W5-KIT-MACOS)
+- 번호 정정(10-22): 처음 D-175로 적혔으나 같은 번호의 「승인된 로컬 MCP는 게이트웨이를 거쳐 … root 실행기」 결정(위 D-175)과 겹쳐 D-193로 옮겼다. 내용은 바꾸지 않았다. 10-21 문서의 「D-175 판단 항목」은 이 절을 가리킬 수 있다.
+
+## D-191 외부 AI 게이트웨이(LiteLLM 등)는 업스트림 방식을 주력으로, 호출 직전 판정 API를 애드온으로 둔다 (2026-10-22)
+
+- 문제: 기업이 LiteLLM 같은 AI 게이트웨이로 MCP를 중앙 연결하면 직원 PC의 하네스가 MINT를 거치지 않는다. 평가에서 「LiteLLM 쪽에서 MCP를 연동하는 경우는 커버되지 않느냐」는 지적이 있었고, 애드온만으로 방어할 수 있다는 방향이 주어졌다.
+- 결정 A(주력): AI 게이트웨이의 MCP 서버가 MINT `/mcp/<서버>/`를 업스트림으로 가리키고 직원이 자기 MINT 토큰을 서버별 헤더로 보낸다. MINT의 판정·전송 직전 재검사·승인·출력 통제가 그대로 적용된다. `addons/litellm/gen_mcp_servers.py`가 운영 중인 서버 목록으로 LiteLLM `mcp_servers`(`oauth_delegate`)를 만든다. 공유 서비스 키를 쓰지 않는다.
+- 결정 B·C: MCP를 게이트웨이에 직접 등록한 경우를 위해 `POST /api/addon/v1/mcp-decision`(호출 직전 판정)과 `/mcp-result`(사후 기록)를 둔다. 판정은 `core.execute_call`의 기존 경로에 `_decide_only`를 주어 upstream 전송만 건너뛴다. 신원은 직원 MCP 토큰에서만 정하고 게이트웨이가 주장하는 사용자는 기록만 한다. 라우트는 `Depends(caller)`이고 `mcp` scope를 요구한다. LiteLLM용 가드레일은 `addons/litellm/mint_guardrail.py`, 다른 게이트웨이는 [HTTP 계약](AI_GATEWAY_ADDON.md)을 쓴다.
+- 결정: 승인 대기 건은 이 경로에서 만들지 않는다(승인되면 MINT가 같은 호출을 직접 한 번 더 보내 이중 실행된다). 사후 기록은 `approval_events`에 덧붙이고 판정 행을 고치지 않는다. MINT가 답하지 못하거나 허용이 아니면 호출자는 차단한다.
+- 이유: B 방식은 판정과 전송 사이를 MINT가 쥐지 못해 A보다 보장이 약하다. 그래서 A를 권하고 B는 이미 직접 등록된 MCP를 위한 보완으로 둔다. 새 의존성·새 테이블 없이 기존 판정 함수와 원장을 재사용한다.
+- 앞단 변경: `field/Caddyfile`의 HTTPS 사이트에 `/api/addon/v1/*`를 추가했고(적용에는 스택 재기동 필요), `llm/standalone/Caddyfile` 출구에 같은 경로를 허용했다.
+- 되돌릴 조건: 평가자가 B를 요구하지 않거나 모든 대상 게이트웨이가 A를 쓸 수 있으면 B 라우트와 `_decide_only`를 제거한다. B로 사람 승인·출력 통제까지 요구받으면 A만 권고한다.
+- 근거·시험·한계: [연동 문서](AI_GATEWAY_ADDON.md), [작업 보고](../../research/llm-wiki/status/reports/2026-10-22-ai-gateway-addon.md), [분석](../../research/llm-wiki/analysis/litellm-mint-opportunities-20261022.md). 판정 API는 제품 스택에 배포되지 않아 실제 MINT와의 B 연동은 미실행이다.
+
+## D-192 로컬 MCP(PC 격리 실행)를 원클릭 승인 안에서 쓸 수 있게 한다 (2026-10-22)
+- 문제(10-22 기기 실측): DEV-73 실행 경로는 배포돼 있었지만 로컬 신청·작업이 0건이었다. ① 매니페스트를 오프라인 키로 손 서명하고 기기 환경변수(`LOCAL_MANIFEST_PUBKEY`·`LOCAL_IMAGE_MIRRORS`·`LOCAL_ENGINE_SETTINGS`)를 손으로 넣어야 했고, ② 엔진 종류·**정확한 판본**을 기기 값 하나로 모든 PC에 강제해 PC마다 다른 docker 판본이 전부 거부됐으며, ③ 이미지를 PC에 미리 반입해야 했고(`--pull=never`), ④ 콘솔에 신청·승인 화면이 없었다. 저장소형 stdio 서버는 기기 내부 레시피(MarkItDown 하나)가 없으면 어떤 경로로도 실행되지 않았다.
+- 결정: `field up`이 서명 키를 만들고(운영자가 공개 키만 넣어 둔 오프라인 모드는 유지) 허용 저장소 기본값을 Docker 공식 MCP 카탈로그(`docker.io/mcp`, `mcp`)로 둔다. 관리자는 승인 화면에서 이미지 이름·인자·폴더만 넣고, 기기가 그 순간의 digest로 고정·서명한다. 원클릭 승인 미리보기는 신청자의 관리형 PC에서 도구 목록을 관찰해 계약을 보여 주고, 승인 시 같은 매니페스트로 등록한다. PC 실행기는 엔진·사용자 매핑·판본을 그 PC에서 측정하고, 허용 저장소의 digest 고정 이미지가 없으면 받아 온다.
+- 이유: 소유자 10-22 지시("엔드포인트 키트·로컬 MCP 정상 동작 최우선, 엣지케이스는 그 뒤"). 게이트웨이 침해는 위협 모델 밖이므로(D-175 판단) 기기가 승인 시 서명해도 보장 범위가 줄지 않는다. digest 고정이라 받아 온 내용이 다르면 엔진이 거부한다.
+- 바뀐 기대값: `dev73_rework_check.test_F5`의 빈 엔진 설정 = 거부 → 빈 설정 = 측정(`test_D192_empty_setting_measures_engine`). 잘못된 조합(docker+podman-auto, 위험 수용 없는 host)은 여전히 거부.
+- 남은 한계: docker에 userns-remap이 없으면 격리 구성이 「탈출 시 호스트 root」로 표시되고 키트가 그 위험 수용을 기본값으로 싣는다(승인 화면의 격리 구성에 표시). 비밀이 필요한 로컬 서버는 범위 밖. 이미지 서명(DEV-77)은 `확인 안 됨`.
+- 되돌릴 조건: 고객이 오프라인 서명·내부 미러만 허용하면 `.env`에 공개 키·미러만 넣고 개인 키를 비운다(승인 화면 서명은 409로 멈춘다).
+- 후속(10-22): ① 승인 화면 「격리 구성」을 기기 환경변수 `LOCAL_ENGINE_SETTINGS`가 아니라 관찰 PC 실행기가 보고해 `local_job_events.evidence->'isolation'`에 남긴 최신 값(엔진·판본·사용자 매핑 범위, `engine` 항목 추가)으로 표시한다. 측정이 없을 때만 「확인 안 됨」. ② 마운트 대상을 관리 계정 홈 절대경로에서 컨테이너 안 고정 경로 `/workspace/<상대경로>`로 바꿨다(podman idmap `--mount`·docker `-v` 둘 다; docker는 원천만 고정한 홈 경로). 같은 서버의 실행 인자(`/workspace/mcp-docs`)가 PC 계정 이름과 무관해져 여러 직원 PC에서 한 서버를 쓴다. 호스트 쪽 검사(홈 아래 상대 경로·점 시작 거부·심볼릭 링크 거부·inode 재확인)는 그대로다.
+- 바뀐 기대값(후속): `dev73_rework_check.test_F3`의 podman 마운트 목적지 `/home/u/work` → `/workspace/work`(docker 분기 단언 추가), `dev73_review2_check`는 `LOCAL_ENGINE_SETTINGS`를 읽는다는 단언 → 읽지 않고 측정 판본을 쓴다는 단언, `local_run_manifest_check`는 매니페스트 인자 `/home/u/work` → `/workspace/work`와 docker 마운트 문자열(`<홈>/work:/workspace/work:ro`). 이유: 목적지가 홈 경로이던 때의 단언이라 새 계약과 정면으로 충돌한다. `local_run_manifest_check`의 docker 옵션 단언은 경로 바인드 전환(10-22) 때 갱신이 빠져 이미 맞지 않던 것을 함께 고쳤다.
+
+## D-194 ID는 정의 정본 하나를 두고, 번호는 `--next`로만 받으며, CI가 정의·참조를 검사한다 (2026-10-22, WIKI-04)
+
+- 문제: 같은 번호가 서로 다른 결정에 쓰였다. D-175는 한 파일에서 두 번 정의됐고(둘째는 D-193으로 옮겼다), D-190은 원격 브랜치 세 곳이 각자 다른 결정으로 정의했다. 백로그에 RM-01·OPS-01·AIG-01이 생겨 시트 내보내기가 형식 오류로 멈췄다. 정책 장부에 없는 정책 ID(P-AUTHZ-DENY-001 등)를 코드·시험이 불렀고, 구성요소 CMP-nn과 제품 기능 대조 CMP-nnn, 시험 Enn과 구조 검토의 연결선 E14~E19는 접두어가 겹쳤다.
+- 결정: ID 계열마다 정의 정본을 하나로 정하고([규칙](../../research/llm-wiki/trace/README.md)), 다른 곳은 부르기만 한다. 새 번호는 `check_trace.py --next <계열>`로만 받는다. 이 명령은 `git fetch` 뒤 작업 트리·로컬 브랜치·`origin/*` 끝점의 정의 정본을 모두 읽어 가장 큰 번호 + 1을 낸다. 다른 브랜치에만 있는 번호·제안·폐기 번호는 `research/llm-wiki/trace/reserved.md`에 두어 정의로 본다. CI(`research-wiki.yml`)는 `check_trace.py`의 오류(중복 정의·정의 없는 참조·형식 위반)만 실패로 보고 경고(참조 0)는 통과시킨다. 시점 보존 문서(`status/reports/`·`status/history-*`·`snapshot-before-*`)의 옛 번호는 지우지 않고 정정 표기를 덧붙인다.
+- 같이 한 정리: D-175 둘째 정의를 D-193으로 옮기고 10-21 재작업 보고에 정정을 덧붙였다. `full_stack_lab/llm/standalone/compose.yaml`의 D-190은 D-191이다. 장부에 없는 정책 ID를 부르던 시험 두 곳은 실제 ID로, `lifecycle_tables.sql`의 위험 매핑은 폐기된 P-AUTHZ-DENY-001 대신 P-AUTHZ-ALLOW-001로 바꿨다(시드 문자열만 바뀌고 판정은 같다). 백로그 접두어 AIG·RM·OPS를 시트 ID 체계에 넣었다. 시트에는 모든 계열의 정의·참조·관련 ID를 담은 「추적」 탭(`sheet/tabs/47-trace.csv`)이 생긴다.
+- 이유: 사람이 번호를 고르면 병렬 레인에서 반드시 겹친다. 겹침을 병합 뒤에 찾으면 이미 서로 다른 뜻으로 참조가 퍼진다. 정의가 하나뿐이어야 시트·문서·코드·룰셋 사이의 연결을 기계가 따라갈 수 있다.
+- 한계: 원격에 올리지 않은 로컬 번호는 보지 못한다(받은 즉시 정의 줄을 쓰고 푸시하는 규칙으로 줄인다). 정의 정본이 JSON·표인 계열은 줄 위치만 알 뿐 의미를 비교하지 않는다. 열린 브랜치의 중복·정의 없는 참조는 병합 때까지 이 검사에 잡히지 않는다. 커밋 SHA와 규제 대장 번호(REQ-·RQ-·CAP-·CTL-·RSK-)는 범위 밖이다.
+- 되돌릴 조건: 거짓 오류가 병렬 작업을 막으면 해당 파일을 `check_trace.py`의 `SKIP_FILES`에 넣고 이유를 적는다. 검사 단계는 CI에서 한 줄을 지우면 빠진다.
+
+
+## D-173 국외 처리 심사를 등록별 현재 위치와 규칙에 결속한다 (2026-10-21, RM-03)
+
+10-20 소유자 결정의 등록 시 1회 심사를 구현한다. `review_server_residency`의 기존 신청자와 승인자 독립성 검사를 통과한 공급자 호스팅 등록만 재사용 심사를 얻는다. 심사 해시는 서버 ID, 엔드포인트, 도입 신청 ID, 정규화한 처리국과 저장국, 처리자, 근거 참조, 이전 근거, 전체 관할 규칙 팩을 함께 덮는다. 심사 기록과 감사 사건에 같은 해시를 남긴다.
+
+호출 시 현재 값으로 해시를 다시 계산하고 일치하는 경우에만 서버 대상에 `transfer_reviewed=true`를 넣는다. OPA의 예외는 내부 등급 국가 규칙의 `approval`에만 적용한다. 중요 등급의 `deny`, 미확인 위치, 도구 인자의 별도 외부 목적지, 기존 DLP와 PAC 차단은 풀지 않는다. 기존 심사 기록은 결속 해시가 없으므로 자동 승격하지 않고 위치 재심사 뒤 적용한다. 규칙 팩이 없거나 국외 이전 근거가 비면 위치 기록만 가능하고 반복 승인 면제는 없다.
+
+새 의존성 없이 기존 OPA와 Python 표준 해시 구현을 재사용했다. 공식 [Rego 언어](https://www.openpolicyagent.org/docs/policy-language)와 [object.get](https://www.openpolicyagent.org/docs/policy-reference/builtins/object)의 누락 기본값 동작을 확인했다. 기존 122개 OPA 기대값은 변경하지 않고 8개 새 시험을 추가했다. 로컬 정책 시험과 DB 대역 경로 시험은 실기기 승인이나 실제 국외 전송 검증으로 세지 않는다. 구현과 검증 상세는 [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md)에 둔다.
+
+## D-196 macOS 키트는 기존 정책·브로커를 재사용하고 계정·pf·launchd만 어댑터로 연결한다 (2026-10-22, W5-KIT-MACOS)
 
 - **문제**: 개인 키트가 Linux·Windows만 제공해 macOS 직원의 설치·활성화 경로가 없었다.
 - **결정**: `managed-macos.py`가 dscl 관리 계정, Mach-O 공식 설치본 탐색, shim/셸 함수, pf 전용 하위 anchor와 launchd를

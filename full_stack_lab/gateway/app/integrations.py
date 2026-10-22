@@ -308,9 +308,15 @@ if __name__ == "__main__":
     checks = {key: True for key in MANAGED_CHECKS}
     base = {"endpoint_id": "d1", "status": "active", "managed_state": "active", "platform": "Linux 7.0", "device_epoch": "e",
             "heartbeat_at": now, "enforcement_checks": checks, "owner_token": "user", "local_username": "managed"}
-    host = lambda accounts, **extra: {"host": {"kernel": "7.0", "wsl": False, "other_accounts": accounts, "reported_at": fresh, **extra}}
+    # managed_heartbeat persists this marker when user_command_helpers is reported.
+    host = lambda accounts, **extra: {"command_settings_checked": True,
+                                    "host": {"kernel": "7.0", "wsl": False, "other_accounts": accounts, "reported_at": fresh, **extra}}
     clean = device_state({**base, "detail": host([])}, now)
     assert clean["state"] == "endpoint_enforced", clean
+    legacy_checks = {key: value for key, value in checks.items() if key != "user_command_helpers"}
+    legacy = {**base, "enforcement_checks": legacy_checks, "detail": {"host": host([])["host"]}}
+    assert device_state(legacy, now)["state"] == "endpoint_enforced"
+    assert device_state({**legacy, "detail": host([])}, now)["state"] == "bypass_possible"  # a scanned device cannot downgrade
     shared = device_state({**base, "detail": host([{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
     assert shared["account_state"] == "endpoint_enforced" and shared["state"] == "bypass_possible", shared
     assert shared["unmanaged_accounts"] == [{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
@@ -329,6 +335,7 @@ if __name__ == "__main__":
     wsl = device_state({**base, "platform": "Linux 6.6-microsoft-standard-WSL2", "detail": host([])}, now)
     assert wsl["account_state"] == "observed_only" and wsl["state"] == "bypass_possible", wsl
     assert device_state({**base, "heartbeat_at": now - timedelta(seconds=HEARTBEAT_SECONDS), "detail": host([])}, now)["account_state"] == "bypass_possible"
+    assert device_state({**base, "heartbeat_at": now - timedelta(seconds=HEARTBEAT_SECONDS - 1), "detail": host([])}, now)["account_state"] == "endpoint_enforced"
     assert device_state({**base, "enforcement_checks": {**checks, "nftables_active": False}, "detail": host([])}, now)["account_state"] == "bypass_possible"
     assert device_state({**base, "managed_state": "pending", "detail": host([])}, now)["state"] == "observed_only"
     win = {**base, "platform": "Windows 11", "enforcement_checks": {key: True for key in MANAGED_CHECKS_BY_PLATFORM["windows"]}}

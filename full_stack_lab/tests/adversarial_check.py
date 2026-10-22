@@ -23,7 +23,7 @@ import asyncio
 import json
 import os
 import sys
-import urllib.error
+import urllib.parse
 import urllib.request
 from contextlib import contextmanager
 from uuid import uuid4
@@ -40,18 +40,25 @@ ATTACKER = "miso@bob.local"
 WORKER = "pse@bob.local"
 
 
+# P-SUSPEND-001: this many refusals inside the auto-suspend window stop a person's use of a server
+# (compose AUTO_SUSPEND_THRESHOLD, default 5), and every later case would then answer
+# P-SUSPEND-001 instead of the control it is meant to exercise. Each attacker stays below it.
+SUSPEND_THRESHOLD = int(os.getenv("AUTO_SUSPEND_THRESHOLD", "5"))
+ATTACKS_PER_ACTOR = SUSPEND_THRESHOLD - 1
+
+
 @contextmanager
-def actors():
+def actors(attackers: int = 1):
     # A repeated test must not inherit an earlier attacker's anomaly history.
     # These are ordinary signed accounts with the template's real role and policy.
     if not os.getenv("DATABASE_URL"):
-        yield WORKER, ATTACKER
+        yield (WORKER, *([ATTACKER] * attackers))
         return
     import psycopg
-    ids = ["adversarial-" + uuid4().hex for _ in range(2)]
+    ids = ["adversarial-" + uuid4().hex for _ in range(1 + attackers)]
     with psycopg.connect(os.environ["DATABASE_URL"], autocommit=True) as connection:
         try:
-            for principal, template in zip(ids, (WORKER, ATTACKER)):
+            for principal, template in zip(ids, (WORKER, *([ATTACKER] * attackers))):
                 inserted = connection.execute(
                     """INSERT INTO principals(token,email,display_name,role,synthetic,department,password_hash,user_id)
                        SELECT %s,%s,%s,role,true,department,password_hash,%s FROM principals
@@ -192,9 +199,9 @@ BENIGN: list[tuple] = [
      {"sql": "select table_name from information_schema.tables limit 5"}, "Allow"),
     ("sql-explain", "postgres", "execute_sql", {"sql": "explain select * from sales.orders"}, "Allow"),
     ("sql-string-with-keywords", "postgres", "execute_sql",
-     {"sql": "select 'drop table x; delete from y' as note"}, "Allow"),
+     {"sql": "select 'drop table x; delete from y' as note limit 1"}, "Allow"),
     ("sql-comment-with-keywords", "postgres", "execute_sql",
-     {"sql": "select 1 as ok /* drop table public.products */"}, "Allow"),
+     {"sql": "select 1 as ok /* drop table public.products */ limit 1"}, "Allow"),
     ("internal-mail", "email", "send_email",
      {"account_name": "assistant", "recipients": ["ysg@bob.local"], "subject": "배포 완료",
       "body": "오늘 배포를 마쳤습니다."}, "Allow"),
@@ -218,11 +225,13 @@ BENIGN: list[tuple] = [
 ]
 
 
-def token(email: str, password: str) -> str:
+def mcp_token(email: str, password: str) -> str:
+    issuer = (os.getenv("IDP_INTERNAL_URL") or os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
     request = urllib.request.Request(
-        f"{GATEWAY}/api/session", method="POST",
-        data=json.dumps({"email": email, "password": password}).encode(),
-        headers={"content-type": "application/json"})
+        f"{issuer}/oauth/token", method="POST",
+        data=urllib.parse.urlencode({"grant_type": "password", "client_id": "adversarial-ws",
+                                     "username": email, "password": password}).encode(),
+        headers={"content-type": "application/x-www-form-urlencoded"})
     with urllib.request.urlopen(request, timeout=15) as response:
         return json.load(response)["access_token"]
 
@@ -283,11 +292,15 @@ async def main() -> int:
 
     # The benign group runs first and as a different person, so no refusal of an attack
     # can colour it (a streak of refusals legitimately raises P-ANOMALY-001 on that principal).
-    with actors() as (worker, attacker):
+    batches = [ATTACKS[i:i + ATTACKS_PER_ACTOR] for i in range(0, len(ATTACKS), ATTACKS_PER_ACTOR)]
+    with actors(len(batches)) as (worker, *attackers):
         print(f"정상 업무 {len(BENIGN)}건 (오탐 대조군, {worker})")
-        benign = await run(BENIGN, token(worker, PASSWORD), hostile=False)
-        print(f"공격 입력 {len(ATTACKS)}건 ({attacker})")
-        hostile = await run(ATTACKS, token(attacker, PASSWORD), hostile=True)
+        benign = await run(BENIGN, mcp_token(worker, PASSWORD), hostile=False)
+        print(f"공격 입력 {len(ATTACKS)}건")
+        hostile = []
+        for batch, attacker in zip(batches, attackers):
+            print(f"  ({attacker})")
+            hostile += await run(batch, mcp_token(attacker, PASSWORD), hostile=True)
 
     rows = benign + hostile
     missed = [row for row in hostile if not row["ok"]]

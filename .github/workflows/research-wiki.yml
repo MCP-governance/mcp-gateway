@@ -1,9 +1,9 @@
 name: Research Markdown and collaboration console
 on:
   push:
-    paths: ['research/llm-wiki/**', 'research/collaboration-console/**', '.github/workflows/research-wiki.yml']
+    paths: ['research/llm-wiki/**', 'research/collaboration-console/**', 'docs/ai/**', 'full_stack_lab/opa/**', '.github/workflows/research-wiki.yml']
   pull_request:
-    paths: ['research/llm-wiki/**', 'research/collaboration-console/**', '.github/workflows/research-wiki.yml']
+    paths: ['research/llm-wiki/**', 'research/collaboration-console/**', 'docs/ai/**', 'full_stack_lab/opa/**', '.github/workflows/research-wiki.yml']
 permissions:
   contents: read
 jobs:
@@ -15,5 +15,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: python research/llm-wiki/tools/check_wiki.py --ci-ignored-local-sources
+      - run: python research/llm-wiki/tools/check_trace.py --self-test
+        if: ${{ !cancelled() }}
+      - run: python research/llm-wiki/tools/check_trace.py
+        if: ${{ !cancelled() }}
       - run: python research/llm-wiki/tools/check_enterprise_analysis.py
+      - run: python research/llm-wiki/tools/test_enterprise_code_refresh.py
       - run: python research/collaboration-console/test_console.py

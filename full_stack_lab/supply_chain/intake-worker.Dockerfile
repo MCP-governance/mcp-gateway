@@ -38,7 +38,10 @@ COPY --chown=worker:worker intake_worker.py /app/intake_worker.py
 COPY --chown=worker:worker trivy_scan.py /app/trivy_scan.py
 COPY --chown=worker:worker exit_terms.py /app/exit_terms.py
 COPY --chown=worker:worker provenance.py /app/provenance.py
+COPY --chown=worker:worker supplier_metadata.py /app/supplier_metadata.py
 COPY gitleaks.toml /rules/gitleaks.toml
 USER worker
 WORKDIR /app
+# Check the packaged worker, not the source tree mounted by unit tests.
+RUN python -c "import intake_worker"
 CMD ["python", "intake_worker.py"]

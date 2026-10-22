@@ -58,7 +58,14 @@ def load_pack(path: Path = Path("/policy/residency.json"), source: Path | None =
 
 
 def facts(spec: dict, organization: dict, cls, pack: dict) -> dict:
-    targets = [{"id": cls.server, **location(spec, organization)}]
+    server_location = location(spec, organization)
+    review = spec.get("residency_review") or {}
+    binding = transfer_review_digest(cls.server, spec, server_location, pack)
+    # Only the independently reviewed server inherits this grant. Tool destinations
+    # remain separate targets even when they happen to name the same country.
+    reviewed = bool(binding and isinstance(review, dict) and review.get("reviewed_by")
+                    and review.get("approval_sha256") == binding)
+    targets = [{"id": cls.server, **server_location, "transfer_reviewed": reviewed}]
     # A server's machine location says nothing about an address passed to a tool.
     for host in sorted({d.host for d in cls.destinations if d.external}):
         try:
@@ -67,6 +74,21 @@ def facts(spec: dict, organization: dict, cls, pack: dict) -> dict:
             target = normalize(None)
         targets.append({"id": host, **target})
     return {"enabled": enabled(organization), "grade": cls.data_class, "targets": targets, "pack_sha256": sha256(pack)}
+
+
+def transfer_review_digest(server_id: str, spec: dict, value: dict, pack: dict) -> str:
+    """A location review is reusable only for this provider and this policy revision."""
+    if spec.get("deployment") != "provider" or not spec.get("intake_id") or not spec.get("endpoint"):
+        return ""
+    try:
+        normalized = normalize(value)
+        validate_pack(pack)
+    except (ValueError, TypeError):
+        return ""
+    if not all(normalized.values()):
+        return ""
+    return sha256({"server_id": server_id, "endpoint": spec["endpoint"],
+                   "intake_id": spec["intake_id"], "location": normalized, "pack": pack})
 
 
 def enabled(organization: dict) -> bool:

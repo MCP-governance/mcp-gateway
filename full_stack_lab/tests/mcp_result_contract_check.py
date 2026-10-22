@@ -169,10 +169,15 @@ class ResultContract(unittest.IsolatedAsyncioTestCase):
         provider.add_span_processor(SimpleSpanProcessor(exporter))
         secret = "untrusted-sensitive-provider-value"
         try:
-            with patch.object(core, "tracer", provider.get_tracer("result-boundary-test")):
-                with patch.object(core.db, "fetch_one", AsyncMock(side_effect=ValueError(secret))):
-                    with self.assertRaises(ValueError):
-                        await core.execute_call({"server_id": "example", "tool": "read", "user_token": "fixture-user"})
+            # Expiry now precedes principal lookup. Keep that unrelated database
+            # boundary isolated so this test still reaches its injected exception.
+            with (patch.object(core, "tracer", provider.get_tracer("result-boundary-test")),
+                  patch.object(core.user_suspend, "expire", AsyncMock()) as expire,
+                  patch.object(core.db, "fetch_one", AsyncMock(side_effect=ValueError(secret))) as fetch):
+                with self.assertRaisesRegex(ValueError, secret):
+                    await core.execute_call({"server_id": "example", "tool": "read", "user_token": "fixture-user"})
+            expire.assert_awaited_once_with("fixture-user", "example")
+            fetch.assert_awaited_once()
             spans = exporter.get_finished_spans()
             self.assertEqual(len(spans), 1)
             self.assertNotIn(secret, spans[0].to_json())

@@ -106,7 +106,7 @@ class SuggestionCheck(unittest.TestCase):
 
     def test_supplier_files_are_bounded_untrusted_data(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             (root / "package.json").write_text('{"author":{"name":"Example","email":"support@example.test"},"homepage":"https://example.test"}', encoding="utf-8")
             (root / "SECURITY.md").write_text("Contact security@example.test", encoding="utf-8")
             metadata = collect(root, "https://github.com/org/docs", "b" * 40)

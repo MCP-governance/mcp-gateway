@@ -565,7 +565,8 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
     if local:
         server_id = local_jobs.server_of(endpoint) or ""
         try:
-            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status='APPROVED' AND reviewed_by IS NOT NULL", (uuid.UUID(intake_id),))
+            # 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다. 관찰은 관리자만 부르고(admin_caller), 등록은 여전히 승인 뒤다.
+            intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s AND status IN ('HOLD','VALIDATED','APPROVED')", (uuid.UUID(intake_id),))
         except ValueError:
             intake = None
         if not intake:
@@ -584,24 +585,23 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
                  else await upstream.discover(registration_endpoint(endpoint)))
     local_view = {}
     if local:
-        settings = json.loads(os.getenv("LOCAL_ENGINE_SETTINGS") or "{}")
-        engine = settings.get("engine") if isinstance(settings, dict) else None
-        namespace = settings.get("namespace") if isinstance(settings, dict) else None
-        version = settings.get("version") if isinstance(settings, dict) else None
-        engine_name = {"podman": "Podman", "docker": "Docker"}.get(engine)
-        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
-        if namespace == "host":
-            isolation_scope = "탈출 시 호스트 root"
-        elif engine_name and namespace_name:
-            isolation_scope = f"{engine_name} {version or '—'} · {namespace_name} · 확인 안 됨"
-        else:
-            isolation_scope = "확인 안 됨"
+        # 격리 구성은 기기 설정이 아니라 관찰 PC 실행기가 측정해 보고한 값(엔진·판본·사용자 매핑)이다.
         measurement = await db.fetch_one(
             """SELECT evidence->'isolation' AS isolation FROM local_job_events
                WHERE server_id=%s AND device_id=%s AND evidence ? 'isolation'
                ORDER BY created_at DESC,id DESC LIMIT 1""",
             (local["manifest"]["server_id"], local["observer_device"]))
         isolation = (measurement or {}).get("isolation") or {}
+        namespace = isolation.get("namespace")
+        engine_name = {"podman": "Podman", "docker": "Docker"}.get(
+            isolation.get("engine") or ("podman" if str(namespace).startswith("podman") else "docker"))
+        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
+        if namespace == "host":
+            isolation_scope = "탈출 시 호스트 root"
+        elif namespace_name:
+            isolation_scope = f"{engine_name} {isolation.get('engine_version') or '—'} · {namespace_name} · {isolation.get('scope') or '확인 안 됨'}"
+        else:
+            isolation_scope = "확인 안 됨"
         local_view = {"observer_device": local["observer_device"], "observer_uid": observer["local_uid"],
                       "image_signature": "확인 안 됨", "isolation_scope": isolation_scope,
                       "user_mapping": isolation.get("uid_map") or "확인 안 됨"}
@@ -966,16 +966,22 @@ async def review_server_residency(server_id: str, location: dict, actor: str) ->
         reviewed_at = datetime.now(UTC).isoformat(timespec="seconds")
         await review.require_independent("residency-review", "server", server_id, actor, applicant,
                                          {"residency": normalized, "previous_sha256": residency.sha256(previous)})
+        binding = residency.transfer_review_digest(server_id, spec, normalized, residency.load_pack())
+        # This decision must be durable before a file-backed grant can take effect.
+        # A later registry failure may delay activation, never create an unaudited grant.
+        await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
+                                  scope={"residency": normalized, "previous_sha256": residency.sha256(previous),
+                                         "approval_sha256": binding})
         spec["residency"] = normalized
         spec["residency_review"] = {"reviewed_by": actor, "reviewed_at": reviewed_at,
-                                    "previous_sha256": residency.sha256(previous)}
+                                    "previous_sha256": residency.sha256(previous),
+                                    "approval_sha256": binding}
         doc["history"].append({"type": "residency-reviewed", "server_id": server_id, "actor": actor,
                                "at": reviewed_at, "residency": normalized,
-                               "previous_sha256": residency.sha256(previous)})
+                               "previous_sha256": residency.sha256(previous),
+                               "approval_sha256": spec["residency_review"]["approval_sha256"]})
         registry.save_runtime(doc)
         await registry.sync()
-    await review.record_event("residency-review", "approved", "server", server_id, actor, applicant=applicant,
-                              scope={"residency": normalized, "previous_sha256": residency.sha256(previous)})
     return {"server_id": server_id, "residency": normalized, "reviewed_by": actor, "reviewed_at": reviewed_at}
 
 
@@ -2392,6 +2398,14 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         except Exception as exc:
             result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.")
             base_event["error"] = _root_cause(exc)
+        if result["decision"] == "Block" and result["policy_id"] == "PAC-01":
+            # The caller can only fix what it is told: which argument left the approved scope.
+            try:
+                gap = pac.argument_gap(principal, cls.server, cls.tool, arguments)
+            except Exception:
+                gap = ""
+            if gap:
+                result = {**result, "reason": f"{result['reason']} — {gap}. 승인된 범위 안의 값으로 바꾸거나 관리자에게 범위 변경을 요청하세요."}
         laps.lap("policy")
 
         policy_basis = result
@@ -2437,7 +2451,10 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 span.set_attribute("mcp.decision", result["decision"])
                 span.set_attribute("mcp.policy_id", result["policy_id"])
 
-        if result["decision"] == "Approval":
+        # D-191: 외부 AI 게이트웨이 애드온은 판정만 받고 전송은 호출한 쪽이 한다. 승인 대기 행도 만들지 않는다 —
+        # 승인되면 이 게이트웨이가 같은 호출을 직접 보내 이중 실행되기 때문이다.
+        decide_only = bool(payload.get("_decide_only"))
+        if result["decision"] == "Approval" and not decide_only:
             new_approval_id = str(uuid.uuid4())
             stored = {k: payload.get(k) for k in ("server_id", "tool", "arguments", "user_token", "client", "transport_claims")}
             stored.update(pac_request_id=request_id, pac_digest=pac.digest(policy_input["pac"]))
@@ -2458,6 +2475,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                         applicant=user_token, scope={"explanation": explanation, "request_fingerprint": canonical_hash(stored)},
                         connection=connection)
             base_event["approval_id"] = new_approval_id
+        elif result["decision"] in {"Allow", "Alert", "Restrict"} and decide_only:
+            base_event["effective_arguments"], base_event["restrictions_applied"] = classify.apply_restrictions(
+                cls, outbound, result.get("restrictions") or {})
         elif result["decision"] in {"Allow", "Alert", "Restrict"}:
             effective, applied = classify.apply_restrictions(cls, outbound, result.get("restrictions") or {})
             base_event["restrictions_applied"] = applied

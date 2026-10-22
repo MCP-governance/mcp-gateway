@@ -15,7 +15,6 @@ from pathlib import Path
 try:
     from offline_buffer import BufferFull, EventBuffer, flush
 except ModuleNotFoundError:  # Imported by the source-check harness, which loads this file by path.
-    import importlib.util
     _buffer_spec = importlib.util.spec_from_file_location("endpoint_offline_buffer", Path(__file__).with_name("offline_buffer.py"))
     if _buffer_spec is None or _buffer_spec.loader is None:
         raise

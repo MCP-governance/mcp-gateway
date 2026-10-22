@@ -68,6 +68,10 @@
 	handle /api/endpoint/* {
 		reverse_proxy gateway:8080
 	}
+	# 외부 AI 게이트웨이 애드온의 판정 API(D-191). Gateway가 직원 MCP 토큰을 검증한다.
+	handle /api/addon/v1/* {
+		reverse_proxy gateway:8080
+	}
 	handle /.well-known/oauth-protected-resource {
 		reverse_proxy gateway:8080
 	}
@@ -91,7 +95,7 @@
 # 전송은 Tailscale 터널이 암호화한다. 하네스·키트가 쓰는 경로는 HTTPS(D-124)에만 있다.
 http://:8081 {
 	# handle 블록은 서로 배타적이고 먼저 맞는 것이 처리한다. respond만 두면 콘솔의 handle이 먼저 받는다.
-	@harness path /mcp/* /oauth/* /api/endpoint/* /.well-known/*
+	@harness path /mcp/* /oauth/* /api/endpoint/* /api/addon/* /.well-known/*
 	handle @harness {
 		respond "HTTPS로 접속하세요." 421
 	}

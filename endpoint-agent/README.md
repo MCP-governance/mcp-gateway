@@ -257,4 +257,4 @@ pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에
 공유 Python 런타임은 남기며, 서버의 기존 엔드포인트 자격 폐기는 콘솔의 기존 관리 경로를 따른다.
 
 **macOS 실설치·활성화·MCP 호출·제거는 미실행**이다. Windows에서 오프라인 코드 검사만 수행했다.
-[보고](../research/llm-wiki/status/reports/2026-10-22-kit-macos.md) · [D-190](../docs/ai/DECISIONS.md).
+[보고](../research/llm-wiki/status/reports/2026-10-22-kit-macos.md) · [D-196](../docs/ai/DECISIONS.md).

@@ -40,7 +40,6 @@ EXTERNAL = {
     "intake_worker_scanners_check": "Trivy 캐시 환경변수 TRIVY_CACHE_DIR 필요",
     "managed_enforcement_check": "Linux 전용 모듈 grp 필요",
     "managed_enrollment_check": "컨테이너 호스트 agent-service:8000 필요",
-    "mcp_result_contract_check": "PostgreSQL 필요",
     "mcp_result_services_check": "libmcpgw_gitleaks.so(Linux)와 PII 분석기 호스트 필요",
     "oss_audit_test": "libmcpgw_gitleaks.so(Linux) 필요",
     "pac_boundary_check": "게이트웨이 이미지의 /registry/field 경로 필요",

@@ -22,7 +22,8 @@
       "mcp-redis",
       "mcp-email",
       "mcp-gitea",
-      "mcp-playwright"
+      "mcp-playwright",
+      "mcp-fetch-tls"
     ]
   }
 }

@@ -764,6 +764,13 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
             (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
                                                        "local_uid": uid, "local_sid": local_sid})))
+    # 같은 PC·같은 관리 계정에 다시 설치하면 설치기가 이전 설치를 먼저 지운다. 남은 장치 행은 다시 보고하지 않는
+    # 유령이므로 폐기한다(10-22 PJ1 재설치마다 active 행이 쌓였다).
+    for old in await db.fetch_all(
+            """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND hostname=%s AND local_username=%s
+               AND platform=%s AND status='active' AND endpoint_id<>%s""",
+            (grant["owner_token"], hostname, username, platform, endpoint_id)):
+        await revoke_device(old["endpoint_id"], "reinstall")
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 

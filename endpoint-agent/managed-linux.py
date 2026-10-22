@@ -302,12 +302,33 @@ def serve(args):
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
-    observed = 0.0
     runner = PROGRAMS / "local-runner.py"
     if runner.exists():
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
         threading.Thread(target=load_module("local_runner", runner).run, daemon=True,
                          args=(config, request, log)).start()
+
+    def observe():
+        # Beside the heartbeat, not inside it: a round that spends up to 80 seconds here is 80 seconds
+        # in which an activation by the organization goes unnoticed and the employee's harness gets
+        # the not-active placeholder instead of a token.
+        while True:
+            observers = {}
+            for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
+                if sys.platform == "darwin" and name == "os-observer.py":
+                    continue  # 커널 이벤트 관측기는 Linux(AppArmor·audit) 전용이다.
+                # Inventory and kernel-event reports are observations; one failing must not cut the
+                # enforced account off from the Gateway.
+                try:
+                    result = subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
+                                            timeout=40, capture_output=True, text=True)
+                    output = json.loads(result.stdout.splitlines()[-1])
+                    observers[name] = output.get("observation", {"state": "failed"})
+                except (OSError, ValueError, IndexError, subprocess.SubprocessError) as exc:
+                    observers[name] = {"state": "failed", "error_code": type(exc).__name__}
+            print(json.dumps({"endpoint_id": config["endpoint_id"], "observers": observers}), flush=True)
+            time.sleep(55)
+    threading.Thread(target=observe, daemon=True).start()
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
         # the activation within seconds instead of a minute; an active device keeps the slow cadence.
@@ -346,8 +367,6 @@ def serve(args):
                 beat.pop("host", None)  # a Gateway older than D-62 / this report rejects the extra field
                 beat.pop("network_quality", None)
                 report = request(config, "/api/endpoint/heartbeat", beat)
-            # The token comes first: the observers below can take up to 80 seconds, and a token
-            # fetched after them would lapse before the next round.
             if report["state"] == "active" and report["compliant"]:
                 with lock:
                     token = request(config, "/oauth/device-token", {})
@@ -356,23 +375,7 @@ def serve(args):
             else:
                 with lock:
                     cache.clear()
-            observers = {}
-            if time.monotonic() - observed >= 55:
-                observed = time.monotonic()
-                for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
-                    if sys.platform == "darwin" and name == "os-observer.py":
-                        continue
-                    # Inventory and kernel-event reports are observations; one failing must not cut the
-                    # enforced account off from the Gateway.
-                    try:
-                        result = subprocess.run([sys.executable, "-I", "-S", str(PROGRAMS / name), "--config", str(observer_config), *extra],
-                                                timeout=40, capture_output=True, text=True)
-                        output = json.loads(result.stdout.splitlines()[-1])
-                        observers[name] = output.get("observation", {"state": "failed"})
-                    except (OSError, ValueError, IndexError, subprocess.SubprocessError) as exc:
-                        observers[name] = {"state": "failed", "error_code": type(exc).__name__}
-            print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
-                              "observers": observers}), flush=True)
+            print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()

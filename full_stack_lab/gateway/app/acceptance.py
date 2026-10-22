@@ -20,10 +20,13 @@ must not undo a person's procedure - so a check that needs it reports SKIP.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import os
 import re
 import sys
+import zipfile
+from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from uuid import uuid4
 
@@ -40,6 +43,7 @@ MCP_URL = API + "/mcp/"
 USERS = {"employee": "ysg@bob.local", "partner": "nkk@bob.local", "admin": "kkg@bob.local", "privacy": "ysg@bob.local"}
 PRINCIPAL = {"employee": "emp-ysg", "partner": "partner-demo", "admin": "admin-demo"}
 TOKENS: dict[str, str] = {}
+MCP_TOKENS: dict[str, str] = {}
 RESULTS: list[dict] = []
 # What an intake approval requires, with synthetic values: supplier assurance and an impact input that scores "low"
 # (one administrator approves). The same values as tests/intake_fixture.py, which this image does not carry.
@@ -68,16 +72,27 @@ async def sign_in() -> None:
                SELECT %s,%s,%s,role,true,department,password_hash,%s FROM principals WHERE email=%s""",
             (principal, email, principal, str(uuid4()), template))
         USERS[who], PRINCIPAL[who] = email, principal
+    issuer = os.getenv("IDP_INTERNAL_URL", os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
     async with httpx.AsyncClient(timeout=15) as client:
         for who, email in USERS.items():
             response = await client.post(API + "/api/session", json={"email": email, "password": password})
             response.raise_for_status()
             TOKENS[who] = response.json()["access_token"]
+            # Console sessions cannot authorize MCP ingress. Obtain the actor's MCP
+            # grant through the same IdP path used by the workstation clients.
+            granted = await client.post(issuer + "/oauth/token", data={
+                "grant_type": "password", "client_id": "acceptance-ws", "username": email, "password": password})
+            granted.raise_for_status()
+            MCP_TOKENS[who] = granted.json()["access_token"]
+
+
+def _mcp_headers(who: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {MCP_TOKENS[who]}",
+            "X-Agent-Name": "acceptance", "X-Workstation-Id": "acceptance"}
 
 
 def _http(who: str) -> httpx2.AsyncClient:
-    return httpx2.AsyncClient(timeout=90, headers={
-        "Authorization": f"Bearer {TOKENS[who]}", "X-Agent-Name": "acceptance", "X-Workstation-Id": "acceptance"})
+    return httpx2.AsyncClient(timeout=90, headers=_mcp_headers(who))
 
 
 async def list_tools(who: str, url: str = MCP_URL) -> list:
@@ -166,7 +181,7 @@ async def per_server_endpoint() -> str:
         unknown = await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": 1,
             "method": "initialize", "params": {"protocolVersion": "2025-03-26", "capabilities": {},
             "clientInfo": {"name": "connection-regression", "version": "1"}}},
-            headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+            headers=_mcp_headers("employee"))
     expect(unknown.status_code == 404, f"등록되지 않은 서버 경로가 {unknown.status_code}")
     refused = unknown.json()
     expect(refused.get("policy_id") == "MCP-REGISTRY-001" and refused.get("decision") == "Block", refused)
@@ -176,7 +191,7 @@ async def per_server_endpoint() -> str:
            and not row["upstream_attempted"] and not row["upstream_executed"], "미등록 연결의 차단 증적 누락")
     before = (await db.fetch_one("SELECT count(*) AS n FROM decisions"))["n"]
     # A harness start (initialize, GET, discovery) or a retry loop is one refusal a minute.
-    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+    async with httpx.AsyncClient(timeout=10, headers=_mcp_headers("employee")) as client:
         again = [await client.post(API + "/mcp/nope/", json={"jsonrpc": "2.0", "id": i, "method": "initialize"}) for i in range(3)]
         again.append(await client.get(API + "/mcp/nope/"))
     expect(all(r.status_code == 404 and r.json().get("decision_id") == refused.get("decision_id") for r in again)
@@ -184,7 +199,7 @@ async def per_server_endpoint() -> str:
     # A refused connection is not a call: it must not use up the caller's ceilings.
     first, second = str(uuid4()), str(uuid4())
     a = await _reserve_call(first, PRINCIPAL["employee"], "acceptance", "probe", {"n": 1}, "public")
-    async with httpx.AsyncClient(timeout=10, headers={"Authorization": f"Bearer {TOKENS['employee']}"}) as client:
+    async with httpx.AsyncClient(timeout=10, headers=_mcp_headers("employee")) as client:
         await client.post(API + "/mcp/nope-ceiling/", json={"jsonrpc": "2.0", "id": 1, "method": "initialize"})
     b = await _reserve_call(second, PRINCIPAL["employee"], "acceptance", "probe", {"n": 2}, "public")
     await _release_call(first); await _release_call(second)
@@ -419,14 +434,14 @@ async def relationship_scope_alerts() -> str:
     """D-39: UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
     another table runs but is flagged; a read inside the relationship stays a plain Allow."""
     await operating("postgres")
-    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees"})
+    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees LIMIT 1"})
     expect(outside.get("decision") == "Alert" and outside.get("policy_id") == "P-SCOPE-001" and not outside["is_error"],
            f"이용 관계 밖 테이블: {outside.get('decision')} {outside.get('policy_id')} {outside['text'][:120]}")
     row = await db.fetch_one("SELECT policy_input FROM decisions WHERE id=%s", (outside.get("decision_id"),))
     scope = (row["policy_input"] or {}).get("relationship") or {}
     expect(scope.get("ids") == ["UR-PG-ANALYTICS"] and scope.get("outside") == ["hr.employees"],
            f"정책 입력의 relationship: {scope}")
-    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders"})
+    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders LIMIT 1"})
     expect(inside.get("decision") == "Allow" and inside.get("policy_id") == "P-AUTHZ-ALLOW-001" and not inside["is_error"],
            f"이용 관계 안 테이블: {inside.get('decision')} {inside.get('policy_id')}")
     return "hr.employees → P-SCOPE-001 경보 · sales.orders → 허용"
@@ -457,7 +472,9 @@ async def console_registration_expires() -> str:
     approval ends on a date (P-APPROVAL-EXPIRY-001); deregistering takes the path away.
     The lab's fetch server stands in under another id, so no outside network is needed."""
     await operating("fetch")
-    server_id, endpoint = "acceptance-fetch", "http://mcp-fetch:8000/mcp"
+    server_id = "acceptance-fetch"
+    endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
+    expect(urlsplit(endpoint).scheme == "https", "ACCEPTANCE_FETCH_ENDPOINT에 신뢰된 HTTPS fetch 시험 경로가 필요합니다.")
     url = f"{API}/mcp/{server_id}/"
     headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
     arguments = {"url": "http://intranet.bob.local/", "max_length": 200}
@@ -474,6 +491,7 @@ async def console_registration_expires() -> str:
         console = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
         requested = await client.post(console + "/api/mcp-requests", headers={"Authorization": f"Bearer {TOKENS['employee']}"},
             json={"display_name": "Acceptance fetch", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+                  "requested_tools": ["fetch"],
                   "requested_transport": "streamable-http", "purpose": "실제 공급자 fetch 서버의 계약과 신청 승인 경계를 확인합니다.",
                   "risk_input": IMPACT_INPUT})
         requested.raise_for_status();intake_id = requested.json()["request"]["id"]
@@ -494,6 +512,7 @@ async def console_registration_expires() -> str:
         # Separation of duties: the admin's own request for the same endpoint cannot be
         # approved by that admin (an APPROVED remote intake does not block a new one).
         own = await client.post(console + "/api/mcp-requests", json={"display_name": "Acceptance fetch (self)",
+            "requested_tools": ["fetch"],
             "intake_kind": "remote-endpoint", "endpoint_url": endpoint, "requested_transport": "streamable-http",
             "purpose": "관리자 본인 신청은 본인이 승인할 수 없는지 확인합니다."})
         own.raise_for_status(); own_id = own.json()["request"]["id"]
@@ -529,7 +548,7 @@ async def console_registration_expires() -> str:
         finally:
             removed = await client.delete(f"{API}/api/registry/servers/{server_id}")
         expect(removed.status_code == 200, f"등록 해제: {removed.status_code}")
-        gone = await client.post(url, json={})
+        gone = await client.post(url, json={}, headers=_mcp_headers("employee"))
     expect(gone.status_code == 404, f"해제한 서버 경로가 {gone.status_code}")
     return f"/mcp/{server_id}/ 도구 1개 · 직접 등록 409 · 자기 승인 403 · 주체 범위 차단 · 기한 만료 차단 · 해제 후 404"
 
@@ -586,6 +605,144 @@ async def invitation_enrollment() -> str:
     return "48시간 초대 발급·아이디 바인딩·employee 고정·소비된 초대 재사용 거부·비밀 재조회 금지"
 
 
+# Every API path the Console's screens call, with the fields their renderers read. The Console reaches the
+# Gateway only through its own origin, so this goes through agent-service like the browser does.
+CONSOLE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000").rstrip("/")
+ADMIN_MENUS = {"overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake",
+               "sbom-impact", "termination", "policy"}
+EMPLOYEE_MENUS = {"activity", "consent", "intake"}
+ADMIN_SCREENS = [
+    ("/auth/me", ["name", "role_label", "user_id", "pages"]),
+    ("/gw/overview", ["today_since", "servers", "workstations", "top_policies", "pending_approvals", "intake_actions",
+                      "termination", "series", "flows", "execution", "pipeline", "enforcement"]),
+    ("/gw/activity?limit=10&decision=Block", ["rows", "cursor", "total", "filtered_total", "page", "page_size"]),
+    ("/gw/activity?limit=50&page=1&q=a", ["rows", "filtered_total"]),
+    ("/gw/activity/analysis", ["total", "series", "hours", "responses", "harnesses", "servers", "people"]),
+    ("/gw/latency", ["stages", "series", "servers"]),
+    ("/gw/health", []),
+    ("/gw/endpoint/network-quality", []),
+    ("/api/integrations", ["items", "devices"]),
+    ("/api/connectors", ["items", "summary"]),
+    ("/api/connectors?summary=1", ["summary.pending", "summary.expired"]),
+    ("/api/connectors/policy", []),
+    ("/api/system/metrics", []),
+    ("/gw/registry", ["servers", "tools", "registrations"]),
+    ("/approvals", ["approvals", "history"]),
+    ("/gw/dispatch-intents", ["rows"]),
+    ("/gw/endpoint/inventory?classification=shadow,retired-residue",
+     ["coverage.known_endpoints", "coverage.reporting_recently", "agents", "entries", "listeners", "os_events", "pages"]),
+    ("/gw/endpoint/inventory", ["coverage", "agents", "devices"]),
+    ("/gw/endpoint/inventory/entries?limit=50&classification=shadow,retired-residue", ["rows", "total", "next_cursor"]),
+    ("/gw/endpoint/inventory/listeners?limit=50&classification=shadow,retired-residue", ["rows", "total", "next_cursor"]),
+    ("/gw/endpoint/inventory/os-events?limit=50", ["rows", "total", "next_cursor"]),
+    ("/api/accounts", ["accounts"]),
+    ("/api/signup-requests", ["requests"]),
+    ("/gw/suspensions", ["suspensions"]),
+    ("/api/consents", ["consents"]),
+    ("/api/mcp-requests", ["requests"]),
+    ("/api/mcp-catalog/search?q=git", ["requests", "registry"]),
+    ("/gw/termination/relationships", ["relationships"]),
+    ("/gw/termination/cases", ["cases", "summary.open_cases", "summary.awaiting_close", "summary.unresolved_grades",
+                               "summary.overdue", "summary.sla_days", "summary.retired_residue", "summary.shadow_endpoints"]),
+    ("/gw/audit/events?limit=100", ["events", "has_more"]),
+    ("/gw/audit/events?limit=100&decision=Block&event_kind=tools/call", ["events"]),
+    ("/gw/audit/siem", ["pending", "retrying", "oldest_pending", "last_delivered"]),
+    ("/gw/audit/incidents", ["incidents", "timer_status"]),
+    ("/gw/audit/verify", ["intact", "checked"]),
+    ("/gw/enforcement", ["enforcement"]),
+    ("/gw/policy/matrix", ["capabilities", "runtime_envelopes"]),
+    ("/gw/policy/ledger", ["policies"]),
+]
+EMPLOYEE_SCREENS = [
+    ("/auth/me", ["name", "role_label", "pages"]),
+    ("/gw/activity?limit=50&page=1", ["rows", "cursor", "total", "filtered_total", "page", "page_size"]),
+    ("/gw/activity?limit=50&decision=Block", ["rows"]),
+    ("/gw/activity/analysis", ["total", "series", "responses"]),
+    ("/api/consents", ["consents"]),
+    ("/api/mcp-requests", ["requests"]),
+    ("/api/mcp-catalog/search", ["requests", "registry"]),
+]
+
+
+def _field(document, dotted: str):
+    for part in dotted.split("."):
+        expect(isinstance(document, dict) and part in document, f"응답에 '{dotted}' 없음")
+        document = document[part]
+    return document
+
+
+async def _screens(who: str, screens: list, menus: set) -> None:
+    headers = {"Authorization": f"Bearer {TOKENS[who]}"}
+    async with httpx.AsyncClient(timeout=60) as client:
+        for path, fields in screens:
+            response = await client.get(CONSOLE_URL + path, headers=headers)
+            expect(response.status_code == 200, f"{who} GET {path} -> {response.status_code} {response.text[:120]}")
+            if fields:
+                document = response.json()
+                for dotted in fields:
+                    try:
+                        _field(document, dotted)
+                    except AssertionError as exc:
+                        raise AssertionError(f"{who} GET {path}: {exc}") from None
+        pages = (await client.get(CONSOLE_URL + "/auth/me", headers=headers)).json()["pages"]
+    expect(set(pages) == menus, f"{who} 메뉴가 기대와 다름: {sorted(pages)}")
+    # A menu entry without a route renders a blank screen; read the same file the browser loads.
+    script = Path(__file__).parent / "agent_static" / "console.js"
+    if script.is_file():
+        source = script.read_text(encoding="utf-8")
+        listed = set(re.findall(r'\{ id: "([\w-]+)", label: "[^"]+", group:', source))
+        routed = set(re.findall(r'ROUTES\.(\w+) =', source)) | set(re.findall(r'ROUTES\["([\w-]+)"\] =', source))
+        expect(menus <= listed and menus <= routed, f"{who} 메뉴 중 화면 목록·경로가 없는 것: {sorted(menus - (listed & routed))}")
+
+
+async def console_admin_screens_load() -> str:
+    await _screens("admin", ADMIN_SCREENS, ADMIN_MENUS)
+    return f"관리자 메뉴 {len(ADMIN_MENUS)}개 · 화면이 부르는 조회 {len(ADMIN_SCREENS)}건 200과 필드"
+
+
+async def console_employee_screens_load() -> str:
+    await _screens("employee", EMPLOYEE_SCREENS, EMPLOYEE_MENUS)
+    async with httpx.AsyncClient(timeout=30) as client:
+        for path in ("/gw/overview", "/gw/registry", "/api/accounts", "/api/system/metrics"):
+            denied = await client.get(CONSOLE_URL + path, headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+            expect(denied.status_code == 403, f"직원이 {path}를 조회함: {denied.status_code}")
+    return f"직원 메뉴 {len(EMPLOYEE_MENUS)}개 · 조회 {len(EMPLOYEE_SCREENS)}건 200과 필드 · 관리자 화면 403"
+
+
+async def console_downloads_work() -> str:
+    headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
+    async with httpx.AsyncClient(timeout=60) as client:
+        for form, kind in (("csv", "text/csv"), ("json", "application/json")):
+            response = await client.get(CONSOLE_URL + f"/gw/registry/export?format={form}", headers=headers)
+            expect(response.status_code == 200 and response.headers.get("content-type", "").startswith(kind),
+                   f"등록부 {form} 내보내기: {response.status_code} {response.headers.get('content-type')}")
+            expect(re.fullmatch(r"[0-9a-f]{64}", response.headers.get("x-registry-sha256", "")),
+                   f"등록부 {form} 응답에 SHA-256 헤더 없음")
+            if form == "json":
+                response.json()
+    return "등록부 CSV·JSON 내려받기와 SHA-256 헤더"
+
+
+async def pc_kit_downloads() -> str:
+    seen = []
+    async with httpx.AsyncClient(timeout=120) as client:
+        for who in ("employee", "admin"):
+            for platform, marker in (("linux", "install.sh"), ("windows", "windows-kit-manifest.json")):
+                response = await client.post(CONSOLE_URL + f"/api/pc-kit?platform={platform}",
+                                             headers={"Authorization": f"Bearer {TOKENS[who]}"})
+                if response.status_code == 503:
+                    raise Skip(f"이 환경에는 설치 키트가 배포되어 있지 않습니다: {response.json().get('detail')}")
+                expect(response.status_code == 200 and response.headers.get("content-type") == "application/zip",
+                       f"{who} {platform} 키트: {response.status_code} {response.text[:120]}")
+                archive = zipfile.ZipFile(io.BytesIO(response.content))
+                names = archive.namelist()
+                expect(archive.testzip() is None and "enrollment.json" in names and marker in names,
+                       f"{who} {platform} 키트 구성: {names[:6]}")
+                json.loads(archive.read("enrollment.json"))
+                seen.append(f"{who}:{platform}")
+    return "내 PC 연결 키트 " + ", ".join(seen)
+
+
 async def _run() -> dict:
     await db.wait_until_ready()
     await sign_in()
@@ -615,6 +772,11 @@ async def _run() -> dict:
         ("pii-external-send-blocked", pii_external_send_blocked()),
         ("read-then-send-chain-blocked", read_then_send_chain_blocked()),
         ("audit-chain-intact", audit_chain_intact()),
+        # Console screens: what each menu calls must answer 200 with the fields its renderer reads.
+        ("console-admin-screens-load", console_admin_screens_load()),
+        ("console-employee-screens-load", console_employee_screens_load()),
+        ("console-registry-export-downloads", console_downloads_work()),
+        ("console-pc-kit-downloads", pc_kit_downloads()),
     ]:
         await check(name, coro)
     counts = {s: sum(1 for r in RESULTS if r["status"] == s) for s in ("PASS", "FAIL", "SKIP")}

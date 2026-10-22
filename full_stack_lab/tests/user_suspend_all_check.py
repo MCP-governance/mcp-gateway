@@ -7,6 +7,7 @@ checked here; PostgreSQL, the HTTP stack and the device are not exercised.
 from __future__ import annotations
 
 import json
+import asyncio
 from pathlib import Path
 import re
 import sys
@@ -56,8 +57,13 @@ class BulkStore(base.Store):
 def load(store):
     record_event = base.production("review.py", {"record_event"}, {
         "db": NS(fetch_one=AsyncMock()), "Jsonb": lambda value, **kw: value, "json": json, "Any": object}).record_event
-    return base.production("user_suspend.py", SINGLE | BATCH,
-                           {"db": store, "review": NS(record_event=record_event), "uuid": uuid})
+    return base.production("user_suspend.py", SINGLE | BATCH | {"MANUAL_OPERATION_SLOTS", "operation_key"},
+                           {"db": NS(POOL_MAX=10, transaction=store.transaction, fetch_one=store.fetch_one,
+                                     fetch_all=store.fetch_all), "asyncio": asyncio,
+                            "review": NS(record_event=record_event), "uuid": uuid,
+                            "local_jobs": NS(is_local=lambda _: False,
+                                             quiesce=AsyncMock(),
+                                             resume_user_stop=AsyncMock())})
 
 
 class BulkChecks(unittest.IsolatedAsyncioTestCase):
@@ -79,6 +85,12 @@ class BulkChecks(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((event["kind"], event["outcome"], event["actor"]), ("user-server-suspend", "held", "admin"))
             self.assertEqual(event["scope"]["batch"], result["batch"])
             self.assertEqual(event["scope"]["user"], "emp-a")
+
+    async def test_bulk_local_server_uses_the_same_quiesce_path_as_single_stop(self):
+        jobs = self.mod.suspend.__globals__["local_jobs"]
+        jobs.is_local = lambda server: server == "filesystem"
+        await self.mod.suspend_all("emp-a", "admin", "사고 대응 중지")
+        jobs.quiesce.assert_awaited_once_with(server_id="filesystem", user_token="emp-a")
 
     async def test_pair_already_stopped_is_skipped_and_gets_no_second_record(self):
         await self.mod.suspend("emp-a", "gitea", "admin", "개별 중지")

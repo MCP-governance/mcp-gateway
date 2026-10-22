@@ -35,6 +35,7 @@
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 실제로 겪은 증상 → 원인 → 해결 | 막혔을 때 |
 | [ROADMAP.md](ROADMAP.md) | 남은 일, 의도적 한계 | 다음 할 일 |
 | [BENCHMARK_LITELLM.md](BENCHMARK_LITELLM.md) | LiteLLM MCP 게이트웨이와의 기능 대조(코드 근거), 반영한 것·가져오지 않는 것·main의 차별점 | 기능을 더하기 전, 발표·논문 |
+| [AI_GATEWAY_ADDON.md](AI_GATEWAY_ADDON.md) | LiteLLM 등 외부 AI 게이트웨이 연동(업스트림·플러그인), 판정 API HTTP 계약과 한계 | 중앙 MCP 연동 고객을 붙일 때 |
 | [BENCHMARK_GATEWAYS.md](BENCHMARK_GATEWAYS.md) | LiteLLM 1.104·ContextForge·Kong·BeyondTrust 재조사와 Claude Code·Codex의 기본 커넥터 통제 키(코드·문서 근거) | 커넥터·도구 통제를 바꾸기 전 |
 | [FIELD_MCP_CANDIDATES.md](FIELD_MCP_CANDIDATES.md) | field 설치에서 시험할 원격 MCP 후보, 취약 버전·엣지 케이스(자동 등록하지 않음) | 실기기 시연 준비 |
 

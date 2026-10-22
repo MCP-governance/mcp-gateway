@@ -84,6 +84,7 @@ const DECISION = {
   Allow: ["allow", "허용"], Alert: ["alert", "경보"], Restrict: ["restrict", "제한 실행"],
   Approval: ["approval", "승인 대기"], Block: ["block", "차단"],
 };
+const ARTIFACT_KIND = { sbom: "SBOM", trivy: "Trivy", semgrep: "Semgrep", gitleaks: "Gitleaks", "exit-terms": "종료 조건" };
 const NONE = html`<span class="muted">—</span>`;
 const SERVER_STATUS = { READY: "정상", DRIFT: "계약 변경", PENDING: "확인 대기", DISABLED: "사용 중지", ERROR: "연결 오류" };
 const LIFECYCLE = { OPERATING: "운영", TERMINATING: "종료 중", RETIRED: "폐기" };
@@ -218,7 +219,7 @@ const REVIEW_KIND = {
   "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지", "runtime-egress": "외부 통신", "runtime-image-scan": "이미지 검사",
   "solo-mode": "단독 운영 모드", "ledger-retention": "보존 기간 변경", "audit-annotate": "감사 주석",
-  "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인",
+  "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인", "addon-result": "외부 게이트웨이 실행 결과",
   "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
   "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개",
   "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
@@ -1779,8 +1780,35 @@ function intakeApprovalFields(out) {
   </details>`;
 }
 
+const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구", device: "장치" };
+
+async function askLocalRun(id, request) {
+  const cur = request.evidence?.local_run || {};
+  const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
+    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"', cur.image || "")}
+    ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
+    ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
+      (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
+    ${field.select("reason_kind", "실행 위치 근거", LOCAL_REASON, cur.reason_kind || "local_file")}
+    ${field.text("reason_text", "근거 설명", 'required minlength="10" maxlength="500"', cur.reason_text || "")}` });
+  if (!fd) return false;
+  const mounts = String(fd.get("mounts") || "").split(",").map((v) => v.trim()).filter(Boolean).map((v) => {
+    const [path, mode = "ro"] = v.split(":");
+    return { path: path.trim().replace(/^~\//, ""), mode: mode.trim() || "ro" };
+  });
+  const result = await api(`/api/mcp-requests/${id}/local-run`, { method: "POST", body: {
+    image: String(fd.get("image")).trim(), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
+    mounts, env: {}, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
+  toast(result.message);
+  return true;
+}
+
 async function showIntakeApproval(id) {
-  const out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  let out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  if (out.request.requested_transport === "stdio" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
+    if (!(await askLocalRun(id, out.request))) return;
+    out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
+  }
   const fd = await ask({ title: `도입 승인 · ${out.request.display_name}`, fields: intakeApprovalFields(out),
     confirm: "승인", disabled: out.proposal.blockers.length > 0, reject: true });
   if (!fd) return;
@@ -1952,7 +1980,7 @@ async function showIntakeReport(id) {
         <tbody>${scanners.map(([name, s]) => html`<tr><td>${name}</td><td>${chip(s.status === "DONE" ? "allow" : "block", s.status === "DONE" ? "완료" : "실패")}</td><td>${s.error || "—"}</td></tr>`)}</tbody></table>` : empty("검사 대기"))}
       ${panel("검사 기준", gateView(report.gate))}
       ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
-        <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
+        <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${ARTIFACT_KIND[a.kind] || a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
     </div>` },
     { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: html`${(report.runtimes || []).length ? html`<table class="data">
       <thead><tr><th>세대</th><th>상태</th><th>이미지</th><th>주소</th><th>시각</th></tr></thead><tbody>
@@ -2138,7 +2166,7 @@ async function caseView(caseId, tab) {
 function evidenceResult(e) {
   const d = e.detail || {};
   switch (e.kind) {
-    case "gateway-denial": return d.blocked ? chip("allow", `실행 전 차단 · ${d.policy_id}`) : chip("block", `차단 안 됨 · ${d.decision} ${d.policy_id || ""}`);
+    case "gateway-denial": return d.blocked ? chip("allow", `실행 전 차단 · ${d.policy_id}`) : chip("block", `차단 안 됨 · ${DECISION[d.decision]?.[1] || d.decision || "—"} ${d.policy_id || ""}`);
     case "credential-check": return d.present === false ? chip("allow", "자격 없음") : d.present ? chip("block", "자격 남음") : chip("alert", `확인 실패 · HTTP ${d.http_status}`);
     case "resource-rejection": return d.rejected ? chip("allow", `자원 서버 거부 · ${d.http_status}`) : chip("block", `자원 서버 수락 · ${d.http_status}`);
     case "endpoint-inventory": return d.absent ? chip("allow", "설정 사라짐") : chip("block", `설정 남음 · ${when(d.last_report)}`);
@@ -2735,7 +2763,7 @@ const ACTIONS = {
   },
   async "registry-export"(el) {
     const format = el.dataset.format;
-    const response = await fetch(`/api/registry/export?format=${encodeURIComponent(format)}`, { headers: { authorization: `Bearer ${token}` } });
+    const response = await fetch(`/gw/registry/export?format=${encodeURIComponent(format)}`, { headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(detailText(body.detail) || `등록부 내보내기 실패 (${response.status})`);

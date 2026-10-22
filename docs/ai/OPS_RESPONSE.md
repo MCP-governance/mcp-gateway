@@ -70,6 +70,8 @@ D-128은 UTC로 정규화하지 않은 기록 시각 해시를 판정 UID에도 
 
 콘솔의 기존 서버 상태·사유로 중지를 확인할 수 있다. 운영 상세 조회는 `GET /api/ops/status`, 복귀는 `POST /api/ops/servers/{server_id}/resume`와 `{"note":"검토 사유"}`다. 두 API는 `Depends(admin_caller)`로 Console 관리자 인증을 요구한다. 복귀는 `PENDING`까지만 바꾸고 실행기를 자동 재시작하지 않는다. 원인이 남으면 다시 중지한다. 계약 변경은 검토한 잠금 파일 반영 또는 새로운 도입 승인으로 해결한 뒤 복귀한다. 폐기 목록에 있는 식별자는 복귀할 수 없다.
 
+D-178 후속(10-21): 중지 요청을 반복해도 이미 중지된 서버의 사유와 실행기 상태를 덮어쓰지 않는다. 서버 상태와 기존 중지를 먼저 확인하고 잠금 후 다시 확인한다. 새 중지 행을 만들지 못한 경우 상태 변경과 감사 사건도 만들지 않는다. SBOM의 세대 없음, 소스 불일치, 검사 미완료는 자료 없음으로 유지한다. [보완 보고](../../research/llm-wiki/status/reports/2026-10-21-sbom-idempotency.md).
+
 ## 서명 폐기 보관과 DB 복원
 
 JWT 발급 권한을 늘리지 않도록 기존 raw 32-byte/base64url Ed25519 방식과 `cryptography`를 재사용하되 `DISPOSAL_PRIVATE_KEY`·`DISPOSAL_PUBLIC_KEY`를 별도로 생성한다. JWT 개인 키는 계속 IdP만 가진다. 게이트웨이·IdP는 폐기 전용 키와 DB 외부 `/disposal` 볼륨을 공유한다.

@@ -31,7 +31,7 @@ from pydantic import Field
 from psycopg.types.json import Jsonb
 
 from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, review, upstream
-from . import intake_proposal, residency, risk_tier, sbom_impact, supplier_assurance
+from . import intake_proposal, local_jobs, residency, risk_tier, sbom_impact, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ResidencyFields, ToolReview, authenticate,
@@ -491,6 +491,9 @@ async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = 
     if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
         bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
         bundle['local_engine']=json.loads(os.getenv('LOCAL_ENGINE_SETTINGS') or '{}')
+        # 엔진·판본은 PC마다 다르므로 실행기가 그 PC에서 측정한다. 기기는 허용 저장소만 정한다.
+        bundle['local_engine'].setdefault('mirrors',[m.strip() for m in os.getenv('LOCAL_IMAGE_MIRRORS','').split(',') if m.strip()])
+        bundle['local_engine'].setdefault('accepted_risk','탈출 시 호스트 root')
     output = io.BytesIO()
     payload = {name: (source / name).read_bytes() for name in names}
     if ca:
@@ -2032,6 +2035,91 @@ async def collect_proposal_provenance(row: dict, record: dict) -> tuple[dict, st
     return record, artifact_provenance.blocking_reason(proof)
 
 
+class LocalRunSpec(StrictModel):
+    image: str = Field(min_length=3, max_length=300)
+    command: list[str] = Field(default_factory=list, max_length=32)
+    mounts: list[dict[str, str]] = Field(default_factory=list, max_length=8)
+    env: dict[str, str] = Field(default_factory=dict, max_length=32)
+    reason_kind: Literal["local_file", "local_tool", "device"]
+    reason_text: str = Field(min_length=10, max_length=500)
+
+
+async def pinned_image(image: str) -> str:
+    """관리자는 `mcp/filesystem` 같은 이름만 넣는다. 실행·서명은 그 순간의 digest로 고정한다(Docker Hub)."""
+    image = image.strip().lower()
+    if "@sha256:" in image:
+        return image
+    name, tag = (image.rsplit(":", 1) if ":" in image.split("/")[-1] else (image, "latest"))
+    repo = name.removeprefix("docker.io/")
+    repo = repo if "/" in repo else "library/" + repo
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            token = (await client.get("https://auth.docker.io/token", params={
+                "service": "registry.docker.io", "scope": f"repository:{repo}:pull"})).json()["token"]
+            head = await client.head(f"https://registry-1.docker.io/v2/{repo}/manifests/{tag}", headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": ", ".join(("application/vnd.oci.image.index.v1+json",
+                                     "application/vnd.docker.distribution.manifest.list.v2+json",
+                                     "application/vnd.oci.image.manifest.v1+json",
+                                     "application/vnd.docker.distribution.manifest.v2+json"))})
+        digest = head.headers.get("docker-content-digest", "")
+    except (httpx.HTTPError, KeyError, ValueError):
+        digest = ""
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise HTTPException(422, "이미지 digest를 확인하지 못했습니다. 이름@sha256:… 형식으로 입력하세요.")
+    return f"{name}@{digest}"
+
+
+async def signed_local_run(spec: dict, server_id: str) -> dict:
+    """승인 화면을 열 때마다 새 서명 세대로 서명한다. 같은 세대의 다른 매니페스트는 게이트웨이가 거부한다."""
+    pem = os.getenv("LOCAL_MANIFEST_PRIVATE_KEY", "").replace("\\n", "\n").strip()
+    if not pem:
+        raise HTTPException(409, "로컬 실행 서명 키가 구성되지 않았습니다.")
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    previous = await db.fetch_one("SELECT signature_generation FROM local_approvals WHERE server_id=%s", (server_id,))
+    manifest = {"server_id": server_id, "image": spec["image"], "command": spec["command"], "mounts": spec["mounts"],
+                "env": spec["env"], "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]},
+                "approval": {"generation": (previous["signature_generation"] + 1) if previous else 1,
+                             "expires_at": (datetime.now(UTC) + timedelta(days=365)).isoformat()}}
+    errors = local_jobs.manifest_errors(manifest, server_id)
+    if errors:
+        raise HTTPException(422, " / ".join(errors))
+    signature = load_pem_private_key(pem.encode(), None).sign(local_jobs.canonical(manifest))
+    return {"manifest": manifest, "signature": base64.b64encode(signature).decode()}
+
+
+def discovery(endpoint: str, local: dict | None, request_id) -> dict:
+    return {"endpoint": endpoint, "local": local, "intake_id": str(request_id)} if local else {"endpoint": endpoint}
+
+
+LOCAL_DISCOVER_SECONDS = 240  # 직원 PC가 이미지를 처음 받아 도구 목록을 돌려주는 시간
+
+
+@app.post("/api/mcp-requests/{request_id}/local-run")
+async def set_local_run(request_id: UUID, request: LocalRunSpec, user: dict = Depends(admin_caller)):
+    """저장소형 stdio 서버를 신청자 PC의 격리 컨테이너로 실행하도록 지정한다(DEV-73). 서명은 승인 화면에서."""
+    row = await approval_row(request_id, user)
+    if row["intake_kind"] != "repository":
+        raise HTTPException(409, "저장소 신청만 PC 격리 실행으로 지정할 수 있습니다.")
+    spec = {**request.model_dump(), "image": await pinned_image(request.image)}
+    errors = local_jobs.manifest_errors({"server_id": "x", "image": spec["image"], "command": spec["command"],
+                                         "mounts": spec["mounts"], "env": spec["env"],
+                                         "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]}}, "x")
+    mirrors = [m.strip() for m in os.getenv("LOCAL_IMAGE_MIRRORS", "").split(",") if m.strip()]
+    if not local_jobs.mirror_image(spec["image"], mirrors):
+        errors.append("허용한 이미지 저장소가 아닙니다: " + (", ".join(mirrors) or "—"))
+    if errors:
+        raise HTTPException(422, " / ".join(errors))
+    evidence = row.get("evidence") or {}
+    changed = await db.fetch_one(
+        "UPDATE mcp_intake_requests SET evidence=%s, updated_at=now() WHERE id=%s AND evidence=%s RETURNING id",
+        (Jsonb({**{k: v for k, v in evidence.items() if k != "approval_proposal"}, "local_run": spec}),
+         request_id, Jsonb(evidence)))
+    if not changed:
+        raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
+    return {"local_run": spec, "message": f"PC 격리 실행 · {spec['image'].split('@')[0]}"}
+
+
 @app.post("/api/mcp-requests/{request_id}/approval-preview")
 async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, user: dict = Depends(admin_caller),
                                   authorization: str | None = Header(default=None)):
@@ -2042,7 +2130,8 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
         proposal = evidence["approval_proposal"]
         gate = await review.intake_gate({**row, "provenance": proposal["provenance"]})
         found = await gateway_proxy("/api/registry/discover", authorization, "POST",
-                                    {"endpoint": proposal["endpoint"]}, timeout=45)
+                                    discovery(proposal["endpoint"], proposal.get("local"), request_id),
+                                    timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
         state = await gateway_proxy("/api/registry", authorization)
         if (proposal["basis"] == intake_proposal.basis(row) and proposal["scan_sha256"] == intake_proposal.scan_basis(gate)
                 and proposal["expires_at"] > datetime.now(UTC).isoformat()
@@ -2057,11 +2146,15 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
             "SELECT endpoint FROM mcp_runtimes WHERE intake_id=%s AND status='ACTIVE' AND source_commit=%s",
             (request_id, row.get("commit_sha")))
         endpoint = runtime["endpoint"] if runtime else ""
+    local = None
+    if not endpoint and evidence.get("local_run"):
+        local = await signed_local_run(evidence["local_run"], sid)
+        endpoint = local_jobs.PREFIX + sid
     found = None
     blockers = []
     if endpoint:
-        found = await gateway_proxy("/api/registry/discover", authorization, "POST",
-                                    {"endpoint": endpoint}, timeout=45)
+        found = await gateway_proxy("/api/registry/discover", authorization, "POST", discovery(endpoint, local, request_id),
+                                    timeout=LOCAL_DISCOVER_SECONDS if local else 45)
     else:
         blockers.append({"code": "execution-missing", "message": "실행 계약이 없습니다. 관리 실행을 확인하세요."})
     record = intake_proposal.source_record(row, found) if found else row.get("provenance") or {}
@@ -2082,6 +2175,8 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
     proposed_risk = intake_proposal.risk_input(row, tools)
     scopes = intake_proposal.tool_reviews(row, tools)
     proposal = {"server_id": sid, "endpoint": endpoint, "catalog": found, "provenance": record, "basis": intake_proposal.basis(row),
+                "local": local, "local_execution": {k: found.get(k) for k in ("observer_device", "observer_uid", "isolation_scope",
+                                                                             "user_mapping", "image_signature")} if local and found else None,
                 "scan_sha256": intake_proposal.scan_basis(gate),
                 "commit_sha": row.get("commit_sha"), "purpose": row["purpose"], "data_class": proposed_risk["data_class"],
                 "risk_input": proposed_risk, "risk": risk_tier.assess(proposed_risk), "tool_reviews": scopes,
@@ -2142,7 +2237,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if proposal["jurisdiction_pack_enabled"] != residency.enabled(state.get("organization") or {}):
             raise HTTPException(409, "관할 규칙이 바뀌었습니다. 다시 열어 확인하세요.")
         found = await gateway_proxy("/api/registry/discover", authorization, "POST",
-                                    {"endpoint": proposal["endpoint"]}, timeout=45)
+                                    discovery(proposal["endpoint"], proposal.get("local"), request_id),
+                                    timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
         if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
             raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
         current = {**row, "provenance": proposal["provenance"]}
@@ -2199,7 +2295,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         reviews = {name: proposal["tool_reviews"][name] for name in selected}
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
-            poisoning_ack=True, tool_reviews=reviews, residency=location)
+            poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
         risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
                        "reasons": risk_reasons, "solo_mode": solo_mode, "solo_operator": solo}
         updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
@@ -2391,7 +2487,7 @@ async def gateway_passthrough(path: str, request: Request, authorization: str | 
                                            "Content-Type": request.headers.get("content-type", "application/json")})
     except httpx.HTTPError as exc:
         raise HTTPException(503, "게이트웨이에 연결할 수 없습니다. 잠시 후 다시 시도하세요.") from exc
-    status = response.headers.get("x-account-status")
+    forwarded = {name: response.headers[name] for name in ("X-Account-Status", "X-Registry-SHA256") if name in response.headers}
     return Response(response.content, status_code=response.status_code,
                     media_type=response.headers.get("content-type", "application/json"),
-                    headers={"X-Account-Status": status} if status else None)
+                    headers=forwarded or None)

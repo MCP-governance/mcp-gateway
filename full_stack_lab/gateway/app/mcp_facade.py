@@ -276,12 +276,13 @@ def transport_security() -> TransportSecuritySettings:
     hosts = ["gateway:*", "gateway-sse:*", "localhost:*", "127.0.0.1:*"]
     # 실기기 배치(compose.field.yaml): PC의 하네스는 공개 주소로 부르고 Caddy가 그 Host를 그대로 넘긴다.
     # DNS 리바인딩 방어는 유지하되, 배포자가 정한 그 이름 하나만 더한다(포트 없는 Host도 오므로 둘 다).
+    # 포트 없는 Host(기본 443)는 "이름:*"과 별개 항목이다. 공개 이름이 위 기본 목록의 이름과 같아도(루프백 시험 배치)
+    # 포트 없는 항목은 따로 더해야 한다.
     public = urlsplit(os.getenv("GATEWAY_PUBLIC_MCP_URL", "")).hostname
-    if public and f"{public}:*" not in hosts:
-        hosts += [public, f"{public}:*"]
-    name = os.getenv("FIELD_PUBLIC_NAME", "")
-    if name:
-        hosts += [name, f"{name}:*"]
+    for name in (public, os.getenv("FIELD_PUBLIC_NAME", "")):
+        for host in ((name, f"{name}:*") if name else ()):
+            if host not in hosts:
+                hosts.append(host)
     return TransportSecuritySettings(
         allowed_hosts=hosts,
         allowed_origins=["http://localhost:*", "http://127.0.0.1:*"],

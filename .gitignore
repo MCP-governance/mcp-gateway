@@ -8,3 +8,5 @@ full_stack_lab/.env
 full_stack_lab/.env.native
 full_stack_lab/.native/
 .vscode/settings.json
+# Ephemeral CI TLS keys and generated registry, never publish as evidence.
+full_stack_lab/.acceptance-tls/

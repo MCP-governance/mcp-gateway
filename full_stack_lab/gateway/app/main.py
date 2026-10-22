@@ -19,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
+from . import addon, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -266,6 +266,23 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
     return user
 
 
+class AddonDecision(StrictModel):
+    server_id: str = Field(min_length=1, max_length=120)
+    tool: str = Field(min_length=1, max_length=200)
+    arguments: dict = Field(default_factory=dict)
+    gateway: str = Field(default="unknown", max_length=40)
+    asserted: dict[str, str] = Field(default_factory=dict, max_length=10)
+    call_ref: str | None = Field(default=None, max_length=80)
+
+
+class AddonResult(StrictModel):
+    decision_id: int
+    outcome: Literal["executed", "not_executed"]
+    is_error: bool = False
+    result_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
+    result_bytes: int | None = Field(default=None, ge=0)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     await bootstrap()
@@ -336,7 +353,6 @@ async def suspensions(_: dict = Depends(admin_caller)) -> dict:
 @app.post("/api/suspensions")
 async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller)) -> dict:
     try:
-        await local_jobs.quiesce(server_id=request.server_id, user_token=request.user_token)
         return await user_suspend.suspend(request.user_token, request.server_id, user["principal"], request.reason)
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
@@ -347,9 +363,7 @@ async def suspend_use(request: SuspendRequest, user: dict = Depends(admin_caller
 @app.post("/api/suspensions/{suspension_id}/resume")
 async def resume_use(suspension_id: int, request: OpsResume, user: dict = Depends(admin_caller)) -> dict:
     try:
-        result = await user_suspend.resume(suspension_id, user["principal"], request.note)
-        await local_jobs.resume(server_id=result['server_id'],user_token=result['user_token'])
-        return result
+        return await user_suspend.resume(suspension_id, user["principal"], request.note)
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -722,6 +736,16 @@ async def session(request: SessionRequest) -> dict:
     if response.status_code != 200:
         raise HTTPException(401, "아이디와 비밀번호를 확인하세요.")
     return response.json()
+
+
+@app.post("/api/addon/v1/mcp-decision")
+async def addon_mcp_decision(request: AddonDecision, user: dict = Depends(caller)) -> dict:
+    return await addon.decide(user, request.model_dump())
+
+
+@app.post("/api/addon/v1/mcp-result")
+async def addon_mcp_result(request: AddonResult, user: dict = Depends(caller)) -> dict:
+    return await addon.record_result(user, request.model_dump())
 
 
 @app.post("/api/approvals/{approval_id}/approve")

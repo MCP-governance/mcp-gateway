@@ -5,12 +5,14 @@ research/llm-wiki/analysis/wbs-1015 (lab results on the merged source, deploy re
 PJ1 queries) or a subagent work report, and the checks below fail the build when that evidence says
 otherwise. Real-device scores stay where PJ1 did not exercise the condition (no harness run today).
 """
+import argparse
 import json
-import shutil
 import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 
-from build_snapshot import REPO, WIKI, STAGES, digest, read, write_outputs
+from build_snapshot import REPO, STAGES, digest, read
+from evidence_gate import selected_current_runs, selected_legacy_runs
 
 E = 'research/llm-wiki/analysis/wbs-1015/'
 REPORTS = 'research/llm-wiki/status/reports/2026-10-15-'
@@ -25,9 +27,16 @@ def git(*args):
     return subprocess.run(['git', '-C', str(REPO), *args], capture_output=True, text=True)
 
 
-def lab_results():
-    rows = [json.loads(line) for line in (REPO / LAB).read_text(encoding='utf-8').splitlines() if line.strip()]
-    return {row['test']: row for row in rows}
+def lab_results(manifest_path, historical=False, image_digest=None, environment=None):
+    if manifest_path is None:
+        raise ValueError('explicit evidence manifest required')
+    manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+    if historical:
+        return selected_legacy_runs(REPO, manifest)
+    if git('status', '--porcelain', '--untracked-files=all').stdout.strip():
+        raise ValueError('current evidence requires a clean working tree')
+    head = git('rev-parse', 'HEAD').stdout.strip()
+    return selected_current_runs(REPO, manifest, head, image_digest, environment)
 
 
 def item(scores, notes, gap, tests=(), evidence=(), workstream=None):
@@ -340,16 +349,17 @@ def page_sections(data, appliance, sample=None):
     data['live_sample'] = sample
 
 
-def build_after_wbs_1015(extra=None, sample=None):
-    """extra: further item configs (the inspection workstream adds its own after its merge)."""
+def build_after_wbs_1015(extra=None, sample=None, manifest_path=None, historical=False):
+    """Reproduce the 10-15 historical score; current scoring needs every stage rebound."""
+    if not historical:
+        raise ValueError('historical replay only: deployment and device evidence are 10-15 snapshots')
     configs = {**CONFIGS, **(extra or {})}
-    target = WIKI / 'analysis/development-wbs/snapshot.json'
-    before = WIKI / 'analysis/development-wbs/snapshot-before-wbs-1015.json'
+    before = REPO / 'research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json'
     if not before.exists():
-        shutil.copyfile(target, before)
+        raise FileNotFoundError(before)
     data = read('research/llm-wiki/analysis/development-wbs/snapshot-before-wbs-1015.json')
     assert data['summary']['progress'] == 24.8, 'baseline must be the 10-14 snapshot'
-    labs = lab_results()
+    labs = lab_results(manifest_path, historical)
     deploy = read(DEPLOY)
     appliance = read(APPLIANCE)
     head = git('rev-parse', 'HEAD').stdout.strip()
@@ -367,7 +377,10 @@ def build_after_wbs_1015(extra=None, sample=None):
         if not cfg:
             continue
         for test in cfg['tests']:
-            assert test in labs and labs[test]['rc'] == 0, f"{row['id']}: {test} did not pass on the merged source"
+            expected_status = 'historical' if historical else 'valid'
+            assert (test in labs and labs[test]['rc'] == 0
+                    and labs[test]['evidence_status'] == expected_status), (
+                f"{row['id']}: {test} lacks selected {expected_status} evidence")
         for stage, score in cfg['scores'].items():
             assert score >= row['stage_scores'][stage], f"{row['id']}: {stage} would fall without a recorded reason"
         row['stage_scores'] = cfg['scores']
@@ -406,8 +419,29 @@ def build_after_wbs_1015(extra=None, sample=None):
         '하네스 자연어 E2E는 Claude Code만 했다(Codex 로그인 문제). 원격 MCP 제공자 쪽 실제 변경 효과는 확인 대상이 아니다.',
         '10-15 범위 기록은 사용자가 허락한 root 권한으로 기존 신청 목적을 옮긴 것이며 새 도입 승인이 아니다.']))
     page_sections(data, appliance, sample)
-    return write_outputs(data)
+    return data
+
+
+def current_evidence_summary(manifest_path, image_digest, environment):
+    """Inspect selected current runs without applying 10-15 deployment/device scores."""
+    labs = lab_results(manifest_path, False, image_digest, environment)
+    return {'evidence_mode': 'current',
+            'selected': {test: row['evidence_status'] for test, row in sorted(labs.items())}}
 
 
 if __name__ == '__main__':
-    build_after_wbs_1015(extra=E2E_CONFIGS)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--manifest', type=Path, required=True)
+    parser.add_argument('--historical-replay', action='store_true',
+                        help='reproduce the 10-15 score from pinned historical rows')
+    parser.add_argument('--image-digest', help='current test image digest (use none for no image)')
+    parser.add_argument('--environment', help='current test environment identifier')
+    args = parser.parse_args()
+    if args.historical_replay:
+        result = build_after_wbs_1015(extra=E2E_CONFIGS, manifest_path=args.manifest,
+                                      historical=True)
+        output = {'progress': result['summary']['progress'],
+                  'complete': result['summary']['complete'], 'evidence_mode': 'historical'}
+    else:
+        output = current_evidence_summary(args.manifest, args.image_digest, args.environment)
+    print(json.dumps(output, ensure_ascii=False))

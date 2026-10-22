@@ -145,18 +145,22 @@ async def applicant_device(token: str, intake_id: str) -> str:
     """The contract is observed where the applicant will run it: their active managed PC."""
     bound = await db.fetch_one("SELECT local_observer_device FROM mcp_intake_requests WHERE id=%s", (intake_id,))
     if bound and bound.get("local_observer_device"):
-        device = await _device(bound["local_observer_device"])
-        if device["owner_token"] != token:
-            raise ValueError("관찰 엔드포인트의 소유자가 신청자와 다릅니다.")
-        return device["endpoint_id"]
+        try:
+            device = await _device(bound["local_observer_device"])
+        except NotStarted:
+            device = None  # 키트 재설치로 장치가 바뀌었다. 신청자의 현재 장치로 다시 묶는다(새 서명 세대로 관찰).
+        if device:
+            if device["owner_token"] != token:
+                raise ValueError("관찰 엔드포인트의 소유자가 신청자와 다릅니다.")
+            return device["endpoint_id"]
     row = await db.fetch_one(
         """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active' AND managed_state='active'
            AND local_uid IS NOT NULL ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
     if not row:
         raise ValueError("신청자의 활성 관리형 PC가 없어 로컬 실행 계약을 확인할 수 없습니다.")
     bound = await db.fetch_one(
-        """UPDATE mcp_intake_requests SET local_observer_device=COALESCE(local_observer_device,%s)
-           WHERE id=%s RETURNING local_observer_device""", (row["endpoint_id"], intake_id))
+        """UPDATE mcp_intake_requests SET local_observer_device=%s WHERE id=%s RETURNING local_observer_device""",
+        (row["endpoint_id"], intake_id))
     return bound["local_observer_device"]
 
 
@@ -336,7 +340,9 @@ async def authorized(connection, device, server, digest, method, *, generation=N
         EXISTS(SELECT 1 FROM local_manifest_revocations r WHERE r.server_id=a.server_id
                AND r.signature_generation>=a.signature_generation) AS withdrawn
         FROM local_approvals a JOIN endpoint_agents e ON e.endpoint_id=%s JOIN principals p ON p.token=e.owner_token
-        JOIN mcp_intake_requests i ON i.id=a.intake_id AND i.status='APPROVED' AND i.local_observer_device=a.observer_device
+        JOIN mcp_intake_requests i ON i.id=a.intake_id AND i.local_observer_device=a.observer_device
+             -- 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다(D-192). 운영 실행은 아래 observed·OPERATING 조건이 막는다.
+             AND (i.status='APPROVED' OR (NOT a.observed AND i.status IN ('HOLD','VALIDATED')))
         LEFT JOIN mcp_servers s ON s.id=a.server_id WHERE a.server_id=%s
         AND EXISTS(SELECT 1 FROM policy_versions WHERE status='ACTIVE')""", (device['endpoint_id'],server))).fetchone()
     if not row or row['revoked'] or row['withdrawn'] or row['expires_at']<=datetime.now(UTC) or row['manifest_sha256']!=digest:
@@ -595,6 +601,17 @@ async def resume(*, server_id='', user_token='', device_id=''):
         return
     await db.execute('DELETE FROM local_run_stops WHERE server_id=%s AND user_token=%s AND device_id=%s',
                      (server_id,user_token,device_id))
+
+
+async def resume_user_stop(connection, server_id: str, user_token: str) -> None:
+    """Reopen exactly one pair in the same transaction that resumes its suspension row."""
+    if not server_id or not user_token:
+        raise ValueError('로컬 재개 범위가 올바르지 않습니다.')
+    # The catalog may have changed since suspension. An exact-pair delete is
+    # idempotent and never clears a server-wide, user-wide or device stop.
+    await connection.execute(
+        "DELETE FROM local_run_stops WHERE server_id=%s AND user_token=%s AND device_id=''",
+        (server_id,user_token))
 
 
 async def prepare_token_revocation(connection, tokens):

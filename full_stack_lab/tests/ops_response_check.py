@@ -28,7 +28,10 @@ import trivy_scan
 
 def ops_module():
     # Import-time dependencies are replaced only for this isolated unit module.
-    db, release, review = (types.ModuleType("app." + name) for name in ("db", "release", "review"))
+    db, local_jobs, release, review = (types.ModuleType("app." + name)
+                                       for name in ("db", "local_jobs", "release", "review"))
+    local_jobs.quiesce = AsyncMock()
+    local_jobs.is_local = lambda _: False
     contract = types.ModuleType("app.contract")
     contract.canonical_hash = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
     contract.POLICY_RESULT = types.SimpleNamespace(is_valid=lambda v: isinstance(v, dict) and "decision" in v and "policy_id" in v)
@@ -36,7 +39,8 @@ def ops_module():
     http.AsyncClient = Mock()
     psycopg_json = types.ModuleType("psycopg.types.json")
     psycopg_json.Jsonb = lambda value: value
-    dependencies = {"app.db": db, "app.release": release, "app.review": review, "app.contract": contract,
+    dependencies = {"app.db": db, "app.local_jobs": local_jobs, "app.release": release,
+                    "app.review": review, "app.contract": contract,
                     "httpx": http, "psycopg": types.ModuleType("psycopg"),
                     "psycopg.types": types.ModuleType("psycopg.types"), "psycopg.types.json": psycopg_json}
     with patch.dict(sys.modules, dependencies):
@@ -179,12 +183,13 @@ class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
     async def test_suspend_stops_runtime_and_never_reactivates(self):
         connection = AsyncMock()
         cursor = AsyncMock()
-        cursor.fetchone.return_value = {"id": 1}
+        cursor.fetchone.side_effect = [{"status": "READY"}, {"id": 1}]
         connection.execute.return_value = cursor
         @asynccontextmanager
         async def transaction():
             yield connection
         ops.db.transaction = transaction
+        ops.db.fetch_one = AsyncMock(return_value={"status": "READY", "suspended": False})
         await ops.suspend("chosen", "drift", "자동 중지", {"findings": []})
         queries = "\n".join(c.args[0] for c in connection.execute.call_args_list)
         self.assertIn("status='STOPPING'", queries)

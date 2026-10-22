@@ -86,6 +86,13 @@ class NativeRotationCheck:
                     rotated_at timestamptz, revoked_at timestamptz
                 );
                 CREATE TABLE agent_revoked_tokens (jti uuid PRIMARY KEY, expires_at timestamptz NOT NULL);
+                -- Family revocation first stops local jobs bound to the revoked access tokens
+                -- (local_jobs.prepare_token_revocation); only the columns it reads or writes.
+                CREATE TABLE local_jobs (
+                    id uuid PRIMARY KEY, token_jti uuid, state text NOT NULL DEFAULT 'queued',
+                    stop_requested boolean NOT NULL DEFAULT false, started_at timestamptz,
+                    stopped_at timestamptz, finished_at timestamptz
+                );
                 INSERT INTO principals VALUES ('rotation_fixture', 'rotation_fixture', 'active', false);
             """)
 
