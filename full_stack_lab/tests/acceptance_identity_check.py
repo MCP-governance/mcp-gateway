@@ -25,6 +25,9 @@ class AcceptanceIdentityTests(unittest.IsolatedAsyncioTestCase):
             p = patch.object(a, name, value)
             p.start()
             self.addCleanup(p.stop)
+        environment = patch.dict(os.environ, ACCEPTANCE_FETCH_ENDPOINT="https://mcp-fetch-tls:8443/mcp")
+        environment.start()
+        self.addCleanup(environment.stop)
         self.client_type = httpx.AsyncClient
 
     def transport(self, handler):
@@ -123,7 +126,9 @@ class AcceptanceIdentityTests(unittest.IsolatedAsyncioTestCase):
                 return httpx.Response(404)
             expected = "Bearer console-admin"
             if path == "/api/mcp-requests":
-                self.assertEqual(json.loads(request.content)["requested_tools"], ["fetch"])
+                body = json.loads(request.content)
+                self.assertEqual(body["requested_tools"], ["fetch"])
+                self.assertEqual(body["endpoint_url"], "https://mcp-fetch-tls:8443/mcp")
                 requests += 1
                 if requests == 1:
                     expected = "Bearer console-employee"
@@ -157,6 +162,14 @@ class AcceptanceIdentityTests(unittest.IsolatedAsyncioTestCase):
             await a.console_registration_expires()
         self.assertEqual(seen[-2].method, "DELETE")
         self.assertEqual(seen[-1].url.path, "/mcp/acceptance-fetch/")
+
+    async def test_registration_fixture_requires_explicit_https(self):
+        with patch.dict(os.environ, ACCEPTANCE_FETCH_ENDPOINT="http://mcp-fetch:8000/mcp"), \
+                patch.object(a, "operating", new=AsyncMock()), \
+                patch.object(a.httpx, "AsyncClient") as client:
+            with self.assertRaisesRegex(AssertionError, "HTTPS"):
+                await a.console_registration_expires()
+        client.assert_not_called()
 
     async def test_console_management_keeps_console_session(self):
         def handle(request):

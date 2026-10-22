@@ -469,7 +469,9 @@ async def console_registration_expires() -> str:
     approval ends on a date (P-APPROVAL-EXPIRY-001); deregistering takes the path away.
     The lab's fetch server stands in under another id, so no outside network is needed."""
     await operating("fetch")
-    server_id, endpoint = "acceptance-fetch", "http://mcp-fetch:8000/mcp"
+    server_id = "acceptance-fetch"
+    endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
+    expect(urlsplit(endpoint).scheme == "https", "ACCEPTANCE_FETCH_ENDPOINT에 신뢰된 HTTPS fetch 시험 경로가 필요합니다.")
     url = f"{API}/mcp/{server_id}/"
     headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
     arguments = {"url": "http://intranet.bob.local/", "max_length": 200}
