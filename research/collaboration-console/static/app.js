@@ -7,6 +7,9 @@ const modelChecks = { confirmed: "응답 모델 확인됨", mismatch: "응답 �
 const kinds = { message: "메시지", task: "작업 상태", check: "검증" };
 const inactive = new Set(["completed", "passed", "failed", "blocked", "cancelled"]);
 const activeTaskStates = new Set(["queued", "running", "waiting"]);
+const rendered = new Map();
+const feeds = new WeakMap();
+let pollTimer, polling = false;
 const CHANNEL_META = {
   overview: { title: "개요", topic: "두 에이전트가 공유한 메시지, 맡은 작업, 수행한 검증을 실시간으로 확인합니다." },
   wbs: { title: "wbs", topic: "목표 G01–G10의 구현·회귀·배포·실제환경·검수 근거별 진척입니다." },
@@ -30,7 +33,18 @@ function eventMatchesFilter(event, author, query) {
   return (author === "all" || event.author === author) && (!query || `${event.body} ${event.task_id}`.toLocaleLowerCase().includes(query));
 }
 
+function renderChanged(key, inputs, draw) {
+  const previous = rendered.get(key);
+  if (previous && inputs.every((value, index) => value === previous[index])) return;
+  draw();
+  rendered.set(key, inputs);
+}
+
 function renderFeed(container, events, { follow } = {}) {
+  const previous = feeds.get(container);
+  if (previous && previous.follow === follow && previous.events.length === events.length &&
+      events.every((event, index) => event === previous.events[index])) return;
+  feeds.set(container, { events, follow });
   const previousScroll = container.scrollTop;
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 90;
   container.replaceChildren();
@@ -70,6 +84,7 @@ function renderOverview() {
 }
 
 function renderTaskList() {
+  const focusedKey = document.activeElement?.dataset.taskKey;
   $("task-list").replaceChildren();
   const tasks = state.tasks.slice().sort((a, b) => b.id - a.id);
   $("task-badge").hidden = !tasks.length;
@@ -77,17 +92,20 @@ function renderTaskList() {
   if (!tasks.length) { $("task-list").append(node("p", "empty", "등록된 작업이 없습니다.")); return; }
   for (const task of tasks) {
     const card = node("button", "task-card" + (state.selectedTask === task.task_id ? " selected" : ""));
+    card.dataset.taskKey = JSON.stringify([task.task_id, task.author]);
     const top = node("div", "task-top");
     top.append(node("strong", "", task.task_id), node("span", `state state-${task.state}`, labels[task.state]));
     card.append(top, node("span", "task-author", `${task.author} 담당`), node("p", "task-body", task.body), node("time", "", time(task.timestamp)));
     if (!inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000) card.append(node("span", "stale", "10분 이상 갱신 없음"));
     card.addEventListener("click", () => { state.selectedTask = task.task_id; renderTasks(); });
     $("task-list").append(card);
+    if (card.dataset.taskKey === focusedKey) card.focus({ preventScroll: true });
   }
 }
 
 function renderTasks() {
-  renderTaskList();
+  renderChanged("task-list", [state.tasks, state.selectedTask,
+    state.tasks.map(task => !inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000).join()], renderTaskList);
   const heading = $("thread-heading");
   heading.replaceChildren();
   if (!state.selectedTask) {
@@ -247,6 +265,7 @@ function renderWbs() {
   $("wbs-badge").textContent = data.summary.total - data.summary.complete;
   $("wbs-goals").replaceChildren();
   const goalSelect = $("wbs-goal-filter");
+  const selectedGoal = goalSelect.value;
   goalSelect.replaceChildren(node("option", "", "모든 목표"));
   goalSelect.firstChild.value = "";
   for (const goal of data.goals) {
@@ -260,6 +279,7 @@ function renderWbs() {
     option.value = goal.id;
     goalSelect.append(option);
   }
+  goalSelect.value = selectedGoal;
   $("wbs-stage-totals").replaceChildren();
   for (const [key, label] of Object.entries(data.rubric.stage_labels)) {
     const div = node("div", "stage-total");
@@ -281,12 +301,23 @@ function updateChannelChrome() {
   for (const view of document.querySelectorAll(".view")) view.classList.toggle("active", view.id === `view-${state.channel}`);
 }
 function render() {
-  renderMembers();
-  renderOverview();
-  renderTasks();
-  renderRuns();
-  renderChecks();
-  if (state.wbs) renderWbs();
+  if (document.hidden) return;
+  $("task-badge").hidden = !state.tasks.length;
+  $("task-badge").textContent = state.tasks.length;
+  $("run-badge").hidden = !state.runs.length;
+  $("run-badge").textContent = state.runs.length;
+  if (state.wbs) {
+    $("wbs-badge").hidden = false;
+    $("wbs-badge").textContent = state.wbs.summary.total - state.wbs.summary.complete;
+  }
+  renderChanged("members", [state.events, state.tasks,
+    state.events.map(event => Date.now() - new Date(event.timestamp).getTime() < 600000).join()], renderMembers);
+  if (state.channel === "overview") renderChanged("overview", [state.events, state.tasks, state.wbs], renderOverview);
+  if (state.channel === "tasks") renderChanged("tasks", [state.events, state.tasks, state.selectedTask,
+    state.tasks.map(task => !inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000).join()], renderTasks);
+  if (state.channel === "runs") renderChanged("runs", [state.runs], renderRuns);
+  if (state.channel === "checks") renderChanged("checks", [state.events], renderChecks);
+  if (state.channel === "wbs") renderChanged("wbs", [state.wbs], renderWbs);
 }
 function setChannel(channel) {
   state.channel = channel;
@@ -302,22 +333,29 @@ function closeSidebars() {
 }
 
 async function poll() {
+  if (document.hidden || polling) return;
+  clearTimeout(pollTimer);
+  polling = true;
   try {
     const response = await fetch(`/api/events?after=${state.cursor}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    const runsResponse = await fetch("/api/runs", { cache: "no-store" });
-    if (runsResponse.ok) state.runs = (await runsResponse.json()).runs;
+    if (!document.hidden) {
+      const runsResponse = await fetch("/api/runs", { cache: "no-store" });
+      if (runsResponse.ok) updateSnapshot("runs", (await runsResponse.json()).runs);
+    }
     try {
-      const wbsResponse = await fetch("/api/wbs", { cache: "no-store" });
-      if (wbsResponse.ok) state.wbs = await wbsResponse.json();
+      if (!document.hidden) {
+        const wbsResponse = await fetch("/api/wbs", { cache: "no-store" });
+        if (wbsResponse.ok) updateSnapshot("wbs", await wbsResponse.json());
+      }
     } catch (_) { /* WBS is a secondary panel; events/runs still render if it is unavailable */ }
     if (data.cursor < state.cursor) state.events = [];
     const ids = new Set(state.events.map(event => event.id));
-    for (const event of data.events) if (!ids.has(event.id)) state.events.push(event);
-    state.events = state.events.slice(-1000);
+    const additions = data.events.filter(event => !ids.has(event.id));
+    if (additions.length) state.events = state.events.concat(additions).slice(-1000);
     state.cursor = data.cursor;
-    state.tasks = data.tasks;
+    updateSnapshot("tasks", data.tasks);
     state.connected = true;
     $("connection").textContent = "연결됨";
     $("connection-dot").className = "dot connected";
@@ -335,9 +373,19 @@ async function poll() {
     $("notice").textContent = `서버에 연결할 수 없습니다 (${error.message}).`;
     $("notice").hidden = false;
   } finally {
-    setTimeout(poll, 2000);
+    polling = false;
+    if (!document.hidden) pollTimer = setTimeout(poll, 2000);
   }
 }
+
+function updateSnapshot(key, value) {
+  if (JSON.stringify(state[key]) !== JSON.stringify(value)) state[key] = value;
+}
+
+document.addEventListener("visibilitychange", () => {
+  clearTimeout(pollTimer);
+  if (!document.hidden) { render(); poll(); }
+});
 
 for (const button of document.querySelectorAll(".channel")) button.addEventListener("click", () => setChannel(button.dataset.channel));
 for (const button of document.querySelectorAll("[data-goto]")) button.addEventListener("click", () => setChannel(button.dataset.goto));

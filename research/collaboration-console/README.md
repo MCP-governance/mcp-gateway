@@ -16,7 +16,9 @@ python -X utf8 research/collaboration-console/console.py serve --host 100.111.15
 
 `--host 0.0.0.0`처럼 모든 인터페이스에 바인딩하면 경고를 출력합니다. 특정 Tailscale IP처럼 좁은 주소에 바인딩하세요. 매일 자동으로 띄우려면 [`install-autostart.ps1`](install-autostart.ps1)로 Windows 작업 스케줄러에 등록합니다(아래 "매일 자동 실행" 참조).
 
-서버를 켜 두면 2초마다 새 기록이 반영되고, `#wbs` 채널은 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
+문서가 보이는 동안 2초마다 새 기록을 조회합니다. 숨김 상태에서는 예약된 폴링을 취소하고, 돌아오면 마지막 커서로 즉시 조회합니다. 이미 시작된 요청은 완료할 수 있으며, 숨김 상태에서는 후속 실행·WBS 조회와 채널 렌더링을 생략합니다. 선택한 채널과 바뀐 내용만 다시 그리며 검색·작성자·따라가기·WBS 필터와 선택한 작업을 유지합니다. `/api/wbs`는 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
+
+폴링·렌더링 회귀는 `node --test research/collaboration-console/test_frontend.mjs`, 문법은 `node --check research/collaboration-console/static/app.js`로 확인합니다. 회귀는 실제 스크립트와 DOM·타이머·fetch 대역을 쓰며 브라우저 메모리 측정이나 실제 서비스 검증을 대신하지 않습니다.
 
 ## 통합 시트 연동
 

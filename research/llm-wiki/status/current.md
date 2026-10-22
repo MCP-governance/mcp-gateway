@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-21
 
+## 범위별 후속: OPS-CONSOLE-EFFICIENCY (10-22)
+
+협업 콘솔의 선택 채널·변경 데이터만 렌더링하고, 문서 숨김 중 폴링 예약과 후속 조회를 멈추며 복귀 시 마지막 커서로 재개하도록 수정했다. 필터·선택 작업·작업 버튼 초점과 기존 커서/1,000건 제한을 대역 회귀로 확인했다. 새 Node 회귀 1개·기존 콘솔 상태 15개·문법 검사 통과. 협업 콘솔 Python 32개 중 31개 통과, 알려진 SheetSync `owner` 부재 단정 1개 실패는 변경하지 않았다. [범위별 보고](reports/2026-10-22-ops-console-efficiency.md)와 [분석·검사](../analysis/ops-console-efficiency/README.md)에 근거·한계를 기록했다. 실제 브라우저/메모리·Codex 렌더러 12.8GB와의 인과관계는 미검증이다. 배포·서비스 재시작·새 웹사이트 실행은 하지 않았다. 다음 작업은 조정자의 변경 검토다.
+
 ## 범위별 후속: OPS-INTAKE-PACKAGING-R3 (10-22)
 
 `10/22-runtime-recovery`의 `62bafc49ec3f360415d229e24ee10b519c7cbe94`에서 도입 워커 이미지의 `supplier_metadata.py` 복사 누락을 한 줄로 수정했다. 격리 import의 수정 전 `ModuleNotFoundError` 재현·수정 후 해소, 새 패키징 회귀 1개·기존 제안값 시험 8개·무인증 라우트/SQL 제약 정적 검사·Python 문법 검사를 통과했다. pyflakes는 미설치로 실행 불가다. 미커밋이며 이미지 빌드·배포·실기기/PJ1 시험은 미실행이다. [범위별 보고](reports/2026-10-22-ops-intake-packaging-r3.md)와 [검사 원본](../analysis/ops-intake-packaging-r3/checks.json)에 한계를 구분했다. 다음 작업은 조정자의 검토와 별도 승인된 배포 검증 인계다. 기존 제품 완료 수치는 변경하지 않았다.

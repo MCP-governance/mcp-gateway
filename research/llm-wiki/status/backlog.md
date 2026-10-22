@@ -4,6 +4,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
+| OPS-CONSOLE-EFFICIENCY | 협업 콘솔 폴링·렌더링 최소화 | [범위별 보고](reports/2026-10-22-ops-console-efficiency.md), [분석·검사](../analysis/ops-console-efficiency/README.md) | 숨긴/변경 없는 채널 재생성 방지·숨김 폴링 중지·커서와 필터/선택 작업 유지 회귀 | 로컬 구현·새 회귀 1개·기존 Node 15개·문법 통과. Python 31통과/알려진 SheetSync 1실패 유지. 실제 브라우저·메모리 미측정. 조정자 검토 대기 |
 | OPS-INTAKE-PACKAGING-R3 | 도입 워커 로컬 의존성 패키징 복구 | [범위별 보고](reports/2026-10-22-ops-intake-packaging-r3.md) | 누락 재현·최소 수정·오프라인 회귀와 배포 검증 구분 | 로컬 구현/회귀 완료, 미커밋. 조정자 검토·별도 승인된 솔루션 기기 이미지 재빌드/배포 및 PJ1 실제 하네스 확인 대기. 이 작업에서는 호스트 접속·빌드·배포 미실행 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | WIKI-03 | 협업 콘솔 통합 시트 연동 | [작업 보고](reports/2026-10-18-sheet-sync.md) | CSV 게시 URL 설정 후 실제 시트 수정·캐시 만료·조회 실패 대체 확인 | 구현·격리 시험 32개·sheet_pull 자체 시험 통과. WBS·백로그 웹 게시 CSV 연결, 콘솔 #wbs '시트 기준' 표시 확인(10-18 14:16, main 29fe6a0) |

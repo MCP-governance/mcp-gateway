@@ -1,0 +1,217 @@
+{
+  "task": "OPS-CONSOLE-EFFICIENCY",
+  "baseline_commit": "62bafc49ec3f360415d229e24ee10b519c7cbe94",
+  "observed_prior_task_commit": "6a33afe521f0b84e5a41734d9077e4d25cf853bc",
+  "final_head": "6a33afe521f0b84e5a41734d9077e4d25cf853bc",
+  "branch": "10/22-runtime-recovery",
+  "files": [
+    {
+      "path": "research/collaboration-console/static/app.js",
+      "sha256": "b0b61bbfa0b9341130a5c67606c9fb29986369a34b7b83665d1c9184686f6f11"
+    },
+    {
+      "path": "research/collaboration-console/test_frontend.mjs",
+      "sha256": "f85a7f1bad82b60bd3d82e8f1128b1ea70e8706ae6e82419f3fb1402785c9ab5"
+    },
+    {
+      "path": "research/collaboration-console/README.md",
+      "sha256": "41c6512f9624fd20457edd3893e87c86796fd45c850a52551c8745aa92d2bab5"
+    },
+    {
+      "path": "docs/ai/DECISIONS.md",
+      "sha256": "fcb6b5b1c1a90e40da7b7017692dc152abc7f26983f9f00381e15bd989f06ae8"
+    },
+    {
+      "path": "research/llm-wiki/status/current.md",
+      "sha256": "4bdc238efb75ac74885430056398f71c4a2e805ce9277fca5e780b7830bff469"
+    },
+    {
+      "path": "research/llm-wiki/status/backlog.md",
+      "sha256": "1a557f2301c96a82c1d058f213691b44cb3f4dd03dbe9031d418f031a11ecf3b"
+    }
+  ],
+  "symbols": [
+    {
+      "symbol": "node",
+      "line": 21
+    },
+    {
+      "symbol": "time",
+      "line": 27
+    },
+    {
+      "symbol": "eventMatchesFilter",
+      "line": 32
+    },
+    {
+      "symbol": "renderChanged",
+      "line": 36
+    },
+    {
+      "symbol": "renderFeed",
+      "line": 43
+    },
+    {
+      "symbol": "renderOverview",
+      "line": 70
+    },
+    {
+      "symbol": "renderTaskList",
+      "line": 86
+    },
+    {
+      "symbol": "renderTasks",
+      "line": 106
+    },
+    {
+      "symbol": "gatewayText",
+      "line": 121
+    },
+    {
+      "symbol": "renderRuns",
+      "line": 127
+    },
+    {
+      "symbol": "renderChecks",
+      "line": 152
+    },
+    {
+      "symbol": "renderMembers",
+      "line": 158
+    },
+    {
+      "symbol": "score",
+      "line": 177
+    },
+    {
+      "symbol": "section",
+      "line": 178
+    },
+    {
+      "symbol": "showWbsDetail",
+      "line": 179
+    },
+    {
+      "symbol": "renderWbsRows",
+      "line": 206
+    },
+    {
+      "symbol": "renderWbs",
+      "line": 242
+    },
+    {
+      "symbol": "updateChannelChrome",
+      "line": 295
+    },
+    {
+      "symbol": "render",
+      "line": 303
+    },
+    {
+      "symbol": "setChannel",
+      "line": 322
+    },
+    {
+      "symbol": "closeSidebars",
+      "line": 328
+    },
+    {
+      "symbol": "poll",
+      "line": 335
+    },
+    {
+      "symbol": "updateSnapshot",
+      "line": 381
+    }
+  ],
+  "prior_task_files": [
+    {
+      "path": "full_stack_lab/supply_chain/intake-worker.Dockerfile",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "full_stack_lab/tests/intake_worker_packaging_test.py",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/ops-intake-packaging-r3/before.txt",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/ops-intake-packaging-r3/checks.json",
+      "matches_prior_commit": false,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/ops-intake-packaging-r3/import-after.txt",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/ops-intake-packaging-r3/import-before.txt",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/ops-intake-packaging-r3/wiki-checks.json",
+      "matches_prior_commit": false,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/status/backlog.md",
+      "matches_prior_commit": false,
+      "diff_numstat": "1\t0\tresearch/llm-wiki/status/backlog.md",
+      "matches_git_normalized": false
+    },
+    {
+      "path": "research/llm-wiki/status/current.md",
+      "matches_prior_commit": false,
+      "diff_numstat": "4\t0\tresearch/llm-wiki/status/current.md",
+      "matches_git_normalized": false
+    },
+    {
+      "path": "research/llm-wiki/status/reports/2026-10-22-ops-intake-packaging-r3.md",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/status/repository-snapshot.json",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    },
+    {
+      "path": "research/llm-wiki/status/repository-snapshot.md",
+      "matches_prior_commit": true,
+      "diff_numstat": "",
+      "matches_git_normalized": true
+    }
+  ],
+  "unchanged_baseline_files": [
+    {
+      "path": "research/collaboration-console/test_console.py",
+      "matches_baseline": true
+    },
+    {
+      "path": "research/llm-wiki/analysis/development-wbs/snapshot.json",
+      "matches_baseline": true
+    },
+    {
+      "path": "research/llm-wiki/tools/sheet_pull.py",
+      "matches_baseline": true
+    }
+  ],
+  "memory_measured": false,
+  "deployment_performed": false
+}
