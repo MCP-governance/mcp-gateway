@@ -202,6 +202,18 @@ class ConsoleTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_gemini_recipient_and_reply_preserve_shared_thread(self):
+        self.log.append("Codex", "message", "DEV-81", "running", "Review fixed commit", recipient="Gemini")
+        self.log.append("Gemini", "message", "DEV-81", "completed", "ACK DEV-81; finding and evidence", recipient="Codex", reply_to=1)
+        events = self.log.snapshot()["events"]
+        self.assertEqual(events[0]["to"], "Gemini")
+        self.assertEqual(events[1]["reply_to"], 1)
+        self.assertEqual(events[1]["author"], "Gemini")
+        with self.assertRaises(ValueError):
+            self.log.append("Codex", "message", "DEV-81", "running", "bad recipient", recipient="external")
+        with self.assertRaises(ValueError):
+            self.log.append("Codex", "message", "DEV-81", "running", "bad reply", reply_to=True)
+
     def test_append_concurrent_producers_preserves_jsonl_and_redacts(self):
         def append(number):
             self.log.append("Codex", "message", "audit", "running", f"record {number}: API_KEY=abc-secret-value")

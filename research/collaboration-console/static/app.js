@@ -1,6 +1,6 @@
 "use strict";
 const $ = id => document.getElementById(id);
-const state = { cursor: 0, events: [], tasks: [], runs: [], wbs: null, connected: false, channel: "overview", selectedTask: null };
+const state = { cursor: 0, events: [], tasks: [], runs: [], worker: null, wbs: null, connected: false, channel: "overview", selectedTask: null };
 const labels = { queued: "대기열", running: "작업 중", waiting: "응답 대기", completed: "완료", passed: "통과", failed: "실패", blocked: "차단됨", cancelled: "중단됨" };
 const outcomes = { running: "실행 중", completed: "완료", turn_error: "턴 오류", usage_limit: "사용량 한도", task_failed: "작업 실패", model_mismatch: "모델 불일치", cancelled: "중단됨" };
 const modelChecks = { confirmed: "응답 모델 확인됨", mismatch: "응답 모델 불일치", unreported: "응답 모델 미보고" };
@@ -8,10 +8,10 @@ const kinds = { message: "메시지", task: "작업 상태", check: "검증" };
 const inactive = new Set(["completed", "passed", "failed", "blocked", "cancelled"]);
 const activeTaskStates = new Set(["queued", "running", "waiting"]);
 const CHANNEL_META = {
-  overview: { title: "개요", topic: "두 에이전트가 공유한 메시지, 맡은 작업, 수행한 검증을 실시간으로 확인합니다." },
+  overview: { title: "개요", topic: "Codex·Claude·Gemini의 작업 요청, 검토 결과, 다음 행동을 같은 스레드에서 확인합니다." },
   wbs: { title: "wbs", topic: "목표 G01–G10의 구현·회귀·배포·실제환경·검수 근거별 진척입니다." },
   tasks: { title: "작업", topic: "task_id별 스레드입니다. 작업을 눌러 관련 기록만 봅니다." },
-  runs: { title: "codex-실행", topic: "Claude·Codex CLI 실행마다 요청/응답 모델, 도구 호출, 결과를 보여 줍니다." },
+  runs: { title: "실행 기록", topic: "CLI의 요청/응답 모델, 도구 호출, 결과입니다. 자동 실행 상태는 작업에서 확인합니다." },
   checks: { title: "검증", topic: "수행한 검증(check) 기록만 모아서 봅니다." },
 };
 
@@ -44,6 +44,8 @@ function renderFeed(container, events, { follow } = {}) {
     const body = node("div", "event-body-wrap");
     const meta = node("div", "event-meta");
     meta.append(node("strong", "author", event.author), node("span", "kind", kinds[event.kind]), node("span", `state state-${event.state}`, labels[event.state]), node("time", "", time(event.timestamp)));
+    if (event.to) meta.append(node("span", "kind", `→ ${event.to === "All" ? "전체" : event.to}`));
+    if (event.reply_to) meta.append(node("span", "kind", `↳ #${event.reply_to} 답장`));
     body.append(meta, node("span", "task-reference", event.task_id), node("p", "event-text", event.body));
     entry.append(avatar, body);
     container.append(entry);
@@ -87,6 +89,7 @@ function renderTaskList() {
 }
 
 function renderTasks() {
+  renderWorker();
   renderTaskList();
   const heading = $("thread-heading");
   heading.replaceChildren();
@@ -98,6 +101,41 @@ function renderTasks() {
   heading.append(node("strong", "", state.selectedTask), node("span", "", `· 기록 ${state.events.filter(e => e.task_id === state.selectedTask).length}건`));
   const events = state.events.filter(event => event.task_id === state.selectedTask);
   renderFeed($("thread-feed"), events);
+}
+
+function renderWorker() {
+  const data = state.worker;
+  $("worker-providers").replaceChildren();
+  $("worker-jobs").replaceChildren();
+  if (!data || !data.available) { $("worker-health").textContent = data?.error || "실행 기록 연결 대기"; return; }
+  $("worker-health").textContent = data.heartbeat_age !== null && data.heartbeat_age < 90 ? `정상 · ${Math.round(data.heartbeat_age)}초 전` : "실행기 확인 필요";
+  const names = {codex: "Codex", claude: "Claude", antigravity: "Gemini"};
+    for (const flow of data.workflows || []) {
+      const row = node("button", "worker-job");
+      const labels = {active:"진행", waiting:"단계 대기", ready:"검토 완료·통합 대기", needs_attention:"확인 필요", paused:"검증 대기", closed:"이전 구성 기록"};
+      row.append(node("strong", "", `LangGraph · ${flow.id}`), node("small", "", `${labels[flow.state] || flow.state} · ${flow.summary}`));
+      row.addEventListener("click", () => { state.selectedTask = flow.id; renderTasks(); });
+      $("worker-jobs").append(row);
+    }
+  for (const provider of data.providers) {
+    const card = node("div", "worker-provider");
+    const waiting = provider.until_at * 1000 > Date.now();
+    card.append(node("strong", "", names[provider.name]), node("small", "", waiting ? `다음 시도 ${time(provider.until_at * 1000)}` : "작업 할당 가능"));
+    if (waiting) card.append(node("small", "", provider.reason));
+    $("worker-providers").append(card);
+  }
+    const descriptions = {running: "실행 중", queued: "대기", waiting_quota: "한도 대기", waiting_service: "모델 용량 대기", waiting_budget: "호출 예산 대기", needs_attention: "확인 필요", orphan_running: "이전 실행 확인 필요", paused: "일시 중지", completed: "완료", closed: "확인 완료", expired: "기한 종료"};
+  const rank = {running: 0, needs_attention: 1, orphan_running: 1, waiting_quota: 2, waiting_service: 2, queued: 3, paused: 4, completed: 5, closed: 6, expired: 6};
+  const jobs = [...data.jobs].sort((a,b) => (rank[a.state] ?? 9) - (rank[b.state] ?? 9) || b.updated - a.updated);
+  for (const job of jobs.filter(j => !["completed", "closed", "expired"].includes(j.state))) {
+    const row = node("button", "worker-job");
+    const top = node("div", "task-top");
+    top.append(node("strong", "", job.title), node("span", "state", descriptions[job.state] || "확인 필요"));
+    row.append(top, node("small", "", `${names[job.provider]} · ${job.task_id} · ${job.state === "running" ? "시작 " + time(job.updated * 1000) : "다음 시도 " + time(job.next_at * 1000)}`));
+    if (job.error && job.state !== "running") row.append(node("small", "worker-diagnostic", job.error));
+    row.addEventListener("click", () => { state.selectedTask = job.task_id; renderTasks(); });
+    $("worker-jobs").append(row);
+  }
 }
 
 function gatewayText(run) {
@@ -140,7 +178,7 @@ function renderChecks() {
 function renderMembers() {
   const box = $("members");
   box.replaceChildren();
-  for (const author of ["Claude", "Codex", "User", "System"]) {
+  for (const author of ["Claude", "Codex", "Gemini", "User", "System"]) {
     const ownEvents = state.events.filter(event => event.author === author);
     const last = ownEvents[ownEvents.length - 1];
     const activeTask = state.tasks.slice().reverse().find(task => task.author === author && activeTaskStates.has(task.state));
@@ -149,7 +187,6 @@ function renderMembers() {
     const avatarRow = node("div", "member-top");
     avatarRow.append(node("span", `avatar avatar-${author.toLowerCase()}`, author[0]), node("span", `member-dot ${recentlyActive ? "online" : "idle"}`));
     member.append(avatarRow, node("strong", "", author));
-    if (author === "Claude") member.append(node("small", "model-badge", "Sonnet 5.5 · xhigh"));
     member.append(node("small", "", activeTask ? `${activeTask.task_id} · ${labels[activeTask.state]}` : "대기 중"));
     member.append(node("time", "", last ? time(last.timestamp) : "기록 없음"));
     box.append(member);
@@ -308,6 +345,10 @@ async function poll() {
     const data = await response.json();
     const runsResponse = await fetch("/api/runs", { cache: "no-store" });
     if (runsResponse.ok) state.runs = (await runsResponse.json()).runs;
+    try {
+      const workerResponse = await fetch("/api/worker", { cache: "no-store" });
+      state.worker = workerResponse.ok ? await workerResponse.json() : null;
+    } catch (_) { state.worker = null; }
     try {
       const wbsResponse = await fetch("/api/wbs", { cache: "no-store" });
       if (wbsResponse.ok) state.wbs = await wbsResponse.json();

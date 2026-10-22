@@ -1,0 +1,20 @@
+[
+  {
+    "name": "langgraph",
+    "version": "1.2.16",
+    "license": "MIT",
+    "url": "https://files.pythonhosted.org/packages/ad/eb/ceb9bed99f6549e9ec51c497b749062d19e0a1c68fea0ad801d55c4a9691/langgraph-1.2.16-py3-none-any.whl",
+    "hashes": {
+      "sha256": "aeceb1bc49488409f12b02f1e51881099391d9e85bcfd78e1dbead71831c41b5"
+    }
+  },
+  {
+    "name": "langgraph-checkpoint-sqlite",
+    "version": "3.1.2",
+    "license": "MIT",
+    "url": "https://files.pythonhosted.org/packages/b2/92/3fd8417a00bd41c40ca586e8f534daaf2c09e80ae891a93552f39ac31538/langgraph_checkpoint_sqlite-3.1.2-py3-none-any.whl",
+    "hashes": {
+      "sha256": "249640b84efd4872585a9ce596a63c2593e543f748341791591aeaf4c878329c"
+    }
+  }
+]

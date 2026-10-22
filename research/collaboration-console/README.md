@@ -1,6 +1,6 @@
-# 개발 현황 허브 — 협업 콘솔 + WBS + Codex 실행 로그
+# 개발 현황 허브 — 협업 콘솔 + WBS + 세 모델 협업
 
-이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#wbs` · `#작업`(task_id별 스레드) · `#codex-실행` · `#검증`으로 나뉘어 있습니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도이며 Python 표준 라이브러리만 사용합니다(새 의존성·CDN·외부 폰트 없음).
+이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#wbs` · `#작업`(task_id별 스레드) · `#실행 기록` · `#검증`으로 나뉩니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도입니다. 웹·기록기는 Python 표준 라이브러리를 쓰고, 자동 협업 실행기만 로컬 가상환경의 LangGraph를 사용합니다.
 
 저장소 루트에서 실행합니다.
 
@@ -155,7 +155,7 @@ powershell -File research/collaboration-console/install-autostart.ps1 -OpenFirew
 
 `runtime/events.jsonl`은 추가만 하는 로컬 기록이며 `.gitignore`로 제외합니다. 요청 파일·원시 결과·로그도 `runtime/`에 두고 공개 Git에 올리지 않습니다. 자격증명 패턴(`Bearer`, `sk-`/`ghp_`/`github_pat_`, JWT, `Authorization:`, `*_PASSWORD`/`*_TOKEN`/`*_API_KEY` 등)은 쓰기 전과 HTTP 응답 전 마스킹합니다. 자동 마스킹은 모든 형식의 비밀 탐지를 보장하지 않으므로 공유 보고에는 필요한 내용만 넣습니다.
 
-HTTP는 `--host`로 지정한 주소(기본 `127.0.0.1`)에만 바인딩하며 고정 정적 파일, `/api/events`, `/api/runs`, `/api/wbs`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다(쓰기는 모두 로컬 `emit`/`claude`/`codex` CLI로만 합니다). Host 헤더는 `127.0.0.1`·`localhost`·실제 바인딩 주소만 허용하고, 그 외 Host·Origin 요청과 경로 탐색을 거부합니다(DNS 리바인딩 방지). 응답에는 CSP(`default-src 'self'` 등)·`X-Content-Type-Options`·`Referrer-Policy` 헤더를 붙입니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다. `/api/wbs`는 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 매 요청 다시 읽어 그대로 돌려줍니다 — 별도 빌드·복사본이 없으므로 그 파일을 갱신하면 다음 2초 폴링에서 바로 반영됩니다.
+HTTP는 `--host`로 지정한 주소(기본 `127.0.0.1`)에만 바인딩하며 고정 정적 파일, `/api/events`, `/api/runs`, `/api/worker`, `/api/wbs`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다(쓰기는 모두 로컬 `emit`/`claude`/`codex` CLI로만 합니다). Host 헤더는 `127.0.0.1`·`localhost`·실제 바인딩 주소만 허용하고, 그 외 Host·Origin 요청과 경로 탐색을 거부합니다(DNS 리바인딩 방지). 응답에는 CSP(`default-src 'self'` 등)·`X-Content-Type-Options`·`Referrer-Policy` 헤더를 붙입니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다. `/api/wbs`는 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 매 요청 다시 읽어 그대로 돌려줍니다 — 별도 빌드·복사본이 없으므로 그 파일을 갱신하면 다음 2초 폴링에서 바로 반영됩니다.
 
 ```powershell
 python -X utf8 research/collaboration-console/test_console.py
@@ -163,3 +163,8 @@ python -X utf8 research/llm-wiki/tools/check_wiki.py
 ```
 
 검사는 다중 작성 보존, 잘못된 이벤트, 비밀·내부 사고 제외, HTTP 읽기 전용·localhost 제한·경로 탐색 차단과 안전한 화면 렌더링을 확인합니다. 실행 기록은 실제 CLI 출력(`fixtures/`의 Claude 인증 실패·Codex 모델 거부, 저장소에 보존된 PJ1 성공 로그)으로 요청 대비 응답 모델, 턴 오류·사용량 한도·작업 실패의 구분, 도구 호출 0건, 게이트웨이 기록 상태, 원시 출력의 비공개를 확인합니다. 실제 브라우저와 실제 Claude CLI 호출은 별도 검증 결과를 기록합니다.
+## 세 모델 협업
+
+협업 화면은 **http://100.111.15.33:1000/** 하나를 사용합니다. `작업 → 자동 실행·대기`에 LangGraph 단계, 제공자별 대기 시각과 실제 큐 상태를 표시합니다. 실행기는 이 폴더의 `.venv/Scripts/python.exe console.py worker`로 동작합니다. `requirements.txt`와 전이 의존성 잠금 파일로 설치하고, 별도 웹 포트나 LangSmith 서버는 띄우지 않습니다.
+
+역할·인계문·확인 응답·한도·명령의 운영 정본은 [COORDINATION.md](COORDINATION.md)입니다. 작업 요청·검토 결과·다음 행동은 같은 task_id에 기록하며, 긴 근거는 원문 파일로 연결합니다. 기존 Markdown 연구 위키와 WBS는 그대로 유지합니다.

@@ -68,9 +68,10 @@ if (`$already) {
 `$python = if (`$pythonw) { `$pythonw.Source } else { (Get-Command python.exe).Source }
 `$argumentList = @('-X', 'utf8', '$ConsolePy', 'serve', '--host', `$BindHost, '--port', `$Port)
 Add-Content -Path `$logPath -Value "`$(Get-Date -Format o) 시작 `$python serve --host `$BindHost --port `$Port"
-Start-Process -FilePath `$python -ArgumentList `$argumentList -WindowStyle Hidden
+`$child = Start-Process -FilePath `$python -ArgumentList `$argumentList -WindowStyle Hidden -Wait -PassThru
+exit `$child.ExitCode
 "@
-Set-Content -Path $Launcher -Value $launcherContent -Encoding UTF8
+[IO.File]::WriteAllText($Launcher, $launcherContent.Replace("`r`n", "`n"), [Text.UTF8Encoding]::new($false))
 
 $action = New-ScheduledTaskAction -Execute "powershell.exe" `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$Launcher`" -BindHost $BindHost -Port $Port"
@@ -78,14 +79,15 @@ $currentUser = "$env:USERDOMAIN\$env:USERNAME"
 # A logon trigger without -User means "any user" and needs elevation; this hub runs for the current user only.
 $triggerLogon = New-ScheduledTaskTrigger -AtLogOn -User $currentUser
 $triggerDaily = New-ScheduledTaskTrigger -Daily -At "09:00"
+$triggerWatch = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 2)
 # IgnoreNew keeps Task Scheduler itself from double-starting; RestartCount covers a launch that fails outright.
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
-    -StartWhenAvailable -AllowStartIfOnBatteries
+    -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($triggerLogon, $triggerDaily) -Settings $settings -User $currentUser -ErrorAction Stop `
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($triggerLogon, $triggerDaily, $triggerWatch) -Settings $settings -User $currentUser -ErrorAction Stop `
     -Description "MINT 개발 협업 콘솔 + WBS 현황판. 로그온 시·매일 09:00 시작, 포트가 이미 열려 있으면 건너뜀." | Out-Null
 
 Write-Host "등록 완료: $TaskName (호스트 $BindHost, 포트 $Port)"

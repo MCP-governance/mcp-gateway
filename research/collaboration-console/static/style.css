@@ -5,6 +5,18 @@
   --blurple:#5865f2;--green:#23a55a;--red:#f23f42;--yellow:#f0b232;--teal:#1abc9c;
   --codex:#1abc9c;--claude:#eb8d5a;--user:#5865f2;--system:#949ba4;
 }
+.avatar-gemini{background:#4777ca;color:#fff}
+.worker-panel{padding:14px;flex:none}
+.worker-panel summary{cursor:pointer}
+.worker-panel .panel-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.worker-panel h2{font-size:13px;margin:0}
+.worker-providers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.worker-provider{display:flex;flex-direction:column;gap:5px;padding:10px;background:var(--bg-field);border-radius:8px;overflow-wrap:anywhere}
+.worker-provider small,.worker-job small,#worker-health{font-size:11px;color:var(--text-muted)}
+.worker-job{display:flex;flex-direction:column;gap:6px;padding:11px;width:100%;background:transparent;color:var(--text);border:0;border-top:1px solid var(--line);text-align:left;overflow-wrap:anywhere}
+.worker-job:hover{background:var(--bg-field)}
+.worker-diagnostic{white-space:pre-wrap;max-height:5em;overflow:auto}
+@media(max-width:600px){.worker-providers{grid-template-columns:1fr}}
 *{box-sizing:border-box}
 body{margin:0;color:var(--text);background:var(--bg-main);font-family:"gg sans",Segoe UI,Malgun Gothic,system-ui,sans-serif;font-size:14px}
 button{font:inherit;cursor:pointer}

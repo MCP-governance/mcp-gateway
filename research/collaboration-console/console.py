@@ -23,7 +23,7 @@ from sheet_pull import CONFIG as SHEET_CONFIG, FILES as SHEET_FILES, SheetSource
 
 DEFAULT_LOG = ROOT / "runtime" / "events.jsonl"
 WBS_SNAPSHOT = REPO_ROOT / "research" / "llm-wiki" / "analysis" / "development-wbs" / "snapshot.json"
-AUTHORS = {"Codex", "Claude", "User", "System"}
+AUTHORS = {"Codex", "Claude", "Gemini", "User", "System"}
 KINDS = {"message", "task", "check"}
 STATES = {"queued", "running", "waiting", "completed", "passed", "failed", "blocked", "cancelled"}
 MAX_BODY = 48_000
@@ -80,6 +80,18 @@ def validate(event):
         if not isinstance(session_id, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,96}", session_id):
             raise ValueError("Invalid session_id")
         result["session_id"] = session_id
+    if event.get("to") is not None:
+        if event["to"] not in AUTHORS | {"All"}:
+            raise ValueError("Invalid recipient")
+        result["to"] = event["to"]
+    if event.get("reply_to") is not None:
+        if type(event["reply_to"]) is not int or event["reply_to"] < 1:
+            raise ValueError("reply_to must be a positive event id")
+        result["reply_to"] = event["reply_to"]
+    if event.get("source_id") is not None:
+        if not isinstance(event["source_id"], str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,120}", event["source_id"]):
+            raise ValueError("Invalid source id")
+        result["source_id"] = event["source_id"]
     return result
 
 
@@ -119,9 +131,10 @@ class EventLog:
         self.path = Path(path).resolve()
         self.lock_path = self.path.with_suffix(self.path.suffix + ".lock")
 
-    def append(self, author, kind, task_id, state, body, session_id=None):
+    def append(self, author, kind, task_id, state, body, session_id=None, *, recipient=None, reply_to=None, source_id=None):
         event = validate({"timestamp": utc_now(), "author": author, "kind": kind,
-                          "task_id": task_id, "state": state, "body": body, "session_id": session_id})
+                          "task_id": task_id, "state": state, "body": body, "session_id": session_id,
+                          "to": recipient, "reply_to": reply_to, "source_id": source_id})
         payload = (json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
         if len(payload) > MAX_LINE:
             raise ValueError("Encoded event too long")
@@ -201,6 +214,9 @@ class Viewer(BaseHTTPRequestHandler):
                 self.respond(200, json.dumps(self.server.run_log.snapshot(), ensure_ascii=False).encode("utf-8"))
             except OSError:
                 self.respond(503, b'{"error":"Run log unavailable"}')
+        elif url.path == "/api/worker":
+            from worker import public_snapshot
+            self.respond(200, json.dumps(public_snapshot(), ensure_ascii=False).encode("utf-8"))
         elif url.path == "/api/wbs":
             try:
                 data = json.loads(WBS_SNAPSHOT.read_text(encoding="utf-8"))
@@ -818,6 +834,13 @@ def main():
     body.add_argument("--body-file")
     body.add_argument("--stdin", action="store_true")
     emit.add_argument("--session-id")
+    emit.add_argument("--to", choices=sorted(AUTHORS | {"All"}))
+    emit.add_argument("--reply-to", type=int)
+    inbox = sub.add_parser("inbox", help="Read addressed messages without calling a model")
+    inbox.add_argument("--log", default=str(DEFAULT_LOG))
+    inbox.add_argument("--for", dest="recipient", choices=sorted(AUTHORS), required=True)
+    inbox.add_argument("--after", type=int, default=0)
+    sub.add_parser("worker", help="Run the background queue without opening another web server")
     claude = sub.add_parser("claude", help="Run the explicitly requested Claude CLI and record its visible output")
     claude.add_argument("--log", default=str(DEFAULT_LOG))
     claude.add_argument("--task-id", required=True)
@@ -859,8 +882,16 @@ def main():
             server.serve_forever(poll_interval=0.5)
         elif args.command == "emit":
             text = Path(args.body_file).read_text(encoding="utf-8-sig") if args.body_file else sys.stdin.read() if args.stdin else args.body
-            event = EventLog(args.log).append(args.author, args.kind, args.task_id, args.state, text, args.session_id)
+            event = EventLog(args.log).append(args.author, args.kind, args.task_id, args.state, text, args.session_id, recipient=args.to, reply_to=args.reply_to)
             print(json.dumps(event, ensure_ascii=False))
+        elif args.command == "inbox":
+            if args.after < 0:
+                raise ValueError("Invalid cursor")
+            snapshot = EventLog(args.log).snapshot(args.after)
+            print(json.dumps({"cursor": snapshot["cursor"], "messages": [event for event in snapshot["events"] if event.get("to") in {args.recipient, "All"}]}, ensure_ascii=False))
+        elif args.command == "worker":
+            from worker import Hub
+            Hub().work()
         elif args.command == "claude":
             return run_claude(args)
         elif args.command == "codex":

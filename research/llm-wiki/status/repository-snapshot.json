@@ -1,12 +1,30 @@
 {
-  "captured_at": "2026-10-21T15:18:58+09:00",
-  "head": "cf9f7e0d7d75c36cde00609692c3239ca078285f",
-  "branch": "10/21-status-update",
+  "captured_at": "2026-10-22T14:03:39+09:00",
+  "head": "204579981ac02956a3ee40301f251ee99af9de6e",
+  "branch": "10/22-langgraph-coordination",
   "status": [
-    "M research/llm-wiki/status/backlog.md",
+    "M .gitignore",
+    " M research/collaboration-console/README.md",
+    " M research/collaboration-console/console.py",
+    " M research/collaboration-console/install-autostart.ps1",
+    " M research/collaboration-console/run-console.ps1",
+    " M research/collaboration-console/static/app.js",
+    " M research/collaboration-console/static/index.html",
+    " M research/collaboration-console/static/style.css",
+    " M research/collaboration-console/test_console.py",
+    " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md"
+    " M research/llm-wiki/status/repository-snapshot.md",
+    "?? research/collaboration-console/COORDINATION.md",
+    "?? research/collaboration-console/coordination.py",
+    "?? research/collaboration-console/requirements.lock.txt",
+    "?? research/collaboration-console/requirements.txt",
+    "?? research/collaboration-console/test_coordination.py",
+    "?? research/collaboration-console/test_worker.py",
+    "?? research/collaboration-console/worker.py",
+    "?? research/llm-wiki/analysis/agent-coordination-20261022/",
+    "?? research/llm-wiki/status/reports/2026-10-22-langgraph-coordination.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -14,7 +32,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805"
+      "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -26,7 +44,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
@@ -50,7 +68,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "c7d2562f6cb171444084b97fb91a77751b1e7d1ca5e2e3b009e35663db029535"
+      "sha256": "1259ae7a57ab0f579ef4d553382c152a5db83eb6e4ffd839ea55556ecab8b22d"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

@@ -1,0 +1,6 @@
+{
+  "invoke_has_durability": true,
+  "sqlite_cursor_calls_setup": true,
+  "workspace_stop": "intentional after unknown write; regression covered",
+  "handoff": "added bounded inline report, no permission expansion"
+}

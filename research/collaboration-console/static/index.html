@@ -22,7 +22,7 @@
         <button class="channel" data-channel="overview"><span class="hash">#</span>개요</button>
         <button class="channel" data-channel="wbs"><span class="hash">#</span>wbs<b id="wbs-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="tasks"><span class="hash">#</span>작업<b id="task-badge" class="badge" hidden></b></button>
-        <button class="channel" data-channel="runs"><span class="hash">#</span>codex-실행<b id="run-badge" class="badge" hidden></b></button>
+        <button class="channel" data-channel="runs"><span class="hash">#</span>실행 기록<b id="run-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="checks"><span class="hash">#</span>검증</button>
       </nav>
       <div class="self-panel">
@@ -34,7 +34,7 @@
       <header class="channel-top">
         <span class="channel-top-hash">#</span>
         <h1 id="channel-title">개요</h1>
-        <p id="channel-topic">두 에이전트가 공유한 메시지, 맡은 작업, 수행한 검증을 실시간으로 확인합니다.</p>
+        <p id="channel-topic">Codex·Claude·Gemini의 작업 요청, 검토 결과, 다음 행동을 같은 스레드에서 확인합니다.</p>
       </header>
       <div id="notice" class="notice" role="status" hidden></div>
 
@@ -49,11 +49,16 @@
           <div class="panel-heading"><h2>WBS 진척</h2><button class="link-button" data-goto="wbs">상세 보기 →</button></div>
           <div class="wbs-mini-body"><strong id="mini-progress">—</strong><progress id="mini-progress-bar" max="100" value="0"></progress><small id="mini-complete">—</small></div>
         </article>
-        <div class="filters"><label>작성자<select id="overview-author"><option value="all">모두</option><option>Codex</option><option>Claude</option><option>User</option><option>System</option></select></label><label class="search">기록 검색<input id="overview-search" type="search" placeholder="작업 ID 또는 메시지"></label><label class="follow"><input id="follow" type="checkbox" checked>최신 기록 따라가기</label></div>
+        <div class="filters"><label>작성자<select id="overview-author"><option value="all">모두</option><option>Codex</option><option>Claude</option><option>Gemini</option><option>User</option><option>System</option></select></label><label class="search">기록 검색<input id="overview-search" type="search" placeholder="작업 ID 또는 메시지"></label><label class="follow"><input id="follow" type="checkbox" checked>최신 기록 따라가기</label></div>
         <div id="overview-feed" class="feed" aria-live="polite"></div>
       </section>
 
       <section id="view-tasks" class="view">
+        <details class="panel worker-panel">
+          <summary class="panel-heading"><h2>자동 실행·대기</h2><span id="worker-health">확인 중</span></summary>
+          <div id="worker-providers" class="worker-providers"></div>
+          <div id="worker-jobs" class="worker-jobs"></div>
+        </details>
         <div class="task-layout">
           <div id="task-list" class="task-list"></div>
           <div class="thread-panel">
@@ -68,7 +73,7 @@
       </section>
 
       <section id="view-checks" class="view">
-        <div class="filters"><label>작성자<select id="checks-author"><option value="all">모두</option><option>Codex</option><option>Claude</option><option>User</option><option>System</option></select></label><label class="search">기록 검색<input id="checks-search" type="search" placeholder="작업 ID 또는 메시지"></label></div>
+        <div class="filters"><label>작성자<select id="checks-author"><option value="all">모두</option><option>Codex</option><option>Claude</option><option>Gemini</option><option>User</option><option>System</option></select></label><label class="search">기록 검색<input id="checks-search" type="search" placeholder="작업 ID 또는 메시지"></label></div>
         <div id="checks-feed" class="feed" aria-live="polite"></div>
       </section>
 
@@ -94,7 +99,7 @@
     <aside id="member-sidebar" class="member-sidebar">
       <div class="member-heading">멤버</div>
       <div id="members" class="members"></div>
-      <div class="about"><p>공개 답변·도구 호출 이름·명시적 작업 보고만 표시합니다. 내부 사고 과정과 자격증명은 기록하지 않습니다.</p><span id="model-request">Claude 요청: Sonnet 5.5 · xhigh</span></div>
+      <div class="about"><p>공개 답변·도구 호출 이름·명시적 작업 보고만 표시합니다. 내부 사고 과정과 자격증명은 기록하지 않습니다.</p><span id="model-request">요청·응답 모델은 실행 기록에서 확인합니다.</span></div>
     </aside>
   </div>
   <dialog id="detail"><div class="dialog-top"><span class="eyebrow" id="detail-id"></span><button id="close" class="close" aria-label="상세 닫기">×</button></div><h2 id="detail-title"></h2><div id="detail-content"></div></dialog>

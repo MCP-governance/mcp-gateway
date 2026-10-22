@@ -1,0 +1,61 @@
+{
+  "recorded_at": "2026-10-22T14:03:39.420704+09:00",
+  "scope": "local orchestration and observed CLI handoff; no product deployment",
+  "unit_tests": {
+    "command": ".venv/Scripts/python.exe -X utf8 -m unittest -q test_worker test_coordination",
+    "passed": 37,
+    "failed": 0
+  },
+  "existing_console_tests": {
+    "passed": 32,
+    "failed": 1,
+    "failure": "pre-existing owner expectation in SheetSync snapshot"
+  },
+  "dependency_check": "passed",
+  "javascript_syntax": "passed",
+  "wiki": {
+    "errors": 0,
+    "warnings": 32
+  },
+  "product_commits": [
+    "6a33afe",
+    "73dfad7"
+  ],
+  "audit_scope": "Coordinator and Hub.claim inline static review; IO runtime not independently reviewed",
+  "audits": [
+    {
+      "id": "10fa955be706",
+      "state": "completed",
+      "result": "C:\\Users\\bobysg\\bob\\프로젝트\\loop\\agent-hub\\runtime\\results\\10fa955be706-2b50a8ea.md",
+      "updated": 1792644844.87493,
+      "result_sha256": "7bf4063af98b9588ad1f08aaa9e5b1667e5fec9acafa802876c3a54077ccccf5"
+    },
+    {
+      "id": "fff70db8819f",
+      "state": "completed",
+      "result": "C:\\Users\\bobysg\\bob\\프로젝트\\loop\\agent-hub\\runtime\\results\\fff70db8819f-c595bc3d.md",
+      "updated": 1792645269.9076355,
+      "result_sha256": "68cded3d2762af49ca657521b4d39cb18d26368d7a15734e3705d43170f71e4c"
+    },
+    {
+      "id": "797c808bff3a",
+      "state": "closed",
+      "result": "C:\\Users\\bobysg\\bob\\프로젝트\\loop\\agent-hub\\runtime\\results\\797c808bff3a-7b2e2203.md",
+      "updated": 1792645356.9926512,
+      "result_sha256": "0d22e6214d7349ce6fd4cc9860ba3a28738a59481f89dbe975b7f71ee3c62be1"
+    },
+    {
+      "id": "e29efb1ccf84",
+      "state": "closed",
+      "result": "C:\\Users\\bobysg\\bob\\프로젝트\\loop\\agent-hub\\runtime\\results\\e29efb1ccf84-0a192074.md",
+      "updated": 1792645356.9936507,
+      "result_sha256": "f30c67dac96dfa7f37fa59da1cb79efb6cc49a27349e181a51191df5f58455df"
+    }
+  ],
+  "source_sha256": {
+    "coordination.py": "37e2597d3e75624c6da2b4ad21f7ae20219364b8b6ddd193421a441e3c305660",
+    "worker.py": "e5d8728121083ad068fb0391e03e53f251209c899adc8f215c546519d0bc1108",
+    "test_coordination.py": "19d0614263a4079bf428f8e7fb7d1a495443cd8bb6f878deb520f33fc90a7433",
+    "test_worker.py": "91b774338846b8da58980b9416d127fc8c736efb8f08522e29f6fefdc00b2400"
+  }
+}
