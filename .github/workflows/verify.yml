@@ -111,6 +111,8 @@ jobs:
           python -m pip install --quiet -r gateway/requirements.txt
           PYTHONPATH=gateway REGISTRY_DIR="$PWD/registry" python -m app.integrations
           python3 tests/acceptance_identity_check.py
+          python3 tests/acceptance_tls_check.py
+          python3 tests/fixture_mcp_identity_test.py
           python3 tests/system_metrics_check.py
           python3 tests/catalog_refresh_check.py
           python3 tests/oauth_rotation_check.py
@@ -180,6 +182,12 @@ jobs:
           # Keep dependency resolver errors in Actions; console.sh's quiet build
           # otherwise reports only the failed Dockerfile instruction.
           docker compose --progress plain build
+          ./console.sh prepare-acceptance-tls
+          export COMPOSE_FILE=compose.yaml:compose.acceptance.yaml
+          export ACCEPTANCE_TLS_UID="$(id -u)" ACCEPTANCE_TLS_GID="$(id -g)"
+          echo "COMPOSE_FILE=$COMPOSE_FILE" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_UID=$ACCEPTANCE_TLS_UID" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_GID=$ACCEPTANCE_TLS_GID" >> "$GITHUB_ENV"
           ./console.sh up --no-llm
 
       # Rego, classification self-check, gateway acceptance, the scripted workday of
@@ -268,4 +276,4 @@ jobs:
 
       - name: 정리
         if: always()
-        run: APPLIANCE_BIND=127.0.0.1 FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' docker compose -f compose.yaml -f compose.field.yaml --profile llm down -v
+        run: APPLIANCE_BIND=127.0.0.1 FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' docker compose -f compose.yaml -f compose.acceptance.yaml -f compose.field.yaml --profile llm down -v --remove-orphans

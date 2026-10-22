@@ -1,16 +1,20 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-21T19:13:11+09:00
+확인 시각: 2026-10-22T18:40:16+09:00
 
-HEAD: `0dfd6fde5536838675067b8fed220821504a8de5` · 로컬 브랜치: `10/21-sheet-runtime-completion`
+HEAD: `a151c48702b1d559a5721c0a126da5a1eee56dc3` · 로컬 브랜치: `10/21-sheet-runtime-completion`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/status/current.md
-?? research/llm-wiki/status/reports/2026-10-21-ci-recovery.md
+M .github/workflows/verify.yml
+ M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/current.md
+?? research/llm-wiki/status/reports/2026-10-22-ci-completion.md
 ```
 
 ## 주요 파일 바이트
