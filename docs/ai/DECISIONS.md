@@ -2030,4 +2030,5 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   비운다. 새 신청은 검사·승인을 처음부터 다시 거친다.
 - **범위 밖**: 주석 없는 도구를 입력 스키마·설명으로 읽기 후보로 추정해 표시하는 것. 확정은 사람이 한다는 원칙만 우선 반영했다.
 - **시험**: `full_stack_lab/tests/intake_one_click_check.py`의 `test_admin_may_lower_tool_action_only_and_gateway_accepts_it`
-  (게이트웨이 이미지에서 20건 통과). `intake_one_click_ast_check.py`는 main에서도 `discovery` 미정의로 9건 실패하는 기존 결함이다.
+  (게이트웨이 이미지에서 20건 통과). 이미지 없이 도는 `intake_one_click_ast_check.py`는 로컬 실행 승인 경로(D-192)가 쓰는
+  `discovery`를 싣지 않아 9건이 실패하고 있었다. 함께 실어 12건 통과.
