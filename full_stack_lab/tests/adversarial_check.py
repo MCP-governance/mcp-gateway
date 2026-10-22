@@ -23,7 +23,7 @@ import asyncio
 import json
 import os
 import sys
-import urllib.error
+import urllib.parse
 import urllib.request
 from contextlib import contextmanager
 from uuid import uuid4
@@ -218,11 +218,13 @@ BENIGN: list[tuple] = [
 ]
 
 
-def token(email: str, password: str) -> str:
+def mcp_token(email: str, password: str) -> str:
+    issuer = (os.getenv("IDP_INTERNAL_URL") or os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
     request = urllib.request.Request(
-        f"{GATEWAY}/api/session", method="POST",
-        data=json.dumps({"email": email, "password": password}).encode(),
-        headers={"content-type": "application/json"})
+        f"{issuer}/oauth/token", method="POST",
+        data=urllib.parse.urlencode({"grant_type": "password", "client_id": "adversarial-ws",
+                                     "username": email, "password": password}).encode(),
+        headers={"content-type": "application/x-www-form-urlencoded"})
     with urllib.request.urlopen(request, timeout=15) as response:
         return json.load(response)["access_token"]
 
@@ -285,9 +287,9 @@ async def main() -> int:
     # can colour it (a streak of refusals legitimately raises P-ANOMALY-001 on that principal).
     with actors() as (worker, attacker):
         print(f"정상 업무 {len(BENIGN)}건 (오탐 대조군, {worker})")
-        benign = await run(BENIGN, token(worker, PASSWORD), hostile=False)
+        benign = await run(BENIGN, mcp_token(worker, PASSWORD), hostile=False)
         print(f"공격 입력 {len(ATTACKS)}건 ({attacker})")
-        hostile = await run(ATTACKS, token(attacker, PASSWORD), hostile=True)
+        hostile = await run(ATTACKS, mcp_token(attacker, PASSWORD), hostile=True)
 
     rows = benign + hostile
     missed = [row for row in hostile if not row["ok"]]
