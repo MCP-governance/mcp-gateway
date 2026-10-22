@@ -403,8 +403,9 @@ async def authorized(connection, device, server, digest, method, *, generation=N
 class LocalClient:
     """The subset of the SDK client _call_upstream and discovery use."""
 
-    def __init__(self, device_id: str, local: dict, timeout: float):
+    def __init__(self, device_id: str, local: dict, timeout: float, *, discovery: bool = True):
         self.device_id, self.local, self.timeout = device_id, local, timeout
+        self.discovery = discovery
         self.protocol_version = None
         self.server_info = None
         self.reused = False
@@ -423,12 +424,27 @@ class LocalClient:
             evidence_context.reset(token)
             transport_context.reset(transport)
 
+    # A call's own container initializes and checks the approved contract (description, input and output
+    # schema hashes, protocol) on the device before it calls (local-runner execute_job). Answering a call's
+    # initialize and tools/list from that approval here saves two container starts per call, which used to
+    # spend the call's time budget before the call itself ran (10-23 PJ1). Observation still asks the server.
     async def start(self) -> None:
+        if not self.discovery:
+            from . import registry
+            self.protocol_version = registry.pinned_protocol(self.local["manifest"]["server_id"])
+            self.server_info = types.Implementation(name="", version="")
+            return
         hello = await self._send("initialize", {})
         self.protocol_version = hello.get("protocolVersion")
         self.server_info = types.Implementation.model_validate(hello.get("serverInfo") or {"name": "", "version": ""})
 
     async def list_tools(self, cursor=None, **_):
+        if not self.discovery:
+            rows = await db.fetch_all("SELECT name, description, input_schema, output_schema FROM mcp_tools"
+                                      " WHERE server_id=%s AND enabled ORDER BY name", (self.local["manifest"]["server_id"],))
+            return types.ListToolsResult.model_validate({"tools": [
+                {"name": r["name"], "description": r["description"], "inputSchema": r["input_schema"],
+                 **({"outputSchema": r["output_schema"]} if r["output_schema"] is not None else {})} for r in rows]})
         return types.ListToolsResult.model_validate(await self._send("tools/list", {"cursor": cursor} if cursor else {}))
 
     async def call_tool(self, name: str, arguments: dict):
@@ -456,7 +472,7 @@ async def session(endpoint: str, timeout: float, device_id: str | None, *, disco
     target = local.get("observer_device") if discovery else device_id
     if not target:
         raise NotStarted("로컬 실행은 관리형 엔드포인트에서 호출해야 합니다.")
-    client = LocalClient(target, local, timeout)
+    client = LocalClient(target, local, timeout, discovery=discovery)
     client.principal=principal
     await client.start()
     yield client
