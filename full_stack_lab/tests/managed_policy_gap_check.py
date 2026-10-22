@@ -92,8 +92,11 @@ class PolicyGap(unittest.IsolatedAsyncioTestCase):
 
     async def test_removed_server_unknown_record_and_stale_token_stop(self):
         installed = await self.install(["docs", "git"])
-        self.usable = ["git"]  # docs removed (even with git unchanged)
-        self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(installed), server="git"), OLD)
+        self.usable = ["git"]  # docs removed: git keeps working, docs is refused (an upstream in ERROR must not cut the PC off)
+        self.assertIsNone(await self.plane.managed_failure(self.principal, self.claims(installed), server="git"))
+        self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(installed), server="docs"), "사용할 수 없는 서버입니다.")
+        with patch.dict(os.environ, {"ENDPOINT_GATEWAY_IPS": "100.64.0.9"}):  # removal plus a control change still stops
+            self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(installed), server="git"), OLD)
         self.usable = ["docs", "git"]
         self.assertIsNone(await self.plane.managed_failure(self.principal, self.claims(installed), server="git"))
         installed = await self.install(["git"])
