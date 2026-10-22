@@ -56,7 +56,6 @@ h1,h2,h3{letter-spacing:-.025em}p{overflow-wrap:anywhere}
 .brand-copy{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1.05}
 .app-bar .app-title{margin-right:auto}
 .brand-copy strong{font-size:18.8px;font-weight:800;letter-spacing:.04em}
-.brand-copy small{margin-top:3px;color:var(--ink-3);font-size:11.2px;font-weight:500;letter-spacing:.02em;white-space:nowrap}
 .page-head .heading{flex:1;min-width:220px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .page-head h1{margin:0;font-size:var(--fs-xl);font-weight:750;line-height:1.3}
 .page-head .status{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
@@ -78,8 +77,7 @@ h1,h2,h3{letter-spacing:-.025em}p{overflow-wrap:anywhere}
 .panel>.tools input,.panel>.tools select{min-height:40px;border:1px solid var(--line-2);border-radius:7px;padding:7px 11px;background:var(--panel)}
 .panel .body{padding:16px 20px 20px}.panel .body.flush{padding:16px 0 0;overflow-x:auto;overscroll-behavior-x:contain}
 .grid{display:grid;gap:20px}.grid.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.grid.c21{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}.grid.c12{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
-.grid.c31{grid-template-columns:minmax(0,3fr) minmax(0,1fr)}
+.grid.c12{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
 .stack{display:flex;flex-direction:column;gap:20px}.chart{width:100%;height:280px}.chart.sm{height:220px}.chart.lg{height:340px}.chart.xl{height:420px}.chart.is-empty{height:auto}
 .chart:not(.chart-interactive) canvas{cursor:default!important}
 .kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:24px}
@@ -133,7 +131,6 @@ table.call-table td:nth-child(4){min-width:200px;max-width:360px}table.call-tabl
 .decision-reason{margin-bottom:16px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2)}
 .decision-reason span{display:block;margin-bottom:6px;color:var(--ink-3);font-size:15px;font-weight:650}
 .decision-reason p{margin:0;color:var(--ink);font-size:16.2px;line-height:1.6;overflow-wrap:anywhere}
-.detail-section-title{margin:24px 0 8px!important}
 .kv{display:grid;grid-template-columns:140px minmax(0,1fr);gap:0;font-size:16.2px;margin:0}
 .kv dt,.kv dd{padding:11px 0;border-bottom:1px solid var(--line)}.kv dt{color:var(--ink-3)}.kv dd{margin:0;overflow-wrap:anywhere;min-width:0}
 .filters{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:18px 20px;border-bottom:1px solid var(--line)}
@@ -212,8 +209,6 @@ legend{padding:0 6px;font-size:16.2px;color:var(--ink-2);font-weight:700}label.c
 .pill-list,.row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row-actions.center{justify-content:center;padding-bottom:16px}
 #catalog-results>p{margin:0;padding:16px 20px}.spacer{flex:1}
 details summary{padding:12px 0;cursor:pointer;color:var(--ink-2);font-weight:600}
-details.analysis{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:0 20px}
-details.analysis[open]{padding-bottom:20px}
 .pair{display:inline-flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:100%;vertical-align:middle}
 .pair .ev{font-size:13.8px;color:var(--ink-3);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.pair .ev.stale{color:var(--alert)}
 .flow3{display:block;font-size:15px;color:var(--ink-2);white-space:nowrap;margin-bottom:4px}
@@ -241,7 +236,7 @@ details.analysis[open]{padding-bottom:20px}
 .list-search{display:flex;align-items:center;gap:10px;min-width:0}.list-search input{width:min(360px,100%);padding:8px 12px;border:1px solid var(--line-2);border-radius:7px;min-height:40px;background:var(--panel)}
 .list-search .result-count{font-size:15px;color:var(--ink-3)}
 @media(min-width:1450px){.main{padding:32px 40px 64px}}
-@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}.crit{grid-template-columns:repeat(2,minmax(0,1fr))}.stepper{grid-template-columns:repeat(4,minmax(0,1fr))}.app-identity{display:none}.main{padding:24px}.grid.c21,.grid.c12,.grid.c31{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.grid.c3{grid-template-columns:repeat(2,minmax(0,1fr))}.crit{grid-template-columns:repeat(2,minmax(0,1fr))}.stepper{grid-template-columns:repeat(4,minmax(0,1fr))}.app-identity{display:none}.main{padding:24px}.grid.c12{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:900px){.shell,.nav-collapsed .shell{grid-template-columns:minmax(0,1fr)}.side{position:fixed;left:0;top:60px;width:220px;z-index:14;box-shadow:var(--float)}.nav-collapsed .side{display:none}.nav-collapsed .nav .group,.nav-collapsed .nav a span{display:initial}.overview-hero{grid-template-columns:minmax(0,1fr)}.command-search input{width:24vw}.main{padding:24px 20px}.grid.c2,.grid.c3{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.app-bar{padding:0 10px;gap:4px}.app-title{font-size:17.5px}.command-search{display:none}.page-head h1{font-size:27.5px}.main{padding:20px 16px 40px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.kpi{padding:14px}.kpi .value{font-size:32.5px}.tabs{gap:16px;margin-bottom:18px}.drawer{width:100%}.drawer>header{padding:18px 16px}.drawer .content{padding:18px 16px 24px}.pipe li{grid-template-columns:28px minmax(0,1fr);gap:8px 12px;padding:16px 0}.pipe .stage-body{grid-column:2}.pipe li>b{padding:0}.pipe li:not(:last-child)::after{top:44px;bottom:-16px}.kv{grid-template-columns:104px minmax(0,1fr)}.crit{grid-template-columns:minmax(0,1fr)}.stepper{grid-template-columns:repeat(2,minmax(0,1fr))}.filters{padding:16px;gap:10px}.filters label{flex:1 1 130px}.filters label.grow{flex-basis:100%}.filters input,.filters select{width:100%}dialog form{padding:20px}.panel>header{padding:16px 16px 0}.panel>.tools{padding:12px 16px 0}.panel .body{padding:16px}.panel .body.flush{padding:12px 0 0}.toast{right:16px;bottom:16px}}
 @media(pointer:coarse){.btn,.btn.sm,.icon-btn,.nav a,.tab,.filters input,.filters select,.form input,.form select,label.check{min-height:44px}}
