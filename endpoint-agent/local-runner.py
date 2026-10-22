@@ -507,8 +507,14 @@ def execute_job(config, job, request, account):
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
         # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
         # The runner's own ValueError messages carry no data; other exceptions keep their type only.
-        print(json.dumps({'local_runner':'job_failed','job':job['id'],'error':type(exc).__name__,
-                          'detail':str(exc)[:200] if type(exc) is ValueError else ''},ensure_ascii=False),flush=True)
+        detail=str(exc)[:200] if type(exc) is ValueError else ''
+        if hasattr(exc,'code') and hasattr(exc,'read'):  # urllib HTTPError: the Gateway's own refusal sentence
+            try:
+                detail=f'{exc.code} '+exc.read()[:300].decode(errors='replace')
+            except Exception:
+                pass
+        print(json.dumps({'local_runner':'job_failed','job':job['id'],'error':type(exc).__name__,'detail':detail},
+                         ensure_ascii=False),flush=True)
     finally:
         cancelled.set()
         if isolation:
