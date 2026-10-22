@@ -7,6 +7,9 @@ const modelChecks = { confirmed: "응답 모델 확인됨", mismatch: "응답 �
 const kinds = { message: "메시지", task: "작업 상태", check: "검증" };
 const inactive = new Set(["completed", "passed", "failed", "blocked", "cancelled"]);
 const activeTaskStates = new Set(["queued", "running", "waiting"]);
+const rendered = new Map();
+const feeds = new WeakMap();
+let pollTimer, polling = false;
 const CHANNEL_META = {
   overview: { title: "개요", topic: "Codex·Claude·Gemini의 작업 요청, 검토 결과, 다음 행동을 같은 스레드에서 확인합니다." },
   wbs: { title: "wbs", topic: "목표 G01–G10의 구현·회귀·배포·실제환경·검수 근거별 진척입니다." },
@@ -30,7 +33,18 @@ function eventMatchesFilter(event, author, query) {
   return (author === "all" || event.author === author) && (!query || `${event.body} ${event.task_id}`.toLocaleLowerCase().includes(query));
 }
 
+function renderChanged(key, inputs, draw) {
+  const previous = rendered.get(key);
+  if (previous && inputs.every((value, index) => value === previous[index])) return;
+  draw();
+  rendered.set(key, inputs);
+}
+
 function renderFeed(container, events, { follow } = {}) {
+  const previous = feeds.get(container);
+  if (previous && previous.follow === follow && previous.events.length === events.length &&
+      events.every((event, index) => event === previous.events[index])) return;
+  feeds.set(container, { events, follow });
   const previousScroll = container.scrollTop;
   const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 90;
   container.replaceChildren();
@@ -72,6 +86,7 @@ function renderOverview() {
 }
 
 function renderTaskList() {
+  const focusedKey = document.activeElement?.dataset.taskKey;
   $("task-list").replaceChildren();
   const tasks = state.tasks.slice().sort((a, b) => b.id - a.id);
   $("task-badge").hidden = !tasks.length;
@@ -79,18 +94,25 @@ function renderTaskList() {
   if (!tasks.length) { $("task-list").append(node("p", "empty", "등록된 작업이 없습니다.")); return; }
   for (const task of tasks) {
     const card = node("button", "task-card" + (state.selectedTask === task.task_id ? " selected" : ""));
+    card.dataset.taskKey = JSON.stringify([task.task_id, task.author]);
     const top = node("div", "task-top");
     top.append(node("strong", "", task.task_id), node("span", `state state-${task.state}`, labels[task.state]));
     card.append(top, node("span", "task-author", `${task.author} 담당`), node("p", "task-body", task.body), node("time", "", time(task.timestamp)));
     if (!inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000) card.append(node("span", "stale", "10분 이상 갱신 없음"));
     card.addEventListener("click", () => { state.selectedTask = task.task_id; renderTasks(); });
     $("task-list").append(card);
+    if (card.dataset.taskKey === focusedKey) card.focus({ preventScroll: true });
   }
 }
 
 function renderTasks() {
   renderWorker();
-  renderTaskList();
+  renderChanged("task-list", [state.tasks, state.selectedTask,
+    state.tasks.map(task => !inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000).join()], renderTaskList);
+  renderChanged("thread", [state.events, state.selectedTask], renderThread);
+}
+
+function renderThread() {
   const heading = $("thread-heading");
   heading.replaceChildren();
   if (!state.selectedTask) {
@@ -103,39 +125,106 @@ function renderTasks() {
   renderFeed($("thread-feed"), events);
 }
 
+const agentNames = { opus: "Opus", sol: "Sol", sonnet: "Sonnet", gemini: "Gemini", luna: "Luna", haiku: "Haiku", astra: "Astra", fable: "Fable", mythos: "Mythos" };
+const providerNames = { codex: "Codex", claude: "Claude", antigravity: "Gemini · Antigravity" };
+
+function renderPolicy(policy) {
+  const box = $("worker-policy");
+  box.replaceChildren();
+  if (!policy) { box.append(node("p", "empty", "운영 정책 연결 대기")); return; }
+  const profiles = new Map((policy.profiles || []).map(profile => [profile.agent, profile]));
+  const lead = profiles.get(policy.effective_lead);
+  box.append(node("strong", "worker-lead", policy.enabled ? `최종 판단 역할 · ${agentNames[policy.effective_lead] || "미확인"}${lead?.model ? ` (${lead.model})` : ""}` : "계층 운영 미적용"));
+  if (policy.lead_reason) box.append(node("small", "worker-note", policy.lead_reason));
+  const groups = [
+    ["상위 판단", ["opus"], "상세 지시·범위 판단 · Sol이 직접 투입 요청"],
+    ["주 코딩·문제 해결", ["sol", "sonnet", "gemini"], "구현·일반 장애 처리 · Opus 한도 시 Sol이 최종 판단 대리"],
+    ["보조 작업", ["luna", "haiku"], "주 코딩 담당이 작은 작업 단위로 위임"],
+    ["고난도 자문", ["astra", "fable", "mythos"], "Opus의 반복 난항 후 Opus가 선택 · 짧은 호출 · 강도 high 이하"],
+  ];
+  for (const [title, agents, description] of groups) {
+    const group = node("section", "worker-role");
+    group.append(node("h3", "", title), node("p", "worker-note", description));
+    for (const agent of agents) {
+      const profile = profiles.get(agent);
+      if (!profile) continue;
+      const availability = profile.availability === "verified" || profile.verified ? "접근 확인" : profile.availability === "unavailable" ? "접근 불가" : "접근 미확인";
+      group.append(node("small", "worker-model", `${agentNames[agent]} · 요청 ${profile.model || "미설정"} · ${profile.effort || "강도 미확인"} · ${profile.enabled ? availability : "사용 중지"}`));
+    }
+    box.append(group);
+  }
+  const caps = policy.caps || policy;
+  box.append(node("p", "worker-note", `작업당 상한 · 단계 ${caps.max_stages ?? "미확인"} · 실제 호출 ${caps.max_calls ?? "미확인"} · 수정 왕복 ${caps.max_revisions ?? "미확인"}`));
+}
+
+function quotaText(quota) {
+  if (!quota) return "잔여 사용량 미확인";
+  const percent = quota.remaining_percent;
+  if (quota.stale && quota.observed_at) return `잔여 사용량 현재 미확인 · 오래된 관측${typeof percent === "number" && Number.isFinite(percent) && percent >= 0 && percent <= 100 ? ` ${percent}%` : ""}`;
+  if (typeof percent === "number" && Number.isFinite(percent) && percent >= 0 && percent <= 100) return `관측 잔여 ${percent}%${quota.status === "warning" ? " · 절약 운영" : ""}`;
+  return quota.status === "exhausted" ? "사용량 한도 도달 · 잔여 수치 미보고" : "잔여 사용량 미확인";
+}
+
 function renderWorker() {
   const data = state.worker;
-  $("worker-providers").replaceChildren();
-  $("worker-jobs").replaceChildren();
-  if (!data || !data.available) { $("worker-health").textContent = data?.error || "실행 기록 연결 대기"; return; }
-  $("worker-health").textContent = data.heartbeat_age !== null && data.heartbeat_age < 90 ? `정상 · ${Math.round(data.heartbeat_age)}초 전` : "실행기 확인 필요";
-  const names = {codex: "Codex", claude: "Claude", antigravity: "Gemini"};
+  $("worker-health").textContent = !data || !data.available ? data?.error || "실행 기록 연결 대기" :
+    data.heartbeat_age !== null && data.heartbeat_age < 90 ? `정상 · ${Math.round(data.heartbeat_age)}초 전` : "실행기 확인 필요";
+  const waiting = (data?.providers || []).map(provider => provider.until_at * 1000 > Date.now()).join();
+  const detail = data ? JSON.stringify([data.available, data.policy, data.providers, data.jobs, data.workflows]) : "";
+  renderChanged("worker-detail", [detail, waiting], () => {
+    $("worker-policy").replaceChildren();
+    $("worker-providers").replaceChildren();
+    $("worker-jobs").replaceChildren();
+    if (!data?.available) return;
+    renderPolicy(data.policy);
+    for (const provider of data.providers || []) {
+      const card = node("div", "worker-provider");
+      const held = provider.until_at * 1000 > Date.now();
+      const quota = provider.quota;
+      card.append(node("strong", "", providerNames[provider.name] || provider.name), node("small", "quota-value", quotaText(quota)));
+      for (const window of quota?.windows || []) {
+        const percent = window.remaining_percent;
+        if (typeof percent !== "number" || !Number.isFinite(percent) || percent < 0 || percent > 100) continue;
+        const minutes = window.window_minutes;
+        const label = { "Weekly Limit Remaining": "주간", "Daily Limit Remaining": "일간", "Session Limit Remaining": "세션" }[window.window] ||
+          (minutes > 0 ? minutes % 1440 === 0 ? `${minutes / 1440}일` : minutes % 60 === 0 ? `${minutes / 60}시간` : `${minutes}분` : "사용량 창");
+        card.append(node("small", "", `${label} · ${percent}%${quota.stale ? " (이전 관측)" : " 남음"}${window.reset_at ? ` · 리셋 ${time(window.reset_at * 1000)}` : ""}`));
+      }
+      if (quota?.observed_at) card.append(node("small", "", `관측 ${time(quota.observed_at * 1000)}${quota.stale ? " · 갱신 필요" : ""}`));
+      if (quota?.reset_at) card.append(node("small", "", `관측 리셋 ${time(quota.reset_at * 1000)}`));
+      card.append(node("small", "", held ? `호출 재개 예정 ${time(provider.until_at * 1000)}` : "호출 제한 대기 없음"));
+      if (held && provider.reason) card.append(node("small", "", provider.reason));
+      $("worker-providers").append(card);
+    }
+    const flowLabels = { active: "진행", waiting: "단계 대기", ready: "검토 완료·통합 대기", needs_attention: "확인 필요", paused: "검증 대기", closed: "이전 구성 기록" };
+    const phaseLabels = { plan: "상위 지시", implement: "구현", review: "검토", revise: "수정", judge: "최종 판단", request_opus: "Opus 직접 투입 요청", intervene: "Opus 직접 해결", auxiliary: "보조 작업", arbitrate: "최종 판단", consult: "고난도 자문" };
     for (const flow of data.workflows || []) {
       const row = node("button", "worker-job");
-      const labels = {active:"진행", waiting:"단계 대기", ready:"검토 완료·통합 대기", needs_attention:"확인 필요", paused:"검증 대기", closed:"이전 구성 기록"};
-      row.append(node("strong", "", `LangGraph · ${flow.id}`), node("small", "", `${labels[flow.state] || flow.state} · ${flow.summary}`));
+      row.append(node("strong", "", flow.id), node("small", "", `${flowLabels[flow.state] || "상태 미확인"} · ${flow.summary || ""}`));
+      const progress = [];
+      if (flow.phase) progress.push(`단계 ${phaseLabels[flow.phase] || flow.phase}`);
+      if (flow.stage_count !== undefined) progress.push(`진행 ${flow.stage_count}단계`);
+      if (flow.call_count !== undefined) progress.push(`실제 호출 ${flow.call_count}회`);
+      if (progress.length) row.append(node("small", "", progress.join(" · ")));
       row.addEventListener("click", () => { state.selectedTask = flow.id; renderTasks(); });
       $("worker-jobs").append(row);
     }
-  for (const provider of data.providers) {
-    const card = node("div", "worker-provider");
-    const waiting = provider.until_at * 1000 > Date.now();
-    card.append(node("strong", "", names[provider.name]), node("small", "", waiting ? `다음 시도 ${time(provider.until_at * 1000)}` : "작업 할당 가능"));
-    if (waiting) card.append(node("small", "", provider.reason));
-    $("worker-providers").append(card);
-  }
-    const descriptions = {running: "실행 중", queued: "대기", waiting_quota: "한도 대기", waiting_service: "모델 용량 대기", waiting_budget: "호출 예산 대기", needs_attention: "확인 필요", orphan_running: "이전 실행 확인 필요", paused: "일시 중지", completed: "완료", closed: "확인 완료", expired: "기한 종료"};
-  const rank = {running: 0, needs_attention: 1, orphan_running: 1, waiting_quota: 2, waiting_service: 2, queued: 3, paused: 4, completed: 5, closed: 6, expired: 6};
-  const jobs = [...data.jobs].sort((a,b) => (rank[a.state] ?? 9) - (rank[b.state] ?? 9) || b.updated - a.updated);
-  for (const job of jobs.filter(j => !["completed", "closed", "expired"].includes(j.state))) {
-    const row = node("button", "worker-job");
-    const top = node("div", "task-top");
-    top.append(node("strong", "", job.title), node("span", "state", descriptions[job.state] || "확인 필요"));
-    row.append(top, node("small", "", `${names[job.provider]} · ${job.task_id} · ${job.state === "running" ? "시작 " + time(job.updated * 1000) : "다음 시도 " + time(job.next_at * 1000)}`));
-    if (job.error && job.state !== "running") row.append(node("small", "worker-diagnostic", job.error));
-    row.addEventListener("click", () => { state.selectedTask = job.task_id; renderTasks(); });
-    $("worker-jobs").append(row);
-  }
+    const descriptions = { running: "실행 중", queued: "대기", waiting_quota: "한도 대기", waiting_service: "모델 용량 대기", waiting_budget: "호출 예산 대기", needs_attention: "확인 필요", orphan_running: "이전 실행 확인 필요", paused: "일시 중지", completed: "완료", closed: "확인 완료", expired: "기한 종료" };
+    const rank = { running: 0, needs_attention: 1, orphan_running: 1, waiting_quota: 2, waiting_service: 2, queued: 3, paused: 4, completed: 5, closed: 6, expired: 6 };
+    const jobs = [...(data.jobs || [])].sort((a, b) => (rank[a.state] ?? 9) - (rank[b.state] ?? 9) || b.updated - a.updated);
+    for (const job of jobs.filter(job => !["completed", "closed", "expired"].includes(job.state))) {
+      const row = node("button", "worker-job");
+      const top = node("div", "task-top");
+      top.append(node("strong", "", job.title), node("span", "state", descriptions[job.state] || "확인 필요"));
+      const schedule = job.state === "running" ? `시작 ${time(job.updated * 1000)}` : job.next_at > 0 ? `다음 시도 ${time(job.next_at * 1000)}` : "할당 대기";
+      row.append(top, node("small", "", `${agentNames[job.agent] || providerNames[job.provider] || job.provider} · ${job.task_id} · ${schedule}`));
+      row.append(node("small", "", `요청 ${job.model || "모델 미확인"} · ${job.effort || "강도 미확인"}`));
+      row.append(node("small", "", `응답 모델 ${(job.observed_models || []).join(", ") || "미보고"}`));
+      if (job.error && job.state !== "running") row.append(node("small", "worker-diagnostic", job.error));
+      row.addEventListener("click", () => { state.selectedTask = job.task_id; renderTasks(); });
+      $("worker-jobs").append(row);
+    }
+  });
 }
 
 function gatewayText(run) {
@@ -284,6 +373,7 @@ function renderWbs() {
   $("wbs-badge").textContent = data.summary.total - data.summary.complete;
   $("wbs-goals").replaceChildren();
   const goalSelect = $("wbs-goal-filter");
+  const selectedGoal = goalSelect.value;
   goalSelect.replaceChildren(node("option", "", "모든 목표"));
   goalSelect.firstChild.value = "";
   for (const goal of data.goals) {
@@ -297,6 +387,7 @@ function renderWbs() {
     option.value = goal.id;
     goalSelect.append(option);
   }
+  goalSelect.value = selectedGoal;
   $("wbs-stage-totals").replaceChildren();
   for (const [key, label] of Object.entries(data.rubric.stage_labels)) {
     const div = node("div", "stage-total");
@@ -318,12 +409,23 @@ function updateChannelChrome() {
   for (const view of document.querySelectorAll(".view")) view.classList.toggle("active", view.id === `view-${state.channel}`);
 }
 function render() {
-  renderMembers();
-  renderOverview();
-  renderTasks();
-  renderRuns();
-  renderChecks();
-  if (state.wbs) renderWbs();
+  if (document.hidden) return;
+  $("task-badge").hidden = !state.tasks.length;
+  $("task-badge").textContent = state.tasks.length;
+  $("run-badge").hidden = !state.runs.length;
+  $("run-badge").textContent = state.runs.length;
+  if (state.wbs) {
+    $("wbs-badge").hidden = false;
+    $("wbs-badge").textContent = state.wbs.summary.total - state.wbs.summary.complete;
+  }
+  renderChanged("members", [state.events, state.tasks,
+    state.events.map(event => Date.now() - new Date(event.timestamp).getTime() < 600000).join()], renderMembers);
+  if (state.channel === "overview") renderChanged("overview", [state.events, state.tasks, state.wbs], renderOverview);
+  if (state.channel === "tasks") renderChanged("tasks", [state.events, state.tasks, state.worker, state.selectedTask,
+    state.tasks.map(task => !inactive.has(task.state) && Date.now() - new Date(task.timestamp).getTime() > 600000).join()], renderTasks);
+  if (state.channel === "runs") renderChanged("runs", [state.runs], renderRuns);
+  if (state.channel === "checks") renderChanged("checks", [state.events], renderChecks);
+  if (state.channel === "wbs") renderChanged("wbs", [state.wbs], renderWbs);
 }
 function setChannel(channel) {
   state.channel = channel;
@@ -339,26 +441,35 @@ function closeSidebars() {
 }
 
 async function poll() {
+  if (document.hidden || polling) return;
+  clearTimeout(pollTimer);
+  polling = true;
   try {
     const response = await fetch(`/api/events?after=${state.cursor}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    const runsResponse = await fetch("/api/runs", { cache: "no-store" });
-    if (runsResponse.ok) state.runs = (await runsResponse.json()).runs;
+    if (!document.hidden) {
+      const runsResponse = await fetch("/api/runs", { cache: "no-store" });
+      if (runsResponse.ok) updateSnapshot("runs", (await runsResponse.json()).runs);
+    }
     try {
-      const workerResponse = await fetch("/api/worker", { cache: "no-store" });
-      state.worker = workerResponse.ok ? await workerResponse.json() : null;
-    } catch (_) { state.worker = null; }
+      if (!document.hidden) {
+        const workerResponse = await fetch("/api/worker", { cache: "no-store" });
+        updateSnapshot("worker", workerResponse.ok ? await workerResponse.json() : null);
+      }
+    } catch (_) { updateSnapshot("worker", null); }
     try {
-      const wbsResponse = await fetch("/api/wbs", { cache: "no-store" });
-      if (wbsResponse.ok) state.wbs = await wbsResponse.json();
+      if (!document.hidden) {
+        const wbsResponse = await fetch("/api/wbs", { cache: "no-store" });
+        if (wbsResponse.ok) updateSnapshot("wbs", await wbsResponse.json());
+      }
     } catch (_) { /* WBS is a secondary panel; events/runs still render if it is unavailable */ }
     if (data.cursor < state.cursor) state.events = [];
     const ids = new Set(state.events.map(event => event.id));
-    for (const event of data.events) if (!ids.has(event.id)) state.events.push(event);
-    state.events = state.events.slice(-1000);
+    const additions = data.events.filter(event => !ids.has(event.id));
+    if (additions.length) state.events = state.events.concat(additions).slice(-1000);
     state.cursor = data.cursor;
-    state.tasks = data.tasks;
+    updateSnapshot("tasks", data.tasks);
     state.connected = true;
     $("connection").textContent = "연결됨";
     $("connection-dot").className = "dot connected";
@@ -376,9 +487,19 @@ async function poll() {
     $("notice").textContent = `서버에 연결할 수 없습니다 (${error.message}).`;
     $("notice").hidden = false;
   } finally {
-    setTimeout(poll, 2000);
+    polling = false;
+    if (!document.hidden) pollTimer = setTimeout(poll, 2000);
   }
 }
+
+function updateSnapshot(key, value) {
+  if (JSON.stringify(state[key]) !== JSON.stringify(value)) state[key] = value;
+}
+
+document.addEventListener("visibilitychange", () => {
+  clearTimeout(pollTimer);
+  if (!document.hidden) { render(); poll(); }
+});
 
 for (const button of document.querySelectorAll(".channel")) button.addEventListener("click", () => setChannel(button.dataset.channel));
 for (const button of document.querySelectorAll("[data-goto]")) button.addEventListener("click", () => setChannel(button.dataset.goto));

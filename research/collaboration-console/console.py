@@ -29,7 +29,7 @@ STATES = {"queued", "running", "waiting", "completed", "passed", "failed", "bloc
 MAX_BODY = 48_000
 MAX_LINE = MAX_BODY * 4 + 4096
 MODEL = "claude-sonnet-5-5"
-EFFORT = "xhigh"
+EFFORT = "high"
 DEFAULT_PORT = 1000
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"),
           "/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -638,7 +638,8 @@ def run_cli(args, agent, command, prompt, requested_by):
         raw = private_raw(log, session_id)
         process = subprocess.Popen(command, cwd=args.cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
-                                   shell=False, bufsize=1)
+                                   shell=False, bufsize=1,
+                                   creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
 
         def read_errors():
             for line in process.stderr:

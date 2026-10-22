@@ -21,7 +21,7 @@
         <div class="channel-category">채널</div>
         <button class="channel" data-channel="overview"><span class="hash">#</span>개요</button>
         <button class="channel" data-channel="wbs"><span class="hash">#</span>wbs<b id="wbs-badge" class="badge" hidden></b></button>
-        <button class="channel" data-channel="tasks"><span class="hash">#</span>작업<b id="task-badge" class="badge" hidden></b></button>
+        <button class="channel" data-channel="tasks"><span class="hash">#</span>작업·에이전트<b id="task-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="runs"><span class="hash">#</span>실행 기록<b id="run-badge" class="badge" hidden></b></button>
         <button class="channel" data-channel="checks"><span class="hash">#</span>검증</button>
       </nav>
@@ -54,8 +54,9 @@
       </section>
 
       <section id="view-tasks" class="view">
-        <details class="panel worker-panel">
-          <summary class="panel-heading"><h2>자동 실행·대기</h2><span id="worker-health">확인 중</span></summary>
+        <details class="panel worker-panel" open>
+          <summary class="panel-heading"><h2>에이전트 운영</h2><span id="worker-health">확인 중</span></summary>
+          <div id="worker-policy" class="worker-policy"></div>
           <div id="worker-providers" class="worker-providers"></div>
           <div id="worker-jobs" class="worker-jobs"></div>
         </details>

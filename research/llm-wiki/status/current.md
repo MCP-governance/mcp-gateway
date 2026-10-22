@@ -1,5 +1,10 @@
 # 개발 현황 — 2026-10-21
 
+## 10-22 협업 역할·사용량 개편
+
+[운영 보고](reports/2026-10-22-hierarchical-agents.md), [정본](../../collaboration-console/COORDINATION.md). Opus 지휘·Sol 대행·주력/보조/짧은 자문 권한, 실제 사용량 관측·예비량·유한 단계 규칙과 기존 1000번 화면에 적용했다. 설치·단위 검사·실제 모델 호출·장시간 운전은 보고서에서 구분한다. 기존 제품 작업과 미커밋 변경은 보존한다.
+
+
 ## 협업 운영 갱신 — 2026-10-22
 
 기존 1000번 화면에 LangGraph·로컬 SQLite 체크포인트를 연결했다. 정상 단계 전환은 즉시, 같은 제공자 최소 5초이며 중복·검토 반복·8회 시작 상한으로 루프를 제한한다. 큐·그래프 회귀 37건 통과, Codex의 intake-worker 패키징 수정과 Gemini 검토 PASS를 실제 확인했다. 제품 레인 로컬 commit `6a33afe`, 기기 배포·PJ1과 Claude 추론은 미실행이다. 기존 콘솔 SheetSync 1건 실패는 유지한다. [작업 보고](reports/2026-10-22-langgraph-coordination.md) · [운영 근거](../analysis/agent-coordination-20261022/README.md).

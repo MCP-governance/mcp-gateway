@@ -1,36 +1,42 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-22T14:03:39+09:00
+확인 시각: 2026-10-22T18:24:57+09:00
 
-HEAD: `204579981ac02956a3ee40301f251ee99af9de6e` · 로컬 브랜치: `10/22-langgraph-coordination`
+HEAD: `9eb6c2c15e8b9d3a70827bc8faf4186d35370e96` · 로컬 브랜치: `10/22-hierarchical-agents`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M .gitignore
+M AGENTS.md
+ M README.md
+ M docs/ai/DECISIONS.md
+ M research/collaboration-console/COORDINATION.md
  M research/collaboration-console/README.md
  M research/collaboration-console/console.py
+ M research/collaboration-console/coordination.py
  M research/collaboration-console/install-autostart.ps1
- M research/collaboration-console/run-console.ps1
+ D research/collaboration-console/run-console.ps1
  M research/collaboration-console/static/app.js
  M research/collaboration-console/static/index.html
  M research/collaboration-console/static/style.css
  M research/collaboration-console/test_console.py
+ M research/collaboration-console/test_coordination.py
+ M research/collaboration-console/test_worker.py
+ M research/collaboration-console/uninstall-autostart.ps1
+ M research/collaboration-console/worker.py
+ M research/llm-wiki/analysis/agent-coordination-20261022/checks.json
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
-?? research/collaboration-console/COORDINATION.md
-?? research/collaboration-console/coordination.py
-?? research/collaboration-console/requirements.lock.txt
-?? research/collaboration-console/requirements.txt
-?? research/collaboration-console/test_coordination.py
-?? research/collaboration-console/test_worker.py
-?? research/collaboration-console/worker.py
-?? research/llm-wiki/analysis/agent-coordination-20261022/
-?? research/llm-wiki/status/reports/2026-10-22-langgraph-coordination.md
+?? research/collaboration-console/agent_policy.py
+?? research/collaboration-console/test_agent_policy.py
+?? research/collaboration-console/test_frontend.mjs
+?? research/collaboration-console/test_usage_probe.py
+?? research/collaboration-console/usage_probe.py
+?? research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.json
+?? research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.md
+?? research/llm-wiki/status/reports/2026-10-22-hierarchical-agents.md
 ```
 
 ## 주요 파일 바이트

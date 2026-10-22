@@ -115,6 +115,7 @@ cd mcp-gateway/full_stack_lab
 | --- | --- |
 | [docs/ai/](docs/ai/README.md) | 설계([ARCHITECTURE](docs/ai/ARCHITECTURE.md))·보안 경계·정책·종료 모델·시험·결정 기록 |
 | [research/llm-wiki/](research/llm-wiki/README.md) | 개발 현황, 작업 보고, 요구사항 분석, 실험 증거 |
+| [research/collaboration-console/](research/collaboration-console/README.md) | 에이전트 역할·사용량·실제 작업 상태와 기존 WBS 콘솔 |
 | [최근 검토와 다음 작업](research/llm-wiki/analysis/review-2026-10-15/README.md) | 코드 관찰·위험 후보·공식 근거·Claude 인계와 검수 조건 |
 | [팀 Drive 자료의 개발 연결](research/llm-wiki/analysis/drive-curation/README.md) | 원본 판본 비교, 정책 50개·MVP 기능 24개와 현재 검수 목표의 관계 |
 | [full_stack_lab/](full_stack_lab/README.md) | 게이트웨이·콘솔·정책·시험·실습 스택 |

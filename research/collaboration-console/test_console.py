@@ -47,6 +47,7 @@ class SheetSyncTests(unittest.TestCase):
                                           **values}), encoding="utf-8")
 
     def test_overlay_by_header_and_id_preserves_evidence_and_adds_goals(self):
+        original = json.loads(json.dumps(self.snapshot))
         row = self.rows[0]
         row.update({"구현": "0.5", "회귀": "", "배포": "1", "실기기": "0", "검수": "0",
                     "담당": "담당자", "진행 메모": "쉼표, 줄바꿈\n메모", "계획 일정": "10/20"})
@@ -62,7 +63,7 @@ class SheetSyncTests(unittest.TestCase):
         self.assertEqual((old["owner"], old["memo"], old["planned_schedule"]),
                          ("담당자", "쉼표, 줄바꿈\n메모", "10/20"))
         self.assertEqual(old["evidence"], self.snapshot["items"][0]["evidence"])
-        self.assertNotIn("owner", self.snapshot["items"][0])
+        self.assertEqual(self.snapshot, original)
         self.assertEqual(data["items"][-1]["title"], "추가 작업")
         self.assertEqual(data["items"][-1]["completion_condition"], "완료 확인")
         self.assertEqual(data["items"][-1]["known_gap"], "후속 확인")
@@ -222,7 +223,7 @@ class ConsoleTests(unittest.TestCase):
         snapshot = self.log.snapshot()
         self.assertEqual(len(snapshot["events"]), 32)
         self.assertEqual(snapshot["malformed_records"], 0)
-        self.assertNotIn("abc-secret-value", self.log.path.read_text())
+        self.assertNotIn("abc-secret-value", self.log.path.read_text(encoding="utf-8"))
         self.assertEqual(len(self.log.snapshot(after=31)["events"]), 1)
 
     def test_reject_invalid_and_skip_malformed_records(self):
@@ -246,7 +247,7 @@ class ConsoleTests(unittest.TestCase):
             {"type": "text", "text": "Bearer abcdefg TOKEN=secret"},
             {"type": "tool_use", "id": "t1", "name": "Read", "input": {"password": "tool-secret"}}
         ]}}, self.log, "claude-audit", seen, "session1")
-        stored = self.log.path.read_text()
+        stored = self.log.path.read_text(encoding="utf-8")
         self.assertNotIn("private thoughts", stored)
         self.assertNotIn("tool-secret", stored)
         self.assertNotIn("abcdefg", stored)
@@ -289,7 +290,7 @@ class ConsoleTests(unittest.TestCase):
         cli_args = json.loads(next(event["body"] for event in events if event["kind"] == "message" and event["author"] == "Claude"))
         self.assertEqual(cli_args[cli_args.index("--resume") + 1], native_id)
         self.assertEqual(cli_args[cli_args.index("--tools") + 1], "Read,Grep,Glob")
-        metadata = json.loads((Path(self.tmp.name) / "test-audit.session.json").read_text())
+        metadata = json.loads((Path(self.tmp.name) / "test-audit.session.json").read_text(encoding="utf-8"))
         self.assertEqual(metadata["native_session_id"], native_id)
         self.assertNotEqual(metadata["run_session_id"], native_id)
         self.assertEqual(metadata["state"], "failed")
@@ -431,6 +432,14 @@ class RunRecordTests(unittest.TestCase):
         values.update(extra)
         return SimpleNamespace(**values)
 
+    @unittest.skipUnless(os.name == "nt", "Windows console creation")
+    def test_cli_does_not_create_a_console_window(self):
+        import subprocess
+        lines = [json.dumps({"type": "result", "subtype": "success", "is_error": False, "result": "done"})]
+        with patch.object(console.subprocess, "Popen", wraps=subprocess.Popen) as start:
+            self.run_agent(console.run_claude, self.fake_cli(lines))
+        self.assertEqual(start.call_args.kwargs["creationflags"], subprocess.CREATE_NO_WINDOW)
+
     def run_agent(self, runner, prefix, **extra):
         with redirect_stdout(io.StringIO()):
             code = runner(self.args(prefix, **extra))
@@ -513,7 +522,7 @@ class RunRecordTests(unittest.TestCase):
         self.assertEqual((run["observed"]["models"], run["model_check"]), ([], "unreported"))
         self.assertTrue(any("Model metadata" in warning for warning in run["warnings"]))
         self.assertEqual((run["tool_calls"], run["no_tool_call"], run["native_session_id"]), (0, True, "01a13e37-caf3-7c20-a23d-28fb02f2e4b7"))
-        argv = json.loads((self.dir / "codex.argv").read_text())
+        argv = json.loads((self.dir / "codex.argv").read_text(encoding="utf-8"))
         self.assertEqual(argv[:3], ["exec", "--json", "--skip-git-repo-check"])
         self.assertEqual(argv[argv.index("-m") + 1], "gpt-test-model")
         self.assertEqual(argv[argv.index("-c") + 1], "model_reasoning_effort=high")
@@ -523,7 +532,7 @@ class RunRecordTests(unittest.TestCase):
         thread = "01a13e37-caf3-7c20-a23d-28fb02f2e4b7"
         code, run = self.run_agent(console.run_codex, self.fake_cli(fixture_lines("codex-model-rejected.jsonl"), exit_code=1, name="codex"),
                                    resume=thread)
-        argv = json.loads((self.dir / "codex.argv").read_text())
+        argv = json.loads((self.dir / "codex.argv").read_text(encoding="utf-8"))
         self.assertEqual(argv[:2], ["exec", "resume"])
         self.assertEqual(argv[2], thread)
         # codex exec resume rejects -s/-C; the worktree is the subprocess cwd instead.
@@ -536,7 +545,7 @@ class RunRecordTests(unittest.TestCase):
 
     def test_codex_without_resume_has_no_resume_argv(self):
         code, run = self.run_agent(console.run_codex, self.fake_cli(fixture_lines("codex-model-rejected.jsonl"), exit_code=1, name="codex"))
-        argv = json.loads((self.dir / "codex.argv").read_text())
+        argv = json.loads((self.dir / "codex.argv").read_text(encoding="utf-8"))
         self.assertNotIn("resume", argv)
 
     def test_find_codex_windows_executable_picks_the_most_recently_built_version(self):

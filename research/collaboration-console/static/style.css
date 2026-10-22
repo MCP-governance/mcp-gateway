@@ -10,13 +10,21 @@
 .worker-panel summary{cursor:pointer}
 .worker-panel .panel-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .worker-panel h2{font-size:13px;margin:0}
+.worker-policy{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.worker-lead,.worker-policy>.worker-note{grid-column:1/-1}
+.worker-lead{font-size:13px}
+.worker-role{padding:10px;border:1px solid var(--line);border-radius:8px;overflow-wrap:anywhere}
+.worker-role h3{font-size:12px;margin:0 0 6px}
+.worker-note,.worker-model{display:block;font-size:11px;line-height:1.7;color:var(--text-muted);margin:0}
+.worker-model{margin-top:4px;color:var(--text)}
+.quota-value{color:var(--text)!important}
 .worker-providers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
 .worker-provider{display:flex;flex-direction:column;gap:5px;padding:10px;background:var(--bg-field);border-radius:8px;overflow-wrap:anywhere}
 .worker-provider small,.worker-job small,#worker-health{font-size:11px;color:var(--text-muted)}
 .worker-job{display:flex;flex-direction:column;gap:6px;padding:11px;width:100%;background:transparent;color:var(--text);border:0;border-top:1px solid var(--line);text-align:left;overflow-wrap:anywhere}
 .worker-job:hover{background:var(--bg-field)}
 .worker-diagnostic{white-space:pre-wrap;max-height:5em;overflow:auto}
-@media(max-width:600px){.worker-providers{grid-template-columns:1fr}}
+@media(max-width:600px){.worker-providers,.worker-policy{grid-template-columns:1fr}}
 *{box-sizing:border-box}
 body{margin:0;color:var(--text);background:var(--bg-main);font-family:"gg sans",Segoe UI,Malgun Gothic,system-ui,sans-serif;font-size:14px}
 button{font:inherit;cursor:pointer}

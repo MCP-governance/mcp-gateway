@@ -1,6 +1,10 @@
-# 개발 현황 허브 — 협업 콘솔 + WBS + 세 모델 협업
+# 개발 현황 허브 — 에이전트 협업·사용량·WBS
 
 이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#wbs` · `#작업`(task_id별 스레드) · `#실행 기록` · `#검증`으로 나뉩니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도입니다. 웹·기록기는 Python 표준 라이브러리를 쓰고, 자동 협업 실행기만 로컬 가상환경의 LangGraph를 사용합니다.
+
+현재 운영 규칙은 [협업 운영](COORDINATION.md)에 모읍니다. Opus가 상세 계획과 판단을 맡고, Sol·Sonnet·Gemini가 실무를 수행합니다. Luna·Haiku는 작은 보조 작업에 쓰고, Astra·Fable·Mythos는 Opus가 선택한 짧은 자문에만 사용합니다. Opus 한도가 부족하면 Sol이 판단을 대행합니다. 모델의 공개 여부·계정 접근 확인·실제 응답 모델은 각각 구분합니다.
+
+화면은 실제 작업 단계와 호출 한도, 제공자가 보고한 잔여량·리셋 시각·관측 시각을 보여 줍니다. 잔여량이 없으면 확인 안 됨으로 표시합니다. 내부 인계는 짧게 유지하고 사람이 읽는 결과는 기존 웹·시트·위키·커밋에 남깁니다.
 
 저장소 루트에서 실행합니다.
 
@@ -16,7 +20,7 @@ python -X utf8 research/collaboration-console/console.py serve --host 100.111.15
 
 `--host 0.0.0.0`처럼 모든 인터페이스에 바인딩하면 경고를 출력합니다. 특정 Tailscale IP처럼 좁은 주소에 바인딩하세요. 매일 자동으로 띄우려면 [`install-autostart.ps1`](install-autostart.ps1)로 Windows 작업 스케줄러에 등록합니다(아래 "매일 자동 실행" 참조).
 
-서버를 켜 두면 2초마다 새 기록이 반영되고, `#wbs` 채널은 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows에서 백그라운드 실행할 때는 `Start-Process -WindowStyle Hidden`을 사용합니다. 종료는 그 서버 프로세스만 중단합니다.
+화면이 보일 때만 주기적으로 새 기록을 조회하며 값이 바뀐 영역만 갱신합니다. `#wbs` 채널은 매 요청마다 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 다시 읽으므로 재생성 빌드 단계 없이 최신 값을 보여 줍니다. Windows 예약 작업은 가상환경의 `pythonw.exe`를 직접 실행합니다. Git·CLI 자식도 콘솔 창 생성을 막습니다. 종료는 그 서버 프로세스만 중단합니다.
 
 ## 통합 시트 연동
 
@@ -69,7 +73,7 @@ EventLog().append("Codex", "check", "solution-audit", "passed", "수행한 검�
 python -X utf8 research/collaboration-console/console.py claude --task-id claude-audit --prompt-file research/collaboration-console/runtime/claude-request.txt --executable claude --allowed-tools Read,Grep,Glob --permission-mode plan --max-turns 30
 ```
 
-현재 요청 모델은 **`claude-sonnet-5-5`**, effort는 **`xhigh`**로 고정되어 있습니다. 사용자가 다른 모델을 지정하면 이 설정을 먼저 바꿉니다. 지원되지 않거나 CLI가 다른 모델을 반환하면 실패로 기록하고 자동 대체하지 않습니다. **응답 모델은 제공자 응답이 실어 온 값만 인정합니다**: `assistant.message.model`(실제 응답)과 `result.modelUsage`의 모델 이름. `system.init.model`은 CLI가 해석한 요청 값을 되돌려 줄 뿐이라(존재하지 않는 모델을 요청해도 그대로 돌아옵니다) `cli_model`로만 남기고 확인으로 세지 않습니다. effort의 서버 적용 여부는 해당 필드 없이 독립적으로 확인할 수 없습니다. `modelUsage`에 요청과 다른 보조 모델이 있어도 주 모델 확인과 구분합니다.
+직접 `console.py claude` 명령의 기본 요청 모델은 **`claude-sonnet-5-5`**, effort는 **`high`**로 고정되어 있습니다. 사용자가 다른 모델을 지정하면 이 설정을 먼저 바꿉니다. 지원되지 않거나 CLI가 다른 모델을 반환하면 실패로 기록하고 자동 대체하지 않습니다. **응답 모델은 제공자 응답이 실어 온 값만 인정합니다**: `assistant.message.model`(실제 응답)과 `result.modelUsage`의 모델 이름. `system.init.model`은 CLI가 해석한 요청 값을 되돌려 줄 뿐이라(존재하지 않는 모델을 요청해도 그대로 돌아옵니다) `cli_model`로만 남기고 확인으로 세지 않습니다. effort의 서버 적용 여부는 해당 필드 없이 독립적으로 확인할 수 없습니다. `modelUsage`에 요청과 다른 보조 모델이 있어도 주 모델 확인과 구분합니다.
 Claude Code 자체가 만드는 로컬 알림의 모델 필드 `<synthetic>`는 실제 제공자 모델이 아니므로 모델 비교에서만 제외합니다. 해당 알림의 공개 본문은 그대로 기록하며 다른 실제 모델 이름은 계속 거부합니다.
 
 ## 실행 기록 (실행마다 한 줄)
@@ -155,7 +159,7 @@ powershell -File research/collaboration-console/install-autostart.ps1 -OpenFirew
 
 `runtime/events.jsonl`은 추가만 하는 로컬 기록이며 `.gitignore`로 제외합니다. 요청 파일·원시 결과·로그도 `runtime/`에 두고 공개 Git에 올리지 않습니다. 자격증명 패턴(`Bearer`, `sk-`/`ghp_`/`github_pat_`, JWT, `Authorization:`, `*_PASSWORD`/`*_TOKEN`/`*_API_KEY` 등)은 쓰기 전과 HTTP 응답 전 마스킹합니다. 자동 마스킹은 모든 형식의 비밀 탐지를 보장하지 않으므로 공유 보고에는 필요한 내용만 넣습니다.
 
-HTTP는 `--host`로 지정한 주소(기본 `127.0.0.1`)에만 바인딩하며 고정 정적 파일, `/api/events`, `/api/runs`, `/api/worker`, `/api/wbs`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다(쓰기는 모두 로컬 `emit`/`claude`/`codex` CLI로만 합니다). Host 헤더는 `127.0.0.1`·`localhost`·실제 바인딩 주소만 허용하고, 그 외 Host·Origin 요청과 경로 탐색을 거부합니다(DNS 리바인딩 방지). 응답에는 CSP(`default-src 'self'` 등)·`X-Content-Type-Options`·`Referrer-Policy` 헤더를 붙입니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다. `/api/wbs`는 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 매 요청 다시 읽어 그대로 돌려줍니다 — 별도 빌드·복사본이 없으므로 그 파일을 갱신하면 다음 2초 폴링에서 바로 반영됩니다.
+HTTP는 `--host`로 지정한 주소(기본 `127.0.0.1`)에만 바인딩하며 고정 정적 파일, `/api/events`, `/api/runs`, `/api/worker`, `/api/wbs`, `/health`만 읽습니다. HTTP에서 기록 작성·파일 조회·명령 실행은 지원하지 않습니다(쓰기는 모두 로컬 `emit`/`claude`/`codex` CLI로만 합니다). Host 헤더는 `127.0.0.1`·`localhost`·실제 바인딩 주소만 허용하고, 그 외 Host·Origin 요청과 경로 탐색을 거부합니다(DNS 리바인딩 방지). 응답에는 CSP(`default-src 'self'` 등)·`X-Content-Type-Options`·`Referrer-Policy` 헤더를 붙입니다. 미연결·빈 기록·오류·갱신 지연을 구별하여 표시합니다. 최근 1,000개 기록을 보여 주며 전체 원본은 JSONL에 보존됩니다. `/api/wbs`는 [`development-wbs/snapshot.json`](../llm-wiki/analysis/development-wbs/snapshot.json)을 매 요청 다시 읽어 그대로 돌려줍니다 — 별도 빌드·복사본이 없으므로 그 파일을 갱신하면 화면이 보이는 동안의 다음 조회에 반영됩니다.
 
 ```powershell
 python -X utf8 research/collaboration-console/test_console.py
@@ -163,8 +167,10 @@ python -X utf8 research/llm-wiki/tools/check_wiki.py
 ```
 
 검사는 다중 작성 보존, 잘못된 이벤트, 비밀·내부 사고 제외, HTTP 읽기 전용·localhost 제한·경로 탐색 차단과 안전한 화면 렌더링을 확인합니다. 실행 기록은 실제 CLI 출력(`fixtures/`의 Claude 인증 실패·Codex 모델 거부, 저장소에 보존된 PJ1 성공 로그)으로 요청 대비 응답 모델, 턴 오류·사용량 한도·작업 실패의 구분, 도구 호출 0건, 게이트웨이 기록 상태, 원시 출력의 비공개를 확인합니다. 실제 브라우저와 실제 Claude CLI 호출은 별도 검증 결과를 기록합니다.
-## 세 모델 협업
+## 계층 협업과 사용량
 
-협업 화면은 **http://100.111.15.33:1000/** 하나를 사용합니다. `작업 → 자동 실행·대기`에 LangGraph 단계, 제공자별 대기 시각과 실제 큐 상태를 표시합니다. 실행기는 이 폴더의 `.venv/Scripts/python.exe console.py worker`로 동작합니다. `requirements.txt`와 전이 의존성 잠금 파일로 설치하고, 별도 웹 포트나 LangSmith 서버는 띄우지 않습니다.
+협업 화면은 **http://100.111.15.33:1000/** 하나를 사용합니다. `작업·에이전트 → 에이전트 운영`에 LangGraph 단계, 제공자별 대기 시각과 실제 큐 상태를 표시합니다. 실행기는 이 폴더의 `.venv/Scripts/python.exe console.py worker`로 동작합니다. `requirements.txt`와 전이 의존성 잠금 파일로 설치하고, 별도 웹 포트나 LangSmith 서버는 띄우지 않습니다.
 
 역할·인계문·확인 응답·한도·명령의 운영 정본은 [COORDINATION.md](COORDINATION.md)입니다. 작업 요청·검토 결과·다음 행동은 같은 task_id에 기록하며, 긴 근거는 원문 파일로 연결합니다. 기존 Markdown 연구 위키와 WBS는 그대로 유지합니다.
+
+설치·제거 스크립트는 웹 서버(`MINT-CollaborationConsole`)와 실행기(`Local-Agent-Hub`)를 함께 관리합니다. 둘 다 같은 가상환경의 `pythonw.exe`를 직접 추적하며, 같은 작업의 중복 시작을 막습니다. 2분 트리거는 프로세스 장애 복구 점검이고 모델 간 인계 지연이 아닙니다.

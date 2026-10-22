@@ -9,7 +9,8 @@
   "existing_console_tests": {
     "passed": 32,
     "failed": 1,
-    "failure": "pre-existing owner expectation in SheetSync snapshot"
+    "failure": "pre-existing owner expectation in SheetSync snapshot",
+    "superseded_by": "hierarchy_v2.console_tests"
   },
   "dependency_check": "passed",
   "javascript_syntax": "passed",
@@ -57,5 +58,58 @@
     "worker.py": "e5d8728121083ad068fb0391e03e53f251209c899adc8f215c546519d0bc1108",
     "test_coordination.py": "19d0614263a4079bf428f8e7fb7d1a495443cd8bb6f878deb520f33fc90a7433",
     "test_worker.py": "91b774338846b8da58980b9416d127fc8c736efb8f08522e29f6fefdc00b2400"
+  },
+  "updated_at": "2026-10-22T09:24:49.327814+00:00",
+  "hierarchy_v2": {
+    "python_tests": {
+      "command": ".venv/Scripts/python.exe -X utf8 -m unittest -q test_console test_worker test_coordination test_usage_probe test_agent_policy",
+      "passed": 106,
+      "failed": 0
+    },
+    "console_tests": {
+      "passed": 34,
+      "failed": 0,
+      "owner_fixture": "assert whole input snapshot unchanged, not absence of optional owner",
+      "encoding": "explicit UTF-8"
+    },
+    "frontend_test": {
+      "command": "node --test test_frontend.mjs",
+      "passed": 1,
+      "failed": 0
+    },
+    "http": {
+      "health": 200,
+      "api/worker": 200,
+      "api/events": 200,
+      "api/wbs": 200,
+      "api/runs": 200
+    },
+    "runtime": {
+      "policy_enabled": true,
+      "effective_lead": "sol",
+      "profiles": 9,
+      "scheduled_tasks": "both Running, Hidden, direct pythonw",
+      "heartbeat_seconds": 7.1,
+      "v1_tls_checkpoint": "waiting, arbitrate queued, Claude hold until 2026-10-22T19:05:00+09:00"
+    },
+    "independent_review": "Explicit model mismatch, arbitrary missing-executable fallback, and malformed completion escalation fixed; bounded mock verification and regressions passed",
+    "long_run": "unverified",
+    "new_profile_inference": "unverified",
+    "source_hashes": {
+      "console.py": "5ea022765bbc9929cc36645c3c9c3d7a2d43689c79296a9c00d9c7e14f2d3d29",
+      "worker.py": "11e446c0dfd1cf991188034978fbf04de042757ef02baf0e08aa0edf9df14389",
+      "coordination.py": "4019257357900fb543df71883b939ede6425f7c2a24871517ad017c7a9c460cd",
+      "agent_policy.py": "dc5da076e5a29d7d7fe2ec7e1cbf29d6119ff4ed85643fd909885ca6d61b0740",
+      "usage_probe.py": "385ac2635c615458eb8801753234bbfefd59ba470a07629f24c4665f4e6f3847",
+      "static/app.js": "0dcca8ffafff5b8ab6a8881655db2a13e72e4c5bcc16cb9a7215b647f6fa9396",
+      "static/index.html": "ad55039c363141b30cfd64392645bed6b9184c964756c3b7f5b3d699da10471b",
+      "static/style.css": "9fe510ce49a8c03de6c0611c481e76047bcf34f472d55e7f0b5e308f355717f6"
+    },
+    "wiki": {
+      "markdown_documents": 647,
+      "errors": 0,
+      "warnings": 0
+    },
+    "dependencies": "pip check passed"
   }
 }

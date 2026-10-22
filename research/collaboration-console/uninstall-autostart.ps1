@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-  Removes the scheduled task and generated launcher created by install-autostart.ps1.
+  Removes the scheduled task created by install-autostart.ps1.
   Does not touch any firewall rule -- remove that separately if you created one with -OpenFirewall.
 
 .EXAMPLE
@@ -12,18 +12,13 @@ param(
     [int]$Port = 1000
 )
 
-if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-    Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
-    Write-Host "제거 완료: 예약 작업 $TaskName"
-} else {
-    Write-Host "등록된 예약 작업이 없습니다: $TaskName"
-}
-
-$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Launcher = Join-Path $Root "run-console.ps1"
-if (Test-Path $Launcher) {
-    Remove-Item $Launcher
-    Write-Host "제거 완료: $Launcher"
+foreach ($removeTask in @($TaskName, 'Local-Agent-Hub') | Select-Object -Unique) {
+    if (Get-ScheduledTask -TaskName $removeTask -ErrorAction SilentlyContinue) {
+        Unregister-ScheduledTask -TaskName $removeTask -Confirm:$false
+        Write-Host "제거 완료: 예약 작업 $removeTask"
+    } else {
+        Write-Host "등록된 예약 작업이 없습니다: $removeTask"
+    }
 }
 
 $firewallName = "MINT 협업 콘솔 ($Port)"

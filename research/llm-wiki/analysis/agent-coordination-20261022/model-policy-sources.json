@@ -1,0 +1,201 @@
+{
+  "checked_at": "2026-10-22T05:15:33.946679+00:00",
+  "status": "source and local CLI metadata verified; server model access not inferred",
+  "sources": [
+    {
+      "id": "anthropic-opus",
+      "url": "https://www.anthropic.com/claude-opus-5-5",
+      "resolved_url": "https://www.anthropic.com/claude-opus-5-5",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "fc0f0be95ec2a8938ec978f7790c2535c47c41cc151643dbc499c43104a1dc80",
+      "bytes": 529928,
+      "read_scope": "Release and supported model ID",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "anthropic-fable-mythos",
+      "url": "https://www.anthropic.com/claude-fable-and-mythos-5-1",
+      "resolved_url": "https://www.anthropic.com/claude-fable-and-mythos-5-1",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "358c20aa56e36af6f3221cdf592e30a40bc40db6ce4acf9f2fdf87e3c12a59a0",
+      "bytes": 418285,
+      "read_scope": "Availability, safeguards, low/medium effort",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "claude-model-config",
+      "url": "https://code.claude.com/docs/en/model-config",
+      "resolved_url": "https://code.claude.com/docs/en/model-config",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "71c72618eee8dee79b59c5b3bc7cfc1170992ec88eff7774333e184a81c28f40",
+      "bytes": 1020915,
+      "read_scope": "Effort and security fallback sections",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "claude-statusline",
+      "url": "https://code.claude.com/docs/en/statusline",
+      "resolved_url": "https://code.claude.com/docs/en/statusline",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "c628f4fa49680fe63cb7f2564fa569ef37899675e377c74434b286a4624d0189",
+      "bytes": 1553867,
+      "read_scope": "rate_limits fields and absence caveats",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "codex-app-server",
+      "url": "https://learn.chatgpt.com/docs/app-server",
+      "resolved_url": "https://learn.chatgpt.com/docs/app-server",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "a04c8a5503d4f5cbf2ea238b9ac499d8dd99b3aa994c1a4690d30301317b1354",
+      "bytes": 980494,
+      "read_scope": "Initialization and account/rateLimits/read sections",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "agy-usage",
+      "url": "https://www.antigravity.google/docs/cli/commands/usage",
+      "resolved_url": "https://www.antigravity.google/docs/cli/commands/usage",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "6899cb9a52811e42e3b1bccda4d85192ed9bdae89c9142ee16aeb406083ea053",
+      "bytes": 112165,
+      "read_scope": "Official usage command and grouped model quotas",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    },
+    {
+      "id": "agy-headless",
+      "url": "https://www.antigravity.google/docs/cli/headless/",
+      "resolved_url": "https://www.antigravity.google/docs/cli/headless/",
+      "retrieved_at": "2026-10-22T05:15:33.946679+00:00",
+      "sha256": "311c9dee37ec8f30253583afd0f482f3491c9248164d1f7ff1741d264f912017",
+      "bytes": 249391,
+      "read_scope": "CLI-direct slash commands, no stream-json",
+      "retention": "hash and metadata only; no redistributed source HTML"
+    }
+  ],
+  "public_repositories": [
+    {
+      "repo": "langchain-ai/langgraph",
+      "commit": "3cd57c038ad827d05f80c6488adea9994156c58c",
+      "license": "MIT",
+      "archived": false,
+      "scope": "repository metadata; reuse existing dependency"
+    },
+    {
+      "repo": "langchain-ai/langgraph-supervisor-py",
+      "commit": "88859b34017ac3569bbd4a3092c7e77593a0a960",
+      "license": "MIT",
+      "archived": true,
+      "scope": "metadata and README; do not adopt archived wrapper"
+    },
+    {
+      "repo": "anthropics/skills",
+      "commit": "dbd4588f9e1033efb41dad4bef2f7947c8993d44",
+      "license": "mixed; claude-api/LICENSE.txt Apache-2.0 only verified",
+      "archived": false,
+      "scope": "skill list, claude-api and skill-creator front matter, claude-api license; no external instructions executed"
+    }
+  ],
+  "local_model_catalog": {
+    "source": "Codex models_cache.json",
+    "model_ids": [
+      "gpt-6.1-sol",
+      "gpt-6-astra",
+      "gpt-6-luna"
+    ],
+    "high_effort_supported": true,
+    "scope": "cached list only; identity and credentials omitted"
+  },
+  "quota_observation": {
+    "source": "agy --print /usage",
+    "observed_at": "2026-10-22T05:15:33.946679+00:00",
+    "exit_code": 0,
+    "scope": "official non-inference command; grouped Antigravity quota only",
+    "groups": [
+      {
+        "group": "Gemini Models",
+        "window": "weekly",
+        "remaining_percent": 31,
+        "resets_at": "2026-10-28T11:22:12Z"
+      },
+      {
+        "group": "Claude and GPT models",
+        "window": "weekly",
+        "remaining_percent": 100,
+        "resets_at": "2026-10-29T05:14:59Z"
+      }
+    ]
+  },
+  "spreadsheet": {
+    "id": "1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI",
+    "title": "MINT 개발 통합 시트",
+    "ops_coord_01_present": true,
+    "unrelated_cells_preserved": true,
+    "existing_backlog_rows_before_update": 74,
+    "owned_tab": "에이전트 운영",
+    "owned_tab_sheet_id": 1049,
+    "owned_tab_range": "A1:H25",
+    "backlog_added_range": "A76:H76",
+    "backlog_status": "진행 중",
+    "url": "https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit",
+    "verification": {
+      "values_readback": true,
+      "backlog_validation_preserved": true,
+      "backlog_status_allowed_values": [
+        "구현 완료(검수 전)",
+        "진행 중",
+        "설계·조사",
+        "미착수",
+        "보류",
+        "완료"
+      ],
+      "array_formula_I1_preserved": true,
+      "unrelated_rows_preserved": true,
+      "native_visual_check": "Chrome Google Sheets at 100 percent; owned operations rows and added backlog row; horizontal scrolling for wide columns"
+    },
+    "runtime_status_scope": "policy implementation and validation in progress; new model inference and long-run stability unverified",
+    "ops_coord_01_present_before_update": false
+  },
+  "updated_at": "2026-10-22T09:12:54.061741+00:00",
+  "latest_runtime_quota_observations": {
+    "scope": "Official non-inference account reads; snapshots, not live remaining balance or model-access proof",
+    "codex": {
+      "source": "Codex account/rateLimits/read",
+      "observed_at_minute_kst": "2026-10-22 18:08",
+      "windows": [
+        {
+          "window": "five_hour",
+          "remaining_percent": 81,
+          "reset_epoch": 1792677730,
+          "resets_at": "2026-10-22T14:02:10Z"
+        },
+        {
+          "window": "weekly",
+          "remaining_percent": 47,
+          "reset_epoch": 1793082802,
+          "resets_at": "2026-10-27T06:33:22Z"
+        }
+      ]
+    },
+    "antigravity_gemini": {
+      "source": "agy --print /usage",
+      "observed_at_minute_kst": "2026-10-22 18:05",
+      "windows": [
+        {
+          "group": "Gemini Models",
+          "window": "weekly",
+          "remaining_percent": 28,
+          "reset_epoch": 1793186532,
+          "resets_at": "2026-10-28T11:22:12Z"
+        }
+      ]
+    },
+    "claude": {
+      "remaining_percent": null,
+      "source": "No fresh account usage reported",
+      "configured_hold_until_kst": "2026-10-22 19:05",
+      "actual_release_verified": false
+    },
+    "previous_antigravity_observation": "quota_observation is retained as the 14:15 historical snapshot; its Claude/GPT 100 percent is not current"
+  }
+}

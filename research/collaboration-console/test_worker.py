@@ -280,6 +280,119 @@ class Checks(unittest.TestCase):
         self.hub.sync_console(log)
         self.assertEqual(len([event for event in log.snapshot()["events"] if event["author"] == "Gemini"]), 1)
 
+    def fake_run(self,job,events):
+        import io
+        class FakeProcess:
+            pid,returncode=12345,0
+            stdin=io.StringIO()
+            stdout=io.StringIO(''.join(json.dumps(event)+'\n' for event in events))
+            def wait(self,timeout=None):
+                return 0
+            def poll(self):
+                return 0
+        with patch('worker.subprocess.Popen',return_value=FakeProcess()),patch('worker.pid_identity',return_value='fixture'):
+            self.hub.run(job)
+        with self.hub.db() as db:
+            return dict(db.execute('SELECT * FROM jobs WHERE id=?',(job['id'],)).fetchone())
+
+    def test_explicit_model_mismatch_cannot_complete_an_opus_judgment(self):
+        job_id=self.add('claude',agent='opus',phase='judge')
+        result=self.fake_run(self.hub.claim(job_id),[{'type':'assistant','message':{'model':'different-model'}},{'type':'result','result':'VERDICT: PASS'}])
+        self.assertEqual(result['state'],'needs_attention')
+        self.assertIn('model mismatch',result['error'])
+        self.assertEqual(self.hub.profile('opus')['availability'],'unverified')
+
+    def test_unreported_response_model_is_unverified_even_when_the_turn_completes(self):
+        job_id=self.add('claude',agent='opus',phase='plan')
+        result=self.fake_run(self.hub.claim(job_id),[{'type':'system','subtype':'init','model':'claude-opus-5-5'},{'type':'result','result':'one actual report'}])
+        self.assertEqual(result['state'],'completed')
+        self.assertEqual(self.hub.profile('opus')['availability'],'unverified')
+
+    def test_opus_quota_hands_lead_to_sol_but_safety_refusal_never_does(self):
+        self.hub.config['limits']={'provider_gap_seconds':0}
+        job_id=self.add('claude',agent='opus',phase='plan')
+        job=self.hub.claim(job_id)
+        result=self.fake_run(job,[{'type':'rate_limit_event','rate_limit_info':{'status':'rejected','resetsAt':time.time()+3600}}])
+        self.assertEqual(result['state'],'lead_handoff')
+        self.hub.hold('claude',0,'fixture release')
+        self.hub.observe_quota('claude',{'status':'known','remaining_percent':80,'reset_at':time.time()+3600,'observed_at':time.time(),'source':'fixture'})
+        self.prompt.write_text('distinct refusal fixture')
+        refused=self.add('claude',agent='opus',phase='judge')
+        result=self.fake_run(self.hub.claim(refused),[{'type':'refusal'},{'type':'rate_limit_event','rate_limit_info':{'status':'rejected','resetsAt':time.time()+3600}}])
+        self.assertEqual(result['state'],'needs_attention')
+
+    def test_stale_quota_and_failed_refresh_do_not_erase_recovery_reserve(self):
+        now=time.time()
+        self.hub.observe_quota('codex',{'status':'warning','remaining_percent':6,'reset_at':now+3600,'observed_at':now-600,'source':'fixture'})
+        self.hub.observe_quota('codex',{'status':'unknown','remaining_percent':None,'reset_at':None,'observed_at':now,'source':'probe unavailable'})
+        self.add()
+        self.assertIsNone(self.hub.claim())
+        self.assertEqual(self.hub.snapshot()['jobs'][0]['state'],'waiting_budget')
+        with self.hub.db() as db:
+            value=json.loads(db.execute("SELECT quota FROM providers WHERE name='codex'").fetchone()[0])
+        self.assertEqual(value['remaining_percent'],6)
+
+    def test_usage_probe_is_account_scoped_throttled_and_preserves_windows(self):
+        executable=self.root/'fixture.exe'
+        executable.touch()
+        self.hub.config['providers']['codex']['executable']=str(executable)
+        now=time.time()
+        observation={'status':'known','remaining_percent':51,'reset_at':now+3600,'observed_at':now,'source':'fixture','windows':[{'group':'codex','window':'primary','remaining_percent':51,'reset_at':now+3600}]}
+        with patch('worker.probe_usage',return_value=observation) as probe:
+            self.hub.refresh_usage('codex')
+            self.hub.refresh_usage('codex')
+            self.assertEqual(probe.call_count,1)
+        with self.hub.db() as db:
+            self.assertEqual(json.loads(db.execute("SELECT quota FROM providers WHERE name='codex'").fetchone()[0])['windows'],observation['windows'])
+
+    def test_missing_codex_bundle_uses_existing_resolver_for_command_and_usage(self):
+        executable=self.root/'new-codex.exe'
+        executable.touch()
+        self.hub.config['providers']['codex']['executable']=str(self.root/'OpenAI/Codex/bin/old/codex.exe')
+        with patch.dict('os.environ',{'LOCALAPPDATA':str(self.root)}),patch('worker.ROOT',self.root),patch('console.find_codex_windows_executable',return_value=executable),patch('worker.probe_usage',return_value=None) as probe:
+            self.hub.refresh_usage('codex')
+            command,_=self.hub.command({'provider':'codex','mode':'read-only','cwd':str(self.root)},'fixture')
+            self.assertEqual(command[0],str(executable))
+            probe.assert_called_once_with('codex',str(executable))
+
+    def seed_actor(self,agent,phase,report,actor=None,mode='read-only'):
+        provider=self.hub.profile(agent)['provider']
+        self.prompt.write_text('fixture '+agent+' '+phase+' '+report)
+        job_id=self.add(provider,agent=agent,phase=phase,task_id='ESC-1',actor_job=actor,mode=mode)
+        result=self.root/(job_id+'.md')
+        result.write_text(report)
+        with self.hub.db() as db:
+            db.execute("UPDATE jobs SET state='completed',result=? WHERE id=?",(str(result),job_id))
+        return job_id
+
+    def test_only_sol_request_can_authorize_one_opus_intervention(self):
+        wrong=self.seed_actor('sonnet','request_opus','REQUEST_OPUS: YES')
+        with self.assertRaisesRegex(ValueError,'Unauthorized'):
+            self.add('claude',agent='opus',phase='intervene',task_id='ESC-1',actor_job=wrong,mode='workspace-write')
+        right=self.seed_actor('sol','request_opus','REQUEST_OPUS: YES')
+        self.seed_actor('opus','intervene','WORK_STATUS: DONE',actor=right,mode='workspace-write')
+        self.prompt.write_text('second intervention')
+        with self.assertRaisesRegex(ValueError,'one-call ceiling'):
+            self.add('claude',agent='opus',phase='intervene',task_id='ESC-1',actor_job=right,mode='workspace-write')
+
+    def test_high_end_requires_opus_two_failed_reviews_and_single_read_only_call(self):
+        request=self.seed_actor('sol','request_opus','REQUEST_OPUS: YES')
+        self.seed_actor('opus','intervene','WORK_STATUS: DONE',actor=request,mode='workspace-write')
+        judge=self.seed_actor('opus','judge','VERDICT: BLOCK\nCONSULT: astra')
+        with self.assertRaisesRegex(ValueError,'repeated failures'):
+            self.add('codex',agent='astra',phase='consult',task_id='ESC-1',actor_job=judge)
+        self.seed_actor('gemini','review','VERDICT: FIX')
+        self.seed_actor('sonnet','review','VERDICT: BLOCK')
+        self.prompt.write_text('single brief consultation')
+        consult=self.add('codex',agent='astra',phase='consult',task_id='ESC-1',actor_job=judge)
+        self.assertEqual(self.hub.claim(consult)['mode'],'read-only')
+        with self.hub.db() as db:
+            db.execute("UPDATE jobs SET state='waiting_service',attempts=1,next_at=0 WHERE id=?",(consult,))
+        self.assertIsNone(self.hub.claim(consult))
+        self.prompt.write_text('second consultation')
+        with self.assertRaisesRegex(ValueError,'one-call ceiling'):
+            self.add('codex',agent='astra',phase='consult',task_id='ESC-1',actor_job=judge)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
