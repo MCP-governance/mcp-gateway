@@ -220,7 +220,7 @@ jobs:
           APPLIANCE_BIND=127.0.0.1 ./console.sh field init-disposal --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field up --with-lab-mcp
           APPLIANCE_BIND=127.0.0.1 ./console.sh field status
-          FIELD_TLS_ADDRESSES='https://127.0.0.1:8080' ./console.sh field ca
+          APPLIANCE_BIND=127.0.0.1 ./console.sh field ca
           echo "FIELD_CA=$PWD/field/ca/root.crt" >> "$GITHUB_ENV"
           echo "FIELD_CA_SHA256=$(cat field/ca/root.sha256)" >> "$GITHUB_ENV"
 
