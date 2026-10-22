@@ -393,11 +393,12 @@ async def me(authorization: str | None = Header(default=None)):
 
 
 KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py"),
+             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
-KIT_EXECUTABLE = {"install.sh"}
+KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}
 
 
 def field_ca() -> dict:
@@ -430,10 +431,30 @@ async def pc_kit() -> dict | None:
 
 
 @app.post("/api/pc-kit")
-async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
+async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = "linux",
+                               delivery: Literal["zip", "command"] = "zip",
                                authorization: str | None = Header(default=None)):
     from .endpoint_plane import enrollment_token
-    user = await current_identity(authorization)
+    download_prefix = "Bearer kit-download."
+    if authorization and authorization.startswith(download_prefix):
+        if platform != "macos" or delivery != "zip":
+            raise HTTPException(403, "다운로드 범위가 다릅니다.")
+        ticket = authorization[len(download_prefix):]
+        if not re.fullmatch(r"[A-Za-z0-9_-]{43}", ticket):
+            raise HTTPException(401, "다운로드 자격이 올바르지 않습니다.")
+        grant = await db.fetch_one(
+            """UPDATE endpoint_enrollment_tokens SET consumed_at=now()
+               WHERE token_hash=%s AND consumed_at IS NULL AND expires_at>now()
+                 AND EXISTS (SELECT 1 FROM principals p WHERE p.token=owner_token AND p.status='active')
+               RETURNING owner_token""", (hashlib.sha256(("kit-download:" + ticket).encode()).hexdigest(),))
+        if not grant:
+            raise HTTPException(401, "다운로드 자격이 만료·사용됐습니다.")
+        owner = await db.fetch_one("SELECT user_id,token FROM principals WHERE token=%s AND status='active'", (grant["owner_token"],))
+        if not owner:
+            raise HTTPException(403, "사용할 수 없는 계정입니다.")
+        user = {"user_id": owner["user_id"], "principal": owner["token"]}
+    else:
+        user = await current_identity(authorization)
     source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
     names = KIT_FILES[platform]
     if any(not (source / name).is_file() for name in names):
@@ -450,6 +471,21 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
         raise HTTPException(503, "Gateway Tailscale 노드 ID를 운영자가 먼저 고정해야 합니다.")
     import json
     ca = field_ca()
+    if delivery == "command":
+        if platform != "macos":
+            raise HTTPException(400, "지원하지 않는 설치 방식입니다.")
+        from .kit_commands import macos_bootstrap
+        ticket = secrets.token_urlsafe(32)
+        try:
+            script = macos_bootstrap(public, ticket, ca.get("ca_certificate", ""))
+        except ValueError as exc:
+            raise HTTPException(503, str(exc)) from None
+        await db.execute(
+            "INSERT INTO endpoint_enrollment_tokens(token_hash,owner_token,expires_at) VALUES (%s,%s,%s)",
+            (hashlib.sha256(("kit-download:" + ticket).encode()).hexdigest(), user["principal"],
+             datetime.now(UTC) + timedelta(minutes=5)))
+        return Response(script, media_type="application/octet-stream",
+                        headers={"Content-Disposition": 'attachment; filename="mcp-connect-macos.command"', "Cache-Control": "no-store"})
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
     if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):

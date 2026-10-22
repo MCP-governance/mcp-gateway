@@ -8,6 +8,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
+| W5-KIT-MACOS | macOS 직원 PC 원클릭 연결 | [보고](reports/2026-10-22-kit-macos.md), [분석](../analysis/kit-macos/README.md), D-190 | macOS 설치·독립 활성화·실제 하네스 MCP·재설치/제거 확인 | 미커밋 구현·오프라인11건 및 기존 콘솔15건 통과. pyflakes 도구 부재로 미실행. macOS 실기기 미실행. 리더 커밋·병합 후 팀원 맥북 실설치 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | WIKI-03 | 협업 콘솔 통합 시트 연동 | [작업 보고](reports/2026-10-18-sheet-sync.md) | CSV 게시 URL 설정 후 실제 시트 수정·캐시 만료·조회 실패 대체 확인 | 구현·격리 시험 32개·sheet_pull 자체 시험 통과. WBS·백로그 웹 게시 CSV 연결, 콘솔 #wbs '시트 기준' 표시 확인(10-18 14:16, main 29fe6a0) |
 | DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |

@@ -1,0 +1,250 @@
+macos-kit | passed | exit=0
+
+test_console_prioritizes_browser_os (__main__.MacOSKitCheck.test_console_prioritizes_browser_os) ... ok
+test_daemon_uses_private_config_without_secrets (__main__.MacOSKitCheck.test_daemon_uses_private_config_without_secrets) ... ok
+test_download_credentials_are_file_mediated (__main__.MacOSKitCheck.test_download_credentials_are_file_mediated) ... ok
+test_kit_sources_and_launch_path (__main__.MacOSKitCheck.test_kit_sources_and_launch_path) ... ok
+test_macho_and_linux_magic (__main__.MacOSKitCheck.test_macho_and_linux_magic) ... ok
+test_macos_control_state_uses_actual_pf_checks (__main__.MacOSKitCheck.test_macos_control_state_uses_actual_pf_checks) ... ok
+test_pf_dual_stack_allowlist (__main__.MacOSKitCheck.test_pf_dual_stack_allowlist) ... ok
+test_platform_detection_and_check_sets (__main__.MacOSKitCheck.test_platform_detection_and_check_sets) ... ok
+test_rollback_executes_reverse_order_and_restores_settings (__main__.MacOSKitCheck.test_rollback_executes_reverse_order_and_restores_settings) ... ok
+test_ticket_is_atomic_scoped_and_distinct_from_enrollment (__main__.MacOSKitCheck.test_ticket_is_atomic_scoped_and_distinct_from_enrollment) ... ok
+test_wrappers_keep_arguments_and_credentials_out_of_environment (__main__.MacOSKitCheck.test_wrappers_keep_arguments_and_credentials_out_of_environment) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.099s
+
+OK
+
+py-compile | passed | exit=0
+
+
+bash-install | passed | exit=0
+
+
+bash-macos | passed | exit=0
+
+
+node-syntax | passed | exit=0
+
+
+console-state | passed | exit=0
+✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.8711ms)
+✔ a poll overlapping a page load shows each call once, newest first, within the limit (1.6927ms)
+✔ ids sort numerically and malformed rows cannot displace real decisions (0.1494ms)
+✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2284ms)
+✔ the status phrase never presents a failed poll as fresh (0.904ms)
+✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.5592ms)
+✔ splitBy counts per key with a decision split, largest first (0.2174ms)
+✔ sankey layers never merge a server with a harness of the same name (0.2115ms)
+✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.2697ms)
+✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.3315ms)
+✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.8941ms)
+✔ latency values read as durations and never invent a measurement (0.2994ms)
+✔ endpoint evidence labels never turn a missing value into a good one (0.2097ms)
+✔ totals are reported apart from the window and page navigation follows the cursor (29.5442ms)
+✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2128ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110.8825
+
+
+open-endpoints | passed | exit=0
+PASS 무인증 1개가 문서와 일치, 인증 필요 95개 (그중 장치 자격 13개: GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)
+
+
+pyflakes | unavailable | exit=1
+
+C:\Users\bobysg\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe: No module named pyflakes
+
+diff-check | failed | exit=2
+docs/ai/DECISIONS.md:1953: new blank line at EOF.
+endpoint-agent/README.md:260: new blank line at EOF.
+
+
+bash-generated-command | exit=0
+
+
+
+Final diff-check after removing extra EOF blank lines: exit=0
+
+macos-kit | passed | exit=0
+
+test_console_prioritizes_browser_os (__main__.MacOSKitCheck.test_console_prioritizes_browser_os) ... ok
+test_daemon_uses_private_config_without_secrets (__main__.MacOSKitCheck.test_daemon_uses_private_config_without_secrets) ... ok
+test_download_credentials_are_file_mediated (__main__.MacOSKitCheck.test_download_credentials_are_file_mediated) ... ok
+test_kit_sources_and_launch_path (__main__.MacOSKitCheck.test_kit_sources_and_launch_path) ... ok
+test_macho_and_linux_magic (__main__.MacOSKitCheck.test_macho_and_linux_magic) ... ok
+test_macos_control_state_uses_actual_pf_checks (__main__.MacOSKitCheck.test_macos_control_state_uses_actual_pf_checks) ... ok
+test_pf_dual_stack_allowlist (__main__.MacOSKitCheck.test_pf_dual_stack_allowlist) ... ok
+test_platform_detection_and_check_sets (__main__.MacOSKitCheck.test_platform_detection_and_check_sets) ... ok
+test_rollback_executes_reverse_order_and_restores_settings (__main__.MacOSKitCheck.test_rollback_executes_reverse_order_and_restores_settings) ... ok
+test_ticket_is_atomic_scoped_and_distinct_from_enrollment (__main__.MacOSKitCheck.test_ticket_is_atomic_scoped_and_distinct_from_enrollment) ... ok
+test_wrappers_keep_arguments_and_credentials_out_of_environment (__main__.MacOSKitCheck.test_wrappers_keep_arguments_and_credentials_out_of_environment) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.098s
+
+OK
+
+py-compile | passed | exit=0
+
+
+wiki-capture | passed | exit=0
+{"head": "1c59a00c91727dfbd9faab37870f274b11e448f5", "dirty_paths": 24, "scope": "local-code-only"}
+
+
+wiki-build | passed | exit=0
+{"format": "markdown", "pages": 648, "catalogs": {"endpoint-permission-references": 12, "experiments": 13, "imports": 22, "local-tool-risks": 13, "papers": 264, "solutions": 9, "threats": 24}, "collaboration_console": "research/collaboration-console/README.md"}
+
+
+wiki-check-ci | passed | exit=0
+{
+  "ok": true,
+  "counts": {
+    "endpoint-permission-references": 12,
+    "experiments": 13,
+    "imports": 22,
+    "local-tool-risks": 13,
+    "papers": 264,
+    "solutions": 9,
+    "threats": 24,
+    "sources_evidence_records": 3,
+    "solutions_evidence_records": 21,
+    "reviewed_local_tools": 92,
+    "markdown_documents": 648
+  },
+  "warnings": [
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L05\\extracts\\LIB-L05.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L05\\originals\\pipc-genai-privacy-guide-2025-08.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L05\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L06\\extracts\\LIB-L06.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L06\\originals\\kisa-ai-red-teaming-guide-2026-07.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L06\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L09\\extracts\\LIB-L09.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L09\\originals\\bs-iso-iec-42001-2023.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L09\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L10\\extracts\\LIB-L10.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L10\\originals\\iso-iec-27001-2022.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L10\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L11\\extracts\\LIB-L11.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L11\\originals\\azs-iso-iec-tr-24028-2024-az.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L11\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L12\\extracts\\LIB-L12.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L12\\originals\\iso-iec-5230-2020.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-L12\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M04\\extracts\\LIB-M04.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M04\\originals\\imda-mgf-agentic-ai-v1-5.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M04\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M08\\extracts\\LIB-M08.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M08\\originals\\csa-securing-agentic-ai-addendum.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M08\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M13\\extracts\\LIB-M13.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M13\\originals\\ca-tbs-directive-automated-decision-making.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M13\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M14\\extracts\\LIB-M14.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M14\\originals\\ccpa-admt-risk-cyber-approved-text.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M14\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M15\\extracts\\LIB-M15.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M15\\originals\\co-sb26-189-session-law.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M15\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M17\\extracts\\LIB-M17.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M17\\originals\\nist-ai-600-1.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M17\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M20\\extracts\\LIB-M20.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M20\\originals\\nist-ai-100-2e2025.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M20\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M21\\extracts\\LIB-M21.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M21\\originals\\nist-ir-8596-iprd.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M21\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M22\\extracts\\LIB-M22.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M22\\originals\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M22\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M28\\extracts\\LIB-M28.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M28\\originals\\cn-network-data-security-regulations-790.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M28\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M31\\extracts\\LIB-M31.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M31\\originals\\tc260-ai-safety-governance-framework-2-0.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M31\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M32\\extracts\\LIB-M32.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M32\\originals\\gbt-45654-2025.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M32\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M34\\extracts\\LIB-M34.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M34\\originals\\sg-pdpa-2012.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M34\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M36\\extracts\\LIB-M36.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M36\\originals\\quebec-law-25-2021.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M36\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M37\\extracts\\LIB-M37.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M37\\originals\\sg-mas-ai-risk-management-guidelines-2026.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M37\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M38\\extracts\\LIB-M38.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M38\\originals\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M38\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M39\\extracts\\LIB-M39.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M39\\originals\\csa-guidelines-on-securing-ai-systems-2024.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M39\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M40\\extracts\\LIB-M40.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M40\\originals\\etsi-en-304-223.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M40\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M43\\extracts\\LIB-M43.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M43\\originals\\au-guidance-ai-adoption-implementation.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M43\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M44\\extracts\\LIB-M44.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M44\\originals\\india-dpdp-rules-2025.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M44\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M45\\extracts\\LIB-M45.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M45\\originals\\india-dpdp-act-2023.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M45\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M48\\extracts\\LIB-M48.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M48\\originals\\au-poa-act-2024.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M48\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M49\\extracts\\LIB-M49.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M49\\originals\\india-ai-governance-guidelines.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\compliance\\LIB-M49\\provenance.json",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P39\\extracts\\P39.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P39\\originals\\P39.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P43\\extracts\\P43.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P43\\originals\\P43.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P46\\extracts\\P46.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P46\\originals\\P46.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P47\\extracts\\P47.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P47\\originals\\P47.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P54\\extracts\\P54.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P54\\originals\\P54.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P58\\extracts\\P58.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P58\\originals\\P58.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P60\\extracts\\P60.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P60\\originals\\P60.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P63\\extracts\\P63.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\P63\\originals\\P63.pdf",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T01\\extracts\\T01_mcp_auth.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T01\\extracts\\T01_mcp_auth_security.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T01\\originals\\T01_mcp_auth.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T01\\originals\\T01_mcp_auth_security.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T02\\extracts\\T02_mcp_tools.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T02\\originals\\T02_mcp_tools.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T04\\extracts\\T04_web.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T04\\originals\\T04.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T08\\extracts\\T08_owasp_cheat.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T08\\extracts\\T08_owasp_mcp.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T08\\originals\\T08_owasp_cheat.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T08\\originals\\T08_owasp_mcp.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T21\\extracts\\T21_mcp_best.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T21\\originals\\T21_mcp_best.html",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T22\\extracts\\T22_supplement.md",
+    "Missing ignored local source: research\\llm-wiki\\local-sources\\policy\\T22\\originals\\T22_supplement.html"
+  ],
+  "errors": []
+}
+
+
+diff-check | passed | exit=0
+
+

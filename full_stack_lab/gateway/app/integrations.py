@@ -33,7 +33,7 @@ from .connectors import REVIEW_DAYS, require_admin, state_of
 from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_platform
 
 router = APIRouter()
-PLATFORM_LABEL = {"wsl": "WSL", "windows": "Windows", "linux": "Linux", "other": "이 플랫폼"}
+PLATFORM_LABEL = {"wsl": "WSL", "windows": "Windows", "linux": "Linux", "macos": "macOS", "other": "이 플랫폼"}
 STATES = ("gateway_enforced", "endpoint_enforced", "vendor_enforced", "observed_only", "unknown_not_enrolled", "bypass_possible")
 CLASSES = ("gateway_mcp", "gateway_backend_connector", "vendor_native_connector", "local_plugin_or_stdio", "shadow_or_unknown")
 
@@ -77,6 +77,8 @@ def platform_of(device: dict, host: dict | None = None) -> str:
         return "wsl"
     if "windows" in text or text.startswith("win"):
         return "windows"
+    if "darwin" in text or "macos" in text or managed_platform(device) == "macos":
+        return "macos"
     return "linux" if "linux" in text else "other"
 
 
@@ -95,6 +97,7 @@ def device_state(device: dict, now: datetime) -> dict:
         bypass.append("같은 엔드포인트의 다른 계정 보고 없음")
     # A Windows device under the managed installer is enforced like Linux; WSL and unmanaged Windows are not.
     managed_windows = platform == "windows" and device.get("device_epoch") and managed_platform(device) == "windows"
+    managed_macos = platform == "macos" and device.get("device_epoch") and managed_platform(device) == "macos"
     if platform in {"windows", "wsl"} and not managed_windows:
         bypass.append(f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원")
     if device.get("status") != "active":
@@ -102,7 +105,7 @@ def device_state(device: dict, now: datetime) -> dict:
     managed = device.get("managed_state")
     if device.get("status") != "active":
         state, evidence = "unknown_not_enrolled", "등록 해제됨"
-    elif platform != "linux" and not managed_windows:
+    elif platform != "linux" and not managed_windows and not managed_macos:
         state, evidence = "observed_only", f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원"
     elif (managed == "active" and age is not None and age < HEARTBEAT_SECONDS
           and set(checks) == managed_checks(device) and all(v is True for v in checks.values())):

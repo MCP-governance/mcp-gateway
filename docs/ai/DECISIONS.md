@@ -1983,3 +1983,21 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 호출 시 현재 값으로 해시를 다시 계산하고 일치하는 경우에만 서버 대상에 `transfer_reviewed=true`를 넣는다. OPA의 예외는 내부 등급 국가 규칙의 `approval`에만 적용한다. 중요 등급의 `deny`, 미확인 위치, 도구 인자의 별도 외부 목적지, 기존 DLP와 PAC 차단은 풀지 않는다. 기존 심사 기록은 결속 해시가 없으므로 자동 승격하지 않고 위치 재심사 뒤 적용한다. 규칙 팩이 없거나 국외 이전 근거가 비면 위치 기록만 가능하고 반복 승인 면제는 없다.
 
 새 의존성 없이 기존 OPA와 Python 표준 해시 구현을 재사용했다. 공식 [Rego 언어](https://www.openpolicyagent.org/docs/policy-language)와 [object.get](https://www.openpolicyagent.org/docs/policy-reference/builtins/object)의 누락 기본값 동작을 확인했다. 기존 122개 OPA 기대값은 변경하지 않고 8개 새 시험을 추가했다. 로컬 정책 시험과 DB 대역 경로 시험은 실기기 승인이나 실제 국외 전송 검증으로 세지 않는다. 구현과 검증 상세는 [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md)에 둔다.
+
+## D-196 macOS 키트는 기존 정책·브로커를 재사용하고 계정·pf·launchd만 어댑터로 연결한다 (2026-10-22, W5-KIT-MACOS)
+
+- **문제**: 개인 키트가 Linux·Windows만 제공해 macOS 직원의 설치·활성화 경로가 없었다.
+- **결정**: `managed-macos.py`가 dscl 관리 계정, Mach-O 공식 설치본 탐색, shim/셸 함수, pf 전용 하위 anchor와 launchd를
+  구성한다. 전송·관리 설정·heartbeat·헤더 반환은 기존 Linux 코드를 재사용한다. 플랫폼별 점검을 별도로 보존해 Linux
+  AppArmor/nft 항목을 macOS에서 참으로 보고하지 않는다. 공개 프로그램 디렉터리는 읽을 수 있도록 설치 umask022,
+  장치 비밀은 명시700·mkstemp600으로 분리한다.
+- **직원 흐름**: 콘솔에서 macOS 연결 파일을 받고 표시된 bash 명령 한 줄·관리자 암호 한 번으로 실행한다. 5분·1회용
+  다운로드 자격은 인증 헤더용 파일에만 들어가고 URL·셸 기록·환경에 넣지 않는다. 원본 연결 파일과 임시 자격 파일을 지운다.
+  기존 `/api/pc-kit` POST에서만 쓰도록 자격을 제한하고 DB의 원자 UPDATE로 소비한다. 등록 토큰과 해시 도메인을 분리한다.
+- **런타임·제거**: 없으면 공식 PSF 서명 Python3.14.9 pkg를 같은 관리자 권한으로 설치한다. 공식 하네스 기설치는 D-71과 같다.
+  재설치 전 rollback하며 제거는 launchd·shim·실행기·pf·설정·프로그램·계정 역순이다. 공유 Python은 유지한다.
+- **한계**: PF는 Apple의 안정 API가 아니다. 관리 UID TCP/UDP 밖 프로토콜·같은 UID 헬퍼 호출·관리자 우회·프로세스 격리는
+  보장하지 않는다. 실제 macOS 정상군·복구는 미실행이다. Linux·Windows 기존 시험 기대값은 변경하지 않았다.
+- **근거·검증**: [분석](../../research/llm-wiki/analysis/kit-macos/README.md),
+  [보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md). 새 오프라인11건·기존 콘솔15건 통과,
+  구문/공개 엔드포인트 검사 통과. pyflakes는 도구 부재·네트워크 제약으로 미실행. 독립 검토의 판본·경로 fixture·umask 지적 수정.

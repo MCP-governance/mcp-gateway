@@ -1,0 +1,229 @@
+{
+  "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+  "environment": "nt",
+  "baseline": "1c59a00c91727dfbd9faab37870f274b11e448f5",
+  "checks": [
+    {
+      "name": "bash-install",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "endpoint-agent/install.sh"
+      ],
+      "at": "2026-10-22T14:14:27.838106+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "bash-macos",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "endpoint-agent/install-macos.sh"
+      ],
+      "at": "2026-10-22T14:14:27.864425+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "node-syntax",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "at": "2026-10-22T14:14:27.910055+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "console-state",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "at": "2026-10-22T14:14:28.074071+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "at": "2026-10-22T14:14:28.166474+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/bootstrap.py",
+        "endpoint-agent/managed-linux.py",
+        "endpoint-agent/managed-macos.py",
+        "full_stack_lab/gateway/app/kit_commands.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/gateway/app/endpoint_plane.py",
+        "full_stack_lab/gateway/app/idp.py",
+        "full_stack_lab/gateway/app/integrations.py",
+        "full_stack_lab/tests/macos_kit_check.py"
+      ],
+      "at": "2026-10-22T14:14:28.195738+00:00",
+      "exit_code": 1,
+      "outcome": "unavailable"
+    },
+    {
+      "name": "bash-generated-command",
+      "command": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "<temporary synthetic .command>"
+      ],
+      "at": "2026-10-22T14:14:28.286266+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "utf8-lf",
+      "outcome": "passed",
+      "exit_code": 0,
+      "at": "2026-10-22T14:14:28.325528+00:00"
+    },
+    {
+      "name": "macos-kit",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/macos_kit_check.py"
+      ],
+      "at": "2026-10-22T14:17:10.731572+00:00",
+      "exit_code": 0,
+      "outcome": "passed",
+      "previous_attempt": {
+        "name": "macos-kit",
+        "command": [
+          "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+          "-B",
+          "-X",
+          "utf8",
+          "full_stack_lab/tests/macos_kit_check.py"
+        ],
+        "at": "2026-10-22T14:14:27.675900+00:00",
+        "exit_code": 0,
+        "outcome": "passed"
+      }
+    },
+    {
+      "name": "py-compile",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-m",
+        "py_compile",
+        "endpoint-agent/managed-macos.py"
+      ],
+      "at": "2026-10-22T14:17:10.798727+00:00",
+      "exit_code": 0,
+      "outcome": "passed",
+      "previous_attempt": {
+        "name": "py-compile",
+        "command": [
+          "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+          "-m",
+          "py_compile",
+          "endpoint-agent/bootstrap.py",
+          "endpoint-agent/managed-linux.py",
+          "endpoint-agent/managed-macos.py",
+          "full_stack_lab/gateway/app/kit_commands.py",
+          "full_stack_lab/gateway/app/agent_service.py",
+          "full_stack_lab/gateway/app/endpoint_plane.py",
+          "full_stack_lab/gateway/app/idp.py",
+          "full_stack_lab/gateway/app/integrations.py",
+          "full_stack_lab/tests/macos_kit_check.py"
+        ],
+        "at": "2026-10-22T14:14:27.807508+00:00",
+        "exit_code": 0,
+        "outcome": "passed"
+      }
+    },
+    {
+      "name": "wiki-capture",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/capture_status.py"
+      ],
+      "at": "2026-10-22T14:17:10.941413+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "wiki-build",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "at": "2026-10-22T14:17:11.058489+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "wiki-check-ci",
+      "command": [
+        "C:\\Users\\bobysg\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "at": "2026-10-22T14:17:12.727899+00:00",
+      "exit_code": 0,
+      "outcome": "passed"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "at": "2026-10-22T14:17:12.783555+00:00",
+      "exit_code": 0,
+      "outcome": "passed",
+      "previous_attempt": {
+        "name": "diff-check",
+        "command": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "at": "2026-10-22T14:14:56.272736+00:00",
+        "exit_code": 0,
+        "outcome": "passed",
+        "previous_attempt": {
+          "exit_code": 2,
+          "outcome": "failed",
+          "reason": "extra final blank lines in documentation, removed"
+        }
+      }
+    }
+  ],
+  "macos_execution": "not-run",
+  "deployment": "not-run",
+  "pj1": "not-run"
+}

@@ -701,12 +701,14 @@ HEARTBEAT_INTERVAL = 60
 NETWORK_RETENTION_DAYS = 7
 MANAGED_CHECKS = {"apparmor_enforcing", "nftables_active", "protected_configs", "ordinary_account", "user_command_helpers"}
 MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
+                              "macos": {"pf_enforcing", "protected_configs", "ordinary_account", "user_command_helpers"},
                               "windows": {"firewall_enforcing", "protected_configs", "ordinary_account", "user_command_helpers"}}
 
 
 def managed_platform(device: dict) -> str:
     # Not the platform column: the observer's own enroll report rewrites it ("Windows 10", "Linux 6.8").
-    return "windows" if (device.get("detail") or {}).get("local_sid") else "linux"
+    detail = device.get("detail") or {}
+    return "windows" if detail.get("local_sid") else "macos" if detail.get("managed_platform") == "macos" else "linux"
 
 
 def managed_checks(device: dict, reported: dict | None = None) -> set[str]:
@@ -753,7 +755,8 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                VALUES (%s,%s,%s,'managed-1',%s,%s,%s,%s,'active',%s,now(),'pending',%s,%s,%s,%s)""",
             (endpoint_id, hostname, platform, grant["owner_token"], _hash_key(key), key[:8],
              Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], str(uuid.uuid4()), username, uid,
-             Jsonb({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows" else {})))
+             Jsonb({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows"
+                   else {"managed_platform": "macos"} if platform == "macos" else {})))
         await connection.execute(
             "UPDATE endpoint_enrollment_tokens SET endpoint_id=%s WHERE token_hash=%s", (endpoint_id, _hash_key(raw)))
         await connection.execute("UPDATE principals SET managed_required=true WHERE token=%s", (grant["owner_token"],))
@@ -792,6 +795,8 @@ async def managed_policy(device: dict) -> dict:
     windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
+              else f'/Library/MCPGatewayManaged/enforcement/mcpgw-{device["local_username"]}/header-helper'
+              if managed_platform(device) == "macos"
               else f'/usr/local/lib/mcpgw-enforcement/mcpgw-{device["local_username"]}/header-helper')
     if not helper:
         raise ValueError("관리형 설치의 헤더 명령이 등록되지 않았습니다.")
@@ -840,6 +845,8 @@ async def managed_policy(device: dict) -> dict:
         policy["proxy_environment"] = proxy
     if windows:
         policy.update(platform="windows", local_sid=detail.get("local_sid"))
+    elif managed_platform(device) == "macos":
+        policy["platform"] = "macos"
     policy["configuration_hashes"] = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in files.items()}
     policy["policy_hash"] = hashlib.sha256(json_document(policy).encode()).hexdigest()
     return policy
