@@ -475,12 +475,23 @@ def main():
     add.add_argument("--hours",type=float,default=24)
     add.add_argument("--require-claude",action="store_true")
     sub.add_parser("status")
+    # needs_attention 작업은 같은 폴더의 다음 작업을 막는다(결과 불명 쓰기 보호). 사람이 확인한 뒤 닫는 경로.
+    close=sub.add_parser("close")
+    close.add_argument("--task-id",required=True)
+    close.add_argument("--reason",required=True)
     args=parser.parse_args()
     hub=Hub()
     coordinator=Coordinator(hub)
     try:
         if args.command=="add":
             print(coordinator.add(args.task_id,args.cwd,args.prompt_file,time.time()+args.hours*3600,args.require_claude))
+        elif args.command=="close":
+            with hub.db() as db:
+                if not db.execute("UPDATE workflows SET state='closed',summary=?,updated=? WHERE id=? AND state IN ('active','waiting','needs_attention')",
+                                  ("사람 확인 후 종료: "+args.reason[:160],time.time(),args.task_id)).rowcount:
+                    raise SystemExit("닫을 수 있는 작업이 아닙니다: "+args.task_id)
+                hub.event(db,args.task_id,"workflow","closed: "+args.reason[:160])
+            print(args.task_id)
         else:
             with hub.db() as db:
                 print(json.dumps([dict(row) for row in db.execute("SELECT id,state,summary,updated FROM workflows")],ensure_ascii=False,indent=2))

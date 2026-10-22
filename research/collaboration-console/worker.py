@@ -616,7 +616,7 @@ class Hub:
             return cmd + ["-"], prompt
         if job["provider"] == "claude":
             writing=job["mode"]=="workspace-write"
-            cmd = [exe, "-p", "--output-format", "stream-json", "--verbose", "--model", model, "--effort", effort, "--permission-mode", "acceptEdits" if writing else "plan", "--allowedTools", "Read,Grep,Glob,Edit,Write" if writing else "Read,Grep,Glob", "--max-turns", "4" if job.get("agent") in HIGH_END else "18", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}']
+            cmd = [exe, "-p", "--output-format", "stream-json", "--verbose", "--model", model, "--effort", effort, "--permission-mode", "acceptEdits" if writing else "plan", "--allowedTools", "Read,Grep,Glob,Edit,Write" if writing else "Read,Grep,Glob", "--max-turns", "4" if job.get("agent") in HIGH_END else "40" if job.get("phase") in {"plan", "judge", "intervene"} else "18", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}']
             if job.get("session"):
                 cmd += ["--resume", job["session"]]
             return cmd, prompt
