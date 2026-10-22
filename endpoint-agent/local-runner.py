@@ -28,6 +28,9 @@ MAX_BYTES = 1048576
 MAX_LINES = 1024
 MAX_QUEUE = 32
 READ_SECONDS = 20
+PREPARE_SECONDS = 180
+STDERR_BYTES = 4096
+STDERR_LINES = 5
 WORKSPACE = '/workspace'  # 컨테이너 안 고정 마운트 위치: 실행 인자가 PC 계정 이름에 묶이지 않는다
 ENGINE_ENV = {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin','HOME':'/root','LANG':'C.UTF-8'}
 
@@ -169,7 +172,7 @@ def detect_engine(setting):
     raise ValueError('컨테이너 엔진이 없습니다')
 
 
-def engine_configuration(config, manifest):
+def engine_configuration(config, manifest, check=None):
     setting=config.get('local_engine') or {}
     if not setting.get('engine'):
         setting=config['local_engine']=detect_engine(setting)
@@ -191,11 +194,50 @@ def engine_configuration(config, manifest):
     image=subprocess.run(inspect,capture_output=True,timeout=5,env=ENGINE_ENV)
     if image.returncode:
         # 허용 저장소의 digest 고정 이미지만 여기까지 온다. 받은 내용이 digest와 다르면 엔진이 거부한다.
-        subprocess.run(argv+['pull',manifest['image']],capture_output=True,timeout=600,check=True,env=ENGINE_ENV)
+        # Control polling renews the unstarted claim; a cancelled preparation never starts a container.
+        pull=subprocess.Popen(argv+['pull',manifest['image']],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=ENGINE_ENV)
+        try:
+            end=time.monotonic()+PREPARE_SECONDS
+            while pull.poll() is None:
+                if check:
+                    check()
+                if time.monotonic()>=end:
+                    raise TimeoutError('이미지 수신 기한이 지났습니다')
+                time.sleep(.2)
+            if pull.returncode:
+                raise ValueError('승인 이미지를 수신하지 못했습니다')
+        finally:
+            if pull.poll() is None:
+                pull.kill()
+                pull.wait(timeout=3)
         image=subprocess.run(inspect,capture_output=True,timeout=5,check=True,env=ENGINE_ENV)
     if len(image.stdout)>16384 or json.loads(image.stdout or b'null'):
         raise ValueError('이미지의 추가 볼륨은 허용하지 않습니다')
     return argv,namespace
+
+
+def masked_stderr(raw, secrets=()):
+    if len(raw)>=STDERR_BYTES:
+        # A rolling buffer can begin inside a credential; discard that incomplete line entirely.
+        raw=raw.partition(b'\n')[2]
+    text=raw.decode('utf-8',errors='replace')
+    # Mask before clipping: a boundary must not expose half of a known credential.
+    for value in sorted({v for v in secrets if isinstance(v,str) and v},key=len,reverse=True):
+        text=text.replace(value,'[비밀 숨김]')
+    text=re.sub(r'(?im)^.*(?:token|secret|password|passwd|authorization|api[_-]?key|credential|-----BEGIN).*$',
+                '[비밀 숨김]',text)
+    text=re.sub(r'(?i)(?:https?://)[^\s/]+@', 'https://[비밀 숨김]@',text)
+    text=''.join(c for c in text if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
+    lines=[]
+    remaining=300
+    for line in reversed(text.splitlines()[-STDERR_LINES:]):
+        if len(line)>remaining:
+            line='[긴 오류 생략]'
+        if len(line)+1>remaining:
+            break
+        lines.append(line)
+        remaining-=len(line)+1
+    return '\n'.join(reversed(lines))
 
 
 class Session:
@@ -209,6 +251,11 @@ class Session:
         self.stop_confirmed=False
         self.creation_uncertain=False
         self.process=None
+        self.stderr_tail=bytearray()
+        self.stderr_lock=threading.Lock()
+        self.stderr_done=threading.Event()
+        self.exit_code=None
+        self.pinned=None
         self.pinned=PinnedMounts(manifest,account.pw_dir)
         try:
             _,command=container_command(engine,manifest,account,mount_options=self.pinned.options,namespace=namespace,name=name,
@@ -216,16 +263,46 @@ class Session:
             check()
             self.pinned.recheck()
             command[command.index('run')]='create'
+            # Keep the exited state until our explicit rm, otherwise --rm erases its exit code.
+            command.remove('--rm')
             self.creation_uncertain=True
-            subprocess.run(command,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=5,check=True,env=ENGINE_ENV)
+            created=subprocess.run(command,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=5,env=ENGINE_ENV)
+            if created.returncode:
+                self.stderr_tail.extend(created.stderr[-STDERR_BYTES:])
+                self.stderr_done.set()
+                raise OSError('로컬 MCP 컨테이너를 생성하지 못했습니다')
             self.creation_uncertain=False
             check()
-            self.process=subprocess.Popen(engine+['start','-a','-i',name],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
+            self.process=subprocess.Popen(engine+['start','-a','-i',name],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
                                           bufsize=0,env=ENGINE_ENV)
+            threading.Thread(target=self._read_stderr,daemon=True).start()
             threading.Thread(target=self._read,daemon=True).start()
         except BaseException:
             self.pinned.close()
             raise
+
+    def _read_stderr(self):
+        try:
+            while True:
+                chunk=self.process.stderr.read(1024)
+                if not chunk:
+                    return
+                with self.stderr_lock:
+                    self.stderr_tail.extend(chunk)
+                    del self.stderr_tail[:-STDERR_BYTES]
+        except OSError:
+            pass
+        finally:
+            self.stderr_done.set()
+
+    def diagnostic(self, secrets=()):
+        self.stderr_done.wait(.2)
+        with self.stderr_lock:
+            raw=bytes(self.stderr_tail)
+        # A launcher error is not proof of an image's file mode; report execution permission only.
+        denied=b'permission denied' in raw.lower() and (b'exec' in raw.lower() or b'/app/.venv/' in raw)
+        return {'kind':'permission' if denied else 'exited' if self.exit_code is not None else 'failed','exit_code':self.exit_code,
+                'stderr_tail':masked_stderr(raw,secrets)}
 
     def mapping(self, namespace):
         end=time.monotonic()+3
@@ -311,14 +388,30 @@ class Session:
                 self.process.kill()
                 self.process.wait(timeout=3)
             try:
+                # Inspect before removal: docker start's status can differ from the container's status.
+                if hasattr(self,'stderr_lock'):
+                    try:
+                        state=subprocess.run(self.engine+['inspect','--format','{{json .State}}',self.name],
+                                             capture_output=True,timeout=1,env=ENGINE_ENV)
+                        if state.returncode==0:
+                            info=json.loads(state.stdout)
+                            if not info.get('Running'):
+                                self.exit_code=info.get('ExitCode')
+                                if info.get('Error'):
+                                    with self.stderr_lock:
+                                        self.stderr_tail.extend(str(info['Error']).encode()[:STDERR_BYTES])
+                                        del self.stderr_tail[:-STDERR_BYTES]
+                    except (OSError,ValueError,subprocess.SubprocessError):
+                        pass  # 진단 조회가 실패해도 컨테이너 회수는 반드시 시도한다.
                 subprocess.run(self.engine+['rm','-f',self.name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3,env=ENGINE_ENV)
                 listed=subprocess.run(self.engine+['ps','-a','--filter',f'name=^{self.name}$','--format','{{.ID}}'],
                                       capture_output=True,timeout=3,env=ENGINE_ENV,check=True)
                 gone=not listed.stdout.strip() and not self.creation_uncertain
-            except (OSError,subprocess.SubprocessError):
+            except (OSError,ValueError,subprocess.SubprocessError):
                 gone=False
             if gone:
-                self.pinned.close()
+                if self.pinned:
+                    self.pinned.close()
                 self.stop_confirmed=True
             return gone
 
@@ -343,7 +436,7 @@ def execute_job(config, job, request, account):
         raise ValueError('승인 매니페스트 서명이 아닙니다')
     if datetime.fromisoformat(job['lease_until']).timestamp()<=time.time():
         raise ValueError('수령 기한이 지났습니다')
-    engine,namespace=engine_configuration(config,manifest)
+    engine=None
     path=f"/api/endpoint/local-jobs/{job['id']}"
     cancelled=threading.Event()
     session=None
@@ -354,9 +447,6 @@ def execute_job(config, job, request, account):
         check_control(job,control)
         return control
     control=check()
-    started=request(config,path+'/start',{})
-    check_control(job,started)
-    deadline=min(datetime.fromisoformat(job['deadline']).timestamp(),time.time()+READ_SECONDS)
     def stop_at_deadline():
         if not cancelled.wait(max(0,deadline-time.time())):
             cancelled.set()
@@ -371,11 +461,16 @@ def execute_job(config, job, request, account):
                 if session:
                     session.stop()
                 return
-    threading.Thread(target=stop_at_deadline,daemon=True).start()
     threading.Thread(target=watch,daemon=True).start()
     answer={'error':'로컬 실행 결과를 확인하지 못했습니다'}
     isolation=None
     try:
+        engine,namespace=engine_configuration(config,manifest,check)
+        check()
+        started=request(config,path+'/start',{})
+        check_control(job,started)
+        deadline=min(datetime.fromisoformat(started['deadline']).timestamp(),time.time()+READ_SECONDS)
+        threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
         session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check)
         isolation=session.mapping(namespace)
@@ -408,7 +503,8 @@ def execute_job(config, job, request, account):
             raise ValueError('허용하지 않는 로컬 요청')
         answer={'result':result}
     except Exception as exc:
-        answer={'error':type(exc).__name__}
+        reason='timeout' if isinstance(exc,TimeoutError) else 'failed'
+        answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
     finally:
         cancelled.set()
         if isolation:
@@ -416,6 +512,15 @@ def execute_job(config, job, request, account):
         # Even an initialization failure has a durable started row and needs a stop receipt.
         if session:
             answer['stopped']=session.stop()
+            if 'error' in answer and hasattr(session,'stderr_lock'):
+                secrets=[*(config.get(k) for k in ('device_key','access_token','refresh_token','password')),
+                         *(manifest.get('env') or {}).values()]
+                diagnostic=session.diagnostic(secrets)
+                if answer['diagnostics']['kind']=='timeout' and diagnostic['kind']!='permission':
+                    diagnostic['kind']='timeout'
+                answer['diagnostics']=diagnostic
+        elif engine is None:
+            answer['stopped']=True  # 엔진 준비 실패 전에는 컨테이너 생성 자체를 시도하지 않았다.
         else:
             listed=subprocess.run(engine+['ps','-a','--filter',f"name=^mcpgw-local-{job['id']}$",'--format','{{.ID}}'],
                                   capture_output=True,timeout=3,env=ENGINE_ENV,check=True)

@@ -103,6 +103,14 @@ ENTITIES = ["EMAIL_ADDRESS", "KR_RRN", "KR_PHONE", "KR_BRN", "KR_ACCOUNT", "KR_P
 # Shorter strings cannot hold any of the entities above ("a@b.co" is 6).
 MIN_CHARS = 6
 
+# Only complete, visibly unfilled template values qualify. A prefix match could
+# hide an issuer token appended to a placeholder, so keep the vocabulary finite.
+_DOCUMENTATION_CREDENTIAL = re.compile(
+    r"[^:=\r\n]+[:=]\s*[\"']?(?:"
+    r"(?i:<your[-_](?:(?:api[-_])?key|(?:access[-_])?token|password|client[-_]secret)>)"
+    r"|YOUR_(?:API_KEY|ACCESS_TOKEN|TOKEN|PASSWORD|CLIENT_SECRET)(?:_HERE)?)[\"']?")
+_JSON_TOKEN = re.compile(r'"(?:[^"\\]|\\.)*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?')
+
 Ignore = Callable[[str, str], bool]  # (entity_type, matched value) -> skip it
 
 
@@ -145,6 +153,8 @@ async def analyze(text: str, ignore: Ignore | None = None) -> list[dict]:
     # An ad-hoc pattern cannot validate; a sixteen-digit group that fails the Luhn check is an order number.
     kept = [item for item in kept if item["entity_type"] != "CARD_NUMBER"
             or _luhn(re.sub(r"\D", "", text[item["start"]:item["end"]]))]
+    kept = [item for item in kept if item["entity_type"] != "CREDENTIAL"
+            or not _DOCUMENTATION_CREDENTIAL.fullmatch(text[item["start"]:item["end"]])]
     if ignore:
         kept = [item for item in kept if not ignore(item["entity_type"], text[item["start"]:item["end"]])]
     return kept
@@ -173,12 +183,18 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
 async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[object, list[str]]:
     """Mask text leaves and preserve the MCP result's JSON shape."""
     keys, numbers, assignments, pending = set(), [], [], [value]
+    prefixes, assignment_offset = [], 0
     while pending:
         item = pending.pop()
         if isinstance(item, dict):
             keys.update(item)
             pending.extend(item.values())
-            assignments.extend(f"{key}={child}" for key, child in item.items() if isinstance(child, str))
+            for key, child in item.items():
+                if isinstance(child, str):
+                    assignment = f"{key}={child}"
+                    prefixes.append((assignment_offset, assignment_offset + len(key) + 1))
+                    assignments.append(assignment)
+                    assignment_offset += len(assignment) + 1
         elif isinstance(item, list):
             pending.extend(item)
         elif isinstance(item, (int, float)) and not isinstance(item, bool):
@@ -186,11 +202,27 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
     # Keys and numeric identifiers cannot be redacted without changing the schema.
     # Inspect them together once, including numbers which string-leaf masking skips.
     immutable = {"keys": sorted(keys), "numbers": numbers}
-    if (keys or numbers) and await analyze(json.dumps(immutable, ensure_ascii=False, allow_nan=False), ignore):
-        raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema")
+    if keys or numbers:
+        immutable_text = json.dumps(immutable, ensure_ascii=False, allow_nan=False)
+        # A fractional JSON number in (-1, 1) cannot be a numeric identifier.
+        # Its digits can nevertheless match an RRN/phone pattern after the dot.
+        # Strings and integral numeric identifiers keep their original protection.
+        fractions = [(m.start(), m.end()) for m in _JSON_TOKEN.finditer(immutable_text)
+                     if not m.group().startswith('"') and 0 < abs(float(m.group())) < 1]
+        numeric_entities = {"KR_RRN", "KR_PHONE", "KR_BRN", "KR_ACCOUNT", "KR_PASSPORT",
+                            "KR_DRIVER_LICENSE", "CARD_NUMBER", "CREDIT_CARD", "IBAN_CODE", "US_SSN"}
+        findings = await analyze(immutable_text, ignore)
+        if any(f["entity_type"] not in numeric_entities
+               or not any(start <= f["start"] < f["end"] <= end for start, end in fractions)
+               for f in findings):
+            raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema")
     # Low-entropy passwords can evade Gitleaks. Preserve assignment context for
     # Presidio's credential recognizer rather than inspect the value in isolation.
+    # A finding wholly inside a text value belongs to leaf masking, even when
+    # the text contains credential examples. Withhold only actual key=value
+    # credentials whose match crosses the synthetic assignment prefix.
     if assignments and any(f["entity_type"] in {"CREDENTIAL", "SECRET_TOKEN"}
+                           and any(start <= f["start"] < end < f["end"] for start, end in prefixes)
                            for f in await analyze("\n".join(assignments), ignore)):
         raise InspectionUnavailable("Credential in structured key/value context is withheld")
 

@@ -1,0 +1,24 @@
+[
+  {
+    "command": [
+      "full_stack_lab/tests/cloudflare_output_fp_check.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_contract_shape_and_explicit_pin_are_accepted (__main__.CloudflareOutput.test_contract_shape_and_explicit_pin_are_accepted) ... ok\ntest_document_line_limit_is_independent_of_bytes_and_schema (__main__.CloudflareOutput.test_document_line_limit_is_independent_of_bytes_and_schema) ... ok\ntest_full_release_boundary_keeps_valid_result (__main__.CloudflareOutput.test_full_release_boundary_keeps_valid_result) ... ok\ntest_masking_cannot_make_an_invalid_contract_releasable (__main__.CloudflareOutput.test_masking_cannot_make_an_invalid_contract_releasable) ... ok\ntest_schema_mismatches_share_the_reported_preview (__main__.CloudflareOutput.test_schema_mismatches_share_the_reported_preview) ... ok\ntest_schema_valid_injection_has_the_same_preview (__main__.CloudflareOutput.test_schema_valid_injection_has_the_same_preview) ... ok\ntest_secret_and_scanner_failure_still_withhold (__main__.CloudflareOutput.test_secret_and_scanner_failure_still_withhold) ... ok\ntest_text_and_size_controls_are_preserved (__main__.CloudflareOutput.test_text_and_size_controls_are_preserved) ... ok\ntest_wire_rejection_is_distinct_and_does_not_include_shape_evidence (__main__.CloudflareOutput.test_wire_rejection_is_distinct_and_does_not_include_shape_evidence) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.441s\n\nOK\n"
+  },
+  {
+    "command": [
+      "-m",
+      "pyflakes",
+      "full_stack_lab/gateway/app/core.py",
+      "full_stack_lab/gateway/app/output_contract.py",
+      "full_stack_lab/tests/cloudflare_output_fp_check.py",
+      "full_stack_lab/tests/output_contract_check.py",
+      "full_stack_lab/tests/mcp_result_contract_check.py"
+    ],
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

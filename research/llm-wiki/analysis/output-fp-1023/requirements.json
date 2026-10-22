@@ -1,0 +1,17 @@
+{
+  "task": "W13-OUTPUT-FP",
+  "baseline": "0f57d0c9c0994faf849544616c6e66939b113fd8",
+  "decision": "D-197",
+  "production_change": false,
+  "incident_reproduced": false,
+  "test_file": "full_stack_lab/tests/cloudflare_output_fp_check.py",
+  "evidence_kind": "captured_catalog_with_synthetic_results_and_inspection_io_doubles",
+  "requirements": [
+    {"id": "OUTFP-01", "requirement": "승인 계약과 일치하는 정상 결과를 보존한다", "code": "core.py:1901,1922; output_contract.py:66,79", "tests": ["test_contract_shape_and_explicit_pin_are_accepted", "test_full_release_boundary_keeps_valid_result"], "result": "passed_offline"},
+    {"id": "OUTFP-02", "requirement": "출력 계약 위반과 마스킹 후 위반을 보류한다", "code": "core.py:1915,2504", "tests": ["test_schema_mismatches_share_the_reported_preview", "test_masking_cannot_make_an_invalid_contract_releasable"], "result": "passed_offline"},
+    {"id": "OUTFP-03", "requirement": "스키마가 맞아도 오염과 Secret 잔여를 보류한다", "code": "core.py:1948,1960", "tests": ["test_schema_valid_injection_has_the_same_preview", "test_secret_and_scanner_failure_still_withhold"], "result": "passed_offline"},
+    {"id": "OUTFP-04", "requirement": "wire 위반과 반환 상한 및 text 제한을 유지한다", "code": "core.py:1871,1932,1942", "tests": ["test_wire_rejection_is_distinct_and_does_not_include_shape_evidence", "test_text_and_size_controls_are_preserved", "test_document_line_limit_is_independent_of_bytes_and_schema"], "result": "passed_offline"},
+    {"id": "OUTFP-05", "requirement": "원장 906의 실패 분기를 실제 승인 계약과 함께 확정한다", "code": "core.py:2535; registry.py:35", "tests": [], "result": "unresolved_missing_incident_error_and_runtime_contract"},
+    {"id": "OUTFP-06", "requirement": "실제 MCP의 정상군·위반군·검사기 복구·경쟁을 검증한다", "tests": [], "result": "not_run_no_device_access_authorized"}
+  ]
+}

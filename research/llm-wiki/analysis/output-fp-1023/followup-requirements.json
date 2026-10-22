@@ -1,0 +1,20 @@
+{
+  "task": "W13-OUTPUT-FP",
+  "job": "auto-928bf5499a358496c1f6",
+  "baseline": "0f57d0c9c0994faf849544616c6e66939b113fd8",
+  "decision": "D-198",
+  "supersedes": "D-197 initial no-production-change conclusion after error details supplied",
+  "production_change": true,
+  "incident_replay": false,
+  "evidence_kind": "synthetic offline HTTP/native I/O doubles; production ad-hoc regex and execution wiring",
+  "test_file": "full_stack_lab/tests/output_inspection_fp_check.py",
+  "requirements": [
+    {"id":"OUTFP-07","requirement":"JSON fractional score preserves schema; integer PII withheld; strings/keys masked or withheld","code":["privacy.py:108","privacy.py:183","privacy.py:210"],"conditions":["normal","negative","numeric/string boundary"],"tests":["test_fractional_score_preserves_schema_but_numeric_pii_is_withheld","test_cloudflare_fractional_score_released_at_68688_bytes","test_sensitive_keys_and_fractional_text_are_still_protected"],"result":"passed_offline"},
+    {"id":"OUTFP-08","requirement":"Document examples do not withhold whole result; actual tokens/PII remain protected","code":["privacy.py:125","privacy.py:183","privacy.py:195"],"conditions":["normal 16094 bytes","finite exact placeholder","appended token negative","low entropy credential negative"],"tests":["test_placeholder_document_released_at_markitdown_size","test_finite_placeholder_syntax_only_and_real_tokens_still_masked","test_document_values_masked_and_actual_assignments_withheld"],"result":"passed_offline"},
+    {"id":"OUTFP-09","requirement":"Unrelated executor queue cannot consume scanner deadline before 51KB scan starts","code":["secret_scan.py:30","secret_scan.py:78","core.py:1953"],"conditions":["shared executor saturated","normal 51456 bytes"],"tests":["test_unrelated_executor_queue_does_not_time_out_51kb_document"],"result":"passed_offline","incident_919_cause":"unconfirmed"},
+    {"id":"OUTFP-10","requirement":"Scanner faults/residue fail closed at final decision and never release stale output","code":["secret_scan.py:78","core.py:2507","core.py:2535"],"conditions":["OSError","ValueError","secret residue","Allow/Block policy assertions"],"tests":["test_engine_failure_and_secret_residue_never_release_documents","test_engine_outage_and_secret_residue_have_output_block_policy","test_normal_document_and_real_secret_pii_have_expected_final_policy"],"result":"passed_offline"},
+    {"id":"OUTFP-11","requirement":"Bounded scan capacity survives timeout/cancel/submit failure and recovers","code":["secret_scan.py:72","secret_scan.py:78","core.py:1953"],"conditions":["4 running timeouts","5th waits","running cancellation","waiting cancellation","submission failure","recovery","total deadline"],"tests":["test_timeout_and_cancellation_retain_slots_until_completion_then_recover","test_running_scan_cancellation_keeps_capacity_until_thread_finishes","test_submission_failure_returns_capacity_and_remains_fail_closed","test_output_deadline_still_includes_wait_for_scanner_capacity"],"result":"passed_offline"},
+    {"id":"OUTFP-12","requirement":"279610-byte rejection and existing contracts/expectations unchanged","code":["core.py:1922","core.py:1932"],"tests":["test_279kb_size_limit_unchanged","cloudflare_output_fp_check.py","output_contract_check.py","mcp_result_contract_check.py","dest_pin_credential_redaction_check.py"],"result":"passed_offline"},
+    {"id":"OUTFP-13","requirement":"Confirm actual incident inputs, deployment/contracts and native scan timings","code":["core.py:2504","core.py:2535","gateway/native/gitleaks/main.go:68"],"tests":[],"result":"unresolved_no_device_access_no_raw_incident_payload_or_timings"}
+  ]
+}

@@ -11,6 +11,7 @@ serving other calls. Same catalog, flags and regexp engine as `gitleaks stdin`
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import ctypes
 import json
 import os
@@ -24,6 +25,9 @@ LIBRARY = os.getenv("GITLEAKS_LIBRARY", "/usr/local/lib/libmcpgw_gitleaks.so")
 TIMEOUT_SECONDS = 5
 
 _slots = asyncio.Semaphore(4)
+# The default executor also serves unrelated blocking work. Its queue used to
+# consume the scan deadline before Gitleaks ran, withholding normal documents.
+_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mcpgw-secret")
 _library: ctypes.CDLL | None = None
 
 
@@ -79,10 +83,14 @@ async def labels(text: str) -> list[str]:
         await _slots.acquire()
         # A thread cannot be cancelled: a scan past its time limit keeps running, so its
         # slot is returned when the scan ends, not when the caller stops waiting.
-        scan = asyncio.ensure_future(asyncio.to_thread(rule_ids, data))
+        try:
+            scan = asyncio.get_running_loop().run_in_executor(_executor, rule_ids, data)
+        except RuntimeError:
+            _slots.release()
+            raise
         scan.add_done_callback(_finished)
         rules = await asyncio.wait_for(asyncio.shield(scan), timeout=TIMEOUT_SECONDS)
-    except (OSError, ValueError, TypeError, AttributeError, asyncio.TimeoutError) as exc:
+    except (OSError, ValueError, TypeError, AttributeError, RuntimeError, asyncio.TimeoutError) as exc:
         raise InspectionUnavailable("Gitleaks Secret 검사를 완료하지 못했습니다.") from exc
     return sorted({"gitleaks:" + rule for rule in rules})
 

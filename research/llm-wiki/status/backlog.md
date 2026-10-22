@@ -1,5 +1,16 @@
 # 개발 백로그
 
+10-23 DEV-73 후속(W14-LOCAL-RUNNER/D-199): 이미지 준비 임대·종료 진단·root 재시도 금지를 보완했다.
+새 28건·기존 31건 통과/4건 Linux 생략. manifest·pyflakes 의존성 및 실제 DB/엔진·PJ1 검증 공백은 남아 있다.
+기존 DEV-73 행의 검수 완료 여부와 진척 점수를 올리지 않는다.
+[보고](reports/2026-10-23-local-runner-usability.md), [원자 요구사항](../analysis/local-runner-usability-1023/README.md).
+
+10-23 DEV-44 후속(W13-OUTPUT-FP/D-198): 리더의 906·919·868 오류 제공 후 소수 점수·문서 예시의
+오탐 및 공용 executor 대기 경합을 로컬 수정했다. 새 15건·앞 W13 9건·기존 계약 33건·자격 오류 경계 16건 통과.
+919 당시 원인과 세 원장의 실제 원문/배포 계약에 대한 재생은 미검증이다. 다음은 리더의 당시 원장·배포/승인 계약·
+검사 실행 근거와 재현군 대조다. [보고](reports/2026-10-23-output-fp.md),
+[분석](../analysis/output-fp-1023/followup.md). 기기 시험·배포 완료로 세지 않는다.
+
 10-22에는 DEV-10의 SQL/HTTPS 시험 입력과 후속 시험의 MCP OAuth 경계, DEV-03의 현재 위협 참조를 보완했다. [후속 검증 보고](reports/2026-10-22-ci-completion.md)에서 정확한 원격 실행 결과를 확인한다.
 
 10-21 CI 실패 후속으로 WIKI-01의 현재 구조 참조와 WIKI-03의 입력 불변 시험을 보완했다. [CI 수정 보고](reports/2026-10-21-ci-recovery.md)를 참고하며, 실제 기기 검수나 기능 진척에 추가 점수를 부여하지 않는다.
@@ -8,6 +19,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
+| W15-CONSENT-UX | 서버별 직원 이용 동의 | [보고](reports/2026-10-23-consent-per-server.md), [분석](../analysis/consent-per-server-1023/README.md), D-200 | 서버 첫 차단→모든 승인 도구 대기→1회 허용·거부, 도구별 감사·무동의 차단 유지, 실제 DB 경쟁·PJ1 재현 | 로컬 구현·새 27건 및 기존 동의4·콘솔15·dispatch15 통과. 브랜치 분리·pyflakes·전체 통제 시험 및 실제 DB/PJ1 검수 미완료. 커밋·기기 접속 없음 |
 | W5-KIT-MACOS | macOS 직원 PC 원클릭 연결 | [보고](reports/2026-10-22-kit-macos.md), [분석](../analysis/kit-macos/README.md), D-190 | macOS 설치·독립 활성화·실제 하네스 MCP·재설치/제거 확인 | 미커밋 구현·오프라인11건 및 기존 콘솔15건 통과. pyflakes 도구 부재로 미실행. macOS 실기기 미실행. 리더 커밋·병합 후 팀원 맥북 실설치 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | WIKI-03 | 협업 콘솔 통합 시트 연동 | [작업 보고](reports/2026-10-18-sheet-sync.md) | CSV 게시 URL 설정 후 실제 시트 수정·캐시 만료·조회 실패 대체 확인 | 구현·격리 시험 32개·sheet_pull 자체 시험 통과. WBS·백로그 웹 게시 CSV 연결, 콘솔 #wbs '시트 기준' 표시 확인(10-18 14:16, main 29fe6a0) |

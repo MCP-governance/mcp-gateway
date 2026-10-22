@@ -1,0 +1,111 @@
+{
+  "task": "W13-OUTPUT-FP",
+  "baseline": "0f57d0c9c0994faf849544616c6e66939b113fd8",
+  "branch": "10/23-output-fp",
+  "timeout_seconds": 3600,
+  "inbox_ids": [
+    8261,
+    8265,
+    8279,
+    8280
+  ],
+  "last_event_id": 8288,
+  "overlap": "Existing uncommitted W13 artifacts preserved; W5-KIT-MACOS and unresolved antigravity do not assign these output-control files in supplied inbox. No cross-agent work modified.",
+  "head_rechecked_before_writes": true,
+  "remote_head_lookup": "github.com:443 unavailable; not confirmed",
+  "decision_allocation": "check_trace.py --next D returned D-198, max197, 68 local branch tips; remote fetch failed",
+  "checks": [
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/output_inspection_fp_check.py",
+      "exit_code": 0,
+      "tests": 15,
+      "chunk_id": "9d5f04"
+    },
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/cloudflare_output_fp_check.py",
+      "exit_code": 0,
+      "tests": 9,
+      "chunk_id": "0e868a"
+    },
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/output_contract_check.py",
+      "exit_code": 0,
+      "tests": 15,
+      "chunk_id": "edc919"
+    },
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/mcp_result_contract_check.py",
+      "exit_code": 0,
+      "tests": 18,
+      "chunk_id": "0af467"
+    },
+    {
+      "command": "python -B -X utf8 full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+      "exit_code": 0,
+      "tests": 16,
+      "chunk_id": "d8bad4"
+    },
+    {
+      "command": "python -B -X utf8 -m pyflakes full_stack_lab/gateway/app/privacy.py full_stack_lab/gateway/app/secret_scan.py full_stack_lab/gateway/app/core.py full_stack_lab/tests/output_inspection_fp_check.py full_stack_lab/tests/cloudflare_output_fp_check.py full_stack_lab/tests/output_contract_check.py full_stack_lab/tests/mcp_result_contract_check.py",
+      "exit_code": 0,
+      "files": 7,
+      "chunk_id": "460074"
+    }
+  ],
+  "total_test_cases": 73,
+  "evidence_kind": "offline synthetic HTTP/native I/O doubles; no live service or incident replay",
+  "sources": [
+    {
+      "repository": "gitleaks",
+      "commit": "83d9cd684c87d95d656c1458ef04895a7f1cbd8e",
+      "files": [
+        {
+          "path": "sources/file.go",
+          "sha256": "c9d1d8be4e5bbac08c0df774882f33060572ed8d720e7f34360f0a5164c822fa"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e3884b252b3bfc045e55be43a34d1e80da070bc6f804ac95bf4660e97d62ebc6"
+        }
+      ]
+    },
+    {
+      "repository": "presidio",
+      "commit": "779dbd286d5ef4d1fbe2514275fb1bce358f2417",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "f3e86ee59a49bcfb0d9a9547484d55224ea7b2d04f95b1947b4d18d17f6de535"
+        }
+      ]
+    },
+    {
+      "repository": "mcp-python-sdk",
+      "commit": "9972c21aa42054fb1450c5fc614761ed11847ec6",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "5e13dbbc1d120fc2a03cecde7c91424ae2d7de11b63d58ded2f4431e261ee50d"
+        }
+      ]
+    }
+  ],
+  "worktree_sha256": {
+    "full_stack_lab/gateway/app/privacy.py": "50ac90d66dedb55ade6c622bd931c01b8876c8cd30c0f7395b599f5a5fd7be7c",
+    "full_stack_lab/gateway/app/secret_scan.py": "2007807f087c63a7fad728aaf4700fe7e7547621b20da1ee28f509e8dd5f72b8",
+    "full_stack_lab/gateway/app/core.py": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039",
+    "full_stack_lab/gateway/native/gitleaks/main.go": "46b4a893237b2dc61d1531ade345e0e6d9573f5aad2ea6d9f05201dc55347760",
+    "full_stack_lab/tests/output_inspection_fp_check.py": "c37500e35344e0f25d78c84dc7bb0088a16cec708ec182bdde510902b1f42328"
+  },
+  "not_run": [
+    "real Presidio",
+    "native Gitleaks",
+    "actual OSS MCP",
+    "PJ1",
+    "deployment",
+    "commit"
+  ],
+  "known_quota_reset_epoch": 1792706934,
+  "known_quota_reset_kst": "2026-10-23 07:08:54+09:00",
+  "remaining_quota_after_work": "unknown"
+}

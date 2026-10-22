@@ -1824,6 +1824,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
 def _root_cause(exc: BaseException) -> str:
     while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
         exc = exc.exceptions[0]
+    if isinstance(exc, local_jobs.LocalExecutionError):
+        return str(exc)
     # SDK/provider/schema exceptions may quote response values or credentials.
     # Public MCP responses, audit rows and diagnostics retain the type only.
     return f"{type(exc).__name__}: 요청 처리를 완료하지 못했습니다."
@@ -2433,10 +2435,17 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         span.set_attribute("mcp.policy_id", result["policy_id"])
 
         # POL-08: asked only when the call would otherwise run, in either enforcement mode.
-        if (result["decision"] in {"Allow", "Alert", "Restrict"} and tool_review.get("consent")
-                and (reason := await consent.missing(user_token, server_id, tool, cls.data_class, tool_review))):
-            result = local_verdict("P-CONSENT-001", "Block", reason,
-                                   conditions={"matched": ["tool_reviews.consent"], "violated": ["user_consents"]})
+        if result["decision"] in {"Allow", "Alert", "Restrict"} and tool_review.get("consent"):
+            try:
+                reason = await consent.missing(user_token, server_id, tool, cls.data_class, tool_review,
+                                               principal=principal)
+            except Exception as exc:
+                result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "동의 요청을 확인할 수 없어 실행하지 않았습니다.",
+                                       error=_root_cause(exc))
+            else:
+                if reason:
+                    result = local_verdict("P-CONSENT-001", "Block", reason,
+                                           conditions={"matched": ["tool_reviews.consent"], "violated": ["user_consents"]})
             base_event.update(result)
             span.set_attribute("mcp.decision", result["decision"])
             span.set_attribute("mcp.policy_id", result["policy_id"])

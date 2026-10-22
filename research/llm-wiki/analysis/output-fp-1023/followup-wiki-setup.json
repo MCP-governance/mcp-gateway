@@ -1,0 +1,26 @@
+[
+  {
+    "command": "research/llm-wiki/tools/capture_status.py",
+    "chunk_id": "22a0bb",
+    "wall_time_seconds": 0.5128303,
+    "exit_code": 0,
+    "original_token_count": 26,
+    "output": "{\"head\": \"0f57d0c9c0994faf849544616c6e66939b113fd8\", \"dirty_paths\": 12, \"scope\": \"local-code-only\"}\r\n"
+  },
+  {
+    "command": "research/llm-wiki/tools/build_wiki.py",
+    "chunk_id": "648903",
+    "wall_time_seconds": 0.1587119,
+    "exit_code": 0,
+    "original_token_count": 66,
+    "output": "{\"format\": \"markdown\", \"pages\": 682, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 264, \"solutions\": 15, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\r\n"
+  },
+  {
+    "command": "research/llm-wiki/tools/map_threats.py",
+    "chunk_id": "44c3f0",
+    "wall_time_seconds": 2.3290064,
+    "exit_code": 0,
+    "original_token_count": 18,
+    "output": "Mapped 24 source policies; static review only; stale review files: 13\r\n"
+  }
+]
