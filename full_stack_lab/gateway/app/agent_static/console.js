@@ -2663,21 +2663,22 @@ const ACTIONS = {
     toast("가입 신청을 거부했습니다."); reload();
   },
   "pc-kit"() {
-    // The kit points the harnesses at the gateway; no password is stored on the PC.
     const kit = viewer.kit;
     openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}
       ${(kit.platforms || []).map((os) => html`<button class="btn sm primary" type="button" data-act="pc-kit-download" data-os="${os}">${PLATFORM_KIT[os] || os}</button>`)}</div>`);
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
-    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}`,
+    const packaging = os === "windows" ? "&packaging=oneclick" : "";
+    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${packaging}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const r = await response.json();
       throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a"); link.href = url; link.download = `mcp-managed-kit-${os}.zip`;
+    const link = document.createElement("a"); link.href = url;
+    link.download = os === "windows" ? "mcp-managed-setup-windows.cmd" : `mcp-managed-kit-${os}.zip`;
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
     toast("설치 파일을 받았습니다.");
   },

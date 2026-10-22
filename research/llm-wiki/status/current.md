@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-22
 
+## Windows 원클릭 설치 구현 인계 (10-23)
+
+`10/23-windows-oneclick`, 기준 `48bb19e`, 미커밋. 콘솔의 Windows 다운로드를 한 파일/UAC 한 번의 자체 추출 경로로 연결하고, 별도 표준 관리 계정의 CreateProfile 준비·모델 로그인 명령 안내를 추가했다(D-197). 기존 IT 승인 ZIP·worker의 경로/ACL/해시·관리 계정 세션 거부를 유지한다. 기존 Windows16·새9·관측7·콘솔15 통과, 환경 설정/field 키트는 기존 실행환경 문제를 준비해 각각7/16통과·각1생략. pyflakes 부재, 실제 Windows 실설치·UAC·활성화·모델 로그인은 미실행이다. [보고](reports/2026-10-23-windows-oneclick.md)와 [요구·신뢰 경계](../analysis/windows-oneclick-2026-10-23.md)를 리더의 독립 검토·pj3 검수 근거로 사용한다.
+
 ## 최신: 전체 CI 실패 후속 검증 (10-22)
 
 사용자 요청으로 작업 브랜치를 재개하고 main `62bafc4`까지의 독립 검토 기록을 통합했다. SQL 집계 시험에 고정 LIMIT을 명시하고, 후속 예약 효과/적대 시험의 Console 토큰과 MCP OAuth 토큰을 구분했다. 실제 OSS fetch MCP를 HTTPS로 검증하기 위한 CI 전용 Caddy/임시 CA 구성을 추가했다. 제품의 HTTPS, scope, 조회량 조건은 유지한다. 현재 위협 참조는 새 독립 변경 검토로 갱신했고 과거 검토 원본을 보존했다.

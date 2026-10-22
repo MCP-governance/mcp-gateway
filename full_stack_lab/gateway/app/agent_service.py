@@ -431,10 +431,13 @@ async def pc_kit() -> dict | None:
 
 @app.post("/api/pc-kit")
 async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
-                               authorization: str | None = Header(default=None)):
+                               authorization: str | None = Header(default=None),
+                               packaging: Literal["zip", "oneclick"] = "zip"):
     from .endpoint_plane import enrollment_token
     user = await current_identity(authorization)
     source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
+    if packaging == "oneclick" and (platform != "windows" or not (source / "windows-oneclick.ps1.in").is_file()):
+        raise HTTPException(503, "설치 파일이 배포되지 않았습니다.")
     names = KIT_FILES[platform]
     if any(not (source / name).is_file() for name in names):
         raise HTTPException(503, "관리형 설치 키트가 배포되지 않았습니다.")
@@ -450,6 +453,8 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
         raise HTTPException(503, "Gateway Tailscale 노드 ID를 운영자가 먼저 고정해야 합니다.")
     import json
     ca = field_ca()
+    if packaging == "oneclick" and (not ca or urlsplit(public).scheme != "https"):
+        raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
     if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
@@ -478,6 +483,12 @@ async def download_managed_kit(platform: Literal["linux", "windows"] = "linux",
             entry.external_attr = (0o755 if name in KIT_EXECUTABLE else 0o644) << 16
             entry.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(entry, value)
+    if packaging == "oneclick":
+        from .windows_oneclick import launcher
+        return Response(launcher(output.getvalue(), (source / "windows-oneclick.ps1.in").read_text(encoding="utf-8")),
+                        media_type="application/octet-stream",
+                        headers={"Content-Disposition": 'attachment; filename="mcp-managed-setup-windows.cmd"',
+                                 "Cache-Control": "no-store"})
     return Response(output.getvalue(), media_type="application/zip",
                     headers={"Content-Disposition": f'attachment; filename="mcp-managed-kit-{platform}.zip"',
                              "Cache-Control": "no-store",

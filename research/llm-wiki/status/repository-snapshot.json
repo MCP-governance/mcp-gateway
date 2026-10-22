@@ -1,14 +1,26 @@
 {
-  "captured_at": "2026-10-22T18:40:16+09:00",
-  "head": "a151c48702b1d559a5721c0a126da5a1eee56dc3",
-  "branch": "10/21-sheet-runtime-completion",
+  "captured_at": "2026-10-23T01:57:15+09:00",
+  "head": "48bb19ec52de0e1e2198d19e75b1f62e7aab2014",
+  "branch": "10/23-windows-oneclick",
   "status": [
-    "M .github/workflows/verify.yml",
-    " M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
+    "M docs/ai/CONSOLE_UI.md",
+    " M docs/ai/DECISIONS.md",
+    " M endpoint-agent/README.md",
+    " M endpoint-agent/managed-windows.py",
+    " M endpoint-agent/windows-worker.ps1",
+    " M full_stack_lab/gateway/app/agent_service.py",
+    " M full_stack_lab/gateway/app/agent_static/console.js",
+    " M research/llm-wiki/catalogs/threats.json",
     " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/current.md",
-    "?? research/llm-wiki/status/reports/2026-10-22-ci-completion.md"
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
+    " M research/llm-wiki/threats/control-map.md",
+    "?? endpoint-agent/tests-windows/test_windows_oneclick.py",
+    "?? endpoint-agent/windows-oneclick.ps1.in",
+    "?? full_stack_lab/gateway/app/windows_oneclick.py",
+    "?? research/llm-wiki/analysis/windows-oneclick-2026-10-23.md",
+    "?? research/llm-wiki/status/reports/2026-10-23-windows-oneclick.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -16,11 +28,11 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "bb74a1772fd9576c9a307fc5df861b5bf6e610ab9fa0a27404908bc360b23a8a"
+      "sha256": "2c5aff22b03e0b1a3b7dbedd003d49eb753a98568ee3823f16c4116050872039"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
-      "sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
+      "sha256": "80212a6c918cd18fe0650c114cb3fdeb95c5d87d5fb9468f6afda716744475fe"
     },
     {
       "path": "full_stack_lab/gateway/app/poisoning.py",
@@ -48,11 +60,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "b6803fd12966c33655d49b13ec337eecef5626bef1feb7f9c58ce6c1e6159ab0"
+      "sha256": "99f22350efc0a9017a9352ce8e6fe03a4213773e6eb8f6ee4d52a7d2193f8893"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "1259ae7a57ab0f579ef4d553382c152a5db83eb6e4ffd839ea55556ecab8b22d"
+      "sha256": "1cae888ddaa2e5b839a4339130fbce0a5907359aabb64c6933ba8c7ba8b61365"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

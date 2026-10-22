@@ -1983,3 +1983,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 호출 시 현재 값으로 해시를 다시 계산하고 일치하는 경우에만 서버 대상에 `transfer_reviewed=true`를 넣는다. OPA의 예외는 내부 등급 국가 규칙의 `approval`에만 적용한다. 중요 등급의 `deny`, 미확인 위치, 도구 인자의 별도 외부 목적지, 기존 DLP와 PAC 차단은 풀지 않는다. 기존 심사 기록은 결속 해시가 없으므로 자동 승격하지 않고 위치 재심사 뒤 적용한다. 규칙 팩이 없거나 국외 이전 근거가 비면 위치 기록만 가능하고 반복 승인 면제는 없다.
 
 새 의존성 없이 기존 OPA와 Python 표준 해시 구현을 재사용했다. 공식 [Rego 언어](https://www.openpolicyagent.org/docs/policy-language)와 [object.get](https://www.openpolicyagent.org/docs/policy-reference/builtins/object)의 누락 기본값 동작을 확인했다. 기존 122개 OPA 기대값은 변경하지 않고 8개 새 시험을 추가했다. 로컬 정책 시험과 DB 대역 경로 시험은 실기기 승인이나 실제 국외 전송 검증으로 세지 않는다. 구현과 검증 상세는 [작업 보고](../../research/llm-wiki/status/reports/2026-10-21-residency-transfer-review.md)에 둔다.
+
+## D-197 Windows 키트의 UAC 승인과 보호 설치기 준비를 한 파일에 묶는다 (2026-10-23)
+
+- **문제**: 10-22 Windows 실측은 IT 선행 배포·로그아웃·모델 로그인 안내 누락으로 D-71의 파일 하나/UAC 한 번 기준에 미달했다.
+- **결정**: 기존 인증된 `/api/pc-kit`의 `packaging=oneclick`이 ZIP과 ASCII PowerShell 템플릿을 담은 `.cmd`를 만든다. UAC 한 번으로 승인한 전체 파일의 SHA-256과 읽기 잠금으로 같은 바이트를 사용하고, 파일 목록·해시 검증 뒤 기존 보호 경로·승인 JSON을 준비한다. 새 라우트·의존성·자동 장치 활성화는 없다.
+- **신뢰 경계**: 기존 `Get-EndpointApprovedKit`·작업자의 경로/ACL/해시 검증은 유지한다. 기존 승인물이 있으면 정확히 일치해야 하고 손상·다른 버전을 덮어쓰지 않는다. 최초 신뢰는 콘솔에서 받은 파일에 대한 관리자의 명시적 UAC 승인이다. SHA-256은 발행자 서명이 아니며 코드 서명 인증서는 추가하지 않는다. `AllSigned`는 거부하고 IT 서명 경로를 유지한다. 자식 작업자만 프로세스 범위 `RemoteSigned`로 실행하며 시스템·그룹 정책은 변경하지 않는다.
+- **계정**: 새 경로는 표준 직원에게도 별도 비관리자 계정을 사용한다. `CreateProfile`로 프로필을 만들고 직원 프로필에서 하네스를 복사한다. 기존 관리 계정의 실행 중 프로세스 거부·SID 방화벽·보호 설정·SYSTEM 헤더 도우미·로그온 트레이 작업은 그대로다. 설치 종료는 조직 활성화 대기이고, 실제 하네스 사용과 모델 로그인은 관리 계정에서 한다.
+- **안내**: 설치 결과에 관리 계정과 `claude auth login`, `codex login --device-auth`만 표시한다. 모델 자격 수집·전달·로그 기록을 추가하지 않는다.
+- **검증/한계**: 기존 Windows 16개와 새 오프라인 9개 시험 통과. 실제 UAC·프로필 생성·Windows 실설치·장치 활성화·모델 로그인은 미실행이며 리더의 pj3 검수가 남는다. 공식 하네스 사전 설치와 신뢰된 콘솔 다운로드는 필요하다. 초기 실패로 남은 보호 설치물·기존 승인판 갱신·재설치는 자동 덮어쓰기하지 않는다. [분석](../../research/llm-wiki/analysis/windows-oneclick-2026-10-23.md) · [보고](../../research/llm-wiki/status/reports/2026-10-23-windows-oneclick.md).
