@@ -128,6 +128,30 @@ class AddressArgumentsTest(unittest.TestCase):
         self.assertTrue(classify.url_destination("https://learn.microsoft.com/a").external)
 
 
+class ArgumentGapTest(unittest.TestCase):
+    """The reason for a PAC-01 refusal names the argument that left the approved scope, never the approved values."""
+
+    def gap(self, arguments):
+        constraint = review.derived_constraints(
+            {"convert": {"input_schema": {"type": "object", "properties": {"uri": {"type": "string"}}, "required": ["uri"]}}},
+            {"convert": {"destinations": ["learn.microsoft.com"]}})["convert"]
+        spec = {"allowed_principals": ["u"], "parameter_constraints": {"convert": constraint}}
+        with patch.object(pac.registry, "server", return_value=spec):
+            return pac.argument_gap({"token": "u"}, "markitdown", "convert", arguments)
+
+    def test_an_address_outside_the_reviewed_destinations_names_the_argument_only(self):
+        gap = self.gap({"uri": "https://example.com/a"})
+        self.assertIn("uri", gap)
+        self.assertNotIn("learn.microsoft.com", gap)
+
+    def test_extra_and_missing_arguments_are_named(self):
+        self.assertIn("x", self.gap({"uri": "https://learn.microsoft.com/a", "x": 1}))
+        self.assertIn("uri", self.gap({}))
+
+    def test_a_call_inside_the_scope_has_no_gap(self):
+        self.assertEqual(self.gap({"uri": "https://learn.microsoft.com/a"}), "")
+
+
 class ConsentTest(unittest.TestCase):
     item = {**BASE, "action": "r", "inputs": None, "mask": False, "grade": "public", "accepts_from": [], "consent": True}
 
