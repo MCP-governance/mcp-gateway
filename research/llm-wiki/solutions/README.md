@@ -21,6 +21,7 @@
 | 상용 | [CrowdStrike Falcon Guardian](crowdstrike-falcon-guardian.md) | 공식 보도자료·블로그 읽기(10-23) | 엔드포인트 에이전트 인벤토리, 프롬프트→실행 인과 조사, 허용 에이전트 종류 통제. 호출 단위 MCP 통제는 미확인 |
 | 사례 | [젠아이랩스 AI-native 개발](genailabs-ai-native-dev.md) | 회사 사례 글(자체 기록, 10-23) | 승인 지점·규약 저장소·실수 전수조사를 검사로 전환·틀린 가설 기록. 코드 미공개 |
 | 상용 | [GensOps 운영 관제](genailabs-gensops.md) | 제품 페이지·데모 첫 화면(10-23) | 한 화면 관제, 제안→승인→실행→기록 조치 흐름. 사내 운영·데모는 가상 데이터, 코드 미공개 |
+| OSS·상용 | [OSS 게이트웨이·스캐너 최신 릴리스와 공시](oss-gateway-scanner-releases-1023.md) · [최신 레퍼런스 갱신](../analysis/refs-update-1023/README.md) | GitHub 릴리스 노트·보안 권고·공식 글 선택 열람(10-23) | agentgateway·Agent Router·Docker MCP Gateway·스캐너 판본, ContextForge·ToolHive·Microsoft·MCP Inspector 권고에서 게이트웨이 자체 fail-open·기본 비밀·이름 충돌 시험 후보. 코드·실행 미확인 |
 
 ## 증거 파일을 다시 확인하는 방법
 

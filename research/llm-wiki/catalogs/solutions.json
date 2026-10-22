@@ -189,5 +189,89 @@
     "verified_on": "2026-10-23",
     "runtime_verified": false,
     "license": "관리형 상용 서비스(가격·계약 미확인)"
+  },
+  {
+    "id": "agentgateway",
+    "title": "agentgateway (Agentic AI Foundation)",
+    "kind": "oss",
+    "url": "https://github.com/agentgateway/agentgateway",
+    "verification": "github_release_notes_and_advisories_read",
+    "summary": "v1.6.0(2026-10-02) 릴리스 노트: MCP 호환 보완·OIDC/JWT 개선·키별 요율 제한. v1.4가 2026-07-28 명세 지원(공식 블로그). 코드 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "agent-router",
+    "title": "Agent Router (구 Envoy AI Gateway, AAIF 프로젝트)",
+    "kind": "oss",
+    "url": "https://github.com/theagentrouter/agent-router",
+    "verification": "github_release_notes_read",
+    "summary": "v1.2.0(2026-10-07) 첫 개명 릴리스. MCP 인증·교차 네임스페이스 참조 강화, MCPRoute 확장. 보안 수정으로 동작 변경. 코드 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "docker-mcp-gateway",
+    "title": "Docker MCP Gateway",
+    "kind": "oss",
+    "url": "https://github.com/docker/mcp-gateway",
+    "verification": "github_release_notes_and_advisories_read",
+    "summary": "v0.44.2(2026-10-21). 2026-10 권고 2건(도구 이름 대소문자 충돌 검사 우회, 잘못된 URI 충돌). 릴리스 본문 비어 있음.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "MIT",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "snyk-agent-scan",
+    "title": "Snyk Agent Scan (구 MCP-Scan)",
+    "kind": "oss",
+    "url": "https://github.com/snyk/agent-scan",
+    "verification": "github_release_list_and_repo_metadata_read",
+    "summary": "v0.6.9(2026-10-20) MCP 서버·에이전트 설정 스캐너. 토큰 요구·서버 실행 설명은 2차 자료로 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "cisco-mcp-scanner",
+    "title": "Cisco AI Defense MCP Scanner",
+    "kind": "oss",
+    "url": "https://github.com/cisco-ai-defense/mcp-scanner",
+    "verification": "github_release_notes_read",
+    "summary": "4.8.7(2026-10-20)이 MCP SDK 2.0 협상 지원과 MIME 매개변수 처리 수정을 넣었다. 탐지 성능 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "Apache-2.0",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "microsoft-agent-365",
+    "title": "Microsoft Agent 365",
+    "kind": "commercial",
+    "url": "https://www.microsoft.com/en-us/microsoft-agent-365",
+    "verification": "official_docs_selected_read",
+    "summary": "2026-05-01 GA. 에이전트 레지스트리·Entra Agent ID·MCP 도구 관리 관제. 사용자당 월 $15(연 약정), E7 $99(공식 페이지). 호출 단위 차단은 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "상용(가격 공식 페이지 표기, 계약 조건 미확인)",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
+  },
+  {
+    "id": "snowflake-natoma-cortex-ai-gateway",
+    "title": "Snowflake Natoma 인수·Cortex AI Gateway",
+    "kind": "commercial",
+    "url": "https://www.snowflake.com/en/news/press-releases/snowflake-announces-intent-to-acquire-natoma-providing-secure-connectivity-for-the-agentic-enterprise",
+    "verification": "official_press_release_and_blog_read",
+    "summary": "2026-05-27 Natoma(MCP 에이전트 접근·위임·감사) 인수 계약, 2026-07-28 Cortex AI Gateway 발표. 종결·가격 미확인.",
+    "path": "solutions/oss-gateway-scanner-releases-1023.md",
+    "license": "상용(가격 미확인)",
+    "verified_on": "2026-10-23",
+    "runtime_verified": false
   }
 ]

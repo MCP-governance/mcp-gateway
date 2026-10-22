@@ -8,6 +8,8 @@
 - [IEEE TSE Beyond the Protocol](REF-J02.md)
 - [Information Sciences 비교 취약점 연구](REF-J03.md)
 
+2026-10-23 [최신 레퍼런스 갱신](../analysis/refs-update-1023/README.md)에서 MCP·에이전트 보안 preprint 27건(`LIB-N01`~`LIB-N27`)과 NSA CSI(`LIB-N28`)를 추가했다. 모두 서지·초록 수준 확인이며 본문 정독이 아니다.
+
 개발에 직접 필요한 공개 자료를 선별했다. 각 페이지는 원본·전체 추출 MD·이전 위키 provenance·SHA-256 경로로 이어진다. 재배포가 확인되지 않은 원본·전체 MD는 로컬 캐시에만 보존하며 공개 Git과 웹 본문에서 제외한다.
 
 보존 자료는 재현용 스냅숏이다. 요약의 적용 제안은 아직 검증되지 않은 개발 후보이며 현재 배포의 통제 증거를 대신하지 않는다.
