@@ -1,0 +1,13 @@
+{
+  "users": [
+    {
+      "mint_user_id": "employee-id",
+      "litellm_user_id": "litellm-user-id",
+      "key_hashes": ["0000000000000000000000000000000000000000000000000000000000000000"]
+    }
+  ],
+  "teams": [
+    {"team_id": "litellm-team-id", "mint_user_ids": ["employee-id"]}
+  ],
+  "workers": ["https://litellm-worker.corp:4000"]
+}

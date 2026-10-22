@@ -1,0 +1,2980 @@
+{
+  "task": "AIG-01-LITELLM-SYNC",
+  "baseline_commit": "e30be961a9a00d7982dd8565e4412c7289e85f4d",
+  "head": "e30be961a9a00d7982dd8565e4412c7289e85f4d",
+  "branch": "10/23-litellm-sync",
+  "scope": "local_static_and_management_http_double_only",
+  "deployment": false,
+  "device_connections": false,
+  "real_litellm": false,
+  "real_postgresql": false,
+  "job_timeout_seconds": 3600,
+  "inbox_ids": [
+    8322,
+    8330,
+    8336,
+    8366,
+    8370,
+    8371
+  ],
+  "inbox_last_event_id": 8377,
+  "inbox_observed_at": "2026-10-23T07:09:11+09:00",
+  "overlap": "No initial dirty files or detected overlap with W5-KIT-MACOS/unassigned work. Earlier jobs and quota notices are evidence, not new authorization. Assigned P1 scope only.",
+  "remote_head_check": "failed_network_restricted",
+  "source_bytes_sha256_available": false,
+  "quota": {
+    "remaining_percent_at_dispatch": 31.0,
+    "latest_observed_remaining_percent": 84,
+    "observed_at_epoch": 1792706950.1842968,
+    "current_remaining_percent": null,
+    "known_reset": "2026-10-30T02:08:54+09:00",
+    "reset_at_epoch": 1793293734,
+    "prior_reset": "2026-10-23T07:08:54+09:00"
+  },
+  "files": [
+    {
+      "path": "full_stack_lab/gateway/app/litellm_sync.py",
+      "sha256": "fd4b003d7fce971e20f6eaaadb73afaebe2ccf44e48ce61855720947f714fda5",
+      "symbols": [
+        {
+          "name": "SyncError",
+          "line": 26,
+          "end_line": 27
+        },
+        {
+          "name": "enabled",
+          "line": 30,
+          "end_line": 31
+        },
+        {
+          "name": "origin",
+          "line": 34,
+          "end_line": 39
+        },
+        {
+          "name": "configuration",
+          "line": 42,
+          "end_line": 72
+        },
+        {
+          "name": "management_key",
+          "line": 75,
+          "end_line": 81
+        },
+        {
+          "name": "ManagementAPI",
+          "line": 84,
+          "end_line": 120
+        },
+        {
+          "name": "merged_permissions",
+          "line": 123,
+          "end_line": 135
+        },
+        {
+          "name": "subjects",
+          "line": 138,
+          "end_line": 143
+        },
+        {
+          "name": "check_subject",
+          "line": 146,
+          "end_line": 154
+        },
+        {
+          "name": "propagate",
+          "line": 157,
+          "end_line": 171
+        },
+        {
+          "name": "_propagate",
+          "line": 174,
+          "end_line": 323
+        },
+        {
+          "name": "initialize",
+          "line": 326,
+          "end_line": 329
+        },
+        {
+          "name": "enqueue",
+          "line": 332,
+          "end_line": 342
+        },
+        {
+          "name": "desired",
+          "line": 345,
+          "end_line": 373
+        },
+        {
+          "name": "fingerprint",
+          "line": 376,
+          "end_line": 377
+        },
+        {
+          "name": "retry_seconds",
+          "line": 380,
+          "end_line": 381
+        },
+        {
+          "name": "reconcile",
+          "line": 384,
+          "end_line": 407
+        },
+        {
+          "name": "_reconcile",
+          "line": 410,
+          "end_line": 472
+        },
+        {
+          "name": "statuses",
+          "line": 475,
+          "end_line": 485
+        },
+        {
+          "name": "watch",
+          "line": 488,
+          "end_line": 497
+        },
+        {
+          "name": "__init__",
+          "line": 85,
+          "end_line": 86
+        },
+        {
+          "name": "request",
+          "line": 88,
+          "end_line": 96
+        },
+        {
+          "name": "_request",
+          "line": 98,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/litellm_sync_tables.sql",
+      "sha256": "8b8937bd4392350d1496522124f10cbf36e7d9e4e7ce07ac8522e21aa8a4a9db"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/core.py",
+      "sha256": "e103f09cd4e4eacd93ad0dd3c271938ce2d0a65a13d9440f430c3956ef9e3a71",
+      "symbols": [
+        {
+          "name": "_flow_match_mode",
+          "line": 79,
+          "end_line": 82
+        },
+        {
+          "name": "check_auto_suspend_settings",
+          "line": 111,
+          "end_line": 119
+        },
+        {
+          "name": "ResultRejected",
+          "line": 126,
+          "end_line": 134
+        },
+        {
+          "name": "response_evidence",
+          "line": 143,
+          "end_line": 154
+        },
+        {
+          "name": "response_disposition",
+          "line": 157,
+          "end_line": 163
+        },
+        {
+          "name": "_Laps",
+          "line": 166,
+          "end_line": 183
+        },
+        {
+          "name": "DispatchRejected",
+          "line": 186,
+          "end_line": 191
+        },
+        {
+          "name": "_configure_tracing",
+          "line": 194,
+          "end_line": 206
+        },
+        {
+          "name": "_discover",
+          "line": 212,
+          "end_line": 216
+        },
+        {
+          "name": "refresh_catalog",
+          "line": 219,
+          "end_line": 382
+        },
+        {
+          "name": "approve_contract",
+          "line": 385,
+          "end_line": 467
+        },
+        {
+          "name": "bootstrap",
+          "line": 470,
+          "end_line": 495
+        },
+        {
+          "name": "refresh_all_catalogs",
+          "line": 498,
+          "end_line": 516
+        },
+        {
+          "name": "check_server",
+          "line": 519,
+          "end_line": 542
+        },
+        {
+          "name": "registration_endpoint",
+          "line": 554,
+          "end_line": 561
+        },
+        {
+          "name": "suggested_action",
+          "line": 564,
+          "end_line": 567
+        },
+        {
+          "name": "discover_for_registration",
+          "line": 570,
+          "end_line": 619
+        },
+        {
+          "name": "register_server",
+          "line": 622,
+          "end_line": 891
+        },
+        {
+          "name": "deregister_server",
+          "line": 894,
+          "end_line": 918
+        },
+        {
+          "name": "review_tool_scopes",
+          "line": 921,
+          "end_line": 964
+        },
+        {
+          "name": "review_server_residency",
+          "line": 967,
+          "end_line": 1002
+        },
+        {
+          "name": "renew_approvals",
+          "line": 1010,
+          "end_line": 1068
+        },
+        {
+          "name": "apply_risk_grace",
+          "line": 1071,
+          "end_line": 1103
+        },
+        {
+          "name": "catalog_watch",
+          "line": 1106,
+          "end_line": 1122
+        },
+        {
+          "name": "_cleanup_expired_flow_fingerprints",
+          "line": 1125,
+          "end_line": 1127
+        },
+        {
+          "name": "_contract",
+          "line": 1130,
+          "end_line": 1193
+        },
+        {
+          "name": "enforcement_mode",
+          "line": 1196,
+          "end_line": 1204
+        },
+        {
+          "name": "set_enforcement_mode",
+          "line": 1207,
+          "end_line": 1215
+        },
+        {
+          "name": "monitor_summary",
+          "line": 1218,
+          "end_line": 1238
+        },
+        {
+          "name": "untrusted_markers",
+          "line": 1244,
+          "end_line": 1251
+        },
+        {
+          "name": "_endpoint_host",
+          "line": 1260,
+          "end_line": 1267
+        },
+        {
+          "name": "transport_secure",
+          "line": 1270,
+          "end_line": 1278
+        },
+        {
+          "name": "egress_allowed",
+          "line": 1281,
+          "end_line": 1307
+        },
+        {
+          "name": "_outbound_text",
+          "line": 1310,
+          "end_line": 1325
+        },
+        {
+          "name": "_privacy_ignore",
+          "line": 1328,
+          "end_line": 1338
+        },
+        {
+          "name": "_sequence_flags",
+          "line": 1341,
+          "end_line": 1351
+        },
+        {
+          "name": "_flow_sources",
+          "line": 1354,
+          "end_line": 1383
+        },
+        {
+          "name": "_dispatch_flow_recheck",
+          "line": 1386,
+          "end_line": 1395
+        },
+        {
+          "name": "_remember_flow",
+          "line": 1398,
+          "end_line": 1418
+        },
+        {
+          "name": "_relationship_scope",
+          "line": 1421,
+          "end_line": 1435
+        },
+        {
+          "name": "_risk_score",
+          "line": 1438,
+          "end_line": 1445
+        },
+        {
+          "name": "_reserve_call",
+          "line": 1448,
+          "end_line": 1533
+        },
+        {
+          "name": "_release_call",
+          "line": 1536,
+          "end_line": 1554
+        },
+        {
+          "name": "_opa",
+          "line": 1561,
+          "end_line": 1562
+        },
+        {
+          "name": "opa_document",
+          "line": 1565,
+          "end_line": 1572
+        },
+        {
+          "name": "policy_ledger",
+          "line": 1575,
+          "end_line": 1593
+        },
+        {
+          "name": "local_verdict",
+          "line": 1596,
+          "end_line": 1621
+        },
+        {
+          "name": "_policy",
+          "line": 1624,
+          "end_line": 1635
+        },
+        {
+          "name": "_call_upstream",
+          "line": 1638,
+          "end_line": 1838
+        },
+        {
+          "name": "_root_cause",
+          "line": 1841,
+          "end_line": 1848
+        },
+        {
+          "name": "_storable",
+          "line": 1851,
+          "end_line": 1859
+        },
+        {
+          "name": "_decoded_strings",
+          "line": 1862,
+          "end_line": 1873
+        },
+        {
+          "name": "_upstream_failure",
+          "line": 1876,
+          "end_line": 1913
+        },
+        {
+          "name": "body_of",
+          "line": 1916,
+          "end_line": 1917
+        },
+        {
+          "name": "_validate_output",
+          "line": 1920,
+          "end_line": 1938
+        },
+        {
+          "name": "_guarded_result",
+          "line": 1941,
+          "end_line": 1969
+        },
+        {
+          "name": "_inspected_result",
+          "line": 1972,
+          "end_line": 1986
+        },
+        {
+          "name": "_audit_payload",
+          "line": 1989,
+          "end_line": 2003
+        },
+        {
+          "name": "_record_decision",
+          "line": 2009,
+          "end_line": 2126
+        },
+        {
+          "name": "record_connection_denial",
+          "line": 2133,
+          "end_line": 2167
+        },
+        {
+          "name": "verify_audit_chain",
+          "line": 2170,
+          "end_line": 2189
+        },
+        {
+          "name": "_decision_payload",
+          "line": 2192,
+          "end_line": 2204
+        },
+        {
+          "name": "execute_call",
+          "line": 2207,
+          "end_line": 2581
+        },
+        {
+          "name": "approve_request",
+          "line": 2584,
+          "end_line": 2637
+        },
+        {
+          "name": "approval_evidence",
+          "line": 2640,
+          "end_line": 2662
+        },
+        {
+          "name": "_require_explanation",
+          "line": 2665,
+          "end_line": 2670
+        },
+        {
+          "name": "revoke_approval",
+          "line": 2673,
+          "end_line": 2691
+        },
+        {
+          "name": "_trivy_summary",
+          "line": 2694,
+          "end_line": 2715
+        },
+        {
+          "name": "_store_trivy",
+          "line": 2718,
+          "end_line": 2725
+        },
+        {
+          "name": "supply_chain_coverage",
+          "line": 2728,
+          "end_line": 2744
+        },
+        {
+          "name": "reject_request",
+          "line": 2747,
+          "end_line": 2782
+        },
+        {
+          "name": "import_supply_chain_reports",
+          "line": 2785,
+          "end_line": 2848
+        },
+        {
+          "name": "__init__",
+          "line": 129,
+          "end_line": 134
+        },
+        {
+          "name": "__init__",
+          "line": 173,
+          "end_line": 175
+        },
+        {
+          "name": "lap",
+          "line": 177,
+          "end_line": 180
+        },
+        {
+          "name": "view",
+          "line": 182,
+          "end_line": 183
+        },
+        {
+          "name": "__init__",
+          "line": 189,
+          "end_line": 191
+        },
+        {
+          "name": "walk",
+          "line": 1314,
+          "end_line": 1322
+        },
+        {
+          "name": "ignore",
+          "line": 1335,
+          "end_line": 1337
+        },
+        {
+          "name": "shrink",
+          "line": 1995,
+          "end_line": 2002
+        },
+        {
+          "name": "recheck",
+          "line": 1763,
+          "end_line": 1765
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/main.py",
+      "sha256": "4e43e82e61de662d8309da3ce743bc50b46eb671237463a6456d7ec952d1811e",
+      "symbols": [
+        {
+          "name": "_error_detail",
+          "line": 65,
+          "end_line": 68
+        },
+        {
+          "name": "RequireBearer",
+          "line": 71,
+          "end_line": 129
+        },
+        {
+          "name": "ServerPath",
+          "line": 132,
+          "end_line": 215
+        },
+        {
+          "name": "StrictModel",
+          "line": 218,
+          "end_line": 219
+        },
+        {
+          "name": "RejectRequest",
+          "line": 222,
+          "end_line": 224
+        },
+        {
+          "name": "ApprovalEvidence",
+          "line": 227,
+          "end_line": 229
+        },
+        {
+          "name": "IntentResolve",
+          "line": 232,
+          "end_line": 234
+        },
+        {
+          "name": "EnforcementRequest",
+          "line": 237,
+          "end_line": 238
+        },
+        {
+          "name": "SessionRequest",
+          "line": 241,
+          "end_line": 243
+        },
+        {
+          "name": "caller",
+          "line": 246,
+          "end_line": 253
+        },
+        {
+          "name": "admin_caller",
+          "line": 256,
+          "end_line": 266
+        },
+        {
+          "name": "AddonDecision",
+          "line": 269,
+          "end_line": 275
+        },
+        {
+          "name": "AddonResult",
+          "line": 278,
+          "end_line": 283
+        },
+        {
+          "name": "lifespan",
+          "line": 287,
+          "end_line": 306
+        },
+        {
+          "name": "public_http_error",
+          "line": 313,
+          "end_line": 314
+        },
+        {
+          "name": "public_validation_error",
+          "line": 318,
+          "end_line": 320
+        },
+        {
+          "name": "OpsResume",
+          "line": 323,
+          "end_line": 324
+        },
+        {
+          "name": "ops_status",
+          "line": 328,
+          "end_line": 334
+        },
+        {
+          "name": "ops_resume",
+          "line": 338,
+          "end_line": 342
+        },
+        {
+          "name": "SuspendRequest",
+          "line": 345,
+          "end_line": 348
+        },
+        {
+          "name": "suspensions",
+          "line": 352,
+          "end_line": 353
+        },
+        {
+          "name": "suspend_use",
+          "line": 357,
+          "end_line": 363
+        },
+        {
+          "name": "resume_use",
+          "line": 367,
+          "end_line": 371
+        },
+        {
+          "name": "UserSuspendAllRequest",
+          "line": 374,
+          "end_line": 376
+        },
+        {
+          "name": "UserResumeAllRequest",
+          "line": 379,
+          "end_line": 381
+        },
+        {
+          "name": "suspend_all_use",
+          "line": 385,
+          "end_line": 389
+        },
+        {
+          "name": "resume_all_use",
+          "line": 393,
+          "end_line": 394
+        },
+        {
+          "name": "_absent",
+          "line": 397,
+          "end_line": 399
+        },
+        {
+          "name": "_probe",
+          "line": 402,
+          "end_line": 408
+        },
+        {
+          "name": "health",
+          "line": 412,
+          "end_line": 436
+        },
+        {
+          "name": "state",
+          "line": 440,
+          "end_line": 456
+        },
+        {
+          "name": "registry_view",
+          "line": 460,
+          "end_line": 494
+        },
+        {
+          "name": "registry_export",
+          "line": 498,
+          "end_line": 506
+        },
+        {
+          "name": "overview",
+          "line": 510,
+          "end_line": 587
+        },
+        {
+          "name": "latency",
+          "line": 598,
+          "end_line": 650
+        },
+        {
+          "name": "activity_feed",
+          "line": 654,
+          "end_line": 665
+        },
+        {
+          "name": "activity_analysis",
+          "line": 669,
+          "end_line": 678
+        },
+        {
+          "name": "protected_resource_metadata",
+          "line": 682,
+          "end_line": 688
+        },
+        {
+          "name": "policy_matrix",
+          "line": 692,
+          "end_line": 698
+        },
+        {
+          "name": "policy_ledger_view",
+          "line": 702,
+          "end_line": 717
+        },
+        {
+          "name": "session",
+          "line": 721,
+          "end_line": 745
+        },
+        {
+          "name": "addon_mcp_decision",
+          "line": 749,
+          "end_line": 750
+        },
+        {
+          "name": "addon_mcp_result",
+          "line": 754,
+          "end_line": 755
+        },
+        {
+          "name": "approve",
+          "line": 759,
+          "end_line": 764
+        },
+        {
+          "name": "reject",
+          "line": 768,
+          "end_line": 772
+        },
+        {
+          "name": "approval_evidence",
+          "line": 776,
+          "end_line": 780
+        },
+        {
+          "name": "approval_revoke",
+          "line": 784,
+          "end_line": 788
+        },
+        {
+          "name": "dispatch_intents",
+          "line": 792,
+          "end_line": 794
+        },
+        {
+          "name": "dispatch_intent_resolve",
+          "line": 798,
+          "end_line": 802
+        },
+        {
+          "name": "catalog_refresh",
+          "line": 806,
+          "end_line": 807
+        },
+        {
+          "name": "ContractApproval",
+          "line": 812,
+          "end_line": 813
+        },
+        {
+          "name": "registry_approve_contract",
+          "line": 817,
+          "end_line": 829
+        },
+        {
+          "name": "registry_check",
+          "line": 833,
+          "end_line": 838
+        },
+        {
+          "name": "LocalRun",
+          "line": 842,
+          "end_line": 845
+        },
+        {
+          "name": "RegistryDiscover",
+          "line": 848,
+          "end_line": 851
+        },
+        {
+          "name": "RegistryRegister",
+          "line": 856,
+          "end_line": 874
+        },
+        {
+          "name": "registry_discover",
+          "line": 878,
+          "end_line": 886
+        },
+        {
+          "name": "registry_intake_discover",
+          "line": 890,
+          "end_line": 899
+        },
+        {
+          "name": "registry_register",
+          "line": 903,
+          "end_line": 911
+        },
+        {
+          "name": "ToolReviews",
+          "line": 914,
+          "end_line": 915
+        },
+        {
+          "name": "ResidencyReview",
+          "line": 918,
+          "end_line": 931
+        },
+        {
+          "name": "registry_tool_reviews",
+          "line": 935,
+          "end_line": 943
+        },
+        {
+          "name": "registry_residency_review",
+          "line": 947,
+          "end_line": 956
+        },
+        {
+          "name": "registry_deregister",
+          "line": 960,
+          "end_line": 964
+        },
+        {
+          "name": "supply_chain_import",
+          "line": 968,
+          "end_line": 972
+        },
+        {
+          "name": "supply_chain_cover",
+          "line": 976,
+          "end_line": 980
+        },
+        {
+          "name": "enforcement",
+          "line": 984,
+          "end_line": 985
+        },
+        {
+          "name": "enforcement_update",
+          "line": 989,
+          "end_line": 994
+        },
+        {
+          "name": "monitor",
+          "line": 998,
+          "end_line": 1000
+        },
+        {
+          "name": "audit_verify",
+          "line": 1004,
+          "end_line": 1006
+        },
+        {
+          "name": "RetentionRequest",
+          "line": 1009,
+          "end_line": 1011
+        },
+        {
+          "name": "audit_retention",
+          "line": 1015,
+          "end_line": 1016
+        },
+        {
+          "name": "audit_retention_update",
+          "line": 1020,
+          "end_line": 1025
+        },
+        {
+          "name": "AuditAnnotation",
+          "line": 1028,
+          "end_line": 1031
+        },
+        {
+          "name": "audit_annotate",
+          "line": 1035,
+          "end_line": 1040
+        },
+        {
+          "name": "audit_annotation_list",
+          "line": 1044,
+          "end_line": 1045
+        },
+        {
+          "name": "audit_filters",
+          "line": 1048,
+          "end_line": 1054
+        },
+        {
+          "name": "audit_events",
+          "line": 1058,
+          "end_line": 1060
+        },
+        {
+          "name": "audit_export",
+          "line": 1064,
+          "end_line": 1066
+        },
+        {
+          "name": "audit_siem",
+          "line": 1070,
+          "end_line": 1071
+        },
+        {
+          "name": "audit_event",
+          "line": 1075,
+          "end_line": 1076
+        },
+        {
+          "name": "IncidentCreate",
+          "line": 1079,
+          "end_line": 1092
+        },
+        {
+          "name": "IncidentReport",
+          "line": 1095,
+          "end_line": 1099
+        },
+        {
+          "name": "IncidentSupplement",
+          "line": 1102,
+          "end_line": 1106
+        },
+        {
+          "name": "audit_incidents",
+          "line": 1110,
+          "end_line": 1111
+        },
+        {
+          "name": "audit_incident_create",
+          "line": 1115,
+          "end_line": 1116
+        },
+        {
+          "name": "audit_incident_detail",
+          "line": 1120,
+          "end_line": 1121
+        },
+        {
+          "name": "audit_incident_report",
+          "line": 1125,
+          "end_line": 1126
+        },
+        {
+          "name": "audit_incident_supplement",
+          "line": 1130,
+          "end_line": 1132
+        },
+        {
+          "name": "TerminationOpen",
+          "line": 1142,
+          "end_line": 1147
+        },
+        {
+          "name": "TargetCreate",
+          "line": 1150,
+          "end_line": 1159
+        },
+        {
+          "name": "TargetUpdate",
+          "line": 1162,
+          "end_line": 1164
+        },
+        {
+          "name": "EvidenceCreate",
+          "line": 1167,
+          "end_line": 1175
+        },
+        {
+          "name": "CaseClose",
+          "line": 1178,
+          "end_line": 1180
+        },
+        {
+          "name": "CaseReopen",
+          "line": 1183,
+          "end_line": 1184
+        },
+        {
+          "name": "EvidenceCollect",
+          "line": 1187,
+          "end_line": 1189
+        },
+        {
+          "name": "termination_relationships",
+          "line": 1193,
+          "end_line": 1196
+        },
+        {
+          "name": "termination_collect",
+          "line": 1200,
+          "end_line": 1205
+        },
+        {
+          "name": "termination_revoke_credential",
+          "line": 1209,
+          "end_line": 1215
+        },
+        {
+          "name": "lab_restore",
+          "line": 1219,
+          "end_line": 1229
+        },
+        {
+          "name": "termination_cases",
+          "line": 1233,
+          "end_line": 1234
+        },
+        {
+          "name": "termination_open",
+          "line": 1238,
+          "end_line": 1245
+        },
+        {
+          "name": "termination_detail",
+          "line": 1249,
+          "end_line": 1253
+        },
+        {
+          "name": "termination_add_target",
+          "line": 1257,
+          "end_line": 1264
+        },
+        {
+          "name": "termination_update_target",
+          "line": 1268,
+          "end_line": 1274
+        },
+        {
+          "name": "termination_add_evidence",
+          "line": 1278,
+          "end_line": 1291
+        },
+        {
+          "name": "termination_probe",
+          "line": 1295,
+          "end_line": 1300
+        },
+        {
+          "name": "termination_assess",
+          "line": 1304,
+          "end_line": 1308
+        },
+        {
+          "name": "termination_close",
+          "line": 1312,
+          "end_line": 1318
+        },
+        {
+          "name": "termination_reopen",
+          "line": 1322,
+          "end_line": 1327
+        },
+        {
+          "name": "termination_report",
+          "line": 1331,
+          "end_line": 1336
+        },
+        {
+          "name": "termination_disclosure",
+          "line": 1340,
+          "end_line": 1350
+        },
+        {
+          "name": "termination_drill",
+          "line": 1354,
+          "end_line": 1363
+        },
+        {
+          "name": "EndpointDeviceCreate",
+          "line": 1374,
+          "end_line": 1380
+        },
+        {
+          "name": "EndpointEnroll",
+          "line": 1383,
+          "end_line": 1389
+        },
+        {
+          "name": "Provenance",
+          "line": 1392,
+          "end_line": 1397
+        },
+        {
+          "name": "EndpointEntry",
+          "line": 1400,
+          "end_line": 1405
+        },
+        {
+          "name": "EndpointReport",
+          "line": 1408,
+          "end_line": 1412
+        },
+        {
+          "name": "ObservationReport",
+          "line": 1415,
+          "end_line": 1423
+        },
+        {
+          "name": "EndpointOSEvent",
+          "line": 1426,
+          "end_line": 1432
+        },
+        {
+          "name": "EndpointOSReport",
+          "line": 1435,
+          "end_line": 1437
+        },
+        {
+          "name": "HostAccount",
+          "line": 1440,
+          "end_line": 1443
+        },
+        {
+          "name": "HostReport",
+          "line": 1446,
+          "end_line": 1450
+        },
+        {
+          "name": "NetworkQuality",
+          "line": 1453,
+          "end_line": 1472
+        },
+        {
+          "name": "UserCommandSetting",
+          "line": 1475,
+          "end_line": 1480
+        },
+        {
+          "name": "ManagedHeartbeat",
+          "line": 1483,
+          "end_line": 1489
+        },
+        {
+          "name": "ManagedActivation",
+          "line": 1492,
+          "end_line": 1494
+        },
+        {
+          "name": "ListenerFinding",
+          "line": 1497,
+          "end_line": 1507
+        },
+        {
+          "name": "ListenerReport",
+          "line": 1510,
+          "end_line": 1524
+        },
+        {
+          "name": "ScanPolicyUpdate",
+          "line": 1527,
+          "end_line": 1534
+        },
+        {
+          "name": "endpoint_device",
+          "line": 1537,
+          "end_line": 1544
+        },
+        {
+          "name": "endpoint_device_create",
+          "line": 1548,
+          "end_line": 1561
+        },
+        {
+          "name": "endpoint_device_revoke",
+          "line": 1565,
+          "end_line": 1569
+        },
+        {
+          "name": "endpoint_device_list",
+          "line": 1573,
+          "end_line": 1574
+        },
+        {
+          "name": "endpoint_managed_policy",
+          "line": 1578,
+          "end_line": 1583
+        },
+        {
+          "name": "endpoint_heartbeat",
+          "line": 1587,
+          "end_line": 1604
+        },
+        {
+          "name": "LocalJobDiagnostics",
+          "line": 1607,
+          "end_line": 1610
+        },
+        {
+          "name": "LocalJobResult",
+          "line": 1613,
+          "end_line": 1618
+        },
+        {
+          "name": "endpoint_local_job",
+          "line": 1622,
+          "end_line": 1624
+        },
+        {
+          "name": "endpoint_local_job_result",
+          "line": 1628,
+          "end_line": 1638
+        },
+        {
+          "name": "endpoint_local_recovery",
+          "line": 1642,
+          "end_line": 1643
+        },
+        {
+          "name": "endpoint_local_control",
+          "line": 1647,
+          "end_line": 1651
+        },
+        {
+          "name": "endpoint_local_start",
+          "line": 1655,
+          "end_line": 1659
+        },
+        {
+          "name": "endpoint_managed_activate",
+          "line": 1663,
+          "end_line": 1668
+        },
+        {
+          "name": "endpoint_enroll",
+          "line": 1672,
+          "end_line": 1686
+        },
+        {
+          "name": "endpoint_scan_policy_read",
+          "line": 1690,
+          "end_line": 1696
+        },
+        {
+          "name": "endpoint_scan_policy_admin",
+          "line": 1700,
+          "end_line": 1701
+        },
+        {
+          "name": "endpoint_scan_policy_update",
+          "line": 1705,
+          "end_line": 1711
+        },
+        {
+          "name": "endpoint_report",
+          "line": 1715,
+          "end_line": 1730
+        },
+        {
+          "name": "endpoint_listener_report",
+          "line": 1734,
+          "end_line": 1749
+        },
+        {
+          "name": "endpoint_observation_status",
+          "line": 1753,
+          "end_line": 1765
+        },
+        {
+          "name": "endpoint_inventory",
+          "line": 1769,
+          "end_line": 1793
+        },
+        {
+          "name": "endpoint_inventory_entries",
+          "line": 1802,
+          "end_line": 1804
+        },
+        {
+          "name": "endpoint_inventory_listeners",
+          "line": 1808,
+          "end_line": 1810
+        },
+        {
+          "name": "endpoint_inventory_os_events",
+          "line": 1814,
+          "end_line": 1818
+        },
+        {
+          "name": "endpoint_observations",
+          "line": 1822,
+          "end_line": 1824
+        },
+        {
+          "name": "endpoint_record",
+          "line": 1828,
+          "end_line": 1833
+        },
+        {
+          "name": "endpoint_correlation",
+          "line": 1837,
+          "end_line": 1848
+        },
+        {
+          "name": "endpoint_network_quality",
+          "line": 1852,
+          "end_line": 1853
+        },
+        {
+          "name": "endpoint_os_report",
+          "line": 1857,
+          "end_line": 1863
+        },
+        {
+          "name": "risk_catalog",
+          "line": 1867,
+          "end_line": 1874
+        },
+        {
+          "name": "console",
+          "line": 1881,
+          "end_line": 1883
+        },
+        {
+          "name": "__init__",
+          "line": 72,
+          "end_line": 73
+        },
+        {
+          "name": "__call__",
+          "line": 75,
+          "end_line": 129
+        },
+        {
+          "name": "__init__",
+          "line": 138,
+          "end_line": 139
+        },
+        {
+          "name": "__call__",
+          "line": 141,
+          "end_line": 215
+        },
+        {
+          "name": "ms",
+          "line": 634,
+          "end_line": 635
+        },
+        {
+          "name": "validate_location",
+          "line": 926,
+          "end_line": 931
+        },
+        {
+          "name": "plausible",
+          "line": 1463,
+          "end_line": 1472
+        },
+        {
+          "name": "source_scope",
+          "line": 1518,
+          "end_line": 1524
+        },
+        {
+          "name": "dependency",
+          "line": 1539,
+          "end_line": 1543
+        },
+        {
+          "name": "response",
+          "line": 109,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/ops_response.py",
+      "sha256": "0d010a3b493656aca2c2d8052b63ccde36cdb19a85b69f36c1749bda4b03e726",
+      "symbols": [
+        {
+          "name": "alert_kind",
+          "line": 27,
+          "end_line": 34
+        },
+        {
+          "name": "emit_alert",
+          "line": 37,
+          "end_line": 40
+        },
+        {
+          "name": "catalog_alerts",
+          "line": 43,
+          "end_line": 46
+        },
+        {
+          "name": "observed_alerts",
+          "line": 49,
+          "end_line": 60
+        },
+        {
+          "name": "selected",
+          "line": 63,
+          "end_line": 64
+        },
+        {
+          "name": "suspend",
+          "line": 67,
+          "end_line": 106
+        },
+        {
+          "name": "contain_drift",
+          "line": 109,
+          "end_line": 111
+        },
+        {
+          "name": "contain_repeated",
+          "line": 114,
+          "end_line": 135
+        },
+        {
+          "name": "resume",
+          "line": 138,
+          "end_line": 161
+        },
+        {
+          "name": "self_test_cases",
+          "line": 164,
+          "end_line": 180
+        },
+        {
+          "name": "self_test",
+          "line": 183,
+          "end_line": 230
+        },
+        {
+          "name": "tick",
+          "line": 233,
+          "end_line": 246
+        },
+        {
+          "name": "watch",
+          "line": 249,
+          "end_line": 255
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/decommission.py",
+      "sha256": "57f8b220519db1287c7a72a505b97f839d1b020f6a1ce7d4121b96ace030bc68",
+      "symbols": [
+        {
+          "name": "_digest",
+          "line": 108,
+          "end_line": 110
+        },
+        {
+          "name": "_now",
+          "line": 113,
+          "end_line": 114
+        },
+        {
+          "name": "_row",
+          "line": 117,
+          "end_line": 126
+        },
+        {
+          "name": "_server",
+          "line": 129,
+          "end_line": 133
+        },
+        {
+          "name": "_case",
+          "line": 136,
+          "end_line": 140
+        },
+        {
+          "name": "_is_provider",
+          "line": 149,
+          "end_line": 150
+        },
+        {
+          "name": "relationships",
+          "line": 154,
+          "end_line": 174
+        },
+        {
+          "name": "drill",
+          "line": 177,
+          "end_line": 217
+        },
+        {
+          "name": "open_case",
+          "line": 221,
+          "end_line": 277
+        },
+        {
+          "name": "seed_targets",
+          "line": 280,
+          "end_line": 326
+        },
+        {
+          "name": "add_target",
+          "line": 329,
+          "end_line": 344
+        },
+        {
+          "name": "revoke_target",
+          "line": 347,
+          "end_line": 367
+        },
+        {
+          "name": "add_evidence",
+          "line": 370,
+          "end_line": 386
+        },
+        {
+          "name": "_invalidate",
+          "line": 389,
+          "end_line": 397
+        },
+        {
+          "name": "_probe_call",
+          "line": 405,
+          "end_line": 420
+        },
+        {
+          "name": "collect",
+          "line": 423,
+          "end_line": 517
+        },
+        {
+          "name": "probe",
+          "line": 520,
+          "end_line": 524
+        },
+        {
+          "name": "_gitea_headers",
+          "line": 527,
+          "end_line": 532
+        },
+        {
+          "name": "_gitea_token_present",
+          "line": 535,
+          "end_line": 544
+        },
+        {
+          "name": "_resource_verdict",
+          "line": 547,
+          "end_line": 574
+        },
+        {
+          "name": "revoke_credential",
+          "line": 577,
+          "end_line": 600
+        },
+        {
+          "name": "_post_cutover",
+          "line": 604,
+          "end_line": 627
+        },
+        {
+          "name": "_judge_target",
+          "line": 630,
+          "end_line": 700
+        },
+        {
+          "name": "_evidence_shows_revoked",
+          "line": 703,
+          "end_line": 716
+        },
+        {
+          "name": "assess",
+          "line": 719,
+          "end_line": 764
+        },
+        {
+          "name": "close_case",
+          "line": 767,
+          "end_line": 793
+        },
+        {
+          "name": "reopen_case",
+          "line": 796,
+          "end_line": 809
+        },
+        {
+          "name": "restore_server",
+          "line": 812,
+          "end_line": 836
+        },
+        {
+          "name": "case_detail",
+          "line": 840,
+          "end_line": 857
+        },
+        {
+          "name": "list_cases",
+          "line": 860,
+          "end_line": 872
+        },
+        {
+          "name": "disclosure_request",
+          "line": 875,
+          "end_line": 905
+        },
+        {
+          "name": "summary",
+          "line": 908,
+          "end_line": 919
+        },
+        {
+          "name": "report",
+          "line": 922,
+          "end_line": 943
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_service.py",
+      "sha256": "74173c160b34c6939a3f8d2a354ecadd4af1b0f7a149bef3a8056abc56035ec0",
+      "symbols": [
+        {
+          "name": "login_allowed",
+          "line": 57,
+          "end_line": 65
+        },
+        {
+          "name": "record_failed_login",
+          "line": 68,
+          "end_line": 69
+        },
+        {
+          "name": "bootstrap_passwords",
+          "line": 72,
+          "end_line": 82
+        },
+        {
+          "name": "bootstrap_field_accounts",
+          "line": 85,
+          "end_line": 101
+        },
+        {
+          "name": "lifespan",
+          "line": 105,
+          "end_line": 130
+        },
+        {
+          "name": "origin_key",
+          "line": 141,
+          "end_line": 149
+        },
+        {
+          "name": "browser_boundary",
+          "line": 153,
+          "end_line": 162
+        },
+        {
+          "name": "root",
+          "line": 166,
+          "end_line": 167
+        },
+        {
+          "name": "login_page",
+          "line": 171,
+          "end_line": 172
+        },
+        {
+          "name": "signup_page",
+          "line": 176,
+          "end_line": 177
+        },
+        {
+          "name": "workspace_page",
+          "line": 181,
+          "end_line": 182
+        },
+        {
+          "name": "Login",
+          "line": 185,
+          "end_line": 187
+        },
+        {
+          "name": "Signup",
+          "line": 190,
+          "end_line": 194
+        },
+        {
+          "name": "request_signup",
+          "line": 198,
+          "end_line": 251
+        },
+        {
+          "name": "ImpactInput",
+          "line": 254,
+          "end_line": 260
+        },
+        {
+          "name": "McpIntake",
+          "line": 263,
+          "end_line": 273
+        },
+        {
+          "name": "ExitTermsReview",
+          "line": 276,
+          "end_line": 281
+        },
+        {
+          "name": "IntakeRejection",
+          "line": 284,
+          "end_line": 285
+        },
+        {
+          "name": "RuntimeRollback",
+          "line": 288,
+          "end_line": 290
+        },
+        {
+          "name": "github_repository_url",
+          "line": 293,
+          "end_line": 312
+        },
+        {
+          "name": "github_repository_path",
+          "line": 315,
+          "end_line": 324
+        },
+        {
+          "name": "current_identity",
+          "line": 327,
+          "end_line": 328
+        },
+        {
+          "name": "admin_caller",
+          "line": 331,
+          "end_line": 335
+        },
+        {
+          "name": "login",
+          "line": 339,
+          "end_line": 363
+        },
+        {
+          "name": "password_principal",
+          "line": 366,
+          "end_line": 392
+        },
+        {
+          "name": "me",
+          "line": 396,
+          "end_line": 406
+        },
+        {
+          "name": "field_ca",
+          "line": 418,
+          "end_line": 433
+        },
+        {
+          "name": "pc_kit",
+          "line": 436,
+          "end_line": 444
+        },
+        {
+          "name": "download_managed_kit",
+          "line": 448,
+          "end_line": 546
+        },
+        {
+          "name": "logout",
+          "line": 550,
+          "end_line": 562
+        },
+        {
+          "name": "session_activity",
+          "line": 566,
+          "end_line": 569
+        },
+        {
+          "name": "gitea_login",
+          "line": 587,
+          "end_line": 589
+        },
+        {
+          "name": "gitea_admin_client",
+          "line": 592,
+          "end_line": 596
+        },
+        {
+          "name": "ensure_gitea_team",
+          "line": 599,
+          "end_line": 620
+        },
+        {
+          "name": "ensure_gitea_user",
+          "line": 623,
+          "end_line": 652
+        },
+        {
+          "name": "reconcile_gitea_accounts",
+          "line": 655,
+          "end_line": 666
+        },
+        {
+          "name": "gitea_forward_auth",
+          "line": 670,
+          "end_line": 698
+        },
+        {
+          "name": "AccountStatus",
+          "line": 701,
+          "end_line": 703
+        },
+        {
+          "name": "AccountInvitations",
+          "line": 706,
+          "end_line": 708
+        },
+        {
+          "name": "invite_accounts",
+          "line": 712,
+          "end_line": 736
+        },
+        {
+          "name": "list_invitations",
+          "line": 740,
+          "end_line": 744
+        },
+        {
+          "name": "revoke_invitation",
+          "line": 748,
+          "end_line": 755
+        },
+        {
+          "name": "list_accounts",
+          "line": 759,
+          "end_line": 769
+        },
+        {
+          "name": "list_signup_requests",
+          "line": 773,
+          "end_line": 779
+        },
+        {
+          "name": "approve_signup",
+          "line": 783,
+          "end_line": 807
+        },
+        {
+          "name": "reject_signup",
+          "line": 811,
+          "end_line": 822
+        },
+        {
+          "name": "set_account_status",
+          "line": 826,
+          "end_line": 865
+        },
+        {
+          "name": "delete_account",
+          "line": 869,
+          "end_line": 906
+        },
+        {
+          "name": "health",
+          "line": 910,
+          "end_line": 912
+        },
+        {
+          "name": "system_metrics",
+          "line": 916,
+          "end_line": 920
+        },
+        {
+          "name": "ready",
+          "line": 924,
+          "end_line": 949
+        },
+        {
+          "name": "gateway_proxy",
+          "line": 952,
+          "end_line": 980
+        },
+        {
+          "name": "allowed_pages",
+          "line": 996,
+          "end_line": 1002
+        },
+        {
+          "name": "console_user",
+          "line": 1005,
+          "end_line": 1013
+        },
+        {
+          "name": "intake_rows",
+          "line": 1016,
+          "end_line": 1035
+        },
+        {
+          "name": "with_risk",
+          "line": 1038,
+          "end_line": 1060
+        },
+        {
+          "name": "list_mcp_requests",
+          "line": 1064,
+          "end_line": 1067
+        },
+        {
+          "name": "search_catalog",
+          "line": 1071,
+          "end_line": 1093
+        },
+        {
+          "name": "internal_repo_name",
+          "line": 1096,
+          "end_line": 1099
+        },
+        {
+          "name": "repo_head",
+          "line": 1102,
+          "end_line": 1109
+        },
+        {
+          "name": "internal_archive_digest",
+          "line": 1112,
+          "end_line": 1130
+        },
+        {
+          "name": "publish_internal_repo",
+          "line": 1133,
+          "end_line": 1184
+        },
+        {
+          "name": "create_mcp_request",
+          "line": 1188,
+          "end_line": 1243
+        },
+        {
+          "name": "review_exit_terms",
+          "line": 1247,
+          "end_line": 1265
+        },
+        {
+          "name": "queue_validation",
+          "line": 1269,
+          "end_line": 1288
+        },
+        {
+          "name": "intake_report_row",
+          "line": 1291,
+          "end_line": 1298
+        },
+        {
+          "name": "runtime_recipe",
+          "line": 1304,
+          "end_line": 1319
+        },
+        {
+          "name": "start_runtime",
+          "line": 1323,
+          "end_line": 1351
+        },
+        {
+          "name": "stop_runtime",
+          "line": 1355,
+          "end_line": 1367
+        },
+        {
+          "name": "runtime_rollback_options",
+          "line": 1370,
+          "end_line": 1410
+        },
+        {
+          "name": "rollback_runtime",
+          "line": 1414,
+          "end_line": 1432
+        },
+        {
+          "name": "_request_rollback",
+          "line": 1435,
+          "end_line": 1494
+        },
+        {
+          "name": "intake_report",
+          "line": 1498,
+          "end_line": 1531
+        },
+        {
+          "name": "intake_artifact",
+          "line": 1535,
+          "end_line": 1550
+        },
+        {
+          "name": "SbomImpactRequest",
+          "line": 1553,
+          "end_line": 1555
+        },
+        {
+          "name": "SbomImpactStop",
+          "line": 1558,
+          "end_line": 1559
+        },
+        {
+          "name": "supply_chain_impact",
+          "line": 1563,
+          "end_line": 1567
+        },
+        {
+          "name": "supply_chain_impact_stop",
+          "line": 1571,
+          "end_line": 1576
+        },
+        {
+          "name": "manual_terms_verified",
+          "line": 1582,
+          "end_line": 1583
+        },
+        {
+          "name": "exit_term_flags",
+          "line": 1586,
+          "end_line": 1592
+        },
+        {
+          "name": "set_risk_input",
+          "line": 1596,
+          "end_line": 1612
+        },
+        {
+          "name": "IntakeApproval",
+          "line": 1615,
+          "end_line": 1627
+        },
+        {
+          "name": "ProvenanceMismatch",
+          "line": 1630,
+          "end_line": 1631
+        },
+        {
+          "name": "hold_intake",
+          "line": 1634,
+          "end_line": 1641
+        },
+        {
+          "name": "risk_tier_gate",
+          "line": 1644,
+          "end_line": 1679
+        },
+        {
+          "name": "approve_mcp_request",
+          "line": 1683,
+          "end_line": 1832
+        },
+        {
+          "name": "RiskAcceptance",
+          "line": 1835,
+          "end_line": 1837
+        },
+        {
+          "name": "accept_intake_risk",
+          "line": 1841,
+          "end_line": 1852
+        },
+        {
+          "name": "IntakeRegistration",
+          "line": 1855,
+          "end_line": 1866
+        },
+        {
+          "name": "RemoteContractReview",
+          "line": 1869,
+          "end_line": 1872
+        },
+        {
+          "name": "review_remote_contract",
+          "line": 1876,
+          "end_line": 1952
+        },
+        {
+          "name": "register_mcp_request",
+          "line": 1956,
+          "end_line": 1988
+        },
+        {
+          "name": "caller",
+          "line": 1991,
+          "end_line": 1992
+        },
+        {
+          "name": "admin_caller",
+          "line": 1995,
+          "end_line": 1998
+        },
+        {
+          "name": "IntakeDiscovery",
+          "line": 2001,
+          "end_line": 2002
+        },
+        {
+          "name": "discover_intake",
+          "line": 2006,
+          "end_line": 2008
+        },
+        {
+          "name": "ApprovalPreview",
+          "line": 2011,
+          "end_line": 2012
+        },
+        {
+          "name": "OneClickApproval",
+          "line": 2015,
+          "end_line": 2024
+        },
+        {
+          "name": "approval_row",
+          "line": 2027,
+          "end_line": 2038
+        },
+        {
+          "name": "collect_proposal_provenance",
+          "line": 2041,
+          "end_line": 2068
+        },
+        {
+          "name": "LocalRunSpec",
+          "line": 2071,
+          "end_line": 2077
+        },
+        {
+          "name": "pinned_image",
+          "line": 2080,
+          "end_line": 2103
+        },
+        {
+          "name": "signed_local_run",
+          "line": 2106,
+          "end_line": 2121
+        },
+        {
+          "name": "discovery",
+          "line": 2124,
+          "end_line": 2125
+        },
+        {
+          "name": "set_local_run",
+          "line": 2132,
+          "end_line": 2153
+        },
+        {
+          "name": "preview_intake_approval",
+          "line": 2157,
+          "end_line": 2230
+        },
+        {
+          "name": "approve_and_register",
+          "line": 2234,
+          "end_line": 2380
+        },
+        {
+          "name": "reject_mcp_request",
+          "line": 2384,
+          "end_line": 2399
+        },
+        {
+          "name": "risk_catalog",
+          "line": 2403,
+          "end_line": 2411
+        },
+        {
+          "name": "my_consents",
+          "line": 2415,
+          "end_line": 2418
+        },
+        {
+          "name": "ConsentDecision",
+          "line": 2421,
+          "end_line": 2422
+        },
+        {
+          "name": "ServerConsentDecision",
+          "line": 2425,
+          "end_line": 2426
+        },
+        {
+          "name": "decide_server_consent",
+          "line": 2430,
+          "end_line": 2437
+        },
+        {
+          "name": "decide_consent",
+          "line": 2441,
+          "end_line": 2446
+        },
+        {
+          "name": "approvals",
+          "line": 2450,
+          "end_line": 2482
+        },
+        {
+          "name": "Rejection",
+          "line": 2485,
+          "end_line": 2486
+        },
+        {
+          "name": "reject",
+          "line": 2490,
+          "end_line": 2499
+        },
+        {
+          "name": "approve",
+          "line": 2503,
+          "end_line": 2511
+        },
+        {
+          "name": "gateway_passthrough",
+          "line": 2528,
+          "end_line": 2546
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_static/console.js",
+      "sha256": "2a1ffce50dc734a43e24b35c4e8f1543103f0b49d8ca85d05e8c34aa4b34c8cc"
+    },
+    {
+      "path": "full_stack_lab/tests/litellm_sync_check.py",
+      "sha256": "c95eca18b502bc6982ff9e687022a8c536beb96d363d4b285edfbfe2866d1a4a",
+      "symbols": [
+        {
+          "name": "State",
+          "line": 31,
+          "end_line": 43
+        },
+        {
+          "name": "Handler",
+          "line": 46,
+          "end_line": 115
+        },
+        {
+          "name": "HTTPTests",
+          "line": 118,
+          "end_line": 383
+        },
+        {
+          "name": "BoundaryTests",
+          "line": 386,
+          "end_line": 519
+        },
+        {
+          "name": "__init__",
+          "line": 32,
+          "end_line": 43
+        },
+        {
+          "name": "log_message",
+          "line": 47,
+          "end_line": 48
+        },
+        {
+          "name": "do_GET",
+          "line": 50,
+          "end_line": 51
+        },
+        {
+          "name": "do_POST",
+          "line": 53,
+          "end_line": 54
+        },
+        {
+          "name": "do_PUT",
+          "line": 56,
+          "end_line": 57
+        },
+        {
+          "name": "do_DELETE",
+          "line": 59,
+          "end_line": 60
+        },
+        {
+          "name": "dispatch",
+          "line": 62,
+          "end_line": 115
+        },
+        {
+          "name": "setUp",
+          "line": 119,
+          "end_line": 134
+        },
+        {
+          "name": "tearDown",
+          "line": 136,
+          "end_line": 140
+        },
+        {
+          "name": "run_plan",
+          "line": 142,
+          "end_line": 143
+        },
+        {
+          "name": "test_create_update_readback_and_preserve_unrelated_permissions",
+          "line": 145,
+          "end_line": 157
+        },
+        {
+          "name": "test_delete_credentials_sessions_and_readback_including_unknown_credential_owner",
+          "line": 159,
+          "end_line": 175
+        },
+        {
+          "name": "test_permission_update_preserves_existing_authentication_and_credentials",
+          "line": 177,
+          "end_line": 187
+        },
+        {
+          "name": "test_success_response_with_server_readback_mismatch_fails",
+          "line": 189,
+          "end_line": 194
+        },
+        {
+          "name": "test_success_response_with_permissions_mismatch_removes_partial_server",
+          "line": 196,
+          "end_line": 200
+        },
+        {
+          "name": "test_delete_readback_mismatch_never_completes",
+          "line": 202,
+          "end_line": 207
+        },
+        {
+          "name": "test_credentials_and_sessions_are_verified_independently",
+          "line": 209,
+          "end_line": 215
+        },
+        {
+          "name": "test_credential_owners_are_enumerated_before_server_cascade_delete",
+          "line": 217,
+          "end_line": 223
+        },
+        {
+          "name": "test_lost_population_evidence_cannot_turn_into_completion_after_retry",
+          "line": 225,
+          "end_line": 235
+        },
+        {
+          "name": "test_wrong_key_owner_and_team_membership_never_receive_tools",
+          "line": 237,
+          "end_line": 243
+        },
+        {
+          "name": "test_unapproved_user_gets_explicit_empty_tools",
+          "line": 245,
+          "end_line": 249
+        },
+        {
+          "name": "test_open_default_and_unowned_server_are_not_adopted",
+          "line": 251,
+          "end_line": 259
+        },
+        {
+          "name": "test_secret_rotation_and_error_bodies_are_not_exposed",
+          "line": 261,
+          "end_line": 268
+        },
+        {
+          "name": "test_failed_job_waits_retries_after_restart_and_appends_evidence",
+          "line": 270,
+          "end_line": 383
+        },
+        {
+          "name": "test_writer_session_lock_is_released_on_cancellation_and_busy",
+          "line": 387,
+          "end_line": 414
+        },
+        {
+          "name": "test_desired_state_requires_completed_registration_and_current_mint_scope",
+          "line": 416,
+          "end_line": 449
+        },
+        {
+          "name": "test_local_or_embedded_credentials_are_never_sent_to_litellm",
+          "line": 451,
+          "end_line": 465
+        },
+        {
+          "name": "test_shutdown_waits_for_inflight_management_write",
+          "line": 467,
+          "end_line": 485
+        },
+        {
+          "name": "test_disabled_installation_does_not_read_config_database_or_secrets",
+          "line": 487,
+          "end_line": 495
+        },
+        {
+          "name": "test_origins_do_not_allow_credentials_redirects_or_paths",
+          "line": 497,
+          "end_line": 502
+        },
+        {
+          "name": "test_configuration_rejects_plain_keys_and_missing_worker_inventory",
+          "line": 504,
+          "end_line": 519
+        },
+        {
+          "name": "execute",
+          "line": 276,
+          "end_line": 300
+        },
+        {
+          "name": "transaction",
+          "line": 303,
+          "end_line": 309
+        },
+        {
+          "name": "guard_connection",
+          "line": 314,
+          "end_line": 315
+        },
+        {
+          "name": "fetch_one",
+          "line": 317,
+          "end_line": 318
+        },
+        {
+          "name": "record",
+          "line": 320,
+          "end_line": 323
+        },
+        {
+          "name": "outside_transaction",
+          "line": 327,
+          "end_line": 329
+        },
+        {
+          "name": "fetch_one",
+          "line": 423,
+          "end_line": 424
+        },
+        {
+          "name": "fetch_all",
+          "line": 426,
+          "end_line": 430
+        },
+        {
+          "name": "blocking",
+          "line": 470,
+          "end_line": 473
+        },
+        {
+          "name": "enqueue_during_http",
+          "line": 366,
+          "end_line": 368
+        },
+        {
+          "name": "execute",
+          "line": 390,
+          "end_line": 393
+        },
+        {
+          "name": "connection",
+          "line": 399,
+          "end_line": 400
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/ai_gateway_addon_check.py",
+      "sha256": "13fe27e7f7b588581e992b126ca146717fe9847cd13ae07eeec0eb30b6b49dd7",
+      "symbols": [
+        {
+          "name": "load",
+          "line": 29,
+          "end_line": 33
+        },
+        {
+          "name": "GatewayDecideOnly",
+          "line": 50,
+          "end_line": 116
+        },
+        {
+          "name": "AddonRoutes",
+          "line": 119,
+          "end_line": 168
+        },
+        {
+          "name": "Guardrail",
+          "line": 171,
+          "end_line": 234
+        },
+        {
+          "name": "Generator",
+          "line": 237,
+          "end_line": 249
+        },
+        {
+          "name": "run_call",
+          "line": 51,
+          "end_line": 98
+        },
+        {
+          "name": "test_allow_is_judged_but_never_sent",
+          "line": 100,
+          "end_line": 105
+        },
+        {
+          "name": "test_approval_writes_no_pending_row_and_block_stays_block",
+          "line": 107,
+          "end_line": 116
+        },
+        {
+          "name": "decide",
+          "line": 123,
+          "end_line": 126
+        },
+        {
+          "name": "test_identity_is_the_token_and_assertion_is_only_recorded",
+          "line": 128,
+          "end_line": 138
+        },
+        {
+          "name": "test_only_allow_family_with_a_recorded_decision_may_proceed",
+          "line": 140,
+          "end_line": 144
+        },
+        {
+          "name": "test_restricted_arguments_are_returned",
+          "line": 146,
+          "end_line": 149
+        },
+        {
+          "name": "test_console_token_cannot_act_as_an_employee",
+          "line": 151,
+          "end_line": 156
+        },
+        {
+          "name": "test_result_attaches_only_to_own_addon_decision",
+          "line": 158,
+          "end_line": 168
+        },
+        {
+          "name": "make",
+          "line": 172,
+          "end_line": 176
+        },
+        {
+          "name": "data",
+          "line": 178,
+          "end_line": 181
+        },
+        {
+          "name": "reply",
+          "line": 183,
+          "end_line": 187
+        },
+        {
+          "name": "test_allow_passes_and_sends_employee_token_not_the_asserted_user",
+          "line": 189,
+          "end_line": 197
+        },
+        {
+          "name": "test_block_missing_token_and_every_failure_stop_the_call",
+          "line": 199,
+          "end_line": 210
+        },
+        {
+          "name": "test_non_mcp_call_is_left_alone_and_restriction_rewrites_arguments",
+          "line": 212,
+          "end_line": 219
+        },
+        {
+          "name": "test_post_hook_records_result_once_and_never_raises",
+          "line": 221,
+          "end_line": 234
+        },
+        {
+          "name": "test_only_serving_servers_and_litellm_safe_alias",
+          "line": 238,
+          "end_line": 249
+        },
+        {
+          "name": "fetch",
+          "line": 57,
+          "end_line": 58
+        },
+        {
+          "name": "Tx",
+          "line": 62,
+          "end_line": 67
+        },
+        {
+          "name": "record",
+          "line": 69,
+          "end_line": 70
+        },
+        {
+          "name": "handler",
+          "line": 184,
+          "end_line": 186
+        },
+        {
+          "name": "__aenter__",
+          "line": 63,
+          "end_line": 64
+        },
+        {
+          "name": "__aexit__",
+          "line": 66,
+          "end_line": 67
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/compose.yaml",
+      "sha256": "6be408b0643b46e0bf384a3692b3c8cf582c32a407d58dbe34b34b0da33b36b9"
+    },
+    {
+      "path": "addons/litellm/sync-bindings.example.json",
+      "sha256": "af83b5631843a05d380c7931402071b6026e1b07cdf1d69ae5c521fe5cf3c4d4"
+    },
+    {
+      "path": "research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py",
+      "sha256": "7a56e755b61ce2b19ddff2a6c251aecd2183b2ef08153336e9adca2e8cae325a",
+      "symbols": [
+        {
+          "name": "git",
+          "line": 26,
+          "end_line": 27
+        },
+        {
+          "name": "main",
+          "line": 30,
+          "end_line": 91
+        }
+      ]
+    },
+    {
+      "path": "research/llm-wiki/analysis/litellm-intervention-1023/sync-requirements.json",
+      "sha256": "a7e0779ed7962f7654e3965c36da0c945076c6abbaab255757a8004bad2b1e6a"
+    },
+    {
+      "path": "research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md",
+      "sha256": "9bfe3ab41d9696d1b538c1efc7af954036a9e705c1f42823e0fcb4f6535c2813"
+    },
+    {
+      "path": "docs/ai/LITELLM_SYNC.md",
+      "sha256": "02dafb5cf04a82d9399097a5340ba652bd9b61f55c9b2d15278d9fb0d9b8de44"
+    }
+  ],
+  "checks": [
+    {
+      "name": "litellm-sync-unit",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/litellm_sync_check.py"
+      ],
+      "started_at": "2026-10-22T22:16:49.318654+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": ".....................\r\n----------------------------------------------------------------------\r\nRan 21 tests in 10.402s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "existing-addon",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/ai_gateway_addon_check.py"
+      ],
+      "started_at": "2026-10-22T22:16:59.914572+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "output": "Traceback (most recent call last):\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\ai_gateway_addon_check.py\", line 18, in <module>\r\n    import httpx\r\nModuleNotFoundError: No module named 'httpx'\r\n"
+    },
+    {
+      "name": "ops-response",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/ops_response_check.py"
+      ],
+      "started_at": "2026-10-22T22:17:00.093711+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": ".......................\r\n----------------------------------------------------------------------\r\nRan 23 tests in 4.759s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "sbom-impact",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/sbom_impact_check.py"
+      ],
+      "started_at": "2026-10-22T22:17:05.078456+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "........\r\n----------------------------------------------------------------------\r\nRan 8 tests in 0.031s\r\n\r\nOK\r\n"
+    },
+    {
+      "name": "intake-oneclick-ast",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/intake_one_click_ast_check.py"
+      ],
+      "started_at": "2026-10-22T22:17:05.270886+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "output": "Traceback (most recent call last):\r\n  File \"C:\\Users\\bobysg\\bob\\프로젝트\\mcp-gw-codex-sol\\full_stack_lab\\tests\\intake_one_click_ast_check.py\", line 18, in <module>\r\n    from datetime import UTC, datetime, timedelta\r\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\r\n"
+    },
+    {
+      "name": "pyflakes",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-m",
+        "pyflakes",
+        "full_stack_lab/gateway/app/litellm_sync.py",
+        "full_stack_lab/gateway/app/core.py",
+        "full_stack_lab/gateway/app/main.py",
+        "full_stack_lab/gateway/app/ops_response.py",
+        "full_stack_lab/gateway/app/decommission.py",
+        "full_stack_lab/gateway/app/agent_service.py",
+        "full_stack_lab/tests/litellm_sync_check.py",
+        "full_stack_lab/tests/ai_gateway_addon_check.py",
+        "research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py"
+      ],
+      "started_at": "2026-10-22T22:17:05.417837+00:00",
+      "returncode": 1,
+      "status": "failed",
+      "output": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\r\n"
+    },
+    {
+      "name": "python-syntax",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "-c",
+        "import ast;from pathlib import Path;paths=['full_stack_lab/gateway/app/litellm_sync.py', 'full_stack_lab/gateway/app/core.py', 'full_stack_lab/gateway/app/main.py', 'full_stack_lab/gateway/app/ops_response.py', 'full_stack_lab/gateway/app/decommission.py', 'full_stack_lab/gateway/app/agent_service.py', 'full_stack_lab/tests/litellm_sync_check.py', 'full_stack_lab/tests/ai_gateway_addon_check.py', 'research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py'];[ast.parse(Path(p).read_text(encoding='utf-8'),filename=p) for p in paths];print('AST PASS',len(paths))"
+      ],
+      "started_at": "2026-10-22T22:17:05.458123+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "AST PASS 9\r\n"
+    },
+    {
+      "name": "console-syntax",
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "started_at": "2026-10-22T22:17:05.578170+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": ""
+    },
+    {
+      "name": "console-state",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "started_at": "2026-10-22T22:17:05.685806+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "✔ masked kinds read in Korean and an unknown kind never shows its raw name (1.261ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (1.9629ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.2044ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.8312ms)\n✔ the status phrase never presents a failed poll as fresh (2.4001ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (1.7745ms)\n✔ splitBy counts per key with a decision split, largest first (0.2424ms)\n✔ sankey layers never merge a server with a harness of the same name (0.2126ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.3092ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (0.342ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (1.2143ms)\n✔ latency values read as durations and never invent a measurement (0.2762ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.2168ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (46.6247ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.2908ms)\nℹ tests 15\nℹ suites 0\nℹ pass 15\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 135.0409\n"
+    },
+    {
+      "name": "intake-ui",
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/intake_one_click_ui_check.mjs"
+      ],
+      "started_at": "2026-10-22T22:17:05.882762+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "✔ display values are escaped, selected tools default on, optional supplier inputs are not required (2.0221ms)\n✔ only critical findings ask for a required reason (0.4109ms)\n✔ second administrator sees the frozen scope without editable expiry or supplier fields (0.2826ms)\n✔ failed scan prevents submit and rejection stays available (0.8609ms)\n✔ repository without execution contract exposes no local execution controls (0.2158ms)\n✔ intake form uses a data grade and tools rather than six risk questions (0.1689ms)\nℹ tests 6\nℹ suites 0\nℹ pass 6\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 70.442\n"
+    },
+    {
+      "name": "open-endpoints",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "started_at": "2026-10-22T22:17:05.997866+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 97개 (그중 장치 자격 13개: GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\r\n"
+    },
+    {
+      "name": "git-whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-22T22:17:06.068167+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": ""
+    },
+    {
+      "name": "existing-test-unchanged",
+      "command": [
+        "git",
+        "diff",
+        "--exit-code",
+        "--",
+        "full_stack_lab/tests/ai_gateway_addon_check.py"
+      ],
+      "started_at": "2026-10-22T22:17:06.119821+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": ""
+    },
+    {
+      "name": "wiki-build",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/build_wiki.py"
+      ],
+      "started_at": "2026-10-22T22:17:06.144143+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "{\"format\": \"markdown\", \"pages\": 731, \"catalogs\": {\"endpoint-permission-references\": 12, \"experiments\": 13, \"imports\": 22, \"local-tool-risks\": 13, \"papers\": 292, \"solutions\": 22, \"threats\": 24}, \"collaboration_console\": \"research/collaboration-console/README.md\"}\r\n"
+    },
+    {
+      "name": "wiki-check",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "started_at": "2026-10-22T22:17:06.261144+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "{\r\n  \"ok\": true,\r\n  \"counts\": {\r\n    \"endpoint-permission-references\": 12,\r\n    \"experiments\": 13,\r\n    \"imports\": 22,\r\n    \"local-tool-risks\": 13,\r\n    \"papers\": 292,\r\n    \"solutions\": 22,\r\n    \"threats\": 24,\r\n    \"sources_evidence_records\": 3,\r\n    \"solutions_evidence_records\": 21,\r\n    \"reviewed_local_tools\": 92,\r\n    \"markdown_documents\": 731\r\n  },\r\n  \"warnings\": [\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\extracts\\\\LIB-L05.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\originals\\\\pipc-genai-privacy-guide-2025-08.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\extracts\\\\LIB-L06.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\originals\\\\kisa-ai-red-teaming-guide-2026-07.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\extracts\\\\LIB-L09.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\originals\\\\bs-iso-iec-42001-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\extracts\\\\LIB-L10.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\originals\\\\iso-iec-27001-2022.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\extracts\\\\LIB-L11.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\originals\\\\azs-iso-iec-tr-24028-2024-az.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\extracts\\\\LIB-L12.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\originals\\\\iso-iec-5230-2020.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\extracts\\\\LIB-M04.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\originals\\\\imda-mgf-agentic-ai-v1-5.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\extracts\\\\LIB-M08.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\originals\\\\csa-securing-agentic-ai-addendum.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\extracts\\\\LIB-M13.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\originals\\\\ca-tbs-directive-automated-decision-making.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\extracts\\\\LIB-M14.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\originals\\\\ccpa-admt-risk-cyber-approved-text.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\extracts\\\\LIB-M15.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\originals\\\\co-sb26-189-session-law.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\extracts\\\\LIB-M17.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\originals\\\\nist-ai-600-1.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\extracts\\\\LIB-M20.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\originals\\\\nist-ai-100-2e2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\extracts\\\\LIB-M21.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\originals\\\\nist-ir-8596-iprd.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\extracts\\\\LIB-M22.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\originals\\\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\extracts\\\\LIB-M28.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\originals\\\\cn-network-data-security-regulations-790.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\extracts\\\\LIB-M31.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\originals\\\\tc260-ai-safety-governance-framework-2-0.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\extracts\\\\LIB-M32.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\originals\\\\gbt-45654-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\extracts\\\\LIB-M34.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\originals\\\\sg-pdpa-2012.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\extracts\\\\LIB-M36.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\originals\\\\quebec-law-25-2021.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\extracts\\\\LIB-M37.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\originals\\\\sg-mas-ai-risk-management-guidelines-2026.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\extracts\\\\LIB-M38.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\originals\\\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\extracts\\\\LIB-M39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\originals\\\\csa-guidelines-on-securing-ai-systems-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\extracts\\\\LIB-M40.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\originals\\\\etsi-en-304-223.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\extracts\\\\LIB-M43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\originals\\\\au-guidance-ai-adoption-implementation.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\extracts\\\\LIB-M44.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\originals\\\\india-dpdp-rules-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\extracts\\\\LIB-M45.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\originals\\\\india-dpdp-act-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\extracts\\\\LIB-M48.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\originals\\\\au-poa-act-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\extracts\\\\LIB-M49.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\originals\\\\india-ai-governance-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\extracts\\\\P39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\originals\\\\P39.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\extracts\\\\P43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\originals\\\\P43.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\extracts\\\\P46.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\originals\\\\P46.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\extracts\\\\P47.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\originals\\\\P47.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\extracts\\\\P54.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\originals\\\\P54.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\extracts\\\\P58.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\originals\\\\P58.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\extracts\\\\P60.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\originals\\\\P60.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\extracts\\\\P63.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\originals\\\\P63.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth_security.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth_security.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\extracts\\\\T02_mcp_tools.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\originals\\\\T02_mcp_tools.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\extracts\\\\T04_web.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\originals\\\\T04.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_cheat.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_mcp.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_cheat.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_mcp.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\extracts\\\\T21_mcp_best.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\originals\\\\T21_mcp_best.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\extracts\\\\T22_supplement.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\originals\\\\T22_supplement.html\"\r\n  ],\r\n  \"errors\": []\r\n}\r\n"
+    },
+    {
+      "name": "trace-ids",
+      "command": [
+        "C:\\Program Files\\Python310\\python.exe",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_trace.py",
+        "--no-fetch"
+      ],
+      "started_at": "2026-10-22T22:17:08.776233+00:00",
+      "returncode": 0,
+      "status": "passed",
+      "output": "(원문 생략: 출력 속 ID 예시가 추적 검사 참조로 잡혀 요약으로 대체, 종료 코드는 exit_code 필드)"
+    }
+  ],
+  "not_run": [
+    "Real PostgreSQL contention/rollback/process crash",
+    "Solution field up deployment",
+    "LiteLLM 1.105 management API and independent call effect",
+    "PJ1 actual harness",
+    "Browser rendering",
+    "Immutable upstream commit source-byte verification"
+  ],
+  "working_tree": [
+    "M addons/litellm/README.md",
+    " M docs/ai/AI_GATEWAY_ADDON.md",
+    " M docs/ai/DATA_MODEL.md",
+    " M docs/ai/DECISIONS.md",
+    " M full_stack_lab/compose.yaml",
+    " M full_stack_lab/gateway/app/agent_service.py",
+    " M full_stack_lab/gateway/app/agent_static/console.js",
+    " M full_stack_lab/gateway/app/core.py",
+    " M full_stack_lab/gateway/app/decommission.py",
+    " M full_stack_lab/gateway/app/main.py",
+    " M full_stack_lab/gateway/app/ops_response.py",
+    " M research/llm-wiki/README.md",
+    " M research/llm-wiki/analysis/litellm-intervention-1023/README.md",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/backlog.md",
+    " M research/llm-wiki/status/current.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
+    "?? addons/litellm/sync-bindings.example.json",
+    "?? docs/ai/LITELLM_SYNC.md",
+    "?? full_stack_lab/gateway/app/litellm_sync.py",
+    "?? full_stack_lab/gateway/app/litellm_sync_tables.sql",
+    "?? full_stack_lab/tests/litellm_sync_check.py",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-evidence.json",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md",
+    "?? research/llm-wiki/analysis/litellm-intervention-1023/sync-requirements.json",
+    "?? research/llm-wiki/status/reports/2026-10-23-litellm-sync.md"
+  ],
+  "recorded_at": "2026-10-22T22:17:17.754812+00:00",
+  "all_checks_passed": false
+}

@@ -1,5 +1,7 @@
 # 데이터 모델
 
+LiteLLM 선택 동기화(D-208)는 `litellm_sync_jobs`에 서버별 revision·fingerprint·재시도 상태·적용 대상·자격 모집단 확인불가 상태를 저장한다. 이 표는 수정 가능한 작업 상태다. G5 재조회 증거는 기존 append-only `approval_events(kind=litellm-sync)`에 별도 추가하며 판정 행을 고치지 않는다. [계약](LITELLM_SYNC.md).
+
 도입 신청의 `requested_tools`(JSON 도구 이름 배열, 빈 저장소 선택은 전체)은 `v2_tables.sql` 끝의 추가 열이다(D-184·187). 검사 워커의 `evidence` 재작성에도 신청자의 선택을 보존한다. `evidence.approval_proposal`은 읽기 화면의 계약·검사·신청 지문과 자동 제안이고, `one_click_pending`은 같은 범위의 승인자 목록, `one_click_scope`는 등록 시 재확인할 최종 선택 범위다. 감사의 정본은 append-only `approval_events`이며 신청 상태의 JSON 갱신은 감사 행 수정이 아니다.
 
 > DB: Gateway의 PostgreSQL(`db`, 데이터베이스 `mcp_governance`; LiteLLM은 같은 서버의 `litellm` DB).

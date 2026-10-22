@@ -100,6 +100,8 @@ async def suspend(server_id, source, reason, evidence, batch=None):
             """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
                VALUES ('automatic-suspension','held','server',%s,'system',%s,%s)""",
             (server_id, reason, Jsonb(scope)))
+        from . import litellm_sync
+        await litellm_sync.enqueue(server_id, connection)
     return True
 
 

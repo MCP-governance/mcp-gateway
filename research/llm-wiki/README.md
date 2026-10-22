@@ -7,7 +7,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 - **수치**: WBS 57개 작업의 단계 가중 진척 63.3%, 최종 검수 완료 0개. 「구현 완료(검수 전)」는 검수 끝이 아니다.
 - **되는 것**(main 병합·기기 배포·실제 호출 기록 있음): 직원 PC 키트 Linux·Windows 설치→활성화, Linux에서 Claude 하네스로 승인 MCP 호출, 로컬 MCP 원클릭 승인, 회원가입, LiteLLM 애드온(판정 API 배포까지).
 - **안 되는 것·미확인**: macOS 키트 실설치, Windows·Codex 하네스 모델 호출, MINT↔LiteLLM 실제 연동 시험, 실제 PostgreSQL 경합 일부, 같은 사용자 프로세스의 로컬 수신 지점 접근(DEV-81 열림).
-- **진행 중**: Windows 직원 단독 원클릭(W11), LiteLLM 승인·철회 동기화(설계 끝, 구현 전).
+- **진행 중**: Windows 직원 단독 원클릭(W11), LiteLLM 승인·철회 동기화(선택 애드온 미커밋 구현·로컬 대역21 통과, 실제 LiteLLM·PostgreSQL·PJ1 검증 전).
 - **어디서 확인하나**: 상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이고, 근거와 한계는 [현황](status/current.md)에 한 쪽으로 정리했다.
 
 ## 주제별 입구

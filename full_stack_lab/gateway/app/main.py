@@ -290,6 +290,8 @@ async def lifespan(_: FastAPI):
     pool_watcher = asyncio.create_task(upstream.maintain_pool())
     operations = asyncio.create_task(ops_response.watch(OPA_URL))
     tombstones = asyncio.create_task(disposal.watch())
+    from . import litellm_sync
+    synchronization = asyncio.create_task(litellm_sync.watch())
     try:
         async with gateway_mcp.session_manager.run():
             yield
@@ -298,7 +300,8 @@ async def lifespan(_: FastAPI):
         pool_watcher.cancel()
         operations.cancel()
         tombstones.cancel()
-        await asyncio.gather(watcher, pool_watcher, operations, tombstones, return_exceptions=True)
+        synchronization.cancel()
+        await asyncio.gather(watcher, pool_watcher, operations, tombstones, synchronization, return_exceptions=True)
         await upstream.close_pool()
         await db.close()
 
@@ -473,11 +476,15 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
     doc = registry.runtime()
     console = doc["servers"]
     sunset = await tool_sunset.snapshot()
+    from . import litellm_sync
+    synchronization = await litellm_sync.statuses()
     return {"catalog_version": registry.catalog_version(), "tool_sunset": sunset,
             "classification": registry.catalog().get("classification", {}),
             "organization": registry.catalog().get("organization", {}),
-            "servers": [{**row, "residency": residency.location(catalog_servers[row["id"]], registry.catalog().get("organization", {}))}
-                        for row in servers if row["id"] in catalog_servers],
+            "servers": [{**row, "residency": residency.location(catalog_servers.get(row["id"], {}), registry.catalog().get("organization", {})),
+                         **({"litellm_sync": synchronization.get(row["id"], synchronization.get("*"))}
+                            if synchronization and (row["id"] in synchronization or row["id"] in console) else {})}
+                        for row in servers if row["id"] in catalog_servers or row["id"] in synchronization],
             "tools": tools, "usage_relationships": relationships,
             # D-49: which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",

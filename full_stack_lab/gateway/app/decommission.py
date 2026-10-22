@@ -270,6 +270,8 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
             await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (rel["id"],))
         raise
     await upstream.release_pool(server.get("endpoint"), None, "termination")
+    from . import litellm_sync
+    await litellm_sync.enqueue(server_id)
     from . import mcp_sessions
     await mcp_sessions.terminate(reason="termination", server_id=server_id)
     return await case_detail(case_id)
@@ -786,6 +788,8 @@ async def close_case(case_id: str, actor: str, note: str, risk_acceptance: str |
             (f"폐기 종결({case['grade']}) · {note.strip()[:160]}", actor, case["server_id"]))
         if case.get("relationship_id"):
             await connection.execute("UPDATE usage_relationships SET status='TERMINATED' WHERE id=%s", (case["relationship_id"],))
+        from . import litellm_sync
+        await litellm_sync.enqueue(case["server_id"], connection)
     return await case_detail(case_id)
 
 

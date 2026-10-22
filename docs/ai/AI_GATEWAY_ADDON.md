@@ -3,6 +3,8 @@
 기업이 LiteLLM·Kong·Portkey 같은 AI 게이트웨이로 MCP를 중앙 연결하면 직원 PC의 하네스는 MINT를 거치지 않는다.
 MINT는 이런 게이트웨이에 붙는 세 가지 방법을 제공한다. 코드와 설치는 [addons/litellm](../../addons/litellm/README.md).
 
+도입 승인·철회를 관리 API로 전파하는 선택 기능은 [LiteLLM 동기화](LITELLM_SYNC.md)(D-208)를 본다. 기본 꺼짐이며 호출 판정 API와 별도다.
+
 | 방식 | 구성 | MINT가 보장하는 것 | 필요한 것 |
 | --- | --- | --- | --- |
 | A 업스트림 | AI 게이트웨이의 MCP 서버가 MINT `/mcp/<서버>/`를 가리킨다 | MINT의 모든 통제(전송 직전 재검사, 승인, 출력 통제, 기록) | 게이트웨이가 직원 토큰을 서버별로 MINT에 전달 |
