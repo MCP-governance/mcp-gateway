@@ -20,10 +20,13 @@ must not undo a person's procedure - so a check that needs it reports SKIP.
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 import os
 import re
 import sys
+import zipfile
+from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from uuid import uuid4
 
@@ -586,6 +589,144 @@ async def invitation_enrollment() -> str:
     return "48시간 초대 발급·아이디 바인딩·employee 고정·소비된 초대 재사용 거부·비밀 재조회 금지"
 
 
+# Every API path the Console's screens call, with the fields their renderers read. The Console reaches the
+# Gateway only through its own origin, so this goes through agent-service like the browser does.
+CONSOLE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000").rstrip("/")
+ADMIN_MENUS = {"overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake",
+               "sbom-impact", "termination", "policy"}
+EMPLOYEE_MENUS = {"activity", "consent", "intake"}
+ADMIN_SCREENS = [
+    ("/auth/me", ["name", "role_label", "user_id", "pages"]),
+    ("/gw/overview", ["today_since", "servers", "workstations", "top_policies", "pending_approvals", "intake_actions",
+                      "termination", "series", "flows", "execution", "pipeline", "enforcement"]),
+    ("/gw/activity?limit=10&decision=Block", ["rows", "cursor", "total", "filtered_total", "page", "page_size"]),
+    ("/gw/activity?limit=50&page=1&q=a", ["rows", "filtered_total"]),
+    ("/gw/activity/analysis", ["total", "series", "hours", "responses", "harnesses", "servers", "people"]),
+    ("/gw/latency", ["stages", "series", "servers"]),
+    ("/gw/health", []),
+    ("/gw/endpoint/network-quality", []),
+    ("/api/integrations", ["items", "devices"]),
+    ("/api/connectors", ["items", "summary"]),
+    ("/api/connectors?summary=1", ["summary.pending", "summary.expired"]),
+    ("/api/connectors/policy", []),
+    ("/api/system/metrics", []),
+    ("/gw/registry", ["servers", "tools", "registrations"]),
+    ("/approvals", ["approvals", "history"]),
+    ("/gw/dispatch-intents", ["rows"]),
+    ("/gw/endpoint/inventory?classification=shadow,retired-residue",
+     ["coverage.known_endpoints", "coverage.reporting_recently", "agents", "entries", "listeners", "os_events", "pages"]),
+    ("/gw/endpoint/inventory", ["coverage", "agents", "devices"]),
+    ("/gw/endpoint/inventory/entries?limit=50&classification=shadow,retired-residue", ["rows", "total", "next_cursor"]),
+    ("/gw/endpoint/inventory/listeners?limit=50&classification=shadow,retired-residue", ["rows", "total", "next_cursor"]),
+    ("/gw/endpoint/inventory/os-events?limit=50", ["rows", "total", "next_cursor"]),
+    ("/api/accounts", ["accounts"]),
+    ("/api/signup-requests", ["requests"]),
+    ("/gw/suspensions", ["suspensions"]),
+    ("/api/consents", ["consents"]),
+    ("/api/mcp-requests", ["requests"]),
+    ("/api/mcp-catalog/search?q=git", ["requests", "registry"]),
+    ("/gw/termination/relationships", ["relationships"]),
+    ("/gw/termination/cases", ["cases", "summary.open_cases", "summary.awaiting_close", "summary.unresolved_grades",
+                               "summary.overdue", "summary.sla_days", "summary.retired_residue", "summary.shadow_endpoints"]),
+    ("/gw/audit/events?limit=100", ["events", "has_more"]),
+    ("/gw/audit/events?limit=100&decision=Block&event_kind=tools/call", ["events"]),
+    ("/gw/audit/siem", ["pending", "retrying", "oldest_pending", "last_delivered"]),
+    ("/gw/audit/incidents", ["incidents", "timer_status"]),
+    ("/gw/audit/verify", ["intact", "checked"]),
+    ("/gw/enforcement", ["enforcement"]),
+    ("/gw/policy/matrix", ["capabilities", "runtime_envelopes"]),
+    ("/gw/policy/ledger", ["policies"]),
+]
+EMPLOYEE_SCREENS = [
+    ("/auth/me", ["name", "role_label", "pages"]),
+    ("/gw/activity?limit=50&page=1", ["rows", "cursor", "total", "filtered_total", "page", "page_size"]),
+    ("/gw/activity?limit=50&decision=Block", ["rows"]),
+    ("/gw/activity/analysis", ["total", "series", "responses"]),
+    ("/api/consents", ["consents"]),
+    ("/api/mcp-requests", ["requests"]),
+    ("/api/mcp-catalog/search", ["requests", "registry"]),
+]
+
+
+def _field(document, dotted: str):
+    for part in dotted.split("."):
+        expect(isinstance(document, dict) and part in document, f"응답에 '{dotted}' 없음")
+        document = document[part]
+    return document
+
+
+async def _screens(who: str, screens: list, menus: set) -> None:
+    headers = {"Authorization": f"Bearer {TOKENS[who]}"}
+    async with httpx.AsyncClient(timeout=60) as client:
+        for path, fields in screens:
+            response = await client.get(CONSOLE_URL + path, headers=headers)
+            expect(response.status_code == 200, f"{who} GET {path} -> {response.status_code} {response.text[:120]}")
+            if fields:
+                document = response.json()
+                for dotted in fields:
+                    try:
+                        _field(document, dotted)
+                    except AssertionError as exc:
+                        raise AssertionError(f"{who} GET {path}: {exc}") from None
+        pages = (await client.get(CONSOLE_URL + "/auth/me", headers=headers)).json()["pages"]
+    expect(set(pages) == menus, f"{who} 메뉴가 기대와 다름: {sorted(pages)}")
+    # A menu entry without a route renders a blank screen; read the same file the browser loads.
+    script = Path(__file__).parent / "agent_static" / "console.js"
+    if script.is_file():
+        source = script.read_text(encoding="utf-8")
+        listed = set(re.findall(r'\{ id: "([\w-]+)", label: "[^"]+", group:', source))
+        routed = set(re.findall(r'ROUTES\.(\w+) =', source)) | set(re.findall(r'ROUTES\["([\w-]+)"\] =', source))
+        expect(menus <= listed and menus <= routed, f"{who} 메뉴 중 화면 목록·경로가 없는 것: {sorted(menus - (listed & routed))}")
+
+
+async def console_admin_screens_load() -> str:
+    await _screens("admin", ADMIN_SCREENS, ADMIN_MENUS)
+    return f"관리자 메뉴 {len(ADMIN_MENUS)}개 · 화면이 부르는 조회 {len(ADMIN_SCREENS)}건 200과 필드"
+
+
+async def console_employee_screens_load() -> str:
+    await _screens("employee", EMPLOYEE_SCREENS, EMPLOYEE_MENUS)
+    async with httpx.AsyncClient(timeout=30) as client:
+        for path in ("/gw/overview", "/gw/registry", "/api/accounts", "/api/system/metrics"):
+            denied = await client.get(CONSOLE_URL + path, headers={"Authorization": f"Bearer {TOKENS['employee']}"})
+            expect(denied.status_code == 403, f"직원이 {path}를 조회함: {denied.status_code}")
+    return f"직원 메뉴 {len(EMPLOYEE_MENUS)}개 · 조회 {len(EMPLOYEE_SCREENS)}건 200과 필드 · 관리자 화면 403"
+
+
+async def console_downloads_work() -> str:
+    headers = {"Authorization": f"Bearer {TOKENS['admin']}"}
+    async with httpx.AsyncClient(timeout=60) as client:
+        for form, kind in (("csv", "text/csv"), ("json", "application/json")):
+            response = await client.get(CONSOLE_URL + f"/gw/registry/export?format={form}", headers=headers)
+            expect(response.status_code == 200 and response.headers.get("content-type", "").startswith(kind),
+                   f"등록부 {form} 내보내기: {response.status_code} {response.headers.get('content-type')}")
+            expect(re.fullmatch(r"[0-9a-f]{64}", response.headers.get("x-registry-sha256", "")),
+                   f"등록부 {form} 응답에 SHA-256 헤더 없음")
+            if form == "json":
+                response.json()
+    return "등록부 CSV·JSON 내려받기와 SHA-256 헤더"
+
+
+async def pc_kit_downloads() -> str:
+    seen = []
+    async with httpx.AsyncClient(timeout=120) as client:
+        for who in ("employee", "admin"):
+            for platform, marker in (("linux", "install.sh"), ("windows", "windows-kit-manifest.json")):
+                response = await client.post(CONSOLE_URL + f"/api/pc-kit?platform={platform}",
+                                             headers={"Authorization": f"Bearer {TOKENS[who]}"})
+                if response.status_code == 503:
+                    raise Skip(f"이 환경에는 설치 키트가 배포되어 있지 않습니다: {response.json().get('detail')}")
+                expect(response.status_code == 200 and response.headers.get("content-type") == "application/zip",
+                       f"{who} {platform} 키트: {response.status_code} {response.text[:120]}")
+                archive = zipfile.ZipFile(io.BytesIO(response.content))
+                names = archive.namelist()
+                expect(archive.testzip() is None and "enrollment.json" in names and marker in names,
+                       f"{who} {platform} 키트 구성: {names[:6]}")
+                json.loads(archive.read("enrollment.json"))
+                seen.append(f"{who}:{platform}")
+    return "내 PC 연결 키트 " + ", ".join(seen)
+
+
 async def _run() -> dict:
     await db.wait_until_ready()
     await sign_in()
@@ -615,6 +756,11 @@ async def _run() -> dict:
         ("pii-external-send-blocked", pii_external_send_blocked()),
         ("read-then-send-chain-blocked", read_then_send_chain_blocked()),
         ("audit-chain-intact", audit_chain_intact()),
+        # Console screens: what each menu calls must answer 200 with the fields its renderer reads.
+        ("console-admin-screens-load", console_admin_screens_load()),
+        ("console-employee-screens-load", console_employee_screens_load()),
+        ("console-registry-export-downloads", console_downloads_work()),
+        ("console-pc-kit-downloads", pc_kit_downloads()),
     ]:
         await check(name, coro)
     counts = {s: sum(1 for r in RESULTS if r["status"] == s) for s in ("PASS", "FAIL", "SKIP")}
