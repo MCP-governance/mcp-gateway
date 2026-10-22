@@ -1557,7 +1557,7 @@ async function refreshIntake() {
 function catalogResults(data) {
   const requests = data.requests || [], registry = data.registry || [];
   return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th><th>사내 저장소</th></tr></thead><tbody>
-    ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.repository_url || r.endpoint_url || ""}</span></td>
+    ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.endpoint_url || [r.repository_url, r.repository_path].filter(Boolean).join("/") || ""}</span></td>
       <td>${r.submitted_by_name}</td><td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
       <td>${r.internal_repo_url ? html`<a href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td></tr>`)}</tbody></table>` : empty(data.query ? "일치하는 신청 없음" : "신청 없음")}
     ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
@@ -1605,7 +1605,7 @@ ROUTES.intake = async (_, tab) => {
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
           ${panel("신청", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>위험 등급</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
           ${requests.map((r) => {
-            return html`<tr><td><b>${r.display_name}</b><span class="sub">${entityRef(r.endpoint_url || r.repository_url, 52)}</span>
+            return html`<tr><td><b>${r.display_name}</b><span class="sub">${entityRef(r.endpoint_url || [r.repository_url, r.repository_path].filter(Boolean).join("/"), 52)}</span>
               <span class="sub">${r.intake_kind === "remote-endpoint" ? "원격 MCP" : "소스 코드"} · ${TRANSPORT[r.requested_transport] || r.requested_transport}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</span>
               ${r.internal_repo_url ? html`<a class="sub" href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
               ${r.registered_server_id ? html`<span class="sub">${chip("allow", "게이트웨이 등록")} <code>/mcp/${r.registered_server_id}/</code></span>` : ""}
@@ -1785,7 +1785,8 @@ const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구",
 async function askLocalRun(id, request) {
   const cur = request.evidence?.local_run || {};
   const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
-    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"', cur.image || "")}
+    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"',
+      cur.image || (request.repository_path ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
     ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
       (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
