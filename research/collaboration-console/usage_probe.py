@@ -52,13 +52,18 @@ def parse_codex(result, now=None):
     return _observation(windows, "Codex account/rateLimits/read", now)
 
 
-def parse_antigravity(output, now=None):
+def antigravity_group(model):
+    """agy는 Gemini 모델 묶음과 Claude·GPT 모델 묶음의 주간 한도가 따로다(10-23 실측: 0% / 73%)."""
+    return "Gemini Models" if str(model or "").startswith("gemini") else "Claude and GPT models"
+
+
+def parse_antigravity(output, now=None, group="Gemini Models"):
     now = time.time() if now is None else now
     windows = []
     seen = set()
     for line in output.splitlines():
         columns = [value.strip() for value in line.split("\t")]
-        if len(columns) != 4 or columns[0] != "Gemini Models":
+        if len(columns) != 4 or columns[0] != group:
             continue
         if columns[1] not in {"Weekly Limit Remaining", "Daily Limit Remaining", "Session Limit Remaining"}:
             continue
@@ -75,12 +80,12 @@ def parse_antigravity(output, now=None):
             continue
         if not 0 <= remaining <= 100 or reset <= now:
             continue
-        windows.append({"group": "Gemini Models", "window": columns[1],
+        windows.append({"group": group, "window": columns[1],
                         "remaining_percent": remaining, "reset_at": reset})
         seen.add(columns[1])
         if len(windows) == 3:
             break
-    return _observation(windows, "Antigravity /usage (Gemini Models)", now)
+    return _observation(windows, f"Antigravity /usage ({group})", now)
 
 
 def _start(command):
@@ -183,7 +188,7 @@ def probe_codex(executable, timeout=12):
         _stop(process, messages, stop, reader)
 
 
-def probe_antigravity(executable, timeout=12):
+def probe_antigravity(executable, timeout=12, group="Gemini Models"):
     process, messages, stop, reader = _start([executable, "--print", "/usage"])
     deadline = time.monotonic() + min(12, max(0.1, timeout))
     try:
@@ -195,17 +200,17 @@ def probe_antigravity(executable, timeout=12):
             output.append(line)
         if process.wait(timeout=max(0.1, deadline-time.monotonic())) != 0:
             return None
-        return parse_antigravity("".join(output))
+        return parse_antigravity("".join(output), group=group)
     finally:
         _stop(process, messages, stop, reader)
 
 
-def probe(provider, executable):
+def probe(provider, executable, model=None):
     try:
         if provider == "codex":
             return probe_codex(executable)
         if provider == "antigravity":
-            return probe_antigravity(executable)
+            return probe_antigravity(executable, group=antigravity_group(model))
     except (OSError, ValueError, RuntimeError, TimeoutError, queue.Empty, subprocess.SubprocessError):
         return None
     return None

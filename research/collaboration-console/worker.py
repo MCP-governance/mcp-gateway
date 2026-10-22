@@ -379,7 +379,7 @@ class Hub:
             if not quota["stale"] or last and now-float(last[0])<300:
                 return
             db.execute("INSERT OR REPLACE INTO meta VALUES(?,?)",(key,str(now)))
-        observation=probe_usage(provider,executable)
+        observation=probe_usage(provider,executable,self.config["providers"].get(provider,{}).get("model"))
         if observation:
             self.observe_quota(provider,observation)
 
