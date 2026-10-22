@@ -36,6 +36,8 @@ CLI 교차 확인은 공식 `bao`의 `version`, 인증 불필요 `status -format
 
 ## 남은 검증
 
+- 2026-10-22 만료 관측의 [복구 제안·공개 파일 만료 검사](openbao/tls-recovery.md)를 추가했다. 로컬 회귀만 통과했으며 실제 복구와 고정판 reload 안전성은 미확인이다. 조정자의 독립 검토 전 적용하지 않는다.
+
 - 실제 server/SDK 시작·결과·image digest·TLS fingerprint·독립 audit request IDs는 root 배포 결과로 추가한다. source/config 준비를 실행 통과로 올리지 않는다.
 - TTL 실제 만료·CIDR 밖 login/token 거부·sealing/outage·retry/fail-closed·소비자 cache 회전·accessor 철회·재시작 영속성은 후속 케이스다. 현재 SDK check는 기다려서 TTL 만료를 검증하지 않는다.
 - OpenBao KV 값 갱신은 해당 LiteLLM virtual key/provider credential의 자동 철회가 아니다. 양쪽 정책·cache·직접 재접근을 따로 시험한다.

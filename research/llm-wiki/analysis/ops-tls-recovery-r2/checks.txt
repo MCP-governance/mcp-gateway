@@ -1,0 +1,19 @@
+UTC: 2026-10-22T05:14:01.962180+00:00
+Python: 3.10.5
+OpenSSL: 3.5.7 (Git for Windows; OPENBAO_TEST_OPENSSL explicitly set)
+Command: python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p openbao_expiry_test.py -v
+test_ca_failure_cannot_be_hidden_by_healthy_server (openbao_expiry_test.ExpiryTest) ... ok
+test_expired_at_exact_not_after (openbao_expiry_test.ExpiryTest) ... ok
+test_healthy_checks_only_server_and_ca (openbao_expiry_test.ExpiryTest) ... ok
+test_helper_failures_return_nonzero_and_suppress_error_text (openbao_expiry_test.ExpiryTest) ... ok
+test_invalid_dates_fail (openbao_expiry_test.ExpiryTest) ... ok
+test_negative_threshold_is_rejected (openbao_expiry_test.ExpiryTest) ... ok
+test_not_yet_valid (openbao_expiry_test.ExpiryTest) ... ok
+test_observed_expiry_is_failure (openbao_expiry_test.ExpiryTest) ... ok
+test_real_openssl_files_and_cli (openbao_expiry_test.ExpiryTest) ... ok
+test_threshold_boundary_and_one_second_outside (openbao_expiry_test.ExpiryTest) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.791s
+
+OK

@@ -4,6 +4,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
+| OPS-TLS-RECOVERY-R2 | OpenBao 만료 검사·복구 제안 | [보고](reports/2026-10-22-ops-tls-recovery-r2.md), [절차](../integrations/lab/openbao/tls-recovery.md) | 두 인증서 사건 분리·기존 CA/키 유지 절차·검사 실패 비정상 반환·독립 검토 | 로컬 회귀 10건·정적 검사 통과. 실기기 복구·고정판 reload 안전성 미확인, Gemini 검토·Claude 판단 대기 |
 | OPS-CONSOLE-EFFICIENCY | 협업 콘솔 폴링·렌더링 최소화 | [범위별 보고](reports/2026-10-22-ops-console-efficiency.md), [분석·검사](../analysis/ops-console-efficiency/README.md) | 숨긴/변경 없는 채널 재생성 방지·숨김 폴링 중지·커서와 필터/선택 작업 유지 회귀 | 로컬 구현·새 회귀 1개·기존 Node 15개·문법 통과. Python 31통과/알려진 SheetSync 1실패 유지. 실제 브라우저·메모리 미측정. 조정자 검토 대기 |
 | OPS-INTAKE-PACKAGING-R3 | 도입 워커 로컬 의존성 패키징 복구 | [범위별 보고](reports/2026-10-22-ops-intake-packaging-r3.md) | 누락 재현·최소 수정·오프라인 회귀와 배포 검증 구분 | 로컬 구현/회귀 완료, 미커밋. 조정자 검토·별도 승인된 솔루션 기기 이미지 재빌드/배포 및 PJ1 실제 하네스 확인 대기. 이 작업에서는 호스트 접속·빌드·배포 미실행 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |

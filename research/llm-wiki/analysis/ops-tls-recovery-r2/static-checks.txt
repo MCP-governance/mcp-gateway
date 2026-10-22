@@ -1,0 +1,3 @@
+AST syntax: PASS (2 files)
+Scoped Markdown links: PASS (15 links, 3 new documents)
+New source/document trailing whitespace: PASS (5 files)
