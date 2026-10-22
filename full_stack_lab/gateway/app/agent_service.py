@@ -2451,7 +2451,7 @@ async def gateway_passthrough(path: str, request: Request, authorization: str | 
                                            "Content-Type": request.headers.get("content-type", "application/json")})
     except httpx.HTTPError as exc:
         raise HTTPException(503, "게이트웨이에 연결할 수 없습니다. 잠시 후 다시 시도하세요.") from exc
-    status = response.headers.get("x-account-status")
+    forwarded = {name: response.headers[name] for name in ("X-Account-Status", "X-Registry-SHA256") if name in response.headers}
     return Response(response.content, status_code=response.status_code,
                     media_type=response.headers.get("content-type", "application/json"),
-                    headers={"X-Account-Status": status} if status else None)
+                    headers=forwarded or None)

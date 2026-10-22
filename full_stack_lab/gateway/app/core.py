@@ -585,24 +585,23 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
                  else await upstream.discover(registration_endpoint(endpoint)))
     local_view = {}
     if local:
-        settings = json.loads(os.getenv("LOCAL_ENGINE_SETTINGS") or "{}")
-        engine = settings.get("engine") if isinstance(settings, dict) else None
-        namespace = settings.get("namespace") if isinstance(settings, dict) else None
-        version = settings.get("version") if isinstance(settings, dict) else None
-        engine_name = {"podman": "Podman", "docker": "Docker"}.get(engine)
-        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
-        if namespace == "host":
-            isolation_scope = "탈출 시 호스트 root"
-        elif engine_name and namespace_name:
-            isolation_scope = f"{engine_name} {version or '—'} · {namespace_name} · 확인 안 됨"
-        else:
-            isolation_scope = "확인 안 됨"
+        # 격리 구성은 기기 설정이 아니라 관찰 PC 실행기가 측정해 보고한 값(엔진·판본·사용자 매핑)이다.
         measurement = await db.fetch_one(
             """SELECT evidence->'isolation' AS isolation FROM local_job_events
                WHERE server_id=%s AND device_id=%s AND evidence ? 'isolation'
                ORDER BY created_at DESC,id DESC LIMIT 1""",
             (local["manifest"]["server_id"], local["observer_device"]))
         isolation = (measurement or {}).get("isolation") or {}
+        namespace = isolation.get("namespace")
+        engine_name = {"podman": "Podman", "docker": "Docker"}.get(
+            isolation.get("engine") or ("podman" if str(namespace).startswith("podman") else "docker"))
+        namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
+        if namespace == "host":
+            isolation_scope = "탈출 시 호스트 root"
+        elif namespace_name:
+            isolation_scope = f"{engine_name} {isolation.get('engine_version') or '—'} · {namespace_name} · {isolation.get('scope') or '확인 안 됨'}"
+        else:
+            isolation_scope = "확인 안 됨"
         local_view = {"observer_device": local["observer_device"], "observer_uid": observer["local_uid"],
                       "image_signature": "확인 안 됨", "isolation_scope": isolation_scope,
                       "user_mapping": isolation.get("uid_map") or "확인 안 됨"}
