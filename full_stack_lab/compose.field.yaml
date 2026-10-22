@@ -117,6 +117,8 @@ services:
       - ./field/ca:/field-ca:ro
     environment:
       MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
+      # 로그인·가입 시도 제한을 Caddy 주소 하나가 아니라 실제 접속 주소별로 센다. Caddy만 믿는다.
+      FORWARDED_ALLOW_IPS: ${MCP_NET_PREFIX:-10.245}.1.250
       REGISTRY_DIR: ${FIELD_REGISTRY_DIR:-/registry-field}
       # D-188: 한 사람이 운영하는 현장 기본값. 0으로 끄면 서로 다른 관리자 요건이 그대로 돈다.
       ROOT_SOLO_APPROVAL: ${ROOT_SOLO_APPROVAL:-1}
