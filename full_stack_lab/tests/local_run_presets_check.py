@@ -47,11 +47,8 @@ class Presets(unittest.TestCase):
         mem = intake_proposal.local_run_preset(row("src/memory"))
         self.assertEqual(mem["mounts"], [{"path": "mcp-memory", "mode": "rw"}])
         self.assertEqual(mem["env"], {"MEMORY_FILE_PATH": "/workspace/mcp-memory/memory.json"})
-        git = intake_proposal.local_run_preset(row("src/git/"))
-        self.assertEqual((git["command"], git["mounts"]), (["--repository", "/workspace/mcp-repo"], [{"path": "mcp-repo", "mode": "ro"}]))
-        for name in ("sequentialthinking", "time"):
-            plain = intake_proposal.local_run_preset(row(f"src/{name}"))
-            self.assertEqual((plain["image"], plain["command"], plain["mounts"], plain["env"]), (f"mcp/{name}", [], [], {}))
+        plain = intake_proposal.local_run_preset(row("src/sequentialthinking/"))
+        self.assertEqual((plain["image"], plain["command"], plain["mounts"], plain["env"]), ("mcp/sequentialthinking", [], [], {}))
         self.assertEqual({p for p, v in intake_proposal.LOCAL_RUN_PRESETS.items() if any(m["mode"] == "rw" for m in v["mounts"])},
                          {"src/memory"}, "only the storing server may default to a writable folder")
 
@@ -59,7 +56,17 @@ class Presets(unittest.TestCase):
         for value in (row("src/everything"), row(""), {}, row("src/filesystem", "https://github.com/someone/servers"),
                       row("src/filesystem", ""), row("../src/filesystem")):
             self.assertEqual(intake_proposal.local_run_preset(value), {}, value)
-        self.assertEqual(intake_proposal.local_run_preset(row("src/time", OFFICIAL + ".git"))["image"], "mcp/time")
+        self.assertEqual(intake_proposal.local_run_preset(row("src/memory", OFFICIAL + ".git"))["image"], "mcp/memory")
+
+    def test_root_only_images_are_not_suggested_and_show_a_short_status(self):
+        # 10-23 PJ1 실측: git·time 인터프리터가 /root(0700) 아래라 비루트 UID에서 exec가 거부된다.
+        for path in ("src/git", "src/git/", "src/time"):
+            self.assertEqual(intake_proposal.local_run_preset(row(path)), {}, path)
+            self.assertEqual(intake_proposal.local_run_status(row(path)), "관리 계정으로 실행할 수 없는 이미지", path)
+        self.assertEqual(intake_proposal.local_run_status(row("src/time", OFFICIAL + ".git")), intake_proposal.ROOT_ONLY_STATUS)
+        for value in (row("src/memory"), row("src/everything"), {}, row("src/git", "https://github.com/someone/servers")):
+            self.assertEqual(intake_proposal.local_run_status(value), "", value)
+        self.assertFalse(set(intake_proposal.ROOT_ONLY_IMAGES) & set(intake_proposal.LOCAL_RUN_PRESETS))
 
     def test_a_suggestion_is_a_copy(self):
         intake_proposal.local_run_preset(row("src/memory"))["mounts"].clear()
@@ -82,11 +89,13 @@ class Presets(unittest.TestCase):
                        {"env": {"LD_PRELOAD": "/workspace/x.so"}}):
             self.assertTrue(jobs.manifest_errors({**base, **change}, "x"), change)
         with self.assertRaises(ValidationError):
-            local_run_spec()(**{**intake_proposal.LOCAL_RUN_PRESETS["src/time"], "reason_text": "짧음"})
+            local_run_spec()(**{**intake_proposal.LOCAL_RUN_PRESETS["src/sequentialthinking"], "reason_text": "짧음"})
 
     def test_preview_returns_the_suggestion_and_the_dialog_prefills_only_when_nothing_is_stored(self):
         self.assertIn('"local_run_preset": intake_proposal.local_run_preset(row)', SERVICE)
-        self.assertIn("askLocalRun(id, out.request, out.local_run_preset)", CONSOLE)
+        self.assertIn('"local_run_status": intake_proposal.local_run_status(row)', SERVICE)
+        self.assertIn("askLocalRun(id, out.request, out.local_run_preset, out.local_run_status)", CONSOLE)
+        self.assertIn('${status ? chip("alert", status) : ""}', CONSOLE)
         self.assertIn("const cur = request.evidence?.local_run || preset;", CONSOLE)
         self.assertIn("mounts, env, reason_kind", CONSOLE, "환경 변수는 입력란의 값을 보낸다")
 

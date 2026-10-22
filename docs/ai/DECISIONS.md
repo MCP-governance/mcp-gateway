@@ -2122,3 +2122,19 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   실제 문서·저장소 폴더 이름이 다르면 관리자가 고친다. README의 memory 예시 파일은 `.jsonl`이고 표는 PJ1에서 통과한 `memory.json`을 쓴다.
   git은 읽기 전용 마운트라 쓰기 도구(add·commit)는 실패하고, 읽기 전용에서의 `git status`·소유자 불일치 동작은 기기에서 확인한다.
 - **시험**: `local_run_presets_check.py`(선택·빈 제안·표의 모든 값이 기존 요청 모델과 매니페스트 검사를 통과), `console-state` 노드 시험, 기존 승인·실행기 시험.
+
+## D-207 루트 전용 공식 이미지(git·time)는 기본값에서 빼고 상태만 보인다 (2026-10-23)
+
+- **문제**: D-206 표가 git·time도 제안했지만, 10-23 PJ1(Ubuntu, Docker 29.8.1, 사용자 재매핑 없음) 실측에서 `mcp/git`·`mcp/time`은 러너 옵션
+  (`--user 1001:1001 --read-only --tmpfs /tmp --cap-drop=ALL --network=none`)으로 `exec /app/.venv/bin/mcp-server-{git,time}: permission denied`로 끝났다. 승인해도 실패한다.
+- **원인(실측)**: 두 이미지의 `/app/.venv/bin/python`은 `/root/.local/share/uv/python/cpython-3.10.18-…/bin/python3.10`으로 가는 링크이고 `/root`가 `drwx------ root`다(USER 미지정=root).
+  비루트 UID는 `/root`를 지날 수 없다. 캐시·HOME·tmpfs 문제가 아니므로 환경 변수(HOME 계열은 러너가 금지)나 tmpfs로 풀 수 없다.
+  시스템 python3.12로 우회해도 패키지가 cp310 확장 모듈(`pydantic_core`)이라 로드되지 않고, 매니페스트는 entrypoint를 바꿀 수 없다. filesystem·memory·sequentialthinking은 node 이미지라 영향이 없다.
+- **결정**: 컨테이너를 root로 돌리거나 capability를 더하지 않는다(재매핑 없는 호스트에서 탈출 시 호스트 root). `LOCAL_RUN_PRESETS`에서 `src/git`·`src/time`을 빼고
+  `ROOT_ONLY_IMAGES`로 모아, 승인 미리보기가 `local_run_status`(「관리 계정으로 실행할 수 없는 이미지」)를 돌려준다. 「PC 격리 실행」 창은 이 문구를 경고 칩으로 보이고
+  이미지 입력란을 비워 둔다(설명 문단 없음). 관리자가 비루트로 다시 만든 사내 미러 이미지를 직접 넣는 길은 그대로 열려 있다.
+- **불변**: `LocalRunSpec`·`manifest_errors`·러너의 `--user`·`--cap-drop=ALL`·허용 환경 변수는 바꾸지 않았다.
+- **한계와 후속**: 진단 실험(컨테이너 안에서만 `/root`를 711, uv 디렉터리를 go+rX로 연 뒤 UID 1001로 `mcp-server-time` 실행)에서는 `initialize`가 통과해
+  `/root` 통과 권한만 고친 사내 재빌드 이미지는 비루트로 동작할 것으로 보이나, 재빌드 이미지는 만들지 않았고 digest·서명 흐름 검증도 하지 않았다.
+  같은 uv 방식으로 빌드된 다른 공식 파이썬 이미지(예: fetch)도 같을 가능성이 있으나 이미지를 받지 않아 확인하지 못했다. D-206의 git·time 항목을 정정한다.
+- **시험**: `local_run_presets_check.py`(두 경로는 빈 제안+상태 문구, 나머지는 빈 문자열, 표와 겹치지 않음, 배선), 기존 승인·러너 시험.
