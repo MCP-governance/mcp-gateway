@@ -36,10 +36,10 @@
           "missing": []
         }
       },
-      "sha256": "332a69282b1c518b929b864ad98ae778fb05d7685c2ac0263d63b0149dc57dc8"
+      "sha256": "8755ddb662f9d8049839fbec848672bb5b6875a9a1af651a73bf8e8cb7e6d72a"
     },
     "backlog": {
-      "rows": 74,
+      "rows": 90,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -50,14 +50,31 @@
         },
         "결정": {
           "target": "decisions",
-          "missing_ids": [],
-          "missing": []
+          "missing_ids": [
+            "D-160",
+            "D-171",
+            "D-173"
+          ],
+          "missing": [
+            {
+              "row_id": "RM-01",
+              "id": "D-171"
+            },
+            {
+              "row_id": "RM-02",
+              "id": "D-160"
+            },
+            {
+              "row_id": "RM-03",
+              "id": "D-173"
+            }
+          ]
         }
       },
-      "sha256": "a07ddb70780094b6680d74d3def6c4cc622a4095e7d7e44b7692bb56fec23501"
+      "sha256": "f32deb36b5aeba81507cfd2b3d3c811fad3c5cc97833bb79fe21f484d12894aa"
     },
     "decisions": {
-      "rows": 127,
+      "rows": 178,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -77,16 +94,20 @@
           "missing": []
         }
       },
-      "sha256": "43572e1417e41abdf89d517100f116f223dde7a6b0f7c72e017dd5583cf4efb4"
+      "sha256": "d7a7249ad5ff2175ba636618a118c1ba6a48f7be91452a271d2cade0e06c09cb"
     },
     "commits": {
-      "rows": 345,
+      "rows": 648,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
         "결정": {
           "target": "decisions",
           "missing_ids": [
+            "D-160",
+            "D-171",
+            "D-174",
+            "D-190",
             "D-36",
             "D-38"
           ],
@@ -98,6 +119,22 @@
             {
               "row_id": "8889afc",
               "id": "D-38"
+            },
+            {
+              "row_id": "775bb12",
+              "id": "D-160"
+            },
+            {
+              "row_id": "775bb12",
+              "id": "D-171"
+            },
+            {
+              "row_id": "d26250c",
+              "id": "D-174"
+            },
+            {
+              "row_id": "8809787",
+              "id": "D-190"
             }
           ]
         },
@@ -117,7 +154,7 @@
           "missing": []
         }
       },
-      "sha256": "9cfa2b2601672660e8b83152071b189db5741f983d4ec022411ad34fc41d91a8"
+      "sha256": "68f286919e1b7968fbee3a7dd25ac45a1410b7239ac5300f96f0b113467b25ab"
     },
     "deploys": {
       "rows": 18,
@@ -303,7 +340,7 @@
           "missing": []
         }
       },
-      "sha256": "3cc9333211c8f3d1d0436bd74bf80732e0d6bb59a952615a5d9a90fd075d3c05"
+      "sha256": "56c7e5899cdae6922ef61f1273efdd2f531632b35b75156fcde8b4ee88e59771"
     },
     "local-tool-risks": {
       "rows": 13,
@@ -646,11 +683,11 @@
       "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
     },
     "docs": {
-      "rows": 547,
+      "rows": 698,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "c8ca2c93d42fba9561bd615ad607ee1a8ba221a540de1a22538fd03e7ae52684"
+      "sha256": "cb938799323499da0b70fca9598b7c62224e50e36859a0295291abc7a29e0fac"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -658,9 +695,16 @@
       "format_errors": [],
       "links": {},
       "sha256": "e14897d31d08151baf5982a4b5519061dd6906695835198c9d371b7f2784673e"
+    },
+    "trace": {
+      "rows": 1450,
+      "duplicate_ids": [],
+      "format_errors": [],
+      "links": {},
+      "sha256": "e0a78e6ea6a4387cee35d01c759bc610cc781c74933c71f926593c057601008f"
     }
   },
   "duplicate_ids": 0,
   "format_errors": 0,
-  "missing_links": 2
+  "missing_links": 9
 }

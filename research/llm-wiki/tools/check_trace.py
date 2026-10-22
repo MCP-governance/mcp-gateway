@@ -179,7 +179,7 @@ def collect_defs(read):
         m = re.match(r"\| ([^| ]+) \| ([^|]*)\| ([^|]*)\| ([^|]*)\|", line)
         fam = next((k for k, rx in STRICT.items() if m and rx.fullmatch(m[1])), None)
         if fam:
-            add(fam, m[1], f"[{m[2].strip()}·{m[3].strip()}] {m[4].strip()}", RESERVED, n)
+            add(fam, m[1], f"[{m[2].strip()}] {m[4].strip()}", RESERVED, n)
     ledger = "full_stack_lab/opa/policy_ledger.json"
     text = read(ledger)
     if text:
