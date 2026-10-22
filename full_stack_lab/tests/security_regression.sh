@@ -37,15 +37,18 @@ wait_healthy() {
 # One call through the Gateway's enforced path, as <principal>: "decision policy executed"
 PROBE='import asyncio, json, os, sys
 import httpx
-from app.acceptance import TOKENS, call
+from app.acceptance import MCP_TOKENS, call
 async def main():
     from app import db
     principal = await db.fetch_one("SELECT email FROM principals WHERE token=%s", (sys.argv[1],))
     async with httpx.AsyncClient(timeout=15) as client:
-        response = await client.post("http://127.0.0.1:8080/api/session", json={
-            "email": principal["email"], "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
+        # MCP ingress takes the OAuth grant, never a Console session (same path as acceptance.sign_in).
+        issuer = os.getenv("IDP_INTERNAL_URL", os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
+        response = await client.post(issuer + "/oauth/token", data={
+            "grant_type": "password", "client_id": "acceptance-ws", "username": principal["email"],
+            "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
         response.raise_for_status()
-        TOKENS["probe"] = response.json()["access_token"]
+        MCP_TOKENS["probe"] = response.json()["access_token"]
     out = await call("probe", sys.argv[2] + "__" + sys.argv[3], json.loads(sys.argv[4]))
     print(out["decision"], out["policy_id"], out["upstream_executed"])
     await db.close()
@@ -216,6 +219,8 @@ expect "원복 후 체인 정상" "$(verify | cut -d' ' -f1)" True
 echo "── MCP 계약이 잠금과 같다 ──"
 docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.now.$$ 2>/dev/null
 if python3 tests/contracts_check.py registry/contracts.lock.json /tmp/contracts.now.$$; then ok "계약 잠금 일치"; else bad "계약 잠금 일치" "위 변경 목록 참고"; fi
+# Keep what the servers advertise next to the other reports so a reviewer can read the diff and decide on `contracts --update`.
+mkdir -p reports && cp /tmp/contracts.now.$$ reports/contracts.now.json
 rm -f /tmp/contracts.now.$$
 
 echo
