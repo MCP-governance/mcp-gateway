@@ -317,7 +317,7 @@ class WiringTest(unittest.IsolatedAsyncioTestCase):
         captured = {}
         async def judge(policy_input):
             captured["input"] = policy_input
-            return policy or {"decision": "Allow", "policy_id": "P-ALLOW-001", "reason": "unit"}
+            return policy or {"decision": "Allow", "policy_id": "P-AUTHZ-ALLOW-001", "reason": "unit"}
         payload = {**self.PAYLOAD}
         remember = AsyncMock()
         released = result if result is not None else {"content": [{"type": "text", "text": READ}], "is_error": False}

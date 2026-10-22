@@ -1,7 +1,7 @@
 # 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 게이트웨이 모드 + 게이트웨이 전용 MCP 집계).
 # compose 프로젝트·망·볼륨을 공유하지 않는다.
 #
-# 망 구조(D-190): LiteLLM은 internal 망(model·data·inner)에만 붙어 밖으로 나가는 길이 없다.
+# 망 구조(D-191): LiteLLM은 internal 망(model·data·inner)에만 붙어 밖으로 나가는 길이 없다.
 #   직원 쪽 입구  edge-proxy:4000  -> litellm:4000       (loopback 게시, 하네스 컨테이너는 edge 망)
 #   LiteLLM 출구  edge-proxy:8081  -> 제품 게이트웨이 /mcp/*  (TLS 검증, 그 밖의 경로·호스트는 403)
 # 그래서 LiteLLM의 MCP 집계는 설정 실수나 관리자 API 등록이 있어도 제품 게이트웨이 말고는 닿을 곳이 없다.
