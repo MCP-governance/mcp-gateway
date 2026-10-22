@@ -91,15 +91,24 @@ LOCAL_RUN_PRESETS = {
                    "env": {"MEMORY_FILE_PATH": "/workspace/mcp-memory/memory.json"}, "reason_kind": "local_file",
                    "reason_text": "PC 폴더에 지식 그래프 영구 저장"},
     "src/sequentialthinking": {**_LOCAL, "image": "mcp/sequentialthinking", "reason_text": "PC 안에서 도는 단계별 사고 도구"},
-    "src/git": {**_LOCAL, "image": "mcp/git", "command": ["--repository", "/workspace/mcp-repo"],
-                "mounts": [{"path": "mcp-repo", "mode": "ro"}], "reason_kind": "local_file",
-                "reason_text": "PC 저장소 폴더 읽기 전용 조회"},
-    "src/time": {**_LOCAL, "image": "mcp/time", "reason_text": "PC 안에서 도는 시각 변환 도구"},
 }
+# git·time 이미지는 인터프리터가 /root(0700) 아래 uv 설치에 있어 관리 계정(UID)으로 exec가 거부된다(10-23 PJ1 docker 29.8.1 실측).
+# 환경 변수·tmpfs로 풀 수 없고 루트 실행은 허용하지 않으므로 제안하지 않고 상태만 보인다.
+ROOT_ONLY_IMAGES = {"src/git", "src/time"}
+ROOT_ONLY_STATUS = "관리 계정으로 실행할 수 없는 이미지"
 
 
 def local_run_preset(row: dict) -> dict:
     """공식 저장소의 알려진 경로만 제안한다. 같은 경로라도 다른 저장소의 서버에는 공식 이미지를 제안하지 않는다."""
-    if (row.get("repository_url") or "").rstrip("/").removesuffix(".git").lower() != OFFICIAL_SERVERS:
+    if not _official(row):
         return {}
     return copy.deepcopy(LOCAL_RUN_PRESETS.get((row.get("repository_path") or "").strip("/"), {}))
+
+
+def _official(row: dict) -> bool:
+    return (row.get("repository_url") or "").rstrip("/").removesuffix(".git").lower() == OFFICIAL_SERVERS
+
+
+def local_run_status(row: dict) -> str:
+    """제안을 못 하는 공식 이미지의 이유를 짧은 상태 문구로. 제안이 있거나 모르는 경로면 빈 문자열."""
+    return ROOT_ONLY_STATUS if _official(row) and (row.get("repository_path") or "").strip("/") in ROOT_ONLY_IMAGES else ""

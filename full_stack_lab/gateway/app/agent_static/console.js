@@ -1660,11 +1660,12 @@ function intakeApprovalFields(out) {
 
 const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구", device: "장치" };
 
-async function askLocalRun(id, request, preset = {}) {
+async function askLocalRun(id, request, preset = {}, status = "") {
   const cur = request.evidence?.local_run || preset;
   const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
+    ${status ? chip("alert", status) : ""}
     ${field.text("image", "이미지", 'required minlength="3" maxlength="300"',
-      cur.image || (request.repository_path ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
+      cur.image || (request.repository_path && !status ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
     ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
       (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
@@ -1691,7 +1692,7 @@ async function askLocalRun(id, request, preset = {}) {
 async function showIntakeApproval(id) {
   let out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
   if (out.request.requested_transport === "stdio" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
-    if (!(await askLocalRun(id, out.request, out.local_run_preset))) return;
+    if (!(await askLocalRun(id, out.request, out.local_run_preset, out.local_run_status))) return;
     out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
   }
   const fd = await ask({ title: `도입 승인 · ${out.request.display_name}`, fields: intakeApprovalFields(out),
