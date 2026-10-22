@@ -2062,3 +2062,15 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   Gitleaks·개인정보 잔여 검사, 실패 시 보류는 그대로다.
 - **시험**: `full_stack_lab/tests/output_credential_span_check.py`(게이트웨이 이미지, 2건). 기존 `mcp_result_contract_check`·
   `output_contract_check`·`response_cap_boundary_check`·`secret_engine_parity_check` 통과.
+
+## D-203 로컬 MCP 호출은 컨테이너를 한 번만 띄운다 — 호출의 initialize·tools/list는 승인 계약으로 답한다 (2026-10-23)
+
+- **문제**: 게이트웨이가 로컬 MCP 호출마다 initialize·tools/list·tools/call을 각각 PC 작업으로 보내 컨테이너가 세 번 떴다
+  (각 3~4초). 호출 전체 시간 안에서 마지막 작업이 남은 시간 없이 시작돼 바로 만료되거나(`TimeoutError`), PC 러너가
+  `/control`의 기한 경과로 컨테이너 전에 실패했다(PJ1 sequentialthinking·read_multiple_files).
+- **결정**: 호출(전송 신원이 있는 세션)에서는 `LocalClient`가 initialize를 고정 프로토콜(`registry.pinned_protocol`)로,
+  tools/list를 `mcp_tools`의 승인 설명·입력/출력 스키마로 답한다. 실제 대조는 PC 러너의 tools/call 작업이 컨테이너 안에서
+  initialize·tools/list를 하고 승인 해시(설명·입력·출력 스키마)와 프로토콜을 비교한 뒤에만 호출하므로 통제가 줄지 않는다.
+  승인 전 관찰·등록(`discovery`)은 지금처럼 실제 서버에 묻는다.
+- **시험**: `local_jobs_pg_check.py`에 "호출은 initialize·tools/list 작업을 만들지 않는다" 추가(운영 DB를 비우는 시험이라
+  기기에서는 돌리지 않음). 오프라인 `dev73_*`·`local_runner_usability_check` 통과. 실증은 PJ1 실제 호출.

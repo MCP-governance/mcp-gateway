@@ -193,6 +193,15 @@ async def scenarios(a, b, stale, silent) -> int:
               client.server_info.name == "fs" and page.tools[0].name == "read_file" and page.next_cursor == "p2"
               and called.content[0].text == "hello" and called.is_error is False)
 
+    # A call's initialize and tools/list are answered from the approval; only tools/call reaches the device,
+    # whose container checks the approved contract itself (10-23: three containers per call ran out of time).
+    queued = (await db.fetch_one("SELECT count(*) AS n FROM local_jobs"))["n"]
+    caller = local_jobs.LocalClient(DEVICE_A, LOCAL, 3, discovery=False)
+    await caller.start()
+    await caller.list_tools()
+    CHECKS.ok("a call starts no initialize or tools/list job",
+              (await db.fetch_one("SELECT count(*) AS n FROM local_jobs"))["n"] == queued)
+
     original = registry.server
     registry.server = lambda server_id: {"local": {**LOCAL, "observer_device": DEVICE_A}}
     await db.execute("DELETE FROM local_jobs")
