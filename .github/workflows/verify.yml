@@ -212,6 +212,9 @@ jobs:
       - name: 실기기 오버레이 — ./console.sh field up
         run: |
           echo "APPLIANCE_BIND=127.0.0.1" >> .env
+          # Caddy now also publishes the browser-console port (D-129) on APPLIANCE_BIND; on the runner that is the same
+          # loopback address as the base stack's Console port. Move the base one (an appliance binds a Tailscale IP, so no clash there).
+          echo "CONSOLE_PORT=18000" >> .env
           # A.I.G 로컬 모델(D-47)은 실기기에서 받는다. CI는 검사 품질을 볼 수 없으므로 내려받지 않는다.
           echo "AIG_LOCAL_MODEL=none" >> .env
           APPLIANCE_BIND=127.0.0.1 ./console.sh field init-disposal --with-lab-mcp
