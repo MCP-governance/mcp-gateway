@@ -30,7 +30,7 @@ RUN set -eux; \
                 postgres:postgres-mcp==0.3.0 redis:redis-mcp-server==0.5.1 email:mcp-email-server==1.9.1; do \
       name="${spec%%:*}"; pkg="${spec#*:}"; \
       python -m venv "/opt/venvs/$name"; \
-      "/opt/venvs/$name/bin/pip" install --no-cache-dir "$pkg" "mcp>=1.17,<2"; \
+      if [ "$name" = postgres ]; then         "/opt/venvs/$name/bin/pip" install --no-cache-dir --no-deps "$pkg";         "/opt/venvs/$name/bin/pip" install --no-cache-dir "attrs>=25.3.0" "humanize>=4.8.0" "instructor>=1.7.9" "mcp[cli]>=1.17,<2" "pglast==7.21" "psycopg-pool>=3.2.6" "psycopg[binary]>=3.2.6";       else "/opt/venvs/$name/bin/pip" install --no-cache-dir "$pkg" "mcp>=1.17,<2"; fi; \
     done
 
 # mcp-server-fetch uses readabilipy, which runs `npm install` *at request time* the
