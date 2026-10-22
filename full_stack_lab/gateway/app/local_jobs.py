@@ -145,18 +145,22 @@ async def applicant_device(token: str, intake_id: str) -> str:
     """The contract is observed where the applicant will run it: their active managed PC."""
     bound = await db.fetch_one("SELECT local_observer_device FROM mcp_intake_requests WHERE id=%s", (intake_id,))
     if bound and bound.get("local_observer_device"):
-        device = await _device(bound["local_observer_device"])
-        if device["owner_token"] != token:
-            raise ValueError("관찰 엔드포인트의 소유자가 신청자와 다릅니다.")
-        return device["endpoint_id"]
+        try:
+            device = await _device(bound["local_observer_device"])
+        except NotStarted:
+            device = None  # 키트 재설치로 장치가 바뀌었다. 신청자의 현재 장치로 다시 묶는다(새 서명 세대로 관찰).
+        if device:
+            if device["owner_token"] != token:
+                raise ValueError("관찰 엔드포인트의 소유자가 신청자와 다릅니다.")
+            return device["endpoint_id"]
     row = await db.fetch_one(
         """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active' AND managed_state='active'
            AND local_uid IS NOT NULL ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
     if not row:
         raise ValueError("신청자의 활성 관리형 PC가 없어 로컬 실행 계약을 확인할 수 없습니다.")
     bound = await db.fetch_one(
-        """UPDATE mcp_intake_requests SET local_observer_device=COALESCE(local_observer_device,%s)
-           WHERE id=%s RETURNING local_observer_device""", (row["endpoint_id"], intake_id))
+        """UPDATE mcp_intake_requests SET local_observer_device=%s WHERE id=%s RETURNING local_observer_device""",
+        (row["endpoint_id"], intake_id))
     return bound["local_observer_device"]
 
 
