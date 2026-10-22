@@ -21,7 +21,8 @@ from .privacy import InspectionUnavailable
 from .classify import SECRET_PATTERNS
 
 LIBRARY = os.getenv("GITLEAKS_LIBRARY", "/usr/local/lib/libmcpgw_gitleaks.so")
-TIMEOUT_SECONDS = 5
+# 문서 여러 개를 한 번에 읽는 결과(수십 KB)와 동시 호출에서 5초가 모자라 정상 문서가 보류됐다(10-23 실사용).
+TIMEOUT_SECONDS = 20
 
 _slots = asyncio.Semaphore(4)
 _library: ctypes.CDLL | None = None
@@ -83,7 +84,7 @@ async def labels(text: str) -> list[str]:
         scan.add_done_callback(_finished)
         rules = await asyncio.wait_for(asyncio.shield(scan), timeout=TIMEOUT_SECONDS)
     except (OSError, ValueError, TypeError, AttributeError, asyncio.TimeoutError) as exc:
-        raise InspectionUnavailable("Gitleaks Secret 검사를 완료하지 못했습니다.") from exc
+        raise InspectionUnavailable(f"Gitleaks Secret 검사를 완료하지 못했습니다: {type(exc).__name__}") from exc
     return sorted({"gitleaks:" + rule for rule in rules})
 
 

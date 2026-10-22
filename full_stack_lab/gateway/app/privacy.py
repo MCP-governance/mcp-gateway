@@ -170,6 +170,26 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
         raise InspectionUnavailable("PII anonymizer unavailable or returned invalid data") from exc
 
 
+# 문서·예시에 흔한 자리표시 값. 실제 자격이 아니라 결과 전체를 보류할 근거가 아니다(10-23 실사용 오탐).
+PLACEHOLDER = re.compile(r"(?i)^[\s\"']*(?:<[^<>]{1,60}>|\$\{[^{}]{1,60}\}|\{\{[^{}]{1,60}\}\}|\*{3,}|x{3,}|\.{3}|"
+                         r"(?:your|my|example|sample|dummy|test|fake)[-_ ]?[a-z_-]{0,30}|changeme|replace[-_ ]?me|redacted)[\s\"']*$")
+
+
+def _identifier_number(number: int | float) -> str | None:
+    """숫자 값에는 하이픈 같은 서식이 없다. ID·타임스탬프·점수가 서식 패턴(사업자·계좌·전화)에 걸려
+    결과 전체를 보류하던 오탐 대신, 숫자 자체로 검증되는 주민번호(생년월일·성별 자리)와 카드번호(Luhn)만 본다."""
+    if not isinstance(number, int) or number < 0:
+        return None
+    digits = str(number)
+    if len(digits) == 13:
+        month, day, gender = int(digits[2:4]), int(digits[4:6]), digits[6]
+        if 1 <= month <= 12 and 1 <= day <= 31 and gender in "12345678":
+            return "KR_RRN"
+    if 13 <= len(digits) <= 19 and _luhn(digits):
+        return "CARD_NUMBER"
+    return None
+
+
 async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[object, list[str]]:
     """Mask text leaves and preserve the MCP result's JSON shape."""
     keys, numbers, assignments, pending = set(), [], [], [value]
@@ -185,14 +205,28 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
             numbers.append(item)
     # Keys and numeric identifiers cannot be redacted without changing the schema.
     # Inspect them together once, including numbers which string-leaf masking skips.
-    immutable = {"keys": sorted(keys), "numbers": numbers}
-    if (keys or numbers) and await analyze(json.dumps(immutable, ensure_ascii=False, allow_nan=False), ignore):
-        raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema")
+    found = {kind for kind in map(_identifier_number, numbers) if kind}
+    if keys or numbers:
+        blob = json.dumps({"keys": sorted(keys), "numbers": numbers}, ensure_ascii=False, allow_nan=False)
+        boundary = blob.rindex('"numbers"')
+        for f in await analyze(blob, ignore):
+            digits = re.sub(r"\D", "", blob[f["start"]:f["end"]])
+            # 키 쪽 탐지는 그대로 받는다. 숫자 쪽은 숫자 자체로 검증되는 것만 받는다.
+            if f["start"] < boundary or (digits and _identifier_number(int(digits))):
+                found.add(f["entity_type"])
+    if found:
+        # 유형만 남긴다(값은 남기지 않는다). 다음 보류의 원인을 원장 오류로 바로 알 수 있게.
+        raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema: "
+                                    + ", ".join(sorted(set(found))))
     # Low-entropy passwords can evade Gitleaks. Preserve assignment context for
     # Presidio's credential recognizer rather than inspect the value in isolation.
-    if assignments and any(f["entity_type"] in {"CREDENTIAL", "SECRET_TOKEN"}
-                           for f in await analyze("\n".join(assignments), ignore)):
-        raise InspectionUnavailable("Credential in structured key/value context is withheld")
+    joined = "\n".join(assignments)
+    credentials = [f for f in (await analyze(joined, ignore) if assignments else [])
+                   if f["entity_type"] in {"CREDENTIAL", "SECRET_TOKEN"}
+                   and not PLACEHOLDER.match(joined[f["start"]:f["end"]].split("=", 1)[-1].split(":", 1)[-1])]
+    if credentials:
+        raise InspectionUnavailable("Credential in structured key/value context is withheld: "
+                                    + ", ".join(sorted({f["entity_type"] for f in credentials})))
 
     async def convert(item: object) -> tuple[object, list[str]]:
         if isinstance(item, str):
