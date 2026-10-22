@@ -713,7 +713,8 @@ class Hub:
                     received += len(line)
                     if len(line) > 524288 or received > 8*1024*1024:
                         outcome.error = True
-                        outcome.diagnostics.append("CLI output budget exceeded")
+                        bound, observed, limit = ("single line characters", len(line), 524288) if len(line) > 524288 else ("aggregate characters", received, 8*1024*1024)
+                        outcome.diagnostics.append(f"CLI output budget exceeded: {bound} observed={observed} limit={limit}")
                         self.stop_child(process)
                         break
                     try:

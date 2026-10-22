@@ -221,6 +221,55 @@ class Checks(unittest.TestCase):
         self.assertLessEqual(len(result.schemas),32)
         self.assertLessEqual(sum(map(len,result.texts)),128000)
 
+    def check_output_budget(self, chunks, expected):
+        import io
+        from unittest.mock import Mock
+        partial = json.dumps({'type': 'result', 'result': 'saved partial result'}) + '\n'
+        process = Mock(pid=12345, returncode=0, stdin=io.StringIO(),
+                       stdout=Mock(wraps=io.StringIO(partial + ''.join(chunks))))
+        # Seed only this temporary database; managed tests never enqueue an agent.
+        with self.hub.db() as db:
+            db.execute("INSERT INTO jobs(id,provider,title,cwd,prompt,deps,state,next_at,updated) VALUES(?,?,?,?,?,?,?,?,?)",
+                       ('output-fixture', 'claude', 'check', str(self.root), str(self.prompt), '[]', 'running', time.time(), time.time()))
+            job = dict(db.execute("SELECT * FROM jobs WHERE id='output-fixture'").fetchone())
+        with patch('worker.subprocess.Popen', return_value=process), \
+             patch('worker.pid_identity', return_value='fixture'), \
+             patch.object(self.hub, 'stop_child') as stop:
+            self.hub._run(job)
+        job = self.hub.snapshot()['jobs'][0]
+        self.assertEqual(job['state'], 'needs_attention')
+        self.assertEqual(job['error'], expected)
+        stop.assert_called_once_with(process)
+        process.wait.assert_called_once_with(timeout=15)
+        process.stdout.close.assert_called_once_with()
+        self.assertTrue(process.stdin.closed)
+        for call in process.stdout.readline.call_args_list:
+            self.assertEqual(call.args, (524289,))
+        report = Path(job['result']).read_text(encoding='utf-8')
+        self.assertIn('saved partial result', report)
+        self.assertIn(expected, report)
+        self.assertNotIn('raw_cli_marker', report)
+        metadata = json.loads(Path(job['result']).with_suffix('.json').read_text(encoding='utf-8'))
+        self.assertTrue(metadata['error'])
+        self.assertTrue(metadata['terminal_success'])
+        self.assertIsNone(self.hub.claim())
+
+    def test_single_line_output_budget_diagnostic(self):
+        boundary = json.dumps({'type': 'progress'}).ljust(524287) + '\n'
+        oversized = 'raw_cli_marker'.ljust(524289)
+        self.check_output_budget([boundary, oversized],
+            'CLI output budget exceeded: single line characters observed=524289 limit=524288')
+
+    def test_aggregate_output_budget_diagnostic(self):
+        partial = json.dumps({'type': 'result', 'result': 'saved partial result'}) + '\n'
+        remaining = 8*1024*1024 - len(partial)
+        chunk = json.dumps({'type': 'progress', 'data': 'raw_cli_marker'}).ljust(524287) + '\n'
+        chunks = [chunk] * (remaining // len(chunk))
+        chunks.append(json.dumps({'type': 'progress'}).ljust(remaining % len(chunk) - 1) + '\n')
+        chunks.append('!')
+        self.check_output_budget(chunks,
+            'CLI output budget exceeded: aggregate characters observed=8388609 limit=8388608')
+
     def test_cli_that_never_reads_stdin_is_stopped_on_startup_timeout(self):
         import sys
         script=self.root/'silent.py'

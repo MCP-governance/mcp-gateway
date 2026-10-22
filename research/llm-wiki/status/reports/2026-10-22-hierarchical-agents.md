@@ -43,3 +43,30 @@ Opus 5.5가 계획·최종 판단을 맡고 Sol·Sonnet·Gemini가 실무를 수
 검사 정본은 [checks.json](../../analysis/agent-coordination-20261022/checks.json)의 hierarchy_v2다. 기존37건 검사와 당시 콘솔 실패 기록은 과거 증거로 보존했다.
 
 위키 목록647문서·출처/링크 검사 오류0·경고0, 의존성 pip check 통과. 별도 제품 기기 배포나 PJ1 시험은 실행하지 않았다.
+
+## OPS-COORD-OUTPUT-DIAGNOSTICS 후속 보강
+
+기준 `6982e2ba1c1d92adff4aa216d3bbd00fca1d53e0`, 기존 브랜치 `10/22-hierarchical-agents`의 깨끗한 작업 트리에서 시작했다. `research/collaboration-console/worker.py`의 출력 초과 진단에 `single line characters` 또는 `aggregate characters`, 관측 문자 수와 한도를 넣었다. CLI 본문은 추가하지 않는다. 두 한도가 동시에 초과하면 단일 줄 초과를 표시한다. 숫자는 기존 제한 읽기와 매 읽기 누적 검사로 제한된다.
+
+`readline(524289)`, 단일 줄 `> 524288`, 누적 `> 8388608` 및 종료·부분 결과·할당량·모델 오류 판정은 유지했다. 문자 수는 기존 `len(str)` 기준으로 개행을 포함한다. `test_worker.py`의 두 회귀는 각 한도까지 허용한 뒤 한 문자 초과를 재현하고, 정확한 숫자 진단·자식 종료 호출·스트림 정리·부분 결과와 오류 메타데이터 보존·CLI 본문 비노출을 검사한다. 자식은 모두 모의 객체이며 실제 CLI는 실행하지 않았다.
+
+실행 위치 `research/collaboration-console`에서 다음 검사를 실행했다.
+
+```powershell
+& 'C:/Program Files/Python310/python.exe' -X utf8 -B -m unittest -v test_worker.Checks.test_single_line_output_budget_diagnostic test_worker.Checks.test_aggregate_output_budget_diagnostic
+```
+
+결과 `Ran 2 tests in 0.431s`, `OK`. 최초 실행은 관리형 세션의 중첩 등록 차단 때문에 두 테스트가 fixture 준비 단계에서 오류를 냈다. 차단 규칙·환경을 바꾸지 않고 임시 DB에 실행 중 fixture를 준비해 `_run`을 직접 검사하도록 수정한 뒤 통과했다. `git diff --check`도 통과했다. 전체 회귀와 실제 TLS-R2 재실행은 미실행이다. 변경은 이 코드·시험·보고서 세 파일에만 미커밋 상태로 남긴다. 다음 행동은 부모 조정자의 diff 독립 검토다.
+
+
+### 후속 실제 인계와 조정자 확인
+
+실제 CLI 네 단계는 Sol 계획(READY)→Sol 구현(DONE)→Gemini 검토(PASS)→Sol 판단(BLOCK)으로 실행됐다. Sol 판단은 읽기 전용에서 tempfile fixture 생성이 거절되어 테스트 본문을 실행하지 못한 것이며, 코드 결함을 보고한 것은 아니다. 조정자가 기존 가상환경의 허용된 환경에서 전체 회귀108건을 독립 실행해 통과를 확인했다. 부모 검증 JSON·소스 해시와 원판정/체크포인트를 함께 보존하고 운영 상태를 검토 완료로 전환했다. 원래 모델의 BLOCK을 PASS로 고쳐 쓰지 않았다.
+
+이 실제 흐름에서 제공자 CLI 정상 종료·최종 보고·단계 인계는 확인했으나 응답 모델 필드는 미보고였다. 요청 모델명으로 서버 응답 모델을 확인했다고 쓰지 않는다. Opus는 19:05 설정 대기 상태라 계획·판단을 Sol이 대리했고 고가 자문 모델은 호출하지 않았다.
+
+별도 제품 레인의 OpenBao 만료 검사10건도 Git에 포함된 OpenSSL의 경로를 해당 검사 프로세스 PATH에만 추가하여 통과했다. 기본 PATH에서 OpenSSL이 없던 첫 실행은9통과/1실패였고 이를 완료로 세지 않았다. 제품 소스·인증서·기기 상태는 바꾸지 않았으며 TLS-R2의 Claude 판단 대기는 유지했다.
+
+새 소유자 역할 규칙을 기존 TLS-R2의 미시작 읽기 전용 최종 판단에도 적용했다. 실행횟수0·PID없음·queued를 확인하고 이전 배정 JSON과 이력을 보존한 뒤, Opus 계정 대기 중의 Sol 대행으로 재배정했다. 이미 실행한 소스 쓰기를 재시작하지 않았다. 위키 시작 지침도 최신 요약·해당ID·적용 원문 중심으로 조정해 같은 전체 현황을 매 단계 다시 전달하지 않도록 했다.
+
+TLS-R2의 첫 Sol 대행은 이전 Claude용 프롬프트의 셸 금지와 Codex의 파일 읽기 도구 구성 차이로 원문을 읽지 못해 BLOCK을 반환했다. 원판정·프롬프트를 보존하고, 같은 Sol·같은 읽기 전용 권한에서 파일 조회용 명령만 허용하는 한 번의 후속 판정으로 정정한다. 안전 거절이나 실행 정책 우회가 아니라 역할 재배정 때의 도구 적합성 문제다.

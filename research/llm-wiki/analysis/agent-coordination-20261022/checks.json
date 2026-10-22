@@ -97,7 +97,7 @@
     "new_profile_inference": "unverified",
     "source_hashes": {
       "console.py": "5ea022765bbc9929cc36645c3c9c3d7a2d43689c79296a9c00d9c7e14f2d3d29",
-      "worker.py": "11e446c0dfd1cf991188034978fbf04de042757ef02baf0e08aa0edf9df14389",
+      "worker.py": "6fc720b54f22629ee9e2f5b0aa9021558ee117a5f65b90a17bbec0d6254639a5",
       "coordination.py": "4019257357900fb543df71883b939ede6425f7c2a24871517ad017c7a9c460cd",
       "agent_policy.py": "dc5da076e5a29d7d7fe2ec7e1cbf29d6119ff4ed85643fd909885ca6d61b0740",
       "usage_probe.py": "385ac2635c615458eb8801753234bbfefd59ba470a07629f24c4665f4e6f3847",
@@ -110,6 +110,31 @@
       "errors": 0,
       "warnings": 0
     },
-    "dependencies": "pip check passed"
+    "dependencies": "pip check passed",
+    "followup_live_workflow": {
+      "task_id": "OPS-COORD-OUTPUT-DIAGNOSTICS",
+      "stages": [
+        "sol plan READY",
+        "sol implement DONE",
+        "gemini review PASS",
+        "sol judge BLOCK"
+      ],
+      "blocking_reason": "read-only sandbox cannot create temporary fixtures",
+      "parent_resolution": {
+        "task_id": "OPS-COORD-OUTPUT-DIAGNOSTICS",
+        "source": "parent independent test execution",
+        "verified_at": "2026-10-22T09:41:23.786516+00:00",
+        "command": ".venv/Scripts/python.exe -X utf8 -m unittest -q test_console test_worker test_coordination test_usage_probe test_agent_policy",
+        "passed": 108,
+        "failed": 0,
+        "original_judgment": "VERDICT: BLOCK due read-only temporary directory creation, no code defect reported",
+        "resolution": "Independent allowed-environment rerun passed; original model result and graph checkpoint preserved",
+        "source_sha256": {
+          "worker.py": "6fc720b54f22629ee9e2f5b0aa9021558ee117a5f65b90a17bbec0d6254639a5",
+          "test_worker.py": "fb499b24766bd7664fdb387cf02265fd1ed3abb30ff0538869339b8ca8500763"
+        }
+      },
+      "model_response": "unreported; requested identity is not provider response proof"
+    }
   }
 }

@@ -4,7 +4,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
-| OPS-COORD-01 | 계층 협업·사용량 기반 대행·콘솔 최적화 | [공식 근거](../analysis/agent-coordination-20261022/model-policy-sources.md), [보고](reports/2026-10-22-hierarchical-agents.md) | 권한 있는 상향 요청·유한 실행·체크포인트·실제 잔여량·사람용 기록·창 없는 실행 확인 | 기존 콘솔 운영 적용·Python106건/프런트엔드1건 통과. 기존 Codex→Gemini 작업 완료, TLS-R2 Claude 판단 대기. 새 계층 실제 모델 전 경로·고급 모델 접근·장시간 안정성 미검증 |
+| OPS-COORD-01 | 계층 협업·사용량 기반 대행·콘솔 최적화 | [공식 근거](../analysis/agent-coordination-20261022/model-policy-sources.md), [보고](reports/2026-10-22-hierarchical-agents.md) | 권한 있는 상향 요청·유한 실행·체크포인트·실제 잔여량·사람용 기록·창 없는 실행 확인 | 기존 콘솔 운영 적용·Python106건/프런트엔드1건 통과. 기존 Codex→Gemini 작업 완료, TLS-R2 Sol 대행 판단 재배정. 새 계층 실제 모델 전 경로·고급 모델 접근·장시간 안정성 미검증 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | WIKI-03 | 협업 콘솔 통합 시트 연동 | [작업 보고](reports/2026-10-18-sheet-sync.md) | CSV 게시 URL 설정 후 실제 시트 수정·캐시 만료·조회 실패 대체 확인 | 구현·격리 시험 32개·sheet_pull 자체 시험 통과. WBS·백로그 웹 게시 CSV 연결, 콘솔 #wbs '시트 기준' 표시 확인(10-18 14:16, main 29fe6a0) |
 | DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |
