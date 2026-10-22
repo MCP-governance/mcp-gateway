@@ -247,8 +247,11 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
             if any(r.kind == "path" for r in cls.resources):
                 kind = "file"
                 targets["files"].append(value)
-        elif (key in {"to", "cc", "bcc", "recipient"} or
-              (isinstance(key, int) and len(path) > 1 and path[-2] in {"recipients", "cc", "bcc"})) and isinstance(value, str):
+        elif ((key in {"to", "cc", "bcc", "recipient"} or
+               (isinstance(key, int) and len(path) > 1 and path[-2] in {"recipients", "cc", "bcc"})) and isinstance(value, str)
+              # A name alone is not a recipient: a knowledge graph's relation {"from": .., "to": "stdio"} was held
+              # to the mail domain list (10-23 PJ1). An address, or a call the classifier read as mail, still is.
+              and ("@" in value or any(d.kind == "email" for d in cls.destinations))):
             kind = "recipient"
             targets["recipients"].append(value)
         bindings.append({"argument_path": path, "target_type": kind,
