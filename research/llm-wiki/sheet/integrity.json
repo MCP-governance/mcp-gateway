@@ -39,7 +39,7 @@
       "sha256": "8755ddb662f9d8049839fbec848672bb5b6875a9a1af651a73bf8e8cb7e6d72a"
     },
     "backlog": {
-      "rows": 90,
+      "rows": 101,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -52,8 +52,7 @@
           "target": "decisions",
           "missing_ids": [
             "D-160",
-            "D-171",
-            "D-173"
+            "D-171"
           ],
           "missing": [
             {
@@ -63,18 +62,14 @@
             {
               "row_id": "RM-02",
               "id": "D-160"
-            },
-            {
-              "row_id": "RM-03",
-              "id": "D-173"
             }
           ]
         }
       },
-      "sha256": "f32deb36b5aeba81507cfd2b3d3c811fad3c5cc97833bb79fe21f484d12894aa"
+      "sha256": "3d26f8fc7d0ecc35a5df4fafefa0c42bb4f89895dd064e34232200d438fc8f84"
     },
     "decisions": {
-      "rows": 178,
+      "rows": 181,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -94,10 +89,10 @@
           "missing": []
         }
       },
-      "sha256": "42a9059aad55d47e15938f30a9e465cea1601169e7950ea6593dd819870fea25"
+      "sha256": "65af1d2092b4a1b2bd11a500d26ea0d53f3f8bc93aea21ff513dff528db01d0f"
     },
     "commits": {
-      "rows": 661,
+      "rows": 741,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -137,7 +132,23 @@
               "id": "D-190"
             },
             {
+              "row_id": "a14564a",
+              "id": "D-190"
+            },
+            {
+              "row_id": "a4885cf",
+              "id": "D-190"
+            },
+            {
               "row_id": "3d4fa7d",
+              "id": "D-190"
+            },
+            {
+              "row_id": "db2e2d0",
+              "id": "D-190"
+            },
+            {
+              "row_id": "facb142",
               "id": "D-190"
             }
           ]
@@ -158,7 +169,7 @@
           "missing": []
         }
       },
-      "sha256": "345eadfc7980c6dc942e3734150e8cbce8db670ede1280decbcb6bb40bbce38a"
+      "sha256": "0ee1edc548c5da39f74b044e70dbf2907569615520e5cd83b08132f0e6d000cd"
     },
     "deploys": {
       "rows": 18,
@@ -344,7 +355,7 @@
           "missing": []
         }
       },
-      "sha256": "56c7e5899cdae6922ef61f1273efdd2f531632b35b75156fcde8b4ee88e59771"
+      "sha256": "b7b4072d399f4a7dfad2404e1f057cad841afcf6c8ade32f303ff2c556235982"
     },
     "local-tool-risks": {
       "rows": 13,
@@ -566,7 +577,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "52d21853b2af294cbebc5ec52bfdafcf0f1db08849f114c3509638a601890432"
+      "sha256": "38cdf3ae9d5f49aff26fb5a4cd93f7ce763976aebcc28ab3a83000b53118c206"
     },
     "code-structure": {
       "rows": 801,
@@ -606,7 +617,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "dc9980ed25288d817ad6696fa8a12e4f63e2f0258fa521bfbce909f10726cd90"
+      "sha256": "de3e1f667fcdee164406d0c0c16acce12499d7a62209942e5612f7a80620b691"
     },
     "mcp-candidates": {
       "rows": 14,
@@ -642,11 +653,11 @@
       "sha256": "5cafbbc3f6b293f097570afa8c2ef8f30f7c77dd007912ff848b3218e75f7709"
     },
     "solutions": {
-      "rows": 9,
+      "rows": 15,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "79a0efebc17296b85539f7018d3dcd8c093480db36fa4cee465731864e4a9306"
+      "sha256": "48b3504f6bd471b76d1b6b7e165a6c06c89846cde35df3bc1a2dd7b8dd80e272"
     },
     "papers": {
       "rows": 264,
@@ -687,11 +698,11 @@
       "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
     },
     "docs": {
-      "rows": 700,
+      "rows": 731,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "a120246960b682fb4c9de2986e7ea71e58499f8e9de56386e8887e40e9757959"
+      "sha256": "beb40620c8c12c0b1501d36ced53da4081ec0efab424bfa516f5b3bf0a923c52"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -701,14 +712,14 @@
       "sha256": "e14897d31d08151baf5982a4b5519061dd6906695835198c9d371b7f2784673e"
     },
     "trace": {
-      "rows": 1452,
+      "rows": 1496,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "3d91fcd5821f77310a103374f1c4a2c2afab97085e0861a711ef63e36819aa71"
+      "sha256": "0d70a722c88fbe8cd8d266894c0b59fe03f196f44b64ef577f99adc12d9e3da7"
     }
   },
   "duplicate_ids": 0,
   "format_errors": 0,
-  "missing_links": 10
+  "missing_links": 13
 }
