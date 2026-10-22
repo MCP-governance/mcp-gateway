@@ -1,12 +1,16 @@
 {
-  "captured_at": "2026-10-21T15:18:58+09:00",
-  "head": "cf9f7e0d7d75c36cde00609692c3239ca078285f",
-  "branch": "10/21-status-update",
+  "captured_at": "2026-10-22T13:35:46+09:00",
+  "head": "62bafc49ec3f360415d229e24ee10b519c7cbe94",
+  "branch": "10/22-runtime-recovery",
   "status": [
-    "M research/llm-wiki/status/backlog.md",
+    "M full_stack_lab/supply_chain/intake-worker.Dockerfile",
+    " M research/llm-wiki/status/backlog.md",
     " M research/llm-wiki/status/current.md",
     " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md"
+    " M research/llm-wiki/status/repository-snapshot.md",
+    "?? full_stack_lab/tests/intake_worker_packaging_test.py",
+    "?? research/llm-wiki/analysis/ops-intake-packaging-r3/",
+    "?? research/llm-wiki/status/reports/2026-10-22-ops-intake-packaging-r3.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -14,7 +18,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "60a92b501203c2d0106d8833441f613ee49cfa2cf39b5627eed459a7599bf805"
+      "sha256": "cc87819ed0763e5e50b06ca36fe08244ca9e098c0ce85ba85035a8cc055b0489"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -26,7 +30,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "0a3ff9eb248d9ce5f8f4b4a7ec53799c69cd2dcd53e02f4995af90dbf0160cdc"
+      "sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
@@ -42,7 +46,7 @@
     },
     {
       "path": "full_stack_lab/opa/decision.rego",
-      "sha256": "b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904"
+      "sha256": "e52e3ea4de50e8ae9c4727079579bf86ba5967aebdb4921875d2ab1d3791c26e"
     },
     {
       "path": "endpoint-agent/bootstrap.py",
@@ -50,7 +54,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "c7d2562f6cb171444084b97fb91a77751b1e7d1ca5e2e3b009e35663db029535"
+      "sha256": "1259ae7a57ab0f579ef4d553382c152a5db83eb6e4ffd839ea55556ecab8b22d"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

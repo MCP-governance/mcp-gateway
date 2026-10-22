@@ -1,0 +1,104 @@
+[
+  {
+    "name": "packaging",
+    "at": "2026-10-22T04:33:24.831537+00:00",
+    "argv": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-B",
+      "-X",
+      "utf8",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "full_stack_lab/tests",
+      "-p",
+      "intake_worker_packaging_test.py",
+      "-v"
+    ],
+    "cwd": ".",
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_local_import_closure_is_packaged (intake_worker_packaging_test.IntakeWorkerPackagingTest) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.015s\n\nOK\n"
+  },
+  {
+    "name": "existing-suggestions",
+    "at": "2026-10-22T04:33:25.094197+00:00",
+    "argv": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-B",
+      "-X",
+      "utf8",
+      "-m",
+      "unittest",
+      "intake_one_click_check.SuggestionCheck",
+      "-v"
+    ],
+    "cwd": "full_stack_lab\\tests",
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "test_applicant_grade_preserved_and_other_inputs_derived (intake_one_click_check.SuggestionCheck) ... ok\ntest_assurance_optional_but_invalid_or_expired_eol_refused (intake_one_click_check.SuggestionCheck) ... ok\ntest_automatic_scope_grants_no_unknown_hosts_or_cross_server_data (intake_one_click_check.SuggestionCheck) ... ok\ntest_destructive_and_command_arguments_outrank_read_hint (intake_one_click_check.SuggestionCheck) ... ok\ntest_fingerprint_binds_source_grade_tools_and_scan_counts (intake_one_click_check.SuggestionCheck) ... ok\ntest_id_is_valid_stable_and_distinct (intake_one_click_check.SuggestionCheck) ... ok\ntest_pack_default_disabled_and_opt_in_missing_location_refused (intake_one_click_check.SuggestionCheck) ... ok\ntest_supplier_files_are_bounded_untrusted_data (intake_one_click_check.SuggestionCheck) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.029s\n\nOK\n"
+  },
+  {
+    "name": "open-endpoints",
+    "at": "2026-10-22T04:33:25.188006+00:00",
+    "argv": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-B",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/open_endpoints.py"
+    ],
+    "cwd": ".",
+    "exit_code": 0,
+    "stdout": "PASS 무인증 1개가 문서와 일치, 인증 필요 95개 (그중 장치 자격 13개: GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\n",
+    "stderr": ""
+  },
+  {
+    "name": "schema",
+    "at": "2026-10-22T04:33:25.255890+00:00",
+    "argv": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-B",
+      "-X",
+      "utf8",
+      "full_stack_lab/tests/schema_check.py"
+    ],
+    "cwd": ".",
+    "exit_code": 0,
+    "stdout": "PASS 기동마다 다시 만드는 CHECK 제약 12개가 파일 사이에서 같다\n",
+    "stderr": ""
+  },
+  {
+    "name": "pyflakes",
+    "at": "2026-10-22T04:33:25.292029+00:00",
+    "argv": [
+      "C:\\Program Files\\Python310\\python.exe",
+      "-B",
+      "-m",
+      "pyflakes",
+      "full_stack_lab\\supply_chain\\exit_terms.py",
+      "full_stack_lab\\supply_chain\\intake_worker.py",
+      "full_stack_lab\\supply_chain\\provenance.py",
+      "full_stack_lab\\supply_chain\\supplier_metadata.py",
+      "full_stack_lab\\supply_chain\\trivy_scan.py",
+      "full_stack_lab/tests/intake_worker_packaging_test.py"
+    ],
+    "cwd": ".",
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\n"
+  },
+  {
+    "name": "syntax-compile",
+    "exit_code": 0,
+    "files": [
+      "full_stack_lab\\supply_chain\\exit_terms.py",
+      "full_stack_lab\\supply_chain\\intake_worker.py",
+      "full_stack_lab\\supply_chain\\provenance.py",
+      "full_stack_lab\\supply_chain\\supplier_metadata.py",
+      "full_stack_lab\\supply_chain\\trivy_scan.py",
+      "full_stack_lab\\tests\\intake_worker_packaging_test.py"
+    ]
+  }
+]

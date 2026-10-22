@@ -1,0 +1,1 @@
+PASS: actual worker line-28 import resolves supplier_metadata.collect from staged Dockerfile COPY inputs. No worker loop or services started.

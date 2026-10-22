@@ -1,0 +1,21 @@
+py : test_local_import_closure_is_packaged (intake_worker_packaging_test.IntakeWorkerPackagingTest) ... 
+위치 줄:2 문자:158
++ ... | Out-Null; py -3 -B -X utf8 -m unittest discover -s full_stack_lab/t ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_local_impo...agingTest) ... :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+======================================================================
+FAIL: test_local_import_closure_is_packaged (intake_worker_packaging_test.IntakeWorkerPackagingTest) (module='supplier_
+metadata')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\bobysg\bob\프로젝트\mcp-gw-codex-sol\full_stack_lab\tests\intake_worker_packaging_test.py", line 51, in te
+st_local_import_closure_is_packaged
+    self.assertIsNotNone(PathFinder.find_spec(name, [str(app)]),
+AssertionError: unexpectedly None : Local worker dependency missing from /app: supplier_metadata
+
+----------------------------------------------------------------------
+Ran 1 test in 0.024s
+
+FAILED (failures=1)

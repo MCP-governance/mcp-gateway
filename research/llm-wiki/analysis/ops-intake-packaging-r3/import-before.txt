@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+  File "intake_worker.py", line 28, in <module>
+    from supplier_metadata import collect as supplier_metadata
+ModuleNotFoundError: No module named 'supplier_metadata'
