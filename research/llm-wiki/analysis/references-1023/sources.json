@@ -1,0 +1,141 @@
+{
+  "checked_at": "2026-10-23",
+  "mint_commit": "origin/main 7b7ad6d",
+  "warning": "공급자 페이지는 수시로 바뀐다. 해시는 확보 시점의 바이트이며 현재 페이지와 같다는 뜻이 아니다. 기능은 공급자 주장이며 시험하지 않았다.",
+  "sources": [
+    {
+      "id": "C1",
+      "title": "CrowdStrike 공식 보도자료(Falcon Guardian)",
+      "url": "https://www.crowdstrike.com/en-us/press-releases/crowdstrike-unveils-falcon-guardian-ai-agent-security/",
+      "fetched_at": "2026-10-22T16:25:55+00:00",
+      "sha256": "a6f69adf3edb3fd31464ddc07b49093436d01102f140e3c3703f5e7c2371be54",
+      "bytes": 307683,
+      "local_path": "local-sources\\references-1023\\C1.html",
+      "status": "saved_html",
+      "reading": "본문(제품 소개·기능 목록) 전체 읽음. 내비게이션·푸터 제외.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "C2",
+      "title": "CrowdStrike 공식 블로그(Falcon Guardian)",
+      "url": "https://www.crowdstrike.com/en-us/blog/falcon-guardian-defines-next-generation-of-ai-security",
+      "fetched_at": "2026-10-22T16:25:55+00:00",
+      "sha256": "4b7f7add628fdc7d66394e84b6eff39c30d036a4ef72fdab0233adc0a1ffa25c",
+      "bytes": 171481,
+      "local_path": "local-sources\\references-1023\\C2.html",
+      "status": "saved_html",
+      "reading": "본문 전체 읽음(WebFetch 요약 + 저장 HTML 텍스트 대조). 화면 구성 설명 없음 확인.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G1",
+      "title": "젠아이랩스 공식 홈",
+      "url": "https://genailabs.kr/",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "800ff8d22a2ad6e06e987d7b68c51328fdf131b5e675ab3742726db6fa2ba1fc",
+      "bytes": 76295,
+      "local_path": "local-sources\\references-1023\\G1.html",
+      "status": "saved_html",
+      "reading": "홈 제목·소개·링크 목록만 확인. 전체 읽기 아님.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G2",
+      "title": "GensOps 제품 소개(젠아이랩스 포털)",
+      "url": "https://gensapps.com/gensops",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "7445221e470a16fed8efef4d45a7aa2d60ac5a20a1f7f628c4fccf078828a036",
+      "bytes": 45346,
+      "local_path": "local-sources\\references-1023\\G2.html",
+      "status": "saved_html",
+      "reading": "제품 본문 전체 읽음.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G3",
+      "title": "사례 연구 AI-native 회사가 일하는 방법",
+      "url": "https://gensapps.com/case-studies/ai-native-company",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "5fa473f5f9dffbe80cc4e6d2615d3a3d180bd743f4f62ea0be5e8dadfa308497",
+      "bytes": 68765,
+      "local_path": "local-sources\\references-1023\\G3.html",
+      "status": "saved_html",
+      "reading": "사례 글 본문 전체 읽음. 수치는 회사 자체 기록.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G4",
+      "title": "GuardTrail 제품 소개",
+      "url": "https://gensapps.com/guardtrail",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "3ecf81f30917925fbbe863fa7de498a53fd6291ad4c7669c5a7eab5679f02c20",
+      "bytes": 47110,
+      "local_path": "local-sources\\references-1023\\G4.html",
+      "status": "saved_html",
+      "reading": "제품 본문 전체 읽음.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G5",
+      "title": "GensOps 라이브 데모(가상 데이터)",
+      "url": "https://ops.gensapps.com/demo",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "a4d86e9d2b8a3ed83ec0d02b4787d148ce4c7763ecc7c06801b80432d964837a",
+      "bytes": 12806,
+      "local_path": "local-sources\\references-1023\\G5.html",
+      "status": "saved_html",
+      "reading": "라이브 데모 첫 화면 텍스트만 확인(동적 3D 화면 미실행).",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G6",
+      "title": "젠아이랩스 이용약관",
+      "url": "https://gensapps.com/terms-of-service",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "9a701bce8bea556151d2ebd97f63beba26a56fa6d9f09614159d3c26423c7013",
+      "bytes": 56572,
+      "local_path": "local-sources\\references-1023\\G6.html",
+      "status": "saved_html",
+      "reading": "제18조 저작권 조항만 확인.",
+      "redistribution": "원본 재배포 금지로 간주(제3자 저작물). ignored local-sources에만 보관"
+    },
+    {
+      "id": "G7",
+      "title": "GitHub genailabs 조직 API(공개 저장소 수)",
+      "url": "https://api.github.com/orgs/genailabs",
+      "fetched_at": "2026-10-22T16:25:56+00:00",
+      "sha256": "5d7104fefac3cc82437b51509559507862aa74cf7b967bb0d1e148524add54df",
+      "bytes": 888,
+      "local_path": "local-sources\\references-1023\\G7.json",
+      "status": "saved_json",
+      "reading": "조직 공개 저장소 수 0 확인.",
+      "redistribution": "API 메타데이터"
+    }
+  ],
+  "secondary_not_saved": [
+    {
+      "id": "S1",
+      "url": "https://siliconangle.com/2026/09/01/crowdstrike-launches-falcon-guardian-to-police-ai-agents-at-the-endpoint/",
+      "status": "search_result_only",
+      "note": "검색 결과 제목·요약만 확인. 본문 미확보."
+    },
+    {
+      "id": "S2",
+      "url": "https://biztechmagazine.com/article/2026/09/crowdstrike-falcon-2026-crowdstrike-announces-falcon-guardian-and-safe-mind-aidr",
+      "status": "search_result_only",
+      "note": "검색 결과 요약만. Falcon Complete GA 시점 등 본문 주장 미확인."
+    },
+    {
+      "id": "S3",
+      "url": "https://nand-research.com/crowdstrike-falcon-guardian-ai-agent-security-at-the-endpoint/",
+      "status": "search_result_only",
+      "note": "2차 분석. 본문 미확보."
+    },
+    {
+      "id": "S4",
+      "url": "https://ir.crowdstrike.com/news-releases/news-release-details/crowdstrike-unveils-falcon-guardian-secure-ai-agents-where-they",
+      "status": "fetch_blocked_403",
+      "note": "IR 사본은 403. 같은 보도자료를 C1로 확보."
+    }
+  ]
+}

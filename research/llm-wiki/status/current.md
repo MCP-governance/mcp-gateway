@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-22
 
+## 레퍼런스 3종 조사 (10-23)
+
+CrowdStrike Falcon Guardian, 젠아이랩스 AI-native 개발 사례, GensOps를 공식 자료로 특정하고 솔루션 카드 3개와 비교 분석을 추가했다(모두 코드 미공개, 공급자 주장, 시험 없음). 방향 제안 R-1~R-7은 구현·승인이 아니다. [작업 보고](reports/2026-10-23-references-3.md), [비교 분석](../analysis/references-1023/README.md).
+
 ## 최신: 전체 CI 실패 후속 검증 (10-22)
 
 사용자 요청으로 작업 브랜치를 재개하고 main `62bafc4`까지의 독립 검토 기록을 통합했다. SQL 집계 시험에 고정 LIMIT을 명시하고, 후속 예약 효과/적대 시험의 Console 토큰과 MCP OAuth 토큰을 구분했다. 실제 OSS fetch MCP를 HTTPS로 검증하기 위한 CI 전용 Caddy/임시 CA 구성을 추가했다. 제품의 HTTPS, scope, 조회량 조건은 유지한다. 현재 위협 참조는 새 독립 변경 검토로 갱신했고 과거 검토 원본을 보존했다.
