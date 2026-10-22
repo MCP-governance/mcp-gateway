@@ -8,7 +8,7 @@ import types
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "gateway" / "app"
