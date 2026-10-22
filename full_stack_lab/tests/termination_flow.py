@@ -52,7 +52,9 @@ failures = []
 def managed_settings(excluded: str | None = None) -> None:
     for workstation in ("ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"):
         command = ["docker", "compose", "exec", "-T", "--user", "root", workstation, "python3",
-                   "/opt/office/managed/render.py", "/opt/office/catalog.toml", "/opt/office/rendered", "--install"]
+                   "/opt/office/managed/render.py", "/opt/office/catalog.toml", "/opt/office/rendered", "--install",
+                   # D-124: a managed URL must be HTTPS; the isolated lab address is the one allowed exception.
+                   "--gateway-url", "http://gateway:8080/mcp"]
         if excluded:
             command.extend(["--exclude-server", excluded])
         subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
