@@ -15801,5 +15801,1028 @@
         "policy_id": "POL-49"
       }
     ]
+  },
+  {
+    "id": "LIB-N01",
+    "title": "GatewayBench: Unified Capability and Security Evaluation Platform for MCP Gateways",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.23449",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-16)",
+    "year": 2026,
+    "authors": "Yitian Zheng, Zhaorun Chen, Haoyu Li 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 게이트웨이",
+    "originals": [],
+    "extracts": [],
+    "summary": "MCP 게이트웨이를 평면형과 계층형 두 구조로 나누고, 작업 완료·도구 사용 효율·공격 저항을 함께 재는 첫 평가 틀이다. 524개 작업과 실제 도구 11,118개를 쓰고, 널리 쓰이는 게이트웨이 7종에 정상·적대 작업을 모두 돌렸다고 밝힌다.",
+    "engineering_use": [
+      "MINT 게이트웨이 시험에 「도구 수가 늘어도 판정이 유지되는가」 축을 더할 때 작업·도구 구성 방식을 참고한다.",
+      "게이트웨이 구조(평면형/계층형)에 따라 효율과 보안이 달라진다는 주장을 우리 구조 설명에 쓰기 전에 직접 재현 범위를 정한다."
+    ],
+    "findings": [
+      "게이트웨이 설계에 따라 작업 완료·효율·공격 저항에 큰 차이가 났고, 그 효과는 모델과 하네스에 따라 달라졌다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N01.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.23449",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.23449",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N02",
+    "title": "Zero-Trust Authorization and Discovery for Enterprise MCP",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.22573",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-18)",
+    "year": 2026,
+    "authors": "Huan Li, Yuwei Wang, Srinivasan Manoharan",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "공식 SDK 6종의 인증·인가 기본 기능을 기업 제로트러스트 관점에서 점검하고, 한 서버가 사람(SSO)과 자동 에이전트(서비스 계정)를 함께 받을 때의 빈틈을 FastMCP 확장으로 메운 논문이다. 허용되지 않은 도구를 목록에서 가리는 방식과 호출 때 막는 방식을 함께 쓰면 노출률이 0으로 내려갔다고 보고한다.",
+    "engineering_use": [
+      "MINT가 도구 목록(`tools/list`)을 주체별로 거르는 방식과 호출 시 판정이 같은 규칙에서 나오는지 점검 항목으로 쓴다.",
+      "목록 숨김만으로는 스크립트 클라이언트가 우회할 수 있다는 결과를 「목록 필터는 보조, 집행은 호출 판정」 원칙의 근거로 인용한다."
+    ],
+    "findings": [
+      "본문 검사만 둔 서버는 4개 모델·2,160회 시도에서 금지 도구가 21.1% 노출됐고, 권한 인식 목록 노출을 더하면 0이었다고 밝힌다. 목록만 거른 경우는 스크립트 클라이언트가 우회할 수 있었다고 한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N02.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.22573",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.22573",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N03",
+    "title": "A Gateway Architecture for Enterprise MCP Authentication: Unifying Heterogeneous Auth, Identity Delegation, and the User / Non-User Persona Problem",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2608.10760",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-08-11)",
+    "year": 2026,
+    "authors": "Suraj Kumar, Amy Wang, Srinivasan Manoharan",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "대규모 조직이 팀마다 제각각 만든 MCP 서버 인증(무인증·API 키·OAuth)을 중앙 MCP 게이트웨이 한 층으로 모은 운영 경험 보고다. 사용자·비사용자 두 축과 자격 유형을 교차한 인증 모델, 토큰 교환(RFC 8693) 위임, 세 가지 신원 흐름을 제시한다. 회사명은 초록에 없다.",
+    "engineering_use": [
+      "MINT의 업스트림 자격(사용자 위임 대 서비스 계정)을 정리할 때 「사용자·자동 주체 × 자격 유형」 2축 분류를 그대로 대조표로 쓴다.",
+      "퇴사자 일괄 회수처럼 게이트웨이를 지나지 않으면 못 하는 운영 이점을 도입 근거 목록에 넣는다."
+    ],
+    "findings": [
+      "토큰을 직접 가져오기·게이트웨이가 발급·토큰 교환 위임의 세 방식을 제시하고, 수십 개 서버 앞에서 운영 중이라고 밝힌다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N03.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2608.10760",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2608.10760",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N04",
+    "title": "Hybrid Semantic Tool Discovery for Enterprise MCP Gateway: Architecture and Implementation",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2608.23992",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-08-25)",
+    "year": 2026,
+    "authors": "Olympia Saha, Amy Wang, Srinivasan Manoharan",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 게이트웨이",
+    "originals": [],
+    "extracts": [],
+    "summary": "게이트웨이 뒤 도구가 2,000개 이상이면 모델 문맥이 도구 설명으로 차 버리는 문제를, 도구 검색 메타 도구 두 개(검색·실행)로 바꾸는 SCOUT 구조로 푼 논문이다. PayPal 운영 환경에서 도구 토큰이 140.2k에서 1.3k로 줄었다고 저자가 보고한다.",
+    "engineering_use": [
+      "MINT 서버별 엔드포인트 구조에서 도구 수가 많은 서버를 점진 노출할 때, 검색 도구도 정책 판정 대상에 넣어야 한다는 설계 요구로 쓴다.",
+      "토큰 절감 수치는 저자 측정이므로 우리 환경 수치로 쓰지 않는다."
+    ],
+    "findings": [
+      "BM25와 밀집 벡터 검색을 합쳐 상위 k개 도구만 보여 주며 클라이언트 수정이 필요 없다고 밝힌다. 99% 감소는 저자가 보고한 PayPal 운영 수치다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N04.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2608.23992",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2608.23992",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N05",
+    "title": "My Credentials, Please: Detecting Filesystem Capability Laundering in MCP Servers at Scale",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.22301",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-15)",
+    "year": 2026,
+    "authors": "Zeqian Huang, Mingyue Tang, Aonan Guan 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 로컬·공급망",
+    "originals": [],
+    "extracts": [],
+    "summary": "로컬 MCP 서버를 클라이언트가 승인하면 서버 프로세스가 선언된 동작보다 넓은 호스트 파일 권한을 얻는 문제(파일시스템 능력 세탁)를 다룬다. 21,097개 서버를 정적·동적으로 점검해 취약 사례 150건을 확인하고 13건의 공시를 냈다고 보고한다.",
+    "engineering_use": [
+      "MINT 직원 PC 키트의 로컬 MCP 승인(D-192)에서 이미지 승인과 별개로 서버가 접근할 수 있는 경로를 계약에 적는 근거로 쓴다.",
+      "도구 분류가 비파일 기능인 서버에도 파일 접근이 숨어 있을 수 있다는 점을 도입 심사의 능력 추출 항목에 반영한다."
+    ],
+    "findings": [
+      "4,806개 선별 서버 중 16.4%가 기능 분류와 달리 파일시스템 능력을 보였고, Anthropic Git MCP 서버의 CVE 2건을 포함해 공시 13건을 냈다고 밝힌다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N05.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.22301",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.22301",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N06",
+    "title": "Runtime Authorization Consistency Checking for MCP-based Agentic Workflows",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.23498",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-20)",
+    "year": 2026,
+    "authors": "Aiyao Zhang, Xiaodong Lee, Zhixian Zhuang 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "호출 하나씩은 허용되지만 이어 붙이면 세션의 권한 경계를 넘는 「인가 표류」를, 컨트롤러 쪽 호출 경계에서 이미 수락된 단계의 계보와 비교해 막는 RAC를 제안한다. 1,248개 워크플로우 벤치마크에서 놓친 차단이 없었다고 보고한다.",
+    "engineering_use": [
+      "MINT의 호출 순서 정책(P-CHAIN-001·P-FLOW-001)이 「직전 수락 단계보다 더 넓은 권한」을 막는지 시험 시나리오를 추가한다.",
+      "거부된 단계를 계보에서 빼는 규칙은 우리 호출 원장 설계와 직접 대응하므로 비교 대상으로 둔다."
+    ],
+    "findings": [
+      "가장 강한 정적+이력 기준선은 차단해야 할 1,008개 중 509개를 놓쳤고 RAC는 놓침이 없었다고 한다. 실제 MCP 파일시스템 재생에서 안전하지 않은 이어가기 9건을 서버 실행 전에 막았고 p99 지연이 1ms 미만이라고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N06.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.23498",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.23498",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N07",
+    "title": "ACLE-MCP: Attested Capability Leases for Execution-Time Trust in Remote LLM Tool Use",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.02690",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-02)",
+    "year": 2026,
+    "authors": "Zhiyang Ding, Yang Luo, Guangpu Chen 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "원격 MCP에서 OAuth 승인만으로는 나중 호출을 처리하는 서버 쪽 워크로드가 처음 신뢰한 대상인지 보장하지 못하는 「승인 후 실행 신뢰 간극」을 다룬다. 호출 단위의 짧은 수명·송신자 제약 임대와 서버 쪽 실행 관문을 제안한다.",
+    "engineering_use": [
+      "MINT가 직접 운영하지 않는 외부 원격 MCP를 업스트림으로 쓸 때 남는 신뢰 한계를 문서화하는 근거로 쓴다.",
+      "온프레미스 우선 정책에서는 원격 MCP 자체를 제한하는 편이 먼저이며 이 구조는 고객 선택 기능 후보로만 둔다."
+    ],
+    "findings": [
+      "Keycloak·MCP Python SDK·vTPM 인용 검증 프로토타입에서 평가한 공격군을 모두 막았고 정상 작업 p95 지연이 OAuth 단독 대비 25.7% 늘었다고 밝힌다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N07.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.02690",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.02690",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N08",
+    "title": "TrustShiftProbe: Characterizing, Benchmarking, and Defending Staged Trust Attacks on MCP Servers",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2608.23763",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-08-24)",
+    "year": 2026,
+    "authors": "Mehrdad Rostamzadeh, Sidhant Narula, Mohammad Ghasemigol 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 공급망·변조",
+    "originals": [],
+    "extracts": [],
+    "summary": "처음에는 정상으로 행동해 신뢰를 쌓다가 어느 시점부터 악성으로 바뀌는 MCP 서버(TrustShift)를 정의하고, 배포 전 정적 분석이 놓치는 이유를 설명한다. 청정 구간에서 배운 행동 기준선과 서버 응답을 비교하는 전송 경계 방어 SHIELD를 제안한다.",
+    "engineering_use": [
+      "MINT의 계약 해시 재승인은 정의가 바뀔 때만 잡는다는 한계를 명시하고, 응답 형태·크기 기준선 이탈 탐지를 후속 검토 항목으로 둔다.",
+      "스키마를 지키는 조작은 런타임 필터를 통과할 수 있다는 점을 응답 검사 시험 설계에 반영한다."
+    ],
+    "findings": [
+      "9가지 TrustShift 변형(구조 위반·의미 훼손·범위 확대)과 세 목적(교란·유출 등)을 분류했다고 밝힌다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N08.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2608.23763",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2608.23763",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N09",
+    "title": "Local Allow, Global Deny: Why Per-Action Authorization Does Not Compose in LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.27620",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-20); IEEE TPS 채택본의 확장판(arXiv 주석 기준, 학회지 판본 미확인)",
+    "year": 2026,
+    "authors": "Anmol Pandey, Aditya Jain, Liang Chen 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "호출 단위 인가가 여럿 합쳐져도 전체 정책(의도·목적·출처·동의·위임)을 지킨다는 보장이 없음을 「구성적 인가 실패」로 정의하고, 목적 위반이 2-safety 초성질이어서 호출별 감시기로는 원리상 못 잡는다는 불가능 결과를 증명한다.",
+    "engineering_use": [
+      "MINT가 호출마다 판정하는 구조(OPA)의 이론적 한계 근거로 인용하고, 원장 기반 교차 실행 감시(목적·출처 비교)를 후속 과제로 둔다.",
+      "「한 호출씩 허용」 통과율만으로 안전을 주장하지 않는 보고 원칙의 근거로 쓴다."
+    ],
+    "findings": [
+      "합성한 최소 반례를 호출별로 보면 9개 LLM 판정기가 거의 모두 승인했고, 두 실행을 함께 보여 주면 같은 모델이 경고했다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N09.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.27620",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.27620",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N10",
+    "title": "Approve What, Exactly? Effect Binding and Trusted Rendering for Agent Step-Up Authorization",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.21063",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-15)",
+    "year": 2026,
+    "authors": "Sai Varun Kodathala, Prashanth Pollishetty, Jaylen Cargill",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 승인·동의",
+    "originals": [],
+    "extracts": [],
+    "summary": "에이전트가 돈을 보내거나 파일을 지우기 전에 받는 사람 승인이 진짜 제2요소가 되려면 에이전트가 만들 수 없고 정확히 무엇을 승인하는지 드러나야 한다고 보고, 승인 경로 공격 12가지를 정의해 AP2·Microsoft 방식·MCP elicitation에 적용한다. 승인 카드를 게이트웨이가 정규 효과 기술자로 만들고 패스키로 서명하는 ASU를 제안한다.",
+    "engineering_use": [
+      "MINT의 동의·승인 화면이 호출 인자(수신자·금액 등)를 정규화해 보여 주고 승인 후 인자 변경을 막는지 점검 항목으로 쓴다.",
+      "승인 홍수·자동 승인 모델이 쉽게 속는다는 결과를 승인 UI 설계(요약·일괄 처리)의 위험 근거로 쓴다."
+    ],
+    "findings": [
+      "에이전트 런타임 10종 감사에서 제3자가 검증할 승인 기록이 없었고, 측정 가능했던 8종 중 4종에서 승인 뒤 인자 변경이 있었다고 한다. 신뢰 카드가 공격 포착률을 0.30에서 0.98로 올렸다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N10.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.21063",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.21063",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N11",
+    "title": "Agent Approval Laundering: Transitive Effects Beyond the Approved Invocation",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.28586",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-23)",
+    "year": 2026,
+    "authors": "Jinqian Zhang, Haojun Xia, Shujiang Wu 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 승인·동의",
+    "originals": [],
+    "extracts": [],
+    "summary": "코딩 에이전트의 승인 기록이 진입 호출만 적고 그 호출이 일으키는 전이 효과(설치 훅, 네트워크 권한 등)를 빠뜨리는 「승인 세탁」을 측정 가능한 실패로 정의한다. 효과 단위로 묶은 승인과 벤치마크를 제안한다.",
+    "engineering_use": [
+      "MINT의 승인·원장 기록에 「호출」뿐 아니라 「예상 효과」를 같이 남기는 항목을 검토한다.",
+      "MCP 호출 하나가 네트워크 권한을 행사할 수 있다는 점은 대상 서버 외부 연결 통제(목적지 고정)와 함께 설명한다."
+    ],
+    "findings": [
+      "효과 구분 승인 기록으로 잔여 효과가 40건에서 13건으로 줄었다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N11.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.28586",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.28586",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N12",
+    "title": "Runtime Authorization for Resources Acquired by AI Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.14744",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-13)",
+    "year": 2026,
+    "authors": "Genliang Zhu, Chu Wang",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "에이전트가 계산 자원·자격·계정·다른 에이전트를 획득할 때 반환된 자원이 곧바로 권한으로 쓰이는 「이행 후 활성화 간극」을 다룬다. 획득물을 격리하고 공급자 증거로 실제 능력을 해석한 뒤 활성화 트랜잭션에서만 쓰게 하는 런타임 인가 구조를 제안한다.",
+    "engineering_use": [
+      "MINT가 도구 응답으로 받은 자격·토큰·URL을 후속 호출에 쓰지 못하게 하는 규칙(자격 재사용 차단)의 이론 근거로 쓴다."
+    ],
+    "findings": [
+      "8가지 안전 성질을 증명하고, 5개 자원 종류에서 안전하지 않은 흔적 40건을 모두 거부했다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N12.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.14744",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.14744",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N13",
+    "title": "Kairos: Transactional Security Enforcement at the System Boundary for LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.18457",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-13)",
+    "year": 2026,
+    "authors": "Kristoffer Hempel, Nils Loose, Lorenzo Cavallaro 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 집행 구조",
+    "originals": [],
+    "extracts": [],
+    "summary": "에이전트 격리 경계에 두는 참조 모니터 Kairos를 제안한다. 신뢰하는 출처를 선언한 정책이 대부분 결정하고 나머지는 보류해 두었다가 모델이나 사람이 사후 추적을 보고 풀어 준다.",
+    "engineering_use": [
+      "MINT의 허용·차단 이분 판정에 「보류 후 증거로 해제」 상태를 둘지 검토하는 비교 자료로 쓴다(관찰 모드와의 관계 명시)."
+    ],
+    "findings": [
+      "AgentDojo에서 공격 성공률을 47.0%에서 2.7%로 낮추면서 정상 유용성은 방어 없는 에이전트 수준을 유지했다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N13.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.18457",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.18457",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N14",
+    "title": "CreepScope: Measuring Post-Use Authorization Exposure in Tool-Using Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.15988",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-11)",
+    "year": 2026,
+    "authors": "Haoran Yu, Lifei Liu, Danping Zhang 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 인가·신원",
+    "originals": [],
+    "extracts": [],
+    "summary": "도구 호출 시점 인가만으로는 앞서 준 권한이 얼마나 오래 쓸 수 있는 채로 남는지 알 수 없다는 「권한 잔존」을 단계별 노출량 지표(CSE·RPD)로 측정한다. 단계마다 임대를 갱신하는 방식이 이론상 0임을 보인다.",
+    "engineering_use": [
+      "MINT 동의·목적 결속의 유효 기간을 「작업 단계 종료 뒤 남은 노출」 관점에서 측정하는 지표로 쓴다."
+    ],
+    "findings": [
+      "12개 워크플로우 재생에서 정적 작업 범위와 단조 온디맨드 방식은 평균 CSE가 26과 13이었고, 단계 임대는 0이었다고 밝힌다. 소규모 모의 사례이며 교차 모델 일반화는 아니라고 스스로 한계를 적는다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N14.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.15988",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.15988",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N15",
+    "title": "Persistent Billable State: Denial-of-Wallet Attacks and Defenses in Tool-Calling LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.28585",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-23)",
+    "year": 2026,
+    "authors": "Jinqian Zhang, Haojun Xia, Shujiang Wu 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 공급망·변조",
+    "originals": [],
+    "extracts": [],
+    "summary": "도구 응답을 대화 기록으로 보존하면 공급자가 매번 다시 과금해, 침해된 도구가 피해자 비용을 키울 수 있는 「지갑 서비스 거부」를 체계화한다. 호스트 쪽 불변식 네 가지로 프롬프트 질량·문맥 증가·재귀·누적 비용을 묶는다.",
+    "engineering_use": [
+      "MINT의 응답 크기 상한과 멱등성 규칙(response-cap)이 비용 증폭 관점에서도 유효한지 점검 항목으로 쓴다."
+    ],
+    "findings": [
+      "세션 누적 입력이 첫 호출의 14,293배까지 늘었고, 코드에서 보이는 방어 장치를 가진 서버·전송 저장소는 3,830개 중 71개였다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N15.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.28585",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.28585",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N16",
+    "title": "Mandato: Protocol-Level Enforcement of Digitally Signed Mandates on AI Agent Actions with Cryptographically Chained Audit Trails",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2608.14074",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-08-14)",
+    "year": 2026,
+    "authors": "Giovanni Racioppi",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 감사·증거",
+    "originals": [],
+    "extracts": [],
+    "summary": "에이전트 행동을 서명된 위임장(허용 도구·인자 제약·기간·대리 대상)으로 제한하는 MCP 투명 프록시 Mandato를 제안한다. 모든 판정과 증거를 해시 체인 감사 로그에 남기고 EU AI Act 12·14조, GDPR, NIS2에 대응시킨다.",
+    "engineering_use": [
+      "MINT 감사 원장의 증거 가치(해시 체인·시점 확인)를 규제 대응 문서에 연결할 때 구성 비교로 쓴다."
+    ],
+    "findings": [
+      "참조 구조와 평가 계획까지만 제시하며 구현 상태와 정량 평가는 계획 단계라고 밝힌다. 초록 기준이다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N16.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2608.14074",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2608.14074",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N17",
+    "title": "KedgeFlow: A Programmable Control Plane for Enterprise AI Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.14810",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-10)",
+    "year": 2026,
+    "authors": "Jun He, Deying Yu",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 집행 구조",
+    "originals": [],
+    "extracts": [],
+    "summary": "승인과 자원 실행이 계약을 공유하지 않아 생기는 변조·동시 재사용·재시도 문제를, 승인 서명·1회 소비 허용량·대상 측 조건·결과 기록으로 묶는 제어 평면 KedgeFlow로 푼다. MCP로 노출하는 참조 구현이 있다.",
+    "engineering_use": [
+      "MINT 승인된 호출이 정확히 한 번만 소비되는지(재시도·경쟁)를 시험하는 동시성 시나리오의 참조로 쓴다."
+    ],
+    "findings": [
+      "6,560회 동시 소비 시도에서 82개 허용량이 각각 정확히 한 번만 소비됐고 32호출 경쟁에서 효과가 한 번만 반영됐다고 보고한다. 단일 호스트·모의 대상 평가다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N17.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.14810",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.14810",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N18",
+    "title": "Registry Descriptions Go Stale Unevenly: An 89-Day Measurement of Model Context Protocol Drift, and Why Drift-Ranked Re-Auditing Under-Covers It",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2608.00997",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-08-02)",
+    "year": 2026,
+    "authors": "Gautam Bharti",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 공급망·변조",
+    "originals": [],
+    "extracts": [],
+    "summary": "공식 MCP 레지스트리 89일간 120회 관측으로 서버 설명이 얼마나 자주·고르게 바뀌는지 측정하고, 드리프트 순위로 재점검하면 효율이 낮다는 정책적 결론을 낸다. 내용 해시가 바뀌면 즉시 재검증하고 주기적 전수 점검을 병행하는 편이 맞다고 제안한다.",
+    "engineering_use": [
+      "MINT의 계약·설명 해시 변경 시 재승인 규칙(rug pull 대응)이 타당하다는 외부 근거로 쓴다."
+    ],
+    "findings": [
+      "서버의 8.6%만 설명을 고쳤고 변경의 절반 정도가 신규 등록에서 일어나 이력 순위로는 닿지 않는다고 한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N18.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2608.00997",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2608.00997",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N19",
+    "title": "What a Random Draw from the MCP Registry Contains, and What Tool-Use Benchmarks Contain Instead",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2609.10962",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-09-10)",
+    "year": 2026,
+    "authors": "Haseeb Mohammed Afsar",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 공급망·변조",
+    "originals": [],
+    "extracts": [],
+    "summary": "레지스트리 전수 24,135개 중 npm/stdio 400개를 무작위로 뽑아 실제로 연결해 보니 초기화에 성공한 서버가 48.8%뿐이었고, 도구 안전 주석 누락률도 선별 표본보다 높았다. 도구 사용 벤치마크는 실제 MCP 도구와 분포가 다르다고도 보인다.",
+    "engineering_use": [
+      "MINT 도입 심사가 「아예 기동하지 않는 서버」와 안전 주석 누락을 정상 경로의 실패로 다루는지 확인한다."
+    ],
+    "findings": [
+      "도구 수준 안전 주석 누락률이 무작위 표본 58.8%, 선별 표본 41.5%였다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N19.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2609.10962",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2609.10962",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N20",
+    "title": "Understanding the Hierarchical Structure and Functional Landscape of the Model Context Protocol Ecosystem",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.05319",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-04)",
+    "year": 2026,
+    "authors": "Tingxuan Tang, Zilong Chen, Yue Xiao",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 공급망·변조",
+    "originals": [],
+    "extracts": [],
+    "summary": "17개 마켓플레이스의 서버 목록 368,754건에서 도구 1,328,233개를 정적으로 추출해 58,915개 기능으로 분류한 대규모 지도(MCPacific)다. 도구의 85%가 개발 이외 영역이고 98.5%는 대체 도구가 있다고 보고한다.",
+    "engineering_use": [
+      "MINT 도입 심사에서 같은 기능의 대체 도구를 보안 경보·복잡도·유지 상태로 비교하는 화면의 근거로 쓴다."
+    ],
+    "findings": [
+      "기능이 같은 도구 쌍의 41%에서 복잡도 차이가 2.5배를 넘었다고 한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N20.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.05319",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.05319",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N21",
+    "title": "A Formal Security Framework for MCP-Based AI Agents: Threat Taxonomy, Verification Models, and Defense Mechanisms",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2604.05969",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-04-07)",
+    "year": 2026,
+    "authors": "Nirajan Acharya, Gaurav Kumar Gupta",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "177,000개 이상의 도구 분석에 근거해 위협 7범주·공격 벡터 23개의 분류와 신뢰 경계 표시 전이 시스템 모델, 기존 방어 12종의 비교, 다층 참조 구조를 제시한다. 어떤 단일 방어도 위협 지형의 34%를 넘지 못한다고 주장한다.",
+    "engineering_use": [
+      "MINT 위협 표(TH-xx)와 분류를 대조해 빠진 벡터를 찾는 점검표로 쓴다. 91% 이론 커버리지는 저자 주장이며 쓰지 않는다."
+    ],
+    "findings": [
+      "기존 단일 방어는 최대 34%만 덮고 통합 구조는 이론상 91%라고 주장한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N21.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2604.05969",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2604.05969",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N22",
+    "title": "SMCP: Secure Model Context Protocol",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2602.01129",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-02-01)",
+    "year": 2026,
+    "authors": "Xinyi Hou, Shenao Wang, Yifan Zhang 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "MCP에 통합 신원·상호 인증·보안 문맥 전파·세분화 정책·감사 로그를 더한 프로토콜 확장 SMCP를 제안하는 설계 논문이다.",
+    "engineering_use": [
+      "프로토콜 개정은 고객·하네스가 따라야 하는 영역이므로 직접 채택 대상이 아니라, 게이트웨이가 대신 채워 주는 기능 목록의 비교 자료로만 쓴다."
+    ],
+    "findings": [
+      "실험 수치 없이 구성 요소와 적용 예시를 설명한다. 초록 기준이다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N22.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2602.01129",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2602.01129",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N23",
+    "title": "Invisible Threats from Model Context Protocol: Generating Stealthy Injection Payload via Tree-based Adaptive Search",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2603.24203",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-03-25)",
+    "year": 2026,
+    "authors": "Yulin Shen, Xudong Pan, Geng Hong 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "도구 응답에 숨기는 간접 주입 페이로드를 트리 기반 적응 탐색으로 만들어 방어를 우회하는 공격 TIP을 제시한다. 방어 없는 환경에서 95% 이상, 대표 방어 4종 앞에서도 50% 이상 성공했다고 보고한다.",
+    "engineering_use": [
+      "MINT 응답 검사 시험에 적응형 페이로드를 쓸 때 방어를 학습하는 공격자를 가정해야 하며, 결정적 정책이 그 뒤를 받치는 구조라는 점을 보고에 명시한다."
+    ],
+    "findings": [
+      "실제 MCP 시스템에 구현해 공격이 통했다고 밝힌다. 모델·서버 판본은 초록에 없다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N23.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2603.24203",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2603.24203",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N24",
+    "title": "Breaking the Protocol: Security Analysis of the Model Context Protocol Specification and Prompt Injection Vulnerabilities in Tool-Integrated LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2601.17549",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-01-24)",
+    "year": 2026,
+    "authors": "Narek Maloyan, Dmitry Namiot",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "MCP 명세 자체를 분석해 능력 증명 부재, 방향 없는 sampling, 다중 서버 암묵 신뢰의 세 구조 취약점을 지적한다. 기능 확장 MCPSec이 공격 성공률을 52.8%에서 12.4%로 낮췄다고 보고한다.",
+    "engineering_use": [
+      "새 명세(2026-07-28)가 sampling을 폐기 예정으로 돌렸으므로 이 논문의 sampling 지적은 신규 배포 기준 영향이 줄었다는 점을 정정 메모로 남긴다."
+    ],
+    "findings": [
+      "MCP 구조 선택이 동등한 비MCP 통합보다 공격 성공률을 23~41% 키웠다고 주장한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N24.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2601.17549",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2601.17549",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N25",
+    "title": "MCP Security Bench (MSB): Benchmarking Attacks Against Model Context Protocol in LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2510.15994",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2025-10-14); ICLR 2026 채택(arXiv 주석 기준, 논문집 판본 미확인)",
+    "year": 2025,
+    "authors": "Dongsen Zhang, Zekun Li, Xu Luo 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "MCP 파이프라인 전 단계(계획·호출·응답)의 공격 12종을 실제 도구로 실행해 재는 MSB 벤치마크다. 9개 모델·10개 영역·도구 405개, 공격 인스턴스 2,000개이며 보안과 성능의 균형 지표 NRP를 제안한다.",
+    "engineering_use": [
+      "MINT가 이미 보유한 MCPSecBench 계열 벤치마크와 보완적으로 쓸 수 있는 실행형 공격 시험 목록이다."
+    ],
+    "findings": [
+      "성능이 높은 모델일수록 공격에 더 취약하다고 보고한다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N25.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2510.15994",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2510.15994",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N26",
+    "title": "AI Agents May Always Fall for Prompt Injections",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2605.17634",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-05-17)",
+    "year": 2026,
+    "authors": "Sahar Abdelnabi, Eugene Bagdasarian",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 위협 분류",
+    "originals": [],
+    "extracts": [],
+    "summary": "데이터와 지시를 엄격히 분리하는 방어가 문맥 조작형 공격을 못 잡고 정당한 행동을 해친다고 보이고, 문맥적 무결성(CI) 이론으로 프롬프트 주입을 다시 설명한다. 공격자가 정당한 흐름처럼 보이게 만들거나, 방어자가 규범을 조이면 정당한 흐름까지 막는 딜레마를 제시한다.",
+    "engineering_use": [
+      "프롬프트 주입 완전 방어를 약속하지 않고 「결정적 정책으로 피해 범위를 제한」한다는 MINT 제품 주장의 한계 설명에 인용한다."
+    ],
+    "findings": [
+      "현재 연구가 다루는 공격 면이 앞으로 줄어든다고 주장한다. 초록 기준이다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N26.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2605.17634",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2605.17634",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N27",
+    "title": "ClawMMU: Protection-Coherent Virtual Memory for Stateful LLM Agents",
+    "kind": "preprint",
+    "url": "https://arxiv.org/abs/2610.28093",
+    "verified_on": "2026-10-23",
+    "verification": "arxiv_api_abstract_read",
+    "publication_status": "preprint",
+    "venue": "arXiv preprint (제출 2026-10-20); NeurIPS 2026 AgenticOS 워크숍(비아카이브) 채택(arXiv 주석 기준)",
+    "year": 2026,
+    "authors": "Jinhao Hu, Bardia Mohammadi, Mofasshara Binte Rafique 외",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 집행 구조",
+    "originals": [],
+    "extracts": [],
+    "summary": "에이전트 장기 기억의 각 조각에 소유자·범위·출처·권한 라벨을 붙이고 문맥 진입·저장·복원·행동 시점에 검사하는 ClawMMU를 제안한다. 가져온 웹 페이지의 숨은 지시가 사용자 지시로 취급되는 문제를 의미 분류 대신 보호 위반으로 바꾸는 접근이다.",
+    "engineering_use": [
+      "MINT의 출처 표시(provenance)와 목적 결속을 도구 응답 → 후속 호출 경로의 라벨 전파로 확장할지 검토하는 참조다(비채택 포함 판단은 소유자)."
+    ],
+    "findings": [
+      "NeurIPS 2026 AgenticOS 워크숍 채택(비아카이브)이라고 arXiv 주석에 적었다. 정량 결과는 초록에서 확인하지 않았다."
+    ],
+    "limitations": "arXiv API의 초록·서지만 읽었다. 본문·실험 조건(모델·서버 판본·반복·오탐·미탐)·재현은 확인하지 않았다. 수치는 저자 보고이며 우리 환경 값으로 쓰지 않는다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "서지와 자체 요약만 보관하며 원문은 복제하지 않는다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N27.md",
+    "metadata_evidence": {
+      "url": "https://arxiv.org/abs/2610.28093",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "arXiv API 응답의 제목·저자·제출일·초록·주석만 읽음. 본문·표·그림 미정독",
+      "sha256": "4511ed24f612e6f6b152a8982f035b6d00dcac6153cb8cbb995360655a8303da"
+    },
+    "arxiv_id": "2610.28093",
+    "summary_review": "abstract_compared_manually"
+  },
+  {
+    "id": "LIB-N28",
+    "title": "Model Context Protocol (MCP): Security Design Considerations for AI-Driven Automation (Cybersecurity Information Sheet)",
+    "kind": "guide",
+    "url": "https://www.nsa.gov/Press-Room/Press-Releases-Statements/Press-Release-View/Article/4496698/nsa-releases-security-design-considerations-for-ai-driven-automation-leveraging/",
+    "verified_on": "2026-10-23",
+    "verification": "official_press_release_read_pdf_hash_only",
+    "publication_status": "published_guidance",
+    "venue": "미국 NSA AI Security Center, 2026-05-20 보도자료(PDF 판본 v1.0 표기는 2차 보도 기준)",
+    "year": 2026,
+    "authors": "National Security Agency, Artificial Intelligence Security Center",
+    "topic": "MCP·에이전트 보안 최신 레퍼런스(2026-08~10 보강) · 정부 가이드",
+    "jurisdiction": "US",
+    "instrument_type": "guidance",
+    "binding": false,
+    "originals": [],
+    "extracts": [],
+    "summary": "NSA AI 보안센터가 MCP 도입 조직을 위해 낸 정보 시트(CSI)다. 보도자료는 직렬화 위험·신뢰 경계·에이전트 오용을 주요 문제로 들고, 인증·인가·입력 검증 같은 기존 원칙이 필요하지만 동적 도구 호출·암묵적 신뢰·문맥 공유 때문에 충분하지 않으며 에이전트 환경 전체를 하나의 연속체로 다뤄야 한다고 설명한다.",
+    "engineering_use": [
+      "MINT가 호출 경계에서 하는 일(신원·계약·자원 분류·정책 판정)과 CSI가 말하는 연속체 관점(도입 심사·런타임·종료 수명주기)의 대응표를 만들 때 공식 정부 출처로 인용한다.",
+      "CSI 본문 권고 항목은 이번에 읽지 못했으므로 항목별 대응은 PDF를 확보해 읽은 뒤에 한다."
+    ],
+    "findings": [
+      "보도자료는 MCP가 PII 조회 같은 민감 작업에도 쓰이고 현재 명세는 구현 시 각별한 주의가 필요하다고 밝힌다.",
+      "프로토콜·구현·운영 태세 세 층의 공백이 함께 문제라고 설명하며 높은 보증이 필요한 환경에서는 신중 도입을 권한다."
+    ],
+    "limitations": "보도자료 전문만 읽었다. CSI PDF 본문은 읽지 못했다(서버가 비브라우저 요청에 403을 반환했고, 브라우저 창에서는 다운로드로 처리되어 본문을 추출하지 못했다). PDF 크기 305,977바이트와 SHA-256만 브라우저 요청으로 계산했다. 권고 항목 수·세부 내용은 확인하지 않았다.",
+    "distribution": "public-under-license",
+    "distribution_reason": "미국 정부 문서의 재배포 조건은 확인하지 않았다. 링크와 자체 요약만 보관한다.",
+    "license_notice": "라이선스 미확인: 본문을 복제하지 않고 서지·자체 요약만 보관한다.",
+    "page": "papers/LIB-N28.md",
+    "metadata_evidence": {
+      "url": "https://www.nsa.gov/Portals/75/documents/Cybersecurity/CSI_MCP_SECURITY.pdf",
+      "path": "analysis/refs-update-1023/refs-update-1023.sources.json",
+      "verified_on": "2026-10-23",
+      "reading_scope": "보도자료 전문(브라우저 창 텍스트 추출). PDF는 바이트 해시만",
+      "sha256": "f9c0452acdf5f45603f61079eea66b67e19b372bee96a8bbb3981a74429add03"
+    },
+    "summary_review": "press_release_compared_manually"
   }
 ]
