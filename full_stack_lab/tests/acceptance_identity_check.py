@@ -165,6 +165,28 @@ class AcceptanceIdentityTests(unittest.IsolatedAsyncioTestCase):
         with self.transport(handle):
             await a.authorization_bundle_served()
 
+    async def test_relationship_queries_reach_scope_policy_after_volume_check(self):
+        from app.classify import bulk_read_reason
+        queries = []
+
+        async def call(who, tool, arguments):
+            self.assertEqual((who, tool), ("employee", "postgres__execute_sql"))
+            self.assertIsNone(bulk_read_reason("postgres", "execute_sql", arguments, 100))
+            queries.append(arguments["sql"])
+            outside = "hr.employees" in arguments["sql"]
+            return {"decision": "Alert" if outside else "Allow",
+                    "policy_id": "P-SCOPE-001" if outside else "P-AUTHZ-ALLOW-001",
+                    "is_error": False, "text": ""}
+
+        with patch.object(a, "operating", new=AsyncMock()), patch.object(a, "call", new=call), \
+                patch.object(a.db, "fetch_one", new=AsyncMock(return_value={"policy_input": {
+                    "relationship": {"ids": ["UR-PG-ANALYTICS"], "outside": ["hr.employees"]}}})):
+            await a.relationship_scope_alerts()
+        self.assertEqual(len(queries), 2)
+        for sql in queries:
+            self.assertIsNotNone(bulk_read_reason("postgres", "execute_sql", {
+                "sql": sql.rsplit(" LIMIT ", 1)[0]}, 100))
+
 
 if __name__ == "__main__":
     unittest.main()

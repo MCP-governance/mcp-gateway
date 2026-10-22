@@ -431,14 +431,14 @@ async def relationship_scope_alerts() -> str:
     """D-39: UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
     another table runs but is flagged; a read inside the relationship stays a plain Allow."""
     await operating("postgres")
-    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees"})
+    outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees LIMIT 1"})
     expect(outside.get("decision") == "Alert" and outside.get("policy_id") == "P-SCOPE-001" and not outside["is_error"],
            f"이용 관계 밖 테이블: {outside.get('decision')} {outside.get('policy_id')} {outside['text'][:120]}")
     row = await db.fetch_one("SELECT policy_input FROM decisions WHERE id=%s", (outside.get("decision_id"),))
     scope = (row["policy_input"] or {}).get("relationship") or {}
     expect(scope.get("ids") == ["UR-PG-ANALYTICS"] and scope.get("outside") == ["hr.employees"],
            f"정책 입력의 relationship: {scope}")
-    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders"})
+    inside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM sales.orders LIMIT 1"})
     expect(inside.get("decision") == "Allow" and inside.get("policy_id") == "P-AUTHZ-ALLOW-001" and not inside["is_error"],
            f"이용 관계 안 테이블: {inside.get('decision')} {inside.get('policy_id')}")
     return "hr.employees → P-SCOPE-001 경보 · sales.orders → 허용"
