@@ -21,7 +21,7 @@ def load_scan():
 class HardLinkReview(unittest.TestCase):
     def test_settings_hardlink_is_rejected_without_reading_report_values(self):
         with tempfile.TemporaryDirectory(prefix="mint-s6-link-") as root:
-            home = Path(root) / "home"
+            home = Path(root).resolve() / "home"
             private = Path(root) / "private.json"
             target = home / ".claude" / "settings.json"
             target.parent.mkdir(parents=True)
@@ -42,7 +42,7 @@ class DirectorySwapReview(unittest.TestCase):
     def test_linked_settings_directory_is_not_followed(self):
         # The state a swap after a path check would leave: .claude points outside the home.
         with tempfile.TemporaryDirectory(prefix="mint-s6-swap-") as root:
-            home = Path(root) / "home"
+            home = Path(root).resolve() / "home"
             outside = Path(root) / "outside"
             outside.mkdir()
             home.mkdir()
