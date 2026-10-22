@@ -859,12 +859,13 @@ def json_document(value) -> str:
 
 
 async def _held_policy(device: dict, policy: dict, reported_hash: str) -> dict | None:
-    """The policy a device installed earlier, when it differs from the current one only by servers added since.
+    """The policy a device installed earlier, when it differs from the current one only by its server list.
 
-    Control changes (allow-list, protection settings, header helper, removed servers) change the rendering for the
-    servers the device already holds, so they never match here and stay fail-closed (D-198)."""
+    Control changes (allow-list, protection settings, header helper) change the rendering for the servers the device
+    already holds, so they never match here and stay fail-closed (D-198). A removed server is not one: the Gateway
+    refuses it per call, and stopping every server for it let one upstream going to ERROR cut a whole PC off."""
     held = (device.get("detail") or {}).get("policy_servers")
-    if reported_hash == policy["policy_hash"] or not held or not set(held) <= set(policy["servers"]):
+    if reported_hash == policy["policy_hash"] or not held:
         return None
     old = await managed_policy(device, servers=held)
     return old if old["policy_hash"] == reported_hash else None
@@ -996,11 +997,13 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False, 
         return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
     if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
-        # Servers added since the device's policy: the ones it holds keep working until it applies the new one,
-        # the new ones wait (D-198). Anything else that differs is a control change and stops everything.
+        # Servers added or removed since the device's policy: the ones it holds and may still use keep working until
+        # it applies the new one (D-198). Anything else that differs is a control change and stops everything.
         held = None if mint else await _held_policy(device, policy, device["policy_hash"])
         if not held or claims.get("device_policy") != device["policy_hash"]:
             return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
+        if server and server not in policy["servers"]:
+            return "사용할 수 없는 서버입니다."
         if server and server not in held["servers"]:
             return "새로 승인된 서버입니다. PC가 새 정책을 적용하면 사용할 수 있습니다."
     return None
