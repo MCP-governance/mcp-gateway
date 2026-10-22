@@ -1,0 +1,1375 @@
+{
+  "baseline": "1c59a00c91727dfbd9faab37870f274b11e448f5",
+  "branch": "10/22-kit-macos",
+  "committed": false,
+  "scope": "local-code-only",
+  "macos_execution": "not-run",
+  "files": [
+    {
+      "path": "endpoint-agent/bootstrap.py",
+      "sha256": "a19d2510cb436af15d251d48fb4bf61a6435d52e7c834eb701b30aa3e4bea6f8",
+      "symbols": [
+        {
+          "name": "Failed",
+          "line": 50,
+          "end_line": 51
+        },
+        {
+          "name": "run",
+          "line": 54,
+          "end_line": 56
+        },
+        {
+          "name": "out",
+          "line": 59,
+          "end_line": 61
+        },
+        {
+          "name": "step",
+          "line": 64,
+          "end_line": 65
+        },
+        {
+          "name": "groups_of",
+          "line": 68,
+          "end_line": 70
+        },
+        {
+          "name": "employee_account",
+          "line": 73,
+          "end_line": 82
+        },
+        {
+          "name": "ensure_packages",
+          "line": 87,
+          "end_line": 109
+        },
+        {
+          "name": "search_roots",
+          "line": 112,
+          "end_line": 123
+        },
+        {
+          "name": "native_claude",
+          "line": 126,
+          "end_line": 135
+        },
+        {
+          "name": "release_directory",
+          "line": 138,
+          "end_line": 150
+        },
+        {
+          "name": "native",
+          "line": 153,
+          "end_line": 157
+        },
+        {
+          "name": "place_harnesses",
+          "line": 160,
+          "end_line": 194
+        },
+        {
+          "name": "managed_account",
+          "line": 199,
+          "end_line": 215
+        },
+        {
+          "name": "shim_state",
+          "line": 221,
+          "end_line": 228
+        },
+        {
+          "name": "replaced_dir",
+          "line": 231,
+          "end_line": 234
+        },
+        {
+          "name": "write_shims",
+          "line": 237,
+          "end_line": 254
+        },
+        {
+          "name": "launcher_functions",
+          "line": 257,
+          "end_line": 270
+        },
+        {
+          "name": "edit_hook",
+          "line": 273,
+          "end_line": 286
+        },
+        {
+          "name": "write_functions",
+          "line": 289,
+          "end_line": 293
+        },
+        {
+          "name": "remove_functions",
+          "line": 296,
+          "end_line": 299
+        },
+        {
+          "name": "replace_launcher",
+          "line": 302,
+          "end_line": 326
+        },
+        {
+          "name": "remove_shims",
+          "line": 329,
+          "end_line": 343
+        },
+        {
+          "name": "installed",
+          "line": 348,
+          "end_line": 349
+        },
+        {
+          "name": "rollback",
+          "line": 352,
+          "end_line": 357
+        },
+        {
+          "name": "close_sessions",
+          "line": 360,
+          "end_line": 365
+        },
+        {
+          "name": "install_managed",
+          "line": 368,
+          "end_line": 378
+        },
+        {
+          "name": "harness_login",
+          "line": 386,
+          "end_line": 414
+        },
+        {
+          "name": "self_check",
+          "line": 417,
+          "end_line": 490
+        },
+        {
+          "name": "main",
+          "line": 493,
+          "end_line": 557
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/managed-linux.py",
+      "sha256": "b22cde28efd891305d35003993fc71cd397cbec611944da535ced8ff6829fb39",
+      "symbols": [
+        {
+          "name": "load_module",
+          "line": 40,
+          "end_line": 44
+        },
+        {
+          "name": "protected",
+          "line": 47,
+          "end_line": 48
+        },
+        {
+          "name": "private_write",
+          "line": 51,
+          "end_line": 61
+        },
+        {
+          "name": "request",
+          "line": 64,
+          "end_line": 77
+        },
+        {
+          "name": "verify_transport",
+          "line": 80,
+          "end_line": 88
+        },
+        {
+          "name": "apply_policy",
+          "line": 91,
+          "end_line": 99
+        },
+        {
+          "name": "checks",
+          "line": 102,
+          "end_line": 133
+        },
+        {
+          "name": "host_report",
+          "line": 136,
+          "end_line": 152
+        },
+        {
+          "name": "forget_stale_sign_in",
+          "line": 155,
+          "end_line": 170
+        },
+        {
+          "name": "install",
+          "line": 173,
+          "end_line": 268
+        },
+        {
+          "name": "serve",
+          "line": 271,
+          "end_line": 381
+        },
+        {
+          "name": "rollback",
+          "line": 384,
+          "end_line": 408
+        },
+        {
+          "name": "header",
+          "line": 414,
+          "end_line": 427
+        },
+        {
+          "name": "main",
+          "line": 430,
+          "end_line": 454
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/managed-macos.py",
+      "sha256": "cd6ebd545c67db2178f55a9b67057e2423912232fcfa70f1e7a42aab476a4a6a",
+      "symbols": [
+        {
+          "name": "load",
+          "line": 35,
+          "end_line": 40
+        },
+        {
+          "name": "run",
+          "line": 43,
+          "end_line": 48
+        },
+        {
+          "name": "account_name",
+          "line": 51,
+          "end_line": 56
+        },
+        {
+          "name": "pf_rules",
+          "line": 59,
+          "end_line": 73
+        },
+        {
+          "name": "daemon_plist",
+          "line": 76,
+          "end_line": 82
+        },
+        {
+          "name": "configure_bootstrap",
+          "line": 85,
+          "end_line": 91
+        },
+        {
+          "name": "configure_runtime",
+          "line": 94,
+          "end_line": 98
+        },
+        {
+          "name": "host_report",
+          "line": 101,
+          "end_line": 109
+        },
+        {
+          "name": "authorize_peer",
+          "line": 112,
+          "end_line": 119
+        },
+        {
+          "name": "core_module",
+          "line": 122,
+          "end_line": 125
+        },
+        {
+          "name": "save",
+          "line": 128,
+          "end_line": 129
+        },
+        {
+          "name": "anchor_name",
+          "line": 132,
+          "end_line": 135
+        },
+        {
+          "name": "apply_pf",
+          "line": 138,
+          "end_line": 160
+        },
+        {
+          "name": "start_runtime",
+          "line": 163,
+          "end_line": 164
+        },
+        {
+          "name": "checks",
+          "line": 167,
+          "end_line": 182
+        },
+        {
+          "name": "write_wrappers",
+          "line": 185,
+          "end_line": 214
+        },
+        {
+          "name": "rollback",
+          "line": 217,
+          "end_line": 262
+        },
+        {
+          "name": "install",
+          "line": 265,
+          "end_line": 345
+        },
+        {
+          "name": "main",
+          "line": 348,
+          "end_line": 363
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/kit_commands.py",
+      "sha256": "f37573e9810b537f18e21cd9e27d25b002e88bec4f7f19cef77d058fe917688d",
+      "symbols": [
+        {
+          "name": "macos_bootstrap",
+          "line": 8,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_service.py",
+      "sha256": "a8634c59050a708bf55a884018815b408b46b84d56283165dd3df83a182693c2",
+      "symbols": [
+        {
+          "name": "login_allowed",
+          "line": 57,
+          "end_line": 65
+        },
+        {
+          "name": "record_failed_login",
+          "line": 68,
+          "end_line": 69
+        },
+        {
+          "name": "bootstrap_passwords",
+          "line": 72,
+          "end_line": 82
+        },
+        {
+          "name": "bootstrap_field_accounts",
+          "line": 85,
+          "end_line": 101
+        },
+        {
+          "name": "lifespan",
+          "line": 105,
+          "end_line": 128
+        },
+        {
+          "name": "origin_key",
+          "line": 139,
+          "end_line": 147
+        },
+        {
+          "name": "browser_boundary",
+          "line": 151,
+          "end_line": 160
+        },
+        {
+          "name": "root",
+          "line": 164,
+          "end_line": 165
+        },
+        {
+          "name": "login_page",
+          "line": 169,
+          "end_line": 170
+        },
+        {
+          "name": "signup_page",
+          "line": 174,
+          "end_line": 175
+        },
+        {
+          "name": "workspace_page",
+          "line": 179,
+          "end_line": 180
+        },
+        {
+          "name": "Login",
+          "line": 183,
+          "end_line": 185
+        },
+        {
+          "name": "Signup",
+          "line": 188,
+          "end_line": 192
+        },
+        {
+          "name": "request_signup",
+          "line": 196,
+          "end_line": 249
+        },
+        {
+          "name": "ImpactInput",
+          "line": 252,
+          "end_line": 258
+        },
+        {
+          "name": "McpIntake",
+          "line": 261,
+          "end_line": 271
+        },
+        {
+          "name": "ExitTermsReview",
+          "line": 274,
+          "end_line": 279
+        },
+        {
+          "name": "IntakeRejection",
+          "line": 282,
+          "end_line": 283
+        },
+        {
+          "name": "RuntimeRollback",
+          "line": 286,
+          "end_line": 288
+        },
+        {
+          "name": "github_repository_url",
+          "line": 291,
+          "end_line": 310
+        },
+        {
+          "name": "current_identity",
+          "line": 313,
+          "end_line": 314
+        },
+        {
+          "name": "admin_caller",
+          "line": 317,
+          "end_line": 321
+        },
+        {
+          "name": "login",
+          "line": 325,
+          "end_line": 349
+        },
+        {
+          "name": "password_principal",
+          "line": 352,
+          "end_line": 378
+        },
+        {
+          "name": "me",
+          "line": 382,
+          "end_line": 392
+        },
+        {
+          "name": "field_ca",
+          "line": 404,
+          "end_line": 419
+        },
+        {
+          "name": "pc_kit",
+          "line": 422,
+          "end_line": 430
+        },
+        {
+          "name": "download_managed_kit",
+          "line": 434,
+          "end_line": 518
+        },
+        {
+          "name": "logout",
+          "line": 522,
+          "end_line": 534
+        },
+        {
+          "name": "session_activity",
+          "line": 538,
+          "end_line": 541
+        },
+        {
+          "name": "gitea_login",
+          "line": 559,
+          "end_line": 561
+        },
+        {
+          "name": "gitea_admin_client",
+          "line": 564,
+          "end_line": 568
+        },
+        {
+          "name": "ensure_gitea_team",
+          "line": 571,
+          "end_line": 592
+        },
+        {
+          "name": "ensure_gitea_user",
+          "line": 595,
+          "end_line": 624
+        },
+        {
+          "name": "reconcile_gitea_accounts",
+          "line": 627,
+          "end_line": 638
+        },
+        {
+          "name": "gitea_forward_auth",
+          "line": 642,
+          "end_line": 670
+        },
+        {
+          "name": "AccountStatus",
+          "line": 673,
+          "end_line": 675
+        },
+        {
+          "name": "AccountInvitations",
+          "line": 678,
+          "end_line": 680
+        },
+        {
+          "name": "invite_accounts",
+          "line": 684,
+          "end_line": 708
+        },
+        {
+          "name": "list_invitations",
+          "line": 712,
+          "end_line": 716
+        },
+        {
+          "name": "revoke_invitation",
+          "line": 720,
+          "end_line": 727
+        },
+        {
+          "name": "list_accounts",
+          "line": 731,
+          "end_line": 741
+        },
+        {
+          "name": "list_signup_requests",
+          "line": 745,
+          "end_line": 751
+        },
+        {
+          "name": "approve_signup",
+          "line": 755,
+          "end_line": 779
+        },
+        {
+          "name": "reject_signup",
+          "line": 783,
+          "end_line": 794
+        },
+        {
+          "name": "set_account_status",
+          "line": 798,
+          "end_line": 837
+        },
+        {
+          "name": "delete_account",
+          "line": 841,
+          "end_line": 878
+        },
+        {
+          "name": "health",
+          "line": 882,
+          "end_line": 884
+        },
+        {
+          "name": "system_metrics",
+          "line": 888,
+          "end_line": 892
+        },
+        {
+          "name": "ready",
+          "line": 896,
+          "end_line": 921
+        },
+        {
+          "name": "gateway_proxy",
+          "line": 924,
+          "end_line": 952
+        },
+        {
+          "name": "allowed_pages",
+          "line": 968,
+          "end_line": 974
+        },
+        {
+          "name": "console_user",
+          "line": 977,
+          "end_line": 985
+        },
+        {
+          "name": "intake_rows",
+          "line": 988,
+          "end_line": 1007
+        },
+        {
+          "name": "with_risk",
+          "line": 1010,
+          "end_line": 1032
+        },
+        {
+          "name": "list_mcp_requests",
+          "line": 1036,
+          "end_line": 1039
+        },
+        {
+          "name": "search_catalog",
+          "line": 1043,
+          "end_line": 1065
+        },
+        {
+          "name": "internal_repo_name",
+          "line": 1068,
+          "end_line": 1071
+        },
+        {
+          "name": "repo_head",
+          "line": 1074,
+          "end_line": 1081
+        },
+        {
+          "name": "internal_archive_digest",
+          "line": 1084,
+          "end_line": 1102
+        },
+        {
+          "name": "publish_internal_repo",
+          "line": 1105,
+          "end_line": 1156
+        },
+        {
+          "name": "create_mcp_request",
+          "line": 1160,
+          "end_line": 1209
+        },
+        {
+          "name": "review_exit_terms",
+          "line": 1213,
+          "end_line": 1231
+        },
+        {
+          "name": "queue_validation",
+          "line": 1235,
+          "end_line": 1254
+        },
+        {
+          "name": "intake_report_row",
+          "line": 1257,
+          "end_line": 1264
+        },
+        {
+          "name": "runtime_recipe",
+          "line": 1270,
+          "end_line": 1285
+        },
+        {
+          "name": "start_runtime",
+          "line": 1289,
+          "end_line": 1317
+        },
+        {
+          "name": "stop_runtime",
+          "line": 1321,
+          "end_line": 1333
+        },
+        {
+          "name": "runtime_rollback_options",
+          "line": 1336,
+          "end_line": 1376
+        },
+        {
+          "name": "rollback_runtime",
+          "line": 1380,
+          "end_line": 1398
+        },
+        {
+          "name": "_request_rollback",
+          "line": 1401,
+          "end_line": 1460
+        },
+        {
+          "name": "intake_report",
+          "line": 1464,
+          "end_line": 1497
+        },
+        {
+          "name": "intake_artifact",
+          "line": 1501,
+          "end_line": 1516
+        },
+        {
+          "name": "SbomImpactRequest",
+          "line": 1519,
+          "end_line": 1521
+        },
+        {
+          "name": "SbomImpactStop",
+          "line": 1524,
+          "end_line": 1525
+        },
+        {
+          "name": "supply_chain_impact",
+          "line": 1529,
+          "end_line": 1533
+        },
+        {
+          "name": "supply_chain_impact_stop",
+          "line": 1537,
+          "end_line": 1542
+        },
+        {
+          "name": "manual_terms_verified",
+          "line": 1548,
+          "end_line": 1549
+        },
+        {
+          "name": "exit_term_flags",
+          "line": 1552,
+          "end_line": 1558
+        },
+        {
+          "name": "set_risk_input",
+          "line": 1562,
+          "end_line": 1578
+        },
+        {
+          "name": "IntakeApproval",
+          "line": 1581,
+          "end_line": 1593
+        },
+        {
+          "name": "ProvenanceMismatch",
+          "line": 1596,
+          "end_line": 1597
+        },
+        {
+          "name": "hold_intake",
+          "line": 1600,
+          "end_line": 1607
+        },
+        {
+          "name": "risk_tier_gate",
+          "line": 1610,
+          "end_line": 1645
+        },
+        {
+          "name": "approve_mcp_request",
+          "line": 1649,
+          "end_line": 1798
+        },
+        {
+          "name": "RiskAcceptance",
+          "line": 1801,
+          "end_line": 1803
+        },
+        {
+          "name": "accept_intake_risk",
+          "line": 1807,
+          "end_line": 1818
+        },
+        {
+          "name": "IntakeRegistration",
+          "line": 1821,
+          "end_line": 1832
+        },
+        {
+          "name": "RemoteContractReview",
+          "line": 1835,
+          "end_line": 1838
+        },
+        {
+          "name": "review_remote_contract",
+          "line": 1842,
+          "end_line": 1918
+        },
+        {
+          "name": "register_mcp_request",
+          "line": 1922,
+          "end_line": 1954
+        },
+        {
+          "name": "caller",
+          "line": 1957,
+          "end_line": 1958
+        },
+        {
+          "name": "admin_caller",
+          "line": 1961,
+          "end_line": 1964
+        },
+        {
+          "name": "IntakeDiscovery",
+          "line": 1967,
+          "end_line": 1968
+        },
+        {
+          "name": "discover_intake",
+          "line": 1972,
+          "end_line": 1974
+        },
+        {
+          "name": "ApprovalPreview",
+          "line": 1977,
+          "end_line": 1978
+        },
+        {
+          "name": "OneClickApproval",
+          "line": 1981,
+          "end_line": 1988
+        },
+        {
+          "name": "approval_row",
+          "line": 1991,
+          "end_line": 2002
+        },
+        {
+          "name": "collect_proposal_provenance",
+          "line": 2005,
+          "end_line": 2032
+        },
+        {
+          "name": "preview_intake_approval",
+          "line": 2036,
+          "end_line": 2102
+        },
+        {
+          "name": "approve_and_register",
+          "line": 2106,
+          "end_line": 2246
+        },
+        {
+          "name": "reject_mcp_request",
+          "line": 2250,
+          "end_line": 2265
+        },
+        {
+          "name": "risk_catalog",
+          "line": 2269,
+          "end_line": 2277
+        },
+        {
+          "name": "my_consents",
+          "line": 2281,
+          "end_line": 2284
+        },
+        {
+          "name": "ConsentDecision",
+          "line": 2287,
+          "end_line": 2288
+        },
+        {
+          "name": "decide_consent",
+          "line": 2292,
+          "end_line": 2297
+        },
+        {
+          "name": "approvals",
+          "line": 2301,
+          "end_line": 2333
+        },
+        {
+          "name": "Rejection",
+          "line": 2336,
+          "end_line": 2337
+        },
+        {
+          "name": "reject",
+          "line": 2341,
+          "end_line": 2350
+        },
+        {
+          "name": "approve",
+          "line": 2354,
+          "end_line": 2362
+        },
+        {
+          "name": "gateway_passthrough",
+          "line": 2379,
+          "end_line": 2397
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "sha256": "7b226a7234bcad1f01767a938ccb3cee73293400509202fa468afe128fbf80c3",
+      "symbols": [
+        {
+          "name": "normalise",
+          "line": 45,
+          "end_line": 49
+        },
+        {
+          "name": "command_digest",
+          "line": 52,
+          "end_line": 53
+        },
+        {
+          "name": "safe_endpoint_ref",
+          "line": 56,
+          "end_line": 64
+        },
+        {
+          "name": "fingerprint",
+          "line": 67,
+          "end_line": 70
+        },
+        {
+          "name": "canonical_sha256",
+          "line": 88,
+          "end_line": 90
+        },
+        {
+          "name": "canonical_time",
+          "line": 93,
+          "end_line": 94
+        },
+        {
+          "name": "projection_of",
+          "line": 97,
+          "end_line": 99
+        },
+        {
+          "name": "provenance_of",
+          "line": 102,
+          "end_line": 114
+        },
+        {
+          "name": "_clip",
+          "line": 117,
+          "end_line": 120
+        },
+        {
+          "name": "_origin",
+          "line": 123,
+          "end_line": 126
+        },
+        {
+          "name": "enroll",
+          "line": 129,
+          "end_line": 142
+        },
+        {
+          "name": "_registry_index",
+          "line": 150,
+          "end_line": 181
+        },
+        {
+          "name": "_match",
+          "line": 184,
+          "end_line": 208
+        },
+        {
+          "name": "check_route_matching",
+          "line": 211,
+          "end_line": 225
+        },
+        {
+          "name": "ingest",
+          "line": 233,
+          "end_line": 239
+        },
+        {
+          "name": "_record_observation",
+          "line": 242,
+          "end_line": 258
+        },
+        {
+          "name": "observation_status",
+          "line": 261,
+          "end_line": 282
+        },
+        {
+          "name": "observation_freshness",
+          "line": 285,
+          "end_line": 296
+        },
+        {
+          "name": "_ingest_inventory",
+          "line": 299,
+          "end_line": 377
+        },
+        {
+          "name": "_link_residue_to_cases",
+          "line": 380,
+          "end_line": 406
+        },
+        {
+          "name": "_classes",
+          "line": 412,
+          "end_line": 416
+        },
+        {
+          "name": "_bounds",
+          "line": 419,
+          "end_line": 426
+        },
+        {
+          "name": "_window",
+          "line": 429,
+          "end_line": 432
+        },
+        {
+          "name": "_listed",
+          "line": 435,
+          "end_line": 441
+        },
+        {
+          "name": "inventory_page",
+          "line": 444,
+          "end_line": 465
+        },
+        {
+          "name": "agents",
+          "line": 468,
+          "end_line": 484
+        },
+        {
+          "name": "shadow_count_for",
+          "line": 487,
+          "end_line": 498
+        },
+        {
+          "name": "coverage",
+          "line": 501,
+          "end_line": 529
+        },
+        {
+          "name": "ingest_os_events",
+          "line": 544,
+          "end_line": 565
+        },
+        {
+          "name": "os_events_page",
+          "line": 568,
+          "end_line": 584
+        },
+        {
+          "name": "_hash_key",
+          "line": 587,
+          "end_line": 592
+        },
+        {
+          "name": "issue_device",
+          "line": 595,
+          "end_line": 625
+        },
+        {
+          "name": "revoke_device",
+          "line": 628,
+          "end_line": 647
+        },
+        {
+          "name": "authenticate_device",
+          "line": 650,
+          "end_line": 663
+        },
+        {
+          "name": "devices",
+          "line": 666,
+          "end_line": 694
+        },
+        {
+          "name": "managed_platform",
+          "line": 708,
+          "end_line": 711
+        },
+        {
+          "name": "managed_checks",
+          "line": 714,
+          "end_line": 721
+        },
+        {
+          "name": "managed_event",
+          "line": 724,
+          "end_line": 727
+        },
+        {
+          "name": "enrollment_token",
+          "line": 730,
+          "end_line": 737
+        },
+        {
+          "name": "consume_enrollment",
+          "line": 740,
+          "end_line": 767
+        },
+        {
+          "name": "managed_policy",
+          "line": 770,
+          "end_line": 845
+        },
+        {
+          "name": "json_document",
+          "line": 848,
+          "end_line": 850
+        },
+        {
+          "name": "heartbeat",
+          "line": 853,
+          "end_line": 900
+        },
+        {
+          "name": "network_quality",
+          "line": 903,
+          "end_line": 933
+        },
+        {
+          "name": "_round",
+          "line": 936,
+          "end_line": 937
+        },
+        {
+          "name": "activate_managed",
+          "line": 940,
+          "end_line": 959
+        },
+        {
+          "name": "managed_failure",
+          "line": 962,
+          "end_line": 976
+        },
+        {
+          "name": "scan_policy",
+          "line": 984,
+          "end_line": 993
+        },
+        {
+          "name": "set_scan_policy",
+          "line": 996,
+          "end_line": 1024
+        },
+        {
+          "name": "listener_fingerprint",
+          "line": 1029,
+          "end_line": 1032
+        },
+        {
+          "name": "_listener_keys",
+          "line": 1035,
+          "end_line": 1044
+        },
+        {
+          "name": "ingest_listeners",
+          "line": 1047,
+          "end_line": 1056
+        },
+        {
+          "name": "_ingest_listeners",
+          "line": 1059,
+          "end_line": 1158
+        },
+        {
+          "name": "listeners_page",
+          "line": 1161,
+          "end_line": 1189
+        },
+        {
+          "name": "observations_page",
+          "line": 1195,
+          "end_line": 1227
+        },
+        {
+          "name": "record_detail",
+          "line": 1236,
+          "end_line": 1249
+        },
+        {
+          "name": "_record",
+          "line": 1252,
+          "end_line": 1259
+        },
+        {
+          "name": "correlate",
+          "line": 1262,
+          "end_line": 1320
+        },
+        {
+          "name": "shadow_listener_count_for",
+          "line": 1323,
+          "end_line": 1338
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/idp.py",
+      "sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
+      "symbols": [
+        {
+          "name": "_sha",
+          "line": 42,
+          "end_line": 43
+        },
+        {
+          "name": "_error",
+          "line": 46,
+          "end_line": 48
+        },
+        {
+          "name": "metadata",
+          "line": 52,
+          "end_line": 63
+        },
+        {
+          "name": "_issue",
+          "line": 66,
+          "end_line": 83
+        },
+        {
+          "name": "token",
+          "line": 87,
+          "end_line": 150
+        },
+        {
+          "name": "DeviceEnrollment",
+          "line": 153,
+          "end_line": 176
+        },
+        {
+          "name": "device_enroll",
+          "line": 180,
+          "end_line": 189
+        },
+        {
+          "name": "device_token",
+          "line": 193,
+          "end_line": 216
+        },
+        {
+          "name": "_revoke_family",
+          "line": 219,
+          "end_line": 239
+        },
+        {
+          "name": "revoke_principal_tokens",
+          "line": 242,
+          "end_line": 261
+        },
+        {
+          "name": "revoke_device_tokens",
+          "line": 264,
+          "end_line": 286
+        },
+        {
+          "name": "revoke",
+          "line": 290,
+          "end_line": 308
+        },
+        {
+          "name": "introspection",
+          "line": 311,
+          "end_line": 350
+        },
+        {
+          "name": "introspect_jti",
+          "line": 353,
+          "end_line": 373
+        },
+        {
+          "name": "introspect",
+          "line": 377,
+          "end_line": 382
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/gateway/app/integrations.py",
+      "sha256": "4d7cb565285cda3d1f38aa82ce48da9546321aca0913c10e2ddf0493860405b2",
+      "symbols": [
+        {
+          "name": "host_report",
+          "line": 41,
+          "end_line": 55
+        },
+        {
+          "name": "os_telemetry",
+          "line": 58,
+          "end_line": 70
+        },
+        {
+          "name": "platform_of",
+          "line": 73,
+          "end_line": 82
+        },
+        {
+          "name": "device_state",
+          "line": 85,
+          "end_line": 128
+        },
+        {
+          "name": "item_evidence",
+          "line": 131,
+          "end_line": 134
+        },
+        {
+          "name": "endpoint_item_state",
+          "line": 137,
+          "end_line": 145
+        },
+        {
+          "name": "snapshot",
+          "line": 148,
+          "end_line": 268
+        },
+        {
+          "name": "VendorControl",
+          "line": 271,
+          "end_line": 278
+        },
+        {
+          "name": "list_integrations",
+          "line": 282,
+          "end_line": 284
+        },
+        {
+          "name": "record_vendor_control",
+          "line": 288,
+          "end_line": 300
+        }
+      ]
+    },
+    {
+      "path": "full_stack_lab/tests/macos_kit_check.py",
+      "sha256": "6ee460546714d1ce2d997d7c2bcb8e197c39ac9ea7336b832901ba1a6a18857c",
+      "symbols": [
+        {
+          "name": "definitions",
+          "line": 23,
+          "end_line": 34
+        },
+        {
+          "name": "MacOSKitCheck",
+          "line": 42,
+          "end_line": 209
+        }
+      ]
+    },
+    {
+      "path": "endpoint-agent/install.sh",
+      "sha256": "920b0229098cd053b63466f89af494d1456953cb354c056329a6a701a8ccf29e"
+    },
+    {
+      "path": "endpoint-agent/install-macos.sh",
+      "sha256": "f8516441e90541e8b194883c9afa854975e8db1d03362352f12510bfd7adc543"
+    },
+    {
+      "path": "full_stack_lab/gateway/app/agent_static/console.js",
+      "sha256": "14c2e1b6357a1fb7f135a91cf4d64b0d77caefc8c354d121e501759865ff8389"
+    }
+  ]
+}

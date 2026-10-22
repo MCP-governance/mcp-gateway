@@ -154,20 +154,23 @@ class DeviceEnrollment(StrictModel):
     enrollment_token: str = Field(min_length=32, max_length=128)
     device_key: str = Field(min_length=43, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
     hostname: str = Field(min_length=1, max_length=200)
-    platform: Literal["linux", "windows"] = "linux"
+    platform: Literal["linux", "windows", "macos"] = "linux"
     local_username: str = Field(pattern=r"^[A-Za-z0-9_][A-Za-z0-9._-]{0,31}$")
     # Linux: the account UID. Windows: the account SID and the header command rendered into the
     # managed harness settings (the interpreter path differs per device, so the installer reports it).
-    local_uid: int | None = Field(default=None, ge=1000)
+    local_uid: int | None = Field(default=None, ge=501)
     local_sid: str | None = Field(default=None, pattern=r"^S-1-5-21-\d+-\d+-\d+-\d+$")
     helper_command: str | None = Field(default=None, max_length=400,
                                        pattern=r'^"[A-Za-z]:\\[^"]+\\pythonw?\.exe" -I -S "[A-Za-z]:\\[^"]+\\managed-windows\.py" header$')
 
     @model_validator(mode="after")
     def per_platform(self):
-        if self.platform == "linux" and (self.local_uid is None or self.local_sid or self.helper_command
+        if self.platform == "linux" and (self.local_uid is None or self.local_uid < 1000 or self.local_sid or self.helper_command
                                          or not re.fullmatch(r"[a-z_][a-z0-9_-]{0,30}", self.local_username)):
             raise ValueError("Linux 등록에는 일반 계정 이름과 UID가 필요합니다.")
+        if self.platform == "macos" and (self.local_uid is None or self.local_sid or self.helper_command
+                                        or not re.fullmatch(r"managed-[A-Za-z0-9_-]{1,23}", self.local_username)):
+            raise ValueError("macOS 등록에는 관리 계정 이름과 UID가 필요합니다.")
         if self.platform == "windows" and (self.local_uid is not None or not self.local_sid or not self.helper_command):
             raise ValueError("Windows 등록에는 계정 SID와 헤더 명령이 필요합니다.")
         return self

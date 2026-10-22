@@ -1933,3 +1933,20 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **보존한 기능**: D-181 직원별 중지, D-182 오프라인 버퍼, D-188 root 단독 모드. C1~C4/T1~T3 판정 기준은 바꾸지 않는다. 새 적대 검토 전까지 배포·PJ1 시험을 하지 않는다.
 - **전역 잠금 순서(실제 DB 시험에서 교착 2건을 찾아 고침)**: `local:admission` → 계정·장치·서버 범위 잠금(정렬) → `local:claim:<장치>` → `local:policy` → 토큰 → 사용자 → 서버·계정·장치·승인 행(읽기 `FOR SHARE`, 쓰기는 자기 행 먼저) → **작업 행은 항상 마지막**. claim은 후보를 잠금 없이 고르고 위 잠금을 잡은 뒤 같은 조건으로 `FOR UPDATE` 재조회하며, 후보가 취소·변경됐으면 수령하지 않는다. 서버 등 전환 trigger는 자기 행 → 작업 행 → 승인 행 순이고 자기 행이 claim의 `FOR SHARE`와 충돌해 먼저 막히므로 순환하지 않는다. 토큰 철회는 토큰 잠금을 쥔 채 별도 연결로 작업을 취소하므로 작업 행을 쥔 채 토큰 잠금을 기다리는 경로가 없어야 한다. 이 순서를 어기는 변경은 `dev73_rework_pg_check`의 교착 체크가 막는다. 전체 대기·행 수·결과 저장 상한은 환경 변수(`LOCAL_JOBS_PENDING_MAX`·`LOCAL_JOBS_ROWS_MAX`·`LOCAL_RESULTS_STORE_MAX_BYTES`, 기본 64·10000·64MiB)로 뺐다.
 - **검증·되돌릴 조건**: [재작업 보고](../../research/llm-wiki/status/reports/2026-10-21-dev73-rework.md). 기존 시험 기대값·AST는 보존했다. 실제 DB 잠금/경합·Linux 반복 교체·엔진 매핑/정지·OSS MCP 검증이 실패하면 지원 엔진/실행 경로를 열지 않는다. 메시지별 컨테이너의 상태 있는 MCP 호환성은 검증 후 별도 결정한다.
+## D-190 macOS 키트는 기존 정책·브로커를 재사용하고 계정·pf·launchd만 어댑터로 연결한다 (2026-10-22, W5-KIT-MACOS)
+
+- **문제**: 개인 키트가 Linux·Windows만 제공해 macOS 직원의 설치·활성화 경로가 없었다.
+- **결정**: `managed-macos.py`가 dscl 관리 계정, Mach-O 공식 설치본 탐색, shim/셸 함수, pf 전용 하위 anchor와 launchd를
+  구성한다. 전송·관리 설정·heartbeat·헤더 반환은 기존 Linux 코드를 재사용한다. 플랫폼별 점검을 별도로 보존해 Linux
+  AppArmor/nft 항목을 macOS에서 참으로 보고하지 않는다. 공개 프로그램 디렉터리는 읽을 수 있도록 설치 umask022,
+  장치 비밀은 명시700·mkstemp600으로 분리한다.
+- **직원 흐름**: 콘솔에서 macOS 연결 파일을 받고 표시된 bash 명령 한 줄·관리자 암호 한 번으로 실행한다. 5분·1회용
+  다운로드 자격은 인증 헤더용 파일에만 들어가고 URL·셸 기록·환경에 넣지 않는다. 원본 연결 파일과 임시 자격 파일을 지운다.
+  기존 `/api/pc-kit` POST에서만 쓰도록 자격을 제한하고 DB의 원자 UPDATE로 소비한다. 등록 토큰과 해시 도메인을 분리한다.
+- **런타임·제거**: 없으면 공식 PSF 서명 Python3.14.9 pkg를 같은 관리자 권한으로 설치한다. 공식 하네스 기설치는 D-71과 같다.
+  재설치 전 rollback하며 제거는 launchd·shim·실행기·pf·설정·프로그램·계정 역순이다. 공유 Python은 유지한다.
+- **한계**: PF는 Apple의 안정 API가 아니다. 관리 UID TCP/UDP 밖 프로토콜·같은 UID 헬퍼 호출·관리자 우회·프로세스 격리는
+  보장하지 않는다. 실제 macOS 정상군·복구는 미실행이다. Linux·Windows 기존 시험 기대값은 변경하지 않았다.
+- **근거·검증**: [분석](../../research/llm-wiki/analysis/kit-macos/README.md),
+  [보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md). 새 오프라인11건·기존 콘솔15건 통과,
+  구문/공개 엔드포인트 검사 통과. pyflakes는 도구 부재·네트워크 제약으로 미실행. 독립 검토의 판본·경로 fixture·umask 지적 수정.

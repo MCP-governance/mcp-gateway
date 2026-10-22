@@ -62,6 +62,13 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 
 ## 3. 직원 PC — 하네스와 관리형 설정
 
+macOS 키트(D-190)는 기존 관리형 정책과 Linux 브로커 루프를 재사용하고 dscl 일반 계정·pf 하위 anchor·launchd를
+어댑터로 연결한다. `/auth/me`의 `kit.platforms`와 개인별 다운로드는 macOS를 포함한다. 브라우저에서 받은 연결 파일을
+한 줄 터미널 명령으로 실행하며 5분·1회용 다운로드 자격은 파일로만 전달한다. Claude 파일은 macOS 공식 관리 경로,
+Codex 파일은 `/etc/codex`를 사용한다. 플랫폼은 관측 열과 별도로 등록 detail에 보존하고 macOS의 실제 점검 항목만 요구한다.
+pf는 UID별 TCP/UDP egress 대상이며 AppArmor·전체 프로토콜 격리를 주장하지 않는다. 구현·정적 검사와 macOS 실검증은
+분리하며 [키트 보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md)를 따른다.
+
 현장 하네스–게이트웨이 구간은 Tailscale IP에 바인딩한 Caddy의 사설 CA HTTPS를 쓴다(D-124).
 공개 URL과 관리형 정책은 HTTPS이며 원격 HTTP 입력을 거부한다. 루트·지문은 개인별 키트에 담고,
 Linux 실행기와 직원 PC 도구의 `harness` 명령이 프로세스별 CA 환경값을 전달한다. 시스템 저장소는 변경하지 않는다.

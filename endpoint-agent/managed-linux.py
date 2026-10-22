@@ -54,7 +54,7 @@ def private_write(path, content):
     fd, filename = tempfile.mkstemp(dir=path.parent, prefix=".mcpgw-")
     temporary = Path(filename)
     try:
-        with os.fdopen(fd, "w") as output:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as output:
             output.write(content)
         temporary.replace(path)
     finally:
@@ -273,7 +273,11 @@ def serve(args):
         raise ValueError("root 관리 서비스와 비밀 설정이 필요합니다")
     config = json.loads(args.config.read_text())
     verify_transport(config)
-    binding = load_module("broker_binding", Path(__file__).with_name("broker_binding.py"))
+    binding = load_module("broker_binding", Path(__file__).with_name(
+        "managed-macos.py" if sys.platform == "darwin" else "broker_binding.py"))
+    if sys.platform == "darwin":
+        binding.configure_runtime(sys.modules[__name__])
+        binding.start_runtime(config, sys.modules[__name__])
     cache, lock = {}, threading.Lock()
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
@@ -295,7 +299,7 @@ def serve(args):
     private_write(observer_config, json.dumps({"ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"],
                  "ENDPOINT_CA_CERTIFICATE": config.get("ca_certificate", ""), "ENDPOINT_CA_SHA256": config.get("ca_sha256", ""),
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
-                 "/etc/codex", "/etc/claude-code"]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
+                 *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
     observed = 0.0
@@ -345,8 +349,8 @@ def serve(args):
             # The token comes first: the observers below can take up to 80 seconds, and a token
             # fetched after them would lapse before the next round.
             if report["state"] == "active" and report["compliant"]:
-                token = request(config, "/oauth/device-token", {})
                 with lock:
+                    token = request(config, "/oauth/device-token", {})
                     cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
                 pause = 60
             else:
@@ -356,6 +360,8 @@ def serve(args):
             if time.monotonic() - observed >= 55:
                 observed = time.monotonic()
                 for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
+                    if sys.platform == "darwin" and name == "os-observer.py":
+                        continue
                     # Inventory and kernel-event reports are observations; one failing must not cut the
                     # enforced account off from the Gateway.
                     try:

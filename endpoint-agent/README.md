@@ -1,6 +1,7 @@
 # Endpoint Agent 설치
 
 이 디렉터리는 관측 에이전트(`agent.py`)와 **관리형 설치기**(Linux `managed-linux.py`, Windows `managed-windows.py`)를 포함합니다.
+macOS 관리형 설치기는 `managed-macos.py`이며 서비스 코드는 Homebrew 소유 경로를 피한 `/Library/MCPGatewayManaged`에 둡니다.
 Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범위 설치기들은 관측 전용입니다.
 강제 연결에는 다음 root 설치 경로를 사용합니다.
 
@@ -228,3 +229,32 @@ Windows도 등록 전 지문 검사와 서비스·관측기 CA 전달을 적용�
 `%ProgramFiles%\MCPGatewayManaged\launchers\<SID>\claude.cmd`·`codex.cmd`가 CA를 하네스 프로세스에만 전달합니다.
 키트 승인 목록에는 `root.crt`·`root.sha256`·`mcpgw_pc.py`의 해시도 포함해야 합니다. 기존 승인 목록은 새 ZIP의 목록으로 교체해야 합니다.
 [배포 절차](../docs/ai/FIELD.md#현장-tls와-루트-배포d-124) · [검증과 인계](../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md).
+## macOS 직원 PC 키트 (2026-10-22)
+
+콘솔 「내 PC 연결」은 브라우저 운영체제의 연결 파일을 먼저 표시한다. macOS 연결 파일을 받은 뒤
+터미널에서 `/bin/bash "$HOME/Downloads/mcp-connect-macos.command"` 한 줄을 실행하고 관리자 암호를 한 번 입력한다.
+다운로드 자격은 5분·1회용이며 파일 안에서 curl 설정 파일로 전달하고 즉시 삭제한다. URL query·명령 인자·환경 변수에
+토큰을 넣지 않는다. Gatekeeper의 더블클릭 허용이나 quarantine 해제 명령은 필요하지 않다.
+
+`install.sh` → `install-macos.sh` → `managed-macos.py`가 설치한다. Python 3.14 framework가 없으면 공식
+3.14.9 universal2 pkg를 받아 pkgutil·PSF 서명자·spctl 확인 후 같은 관리자 권한 안에서 설치한다.
+공식 Codex·Claude 설치본은 미리 있어야 한다(D-71과 동일). npm·Homebrew·사용자 native 설치 위치에서 Mach-O를 찾아
+승인 경로에 복사하고 해시를 기록한다. 새 하네스나 MCP 구현을 만들지 않는다.
+
+dscl로 `managed-<직원>` 일반 계정과 별도 홈을 만들고, 기존 Linux 정책 전송·파일 렌더링·토큰 브로커를 재사용한다.
+Claude 관리 설정은 `/Library/Application Support/ClaudeCode`, Codex는 `/etc/codex`에 둔다.
+`/usr/local/bin` shim과 bash/zsh 함수가 관리 계정의 실행기로 연결한다. 모델 프록시와 CA의 공개 값만 실행 환경에 넣고,
+장치 비밀은 root 전용 `/var/db/mcpgw-managed` 파일에 보관한다. 헤더 헬퍼는 Darwin getpeereid UID를 확인하는 소켓을 사용한다.
+launchd root 서비스가 정책·heartbeat·잠금 안 토큰 갱신을 담당한다. 조직 관리자의 독립 활성화는 그대로 필요하다.
+
+pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에 관리 UID의 게이트웨이·모델 프록시 TCP만 허용한다.
+그 외 TCP/UDP는 차단한다. Linux의 모든 IP 프로토콜 차단·AppArmor 프로세스 격리와 동등하지 않으며 같은 UID의
+헬퍼 호출·관리자 우회는 남는다. Apple은 PF를 안정된 API로 보장하지 않는다. root 규칙 전체를 다시 로드하지 않는다.
+
+제거는 키트 폴더에서 `bash install.sh --remove`로 실행한다. launchd → shim/셸 함수 → 실행기/헬퍼 → pf anchor/활성화 참조
+→ 기존 관리 설정 복원 → 프로그램 → 관리 계정/홈 순서로 되돌린다. 재설치도 기존 연결부터 제거한다.
+키트를 지운 뒤에는 `sudo /Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14 -I -B /Library/MCPGatewayManaged/managed-macos.py --remove`를 사용한다.
+공유 Python 런타임은 남기며, 서버의 기존 엔드포인트 자격 폐기는 콘솔의 기존 관리 경로를 따른다.
+
+**macOS 실설치·활성화·MCP 호출·제거는 미실행**이다. Windows에서 오프라인 코드 검사만 수행했다.
+[보고](../research/llm-wiki/status/reports/2026-10-22-kit-macos.md) · [D-190](../docs/ai/DECISIONS.md).

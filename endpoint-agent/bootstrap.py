@@ -116,6 +116,10 @@ def search_roots(employee: str) -> list[Path]:
              home / ".npm-global/lib/node_modules", home / ".local/share/reflex", home / ".local/lib",
              *sorted(home.glob(".nvm/versions/node/*/lib/node_modules"), reverse=True),
              home / ".codex/packages/standalone/current/bin"]
+    if sys.platform == "darwin":
+        roots += [Path("/opt/homebrew/lib/node_modules"), Path("/opt/homebrew/bin"),
+                  Path("/usr/local/bin"), home / ".local/bin",
+                  *sorted(Path("/opt/homebrew/Cellar/codex").glob("*/bin"), reverse=True)]
     return [root for root in roots if root.exists()]
 
 
@@ -148,7 +152,9 @@ def release_directory(employee: str, name: str) -> Path | None:
 
 def native(path: Path) -> bool:
     with open(path, "rb") as handle:
-        return handle.read(4) == b"\x7fELF"
+        magic = handle.read(4)
+        return (magic in {b"\xcf\xfa\xed\xfe", b"\xfe\xed\xfa\xcf", b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca"}
+                if sys.platform == "darwin" else magic == b"\x7fELF")
 
 
 def place_harnesses(employee: str) -> dict[str, dict]:

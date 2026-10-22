@@ -190,7 +190,11 @@ const locationRows = (value = {}) => [
   ["처리 주체", value.processor || "—"], ["위치 근거", value.evidence_ref || "—"], ["이전 근거", value.transfer_basis || "—"],
 ];
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
-const PLATFORM_KIT = { linux: "Linux 설치 파일", windows: "Windows 설치 파일" };
+const PLATFORM_KIT = { linux: "Linux 설치 파일", windows: "Windows 설치 파일", macos: "macOS 연결 파일" };
+function preferredKitPlatform() {
+  const os = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
+  return /mac/i.test(os) ? "macos" : /win/i.test(os) ? "windows" : "linux";
+}
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
   revocation_evidence: "폐기 기록 제출",
@@ -1399,7 +1403,7 @@ ROUTES.coverage = async (_, tab, query) => {
 };
 
 const VENDOR_CONSOLE = { blocked: "차단", limited: "제한 허용", allowed: "허용", unknown: "확인 불가" };
-const CHECK_LABEL = { apparmor_enforcing: "실행 통제", nftables_active: "네트워크 통제", firewall_enforcing: "네트워크 통제", protected_configs: "설정 보호", ordinary_account: "일반 계정", user_command_helpers: "사용자 명령 헬퍼 없음" };
+const CHECK_LABEL = { apparmor_enforcing: "실행 통제", nftables_active: "네트워크 통제", firewall_enforcing: "네트워크 통제", pf_enforcing: "네트워크 통제", protected_configs: "설정 보호", ordinary_account: "일반 계정", user_command_helpers: "사용자 명령 헬퍼 없음" };
 function checksChip(checks) {
   const entries = Object.entries(checks || {});
   if (!entries.length) return NONE;
@@ -2635,21 +2639,23 @@ const ACTIONS = {
     toast("가입 신청을 거부했습니다."); reload();
   },
   "pc-kit"() {
-    // The kit points the harnesses at the gateway; no password is stored on the PC.
     const kit = viewer.kit;
+    const preferred = preferredKitPlatform();
+    const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferred) - Number(a === preferred));
     openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}
-      ${(kit.platforms || []).map((os) => html`<button class="btn sm primary" type="button" data-act="pc-kit-download" data-os="${os}">${PLATFORM_KIT[os] || os}</button>`)}</div>`);
+      ${platforms.map((os) => html`<button class="btn sm ${os === preferred ? "primary" : ""}" type="button" data-act="pc-kit-download" data-os="${os}">${PLATFORM_KIT[os] || "—"}</button>`)}</div>
+      ${platforms.includes("macos") ? html`<dl><dt>macOS 터미널 명령</dt><dd><code>/bin/bash "$HOME/Downloads/mcp-connect-macos.command"</code></dd><dt>관리자 암호</dt><dd>1회</dd><dt>연결 파일 유효 시간</dt><dd>5분</dd></dl>` : ""}`);
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
-    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}`,
+    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${os === "macos" ? "&delivery=command" : ""}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const r = await response.json();
       throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a"); link.href = url; link.download = `mcp-managed-kit-${os}.zip`;
+    const link = document.createElement("a"); link.href = url; link.download = os === "macos" ? "mcp-connect-macos.command" : `mcp-managed-kit-${os}.zip`;
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
     toast("설치 파일을 받았습니다.");
   },
