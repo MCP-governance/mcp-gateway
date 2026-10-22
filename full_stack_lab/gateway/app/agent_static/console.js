@@ -1782,8 +1782,8 @@ async function askLocalRun(id, request) {
   const cur = request.evidence?.local_run || {};
   const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
     ${field.text("image", "이미지", 'required minlength="3" maxlength="300"', cur.image || "")}
-    ${field.text("command", "실행 인자", 'maxlength="2000"', (cur.command || []).join(" "))}
-    ${field.text("mounts", "폴더 (홈 기준, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000"',
+    ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
+    ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
       (cur.mounts || []).map((m) => `${m.path}:${m.mode}`).join(", "))}
     ${field.select("reason_kind", "실행 위치 근거", LOCAL_REASON, cur.reason_kind || "local_file")}
     ${field.text("reason_text", "근거 설명", 'required minlength="10" maxlength="500"', cur.reason_text || "")}` });

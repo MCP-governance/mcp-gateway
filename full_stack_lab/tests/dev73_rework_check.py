@@ -119,10 +119,16 @@ class ControlChecks(unittest.TestCase):
     def test_F3_container_uses_preimported_digest_and_no_log_disk(self):
         account=SimpleNamespace(pw_uid=2001,pw_gid=2001)
         _,argv=runner.container_command(['podman'],self.body,account,namespace='podman-auto',
-                                        mount_options=['-v','/proc/123/fd/4:/home/u/work:ro'])
+                                        mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'])
         for flag in ('--pull=never','--network=none','--read-only','--log-driver=none','--userns=auto'):
             self.assertIn(flag,argv)
-        self.assertIn('type=bind,source=/proc/123/fd/4,target=/home/u/work,ro,idmap',argv)
+        self.assertIn('type=bind,source=/proc/123/fd/4,target=/workspace/work,ro,idmap',argv)
+        # docker는 같은 컨테이너 경로에 홈 경로를 바인드한다(10-22: 목적지는 계정 이름과 무관).
+        _,docker=runner.container_command(['docker'],self.body,account,namespace='docker-remap',
+                                          mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'],host_paths=['/home/u/work'])
+        self.assertIn('/home/u/work:/workspace/work:ro',docker)
+        with self.assertRaises(ValueError):
+            runner.container_command(['docker'],self.body,account,namespace='docker-remap',mount_options=['-v','/proc/123/fd/4:/workspace/work:ro'])
 
 
 class OutputBounds(unittest.TestCase):
@@ -173,6 +179,15 @@ class OutputBounds(unittest.TestCase):
 
 @unittest.skipUnless(os.name=='posix' and hasattr(os,'O_NOFOLLOW'),'Linux openat/FD bind 실측 필요')
 class MountRaces(unittest.TestCase):
+    def test_mount_target_is_fixed_workspace_not_home(self):
+        with tempfile.TemporaryDirectory() as folder:
+            home=Path(folder)/'managed-a';(home/'mcp-docs'/'sub').mkdir(parents=True)
+            held=runner.PinnedMounts({'mounts':[{'path':'mcp-docs/sub','mode':'ro'}]},str(home))
+            try:
+                self.assertTrue(held.options[1].endswith(':/workspace/mcp-docs/sub:ro'))
+                self.assertNotIn('managed-a',held.options[1])
+            finally:held.close()
+
     def test_F4_parent_symlink_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             home=Path(folder)/'home';home.mkdir();(home/'real').mkdir();(home/'link').symlink_to(home/'real',target_is_directory=True)
