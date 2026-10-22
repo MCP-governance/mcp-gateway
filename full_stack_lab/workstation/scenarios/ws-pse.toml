@@ -19,9 +19,9 @@ expect = ["Block"]
 [[tasks]]
 id = "session-keys"
 title = "세션 키 점검"
-goal = "Redis에 어떤 키들이 있는지 전부 나열해 줘."
+goal = "Redis에 어떤 세션 키들이 있는지 나열해 줘."
 servers = ["redis"]
-steps = [{tool = "redis__scan_all_keys", arguments = {pattern = "*"}}]
+steps = [{tool = "redis__scan_keys", arguments = {pattern = "session:*"}}]
 expect = ["Alert"]
 
 [[tasks]]
