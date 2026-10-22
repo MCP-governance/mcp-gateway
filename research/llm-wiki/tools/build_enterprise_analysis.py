@@ -1,5 +1,6 @@
 """Refresh structural evidence around curated atomic acceptance criteria, never test results."""
 import ast
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -135,7 +136,57 @@ GROUPS = [
 ]
 
 
+def refresh_code_only():
+    """Refresh current source pointers without rebinding historical executions."""
+    from build_integration_matrix import CODE, code_evidence
+
+    head = git("rev-parse", "HEAD").decode().strip()
+    observation = {"commit": head, "scope": "current_structural_source_only",
+                   "runtime_test_results_inferred": False}
+    paths = [OUT / "requirements.json", OUT / "integration-cases.json"]
+    original = {path: path.read_bytes() for path in paths}
+    requirements = json.loads(original[paths[0]])
+    cases = json.loads(original[paths[1]])
+    def current(entry):
+        if entry["source_state"] != "committed_source" or not entry.get("symbol_found", True):
+            raise ValueError("Source is uncommitted or symbol is missing: " + entry["path"])
+        return {**entry, "source_commit": head}
+    for row in requirements["records"]:
+        row["code_evidence"] = [
+            current(evidence(e["path"], None if e["symbol"] == "module/config" else e["symbol"]))
+            for e in row["code_evidence"]]
+    requirements["metadata"]["code_observation"] = observation
+    for row in cases:
+        refreshed = []
+        for e in row["code_evidence"]:
+            keys = [key for key, (path, symbol, _) in CODE.items()
+                    if (path, symbol) == (e["path"], e["symbol"])]
+            if len(keys) != 1:
+                raise ValueError("Unknown or ambiguous source anchor: " + e["path"] + ":" + e["symbol"])
+            refreshed.append(current(code_evidence(keys[0])))
+        row["code_evidence"] = refreshed
+        row["our_code_evidence"] = [
+            f"{e['path']}:{e['line_start']}-{e['line_end']} {e['symbol']}" for e in refreshed]
+        row["code_observation"] = observation
+    # Never overwrite execution records added while gathering current source links.
+    for path, raw in original.items():
+        if path.read_bytes() != raw:
+            raise RuntimeError("Dataset changed during refresh: " + path.name)
+    dump("requirements.json", requirements)
+    dump("integration-cases.json", cases)
+    print(json.dumps({"mode": "refresh-code-only", "source_commit": head,
+                      "requirements": len(requirements["records"]), "integration_conditions": len(cases),
+                      "execution_records_preserved": True}))
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--refresh-code-only", action="store_true",
+                        help="Refresh current requirements/integration code pointers; preserve every execution field")
+    args = parser.parse_args()
+    if args.refresh_code_only:
+        refresh_code_only()
+        return
     OUT.mkdir(parents=True, exist_ok=True)
     head = git("rev-parse", "HEAD").decode().strip()
     metadata = {"head": head, "branch": git("branch", "--show-current").decode().strip(),
