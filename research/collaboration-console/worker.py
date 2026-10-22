@@ -429,7 +429,8 @@ class Hub:
             raise ValueError("Agent profile has no write permission")
         if agent=="opus" and mode!="read-only" and phase!="intervene":
             raise ValueError("Opus writes require Sol-authorized intervention")
-        if provider != "codex" and mode != "read-only" and not (profile and agent in {"opus","sonnet","gemini"}):
+        # 10-23 소유자: Gemini도 조사 결과를 직접 쓴다(샌드박스·쓰기 금지 경로 유지). Claude CLI 레인은 계속 검토 전용.
+        if provider not in {"codex", "antigravity"} and mode != "read-only" and not (profile and agent in {"opus","sonnet","gemini"}):
             raise ValueError("Claude and Antigravity are reviewers in this installation")
         dedup_task = task_id or ""
         job_id = job_id or uuid.uuid4().hex[:12]
@@ -620,7 +621,7 @@ class Hub:
             if job.get("session"):
                 cmd += ["--resume", job["session"]]
             return cmd, prompt
-        cmd = [exe, "--input-format", "stream-json", "--model", model, "--mode", "accept-edits" if job["mode"]=="workspace-write" else "plan", "--output-format", "stream-json", "--print-timeout", "15m", "--add-dir", str(self.runtime)]
+        cmd = [exe, "--input-format", "stream-json", "--model", model, "--mode", "accept-edits" if job["mode"]=="workspace-write" else "plan", "--output-format", "stream-json", "--print-timeout", "55m", "--add-dir", str(self.runtime)]
         # 화면 없는 실행에서는 명령 승인을 물을 사람이 없어 git diff 같은 읽기 명령도 거부되고 작업이 멈췄다(10-23).
         # 허용 규칙 문법이 공개돼 있지 않아, 터미널 제한 샌드박스 안에서 자동 승인한다. 쓰기 금지 경로는 settings.json deny로 유지.
         cmd += ["--sandbox", "--dangerously-skip-permissions"]
