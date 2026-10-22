@@ -234,10 +234,14 @@ async def request_signup(request: Signup, http_request: Request):
         if _login_attempts.get(key):
             _login_attempts[key].pop()
         return {"status": "approved", "message": "등록을 완료했습니다. 로그인하세요."}
+    # 거절된 아이디는 다시 신청할 수 있어야 한다. 승인·대기 중인 신청은 그대로 둔다.
     row = await db.fetch_one(
         """INSERT INTO signup_requests(id,username,display_name,password_hash)
            VALUES (%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
-           ON CONFLICT (username) DO NOTHING RETURNING id""",
+           ON CONFLICT (username) DO UPDATE SET display_name=EXCLUDED.display_name,
+               password_hash=EXCLUDED.password_hash, status='pending', requested_at=now(),
+               reviewed_at=NULL, reviewed_by=NULL
+           WHERE signup_requests.status='rejected' RETURNING id""",
         (uuid4(), username, request.display_name.strip(), request.password),
     )
     if not row:
@@ -362,6 +366,11 @@ async def password_principal(email: str, password: str, caller: str) -> dict:
         (password, email))
     if not row or not row["password_ok"]:
         record_failed_login(f"{caller}|{email}")
+        # 비밀번호까지 맞은 대기 신청만 알려 준다. 아이디 존재 여부는 드러나지 않는다.
+        if not row and await db.fetch_one(
+                """SELECT 1 FROM signup_requests WHERE username=%s AND status='pending'
+                   AND password_hash = crypt(%s, password_hash)""", (email, password)):
+            raise HTTPException(403, "관리자 승인을 기다리는 중입니다.")
         raise HTTPException(401, "아이디와 비밀번호를 확인하세요.")
     if row["status"] != "active":
         # 실패 한도를 소진시키지 않는다. 비밀번호는 맞았고 계정 상태가 문제다.
