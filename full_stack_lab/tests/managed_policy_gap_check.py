@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 import sys
 
 LAB = Path(__file__).resolve().parents[1]
-NAMES = {"managed_policy", "managed_platform", "json_document", "_held_policy", "managed_failure", "heartbeat",
+NAMES = {"managed_policy", "managed_platform", "json_document", "_held_policy", "managed_failure", "heartbeat", "policy_accepted",
          "managed_checks", "MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM"}
 OLD = "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
 NEW = "새로 승인된 서버입니다. PC가 새 정책을 적용하면 사용할 수 있습니다."
@@ -105,6 +105,13 @@ class PolicyGap(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(installed), mint=True), OLD)
         self.device["detail"] = {}  # nothing recorded yet: strict, as before D-198
         self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(installed), server="git"), OLD)
+
+    async def test_local_jobs_accept_a_policy_one_server_list_behind(self):
+        await self.install(["docs", "git"])
+        self.usable = ["git"]  # removed elsewhere: a local job on this PC keeps running
+        self.assertTrue(await self.plane.policy_accepted(self.device))
+        with patch.dict(os.environ, {"ENDPOINT_GATEWAY_IPS": "100.64.0.9"}):
+            self.assertFalse(await self.plane.policy_accepted(self.device))
 
     async def test_heartbeat_with_older_server_set_is_compliant_but_control_drift_is_not(self):
         installed = await self.install(["git"])

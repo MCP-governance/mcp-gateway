@@ -207,7 +207,8 @@ class GatewayControl(unittest.IsolatedAsyncioTestCase):
         async def transaction():yield SimpleNamespace(execute=execute)
         self.package=ModuleType(PACKAGE)
         self.package.poisoning=SimpleNamespace(result_findings=Mock(return_value=[]))
-        self.package.endpoint_plane=SimpleNamespace(managed_policy=AsyncMock(return_value={'policy_hash':'policy'}))
+        self.package.endpoint_plane=SimpleNamespace(managed_policy=AsyncMock(return_value={'policy_hash':'policy'}),
+            policy_accepted=AsyncMock(side_effect=lambda device: device['policy_hash']=='policy'))
         self.package.registry=SimpleNamespace(server=lambda _:None)
         self.env={**G,'__package__':PACKAGE,'__name__':PACKAGE+'.jobs','CLAIM_SECONDS':5,'PREPARE_SECONDS':180,
                   '_device':AsyncMock(return_value=self.device),'authorized':AsyncMock(return_value=self.allowed),

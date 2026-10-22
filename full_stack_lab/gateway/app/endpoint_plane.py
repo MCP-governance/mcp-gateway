@@ -871,6 +871,12 @@ async def _held_policy(device: dict, policy: dict, reported_hash: str) -> dict |
     return old if old["policy_hash"] == reported_hash else None
 
 
+async def policy_accepted(device: dict) -> bool:
+    """The device runs the current policy, or one that differs from it only by its server list (D-198)."""
+    policy = await managed_policy(device)
+    return device["policy_hash"] == policy["policy_hash"] or bool(await _held_policy(device, policy, device["policy_hash"]))
+
+
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
                     quality: dict | None = None, user_command_settings: list | None = None) -> dict:
     latest = await managed_policy(device)
