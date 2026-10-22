@@ -46,6 +46,9 @@ TRUSTED = {SYSTEM, ADMINISTRATORS, TRUSTED_INSTALLER}
 WRITE_RIGHTS = 0x2 | 0x4 | 0x10 | 0x40 | 0x100 | 0x10000 | 0x40000 | 0x80000 | 0x10000000 | 0x40000000
 RULES = ("egress", "gateway-tcp", "gateway-udp")
 TASK = "MCPGatewayManaged-{user}"
+# The cached credential has to outlive one slow round (60 s pause + the observers' 40 s and 45 s limits),
+# or the harness is given the not-active placeholder between two rounds of an active device.
+TOKEN_CACHE_SECONDS = 180
 
 
 def pipe_name(username):
@@ -644,7 +647,41 @@ def serve(args):
             log.unlink()
         with open(log, "a", encoding="utf-8") as output:
             output.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry}, ensure_ascii=False) + "\n")
+    latest = {"inventory": "pending", "os": {"state": "failed", "error_code": "not_run", "accepted_count": 0}}
+
+    def observe():
+        # Beside the heartbeat, not inside it: up to 85 seconds spent here is time in which an activation by
+        # the organization goes unnoticed and the employee's harness gets the not-active placeholder.
+        while True:
+            inventory_status = "success"
+            try:  # configuration inventory is independent from OS event observation
+                subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
+                               check=True, timeout=40, capture_output=True)
+            except (OSError, subprocess.SubprocessError) as exc:
+                inventory_status = type(exc).__name__
+            os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
+            try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
+                done = subprocess.run(
+                    [sys.executable, "-B", "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
+                     "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace")
+                lines = [line for line in done.stdout.splitlines() if line.startswith("{")]
+                if lines:
+                    candidate = json.loads(lines[-1])
+                    if isinstance(candidate, dict) and candidate.get("channel") == "os":
+                        os_observer = candidate
+                    else:
+                        os_observer["error_code"] = "invalid_collector_output"
+                else:
+                    os_observer["error_code"] = "missing_collector_output"
+            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                os_observer["error_code"] = type(exc).__name__
+            with lock:
+                latest.update(inventory=inventory_status, os=os_observer)
+            time.sleep(55)
+    threading.Thread(target=observe, daemon=True).start()
     while True:
+        pause = 10  # until the organization activates the device: the first token follows within seconds
         try:
             verify_transport(config)
             policy = request(config, "/api/endpoint/managed-policy")
@@ -683,33 +720,13 @@ def serve(args):
             if report["state"] == "active" and report["compliant"]:
                 token = request(config, "/oauth/device-token", {})
                 with lock:
-                    cache.update(token=token["access_token"], until=time.monotonic() + 120)
+                    cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
+                pause = 60
             else:
                 with lock:
                     cache.clear()
-            inventory_status = "success"
-            try:  # configuration inventory is independent from OS event observation
-                subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
-                               check=True, timeout=40, capture_output=True)
-            except (OSError, subprocess.SubprocessError) as exc:
-                inventory_status = type(exc).__name__
-            os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
-            try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
-                done = subprocess.run(
-                    [sys.executable, "-B", "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
-                     "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
-                    encoding="utf-8", errors="replace")
-                lines = [line for line in done.stdout.splitlines() if line.startswith("{")]
-                if lines:
-                    candidate = json.loads(lines[-1])
-                    if isinstance(candidate, dict) and candidate.get("channel") == "os":
-                        os_observer = candidate
-                    else:
-                        os_observer["error_code"] = "invalid_collector_output"
-                else:
-                    os_observer["error_code"] = "missing_collector_output"
-            except (OSError, subprocess.SubprocessError, ValueError) as exc:
-                os_observer["error_code"] = type(exc).__name__
+            with lock:
+                inventory_status, os_observer = latest["inventory"], latest["os"]
             record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
                     "config_inventory": inventory_status, "os_observer": os_observer})
             management = {"active": "활성", "pending": "등록 대기", "quarantined": "격리됨", "revoked": "철회됨"}.get(report["state"], "확인 필요")
@@ -722,7 +739,7 @@ def serve(args):
             record({"state": "connection-stopped", "error": type(exc).__name__, "status": getattr(exc, "code", None),
                     "reason": str(exc)[:200]})
             publish(status_path, False, management="확인 필요")
-        time.sleep(60)
+        time.sleep(pause)
 
 
 def rollback(args):

@@ -115,6 +115,39 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
             "valid_from": None, "valid_until": None, "commands": [], "transfer_destinations": []}
 
 
+def _argument_error(error) -> str:
+    path = ".".join(str(part) for part in error.absolute_path)
+    if error.validator == "additionalProperties":
+        names = sorted(str(k) for k in set(error.instance) - set(error.schema.get("properties") or {}))
+        return "승인되지 않은 인자 " + ", ".join(f"{path}.{n}" if path else n for n in names)
+    if error.validator == "required":
+        names = [str(k) for k in error.validator_value if k not in error.instance]
+        return "필요한 인자 " + ", ".join(f"{path}.{n}" if path else n for n in names) + " 없음"
+    kind = {"pattern": "값이 승인된 주소·형식 밖", "enum": "값이 승인된 값이 아님", "const": "값이 승인된 값이 아님",
+            "type": "형식이 승인 범위와 다름"}.get(error.validator, "값이 승인 범위 밖")
+    return f"인자 {path or '(전체)'}: {kind}"
+
+
+def argument_gap(principal: dict, server: str, tool: str, arguments: dict) -> str:
+    """Which argument puts a call outside the approved scope, for the person who has to change it.
+
+    Names the argument and the kind of mismatch, never the approved values: the reviewer's list of
+    destinations or values is not shown to the caller anywhere else (tools/list carries the provider's
+    schema), so the reason does not become a way to read it out one probe at a time."""
+    spec = registry.server(server) or {}
+    if spec.get("allowed_principals") is not None:
+        constraints = [spec.get("parameter_constraints", {}).get(tool)]
+    else:
+        constraints = [g.get("argument_schema") for g in capabilities()["capabilities"]
+                       if principal["token"] in g["principals"] and server in g["servers"]
+                       and (g.get("tools") is None or tool in g["tools"])]
+    for constraint in filter(None, constraints):
+        errors = sorted(Draft202012Validator(constraint).iter_errors(arguments), key=lambda e: [str(p) for p in e.absolute_path])
+        if errors:
+            return "; ".join(dict.fromkeys(_argument_error(e) for e in errors[:3]))
+    return ""
+
+
 def visible(principal: dict, server_id: str, tool: str, action: str) -> bool:
     """Whether tools/list may show this tool to this person. SQL's effective action depends on its
     parsed statement; other tools keep their reviewed action, because testing every action would

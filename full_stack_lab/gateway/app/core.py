@@ -2398,6 +2398,14 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         except Exception as exc:
             result = local_verdict("P-CONTROL-FAIL-CLOSED", "Block", "OPA 정책 결정에 실패하여 기본 차단했습니다.")
             base_event["error"] = _root_cause(exc)
+        if result["decision"] == "Block" and result["policy_id"] == "PAC-01":
+            # The caller can only fix what it is told: which argument left the approved scope.
+            try:
+                gap = pac.argument_gap(principal, cls.server, cls.tool, arguments)
+            except Exception:
+                gap = ""
+            if gap:
+                result = {**result, "reason": f"{result['reason']} — {gap}. 승인된 범위 안의 값으로 바꾸거나 관리자에게 범위 변경을 요청하세요."}
         laps.lap("policy")
 
         policy_basis = result
