@@ -38,18 +38,18 @@
         "head_sha256": "f3fd02455f7397b0eb0006a90447a83cbf0ad1f71d252f5946babd3adfc3015e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/console.sh",
         "symbol": "field_up",
         "line_start": 301,
         "line_end": 353,
-        "normalized_sha256": "06cf4e36ef879ea8fa2555304d878cf80b5712baee7d513b00a2ac3af0ce14f7",
-        "head_sha256": "06cf4e36ef879ea8fa2555304d878cf80b5712baee7d513b00a2ac3af0ce14f7",
+        "normalized_sha256": "13fb2430414ff0c6b15db053f76bb70db6de69945229ca2fa09f22c091a37067",
+        "head_sha256": "13fb2430414ff0c6b15db053f76bb70db6de69945229ca2fa09f22c091a37067",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/llm/litellm.yaml",
@@ -60,7 +60,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -73,7 +73,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -117,7 +117,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/opencode/opencode.json",
@@ -128,7 +128,7 @@
         "head_sha256": "716f59d553f5bbeab7678b0e733ad7781055faf1ca52e84ee32df379633fe1c4",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -139,7 +139,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -152,7 +152,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -197,7 +197,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/codex/config.toml",
@@ -208,7 +208,7 @@
         "head_sha256": "6b0c44349b5951e8e7fa54cb786b1a96254b7777a878bc5198106ac43a920a9f",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -219,7 +219,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -232,7 +232,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -277,7 +277,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/claude-code/managed-settings.json",
@@ -288,7 +288,7 @@
         "head_sha256": "e9785f69d66fa91246ebf0a95d062932586430c9b0191b573a70d90b6e968de7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -299,7 +299,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -312,7 +312,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -356,7 +356,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/opencode/opencode.json",
@@ -367,7 +367,7 @@
         "head_sha256": "716f59d553f5bbeab7678b0e733ad7781055faf1ca52e84ee32df379633fe1c4",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -379,7 +379,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -423,7 +423,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/codex/config.toml",
@@ -434,7 +434,7 @@
         "head_sha256": "6b0c44349b5951e8e7fa54cb786b1a96254b7777a878bc5198106ac43a920a9f",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -445,7 +445,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -458,7 +458,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -502,7 +502,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/managed/claude-code/managed-settings.json",
@@ -513,7 +513,7 @@
         "head_sha256": "e9785f69d66fa91246ebf0a95d062932586430c9b0191b573a70d90b6e968de7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -524,7 +524,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -537,7 +537,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -581,35 +581,35 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "refresh_catalog",
         "line_start": 219,
         "line_end": 382,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/mcp_facade.py:121-171 _approved_tools",
       "full_stack_lab/gateway/app/core.py:219-382 refresh_catalog",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -645,7 +645,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -689,18 +689,18 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_guarded_result",
-        "line_start": 1917,
-        "line_end": 1945,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 1923,
+        "line_end": 1951,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/privacy.py",
@@ -711,12 +711,12 @@
         "head_sha256": "5eeb5df2cd13c2f59a3d946861f1d62cf5f5de6266f41c7b33c88e7fc8ff36b1",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/mcp_facade.py:183-229 _render",
-      "full_stack_lab/gateway/app/core.py:1917-1945 _guarded_result",
+      "full_stack_lab/gateway/app/core.py:1923-1951 _guarded_result",
       "full_stack_lab/gateway/app/privacy.py:173-209 mask_payload"
     ],
     "evidence_requirements": [
@@ -743,7 +743,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -786,23 +786,23 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_guarded_result",
-        "line_start": 1917,
-        "line_end": 1945,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 1923,
+        "line_end": 1951,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/mcp_facade.py:183-229 _render",
-      "full_stack_lab/gateway/app/core.py:1917-1945 _guarded_result"
+      "full_stack_lab/gateway/app/core.py:1923-1951 _guarded_result"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -828,7 +828,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -872,7 +872,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -883,7 +883,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -894,7 +894,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -905,7 +905,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -919,7 +919,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -964,7 +964,7 @@
         "head_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -975,7 +975,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -986,7 +986,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -999,7 +999,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1043,23 +1043,23 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/mcp_facade.py:121-171 _approved_tools",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -1085,7 +1085,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1129,7 +1129,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1140,7 +1140,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1151,7 +1151,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1164,7 +1164,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1208,18 +1208,18 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "refresh_catalog",
         "line_start": 219,
         "line_end": 382,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -1230,7 +1230,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1262,7 +1262,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1306,18 +1306,18 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/llm/litellm.yaml",
@@ -1328,12 +1328,12 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/mcp_facade.py:232-272 build_mcp",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/llm/litellm.yaml:1-33 model_list"
     ],
     "evidence_requirements": [
@@ -1360,7 +1360,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1405,7 +1405,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -1416,7 +1416,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -1427,7 +1427,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -1438,7 +1438,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1452,7 +1452,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1496,7 +1496,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -1507,7 +1507,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1518,7 +1518,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1531,7 +1531,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1575,7 +1575,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -1586,7 +1586,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
@@ -1597,7 +1597,7 @@
         "head_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1608,7 +1608,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1622,7 +1622,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1665,7 +1665,7 @@
         "head_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
@@ -1676,7 +1676,7 @@
         "head_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -1687,7 +1687,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1700,7 +1700,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1745,7 +1745,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -1756,7 +1756,7 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/provision_keys.py",
@@ -1767,7 +1767,7 @@
         "head_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1780,7 +1780,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1824,7 +1824,7 @@
         "head_sha256": "f63f4049b1a89e0d1b6bf2595ed5fa2d7a4084a929c43954a8313f15c17291db",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/model-proxy/tinyproxy.conf",
@@ -1835,7 +1835,7 @@
         "head_sha256": "d6ec1254c370a6cbad5636e5077e54d23621904f0e6e1aa4de485e245b83afe8",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -1846,7 +1846,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1859,7 +1859,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1903,7 +1903,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -1914,7 +1914,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -1925,7 +1925,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -1938,7 +1938,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -1982,7 +1982,7 @@
         "head_sha256": "d6ec1254c370a6cbad5636e5077e54d23621904f0e6e1aa4de485e245b83afe8",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/model-proxy/model-domains.txt",
@@ -1993,7 +1993,7 @@
         "head_sha256": "f63f4049b1a89e0d1b6bf2595ed5fa2d7a4084a929c43954a8313f15c17291db",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -2004,7 +2004,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -2017,7 +2017,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2061,18 +2061,18 @@
         "head_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/llm/litellm.yaml",
@@ -2083,12 +2083,12 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/workstation/provision_keys.py:32-61 main",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/llm/litellm.yaml:1-33 model_list"
     ],
     "evidence_requirements": [
@@ -2115,7 +2115,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2153,13 +2153,13 @@
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -2170,11 +2170,11 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/gateway/app/mcp_facade.py:183-229 _render"
     ],
     "evidence_requirements": [
@@ -2201,7 +2201,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2245,23 +2245,23 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/llm/litellm.yaml:1-33 model_list",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -2287,7 +2287,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2331,7 +2331,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -2342,18 +2342,18 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -2364,13 +2364,13 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/llm/litellm.yaml:1-33 model_list",
       "full_stack_lab/gateway/app/upstream.py:327-356 session",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/integrations/litellm/preflight.py:126-177 probe"
     ],
     "evidence_requirements": [
@@ -2397,7 +2397,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2441,35 +2441,35 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_guarded_result",
-        "line_start": 1917,
-        "line_end": 1945,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 1923,
+        "line_end": 1951,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/llm/litellm.yaml:1-33 model_list",
-      "full_stack_lab/gateway/app/core.py:1917-1945 _guarded_result",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:1923-1951 _guarded_result",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -2505,7 +2505,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2545,11 +2545,11 @@
         "symbol": "_configure_tracing",
         "line_start": 194,
         "line_end": 206,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/mcp_facade.py",
@@ -2560,18 +2560,18 @@
         "head_sha256": "1612c988bda09206d32dc91e395c9db2041942c8fcc77f47ec1d5e082e451e1e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/workstation/provision_keys.py",
@@ -2582,13 +2582,13 @@
         "head_sha256": "f9e1b40efaf5a0f65e001bbfc45fefcea47f365908e752ec15cb53307774f9d7",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/core.py:194-206 _configure_tracing",
       "full_stack_lab/gateway/app/mcp_facade.py:98-118 _client_context",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/workstation/provision_keys.py:32-61 main"
     ],
     "evidence_requirements": [
@@ -2625,7 +2625,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2669,7 +2669,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -2680,18 +2680,18 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_configure_tracing",
         "line_start": 194,
         "line_end": 206,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -2723,7 +2723,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2767,7 +2767,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -2778,7 +2778,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -2790,7 +2790,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2834,18 +2834,18 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -2856,12 +2856,12 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/upstream.py:40-77 credential_headers",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call",
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call",
       "full_stack_lab/gateway/app/agent_contract.py:142-188 authenticated_user"
     ],
     "evidence_requirements": [
@@ -2888,7 +2888,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -2932,7 +2932,7 @@
         "head_sha256": "f3fd02455f7397b0eb0006a90447a83cbf0ad1f71d252f5946babd3adfc3015e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/llm/litellm.yaml",
@@ -2943,7 +2943,7 @@
         "head_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -2954,7 +2954,7 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -2967,7 +2967,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3014,7 +3014,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3025,7 +3025,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3072,7 +3072,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -3083,7 +3083,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3095,7 +3095,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3140,7 +3140,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -3151,7 +3151,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3163,7 +3163,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3210,7 +3210,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3221,7 +3221,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3266,7 +3266,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
@@ -3277,7 +3277,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3289,7 +3289,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3333,7 +3333,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3344,7 +3344,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3389,7 +3389,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
@@ -3400,24 +3400,24 @@
         "head_sha256": "06f79264290c7ade126e824f874a992c0742a8adb018d06e98d2eccf3bfe7b5d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/upstream.py:40-77 credential_headers",
       "full_stack_lab/gateway/app/idp.py:216-236 _revoke_family",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -3443,7 +3443,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3488,23 +3488,23 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/upstream.py:40-77 credential_headers",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -3530,7 +3530,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3575,7 +3575,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/compose.yaml",
@@ -3586,7 +3586,7 @@
         "head_sha256": "f3fd02455f7397b0eb0006a90447a83cbf0ad1f71d252f5946babd3adfc3015e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3598,7 +3598,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3643,7 +3643,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/integrations/litellm/preflight.py",
@@ -3654,18 +3654,18 @@
         "head_sha256": "c75d16b76164be5549d9947059f6c3295658a570becd31e95394291bf943e4ce",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_configure_tracing",
         "line_start": 194,
         "line_end": 206,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3697,7 +3697,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3743,35 +3743,35 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "_configure_tracing",
         "line_start": 194,
         "line_end": 206,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
         "symbol": "execute_call",
-        "line_start": 2183,
-        "line_end": 2542,
-        "normalized_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
-        "head_sha256": "3813d3d64bfff82875c41174d8c7d8c86c0f32fc9b105f5735c39efb1ae61687",
+        "line_start": 2189,
+        "line_end": 2548,
+        "normalized_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
+        "head_sha256": "810e24cf2173216de58466f2a83844292a48e7e4f7e2da95a82c5a6364ecc25d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
       "full_stack_lab/gateway/app/upstream.py:40-77 credential_headers",
       "full_stack_lab/gateway/app/core.py:194-206 _configure_tracing",
-      "full_stack_lab/gateway/app/core.py:2183-2542 execute_call"
+      "full_stack_lab/gateway/app/core.py:2189-2548 execute_call"
     ],
     "evidence_requirements": [
       "실제 native 모델/도구 ID와 Gateway decision/policy/trace 상관관계",
@@ -3807,7 +3807,7 @@
     "anchor_refreshed_on": "2026-10-15",
     "current_source_assessment": "anchors_refreshed_semantic_and_runtime_revalidation_required",
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3852,7 +3852,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
@@ -3863,7 +3863,7 @@
         "head_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3875,7 +3875,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3921,7 +3921,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3932,7 +3932,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -3976,7 +3976,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -3987,7 +3987,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -4031,7 +4031,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -4042,7 +4042,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -4087,7 +4087,7 @@
         "head_sha256": "b3577db374fba9841080c8a5a75d6c9f5a083bd0c377a0824042f96c84707d4c",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       },
       {
         "path": "full_stack_lab/compose.yaml",
@@ -4098,7 +4098,7 @@
         "head_sha256": "f3fd02455f7397b0eb0006a90447a83cbf0ad1f71d252f5946babd3adfc3015e",
         "source_state": "committed_source",
         "scope": "local source inspection, not runtime proof",
-        "source_commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc"
+        "source_commit": "771a0fa100817758e6f0544fdccbb36b97971d33"
       }
     ],
     "our_code_evidence": [
@@ -4110,7 +4110,7 @@
       "조건별 실제 공급자·독립 수신 또는 효과 관측 및 원복 결과; credential 값 제외"
     ],
     "code_observation": {
-      "commit": "f32df54cf3a56becf625977c4fa76f54df8b14dc",
+      "commit": "771a0fa100817758e6f0544fdccbb36b97971d33",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
