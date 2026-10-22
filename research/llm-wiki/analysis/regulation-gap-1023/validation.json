@@ -1,0 +1,44 @@
+{
+  "checked_at": "2026-10-22T16:54:03.203175+00:00",
+  "ok": true,
+  "task_id": "RES-REGS",
+  "baseline_commit": "3a1b2a198ff381a36146a3f84219eb8a304f8a2b",
+  "requirements": 74,
+  "sources": 17,
+  "code_anchors": 31,
+  "linked_existing_requirements": 16,
+  "local_links": 157,
+  "present_preserved_files": 10,
+  "csv_inventory": {
+    "20-reg-docs.csv": {
+      "rows": 61,
+      "sha256": "5500ac963279e1a31f82f959ab4872106a23b16d09817a78c4262891829ac0f7"
+    },
+    "21-reg-requirements.csv": {
+      "rows": 1223,
+      "sha256": "a54fb58918ce704edf2b3f67da5058acfd806d55c0c1a7590b6cae0f30c183e8"
+    },
+    "24-reg-capabilities.csv": {
+      "rows": 7,
+      "sha256": "74c945e157d9caa8de4326ed2b72201a3123b99eaf7ee6fdb67dd2563067efad"
+    },
+    "25-reg-proposals.csv": {
+      "rows": 7,
+      "sha256": "fb67c421229347193aeee0c2b2a14618e1a6d08590eacab89db8d6c9199546c1"
+    },
+    "29-reg-incident-deadlines.csv": {
+      "rows": 44,
+      "sha256": "8c80be40aca5c7d5e8aebb4e1bdd27ddb630a29ba51dcccf29947fab6742253a"
+    },
+    "30-reg-retention.csv": {
+      "rows": 16,
+      "sha256": "89197014d71365f37159bd56ba8908ca10dacf2a427fed91a9b634e587c4bab9"
+    },
+    "32-reg-clauses.csv": {
+      "rows": 124,
+      "sha256": "c2ef790c903240eff33137cb0f084e4ae020fb0db212f3674fae7d1f03814d2b"
+    }
+  },
+  "errors": [],
+  "limitation": "Artifact consistency only. Not product tests or official-source completeness."
+}
