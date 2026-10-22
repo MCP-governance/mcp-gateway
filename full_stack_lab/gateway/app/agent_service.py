@@ -300,14 +300,26 @@ def github_repository_url(value: str) -> str:
         or parsed.port
         or parsed.query
         or parsed.fragment
-        or len(pieces) != 2
+        or not (len(pieces) == 2 or (len(pieces) >= 5 and pieces[2] == "tree"))
     ):
         raise ValueError("https://github.com/조직/저장소 형식의 URL만 제출할 수 있습니다.")
-    owner, repository = pieces
+    owner, repository = pieces[:2]
     repository = repository.removesuffix(".git")
     if not owner or not repository or any(part in {".", ".."} for part in (owner, repository)):
         raise ValueError("유효한 GitHub 조직과 저장소 이름을 입력하세요.")
     return f"https://github.com/{owner}/{repository}"
+
+
+def github_repository_path(value: str) -> str:
+    """공식 서버 모음처럼 한 저장소에 여러 MCP가 있으면 `.../tree/<브랜치>/<경로>`로 그중 하나를 신청한다.
+
+    복제·검사는 저장소 전체로 그대로 하고, 경로는 같은 저장소의 서로 다른 서버를 구분하는 신청 정보다.
+    """
+    pieces = [piece for piece in urlsplit(value.strip()).path.split("/") if piece]
+    path = "/".join(pieces[4:]) if len(pieces) >= 5 and pieces[2] == "tree" else ""
+    if path and not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9._-]*(?:/[A-Za-z0-9_-][A-Za-z0-9._-]*)*", path):
+        raise ValueError("저장소 안 경로는 영문·숫자·._- 로 된 폴더 경로여야 합니다.")
+    return path
 
 
 async def current_identity(authorization: str | None) -> dict:
@@ -990,7 +1002,7 @@ def console_user(user: dict) -> dict:
 
 async def intake_rows(user: dict) -> list[dict]:
     await review.lapse_expired_acceptances()
-    query = """SELECT r.id, r.submitted_by, r.display_name, r.repository_url, r.requested_transport, r.purpose,
+    query = """SELECT r.id, r.submitted_by, r.display_name, r.repository_url, r.repository_path, r.requested_transport, r.purpose,
                       r.status, r.risk_level, r.review_note, r.reviewed_by, r.reviewed_at, r.created_at, r.updated_at,
                       r.commit_sha, r.source_ref, r.evidence, r.validated_at, r.exit_terms, r.internal_repo_url,
                       r.registered_server_id, r.intake_kind, r.endpoint_url, r.provenance, r.risk_input, r.requested_tools,
@@ -1048,7 +1060,7 @@ async def search_catalog(q: str = "", authorization: str | None = Header(default
     await current_identity(authorization)
     term = q.strip()
     like = f"%{term}%"
-    request_query = """SELECT r.display_name, r.repository_url, r.endpoint_url, r.intake_kind, r.requested_transport, r.status, r.risk_level,
+    request_query = """SELECT r.display_name, r.repository_url, r.repository_path, r.endpoint_url, r.intake_kind, r.requested_transport, r.status, r.risk_level,
                               r.commit_sha, r.source_ref, r.validated_at, r.reviewed_at, r.created_at,
                               r.internal_repo_url, COALESCE(p.display_name, r.submitted_by) AS submitted_by_name
                        FROM mcp_intake_requests r LEFT JOIN principals p ON p.token=r.submitted_by"""
@@ -1164,6 +1176,7 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     user = await current_identity(authorization)
     try:
         repository_url = github_repository_url(request.repository_url) if request.repository_url else ""
+        repository_path = github_repository_path(request.repository_url) if request.repository_url else ""
         endpoint = core.registration_endpoint(request.endpoint_url) if request.intake_kind == "remote-endpoint" else None
         if request.intake_kind == "repository" and not repository_url:
             raise ValueError("소스 도입에는 구현 저장소 주소가 필요합니다.")
@@ -1179,9 +1192,10 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     # approved again with the input it lacks (DEV-71).
     existing = await db.fetch_one(
         "SELECT id, status FROM mcp_intake_requests"
-        " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND status NOT IN ('REJECTED', 'FAILED')"
+        " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND repository_path=%s"
+        " AND status NOT IN ('REJECTED', 'FAILED')"
         " AND (status <> 'APPROVED' OR (intake_kind='repository' AND jsonb_typeof(evidence->'risk_assessment')='object'))",
-        (request.intake_kind, endpoint or repository_url),
+        (request.intake_kind, endpoint or repository_url, "" if endpoint else repository_path),
     )
     if existing:
         raise HTTPException(409, "같은 대상의 신청이 이미 진행 중입니다.")
@@ -1196,18 +1210,19 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
         row = await (await connection.execute(
             """INSERT INTO mcp_intake_requests(
                      id, submitted_by, display_name, repository_url, requested_transport,
-                     purpose, exit_terms, status, intake_kind, endpoint_url, risk_input, requested_tools
-                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                 RETURNING id, display_name, repository_url, requested_transport, purpose,
+                     purpose, exit_terms, status, intake_kind, endpoint_url, risk_input, requested_tools, repository_path
+                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                 RETURNING id, display_name, repository_url, repository_path, requested_transport, purpose,
                            status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
             (uuid4(), user["principal"], request.display_name.strip(), repository_url,
              request.requested_transport, request.purpose.strip(), Jsonb({}),
              "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint,
-             Jsonb(applicant_input), Jsonb(sorted(set(request.requested_tools)))))).fetchone()
+             Jsonb(applicant_input), Jsonb(sorted(set(request.requested_tools))),
+             "" if endpoint else repository_path))).fetchone()
         if row:
             await review.record_event("user-consent", "recorded", "intake", row["id"], user["principal"],
                                       applicant=user["principal"], reason=request.purpose.strip(),
-                                      scope={"kind": request.intake_kind, "target": endpoint or repository_url,
+                                      scope={"kind": request.intake_kind, "target": endpoint or "/".join(filter(None, (repository_url, repository_path))),
                                              "transport": request.requested_transport}, connection=connection)
     return {"request": row, "message": "신청했습니다."}
 

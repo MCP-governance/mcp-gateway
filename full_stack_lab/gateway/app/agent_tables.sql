@@ -171,6 +171,7 @@ ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS source_ref text;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS evidence jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validated_at timestamptz;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS internal_repo_url text;
+ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS repository_path text NOT NULL DEFAULT '';
 ALTER TABLE mcp_intake_requests DROP CONSTRAINT IF EXISTS mcp_intake_requests_status_check;
 ALTER TABLE mcp_intake_requests ADD CONSTRAINT mcp_intake_requests_status_check
   CHECK (status IN ('HOLD', 'VALIDATION_QUEUED', 'VALIDATING', 'VALIDATED', 'REMOTE_REVIEWED', 'APPROVED', 'FAILED', 'REJECTED'));
