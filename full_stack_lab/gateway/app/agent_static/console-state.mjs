@@ -243,6 +243,16 @@ export function dedupeItems(items) {
   return [...groups.values()];
 }
 
+const CONNECTOR_CONTROL = [["bypass_possible", "block", "차단 미검증"], ["observed_only", "alert", "차단 미검증"],
+  ["vendor_enforced", "brand", "벤더 콘솔 차단"], ["endpoint_enforced", "allow", "엔드포인트에서 차단"]];
+
+/** The weakest control among the endpoints that reported one harness item: one open path decides it. [tone, label] or null. */
+export function connectorControl(items, key) {
+  const states = new Set((items || []).filter((i) => i?.item_key === key).map((i) => i.state));
+  const hit = CONNECTOR_CONTROL.find(([state]) => states.has(state));
+  return hit ? [hit[1], hit[2]] : null;
+}
+
 /** The five stops of one audit row: source, gateway, endpoint, upstream, response. */
 export function pipelineOf(row) {
   const connection = row?.event_kind === "mcp-connection";

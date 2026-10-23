@@ -7,7 +7,7 @@
  */
 import { lang, locale, t, clockText, dateTimeText } from "./i18n.mjs";
 import { mergeRows, hourBuckets, sankeyData, harnessLabel, DECISIONS,
-  statusView, dedupeItems, pipelineOf, resourceValues, observationRows, listenerCoverage,
+  statusView, dedupeItems, connectorControl, pipelineOf, resourceValues, observationRows, listenerCoverage,
   msText, pctText, LATENCY_STAGE, timingRows, privacyText,
   originLabel, denialClass, provenanceView, countView, pager, denialCount } from "./console-state.mjs";
 import * as charts from "./charts.mjs";
@@ -1156,7 +1156,7 @@ function downstreamText(d) {
 // ── harness inventory: a reported state is not enforcement evidence ──
 const CONNECTOR_KIND = { connector: "claude.ai 커넥터", plugin: "플러그인", server: "직접 추가", app: "ChatGPT 앱", feature: "기본 기능" };
 const CONNECTOR_STATE = { pending: ["approval", "미승인"], expired: ["block", "검토 기한 만료"], denied: ["block", "거부"],
-  approved: ["allow", "승인"], default: ["outline", "재검토"] };
+  approved: ["outline", "승인 · 기록만"], default: ["outline", "재검토"] };
 const FEATURE_LABEL = { web_search: "웹 검색", apps: "ChatGPT 앱 전체", plugins: "플러그인", browser_use: "브라우저 조작",
   computer_use: "컴퓨터 조작", image_generation: "이미지 생성", memories: "메모리" };
 const connectorName = (g) => (g.kinds.includes("feature") ? FEATURE_LABEL[g.names[0]] || g.names[0] : g.names.join(" · "));
@@ -1174,7 +1174,8 @@ const connectorButtons = (g) => g.decision
   ? html`<button class="btn sm" data-act="connector-decide" data-key="${g.key}" data-decision="reset">되돌리기</button>`
   : html`<button class="btn sm danger" data-act="connector-deny" data-key="${g.key}" data-name="${connectorName(g)}">거부</button>
     ${g.state === "default" ? "" : html`<button class="btn sm primary" data-act="connector-decide" data-key="${g.key}" data-decision="approved">승인</button>`}`;
-let connectorGroups = [];
+const connectorControlChip = (all, key) => { const c = connectorControl(all, key); return c ? chip(c[0], c[1]) : NONE; };
+let connectorGroups = [], connectorItems = [];
 
 // Which control governs each integration and endpoint, with what evidence.
 const STATE_DECISION = { gateway_enforced: "Allow", endpoint_enforced: "Allow", vendor_enforced: "",
@@ -1202,6 +1203,7 @@ ROUTES.coverage = async (_, tab, query) => {
   const [p, inv, conn] = await Promise.all([planes(), gw("endpoint/inventory?classification=shadow,retired-residue"), api("/api/connectors")]);
   const [entriesPage, listenersPage, eventsPage] = await Promise.all([covPage(inv, "entries"), covPage(inv, "listeners"), covPage(inv, "os_events")]);
   connectorGroups = conn.items;
+  connectorItems = p.items;
   const items = dedupeItems(p.items);
   integrationItems = items;
   const state = query.get("state") || "", cls = query.get("class") || "", q = (query.get("q") || "").toLowerCase();
@@ -1279,13 +1281,14 @@ ROUTES.coverage = async (_, tab, query) => {
               <td>${evidenceChip(e.provenance_state)}</td>`))}
             </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` },
         { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터·앱·기능",
-          conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 엔드포인트</th><th>승인</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
+          conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 엔드포인트</th><th>승인</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
             ${conn.items.map((g) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
               <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
               <td>${chip("plain", g.harness === "claude" ? "Claude Code" : "Codex")}</td>
               <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
               <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
               <td>${connectorState(g)}${g.violation ? chip("block", "미승인 사용") : ""}</td>
+              <td>${connectorControlChip(connectorItems, g.key)}</td>
               <td class="small">${vendor ? html`${chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state)}<span class="sub">${vendor.verified_by} · ${when(vendor.verified_at)}</span>` : NONE}</td>
               <td class="num nowrap">${connectorButtons(g)}</td></tr>`; })}</tbody></table>`
             : empty("보고된 커넥터 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" }) },
@@ -2862,7 +2865,7 @@ const ACTIONS = {
     if (!g) return;
     openDrawer(connectorName(g), html`<div class="row-actions">${connectorState(g)}
       ${g.violation ? chip("block", "미승인 사용") : ""}${connectorButtons(g)}</div>
-      ${kv([["하네스", g.harness === "claude" ? "Claude Code" : "Codex"], ["종류", g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")],
+      ${kv([["하네스", g.harness === "claude" ? "Claude Code" : "Codex"], ["통제", connectorControlChip(connectorItems, g.key)], ["종류", g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")],
         ["대상", html`<span class="mono">${connectorTarget(g)}</span>`], ["처음 보고", when(g.first_seen)],
         ["결정", g.decision ? html`${g.note || "—"}<span class="sub">${g.decided_by} · ${when(g.decided_at)}</span>` : ""]])}
       <h3>사용 엔드포인트</h3>

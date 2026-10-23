@@ -134,6 +134,10 @@ Claude Code는 claude.ai 계정에 연결한 커넥터(`claude.ai Notion` 등)�
 
 - 관리자는 **직원·단말 → 하네스 커넥터**에서 예외 승인·거부를 기록합니다. 벤더 출처와 무관하게 **미승인 항목은 처음부터
   거부 정책 대상**입니다. `CONNECTOR_REVIEW_DAYS`(기본 14일)는 검토 기한이며 사용 유예가 아닙니다(D-53).
+- 관리형 단말은 키트 없이 서비스가 직접 보고합니다: 관리 계정의 `claude mcp list`·`claude plugin list`, Codex 앱·기능·웹 검색 유효값을
+  6시간마다 장치 자격(`POST /api/endpoint/harness-inventory`)으로 보내고, 보고 항목은 소유자의 관리 단말 상태로 판정합니다(D-220).
+- 관리형 Claude Code는 계정 동기화 플러그인·스킬(`syncClaudeAiPlugins`·`syncClaudeAiSkills`)과 WebFetch·WebSearch(`permissions.deny`,
+  `allowManagedPermissionRulesOnly`)도 닫습니다(D-219). 특정 벤더 커넥터를 열어 주는 경로는 설계만 있습니다(D-222).
 - 사용자 설정 적용은 보조 조치입니다. 목록에서 사라져도 실제 차단이 입증되지 않아 화면에는 **차단 미검증**으로 표시합니다.
 - `mcpgw_pc.py managed …`는 항상 세 파일을 만듭니다. Claude Code는 Gateway 서버만 고정하고 계정 커넥터·새 마켓플레이스를
   제한합니다. Codex는 `requirements.toml`의 서버 이름·URL 제약과 Apps·플러그인·웹 검색·브라우저/컴퓨터 사용 제한을 받습니다.

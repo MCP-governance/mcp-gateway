@@ -135,17 +135,24 @@ async def groups() -> list[dict]:
     return rows
 
 
-@router.post("/api/pc/inventory")
-async def pc_inventory(report: Inventory, authorization: str | None = Header(default=None)):
-    """키트가 보고한 목록을 갱신한다. absent는 미관측이며 차단 확인이 아니다."""
-    user = await authenticated_user(authorization)
+# 장치 인증으로 온 보고는 이 접두어를 단 작업 위치로 저장한다. 키트의 workstation 형식(`^[a-z0-9]...`)에는 ':'가 없어
+# 직원이 자기 키트 보고를 관리 단말의 보고로 위장하지 못한다.
+DEVICE_PREFIX = "device:"
+
+
+class DeviceInventory(StrictModel):
+    harnesses: list[Literal["claude", "codex"]] = Field(max_length=2)
+    items: list[HarnessItem] = Field(default_factory=list, max_length=500)
+
+
+async def ingest(principal: str, workstation: str, harnesses: list[str], items: list[HarnessItem]) -> dict:
     async with db.transaction() as connection:
         await connection.execute(
             """UPDATE harness_items SET active=false, status='absent'
                WHERE principal=%s AND workstation=%s AND harness = ANY(%s)""",
-            (user["principal"], report.workstation, report.harnesses))
-        for item in report.items:
-            if item.harness not in report.harnesses:
+            (principal, workstation, harnesses))
+        for item in items:
+            if item.harness not in harnesses:
                 continue
             await connection.execute(
                 """INSERT INTO harness_items(principal, workstation, harness, kind, name, item_key, target, status, active)
@@ -153,13 +160,20 @@ async def pc_inventory(report: Inventory, authorization: str | None = Header(def
                    ON CONFLICT (principal, workstation, harness, kind, name) DO UPDATE
                    SET item_key=EXCLUDED.item_key, target=EXCLUDED.target, status=EXCLUDED.status,
                        active=EXCLUDED.active, last_seen=now()""",
-                (user["principal"], report.workstation, item.harness, item.kind, item.name,
+                (principal, workstation, item.harness, item.kind, item.name,
                  key_of(item.harness, item.kind, item.name, item.target), item.target, item.status, item.active))
     all_groups = await groups()
-    mine = {key_of(i.harness, i.kind, i.name, i.target) for i in report.items}
-    return {"accepted": len(report.items), "policy": policy(all_groups, gateway_host()),
+    mine = {key_of(i.harness, i.kind, i.name, i.target) for i in items}
+    return {"accepted": len(items), "policy": policy(all_groups, gateway_host()),
             "review": [{"key": g["key"], "names": g["names"], "state": g["state"], "note": g["note"] or ""} for g in all_groups
                        if g["key"] in mine and g["state"] in {"pending", "denied", "expired"}]}
+
+
+@router.post("/api/pc/inventory")
+async def pc_inventory(report: Inventory, authorization: str | None = Header(default=None)):
+    """키트가 보고한 목록을 갱신한다. absent는 미관측이며 차단 확인이 아니다."""
+    user = await authenticated_user(authorization)
+    return await ingest(user["principal"], report.workstation, report.harnesses, report.items)
 
 
 def require_admin(user: dict) -> None:
@@ -183,6 +197,7 @@ async def list_connectors(summary: bool = False, authorization: str | None = Hea
            ORDER BY i.last_seen DESC LIMIT 2000""")
     by_key: dict[str, list] = {}
     for h in holders:
+        h["workstation"] = h["workstation"].removeprefix(DEVICE_PREFIX)
         by_key.setdefault(h.pop("key"), []).append(h)
     for g in rows:
         g["holders"] = by_key.get(g["key"], [])

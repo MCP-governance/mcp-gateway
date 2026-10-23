@@ -19,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import addon, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
+from . import addon, connectors, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -1670,6 +1670,17 @@ async def endpoint_managed_activate(endpoint_id: str, request: ManagedActivation
         return await endpoint_plane.activate_managed(endpoint_id, user["principal"], request.policy_hash, request.note)
     except (ValueError, PermissionError) as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+@app.post("/api/endpoint/harness-inventory")
+async def endpoint_harness_inventory(request: connectors.DeviceInventory,
+                                     device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    """관리 계정의 하네스가 가진 커넥터·플러그인·앱·기본 기능. 장치 키가 가리키는 장치의 소유자 명의로만 저장한다."""
+    if not device.get("owner_token"):
+        raise HTTPException(409, "소유자가 없는 장치의 보고는 받지 않습니다.")
+    result = await connectors.ingest(device["owner_token"], connectors.DEVICE_PREFIX + device["endpoint_id"],
+                                     request.harnesses, request.items)
+    return {"accepted": result["accepted"]}
 
 
 @app.post("/api/endpoint/enroll", status_code=201)

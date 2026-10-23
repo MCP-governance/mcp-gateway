@@ -232,3 +232,14 @@ test("latency and failure show only a fresh sample and a denial count only a col
   assert.equal(denialCount({ kernel_denials_state: "failed", kernel_denials_24h: 0 }), "수집 중단");
   assert.equal(denialCount({ kernel_denials_state: "unknown", kernel_denials_24h: 0 }), null);
 });
+
+test("a harness connector row shows the weakest control among the endpoints that reported it", async () => {
+  const { connectorControl } = await import("../gateway/app/agent_static/console-state.mjs");
+  const row = (state, key = "claude:host:mcp.notion.com") => ({ item_key: key, state });
+  assert.equal(connectorControl([], "k"), null);
+  assert.equal(connectorControl([row("endpoint_enforced", "other")], "claude:host:mcp.notion.com"), null);
+  assert.deepEqual(connectorControl([row("endpoint_enforced")], "claude:host:mcp.notion.com"), ["allow", "엔드포인트에서 차단"]);
+  assert.deepEqual(connectorControl([row("endpoint_enforced"), row("bypass_possible")], "claude:host:mcp.notion.com"), ["block", "차단 미검증"]);
+  assert.deepEqual(connectorControl([row("endpoint_enforced"), row("observed_only")], "claude:host:mcp.notion.com"), ["alert", "차단 미검증"]);
+  assert.deepEqual(connectorControl([row("vendor_enforced")], "claude:host:mcp.notion.com"), ["brand", "벤더 콘솔 차단"]);
+});
