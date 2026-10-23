@@ -205,9 +205,15 @@ dialog .tool-pick label{flex-direction:row;align-items:center;justify-content:sp
 .toast{position:fixed;right:24px;bottom:24px;z-index:40;padding:14px 18px;max-width:min(460px,calc(100% - 32px));background:var(--ink);color:var(--panel);box-shadow:var(--float);border-radius:8px;font-size:14.58px}
 .toast.bad{background:var(--block-bg);color:var(--block);border:1px solid var(--block)}.skeleton{padding:40px 0;color:var(--ink-3)}
 .form{max-width:1000px}.form label,fieldset label{display:flex;flex-direction:column;gap:7px;font-size:14.58px;font-weight:550;min-width:0}
-.form input,.form select,.form textarea{width:100%;min-height:42px;padding:10px 12px;background:var(--panel);border:1px solid var(--line-2);border-radius:7px}
+.form input:not([type="checkbox"]):not([type="radio"]),.form select,.form textarea{width:100%;min-height:42px;padding:10px 12px;background:var(--panel);border:1px solid var(--line-2);border-radius:7px}
 .form textarea{min-height:120px;resize:vertical}fieldset{display:flex;flex-direction:column;gap:12px;min-width:0;margin:0;padding:18px;border:1px solid var(--line);border-radius:8px}
 legend{padding:0 6px;font-size:14.58px;color:var(--ink-2);font-weight:700}label.check{flex-direction:row;align-items:center;gap:10px;font-weight:400;min-height:32px}
+.kit-steps{margin:16px 0;padding-left:22px;display:flex;flex-direction:column;gap:10px}.kit-steps code{display:block;margin-top:4px}.kit-steps .sub{display:block;font-size:13.5px;color:var(--ink-3)}
+.tool-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:360px;overflow:auto}
+.tool-list label.check{align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:7px}
+.tool-list input[type="checkbox"]{flex:none;width:16px;height:16px;min-height:0;margin:3px 0 0}
+.tool-list label>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tool-list .sub{font-size:13.5px;color:var(--ink-3);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .pill-list,.row-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row-actions.center{justify-content:center;padding-bottom:16px}
 #catalog-results>p{margin:0;padding:16px 20px}.spacer{flex:1}
 details summary{padding:12px 0;cursor:pointer;color:var(--ink-2);font-weight:600}
