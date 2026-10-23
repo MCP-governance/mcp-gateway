@@ -2146,3 +2146,17 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **증거·실패**: approval_events에 litellm-sync/G5 사건만 추가한다. litellm_sync_jobs는 원장이 아닌 수정 가능한 작업 상태다. 실패는 최대 300초 간격으로 재시도하고 화면에 동기화 실패를 표시한다. 자격 삭제 전 소유자 목록을 확보하지 못한 경우 모집단 확인불가를 보존하며 재시도 뒤 빈 목록만으로 완료하지 않는다. 기존 판정 행과 종료 등급 조합은 수정하지 않는다.
 - **대안·되돌릴 조건**: 응답 코드만 보고 완료하거나 직원 토큰·공유 자격을 복제하는 방법은 증거와 자격 경계를 충족하지 않아 제외했다. LiteLLM API/ACL 계약이 달라지면 URL 설정을 비워 애드온을 중지하고 새 판본에서 계약·시험을 다시 검토한다. 꺼짐은 이미 남은 외부 경로를 삭제하는 조치가 아니므로 철회가 필요하면 켜진 상태에서 재조회까지 마친다.
 - **검증/한계**: 신규 HTTP 대역 21건과 기존 운영23/SBOM8·화면 상태15/UI6 통과. 실제 LiteLLM1.105·PostgreSQL·PJ1·브라우저는 미실행. 기존 애드온 회귀와 pyflakes는 로컬 의존성 부족으로 미실행이다. 현재 신규 등록은 자격 없는 HTTP에 한정하며 로컬 stdio·인증 설정 복제·공급자 토큰 원격 폐기·SSE/stateless·미열거 워커는 입증하지 않는다. [운영 계약](LITELLM_SYNC.md) · [근거](../../research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md) · [보고](../../research/llm-wiki/status/reports/2026-10-23-litellm-sync.md).
+
+## D-209 10-23 기능(D-199·D-201·D-206·D-207)을 일회용 스택 수용 시험에 항목으로 추가한다 (2026-10-23)
+
+- **결정**: 기기 콘솔은 비밀번호 로그인을 하지 않으므로(10-22 W7 결정, `status/reports/2026-10-22-w7-console-check.md`) 인증이 필요한 기능 점검은 CI의 일회용 스택 수용 시험에 둔다.
+  `acceptance.py`에 세 항목을 더했다. 모두 실제 HTTP로 정상·거부를 함께 보고 상태 코드뿐 아니라 응답 본문·DB 상태·`approval_events`까지 대조한다.
+  `one-click-approval-lowers-tool-class`(D-199: 제안값 이하로만 낮춤, 올리기 422·직원 403·낡은 화면 409, 게이트웨이 직접 등록의 분류 변경 409, 원장 `actions`),
+  `server-level-consent-decisions`(D-201: `P-CONSENT-001`, 서버 단위 대기·허용·거부·철회, 남의 요청·다른 서버·화면에 없던 번호 409, 도구별 사건),
+  `approval-preview-local-run-values`(D-206·D-207: `local_run_preset`·`local_run_status`).
+- **대상**: 승인 대상은 기존 등록 시험이 쓰는 실제 fetch 서버(TLS 경로)뿐이다. 새 mock MCP를 만들지 않았다.
+  원격 신청이 아니면 미리보기에 공식 저장소 경로가 없으므로, 로컬 실행 값은 보류 상태 합성 신청 행(공식 저장소 URL·경로 메타데이터)을 DB에 넣어 응답 필드만 본다. 행은 거부로 정리한다.
+- **원클릭 등록 서버는 호출하지 않는다**: 원클릭 승인의 도구 심사는 외부 목적지가 비어 있어 `derived_constraints`가 주소 인자를 모두 막는다(`(?!)`). 그래서 fetch를 실제로 부르는 동의 시험은 등록 시험과 같은 계약 검토 경로(`review-contract`→`approve`→`register`, 도구 심사에 `consent: true`)로 등록하고, 원클릭 시험은 등록 상태·원장·도구 목록까지만 본다. 분류 낮추기가 호출 판정(P-RATE-003 회피)에 미치는 효과는 이 항목이 보지 않는다.
+- **한계**: 수용 스택에는 PC 격리 실행기·직원 PC가 없어 로컬 실행 승인·서명·컨테이너 기동은 이 항목들이 보지 않는다(PJ1 실사용 증거가 따로 필요).
+  서버 단위 동의의 「도구 여러 개를 한 번에」는 fetch가 도구 하나라 일괄 구조가 아니라 대기·결정 흐름만 본다. 다중 도구 일괄은 `consent_per_server_check.py`(대역)가 다룬다.
+  항목 코드는 `tests/acceptance_w7_check.py`(HTTP·DB 대역, CI 정적 단계)로 모양만 확인했고 서비스 통과 증거는 CI의 `./console.sh test`에서 나온다.
