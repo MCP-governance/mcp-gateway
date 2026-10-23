@@ -2341,3 +2341,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   Claude Code 공식 문서는 네이티브 설치의 `~/.local/bin/claude`를 사용자 런처로 바꿔도 자동 업데이트·`claude update`가 그대로 두고 새 판본을 `versions/`에 설치한다고 밝힌다(https://code.claude.com/docs/en/setup, Auto-updates). 이때 Claude Code는 설치된 판본을 지우지 않고 남긴다(디스크 사용 증가).
 - 안전: 모든 파일 연산은 직원 홈에서 시작해 `O_NOFOLLOW` 디렉터리 FD와 `O_EXCL|O_NOFOLLOW` 생성으로 한다(경로 중간 링크·경쟁 생성 거부). 관리자 권한 직원이라 보안 경계가 아니라 사용 경로 정리다.
 - 시험: `kit_install_upfront_check.py` `HomeLaunchers`(Linux: 교체·재확인 무변경·업데이트 뒤 복구·원복), pj2 실측.
+
+## D-229 키트 원복은 PC에 남은 옛 집행 코드가 아니라 키트에 든 새 코드로 한다 (2026-10-23)
+
+- 배경: 팀원 VM(kuku, 노션 버그 리포트 「MINT 설치기 오류」)에서 D-218 이후 키트로 다시 설치해도 `[기존 설치 제거]`가 `/usr/local/lib/mcpgw-managed/enforce-linux.py`(앞선 실패 설치가 남긴 옛 코드)의 `systemctl disable` 오류로 멈췄고, 남은 `config.json` 때문에 다음 설치가 「이미 설치된 장치」로 거부됐다. 설치기는 키트의 `managed-linux.py rollback`을 부르지만, 그것이 집행 원복은 설치 경로의 옛 사본으로 실행했다.
+- 결정: `managed-linux.py rollback`은 자기 옆의 `enforce-linux.py`를 실행한다. 키트에서 부르면 키트의 새 코드, 설치본에서 부르면 설치본이다.
+- 시험: pj2에서 설치본 `enforce-linux.py`를 D-218 이전 판으로 바꾸고 egress 서비스 파일을 지운 부분 설치를 만든 뒤 새 키트로 재설치.
