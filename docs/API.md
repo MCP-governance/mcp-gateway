@@ -105,7 +105,7 @@
 `GET /api/endpoint/network-quality` → `{devices:[{endpoint_id,hostname,measured_at,rtt_p50_ms,rtt_p95_ms,jitter_ms,failure_pct,state}], summary:{p50_ms,p95_ms,failure_pct,devices}}`.
 `GET /api/endpoint/inventory`는 기존 키에 `pages{entries,listeners,os_events,managed_events}`(`total`·`limit`·`next_cursor`)를 더한다.
 장치 하트비트는 선택 필드 `network_quality`를 받으며 잘못된 값은 버리고 응답에 `rejected`로 알린다.
-장치: `POST /api/endpoint/enroll`, `POST /api/endpoint/inventory`, `POST /api/endpoint/listeners`, `GET /api/endpoint/scan-policy`.
+장치: `POST /api/endpoint/enroll`, `POST /api/endpoint/inventory`, `POST /api/endpoint/harness-inventory`(관리 계정 하네스의 커넥터·플러그인·앱·기본 기능, 장치 자격·소유자 명의, `{harnesses, items}`), `POST /api/endpoint/listeners`, `GET /api/endpoint/scan-policy`.
 
 ## 6. 오류의 의미
 - `401` 토큰 없음·무효·폐기(로그아웃 포함). `/mcp/`는 RFC 9728 챌린지를 붙인다.

@@ -29,6 +29,16 @@ def check(test, claude: dict, requirements: dict, helpers: list[str]):
     test.assertTrue(helpers and all(helpers))
 
 
+def check_connector_surfaces(test, claude: dict, servers: list[str]):
+    """Account-side surfaces PJ1 showed open on a managed account (10-23): synced plugins and WebSearch."""
+    test.assertIs(claude["syncClaudeAiPlugins"], False)
+    test.assertIs(claude["syncClaudeAiSkills"], False)
+    test.assertIs(claude["allowManagedPermissionRulesOnly"], True)
+    test.assertEqual(claude["permissions"]["deny"], ["WebFetch", "WebSearch"])
+    # With user rules ignored, the Gateway servers must be allowed by the managed file or `-p` runs could not call them.
+    test.assertEqual(claude["permissions"]["allow"], [f"mcp__{s}" for s in servers])
+
+
 class ManagedCommandSurfaces(unittest.TestCase):
     def test_workstation_render(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -52,6 +62,7 @@ class ManagedCommandSurfaces(unittest.TestCase):
             check(self, json.loads((out / "managed-settings.json").read_text(encoding="utf-8")),
                   tomllib.loads((out / "requirements.toml").read_text(encoding="utf-8")),
                   [s.get("headersHelper") for s in mcp.values()])
+            check_connector_surfaces(self, json.loads((out / "managed-settings.json").read_text(encoding="utf-8")), ["git"])
 
     def test_endpoint_managed_policy(self):
         path = LAB / "gateway/app/endpoint_plane.py"
@@ -76,6 +87,7 @@ class ManagedCommandSurfaces(unittest.TestCase):
             mcp = json.loads(files["managed-mcp.json"])["mcpServers"]
             check(self, json.loads(files["managed-settings.json"]), tomllib.loads(files["requirements.toml"]),
                   [s.get("headersHelper") for s in mcp.values()])
+            check_connector_surfaces(self, json.loads(files["managed-settings.json"]), ["git"])
 
 
 if __name__ == "__main__":

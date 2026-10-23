@@ -29,7 +29,7 @@ from psycopg.types.json import Jsonb
 
 from . import classify, db, registry
 from .agent_contract import StrictModel, authenticated_user
-from .connectors import REVIEW_DAYS, require_admin, state_of
+from .connectors import DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
 from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_platform
 
 router = APIRouter()
@@ -145,6 +145,20 @@ def endpoint_item_state(device: dict | None, approved: bool) -> tuple[str, str, 
     return ("observed_only" if approved else "bypass_possible"), device["evidence"], device["bypass"] or [device["evidence"]]
 
 
+def harness_item_state(device: dict | None, approved: bool, active: bool, status: str) -> tuple[str, str, list[str]]:
+    """A harness-reported item. Under the device credential (`device` is the reporting device) it is enforced as far
+    as that device is; the kit reports with a Console token from whichever OS account ran it, so it has no device
+    and is never enforcement evidence. An item the harness reports as off is not the same as one that vanished."""
+    state, evidence, bypass = endpoint_item_state(device, approved)
+    if active:
+        return state, evidence, bypass
+    if status == "absent":
+        return "observed_only", "마지막 보고에서 사라짐", bypass
+    if device is None:
+        return "observed_only", "하네스에서 비활성 보고", bypass
+    return state, "하네스에서 비활성 · " + evidence, bypass
+
+
 async def snapshot() -> dict:
     now = datetime.now(UTC)
     raw_devices = await db.fetch_all(
@@ -202,7 +216,7 @@ async def snapshot() -> dict:
             # Outside any device: the same SaaS account used from another machine.
             "residual": ["다른 기기·웹에서의 SaaS 접근은 벤더 정책 소관"] if provider else []})
 
-    # Harness reports (kit, not device-bound): vendor connectors/apps/features and local plugins.
+    # Harness reports (from the kit, or from a managed device): vendor connectors/apps/features and local plugins.
     decided = {d["item_key"]: d for d in await db.fetch_all("SELECT * FROM harness_decisions")}
     vendor_records = {v["item_key"]: v["record"] for v in await db.fetch_all("SELECT * FROM harness_vendor_controls")}
     for row in await db.fetch_all(
@@ -212,11 +226,9 @@ async def snapshot() -> dict:
         approval = state_of(decision.get("decision"), False, row["first_seen"], now)
         local = row["kind"] in {"plugin", "server"} and not row["target"].startswith(("http://", "https://"))
         vendor = vendor_records.get(row["item_key"]) or {}
-        # The kit reports with a Console token from whichever OS account ran it, so the
-        # item is not bound to a managed device even when its owner has one.
-        state, evidence, bypass = endpoint_item_state(None, approval == "approved")
-        if not row["active"]:
-            state, evidence = "observed_only", "마지막 보고에서 사라짐"
+        bound = row["workstation"].startswith(DEVICE_PREFIX)
+        device_id = row["workstation"][len(DEVICE_PREFIX):] if bound else None
+        state, evidence, bypass = harness_item_state(devices.get(device_id), approval == "approved", row["active"], row["status"])
         if row["kind"] in {"connector", "app"} and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
             # A manual record ages like a review: past REVIEW_DAYS it no longer vouches.
             checked = datetime.fromisoformat(vendor["verified_at"])
@@ -228,9 +240,9 @@ async def snapshot() -> dict:
             "class": "local_plugin_or_stdio" if local else "vendor_native_connector",
             "key": f"{row['item_key']}|{row['principal']}|{row['workstation']}", "item_key": row["item_key"],
             "name": row["name"], "target": row["target"], "harness": row["harness"],
-            "owner": row["principal"], "device": row["workstation"],
-            "discovered_from": "PC 보고", "discovered_at": row["first_seen"], "source": row["kind"],
-            "managed_by": "endpoint" if local else "vendor", "enforced": state in {"endpoint_enforced", "vendor_enforced"},
+            "owner": row["principal"], "device": device_id or row["workstation"],
+            "discovered_from": "엔드포인트 보고" if bound else "PC 보고", "discovered_at": row["first_seen"], "source": row["kind"],
+            "managed_by": "endpoint" if local or state == "endpoint_enforced" else "vendor", "enforced": state in {"endpoint_enforced", "vendor_enforced"},
             "state": state, "evidence": evidence,
             "approval": {"state": approval, "expires_at": None, "decided_by": decision.get("decided_by"),
                          "review_days": REVIEW_DAYS},

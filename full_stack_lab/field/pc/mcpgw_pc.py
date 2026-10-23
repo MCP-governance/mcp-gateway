@@ -544,35 +544,53 @@ def claude_items(settings: dict) -> list[dict] | None:
     return items
 
 
-def codex_rpc(codex: str, method: str, params: dict, timeout: float = 60) -> dict | None:
-    """`codex app-server`에 JSON-RPC 한 번. stdin을 닫으면 답하기 전에 끝나므로 답을 받을 때까지 열어 둔다."""
+def codex_calls(codex: str, calls: list, timeout: float = 60) -> dict:
+    """`codex app-server`에 JSON-RPC. stdin을 닫으면 답하기 전에 끝나므로 답을 모두 받을 때까지 열어 둔다.
+    calls는 [(method, params), …]이고 {method: result}를 돌려준다(받지 못한 것은 빠진다)."""
     import queue
     import threading
     try:
         process = subprocess.Popen([codex, "app-server"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace")
     except OSError:
-        return None
+        return {}
     lines: queue.Queue = queue.Queue()
     threading.Thread(target=lambda: [lines.put(line) for line in process.stdout], daemon=True).start()
+    wanted = {i + 2: method for i, (method, _) in enumerate(calls)}
+    answers: dict = {}
     try:
         for message in ({"id": 1, "method": "initialize", "params": {"clientInfo": {"name": TOOL, "version": "1"}}},
-                        {"method": "initialized"}, {"id": 2, "method": method, "params": params}):
+                        {"method": "initialized"},
+                        *({"id": i + 2, "method": m, "params": p} for i, (m, p) in enumerate(calls))):
             process.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
         process.stdin.flush()
         deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
+        while len(answers) < len(wanted) and time.monotonic() < deadline:
             try:
                 reply = json.loads(lines.get(timeout=max(0.1, deadline - time.monotonic())))
             except (queue.Empty, ValueError):
                 continue
-            if isinstance(reply, dict) and reply.get("id") == 2:
-                return reply.get("result")
-        return None
+            if isinstance(reply, dict) and reply.get("id") in wanted:
+                answers[wanted[reply["id"]]] = reply.get("result")
     except OSError:
-        return None
+        pass
     finally:
         process.kill()
+    return answers
+
+
+def codex_rpc(codex: str, method: str, params: dict, timeout: float = 60) -> dict | None:
+    return codex_calls(codex, [(method, params)], timeout).get(method)
+
+
+def effective_web_search(config_result: dict | None, requirements_result: dict | None) -> str:
+    """Codex가 실제로 쓰는 웹 검색 모드: 계층 설정을 관리형 requirements가 제한한 값. 기본은 cached이고,
+    관리형 목록에 그 모드가 없으면 목록의 값만 남는다(endpoint-agent/managed-linux.py와 같은 규칙)."""
+    mode = ((config_result or {}).get("config") or {}).get("web_search") or "cached"
+    allowed = ((requirements_result or {}).get("requirements") or {}).get("allowedWebSearchModes") or []
+    if allowed and mode not in allowed:
+        mode = "disabled" if "disabled" in allowed else str(allowed[0])
+    return str(mode)
 
 
 def codex_items(settings: dict) -> list[dict] | None:
@@ -606,12 +624,16 @@ def codex_items(settings: dict) -> list[dict] | None:
         cells = line.split()
         if len(cells) >= 3 and cells[0] in CODEX_FEATURES and cells[-1] == "true":
             items.append({"harness": "codex", "kind": "feature", "name": cells[0], "target": "on", "status": "on"})
-    mode = "cached"  # Codex 기본값(WebSearchMode::Cached)
-    try:
-        import tomllib
-        mode = str(tomllib.loads(codex_config().read_text(encoding="utf-8")).get("web_search", mode))
-    except (ImportError, OSError, ValueError):
-        pass
+    # 유효값으로 판정한다: 관리형 requirements가 막은 웹 검색이 사용자 config.toml에 키가 없다는 이유로 켜진 것으로 보고되면 안 된다.
+    answers = codex_calls(codex, [("config/read", {}), ("configRequirements/read", {})])
+    mode = effective_web_search(answers.get("config/read"), answers.get("configRequirements/read"))
+    if "config/read" not in answers:  # app-server를 못 읽는 판본은 사용자 config.toml로
+        mode = "cached"  # Codex 기본값(WebSearchMode::Cached)
+        try:
+            import tomllib
+            mode = str(tomllib.loads(codex_config().read_text(encoding="utf-8")).get("web_search", mode))
+        except (ImportError, OSError, ValueError):
+            pass
     if mode != "disabled":
         items.append({"harness": "codex", "kind": "feature", "name": "web_search", "target": mode, "status": mode})
     return items
@@ -842,6 +864,9 @@ def cmd_managed(args) -> None:
                "allowManagedMcpServersOnly": True,
                "allowedMcpServers": [{"serverUrl": endpoint(settings, s)} for s in settings["servers"]],
                "strictKnownMarketplaces": [], "deniedMcpServers": [],
+               # 계정에 동기화된 플러그인·스킬과 웹 도구는 Gateway 밖 경로다. 관리형 권한 규칙만 인정해 직원이 다시 허용하지 못한다.
+               "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False, "allowManagedPermissionRulesOnly": True,
+               "permissions": {"allow": [f"mcp__{s}" for s in settings["servers"]], "deny": ["WebFetch", "WebSearch"]},
                # 훅·statusLine·fileSuggestion은 하네스가 셸로 시작하는 명령이라 헤더 헬퍼에 닿는다(D-147).
                "allowManagedHooksOnly": True}
     root = ['allowed_web_search_modes = ["disabled"]', "allow_browser_and_computer_use = false",

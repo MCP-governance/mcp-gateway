@@ -851,6 +851,14 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
                 "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
                 "strictKnownMarketplaces": [],
+                # Account-synced plugins and skills load from the claude.ai account, outside the managed set
+                # (PJ1 10-23: productivity@synced loaded); only `false` is honoured, so this cannot be undone
+                # from the user's settings. Web tools reach the web through the account, not the Gateway:
+                # the deny rules close them, and only managed permission rules count so the account cannot
+                # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.
+                "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False,
+                "allowManagedPermissionRulesOnly": True,
+                "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": ["WebFetch", "WebSearch"]},
                 # User, project and plugin hooks run commands the harness starts; a hook could call the
                 # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                 # same gate narrows statusLine and fileSuggestion to managed values (D-147).

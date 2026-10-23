@@ -13,6 +13,8 @@ import importlib.util
 import json
 import os
 import pwd
+import queue
+import re
 import secrets
 import shutil
 import socket
@@ -362,6 +364,179 @@ def status(args):
     print(render_status(summary, time.time()), end="")
 
 
+# -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
+# from an unmanaged PC with an employee token; here it goes under the device credential, so nothing in
+# this service ever holds an employee token. --
+INVENTORY_EVERY = 6 * 3600
+ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
+# `claude mcp list`: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected". Read as mcpgw_pc.py reads it.
+CLAUDE_LINE = re.compile(r"^(?P<name>.+?): (?P<target>.*?)(?: \((?:HTTP|SSE)\))? - (?P<status>[✔✓√✘✗×!-] .*)$")
+PLUGIN_HEAD = re.compile(r"^\s*[❯>*-]\s+(?P<name>[\w.-]+@[\w.-]+)\s*$")
+CODEX_FEATURES = ("apps", "plugins", "browser_use", "computer_use", "image_generation", "memories")
+APP_ID = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
+
+
+def origin(url):
+    """scheme://host[:port] only: some MCP URLs carry a key in the path or query."""
+    try:
+        parts = urlsplit(url)
+        port = f":{parts.port}" if parts.port else ""
+    except ValueError:
+        return ""
+    return f"{parts.scheme}://{parts.hostname}{port}" if parts.scheme in ("http", "https") and parts.hostname else ""
+
+
+def parse_claude_servers(text, gateway_url):
+    items = []
+    for line in text.splitlines():
+        match = CLAUDE_LINE.match(line.strip())
+        if not match or match["target"].startswith(gateway_url + "/mcp/"):
+            continue  # servers behind the Gateway are the Gateway's to see
+        name, target = match["name"], match["target"].strip()
+        kind = "connector" if name.startswith("claude.ai ") else "plugin" if name.startswith("plugin:") else "server"
+        items.append({"harness": "claude", "kind": kind, "name": name[:200],
+                      "target": origin(target) or ("stdio" if target else ""), "status": match["status"][:120]})
+    return items
+
+
+def parse_claude_plugins(text):
+    """`claude plugin list`: "❯ productivity@synced", then "Status: ✔ loaded". Synced plugins are not MCP server lines."""
+    items, current = [], None
+    for line in text.splitlines():
+        head = PLUGIN_HEAD.match(line)
+        if head:
+            current = {"harness": "claude", "kind": "plugin", "name": head["name"][:200], "target": "stdio",
+                       "status": "", "active": False}
+            items.append(current)
+            continue
+        status = re.match(r"^\s*Status:\s*(.+?)\s*$", line)
+        if status and current is not None:
+            current["status"] = status[1][:120]
+            current["active"] = "loaded" in status[1].lower() and not re.search("[✘✗×]", status[1])
+    return items
+
+
+def effective_web_search(config_result, requirements_result):
+    """The mode Codex runs with: the layered config clamped by the managed requirements, not a user file.
+    Codex defaults to cached; a managed list that omits the mode leaves only the list's own value."""
+    mode = ((config_result or {}).get("config") or {}).get("web_search") or "cached"
+    allowed = ((requirements_result or {}).get("requirements") or {}).get("allowedWebSearchModes") or []
+    if allowed and mode not in allowed:
+        mode = "disabled" if "disabled" in allowed else str(allowed[0])
+    return str(mode)
+
+
+def parse_codex(gateway_url, servers, apps, features_text, web_search):
+    items = []
+    for server in servers:
+        url = (server.get("transport") or {}).get("url") or ""
+        if url.startswith(gateway_url + "/mcp/"):
+            continue
+        items.append({"harness": "codex", "kind": "server", "name": str(server.get("name"))[:200],
+                      "target": origin(url) or "stdio", "status": "enabled" if server.get("enabled") else "disabled",
+                      "active": bool(server.get("enabled"))})
+    for app in apps:
+        if APP_ID.match(str(app.get("id", ""))):
+            items.append({"harness": "codex", "kind": "app", "name": str(app.get("runtimeName") or app["id"])[:200],
+                          "target": app["id"], "status": "enabled" if app.get("enabled") else "disabled",
+                          "active": bool(app.get("enabled"))})
+    for line in features_text.splitlines():
+        cells = line.split()
+        if len(cells) >= 3 and cells[0] in CODEX_FEATURES and cells[-1] == "true":
+            items.append({"harness": "codex", "kind": "feature", "name": cells[0], "target": "on", "status": "on"})
+    if web_search != "disabled":
+        items.append({"harness": "codex", "kind": "feature", "name": "web_search", "target": web_search, "status": web_search})
+    return items
+
+
+def run_as_managed(config, tool, arguments, stdin=None):
+    """Start the managed account's own launcher as that account: the environment, proxy and profile are the ones
+    the employee's harness gets. setpriv, not subprocess(user=): supported distributions include Python 3.8."""
+    account = pwd.getpwnam(config["username"])
+    launcher = ENFORCEMENT / ("mcpgw-" + config["username"]) / tool
+    command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--",
+               str(launcher), *arguments]
+    return subprocess.Popen(command, stdin=stdin or subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                            cwd=account.pw_dir, env={"PATH": "/usr/bin:/bin"}, text=True, encoding="utf-8", errors="replace")
+
+
+def run_text(config, tool, arguments, timeout=120):
+    process = run_as_managed(config, tool, arguments)
+    try:
+        output, _ = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.communicate()
+        raise
+    if process.returncode != 0:
+        raise ValueError(f"{tool} {arguments[0]} 실패")
+    return output
+
+
+def codex_rpc(config, calls, timeout=60):
+    """`codex app-server` answers JSON-RPC while its stdin stays open; one process serves every call."""
+    process = run_as_managed(config, "codex", ["app-server"], stdin=subprocess.PIPE)
+    lines = queue.Queue()
+    threading.Thread(target=lambda: [lines.put(line) for line in process.stdout], daemon=True).start()
+    wanted = {i + 2: method for i, (method, _) in enumerate(calls)}
+    answers = {}
+    try:
+        for message in ({"id": 1, "method": "initialize", "params": {"clientInfo": {"name": "mcpgw-managed", "version": "1"}}},
+                        {"method": "initialized"},
+                        *({"id": i + 2, "method": m, "params": p} for i, (m, p) in enumerate(calls))):
+            process.stdin.write(json.dumps({"jsonrpc": "2.0", **message}) + "\n")
+        process.stdin.flush()
+        deadline = time.monotonic() + timeout
+        while len(answers) < len(wanted) and time.monotonic() < deadline:
+            try:
+                reply = json.loads(lines.get(timeout=max(0.1, deadline - time.monotonic())))
+            except (queue.Empty, ValueError):
+                continue
+            if isinstance(reply, dict) and reply.get("id") in wanted:
+                answers[wanted[reply["id"]]] = reply.get("result")
+    finally:
+        process.kill()
+        process.communicate()
+    return answers
+
+
+def collect_inventory(config):
+    """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
+    marks every item of a reported harness absent, so a failed read must not look like an empty one."""
+    found = {}
+    if "claude" in config.get("harnesses", ()):
+        try:
+            items = parse_claude_servers(run_text(config, "claude", ["mcp", "list"]), config["gateway_url"])
+            try:
+                items += parse_claude_plugins(run_text(config, "claude", ["plugin", "list"]))
+            except (ValueError, OSError, subprocess.TimeoutExpired):
+                pass  # a Claude Code without `plugin list`: the server lines still stand
+            found["claude"] = items
+        except (ValueError, OSError, subprocess.TimeoutExpired):
+            pass
+    if "codex" in config.get("harnesses", ()):
+        try:
+            servers = json.loads(run_text(config, "codex", ["mcp", "list", "--json"]) or "[]")
+            answers = codex_rpc(config, [("app/installed", {}), ("config/read", {}), ("configRequirements/read", {})])
+            if answers.get("app/installed") is not None:
+                found["codex"] = parse_codex(
+                    config["gateway_url"], servers, answers["app/installed"].get("apps", []),
+                    run_text(config, "codex", ["features", "list"]),
+                    effective_web_search(answers.get("config/read"), answers.get("configRequirements/read")))
+        except (ValueError, OSError, subprocess.TimeoutExpired):
+            pass
+    return found
+
+
+def report_inventory(config):
+    found = collect_inventory(config)
+    if not found:
+        raise ValueError("보고할 하네스 목록을 읽지 못했습니다")
+    answer = request(config, "/api/endpoint/harness-inventory", {
+        "harnesses": sorted(found), "items": [item for items in found.values() for item in items]})
+    print(json.dumps({"harness_inventory": "reported", "accepted": answer.get("accepted"), "harnesses": sorted(found)}), flush=True)
+
+
 def serve(args):
     if os.geteuid() != 0 or not protected(args.config):
         raise ValueError("root 관리 서비스와 비밀 설정이 필요합니다")
@@ -428,6 +603,20 @@ def serve(args):
         kit = kit_version(PROGRAMS)
     except OSError:
         kit = None
+    def harness_inventory():
+        time.sleep(60)  # after the first heartbeat: the employee's harness gets its token first
+        while True:
+            try:
+                report_inventory(config)
+                wait = INVENTORY_EVERY
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
+                # A pending or revoked device is refused (401/403); retry soon. This never touches the heartbeat.
+                print(json.dumps({"harness_inventory": "failed", "error": type(exc).__name__,
+                                  "status": getattr(exc, "code", None)}), flush=True)
+                wait = 900
+            time.sleep(wait)
+    if sys.platform.startswith("linux") and config.get("harnesses"):
+        threading.Thread(target=harness_inventory, daemon=True).start()
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit}
     while True:

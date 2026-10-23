@@ -2248,3 +2248,41 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 배경: 팀원 Ubuntu VM에서 앞선 설치가 중간에 실패한 뒤 재설치하자, `enforce-linux.py --rollback`이 없는 `mcpgw-egress-<계정>.service`를 `systemctl disable`하다 종료 코드 1로 멈췄다. 원복이 중간에 끝나 `config.json`이 남고 다음 설치가 「이미 설치된 장치」로 거부됐다.
 - 결정: 원복의 각 단계는 대상이 있을 때만 지우고(서비스 파일·AppArmor 프로필 존재 확인, nft 표 삭제 실패는 무시), 없는 것은 이미 원복된 것으로 본다. `managed-linux.py rollback`도 없는 서비스의 오류를 출력하지 않는다. 계정 UID가 바뀐 경우의 거부는 그대로다.
 - 시험: WSL에서 상태 파일만 있는 부분 설치를 원복해 종료 코드 0. 팀원 VM 재실행으로 실기기 확인.
+
+## D-219 관리형 Claude Code는 계정 동기화 플러그인과 웹 도구도 닫는다 (2026-10-23)
+
+- 배경(PJ1 10-23, Claude Code 2.1.288, 관리 계정): 관리형 프로필(`disableClaudeAiConnectors`·`allowManagedMcpServersOnly`)이 있는데도 `claude plugin list`에 계정에서 동기화된 `productivity@synced`·`engineering@synced`·`pdf-viewer@synced`가 `loaded`였고, `claude -p`의 WebSearch가 열려 실제 검색 결과를 돌려줬다(WebFetch는 모델 프록시가 `proxy refused`로 막음). 커넥터 서버만 닫고 계정 쪽 두 경로를 닫지 않았다.
+- 결정: 관리형 `managed-settings.json`(`endpoint_plane.managed_policy`, 키트 `mcpgw_pc.py managed`)에 다음을 더한다.
+  - `syncClaudeAiPlugins: false`, `syncClaudeAiSkills: false` — 계정에 켠 플러그인·스킬의 내려받기와 이미 받은 것의 로드를 멈춘다. 공식 문서상 `false`만 효력이 있고(`true`는 미설정과 같음) 사용자·로컬·관리형 범위에서 읽는다. 관리형 범위에서는 받아 둔 것을 `~/.claude/plugins/.trash/`로 옮긴다. 플러그인 쪽은 v2.1.273 이상(PJ1은 2.1.288), 스킬 쪽 최소 판본은 문서에 없다.
+  - `permissions.deny: ["WebFetch", "WebSearch"]` — 프록시가 막는 WebFetch도 설정으로 막고, 프록시로 막지 못한 WebSearch를 닫는다.
+  - `allowManagedPermissionRulesOnly: true` — 사용자·프로젝트·로컬·`--settings`의 allow/ask/deny와 `--allowedTools`를 무시해 직원이 deny를 다시 열지 못한다. 문서는 이 키가 MCP 허용 목록을 잠그지 않는다고 따로 밝히므로 `allowManagedMcpServersOnly`는 그대로 둔다.
+  - `permissions.allow: ["mcp__<서버>", …]`(Gateway에 라우팅된 서버만) — 위 키로 `--allowedTools`가 무시되면 `claude -p`가 Gateway 도구를 부를 수 없게 되므로, Codex의 `default_tools_approval_mode = "approve"`와 같이 하네스 승인은 미리 주고 판정은 Gateway가 한다. 서버 목록이 바뀌면 설정 해시가 바뀌어 단말이 다시 받는다.
+- 출처: https://code.claude.com/docs/en/settings-reference.md (`syncClaudeAiPlugins`·`syncClaudeAiSkills`·`allowManagedPermissionRulesOnly`·`permissions.deny` 항목), https://code.claude.com/docs/en/managed-mcp.md (`allowManagedMcpServersOnly` 구분, `allowAllClaudeAiMcps`, `serverUrl` 규칙). 2026-10-23 WebFetch로 대조.
+- 시험: `tests/command_surfaces_check.py`의 `check_connector_surfaces`를 키트 managed·`managed_policy`(Linux·Windows)에 적용(수정 전 KeyError로 실패). 워크스테이션 이미지 템플릿은 이미 WebFetch/WebSearch를 거부한다.
+- 한계: 설정 파일이 맞다는 시험이며 실제 차단은 PJ1에서 `claude plugin list`(synced 없음)·`claude -p` WebSearch(거부)로 확인해야 한다. Desktop·웹·다른 클라이언트는 이 설정 밖이다. 이미 받아 둔 동기화 플러그인은 설정이 내려간 뒤 다음 Claude Code 시작 때 휴지통으로 옮겨진다.
+
+## D-220 관리 단말은 자기 하네스의 커넥터·기능을 장치 자격으로 보고하고, 그 보고는 소유자의 관리 단말 상태로 판정한다 (2026-10-23)
+
+- 배경: 인벤토리 보고(`mcpgw_pc.py report`)는 직원 토큰을 쓰는 비관리 설치에서만 돌았다. 관리 계정(`managed-<직원>`)은 키트를 쓰지 않아 PJ1의 `harness_items`가 0행이었고, `integrations.snapshot`은 하네스 보고 항목마다 `endpoint_item_state(None, …)`를 호출해 어떤 항목도 `endpoint_enforced`가 될 수 없었다(보고가 직원 토큰으로 오므로 맞는 보수적 선택이었다).
+- 결정 1(수집): `endpoint-agent/managed-linux.py serve`에 스레드를 더해 60초 뒤부터 6시간마다 수집·보고한다(실패는 15분 뒤 재시도, heartbeat와 무관). 관리 계정의 `claude`·`codex` 실행기(`/usr/local/lib/mcpgw-enforcement/mcpgw-<계정>/`)를 `setpriv`로 그 계정 권한에서 돌린다(`subprocess(user=)`는 Python 3.8에 없다). 읽는 것: `claude mcp list`(Gateway 서버 제외), `claude plugin list`(`productivity@synced` 같은 동기화 플러그인, kind `plugin`·대상 `stdio`·`Status: ✔ loaded`면 active), `codex mcp list --json`, app-server `app/installed`·`config/read`·`configRequirements/read`, `codex features list`. 이름과 목적지 호스트(`origin`)만 보낸다. 한 하네스의 읽기가 실패하면 그 하네스는 보고에서 뺀다 — Gateway는 보고한 하네스의 항목을 전부 `absent`로 되돌리므로 실패가 「없음」처럼 보이면 안 된다. macOS·Windows 관리형은 이번에 포함하지 않는다.
+- 결정 2(경로): `POST /api/endpoint/harness-inventory`(`Depends(endpoint_device("inventory"))`, 직원 토큰 아님). 항목은 장치 소유자(`owner_token`) 명의, 작업 위치는 `device:<endpoint_id>`로 저장한다. 키트 보고의 `workstation` 형식(`^[a-z0-9]…`)에는 `:`가 없어 직원이 자기 키트 보고로 관리 단말의 보고를 덮어쓰거나 흉내 낼 수 없다. `connectors.ingest`가 두 경로의 저장을 공유한다(키트 응답 형식 불변). 소유자가 없는 장치의 보고는 409.
+- 결정 3(상태): `integrations.harness_item_state` — 장치 보고는 그 장치의 상태로 `endpoint_item_state`를 계산한다(점검 정상이면 `endpoint_enforced`, 같은 PC의 다른 관리자 계정이 있으면 `bypass_possible`). 이는 관리 계정의 커널 규칙(UID nft는 Gateway 호스트와 모델 프록시만 허용)이 벤더 목적지 연결을 막는다는 D-62의 조건에 기댄 것이지, 하네스가 그 항목을 로드하지 않는다는 뜻이 아니다. 키트 보고(장치 없음)는 지금처럼 집행 증거가 아니다. 목록의 `managed_by`는 `endpoint_enforced`면 `endpoint`, 발견 위치는 「엔드포인트 보고」.
+- 결정 4(웹 검색): Codex 웹 검색은 사용자 `config.toml`이 아니라 유효값으로 판정한다. `config/read`의 `web_search`(없으면 기본 cached)를 `configRequirements/read`의 `allowedWebSearchModes`로 제한한다(허용 목록에 그 모드가 없으면 `disabled`, 없으면 목록의 첫 값). PJ1은 `web_search: "disabled"`·`allowedWebSearchModes: ["disabled"]`인데 키트 수집기는 파일에 키가 없다는 이유로 `cached`를 보고했다(k1.log). 키트(`mcpgw_pc.py`)와 관리 단말 수집기가 같은 규칙을 쓰며 `connector_control_check.py`가 두 구현의 일치를 본다. `app-server` 응답이 없는 판본은 예전처럼 `config.toml`을 읽는다.
+- 시험: `tests/connector_control_check.py` 11건(PJ1 실제 출력 사용). 수정 전 코드에서 장치 보고 상태·웹 검색 유효값·수집기 시험이 모두 실패.
+- 한계: root 서비스가 관리 계정으로 `claude mcp list`를 돌릴 때 AppArmor 프로필·헤더 브로커 결속 모드에서 실제로 기대한 출력이 나오는지는 PJ1 확인 전이다(실패하면 보고하지 않고 15분마다 재시도하며 로그에 `harness_inventory: failed`만 남는다). `claude mcp list`는 서버마다 연결을 확인하므로 120초 한도에서 시간 초과될 수 있다. 장치 보고 항목의 「사용 엔드포인트」 수는 같은 직원의 키트 보고와 별개 행으로 센다.
+
+## D-221 비활성 항목과 「마지막 보고에서 사라짐」을 나누고, 콘솔 하네스 커넥터 표에 통제 상태를 표시한다 (2026-10-23)
+
+- 배경: 하네스가 `enabled: false`로 보고한 앱(PJ1의 Slack·Notion 등 9개)과 보고에서 빠진 항목이 모두 「마지막 보고에서 사라짐」으로 표시됐다. 콘솔 하네스 커넥터 표는 승인 칩만 있어 「승인」이 하네스에 효과가 있는 것처럼 읽혔고, 항목이 실제로 어디까지 막혀 있는지(엔드포인트에서 차단·차단 미검증)는 다른 탭에서만 보였다.
+- 결정: `harness_item_state` — `status == 'absent'`(보고에서 빠짐)이면 `observed_only`·「마지막 보고에서 사라짐」, 하네스가 직접 꺼짐으로 보고했으면(`active=false`, 그 밖의 status) 장치 보고는 계산된 상태를 유지하고 근거를 「하네스에서 비활성 · …」, 장치 없는 키트 보고는 `observed_only`·「하네스에서 비활성 보고」로 한다.
+  콘솔 벤더 커넥터 표와 상세에 「통제」 열/항목을 더한다. 같은 항목을 보고한 엔드포인트들의 상태 중 가장 약한 것을 라벨로 보인다(`console-state.mjs connectorControl`): 엔드포인트에서 차단 / 벤더 콘솔 차단 / 차단 미검증. 승인 칩은 「승인 · 기록만」(윤곽 칩)으로 바꿔 장부 기록이며 하네스 설정이 바뀌지 않음을 설명문 없이 라벨로만 구분한다. 한국어·영어 사전 모두 추가.
+- 시험: `connector_control_check.py ItemState`, `console-state.test.mjs`(connectorControl), `i18n.test.mjs`.
+- 한계: 라벨은 보고·점검에 기댄 표시이며 단말 밖 경로(Desktop·웹)의 차단을 뜻하지 않는다.
+
+## D-222 후속(설계만): 관리자가 특정 벤더 커넥터를 허용하는 경로 (2026-10-23)
+
+- 현재: 승인은 장부 기록이고 관리형 프로필을 넓히지 않는다(D-53). 그래서 승인해도 Claude Code의 관리 계정에서는 그 커넥터가 계속 닫혀 있다. 이는 설계된 동작이지만, 「승인했는데 안 된다」는 요구를 풀 수 있는 공식 경로가 있다.
+- 경로 A — `managedMcpServers`(Claude Code 2.1.259 이상, 관리형 설정): 승인한 벤더의 원격 서버(`type: http`, `https` URL, `command`·`env`·`headersHelper` 없음)를 관리형 설정에 직접 넣는다. 직원이 OAuth로 각자 로그인하고(`headers`에 비밀을 넣지 않는다), `managed-mcp.json`이 있어도 로드되며 `allowedMcpServers` 항목이 필요 없고 `deniedMcpServers`는 여전히 적용된다. claude.ai 계정 커넥터를 다시 여는 `allowAllClaudeAiMcps`가 필요 없어 권장 방향이다.
+- 경로 B — `allowAllClaudeAiMcps: true` + `allowManagedMcpServersOnly: true` + `allowedMcpServers`에 Gateway URL과 승인한 벤더의 `serverUrl`(예: `https://mcp.example.com/*`, 호스트 전체를 쓸 때만 와일드카드, 포트 규칙 주의): 계정 커넥터를 불러오되 허용 목록에 있는 것만 연다. 허용 목록 판정은 2.1.273 이상이며, 한 곳이라도 목록을 빠뜨리거나 `allowManagedMcpServersOnly`가 빠지면 계정의 모든 커넥터가 열리는 D-53의 위험이 그대로 돌아온다. `serverName`은 보안 통제가 아니다(문서 경고).
+- 공통으로 필요한 변경과 위험: ① 벤더 호스트로의 연결을 관리 계정의 UID nft 허용 목록에 더해야 한다(지금은 Gateway와 모델 프록시뿐) — 이 순간부터 그 항목은 Gateway 판정 밖의 직접 경로이므로 상태는 `endpoint_enforced`가 아니라 「벤더 통제」·「관찰만」이어야 하고 `vendor_enforced`는 벤더 콘솔 확인 기록이 있을 때만이다. ② 승인에 데이터 범위·목적·만료를 결속하고 만료되면 설정에서 빼야 한다(`CONNECTOR_REVIEW_DAYS`는 검토 기한이지 사용 유예가 아니다). ③ 정식 경로(도입 신청 → Gateway 등록)가 있는 서버는 그쪽을 쓴다 — 직접 경로는 PII 검사·계약 대조·감사 원장을 우회한다. ④ Codex는 `features.apps = false`가 앱 전체를 닫고 앱 단위 허용 키가 requirements에 있는지 미확인이다. ⑤ 정책 해시가 바뀌므로 승인·철회가 단말 정책 갱신(heartbeat 60초)으로 이어지고, 철회 시 열린 세션은 다음 시작까지 남을 수 있다.
+- 구현하지 않았다. 구현 시 소유자 결정이 필요한 것: 어떤 벤더를 직접 경로로 열 수 있는가(데이터 등급), 직접 경로의 감사·상태 표시 방식.
