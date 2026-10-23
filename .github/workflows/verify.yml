@@ -113,6 +113,7 @@ jobs:
           PYTHONPATH=gateway REGISTRY_DIR="$PWD/registry" python -m app.integrations
           python3 tests/acceptance_identity_check.py
           python3 tests/acceptance_tls_check.py
+          python3 tests/acceptance_w7_check.py
           python3 tests/fixture_mcp_identity_test.py
           python3 tests/system_metrics_check.py
           python3 tests/catalog_refresh_check.py

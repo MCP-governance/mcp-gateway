@@ -11,7 +11,9 @@ unapproved and unknown tools never run, arguments are checked against
 the approved schema, a drifted contract blocks, approval runs a call exactly once,
 monitor mode records what enforcement would have done, detected identifiers are
 masked in results and never sent outside, a read of important data followed by an
-external send is stopped as a chain, and the audit chain holds.
+external send is stopped as a chain, and the audit chain holds. One-click approval (a tool's class
+may only be lowered), consent decided per server, and the local-run values of the approval preview
+are checked over HTTP against the same real fetch server.
 
 Every call goes through the real ingress (/mcp/) with a real token to a real
 server. A server someone has put into termination is not restored here - the test
@@ -26,6 +28,7 @@ import os
 import re
 import sys
 import zipfile
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from uuid import uuid4
@@ -35,7 +38,7 @@ import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
-from . import db
+from . import db, review
 from .core import _release_call, _reserve_call, approve_request, enforcement_mode, set_enforcement_mode, verify_audit_chain
 
 API = os.getenv("ACCEPTANCE_GATEWAY_URL", "http://127.0.0.1:8080").rstrip("/")
@@ -743,6 +746,335 @@ async def pc_kit_downloads() -> str:
     return "내 PC 연결 키트 " + ", ".join(seen)
 
 
+# ── 10-23 기능: 원클릭 승인의 분류 낮추기(D-199), 서버 단위 동의(D-201), 승인 미리보기의 로컬 실행 값(D-206·D-207) ──
+# 승인 대상은 위 등록 시험과 같은 실제 fetch 서버(수용 스택의 TLS 경로)다. 신청·승인은 합성 계정이 하고, 끝나면 등록을 해제한다.
+# 원클릭 승인이 만드는 도구 심사는 외부 목적지가 비어 주소 인자를 모두 막는다. 그래서 fetch를 실제로 부르는 동의 시험은
+# 등록 시험과 같은 계약 검토 경로로 등록하고, 원클릭 시험은 등록 상태·원장·목록까지만 본다.
+OFFICIAL_SERVERS = "https://github.com/modelcontextprotocol/servers"
+ROOT_ONLY_STATUS = "관리 계정으로 실행할 수 없는 이미지"
+FETCH_ARGUMENTS = {"url": "http://intranet.bob.local/", "max_length": 200}
+
+
+def _bearer(who: str) -> dict[str, str]:
+    return {"Authorization": f"Bearer {TOKENS[who]}"}
+
+
+def _detail(response: httpx.Response) -> str:
+    try:
+        return str(response.json().get("detail", ""))
+    except ValueError:
+        return response.text[:200]
+
+
+async def _second_admin() -> dict[str, str]:
+    """위험 등급이 서로 다른 관리자 두 명의 승인을 요구하면 두 번째로 누르는 합성 관리자."""
+    if "admin2" not in TOKENS:
+        principal = PRINCIPAL["admin"] + "-2"
+        email = principal + "@bob.local"
+        await db.execute(
+            """INSERT INTO principals(token,email,display_name,role,synthetic,department,password_hash,user_id)
+               SELECT %s,%s,%s,role,true,department,password_hash,%s FROM principals WHERE email=%s""",
+            (principal, email, principal, str(uuid4()), USERS["admin"]))
+        PRINCIPAL["admin2"], USERS["admin2"] = principal, email  # run()이 끝날 때 함께 정리된다
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(API + "/api/session", json={
+                "email": email, "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
+            response.raise_for_status()
+        TOKENS["admin2"] = response.json()["access_token"]
+    return _bearer("admin2")
+
+
+@asynccontextmanager
+async def _fetch_intake(client: httpx.AsyncClient, tag: str):
+    """직원이 fetch 서버를 신청하고 관리자가 승인 미리보기를 연 상태. 나올 때 등록을 해제하고 남은 신청을 거부한다."""
+    endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
+    expect(urlsplit(endpoint).scheme == "https", "ACCEPTANCE_FETCH_ENDPOINT에 신뢰된 HTTPS fetch 시험 경로가 필요합니다.")
+    await operating("fetch")
+    created = await client.post(CONSOLE_URL + "/api/mcp-requests", headers=_bearer("employee"), json={
+        "display_name": f"Acceptance fetch {tag}", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+        "requested_tools": ["fetch"], "requested_transport": "streamable-http",
+        "purpose": "원클릭 승인과 서버 단위 동의를 실제 fetch 서버로 확인합니다.",
+        "risk_input": {**IMPACT_INPUT, "data_class": "public"}})
+    expect(created.status_code == 200, f"도입 신청: {created.status_code} {created.text[:200]}")
+    ctx = {"intake": created.json()["request"]["id"], "sid": None}
+    try:
+        opened = await client.post(CONSOLE_URL + f"/api/mcp-requests/{ctx['intake']}/approval-preview",
+                                   headers=_bearer("admin"), json={})
+        expect(opened.status_code == 200, f"승인 미리보기: {opened.status_code} {opened.text[:200]}")
+        preview = opened.json()
+        proposal = preview["proposal"]
+        expect(not proposal["blockers"] and set(proposal["tools"]) == {"fetch"},
+               f"승인 미리보기 제안: 보류 {proposal['blockers']} · 도구 {proposal['tools']}")
+        ctx.update(preview=preview, proposal=proposal, digest=preview["proposal_sha256"], sid=proposal["server_id"],
+                   suggested=proposal["tools"]["fetch"])
+        yield ctx
+    finally:
+        with suppress(httpx.HTTPError):
+            if ctx["sid"]:
+                await client.delete(f"{API}/api/registry/servers/{ctx['sid']}", headers=_bearer("admin"))
+            await client.post(CONSOLE_URL + f"/api/mcp-requests/{ctx['intake']}/reject",
+                              headers=_bearer("admin"), json={"note": "수용 시험 정리"})
+
+
+FETCH_CONSTRAINT = {"type": "object", "additionalProperties": False, "required": ["url", "max_length"],
+                    "properties": {"url": {"const": FETCH_ARGUMENTS["url"]}, "max_length": {"const": FETCH_ARGUMENTS["max_length"]}}}
+
+
+@asynccontextmanager
+async def _consent_server(client: httpx.AsyncClient):
+    """등록 시험과 같은 절차(검토한 계약·고정 인자)로 fetch를 등록하되 도구 심사가 직원 동의를 요구한다.
+    원클릭 승인의 도구 심사는 외부 목적지가 비어 있어 주소 인자를 모두 막으므로 fetch를 실제로 부르는 이 시험에는 쓸 수 없다."""
+    endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
+    expect(urlsplit(endpoint).scheme == "https", "ACCEPTANCE_FETCH_ENDPOINT에 신뢰된 HTTPS fetch 시험 경로가 필요합니다.")
+    await operating("fetch")
+    server_id, admin = "acceptance-consent", _bearer("admin")
+    found = await client.post(API + "/api/registry/discover", headers=admin, json={"endpoint": endpoint})
+    found.raise_for_status()
+    scope = {"server_id": server_id, "endpoint": endpoint, "catalog_hash": found.json()["catalog_hash"],
+             "tools": {"fetch": "r"}, "data_class": "public", "valid_days": 1, "poisoning_ack": False,
+             "tool_reviews": {"fetch": {"purpose": "intranet 공개 자료 읽기", "asset": "intranet.bob.local",
+                                        "destinations": [], "consent": True}}}
+    created = await client.post(CONSOLE_URL + "/api/mcp-requests", headers=_bearer("employee"), json={
+        "display_name": "Acceptance consent", "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+        "requested_tools": ["fetch"], "requested_transport": "streamable-http",
+        "purpose": "서버 단위 동의 결정을 실제 fetch 서버로 확인합니다.", "risk_input": IMPACT_INPUT})
+    expect(created.status_code == 200, f"도입 신청: {created.status_code} {created.text[:200]}")
+    intake = created.json()["request"]["id"]
+    base = f"{CONSOLE_URL}/api/mcp-requests/{intake}"
+    try:
+        for step, body in (
+                ("review-contract", {**scope, "allowed_principals": [PRINCIPAL["employee"]],
+                                     "parameter_constraints": {"fetch": FETCH_CONSTRAINT},
+                                     "review_note": "동의를 요구하는 fetch 입력 계약과 intranet 공개 자료 읽기 범위를 검토했습니다."}),
+                ("approve", {**SUPPLIER_ASSURANCE, "risk_acceptance": "격리 테스트보드에서 intranet 공개 자료의 읽기만 수행합니다."}),
+                ("register", scope)):
+            response = await client.post(f"{base}/{step}", headers=admin, json=body)
+            expect(response.status_code == 200, f"{step}: {response.status_code} {response.text[:200]}")
+        expect(response.json().get("status") == "READY", f"등록: {response.text[:200]}")
+        yield server_id
+    finally:
+        with suppress(httpx.HTTPError):
+            await client.delete(f"{API}/api/registry/servers/{server_id}", headers=admin)
+
+
+async def _click(client: httpx.AsyncClient, headers: dict, ctx: dict, **extra) -> httpx.Response:
+    body = {"proposal_sha256": ctx["digest"], "tools": ["fetch"], "valid_days": 1,
+            "supplier_assurance": SUPPLIER_ASSURANCE, **extra}
+    return await client.post(CONSOLE_URL + f"/api/mcp-requests/{ctx['intake']}/approve-and-register",
+                             headers=headers, json=body)
+
+
+async def _approve(client: httpx.AsyncClient, ctx: dict, **extra) -> httpx.Response:
+    """승인 클릭. 위험 등급이 두 명을 요구하면 다른 관리자가 같은 범위로 한 번 더 누른다."""
+    first = await _click(client, _bearer("admin"), ctx, **extra)
+    if first.status_code == 200 and first.json().get("pending"):
+        other = await _second_admin()
+        reopened = await client.post(CONSOLE_URL + f"/api/mcp-requests/{ctx['intake']}/approval-preview",
+                                     headers=other, json={})
+        expect(reopened.status_code == 200 and reopened.json().get("proposal_sha256") == ctx["digest"],
+               f"두 번째 관리자의 미리보기: {reopened.status_code} {reopened.text[:160]}")
+        return await _click(client, other, ctx, **extra)
+    return first
+
+
+def _lowering(ctx: dict) -> dict:
+    """제안이 읽기가 아니면 읽기로 낮춘다(올리기는 받지 않는다)."""
+    return {"actions": {"fetch": "r"}} if ctx["suggested"] != "r" else {}
+
+
+async def one_click_lowers_tool_class() -> str:
+    """D-199: 원클릭 승인은 도구 분류를 제안값 이하로만 바꾼다. 올리기·낡은 화면·비관리자는 받지 않고,
+    게이트웨이의 등록 범위 가드도 승인 범위와 다른 분류를 거부한다."""
+    async with httpx.AsyncClient(timeout=180) as client, _fetch_intake(client, "분류") as ctx:
+        suggested, sid, intake = ctx["suggested"], ctx["sid"], ctx["intake"]
+        preview_url = CONSOLE_URL + f"/api/mcp-requests/{intake}/approval-preview"
+        admin = _bearer("admin")
+        # 원격 신청에는 PC 격리 실행 제안이 없다(필드는 있고 비어 있다).
+        expect(ctx["preview"].get("local_run_preset") == {} and ctx["preview"].get("local_run_status") == "",
+               f"원격 신청의 로컬 실행 제안: {ctx['preview'].get('local_run_preset')} {ctx['preview'].get('local_run_status')!r}")
+        # 거부
+        denied = await client.post(preview_url, headers=_bearer("employee"), json={})
+        forged = await _click(client, _bearer("employee"), ctx)
+        expect(denied.status_code == 403 and forged.status_code == 403,
+               f"직원의 미리보기 {denied.status_code} · 승인 {forged.status_code}")
+        stale = await _click(client, admin, ctx, proposal_sha256="0" * 64)
+        expect(stale.status_code == 409, f"바뀐 화면의 승인이 {stale.status_code}")
+        unknown = await _click(client, admin, ctx, actions={"nope": "r"})
+        expect(unknown.status_code == 422, f"선택하지 않은 도구의 분류 변경이 {unknown.status_code}")
+        higher = next((a for a in "wx" if "rwx".index(a) > "rwx".index(suggested)), None)
+        if higher:
+            raised = await _click(client, admin, ctx, actions={"fetch": higher})
+            expect(raised.status_code == 422 and "제안값 이하" in _detail(raised),
+                   f"분류 올리기({suggested}→{higher}): {raised.status_code} {_detail(raised)[:120]}")
+        row = await db.fetch_one(
+            "SELECT (SELECT status FROM mcp_intake_requests WHERE id=%s::uuid) AS intake,"
+            " (SELECT count(*) FROM mcp_servers WHERE id=%s) AS servers", (intake, sid))
+        expect(row["intake"] != "APPROVED" and row["servers"] == 0, f"거부된 클릭 뒤 상태: {dict(row)}")
+        # 정상: 제안이 읽기가 아니면 읽기로 낮춰 승인한다.
+        extra = _lowering(ctx)
+        approved = await _approve(client, ctx, **extra)
+        expect(approved.status_code == 200 and approved.json().get("status") == "READY",
+               f"원클릭 승인·등록: {approved.status_code} {approved.text[:200]}")
+        tools = await db.fetch_all("SELECT name, action, enabled FROM mcp_tools WHERE server_id=%s ORDER BY name", (sid,))
+        expect([(t["name"], t["action"], t["enabled"]) for t in tools] == [("fetch", "r", True)], f"등록된 도구: {tools}")
+        done = [e for e in await review.events_for("intake", intake)
+                if e["kind"] == "intake-one-click" and e["outcome"] == "approved"]
+        expect(len(done) == 1 and done[0]["scope"].get("tools") == ["fetch"]
+               and (done[0]["scope"].get("actions") or {}) == extra.get("actions", {}),
+               f"승인 원장의 범위: {[e['scope'] for e in done]}")
+        # 게이트웨이 가드: 승인 범위와 다른 분류(읽기로 승인한 도구를 쓰기로)는 직접 등록해도 거부한다.
+        direct = await client.post(API + "/api/registry/servers", headers=admin, json={
+            "server_id": sid, "display_name": "Acceptance fetch 분류", "endpoint": ctx["proposal"]["endpoint"],
+            "catalog_hash": ctx["proposal"]["catalog"]["catalog_hash"], "tools": {"fetch": "w"},
+            "data_class": ctx["proposal"]["data_class"], "valid_days": 1, "source_url": ctx["proposal"]["endpoint"],
+            "supplier_assurance": SUPPLIER_ASSURANCE, "intake_id": intake, "poisoning_ack": True,
+            "tool_reviews": ctx["proposal"]["tool_reviews"]})
+        expect(direct.status_code == 409 and "승인한 범위" in _detail(direct),
+               f"게이트웨이 직접 등록의 분류 변경: {direct.status_code} {_detail(direct)[:160]}")
+        kept = await db.fetch_one("SELECT action FROM mcp_tools WHERE server_id=%s AND name='fetch'", (sid,))
+        expect(kept and kept["action"] == "r", f"거부 뒤 도구 분류: {kept}")
+        listed = {t.name for t in await list_tools("employee", f"{API}/mcp/{sid}/")}
+        expect(listed == {"fetch"}, f"/mcp/{sid}/ 도구 목록: {listed}")
+    return (f"제안 {suggested} → 등록 r(원장 actions={extra.get('actions', {})}) · "
+            f"{'올리기 422 · ' if higher else ''}직원 403 · 낡은 화면 409 · 게이트웨이 직접 등록 409 · 신청자 목록 fetch 1개")
+
+
+async def server_consent_flow() -> str:
+    """D-201: 동의가 필요하면 그 서버의 승인 도구 동의를 한꺼번에 대기시키고, 서버 단위 결정은 본인의 화면 목록에만
+    적용된다. 허용·거부·철회마다 도구별 감사 사건이 남고, 호출은 그 결정을 따른다."""
+    async with httpx.AsyncClient(timeout=180) as client, _consent_server(client) as sid:
+        url = f"{API}/mcp/{sid}/"
+        employee, admin = _bearer("employee"), _bearer("admin")
+
+        async def mine() -> list[dict]:
+            listed = await client.get(CONSOLE_URL + "/api/consents", headers=employee)
+            expect(listed.status_code == 200, f"동의 목록: {listed.status_code}")
+            return [c for c in listed.json()["consents"] if c["server_id"] == sid]
+
+        async def decide(decision: str, ids: list[int], headers: dict = employee, server: str = sid) -> httpx.Response:
+            return await client.post(CONSOLE_URL + f"/api/consents/server/{server}", headers=headers,
+                                     json={"decision": decision, "consent_ids": ids})
+
+        async def blocked(why: str) -> dict:
+            out = await call("employee", "fetch", FETCH_ARGUMENTS, url)
+            expect(out.get("decision") == "Block" and out.get("policy_id") == "P-CONSENT-001"
+                   and not out.get("upstream_attempted"), f"{why}: {out.get('decision')} {out.get('policy_id')}")
+            return out
+
+        async def events(consent_id: int) -> list[dict]:
+            return [e for e in await review.events_for("consent", consent_id) if e["kind"] == "user-consent"]
+
+        expect(not await mine(), "호출 전에 동의 요청이 있음")
+        await blocked("동의 전 호출")
+        pending = await mine()
+        tools = {r["name"] for r in await db.fetch_all("SELECT name FROM mcp_tools WHERE server_id=%s AND enabled", (sid,))}
+        expect({c["tool_name"] for c in pending} == tools and len(pending) == len(tools)
+               and {c["status"] for c in pending} == {"PENDING"},
+               f"서버 단위 대기: {[(c['tool_name'], c['status']) for c in pending]}")
+        ids = [c["id"] for c in pending]
+        # 거부: 남의 요청·다른 서버·화면에 없던 번호·빈 목록·대기 아닌 철회는 하나도 바꾸지 않는다.
+        attempts = {
+            "관리자가 직원의 요청을 결정": await decide("grant", ids, admin),
+            "다른 서버 경로": await decide("grant", ids, server="acceptance-other"),
+            "화면에 없던 번호 포함": await decide("grant", ids + [2_000_000_000]),
+            "대기 상태의 철회": await decide("revoke", ids)}
+        expect(all(r.status_code == 409 for r in attempts.values()),
+               f"거부 응답: { {k: r.status_code for k, r in attempts.items()} }")
+        single = await client.post(CONSOLE_URL + f"/api/consents/{ids[0]}", headers=admin, json={"decision": "grant"})
+        empty = await decide("grant", [])
+        expect(single.status_code == 409 and empty.status_code == 422,
+               f"개별 결정 {single.status_code} · 빈 목록 {empty.status_code}")
+        expect({c["status"] for c in await mine()} == {"PENDING"}, "거부된 결정이 상태를 바꿈")
+        # 거부 결정: 도구별 사건 1건, 이후 호출은 거부 사유로 막히고 다시 묻지 않는다.
+        denied = await decide("deny", ids)
+        expect(denied.status_code == 200 and {c["status"] for c in denied.json()["consents"]} == {"DENIED"},
+               f"서버 단위 거부: {denied.status_code} {denied.text[:160]}")
+        for i in ids:
+            seen = await events(i)
+            expect([(e["outcome"], e["actor"]) for e in seen] == [("rejected", PRINCIPAL["employee"])],
+                   f"거부 사건 {i}: {seen}")
+        out = await blocked("거부 뒤 호출")
+        reason = await db.fetch_one("SELECT reason FROM decisions WHERE id=%s", (out.get("decision_id"),))
+        expect("동의하지 않았" in ((reason or {}).get("reason") or ""), f"거부 사유: {reason}")
+        expect({c["status"] for c in await mine()} == {"DENIED"}, "거부한 동의가 다시 대기로 열림")
+        # 허용 결정: 기한이 붙고, 호출이 실제 서버까지 간다.
+        granted = await decide("grant", ids)
+        rows = granted.json().get("consents", []) if granted.status_code == 200 else []
+        expect(len(rows) == len(ids) and {c["status"] for c in rows} == {"GRANTED"} and all(c["expires_at"] for c in rows),
+               f"서버 단위 허용: {granted.status_code} {granted.text[:160]}")
+        for i in ids:
+            expect([e["outcome"] for e in await events(i)] == ["rejected", "approved"], f"허용 사건 {i}")
+        ran = await call("employee", "fetch", FETCH_ARGUMENTS, url)
+        expect(ran.get("decision") in {"Allow", "Alert"} and not ran["is_error"],
+               f"허용 뒤 호출: {ran.get('decision')} {ran.get('policy_id')} {ran['text'][:120]}")
+        # 철회: 다시 막히고 새 대기가 열린다.
+        revoked = await decide("revoke", ids)
+        expect(revoked.status_code == 200 and {c["status"] for c in revoked.json()["consents"]} == {"REVOKED"},
+               f"서버 단위 철회: {revoked.status_code}")
+        await blocked("철회 뒤 호출")
+        expect({c["status"] for c in await mine()} == {"PENDING"}, "철회 뒤 호출이 새 동의 요청을 만들지 않음")
+    return (f"첫 호출 차단과 승인 도구 {len(tools)}개 일괄 대기 · 거부 409 4건·개별 409·빈 목록 422 · "
+            "거부→차단·재요청 없음 · 허용→실행 · 철회→차단·재요청 · 도구별 감사 사건")
+
+
+async def approval_preview_local_run_values() -> str:
+    """D-206·D-207: 승인 미리보기가 공식 저장소 경로에 맞는 PC 격리 실행 기본값(루트 전용 이미지는 상태 문구)을 돌려준다.
+    합성 신청 행(보류 상태, 검증 전)이라 실행·등록은 하지 않고 응답 필드만 확인한다."""
+    cases = [
+        ("src/filesystem", OFFICIAL_SERVERS, {"image": "mcp/filesystem", "command": ["/workspace/mcp-docs"],
+                                              "mounts": [{"path": "mcp-docs", "mode": "ro"}], "env": {}}, ""),
+        ("src/memory", OFFICIAL_SERVERS, {"image": "mcp/memory", "command": [],
+                                          "mounts": [{"path": "mcp-memory", "mode": "rw"}],
+                                          "env": {"MEMORY_FILE_PATH": "/workspace/mcp-memory/memory.json"}}, ""),
+        ("src/git", OFFICIAL_SERVERS, None, ROOT_ONLY_STATUS),
+        ("src/time", OFFICIAL_SERVERS, None, ROOT_ONLY_STATUS),
+        ("src/filesystem", "https://github.com/acceptance-example/servers", None, ""),
+    ]
+    made: list[str] = []
+    admin = _bearer("admin")
+    async with httpx.AsyncClient(timeout=90) as client:
+        try:
+            for path, repository, preset, status in cases:
+                row_id = uuid4()
+                intake = str(row_id)
+                await db.execute(
+                    """INSERT INTO mcp_intake_requests(id, submitted_by, display_name, repository_url, requested_transport,
+                              purpose, status, intake_kind, repository_path)
+                       VALUES (%s,%s,%s,%s,'stdio',%s,'HOLD','repository',%s)""",
+                    (row_id, PRINCIPAL["employee"], f"Acceptance {path}", repository,
+                     "승인 미리보기 응답 확인용 합성 신청입니다.", path))
+                made.append(intake)
+                response = await client.post(CONSOLE_URL + f"/api/mcp-requests/{intake}/approval-preview",
+                                             headers=admin, json={})
+                expect(response.status_code == 200, f"{path} 미리보기: {response.status_code} {response.text[:200]}")
+                body = response.json()
+                expect("local_run_preset" in body and "local_run_status" in body,
+                       f"{path} 응답에 로컬 실행 필드 없음: {sorted(body)}")
+                got = body["local_run_preset"]
+                if preset is None:
+                    expect(got == {}, f"{repository}의 {path}에 제안이 있음: {got}")
+                else:
+                    expect({k: got.get(k) for k in preset} == preset, f"{path} 제안: {got}")
+                expect(body["local_run_status"] == status, f"{path} 상태 문구: {body['local_run_status']!r}")
+                if path == "src/filesystem" and preset:
+                    # 실행 계약이 없는 미리보기는 보류다. 같은 화면 기준의 승인 클릭은 받지 않는다.
+                    codes = {b["code"] for b in body["proposal"]["blockers"]}
+                    expect("execution-missing" in codes, f"보류 사유: {sorted(codes)}")
+                    click = await client.post(CONSOLE_URL + f"/api/mcp-requests/{intake}/approve-and-register",
+                                              headers=admin, json={"proposal_sha256": body["proposal_sha256"],
+                                                                   "tools": ["read_file"], "valid_days": 1})
+                    expect(click.status_code == 409, f"보류된 제안의 승인 클릭이 {click.status_code}")
+                    state = await db.fetch_one("SELECT status FROM mcp_intake_requests WHERE id=%s::uuid", (intake,))
+                    expect(state["status"] == "HOLD", f"승인 클릭 뒤 신청 상태: {state}")
+        finally:
+            for intake in made:
+                with suppress(httpx.HTTPError):
+                    await client.post(CONSOLE_URL + f"/api/mcp-requests/{intake}/reject", headers=admin,
+                                      json={"note": "수용 시험 정리"})
+    return ("filesystem 읽기 폴더 · memory 쓰기 폴더+환경 · git·time 상태 문구 · 다른 저장소의 같은 경로는 빈 제안 · "
+            "보류된 제안의 승인 409 (PC 격리 실행 자체는 수용 스택에서 실행하지 않음)")
+
+
 async def _run() -> dict:
     await db.wait_until_ready()
     await sign_in()
@@ -764,6 +1096,10 @@ async def _run() -> dict:
         ("usage-relationship-scope-alerts", relationship_scope_alerts()),
         ("server-check-changes-nothing", server_check_is_side_effect_free()),
         ("console-registration-pins-and-expires", console_registration_expires()),
+        # 10-23 기능. 위 등록 시험이 같은 fetch 경로를 해제한 뒤에 같은 서버를 원클릭 승인으로 다시 등록한다.
+        ("one-click-approval-lowers-tool-class", one_click_lowers_tool_class()),
+        ("server-level-consent-decisions", server_consent_flow()),
+        ("approval-preview-local-run-values", approval_preview_local_run_values()),
         ("invited-employee-enrollment", invitation_enrollment()),
         ("oversized-arguments-not-sent", oversized_arguments_not_sent()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:
