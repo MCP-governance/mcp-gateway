@@ -2160,3 +2160,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **한계**: 수용 스택에는 PC 격리 실행기·직원 PC가 없어 로컬 실행 승인·서명·컨테이너 기동은 이 항목들이 보지 않는다(PJ1 실사용 증거가 따로 필요).
   서버 단위 동의의 「도구 여러 개를 한 번에」는 fetch가 도구 하나라 일괄 구조가 아니라 대기·결정 흐름만 본다. 다중 도구 일괄은 `consent_per_server_check.py`(대역)가 다룬다.
   항목 코드는 `tests/acceptance_w7_check.py`(HTTP·DB 대역, CI 정적 단계)로 모양만 확인했고 서비스 통과 증거는 CI의 `./console.sh test`에서 나온다.
+
+## D-210 한 저장소의 여러 MCP는 서버 ID를 폴더 이름으로 만든다 (2026-10-23)
+
+- **문제**: `intake_proposal.server_id`가 저장소 경로의 앞 21자로 이름을 만들어, modelcontextprotocol/servers의 filesystem·memory·
+  sequentialthinking이 모두 `modelcontextprotocol-…`가 됐다. 하네스 도구 이름(`mcp__<서버>__<도구>`)과 콘솔에서 서로 구분되지 않는다.
+- **결정**: 저장소 신청에 `repository_path`가 있으면 그 마지막 폴더 이름(예: `filesystem-a9ba6f1a`)을 쓴다. 뒤의 신청 ID 8자는
+  그대로라 고유성은 같다. 이미 등록된 서버의 ID는 바꾸지 않는다(새 신청부터).
+- **시험**: `intake_one_click_check.py`의 `test_id_is_valid_stable_and_distinct`.
