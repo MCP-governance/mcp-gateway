@@ -107,6 +107,14 @@ class RunnerCommand(unittest.TestCase):
         self.assertEqual(os.stat(os.path.join(self.home, "fresh", "docs")).st_mode & 0o777, 0o700)
         with self.assertRaises(ValueError):
             runner.PinnedMounts(manifest(mounts=[{"path": "link", "mode": "ro"}]), self.home, owner)
+        # 별도 관리 계정: 읽기 전용 폴더는 직원 홈(직원이 문서를 넣는 곳)에서, 쓰기 폴더는 관리 계정 홈에 둔다(D-224).
+        employee = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, employee)
+        split = runner.PinnedMounts(manifest(mounts=[{"path": "docs", "mode": "ro"}, {"path": "state", "mode": "rw"}]),
+                                    self.home, owner, (employee, *owner))
+        self.addCleanup(split.close)
+        self.assertEqual([str(p).startswith(employee) for p, *_ in split.paths], [True, False])
+        self.assertEqual(os.stat(os.path.join(employee, "docs")).st_mode & 0o777, 0o755)
         with self.assertRaises(ValueError):
             runner.container_command("docker", manifest(image="mcp/filesystem:latest"), self.account,
                                      mount_options=self.pinned.options)
