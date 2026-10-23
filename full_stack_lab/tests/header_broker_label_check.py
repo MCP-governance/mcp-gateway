@@ -69,6 +69,13 @@ class HeaderBrokerLabel(unittest.TestCase):
             self.namespace["Header"](peer, None, None)
         return peer.answer
 
+    def test_pc_with_one_harness_needs_only_its_profiles(self):
+        only = BINDING.enforcing_profiles("u", ("codex",))
+        self.assertIn("mcpgw-u-bound-codex", only)
+        self.assertFalse(any("claude" in p for p in only))
+        self.assertEqual(BINDING.enforcing_profiles("u"), BINDING.enforcing_profiles("u", ("codex", "claude")))
+        self.assertEqual(len(BINDING.enforcing_profiles("u")), 8)
+
     def test_exact_approved_labels_receive_active_token(self):
         for label in ("codex", "claude", "credential"):
             for mode in ("", " (enforce)"):

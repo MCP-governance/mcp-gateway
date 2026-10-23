@@ -177,7 +177,9 @@ def place_harnesses(employee: str) -> dict[str, dict]:
             if name == "claude" and (APPROVED / "claude").is_file():
                 placed[name] = {"path": str(APPROVED / name), "source": "already-approved"}
                 continue
-            raise Failed(f"공식 {name} 설치를 찾지 못했습니다. {name}을 설치한 뒤 다시 실행하세요")
+            # PC에 있는 하네스만 관리한다. 없는 것은 나중에 설치하고 키트를 다시 실행하면 추가된다.
+            print(f"{name}이(가) 이 PC에 없어 건너뜁니다.", flush=True)
+            continue
         for item, origin in origins.items():
             target = APPROVED / item
             if not native(origin):
@@ -191,6 +193,8 @@ def place_harnesses(employee: str) -> dict[str, dict]:
                 temporary.replace(target)
             placed.setdefault(name, {"path": str(APPROVED / name), "source": str(source), "digests": {}})
             placed[name]["digests"][item] = digest
+    if not placed:
+        raise Failed("이 PC에서 codex·claude를 찾지 못했습니다. 둘 중 하나를 설치한 뒤 다시 실행하세요")
     return placed
 
 
@@ -234,7 +238,7 @@ def replaced_dir(managed: str) -> Path:
     return keep
 
 
-def write_shims(employee: str, managed: str) -> list[str]:
+def write_shims(employee: str, managed: str, names=("codex", "claude")) -> list[str]:
     """`codex` and `claude` in the employee's own account, run as the managed account.
 
     Only for an employee who is already an administrator: the sudoers rule grants them a login
@@ -249,7 +253,7 @@ def write_shims(employee: str, managed: str) -> list[str]:
     if subprocess.run(["visudo", "-cqf", str(SUDOERS)], check=False).returncode:
         SUDOERS.unlink(missing_ok=True)
         raise Failed("sudo 규칙 검사에 실패해 실행 연결을 만들지 않았습니다")
-    launchers = [replace_launcher(name, managed, shell) for name in ("codex", "claude")]
+    launchers = [replace_launcher(name, managed, shell) for name in names]
     write_functions(employee)
     return launchers
 
@@ -535,7 +539,7 @@ def main() -> int:
                                      pwd.getpwnam(employee).pw_uid if companion else None)
             if companion:
                 step("직원 계정에서 바로 실행되게 연결")
-                result["launchers"] = write_shims(employee, account)
+                result["launchers"] = write_shims(employee, account, tuple(placed))
         except Failed:
             # Half a connection is worse than none: the account keeps its own shell and firewall.
             if installed(account) or (SHIM_DIR / "codex").is_file():
