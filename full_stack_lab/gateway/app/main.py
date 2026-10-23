@@ -1647,6 +1647,15 @@ async def endpoint_local_recovery(device: dict = Depends(endpoint_device("enforc
     return {'jobs':await local_jobs.recoverable(device)}
 
 
+@app.get("/api/endpoint/local-manifests")
+async def endpoint_local_manifests(device: dict = Depends(endpoint_device("enforcement"))) -> dict:
+    """장치가 첫 호출 전에 폴더와 이미지를 미리 준비할 승인 서버 목록(서명한 매니페스트)."""
+    try:
+        return {"servers": await local_jobs.device_manifests(device)}
+    except local_jobs.NotStarted as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
 @app.get("/api/endpoint/local-jobs/{job_id}/control")
 async def endpoint_local_control(job_id: UUID, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:

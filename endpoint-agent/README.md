@@ -18,7 +18,8 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 2. 조직 IT가 게이트웨이 HTTPS와 배치 루트·SHA-256 지문, 승인된 설치기, 공식 native ELF 배포판을 확인합니다.
    사용자가 수정한 스크립트를 root로 실행하지 않습니다. 관리형 배포 시스템에서 승인 출처를 검증한 설치기를 사용하세요.
 3. 일반 계정 UID 1000 이상, sudo·wheel·docker·lxd·libvirt 권한 없음, 기존 세션 없음이 필요합니다.
-   root가 systemd·AppArmor·nftables·gcc를 준비하고 Codex·Claude를 `/opt/mcpgw-approved/{codex,claude}`에 설치합니다.
+   root가 systemd를 확인하고 gcc·nftables·AppArmor 도구·curl·openssl과 로컬 MCP용 컨테이너 엔진(apt `docker.io`·dnf `podman`·pacman `docker`)을
+   한 번에 설치하며(D-225), Codex·Claude를 `/opt/mcpgw-approved/{codex,claude}`에 설치합니다.
    Codex는 같은 릴리스의 `codex-code-mode-host`를 같은 폴더에 둡니다(npm 패키지의
    `@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/bin/`에 둘이 함께 있음). 없으면 도구 호출이 모두 실패해 설치기가 거부합니다.
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
@@ -57,7 +58,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
 같은 직원이 같은 PC에 키트를 다시 설치하면(업데이트) 직전 활성 장치를 대체하고 활성화를 이어받습니다(D-217). 격리되거나 중지된 장치는 이어받지 않고 다른 PC는 새 활성화가 필요합니다.
-직원은 `mcpgw-status`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
+직원은 `mcpgw-status`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
 관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
 안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
@@ -291,7 +292,9 @@ pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에
 한국어 사유·확인된 종료 코드·비밀을 숨긴 표준 오류 마지막 5줄(최대 300자)을 전달한다.
 권한 거부는 이미지 파일 권한·상위 디렉터리·보안 정책 등 여러 원인이 가능하므로 root 전용이라고 단정하지 않는다.
 
-설치 전 관리자가 선택할 엔진 구성은 다음과 같다. 설치기는 호스트의 Docker 설정을 자동 변경하지 않는다.
+설치기는 엔진이 없으면 배포판 패키지를 설치하고 docker 서비스를 켠다(D-225, 실패해도 원격 MCP 설치는 계속). 활성화된 장치는 승인된 로컬 서버의 폴더와
+digest 고정 이미지를 첫 호출 전에 백그라운드로 준비한다(D-226). 설치기는 호스트의 Docker 설정(`daemon.json` 등)을 자동 변경하지 않는다.
+설치 전 관리자가 선택할 엔진 구성은 다음과 같다.
 
 | 선택 | 관리자 준비 | 현재 실행기와 한계 |
 | --- | --- | --- |
@@ -299,5 +302,5 @@ pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에
 | rootless Podman | [공식 rootless 설명](https://docs.podman.io/en/latest/markdown/podman.1.html#rootless-mode)에 따라 별도 엔진 계정·subuid/subgid·저장소·cgroup 조건을 준비 | 현재 root 서비스의 `podman --userns=auto`는 rootless가 아님. 전용 계정 실행·마운트 매핑·복구/회수 어댑터 검증 전에는 설치만으로 지원된다고 보지 않음 |
 | 사용자 재매핑 없는 Docker | 기존 위험 수용과 관리 UID 실행을 유지 | 실행 권한 거부 이미지는 차단된 상태로 유지. `--user 0`, `--privileged`, 사용자 공간 비활성화, 파일 권한 수정으로 우회하지 않음 |
 
-Docker 데몬 재설정·패키지 설치·rootless 전환은 별도 운영 변경이다. 이번 수정에서는 실행하지 않았다.
+Docker 데몬 재설정·rootless 전환은 별도 운영 변경이다. 이번 수정에서는 실행하지 않았다.
 이번 로컬 검증과 실기기 재측정 공백은 [작업 보고](../research/llm-wiki/status/reports/2026-10-23-local-runner-usability.md)에 둔다.

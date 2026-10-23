@@ -2301,3 +2301,35 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   링크·하드링크·특수 파일 거부, 고정 FD 바인드, 실행 직전 재확인은 그대로다. 직원이 600으로 둔 파일은 컨테이너가 읽지 못한다(그 파일만 읽기 오류).
 - 같은 계정(직원=관리 계정)인 경우는 바뀌지 않는다.
 - 시험: `local_run_manifest_check.py`(ro는 직원 홈 0755, rw는 관리 계정 홈), WSL 단독 확인, pj2 실측.
+
+## D-225 키트는 sudo 설치 한 번에 필수 구성요소와 컨테이너 엔진까지 갖춘다 (2026-10-23)
+
+- 배경: 소유자 10-23 지시("처음에 sudo로 설치할 때 종속성과 세팅을 다 넣는다"). 키트는 gcc·nftables·AppArmor 도구만 설치하고, 로컬 MCP가 쓰는 컨테이너 엔진·openssl은 첫 사용 때 없으면 그제야 실패했다(엔진 없음은 첫 호출 오류, 이미지 수신은 첫 호출 한도 180초에 걸림).
+- 결정 1(한 번에 조회·설치): `bootstrap.ensure_packages`는 `REQUIRED`(gcc·nft·apparmor_parser·curl·openssl)를 `shutil.which`로 한 번 조회해 없는 것만 모아 패키지 관리자를 한 번 갱신(apt-get update)하고 한 번에 설치한다. 모두 있으면 아무 명령도 실행하지 않는다. 이전에는 `missing`과 `still`을 같은 질의로 두 번 만들었다.
+  openssl은 로컬 매니페스트 서명 검증(`local-runner.signed`)이, curl은 하네스·점검 도구가 쓴다.
+- 결정 2(엔진: 설치한다, 실패해도 멈추지 않는다): 엔진이 없으면(`/usr/bin/podman`·`/usr/bin/docker`, 러너가 보는 경로와 같다) 배포판 패키지로 설치한다 — apt `docker.io`, dnf `podman`, pacman `docker`.
+  근거: 소유자가 설치 때 다 넣기를 원하고, 첫 호출에서 설치하면 시간 제한에 걸리며, 엔진이 필요한 로컬 MCP는 엔진 없이 쓸 수 없다. 엔진은 원격 MCP에 필요 없으므로 설치 실패는 「로컬 MCP는 엔진 설치 뒤 사용할 수 있습니다: sudo apt-get install docker.io」로 알리고 나머지 설치는 계속한다(필수 구성요소 실패는 기존대로 설치를 멈춘다).
+  docker면 `systemctl enable --now docker`까지 한다(podman은 데몬이 없고 러너가 podman을 먼저 쓴다). 이미 설치돼 있으나 꺼진 docker도 켠다. 실패하면 한 줄로 켜는 명령을 안내한다.
+- 하지 않는 것(보안 약화 금지): Docker 공식 저장소·키 추가(외부 신뢰 확장), `daemon.json`·userns-remap 변경(기존 컨테이너 저장소가 가려진다 — 러너가 측정해 「탈출 시 호스트 root」 위험 수용을 표시하는 D-192 구조 그대로), 어떤 계정도 docker 그룹에 넣기(관리 계정이 docker 그룹이면 설치기가 거부하는 규칙 불변).
+- 결정 3(파이썬): 설치 전에 설치기 인터프리터와 서비스가 쓰는 `/usr/bin/python3`가 3.10 이상인지 확인한다(`check_python`). 문서의 「Python 3.10 이상」을 실제 검사로 만들었고, 미달이면 계정·패키지를 건드리기 전에 한 줄로 멈춘다.
+- 결정 4(소요 시간): 단계 안내(`step`)가 단계별 소요를 모아 설치 끝에 한 줄로 낸다. 「설치 소요(로그인 제외): 필수 구성요소 설치 41초 · 관리형 연결 설치 9초 · 합계 52초」. 1초 미만 단계는 빼고, 직원이 로그인하는 시간은 넣지 않는다. 디버그 출력은 아니다.
+- 한계: `/usr/bin` 밖의 엔진(snap docker 등)은 러너가 쓰지 못해 「엔진 없음」으로 보고 `docker.io`를 더 설치한다. dnf의 `podman`은 root 서비스의 `--userns=auto`를 쓰므로 `/etc/subuid`에 containers 범위가 있어야 하고(Fedora 기본) 실측하지 않았다. 실제 apt·dnf·pacman 설치와 `systemctl enable --now docker`는 대역으로만 시험했다.
+- 시험: `full_stack_lab/tests/kit_install_upfront_check.py` `Packages`(한 번의 갱신·두 번의 설치, 완비 PC는 무명령, 정지된 docker 켜기, 엔진 실패 계속, 필수 실패 중단, 관리자별 이름, 파이썬 판본, 소요 시간). 수정 전 코드에서는 이 파일 29건 중 28건 실패.
+
+## D-226 승인된 로컬 MCP의 폴더와 이미지를 첫 호출 전에 준비한다 (2026-10-23)
+
+- 배경: PJ1에서 첫 이미지 pull이 5~15분이라 첫 호출이 180초 한도에 걸렸고(D-200), pj2 첫 설치에서는 마운트 폴더가 없어 첫 호출이 실패했다(D-223). 폴더·이미지 준비는 설치 쪽 일이다.
+- 결정 1(목록): 장치는 새 경로 `GET /api/endpoint/local-manifests`(장치 자격, `enforcement` 범위)로 이 장치가 준비해도 되는 승인 서버를 받는다. 게이트웨이는 직원이 쓸 수 있는 서버(`pac.servers_for`) 중 **작업 실행과 같은 `local_jobs.authorized`** 검사(`tools/call` 기준)를 통과한 서버만 서명 매니페스트와 함께 낸다. 철회·만료·정지·정지된 사용자·미관찰 승인은 나오지 않는다. 활성이 아닌 장치는 409이다.
+- 결정 2(검증): 장치는 작업 때와 같은 함수 `verify_manifest`(고정 승인 키 서명 + digest + 서버 id)로 확인하고, 서명 승인 기한이 지났으면 준비하지 않는다. 확인 전에는 폴더도 이미지도 만들지 않는다(위조 매니페스트 시험).
+- 결정 3(준비): 폴더는 작업 때와 같은 `PinnedMounts`로 만든다(`ensure_mounts`): ro는 직원 홈 0755, rw는 관리 계정 홈 0700, 링크·하드링크·특수 파일 거부, 고정 FD(D-223·D-224 불변). 이미지는 작업과 같은 `engine_configuration`(허용 저장소·digest 고정·엔진 판본 측정·추가 볼륨 거부)을 `seconds=PREFETCH_SECONDS`(1800)로 불러 받는다. 첫 호출 한도(`PREPARE_SECONDS` 180)는 그대로다.
+- 결정 4(실행 방식): 서비스가 별도 스레드(`local.prepare`)로 60초마다 목록을 받아 새(서버, 매니페스트 해시)만 준비한다. 작업 수령 루프와 섞이지 않아 이미지를 받는 동안에도 호출이 막히지 않고, 설치는 기다리지 않는다. 활성화 전(401·403·409)은 오류가 아니라 기다림이라 15초마다 다시 보고, 목록 경로를 모르는 이전 게이트웨이(404·405)는 조용히 60초 간격이다. 서버별 실패는 같은 사유를 한 번만 기록하고 300초 뒤 다시 한다. 철회된 서버는 기억에서 지운다. 준비한 서버는 다시 열지 않는다(엔진에서 이미지를 지웠다면 첫 호출이 같은 함수로 다시 받는다).
+- 결정 5(보이기): 서비스가 상태 요약에 `local`(준비/전체·사유·문서 폴더)을 싣고 `mcpgw-status`가 두 줄을 보인다 — 「로컬 MCP 준비: 1/2 (이미지 받는 중: memory)」, 「직원 문서 폴더: /home/<직원>/mcp-docs」. 승인된 로컬 서버가 없거나 목록을 아직 못 받았으면 `—`. 설치 끝에는 「활성화 뒤 백그라운드로 진행, 진행과 문서 폴더 위치는 mcpgw-status」 한 줄을 낸다. 문서 폴더 경로는 승인 매니페스트의 ro 마운트에서만 알 수 있어 설치 순간에는 모른다.
+- 한계: ① 게이트웨이 배포가 있어야 목록이 나온다(없으면 첫 호출 때 받는 기존 경로가 그대로다). ② 활성화 전 장치는 준비하지 않는다 — 활성화되기 전에 폴더·이미지를 내려받게 하지 않으려는 선택이며 활성화 뒤 15초 안에 시작한다. ③ 새 승인을 만드는 순간의 관찰 호출(승인 전)은 그 서버가 아직 목록에 없어 여전히 그 자리에서 이미지를 받는다. ④ 직원이 모드 600으로 둔 파일은 컨테이너가 읽지 못한다(D-224). ⑤ 폴더 안 파일이 1만 개를 넘거나 링크가 있으면 준비가 그 사유로 실패한다(작업과 같은 검사).
+- 시험: `kit_install_upfront_check.py` `PrepareLoop`·`Folders`·`SignedEndToEnd`(실제 Ed25519 서명을 openssl로 확인)·`SharedEngineHelpers`·`StatusLines`·`DeviceManifests`. 기존 `dev73_rework_check`·`local_runner_usability_check`·`local_run_manifest_check`는 기대값 변경 없이 통과.
+
+## D-227 설치·러너 중복 정리와 측정해 하지 않은 것 (2026-10-23)
+
+- 정리(동작 불변): ① 엔진 명령줄(`[binary,'--remote=false']`/`--host unix:///…`)을 세 곳(`detect_engine`·`engine_configuration`·`recover`)이 따로 만들던 것을 `engine_argv` 하나로, 엔진 판본 질의 두 곳을 `client_version` 하나로. ② 작업 실행의 매니페스트 해시·서명 확인을 `verify_manifest`로 빼 미리 준비와 같은 함수를 쓴다. ③ 직원 홈 조회(`pwd.getpwuid(owner_uid)`)를 `employee_documents`로. ④ `managed-linux install`이 `machine_id()`를 두 번 불러 `/etc/machine-id`를 두 번 읽던 것을 한 번으로. ⑤ `ensure_packages`의 같은 도구 질의 두 번을 한 번으로.
+- 측정해 하지 않은 것: `load_module("…", agent.py)` 반복 로드는 1회 13ms(20회 평균)라 캐시하지 않았다. `systemctl daemon-reload` 두 번은 집행 단위 파일과 관리 서비스 단위 파일이 서로 다른 시점에 쓰여야 부분 설치 원복(D-218)이 대칭이라 합치지 않았다. 설치의 `verify_transport` 재호출은 일회용 등록 토큰을 쓰기 전에 잘못된 주소·인증서를 거르는 검사(코드 주석)라 남겼다. 보안 검사(링크 거부·고정 FD·root 소유 경로·AppArmor/nft 순서·원복 멱등)는 한 줄도 바꾸지 않았다.
+- 죽은 코드: 키트 5개 파일의 최상위 함수·상수를 저장소 전체 참조 수로 훑었으나 참조 0인 것은 없었다(`pyflakes` 통과).
+- 시험: 기존 키트·러너 시험 전부 기대값 변경 없이 통과(`loopback_owner_replies_test`는 `check_python` 대역 한 줄만 추가).

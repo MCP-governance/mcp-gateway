@@ -29,6 +29,11 @@ MAX_LINES = 1024
 MAX_QUEUE = 32
 READ_SECONDS = 20
 PREPARE_SECONDS = 180
+# 설치·승인 때 미리 받을 때는 첫 호출 한도(PREPARE_SECONDS)에 묶이지 않는다. PJ1의 첫 pull이 5~15분이었다.
+PREFETCH_SECONDS = 1800
+PREPARE_EVERY = 60
+PREPARE_WAITING = 15
+PREPARE_RETRY = 300
 STDERR_BYTES = 4096
 STDERR_LINES = 5
 WORKSPACE = '/workspace'  # 컨테이너 안 고정 마운트 위치: 실행 인자가 PC 계정 이름에 묶이지 않는다
@@ -63,7 +68,7 @@ class PinnedMounts:
         """documents: (home, uid, gid) of the employee when the harness runs in a separate managed account. A
         read-only mount then comes from the employee's own home, where they can put files; writable state stays in
         the managed account's home, which the employee cannot reach (D-224)."""
-        self.stack, self.paths, self.options = ExitStack(), [], []
+        self.stack, self.paths, self.options, self.readable = ExitStack(), [], [], []
         try:
             if not Path(home).is_absolute() or home in ('/','/root') or ':' in home or ',' in home:
                 raise ValueError('허용하지 않는 홈 경로')
@@ -99,6 +104,8 @@ class PinnedMounts:
                 info=os.fstat(parent)
                 self.paths.append((absolute,parent,info.st_dev,info.st_ino))
                 self.options += ['-v',f'/proc/{os.getpid()}/fd/{parent}:{WORKSPACE}/{relative}:{mode}']
+                if mode == 'ro':
+                    self.readable.append(str(absolute))
         except BaseException:
             self.stack.close()
             raise
@@ -171,14 +178,22 @@ def container_command(engine, manifest, account, *, mount_options=None, namespac
     return name,args+mount_options+[manifest['image']]+command
 
 
+def engine_argv(engine):
+    binary='/usr/bin/'+engine
+    return [binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
+
+
+def client_version(argv):
+    return subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
+
+
 def detect_engine(setting):
     """PC마다 설치된 엔진과 판본이 다르다. 기기가 한 값을 강제하면 대부분의 PC가 거부되므로 여기서 측정한다."""
     for engine in ('podman','docker'):
-        binary='/usr/bin/'+engine
-        if not os.path.isfile(binary):
+        if not os.path.isfile('/usr/bin/'+engine):
             continue
-        argv=[binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
-        version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
+        argv=engine_argv(engine)
+        version=client_version(argv)
         if engine=='podman':
             namespace='podman-auto'
         else:
@@ -188,7 +203,7 @@ def detect_engine(setting):
     raise ValueError('컨테이너 엔진이 없습니다')
 
 
-def engine_configuration(config, manifest, check=None):
+def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS):
     setting=config.get('local_engine') or {}
     if not setting.get('engine'):
         setting=config['local_engine']=detect_engine(setting)
@@ -201,9 +216,8 @@ def engine_configuration(config, manifest, check=None):
         raise ValueError('탈출 시 호스트 root 범위가 승인되지 않았습니다')
     if not image_allowed(manifest['image'],setting.get('mirrors',[])):
         raise ValueError('내부 미러 이미지가 아닙니다')
-    binary='/usr/bin/'+engine
-    argv=[binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
-    version=subprocess.run(argv+['version','--format','{{.Client.Version}}'],capture_output=True,timeout=5,env=ENGINE_ENV,check=True).stdout.decode().strip()
+    argv=engine_argv(engine)
+    version=client_version(argv)
     if not setting.get('version') or version!=setting['version']:
         raise ValueError('측정 대상으로 지정한 엔진 판본과 다릅니다')
     inspect=argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']]
@@ -213,7 +227,7 @@ def engine_configuration(config, manifest, check=None):
         # Control polling renews the unstarted claim; a cancelled preparation never starts a container.
         pull=subprocess.Popen(argv+['pull',manifest['image']],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=ENGINE_ENV)
         try:
-            end=time.monotonic()+PREPARE_SECONDS
+            end=time.monotonic()+seconds
             while pull.poll() is None:
                 if check:
                     check()
@@ -442,14 +456,28 @@ def check_control(job, control):
         raise ValueError('현재 로컬 실행 승인이 아닙니다')
 
 
+def verify_manifest(config, manifest, signature, digest, server_id):
+    """작업 실행과 미리 준비가 같은 검사를 쓴다: 게이트웨이가 준 값이 아니라 이 PC에 고정한 승인 키로 확인한다."""
+    if hashlib.sha256(canonical(manifest)).hexdigest()!=digest or manifest.get('server_id')!=server_id:
+        raise ValueError('승인 매니페스트가 아닙니다')
+    if not signed(manifest,signature,config.get('manifest_pubkey','')):
+        raise ValueError('승인 매니페스트 서명이 아닙니다')
+
+
+def employee_documents(config):
+    """별도 관리 계정을 쓰는 직원의 (홈, uid, gid). 읽기 전용 마운트는 그 홈에서 온다(D-224)."""
+    if config.get('owner_uid') is None:
+        return None
+    import pwd
+    employee=pwd.getpwuid(config['owner_uid'])
+    return (employee.pw_dir,employee.pw_uid,employee.pw_gid)
+
+
 def execute_job(config, job, request, account):
     manifest=job['manifest']
     if account.pw_uid!=job['account_uid'] or account.pw_uid!=config['uid']:
         raise ValueError('등록한 실행 계정 번호가 아닙니다')
-    if hashlib.sha256(canonical(manifest)).hexdigest()!=job['manifest_sha256'] or manifest.get('server_id')!=job['server_id']:
-        raise ValueError('승인 매니페스트가 아닙니다')
-    if not signed(manifest,job['signature'],config.get('manifest_pubkey','')):
-        raise ValueError('승인 매니페스트 서명이 아닙니다')
+    verify_manifest(config,manifest,job['signature'],job['manifest_sha256'],job['server_id'])
     if datetime.fromisoformat(job['lease_until']).timestamp()<=time.time():
         raise ValueError('수령 기한이 지났습니다')
     engine=None
@@ -488,12 +516,7 @@ def execute_job(config, job, request, account):
         deadline=min(datetime.fromisoformat(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
-        documents=None
-        if config.get('owner_uid') is not None:
-            import pwd
-            employee=pwd.getpwuid(config['owner_uid'])
-            documents=(employee.pw_dir,employee.pw_uid,employee.pw_gid)
-        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,documents)
+        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
         isolation=session.mapping(namespace)
         isolation['engine_version']=config['local_engine']['version']
         isolation['engine']=config['local_engine']['engine']
@@ -566,11 +589,10 @@ def recover(config, request):
         name='mcpgw-local-'+identity
         engines=0
         for engine in ('podman','docker'):
-            binary='/usr/bin/'+engine
-            if not os.path.isfile(binary):
+            if not os.path.isfile('/usr/bin/'+engine):
                 continue
             engines+=1
-            args=[binary,'--remote=false'] if engine=='podman' else [binary,'--host','unix:///var/run/docker.sock']
+            args=engine_argv(engine)
             subprocess.run(args+['rm','-f',name],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=3,env=ENGINE_ENV)
             listed=subprocess.run(args+['ps','-a','--filter',f'name=^{name}$','--format','{{.ID}}'],
                                   capture_output=True,timeout=3,env=ENGINE_ENV,check=True)
@@ -579,6 +601,90 @@ def recover(config, request):
         if not engines:
             raise OSError('컨테이너 엔진 정지를 확인할 수 없습니다')
         request(config,f'/api/endpoint/local-jobs/{identity}',{'error':'실행기 재연결 후 정지 확인','stopped':True})
+
+
+# 승인된 로컬 서버의 폴더·이미지를 첫 호출 전에 준비한 결과. 서비스가 읽어 `mcpgw-status`에 싣는다.
+# ready·total이 None이면 아직 게이트웨이에서 목록을 받지 못한 것이다(활성화 대기 등).
+preparation={'ready':None,'total':None,'note':'','documents':[]}
+
+
+def prepare_reason(exc):
+    # 러너 자신의 ValueError 문장은 데이터를 담지 않는다. 그 밖의 예외는 종류만 말한다.
+    if isinstance(exc,TimeoutError):
+        return '이미지 수신 기한이 지났습니다'
+    if type(exc) is ValueError:
+        return str(exc)[:60]
+    if isinstance(exc,(KeyError,TypeError,AttributeError)):
+        return '승인 정보 형식이 올바르지 않습니다'
+    if isinstance(exc,subprocess.SubprocessError):
+        return '컨테이너 엔진을 사용할 수 없습니다'
+    return '폴더 또는 엔진 준비에 실패했습니다'
+
+
+def ensure_mounts(manifest, account, documents):
+    """승인 폴더를 첫 호출 전에 만든다. 소유·권한·링크 거부는 실행 때와 같은 PinnedMounts가 정한다(D-223·D-224)."""
+    mounts=PinnedMounts(manifest,account.pw_dir,(account.pw_uid,account.pw_gid),documents)
+    try:
+        return list(mounts.readable)
+    finally:
+        mounts.close()
+
+
+def prepare_once(config, request, log, account, done, folders, failed):
+    """한 바퀴: 승인 목록을 받아 새 서버만 준비하고, 다음 확인까지 기다릴 초를 돌려준다.
+    done·folders·failed는 바퀴를 넘겨 쓰는 기억이다. 준비한 서버는 다시 열어 보지 않는다(엔진에서 이미지를 지웠다면
+    첫 호출이 같은 함수로 다시 받는다)."""
+    try:
+        entries=request(config,'/api/endpoint/local-manifests').get('servers',[])
+    except Exception as exc:
+        # 활성화 전 장치(401·403·409)와 이 경로를 모르는 이전 게이트웨이(404·405)는 오류가 아니라 기다림이다.
+        status=getattr(exc,'code',None)
+        preparation.update(ready=None,total=None,note='',documents=[])
+        if status not in (401,403,404,405,409):
+            log({'local_runner':'prepare_error','error':type(exc).__name__})
+        return PREPARE_WAITING if status in (401,403,409) else PREPARE_EVERY
+    documents=employee_documents(config)
+    current={(entry['server_id'],entry['manifest_sha256']) for entry in entries}
+    for memory in (folders,failed):
+        for key in set(memory)-current:
+            del memory[key]
+    done.intersection_update(current)
+    preparation.update(ready=len(done),total=len(entries),note='',documents=sorted({d for key in folders for d in folders[key]}))
+    for entry in entries:
+        key=(entry['server_id'],entry['manifest_sha256'])
+        if key in done:
+            continue
+        name=str(entry['server_id'])[:64]
+        if key in failed and failed[key][0]>time.monotonic():
+            continue
+        try:
+            manifest=entry['manifest']
+            verify_manifest(config,manifest,entry['signature'],entry['manifest_sha256'],entry['server_id'])
+            if datetime.fromisoformat(manifest['approval']['expires_at']).timestamp()<=time.time():
+                raise ValueError('승인 기한이 지났습니다')
+            folders[key]=ensure_mounts(manifest,account,documents)
+            preparation.update(note='이미지 받는 중: '+name,documents=sorted({d for k in folders for d in folders[k]}))
+            engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
+            done.add(key)
+            failed.pop(key,None)
+            preparation.update(ready=len(done),note='')
+            log({'local_runner':'prepared','server':name})
+        except Exception as exc:
+            reason=prepare_reason(exc)
+            if failed.get(key,(0,''))[1]!=reason:
+                log({'local_runner':'prepare_failed','server':name,'reason':reason})
+            failed[key]=(time.monotonic()+PREPARE_RETRY,reason)
+    preparation['note']=next((reason for key,(_,reason) in failed.items() if key in current),'')
+    return PREPARE_EVERY
+
+
+def prepare(config, request, log):
+    """서비스가 별도 스레드로 돌린다. 작업 수령 루프(run)와 섞이지 않아 이미지를 받는 동안에도 호출이 막히지 않는다."""
+    import pwd
+    account=pwd.getpwnam(config['username'])
+    done,folders,failed=set(),{},{}
+    while True:
+        time.sleep(prepare_once(config,request,log,account,done,folders,failed))
 
 
 def run(config, request, log):
