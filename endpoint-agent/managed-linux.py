@@ -842,7 +842,10 @@ def rollback(args):
     Path("/etc/systemd/system", unit).unlink(missing_ok=True)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     if (Path("/usr/local/lib/mcpgw-enforcement") / f"mcpgw-{args.user}" / "state.json").exists():
-        subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user, "--rollback"], check=True)
+        # The enforcer beside this file: run from a new kit, that is the kit's copy. The copy a failed earlier
+        # install left under /usr/local is the old code and stopped this removal (10-23 kuku VM, D-229).
+        subprocess.run([sys.executable, str(Path(__file__).with_name("enforce-linux.py")), "--user", args.user, "--rollback"],
+                       check=True)
     for name, target in FILES.items():
         backup = folder / (target.name + ".backup")
         if backup.exists():
