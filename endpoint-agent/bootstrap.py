@@ -433,16 +433,19 @@ def close_sessions(account: str) -> None:
 
 
 def failure_reason(output: str) -> str:
-    """The line that says why, not the last one: the enforcer's refusal ("...: error: ...") is printed
-    before the wrapper's "Command [...] returned non-zero" line, which only names the program (10-23 kuku VM)."""
-    lines = [line.strip() for line in (output or "").splitlines() if line.strip()]
+    """Why the managed install failed, in the words that say it: the enforcer's refusal ("...: error: ..."),
+    or the failing command's own error output plus the exception that named the command. The last line alone
+    was a traceback line or a truncated "Command [...]" (10-23 kuku VM)."""
+    lines = [line.rstrip() for line in (output or "").splitlines() if line.strip()]
     for line in reversed(lines):
         if ": error: " in line:
-            return line.split(": error: ", 1)[1][:300]
-    for line in reversed(lines):
-        if not line.startswith(("Traceback", "File ", "raise ", "subprocess.")) and "returned non-zero" not in line:
-            return line[:300]
-    return lines[-1][:300] if lines else ""
+            return line.split(": error: ", 1)[1].strip()
+    start = next((k for k in range(len(lines) - 1, -1, -1) if lines[k].startswith("Traceback")), None)
+    before = [line.strip() for line in (lines[:start] if start is not None else [])
+              if not line.startswith(("[", "{", "usermod:"))][-3:]
+    error = next((line.strip() for line in reversed(lines)
+                  if re.match(r"^[A-Za-z_][\w.]*(Error|Exception):", line.strip())), "")
+    return " / ".join(before + ([error] if error else [])) or (lines[-1].strip() if lines else "")
 
 
 def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None) -> dict:
