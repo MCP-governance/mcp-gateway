@@ -7,6 +7,7 @@ import base64
 import hashlib
 import json
 import os
+import pwd
 import queue
 import re
 import stat
@@ -59,9 +60,11 @@ def image_allowed(image, mirrors):
 
 class PinnedMounts:
     """Pin every parent with openat/O_NOFOLLOW; the local engine binds the held inode, not a user pathname."""
-    def __init__(self, manifest, home, owner=None):
+    def __init__(self, manifest, home, owner=None, documents=None):
+        """documents: (home, uid, gid) of the employee when the harness runs in a separate managed account. A
+        read-only mount then comes from the employee's own home, where they can put files; writable state stays in
+        the managed account's home, which the employee cannot reach (D-224)."""
         self.stack, self.paths, self.options = ExitStack(), [], []
-        inside = len(Path(home).parts)
         try:
             if not Path(home).is_absolute() or home in ('/','/root') or ':' in home or ',' in home:
                 raise ValueError('허용하지 않는 홈 경로')
@@ -70,15 +73,20 @@ class PinnedMounts:
                 parts = relative.split('/')
                 if mode not in ('ro','rw') or any(not p or p.startswith('.') or ':' in p or ',' in p for p in parts) or relative.startswith('/'):
                     raise ValueError('허용하지 않는 마운트 경로')
-                absolute = Path(home).joinpath(*parts)
+                base, creator, folder_mode = home, owner, 0o700
+                if documents and mode == 'ro':
+                    base, creator, folder_mode = documents[0], documents[1:], 0o755
+                inside = len(Path(base).parts)
+                absolute = Path(base).joinpath(*parts)
                 parent = None
                 for index, part in enumerate(absolute.parts):
-                    if owner and index >= inside:
+                    if creator and index >= inside:
                         # 첫 설치 PC에는 승인된 폴더가 아직 없다(10-23 pj2). 관리 계정 홈 안의 승인 경로만,
                         # 고정된 부모 FD 아래에 그 계정 소유 0700으로 만든다. 이미 있는 링크·파일은 아래 open이 거부한다.
                         try:
-                            os.mkdir(part,0o700,dir_fd=parent)
-                            os.chown(part,*owner,dir_fd=parent,follow_symlinks=False)
+                            os.mkdir(part,folder_mode,dir_fd=parent)
+                            os.chown(part,*creator,dir_fd=parent,follow_symlinks=False)
+                            os.chmod(part,folder_mode,dir_fd=parent)
                         except FileExistsError:
                             pass
                     try:
@@ -250,7 +258,7 @@ def masked_stderr(raw, secrets=()):
 
 
 class Session:
-    def __init__(self, engine, manifest, account, namespace, name, check):
+    def __init__(self, engine, manifest, account, namespace, name, check, documents=None):
         self.engine,self.name=engine,name
         self.lines=queue.Queue(MAX_QUEUE)
         self.next_id=0
@@ -265,7 +273,7 @@ class Session:
         self.stderr_done=threading.Event()
         self.exit_code=None
         self.pinned=None
-        self.pinned=PinnedMounts(manifest,account.pw_dir,(account.pw_uid,account.pw_gid))
+        self.pinned=PinnedMounts(manifest,account.pw_dir,(account.pw_uid,account.pw_gid),documents)
         try:
             _,command=container_command(engine,manifest,account,mount_options=self.pinned.options,namespace=namespace,name=name,
                                          host_paths=[str(path) for path,*_ in self.pinned.paths])
@@ -481,7 +489,9 @@ def execute_job(config, job, request, account):
         deadline=min(datetime.fromisoformat(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
-        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check)
+        employee=pwd.getpwuid(config['owner_uid']) if config.get('owner_uid') is not None else None
+        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,
+                         (employee.pw_dir,employee.pw_uid,employee.pw_gid) if employee else None)
         isolation=session.mapping(namespace)
         isolation['engine_version']=config['local_engine']['version']
         isolation['engine']=config['local_engine']['engine']
@@ -570,7 +580,6 @@ def recover(config, request):
 
 
 def run(config, request, log):
-    import pwd
     account=pwd.getpwnam(config['username'])
     failures,last=0,None
     while True:
