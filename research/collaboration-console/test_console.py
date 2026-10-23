@@ -1,10 +1,11 @@
 import concurrent.futures
 import csv
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import closing, redirect_stderr, redirect_stdout
 import importlib.util
 import io
 import json
 import os
+import sqlite3
 from pathlib import Path
 import tempfile
 import threading
@@ -202,6 +203,18 @@ class ConsoleTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_snapshot_cache_tracks_external_append_and_does_not_share_mutable_values(self):
+        self.log.append("Codex", "task", "CACHE", "running", "first")
+        with patch.object(self.log, "_read_snapshot", wraps=self.log._read_snapshot) as read:
+            snapshot = self.log.snapshot()
+            snapshot["events"][0]["body"] = "caller mutation"
+            self.assertEqual(self.log.snapshot()["events"][0]["body"], "first")
+            self.assertEqual(read.call_count, 1)
+            console.EventLog(self.log.path).append("Codex", "task", "CACHE", "completed", "second")
+            self.assertEqual(self.log.snapshot()["tasks"][0]["state"], "completed")
+            self.assertEqual(self.log.snapshot(after=1)["events"][0]["body"], "second")
+            self.assertEqual(read.call_count, 3)
 
     def test_gemini_recipient_and_reply_preserve_shared_thread(self):
         self.log.append("Codex", "message", "DEV-81", "running", "Review fixed commit", recipient="Gemini")
@@ -661,6 +674,66 @@ class RunRecordTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join()
+
+
+class DurableRunSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        (self.root / "runtime").mkdir()
+        self.path = self.root / "runtime/hub.sqlite3"
+        self.log = console.RunLog(self.root / "runs.jsonl")
+        with closing(sqlite3.connect(self.path)) as db:
+            db.executescript("""
+                CREATE TABLE jobs(id,provider,title,task_id,state,attempts,updated,model,effort,observed_models,session,error,phase);
+                CREATE TABLE events(job,at,state);
+                CREATE TABLE call_usage(job,input_tokens,output_tokens);
+                INSERT INTO jobs VALUES('j1','antigravity','Gemini review','TASK','running',1,1700000020,'gemini-test','medium','[]','same-session','TOKEN=very-secret-value','communication');
+                INSERT INTO jobs VALUES('queued','codex','Not yet executed','NEXT','queued',0,1700000030,'sol','high','[]',NULL,NULL,'code');
+                INSERT INTO events VALUES('j1',1700000010,'running');
+                INSERT INTO call_usage VALUES('j1',12,5);
+            """)
+
+    def test_actual_job_replaces_duplicate_old_session_and_refreshes_from_database(self):
+        legacy = console.Run("Claude", "TASK", "legacy", "old", "high")
+        legacy.native_session = "same-session"
+        self.log.append(legacy.record("start"))
+        snapshot = console.run_snapshot(self.log, self.root)
+        self.assertEqual(len(snapshot["runs"]), 1)
+        run = snapshot["runs"][0]
+        self.assertEqual((run["agent"], run["run_id"], run["outcome"]), ("Gemini", "worker:j1", "running"))
+        self.assertIsNone(run["tool_calls"])
+        self.assertFalse(run["no_tool_call"])
+        self.assertEqual(run["model_check"], "unreported")
+        self.assertEqual(run["usage"], {"input_tokens": 12, "output_tokens": 5})
+        self.assertNotIn("very-secret-value", json.dumps(snapshot))
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute("UPDATE jobs SET state='completed',observed_models='[\"gemini-test\"]',updated=1700000040 WHERE id='j1'")
+            db.commit()
+        refreshed = console.run_snapshot(self.log, self.root)["runs"][0]
+        self.assertEqual(refreshed["outcome"], "completed")
+        self.assertEqual(refreshed["model_check"], "confirmed")
+        self.assertIsNotNone(refreshed["ended_at"])
+
+    def test_unavailable_worker_preserves_cli_history_and_does_not_create_database(self):
+        legacy = console.Run("Codex", "TASK", "legacy", "sol", "high")
+        self.log.append(legacy.record("start"))
+        absent = self.root / "absent"
+        snapshot = console.run_snapshot(self.log, absent)
+        self.assertEqual(snapshot["sources"]["durable_worker"], "missing")
+        self.assertFalse(absent.exists())
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute("DROP TABLE events")
+        snapshot = console.run_snapshot(self.log, self.root)
+        self.assertEqual(snapshot["sources"]["durable_worker"], "unavailable")
+        self.assertEqual(snapshot["runs"][0]["run_id"], "legacy")
+
+    def test_legacy_log_failure_does_not_hide_current_worker_runs(self):
+        with patch.object(self.log, "snapshot", side_effect=OSError("unreadable legacy log")):
+            snapshot = console.run_snapshot(self.log, self.root)
+        self.assertEqual(snapshot["sources"], {"cli_log": "unavailable", "durable_worker": "available"})
+        self.assertEqual(snapshot["runs"][0]["run_id"], "worker:j1")
 
 
 if __name__ == "__main__":

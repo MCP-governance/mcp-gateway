@@ -200,7 +200,11 @@ def probe_antigravity(executable, timeout=12, group="Gemini Models"):
             output.append(line)
         if process.wait(timeout=max(0.1, deadline-time.monotonic())) != 0:
             return None
-        return parse_antigravity("".join(output), group=group)
+        raw="".join(output)
+        result=parse_antigravity(raw,group=group)
+        if result:
+            result['groups']={name:parse_antigravity(raw,group=name) for name in ('Gemini Models','Claude and GPT models')}
+        return result
     finally:
         _stop(process, messages, stop, reader)
 

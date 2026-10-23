@@ -17,7 +17,7 @@ import threading
 import time
 import uuid
 from agent_policy import HIGH_END, MAIN, policy as agent_policy, quota_observation, visible_quota, reserve_blocked
-from usage_probe import probe as probe_usage
+from usage_probe import probe as probe_usage, antigravity_group
 
 ROOT = Path(__file__).resolve().parents[3] / "loop" / "agent-hub"
 KST = timezone(timedelta(hours=9))
@@ -135,6 +135,7 @@ def public_snapshot(root=ROOT):
             access = {row["agent"]:dict(row) for row in db.execute("SELECT * FROM agent_access")} if db.execute("SELECT 1 FROM sqlite_master WHERE name='agent_access'").fetchone() else {}
             for provider in providers:
                 provider["quota"] = visible_quota(json.loads(quota_rows[provider["name"]]) if quota_rows.get(provider["name"]) else None,policy["quota_fresh_seconds"])
+                provider['quota_groups']={row['key'].split(':',2)[2]:visible_quota(json.loads(row['value']),policy['quota_fresh_seconds']) for row in db.execute("SELECT key,value FROM meta WHERE key LIKE 'quota:'||?||':%'",(provider['name'],))}
             for name, value in access.items():
                 if name in policy["profiles"] and policy["profiles"][name]["model"] == value["model"]:
                     policy["profiles"][name].update(availability=value["availability"],verified=value["availability"]=="verified")
@@ -144,15 +145,23 @@ def public_snapshot(root=ROOT):
             policy.update(effective_lead="sol" if unavailable else "opus",lead_reason="Opus 계정 한도 또는 모델 사용 불가" if unavailable else "Opus 상위 판단")
             policy["profiles"] = list(policy["profiles"].values())
             workflows = []
+            workflows_truncated=0
             if db.execute("SELECT 1 FROM sqlite_master WHERE name='workflows'").fetchone():
-                for row in db.execute("SELECT id,state,summary,updated,spec FROM workflows ORDER BY updated DESC LIMIT 20"):
+                count=db.execute("SELECT COUNT(*) FROM workflows WHERE state IN ('active','waiting','needs_attention')").fetchone()[0]
+                active=db.execute("SELECT id,state,summary,updated,spec FROM workflows WHERE state IN ('active','waiting','needs_attention') ORDER BY updated DESC LIMIT 200").fetchall()
+                recent=db.execute("SELECT id,state,summary,updated,spec FROM workflows WHERE state NOT IN ('active','waiting','needs_attention') ORDER BY updated DESC LIMIT 20").fetchall()
+                workflows_truncated=max(0,count-len(active))
+                for row in active+recent:
                     item={key:row[key] for key in ("id","state","summary","updated")}
                     spec=json.loads(row["spec"])
                     frozen=spec.get("policy",{})
                     item.update(policy_version=spec.get("policy_version",1),max_stages=frozen.get("max_stages",5),max_calls=frozen.get("max_calls",8))
                     workflows.append(item)
             jobs = []
-            for row in db.execute("SELECT * FROM jobs ORDER BY updated DESC LIMIT 40"):
+            active_count=db.execute("SELECT COUNT(*) FROM jobs WHERE state NOT IN ('completed','closed','expired')").fetchone()[0]
+            active=db.execute("SELECT * FROM jobs WHERE state NOT IN ('completed','closed','expired') ORDER BY state='running' DESC,updated DESC LIMIT 500").fetchall()
+            recent=db.execute("SELECT * FROM jobs WHERE state IN ('completed','closed','expired') ORDER BY updated DESC LIMIT 40").fetchall()
+            for row in active+recent:
                 job = {key: row[key] for key in ("id", "provider", "title", "state", "next_at", "until_at", "updated", "deps")}
                 job["task_id"] = row["task_id"] if "task_id" in row.keys() and row["task_id"] else row["id"]
                 job["error"] = redact(row["error"] or "")[-1500:]
@@ -160,8 +169,17 @@ def public_snapshot(root=ROOT):
                 if isinstance(job.get("observed_models"),str):
                     job["observed_models"]=json.loads(job["observed_models"])
                 jobs.append(job)
+            handoffs = []
+            handoffs_truncated=0
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='handoffs'").fetchone():
+                query="SELECT h.task,h.root,h.round,h.state,h.updated,h.job,j.state AS job_state,j.provider,j.model,j.next_at FROM handoffs h JOIN jobs j ON j.id=h.job"
+                count=db.execute("SELECT COUNT(*) FROM handoffs WHERE state NOT IN ('done','forwarded')").fetchone()[0]
+                active=db.execute(query+" WHERE h.state NOT IN ('done','forwarded') ORDER BY h.updated DESC LIMIT 500").fetchall()
+                recent=db.execute(query+" WHERE h.state IN ('done','forwarded') ORDER BY h.updated DESC LIMIT 20").fetchall()
+                handoffs=[dict(row) for row in active+recent]
+                handoffs_truncated=max(0,count-len(active))
             return {"available": True, "heartbeat_age": round(time.time() - float(beat[0]), 1) if beat else None,
-                    "providers": providers, "jobs": jobs, "workflows": workflows, "policy":policy, "time": stamp()}
+                    "providers": providers, "jobs": jobs, "jobs_truncated":max(0,active_count-500), "workflows": workflows, "workflows_truncated":workflows_truncated, "handoffs":handoffs, "handoffs_truncated":handoffs_truncated, "policy":policy, "time": stamp()}
     except (OSError, sqlite3.Error, ValueError):
         return {"available": False, "error": "자동 실행기 기록 읽기 실패", "jobs": [], "providers": []}
 
@@ -307,10 +325,11 @@ class Hub:
         if not profile["enabled"] or profile["availability"]=="unavailable":
             return False
         with self.db() as db:
-            provider=db.execute("SELECT until_at,quota FROM providers WHERE name=?",(profile["provider"],)).fetchone()
+            provider=db.execute("SELECT until_at FROM providers WHERE name=?",(profile["provider"],)).fetchone()
+            account=self.quota_for(db,profile['provider'],profile['model'])
         if provider["until_at"]>time.time():
             return False
-        quota=visible_quota(json.loads(provider["quota"]) if provider["quota"] else None,frozen["quota_fresh_seconds"])
+        quota=visible_quota(account,frozen["quota_fresh_seconds"])
         return not reserve_blocked(quota,frozen["reserve_percent"])
 
     def effective_lead(self, frozen=None):
@@ -325,7 +344,20 @@ class Hub:
             executable=find_codex_windows_executable() or executable
         return str(executable)
 
-    def observe_quota(self, provider, observation):
+    def quota_for(self, db, provider, model):
+        if provider=='antigravity':
+            row=db.execute('SELECT value FROM meta WHERE key=?',('quota:antigravity:'+antigravity_group(model),)).fetchone()
+            if row:
+                return json.loads(row[0])
+        row=db.execute('SELECT quota FROM providers WHERE name=?',(provider,)).fetchone()
+        quota=json.loads(row[0]) if row and row[0] else {}
+        if provider=='antigravity':
+            group=quota['windows'][0].get('group') if quota.get('windows') else antigravity_group(self.config['providers'][provider]['model'])
+            if group!=antigravity_group(model):
+                return {}
+        return quota
+
+    def observe_quota(self, provider, observation, model=None):
         if provider not in PROVIDERS or not isinstance(observation,dict):
             raise ValueError("Invalid account quota observation")
         # The parser accepts only transport metadata; free-form model reports never enter here.
@@ -354,16 +386,32 @@ class Hub:
                 windows.append(clean)
             permitted["windows"]=windows
         with self.db() as db:
-            previous=db.execute("SELECT quota FROM providers WHERE name=?",(provider,)).fetchone()[0]
-            previous=json.loads(previous) if previous else None
+            group=None
+            if provider=='antigravity':
+                group=permitted.get('windows',[{}])[0].get('group') if permitted.get('windows') else antigravity_group(model or self.config['providers'][provider]['model'])
+                if group not in {'Gemini Models','Claude and GPT models'}:
+                    raise ValueError('Invalid Antigravity model group')
+                previous=db.execute('SELECT value FROM meta WHERE key=?',('quota:antigravity:'+group,)).fetchone()
+                previous=json.loads(previous[0]) if previous else None
+            else:
+                previous=db.execute("SELECT quota FROM providers WHERE name=?",(provider,)).fetchone()[0]
+                previous=json.loads(previous) if previous else None
             if previous and (previous.get("observed_at",0) or 0)>(permitted.get("observed_at",0) or 0):
                 return
             if previous and reserve_blocked(previous,self.policy["reserve_percent"]) and permitted["remaining_percent"] is None and permitted["status"]!="exhausted":
                 return
-            db.execute("UPDATE providers SET quota=? WHERE name=?",(json.dumps(permitted),provider))
-            if permitted["remaining_percent"] is not None and not reserve_blocked(permitted,self.policy["reserve_percent"]):
-                waiting=db.execute("SELECT id FROM jobs WHERE provider=? AND state='waiting_budget' AND error='계정 잔여 사용량이 복구 예비분 이하'",(provider,)).fetchall()
+            if group:
+                db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)',('quota:antigravity:'+group,json.dumps(permitted)))
+            if not group or group==antigravity_group(self.config['providers'][provider]['model']):
+                db.execute("UPDATE providers SET quota=? WHERE name=?",(json.dumps(permitted),provider))
+            if permitted["remaining_percent"] is not None:
+                waiting=db.execute("SELECT id,model,policy FROM jobs WHERE provider=? AND state='waiting_budget' AND error='계정 잔여 사용량이 복구 예비분 이하'",(provider,)).fetchall()
                 for job in waiting:
+                    if group and antigravity_group(job['model'] or self.config['providers'][provider]['model'])!=group:
+                        continue
+                    frozen=json.loads(job['policy']) if job['policy'] else self.policy
+                    if reserve_blocked(permitted,frozen['reserve_percent']):
+                        continue
                     db.execute("UPDATE jobs SET state='queued',next_at=?,error='',updated=? WHERE id=?",(time.time(),time.time(),job["id"]))
                     self.event(db,job["id"],"queued","새 사용량 관측에서 예비량 회복 확인; 대기열 재개")
 
@@ -387,6 +435,9 @@ class Hub:
         observation=(probe_usage(provider,executable,self.config["providers"].get(provider,{}).get("model"))
                      if provider=="antigravity" else probe_usage(provider,executable))
         if observation:
+            for group in observation.get('groups',{}).values():
+                if group:
+                    self.observe_quota(provider,group)
             self.observe_quota(provider,observation)
 
     def refresh_codex_quota(self, session):
@@ -523,12 +574,19 @@ class Hub:
     def claim(self, job_id=None, nested=False):
         now = time.time()
         with self.db() as db:
+            if db.execute("SELECT 1 FROM meta WHERE key='reload_worker_pending'").fetchone():
+                return None
             providers=[row[0] for row in db.execute("SELECT DISTINCT provider FROM jobs WHERE state IN ('queued','waiting_quota','waiting_service','waiting_budget') AND next_at<=?",(now,))]
         for provider in providers:
             self.refresh_usage(provider)
         now=time.time()
         with self.db() as db:
             db.execute("BEGIN IMMEDIATE")
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='workflows'").fetchone():
+                abandoned=db.execute("SELECT j.id FROM jobs j JOIN workflows w ON w.id=j.task_id WHERE w.state='closed' AND j.id LIKE 'wf-%' AND j.state IN ('queued','waiting_quota','waiting_service','waiting_budget') AND j.pid IS NULL").fetchall()
+                for job in abandoned:
+                    db.execute("UPDATE jobs SET state='closed',updated=?,error='상위 작업 흐름 종료로 미실행 단계 정리' WHERE id=?",(now,job['id']))
+                    self.event(db,job['id'],'closed','상위 작업 흐름 종료로 미실행 단계 정리')
             jobs = db.execute("SELECT j.*,p.until_at AS account_until FROM jobs j JOIN providers p ON p.name=j.provider WHERE j.state IN ('queued','waiting_quota','waiting_service','waiting_budget') AND j.next_at<=? ORDER BY j.next_at", (now,)).fetchall()
             for job in jobs:
                 if job_id and job["id"] != job_id:
@@ -566,8 +624,8 @@ class Hub:
                     self.event(db,job["id"],"waiting_budget","Observed local token budget reached")
                     db.execute("UPDATE jobs SET state='waiting_budget',next_at=? WHERE id=?", (now+3600,job["id"]))
                     continue
-                account=db.execute("SELECT quota FROM providers WHERE name=?",(job["provider"],)).fetchone()[0]
-                quota=visible_quota(json.loads(account) if account else None,frozen["quota_fresh_seconds"])
+                account=self.quota_for(db,job['provider'],job['model'] or self.config['providers'][job['provider']]['model'])
+                quota=visible_quota(account,frozen["quota_fresh_seconds"])
                 if reserve_blocked(quota,frozen["reserve_percent"],now):
                     # Finish/checkpoint the prior turn; keep reserve for recovery instead of starting long work.
                     until=quota["reset_at"] or now+300
@@ -834,7 +892,9 @@ class Hub:
             outcome.diagnostics.append("Safety refusal; no automatic retry, model change or escalation")
         diagnostics = "\n".join(outcome.diagnostics)
         if outcome.quota:
-            self.observe_quota(job["provider"],outcome.quota)
+            self.observe_quota(job["provider"],outcome.quota,requested_model)
+        if outcome.limited and job['provider']=='antigravity':
+            self.observe_quota('antigravity',{'status':'exhausted','remaining_percent':0,'observed_at':time.time(),'reset_at':outcome.retry_at or time.time()+300,'source':'CLI quota response'},requested_model)
         if job["provider"]=="codex":
             try:
                 self.refresh_codex_quota(outcome.session)
@@ -856,7 +916,8 @@ class Hub:
             elif outcome.limited:
                 next_at = max(outcome.retry_at, now + 60)
                 state, session = "waiting_quota", outcome.session or job.get("session")
-                db.execute("UPDATE providers SET until_at=MAX(until_at,?),reason='CLI quota response' WHERE name=?", (next_at, job["provider"]))
+                if job['provider']!='antigravity':
+                    db.execute("UPDATE providers SET until_at=MAX(until_at,?),reason='CLI quota response' WHERE name=?", (next_at, job["provider"]))
                 if job["mode"] != "read-only" and not session:
                     state = "needs_attention"
                     diagnostics += "\nWrite task has no resumable session; inspect workspace before retry"
@@ -954,29 +1015,41 @@ class Hub:
                                         text = text[:6000] + "\n\n[화면에는 일부만 표시. 검토와 판단은 아래 원문 전체를 읽을 것.]"
                                     text += "\n\n원문: " + str(result)
                                     recipient = {"codex": "Claude", "antigravity": "Codex", "claude": "Codex"}[job["provider"]]
+                                    handoff = db.execute("SELECT source FROM handoffs WHERE job=?",(job['id'],)).fetchone() if db.execute("SELECT 1 FROM sqlite_master WHERE name='handoffs'").fetchone() else None
                                     requests = [entry for entry in log.snapshot()["events"] if entry["task_id"] == task and entry.get("to") == NAMES[job["provider"]] and entry["state"] == "running"]
-                                    log.append(NAMES[job["provider"]], "message", task, "completed", text, recipient=recipient, reply_to=requests[-1]["id"] if requests else None, source_id=source + ".result")
+                                    log.append(NAMES[job["provider"]], "message", task, "completed", text, recipient=recipient, reply_to=handoff['source'] if handoff else requests[-1]["id"] if requests else None, source_id=source + ".result")
                             except OSError:
                                 pass
                     last = event["id"]
             # At-least-once bridge; recent source ids suppress replay after an interrupted append.
             db.execute("INSERT OR REPLACE INTO meta VALUES('console_cursor',?)", (str(last),))
 
+    def launch_ready(self, threads):
+        threads = [thread for thread in threads if thread.is_alive()]
+        for _ in range(len(PROVIDERS)-len(threads)):
+            job = self.claim(nested=True)
+            if not job:
+                break
+            thread = threading.Thread(target=self.run,args=(job,),daemon=True)
+            thread.start()
+            threads.append(thread)
+        return threads
+
     def work(self):
         from coordination import Coordinator
+        from handoffs import tick as handoff_tick
         with service_lock(self.root):
             self.recover()
             coordinator = Coordinator(self)
+            threads = []
             while True:
                 self.heartbeat()
                 self.reap()
                 self.export()
                 coordinator.tick()
-                job = self.claim()
-                if job:
-                    self.run(job)
-                else:
-                    time.sleep(10)
+                handoff_tick(self)
+                threads = self.launch_ready(threads)
+                time.sleep(2)
 
 
 def main():

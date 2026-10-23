@@ -1,6 +1,6 @@
 # 개발 현황 허브 — 에이전트 협업·사용량·WBS
 
-이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#wbs` · `#작업`(task_id별 스레드) · `#실행 기록` · `#검증`으로 나뉩니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도입니다. 웹·기록기는 Python 표준 라이브러리를 쓰고, 자동 협업 실행기만 로컬 가상환경의 LangGraph를 사용합니다.
+이 웹 화면은 **에이전트들의 실제 소통·작업 상태와 [WBS 현황](../development-status-site/README.md)을 사용자가 함께 보는 콘솔**입니다. Discord 스타일 다크 UI에 채널 `#개요` · `#에이전트 협의` · `#WBS` · `#작업·에이전트`(task_id별 스레드) · `#실행 기록` · `#검증`으로 나뉩니다. 연구 자료와 최종 보고는 [LLM 연구 위키](../llm-wiki/README.md)의 Markdown으로 유지합니다. 제품 게이트웨이 콘솔과 별도입니다. 웹·기록기는 Python 표준 라이브러리를 쓰고, 자동 협업 실행기만 로컬 가상환경의 LangGraph를 사용합니다.
 
 현재 운영 규칙은 [협업 운영](COORDINATION.md)에 모읍니다. Opus가 상세 계획과 판단을 맡고, Sol·Sonnet·Gemini가 실무를 수행합니다. Luna·Haiku는 작은 보조 작업에 쓰고, Astra·Fable·Mythos는 Opus가 선택한 짧은 자문에만 사용합니다. Opus 한도가 부족하면 Sol이 판단을 대행합니다. 모델의 공개 여부·계정 접근 확인·실제 응답 모델은 각각 구분합니다.
 
@@ -61,7 +61,7 @@ from console import EventLog
 EventLog().append("Codex", "check", "solution-audit", "passed", "수행한 검사와 실제 결과")
 ```
 
-한 줄 JSON 이벤트는 `timestamp`(시간대 포함 ISO 8601), `author`(`Codex`, `Claude`, `User`, `System`), `kind`(`message`, `task`, `check`), `task_id`, `state`, `body`, 선택적 `session_id`로 구성됩니다. 작업 상태는 `queued`, `running`, `waiting`, `completed`, `passed`, `failed`, `blocked`, `cancelled`를 사용합니다. 같은 `task_id`와 작성자의 마지막 **task 이벤트**가 담당자·작업 상태를 결정합니다. 같은 작업에 협력하는 Codex와 Claude의 상태는 각각 보존합니다. 메시지나 검증 결과로 작업 전체가 자동 완료되지 않습니다.
+한 줄 JSON 이벤트는 `timestamp`(시간대 포함 ISO 8601), `author`(`Codex`, `Claude`, `User`, `System`), `kind`(`message`, `task`, `check`), `task_id`, `state`, `body`, 선택적 `session_id`로 구성됩니다. 작업 상태는 `queued`, `running`, `waiting`, `completed`, `passed`, `failed`, `blocked`, `cancelled`를 사용합니다. 이벤트 API의 tasks는 같은 `task_id`·작성자의 마지막 **task 이벤트**인 과거 기록입니다. 현재 화면 집계는 실제 worker 작업을 우선하고 같은 작업 ID를 묶습니다. 오래된 이벤트 상태는 현재 미확인으로 표시합니다. 같은 작업에 협력하는 Codex와 Claude의 상태는 각각 보존합니다. 메시지나 검증 결과로 작업 전체가 자동 완료되지 않습니다.
 
 공유할 답변, 실제 작업 보고, 수행한 검증 결과만 기록합니다. 계획한 검사를 통과로, 요청한 모델 설정을 실제 사용 증거로 표시하지 않습니다. 내부 사고 과정은 기록하지 않습니다. 작업이 멈췄거나 결과가 바뀌면 상태를 명시적으로 갱신합니다. 10분 이상 갱신되지 않은 진행 작업은 화면에서 상태 확인 대상으로 표시합니다.
 
@@ -174,3 +174,12 @@ python -X utf8 research/llm-wiki/tools/check_wiki.py
 역할·인계문·확인 응답·한도·명령의 운영 정본은 [COORDINATION.md](COORDINATION.md)입니다. 작업 요청·검토 결과·다음 행동은 같은 task_id에 기록하며, 긴 근거는 원문 파일로 연결합니다. 기존 Markdown 연구 위키와 WBS는 그대로 유지합니다.
 
 설치·제거 스크립트는 웹 서버(`MINT-CollaborationConsole`)와 실행기(`Local-Agent-Hub`)를 함께 관리합니다. 둘 다 같은 가상환경의 `pythonw.exe`를 직접 추적하며, 같은 작업의 중복 시작을 막습니다. 2분 트리거는 프로세스 장애 복구 점검이고 모델 간 인계 지연이 아닙니다.
+
+
+## 전체 화면 점검 반영 (10-23)
+
+6개 메뉴에서 새로고침·주소 복원·뒤로 가기를 지원합니다. 개요는 실행기·사용량·현재 큐, 협의는 같은 인계 흐름의 최신 단계, 작업은 검색·상태 필터·작업별 기록, 실행은 직접/자동 호출 통합과 미관측 구분, WBS는 시트/스냅샷 기준 시각과 실패, 검증은 실제 검사 결과를 표시합니다. 작업 ID를 누르면 관련 기록으로 이동합니다. 긴 응답·진단은 펼쳐 읽으며 새 기록이 와도 펼침과 읽던 위치를 보존합니다.
+
+데이터별 조회 실패는 마지막 성공 자료와 함께 경고하고 로그 교체로 커서가 줄면 즉시 재조회합니다. 숨긴 탭은 조회하지 않으며 바뀌지 않은 JSONL은 읽기 캐시를 재사용합니다. 서버는 기존 1000 포트의 읽기 전용 API·Host/Origin/CSP 정책을 유지합니다. 자동 응답 요청의 상태와 한도·대행 규칙은 [운영 정본](COORDINATION.md#지속-협의와-부분-장애-10-23)을 따릅니다.
+
+WBS 안의 개발 백로그는 기존 `/api/backlog`를 조회하며, 실행 큐와 다른 계획·상태 자료임을 구분합니다. 시트 조회 시각과 현장 근거 기준 시각을 따로 표시하며 오래된 검증 날짜를 현재 시각으로 덮어쓰지 않습니다.

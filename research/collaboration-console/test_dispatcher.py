@@ -72,6 +72,23 @@ class Checks(unittest.TestCase):
         with self.assertRaises(ValueError):
             d.parse_text('cwd: C:/\nmode: danger-full-access\n---\nDo anything')
 
+    def test_existing_wbs_workspace_is_valid_for_idle_planner(self):
+        workspace=self.root/'mcp-gateway-wbs'
+        workspace.mkdir()
+        meta,body=d.parse_text(f'cwd: {workspace}\nmode: read-only\n---\nFind approved remaining work.')
+        self.assertEqual(meta['cwd'],str(workspace))
+
+    def test_invalid_instruction_reports_once_without_stopping_other_provider(self):
+        path=self.queue()
+        path.write_text('invalid instruction')
+        self.queue('antigravity')
+        state={}
+        d.dispatch(self.hub,state)
+        count=self.emit.call_count
+        d.dispatch(self.hub,state)
+        self.assertEqual(len(self.hub.snapshot()['jobs']),1)
+        self.assertEqual(self.emit.call_count,count)
+
     def test_dispatch_freezes_requested_model_before_config_changes(self):
         self.queue()
         d.dispatch(self.hub, {})
@@ -123,6 +140,20 @@ class Checks(unittest.TestCase):
         run.assert_called_once()
         with self.hub.db() as db:
             self.assertIsNone(db.execute("SELECT 1 FROM meta WHERE key='reload_worker_pending'").fetchone())
+
+    def test_restart_restores_maintenance_holds_without_overwriting_vendor_limit(self):
+        saved={'codex':{'until_at':123,'reason':'old'},'claude':{'until_at':0,'reason':''}}
+        with self.hub.db() as db:
+            db.execute("INSERT INTO meta VALUES('reload_worker_pending','1')")
+            db.execute("INSERT INTO meta VALUES('reload_provider_holds',?)",(json.dumps(saved),))
+            db.execute("UPDATE providers SET until_at=9999999999,reason='실행기 유휴 반영 대기' WHERE name='codex'")
+            db.execute("UPDATE providers SET until_at=9999999998,reason='vendor limit' WHERE name='claude'")
+        with patch.object(d.subprocess,'run') as run:
+            run.return_value.returncode=0
+            d.restart_when_idle(self.hub)
+        providers={p['name']:p for p in self.hub.snapshot()['providers']}
+        self.assertEqual(providers['codex']['until_at'],123)
+        self.assertEqual(providers['claude']['reason'],'vendor limit')
 
     def test_only_explicit_unstarted_paused_job_resumes_after_reload(self):
         path = self.root / 'resume.md'

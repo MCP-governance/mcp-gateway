@@ -1,22 +1,33 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-22T18:56:19+09:00
+확인 시각: 2026-10-23T14:20:34+09:00
 
-HEAD: `441371372661ef253f743cb6ab201ab8b81c71b7` · 로컬 브랜치: `10/22-hierarchical-agents`
+HEAD: `ce598b54c74000072717c73ef338e3f8cb15f892` · 로컬 브랜치: `10/22-hierarchical-agents`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
- M research/collaboration-console/COORDINATION.md
- M research/llm-wiki/analysis/agent-coordination-20261022/checks.json
- M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.json
- M research/llm-wiki/analysis/agent-coordination-20261022/model-policy-sources.md
+M research/collaboration-console/COORDINATION.md
+ M research/collaboration-console/README.md
+ M research/collaboration-console/console.py
+ M research/collaboration-console/dispatcher.py
+ M research/collaboration-console/static/app.js
+ M research/collaboration-console/static/index.html
+ M research/collaboration-console/static/style.css
+ M research/collaboration-console/test_console.py
+ M research/collaboration-console/test_discussions.mjs
+ M research/collaboration-console/test_dispatcher.py
+ M research/collaboration-console/test_frontend.mjs
+ M research/collaboration-console/test_worker.py
+ M research/collaboration-console/usage_probe.py
+ M research/collaboration-console/worker.py
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
  M research/llm-wiki/status/reports/2026-10-22-hierarchical-agents.md
+?? research/collaboration-console/handoffs.py
+?? research/collaboration-console/test_handoffs.py
 ```
 
 ## 주요 파일 바이트

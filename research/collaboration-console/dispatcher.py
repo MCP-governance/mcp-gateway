@@ -19,8 +19,8 @@ BUSY = {'queued', 'running', 'waiting_quota', 'waiting_service', 'waiting_budget
 PLANNER_EVERY = 3 * 3600
 
 
-def emit(task, body, author='System'):
-    EventLog().append(author, 'message', task, 'completed', body, recipient='All')
+def emit(task, body, author='System', state='completed'):
+    EventLog().append(author, 'message', task, state, body, recipient='All')
 
 
 def save(state):
@@ -33,7 +33,7 @@ def parse_text(text):
     head, separator, body = text.partition('\n---\n')
     meta = dict(re.findall(r'^(cwd|mode|task):\s*(.+)$', head, re.M))
     cwd = Path(meta.get('cwd', '')).resolve()
-    if not separator or not body.strip() or cwd.parent != ROOT.resolve() or not cwd.name.startswith('mcp-gw') or not cwd.is_dir():
+    if not separator or not body.strip() or cwd.parent != ROOT.resolve() or not (cwd.name=='mcp-gateway-wbs' or cwd.name.startswith('mcp-gw-')) or not cwd.is_dir():
         raise ValueError('승인된 작업 클론과 지시서 본문이 필요합니다')
     if meta.get('mode', 'read-only') not in {'read-only', 'workspace-write'}:
         raise ValueError('허용하지 않는 실행 모드')
@@ -102,6 +102,8 @@ def report_usage(state, info, jobs, reserve, now):
 
 
 def dispatch(hub, state):
+    from handoffs import tick
+    tick(hub)
     status = hub.snapshot()
     harvest(state, status['jobs'])
     now = time.time()
@@ -123,7 +125,15 @@ def dispatch(hub, state):
             path = STANDING / '_planner.md'
         else:
             path = queue[0]
-        meta, body = parse_text(path.read_text(encoding='utf-8'))
+        try:
+            meta, body = parse_text(path.read_text(encoding='utf-8'))
+        except (ValueError,OSError) as exc:
+            key='invalid:'+str(path)
+            if state.get(key)!=str(exc):
+                state[key]=str(exc)
+                save(state)
+                emit('AUTO-DISPATCH',f'지시서 확인 필요: {path} · {exc}. 원문은 보존하며 다른 제공자·응답 인계는 계속합니다.',state='blocked')
+            continue
         if any(j['cwd'] == str(Path(meta['cwd']).resolve()) and j['state'] in {'needs_attention', 'orphan_running'} and j['mode'] != 'read-only' for j in status['jobs']):
             continue
         if planner:
@@ -159,6 +169,10 @@ def restart_when_idle(hub):
                                 capture_output=True, timeout=20, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         if result.returncode:
             raise RuntimeError('실행기 유휴 재시작 실패; 다음 확인에서 재시도')
+        held=db.execute("SELECT value FROM meta WHERE key='reload_provider_holds'").fetchone()
+        for provider,info in json.loads(held[0]).items() if held else []:
+            db.execute("UPDATE providers SET until_at=?,reason=? WHERE name=? AND reason='실행기 유휴 반영 대기'",(info['until_at'],info['reason'],provider))
+        db.execute("DELETE FROM meta WHERE key='reload_provider_holds'")
         resume = db.execute("SELECT value FROM meta WHERE key='resume_after_reload'").fetchone()
         for job_id in json.loads(resume[0]) if resume else []:
             job = db.execute("SELECT provider FROM jobs WHERE id=? AND state='paused' AND attempts=0 AND pid IS NULL",(job_id,)).fetchone()

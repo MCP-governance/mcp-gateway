@@ -302,6 +302,59 @@ class Checks(unittest.TestCase):
         self.assertFalse(public_snapshot(missing)["available"])
         self.assertFalse(missing.exists())
 
+    def test_closed_workflow_clears_unclaimed_stages_without_touching_live_jobs(self):
+        states=('queued','waiting_quota','waiting_service','waiting_budget','running','paused','needs_attention')
+        for state in states:
+            self.prompt.write_text('stage '+state)
+            self.hub.add('codex',state,self.root,self.prompt,job_id='wf-closed-'+state,task_id='CLOSED')
+        active=self.hub.add('antigravity','active',self.root,self.prompt,job_id='wf-active',task_id='ACTIVE')
+        with self.hub.db() as db:
+            db.execute('CREATE TABLE workflows (id TEXT PRIMARY KEY,state TEXT,spec TEXT)')
+            db.executemany('INSERT INTO workflows VALUES(?,?,?)',[('CLOSED','closed','{}'),('ACTIVE','active','{}')])
+            for state in states:
+                db.execute('UPDATE jobs SET state=?,next_at=? WHERE id=?',(state,time.time()+3600,'wf-closed-'+state))
+            db.execute('UPDATE jobs SET next_at=? WHERE id=?',(time.time()+3600,active))
+        self.assertIsNone(self.hub.claim())
+        self.assertIsNone(self.hub.claim())
+        with self.hub.db() as db:
+            for state in states:
+                expected='closed' if state.startswith('waiting_') or state=='queued' else state
+                self.assertEqual(db.execute('SELECT state FROM jobs WHERE id=?',('wf-closed-'+state,)).fetchone()[0],expected)
+            self.assertEqual(db.execute('SELECT state FROM jobs WHERE id=?',(active,)).fetchone()[0],'queued')
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM events WHERE state='closed'").fetchone()[0],4)
+
+    def test_public_snapshot_keeps_old_waiting_jobs_beside_recent_completions(self):
+        waiting=self.add(job_id='old-waiting')
+        with self.hub.db() as db:
+            db.execute("UPDATE jobs SET state='waiting_budget',updated=1 WHERE id=?",(waiting,))
+            for index in range(45):
+                db.execute("INSERT INTO jobs(id,provider,title,cwd,prompt,mode,state,updated) SELECT 'done-'||?,provider,title,cwd,prompt,mode,'completed',? FROM jobs WHERE id=?",(index,index+2,waiting))
+        snapshot=public_snapshot(self.root)
+        self.assertTrue(snapshot['available'])
+        self.assertEqual(snapshot['jobs'][0]['id'],waiting)
+        self.assertEqual(len(snapshot['jobs']),41)
+        self.assertEqual(snapshot['jobs_truncated'],0)
+
+    def test_public_snapshot_keeps_pending_workflows_and_handoffs(self):
+        from handoffs import table
+        table(self.hub)
+        job=self.add()
+        with self.hub.db() as db:
+            db.execute('CREATE TABLE workflows (id TEXT PRIMARY KEY,spec TEXT,state TEXT,summary TEXT,created REAL,updated REAL)')
+            for index in range(25):
+                state='waiting' if index==0 else 'closed'
+                db.execute('INSERT INTO workflows VALUES(?,?,?,?,?,?)',(str(index),'{}',state,'fixture',index,index))
+                state='blocked' if index==0 else 'done'
+                clone='handoff-job-'+str(index)
+                db.execute("INSERT INTO jobs(id,provider,title,cwd,prompt,state,updated) SELECT ?,provider,title,cwd,prompt,'completed',? FROM jobs WHERE id=?",(clone,index,job))
+                db.execute('INSERT INTO handoffs(request,root,task,source,job,round,state,created,updated) VALUES(?,?,?,?,?,?,?,?,?)',(str(index),str(index),'fixture',index,clone,1,state,index,index))
+        snapshot=public_snapshot(self.root)
+        self.assertTrue(snapshot['available'])
+        self.assertEqual(len(snapshot['workflows']),21)
+        self.assertEqual(snapshot['workflows'][0]['state'],'waiting')
+        self.assertEqual(len(snapshot['handoffs']),21)
+        self.assertEqual(snapshot['handoffs'][0]['state'],'blocked')
+
     def test_console_bridge_routes_real_artifact_once_and_keeps_task_id(self):
         from console import EventLog
         log = EventLog(self.root / "public-events.jsonl")

@@ -1,7 +1,7 @@
 :root{
   color-scheme:dark;
   --bg-sidebar:#1e1f22;--bg-channels:#2b2d31;--bg-main:#313338;--bg-panel:#383a40;--bg-field:#1e1f22;
-  --line:#26272b;--text:#f2f3f5;--text-muted:#949ba4;--text-faint:#80848e;
+  --line:#26272b;--text:#f2f3f5;--text-muted:#bbc0c9;--text-faint:#b1b7c2;
   --blurple:#5865f2;--green:#23a55a;--red:#f23f42;--yellow:#f0b232;--teal:#1abc9c;
   --codex:#1abc9c;--claude:#eb8d5a;--user:#5865f2;--system:#949ba4;
 }
@@ -241,3 +241,38 @@ dialog .stage-line p{margin:3px 0;font-size:11px}
   .overview-grid{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Shared navigation and long-record readability. */
+.channel,.mobile-toggle,.close,.row-title,.link-button{min-height:44px}
+.mobile-toggle{width:44px;height:44px}
+select,input[type=search]{min-height:44px}
+:focus-visible{outline:3px solid #b7c1ff;outline-offset:3px}
+.event-expanded summary{cursor:pointer;color:#c5ceff}
+.event-expanded[open] summary{margin-bottom:8px}
+#discussion-status{max-height:230px;overflow:auto;flex:none}
+#discussion-status p{font-size:12px;line-height:1.65;margin:6px 0}
+.worker-jobs{max-height:300px;overflow:auto}
+.worker-policy{margin-bottom:12px}
+.task-layout{min-height:420px;flex-shrink:0}
+.task-list{max-height:650px}
+#refresh{margin-left:auto}
+.channel-top p{max-width:75ch;line-height:1.6}
+.feed{min-height:220px}
+@media(min-width:901px) and (max-width:1250px){.app{grid-template-columns:200px minmax(0,1fr)}.member-sidebar{display:none}}
+@media(max-width:600px){.view{padding:12px}.summary-grid,.metrics{gap:8px}.filters label{font-size:12px}.worker-providers{grid-template-columns:1fr}.task-layout{min-height:0;display:flex;flex-direction:column}.task-list{max-height:300px;flex:none}.thread-panel{min-height:300px}.channel-top{padding:12px}.channel-top p{display:none}.worker-jobs{max-height:220px}}
+
+.operational-status{flex:none}.operational-status p{font-size:12px;line-height:1.7;margin:6px 0;color:var(--text-muted)}
+
+button.task-reference{padding:0 6px 0 0;min-height:32px;text-align:left;color:#c5ceff}button.task-reference:hover{text-decoration:underline}
+
+.backlog-entry{border-top:1px solid var(--line);padding:12px 0}.backlog-entry summary{cursor:pointer;min-height:44px;line-height:1.7}.backlog-entry h3{font-size:12px;color:var(--text-muted)}.backlog-entry p{font-size:13px;line-height:1.7;white-space:pre-wrap}
+
+.view>.filters,.view>.panel,.view>.metrics,.view>.overview-grid,.view>.summary-grid,.view>.notice{flex-shrink:0}
+.table-scroll{min-height:100px}
+#wbs-as-of-small{font-size:16px;line-height:1.7;overflow-wrap:anywhere}
+#history-scope{display:block;line-height:1.5;margin-top:4px}
+
+.event-user .author{color:#b7c1ff}.event-system .author{color:var(--text-muted)}
+.kind,.state,.event-meta time,.task-reference,.metric small,.metric-label,.self-info small,.summary small,.summary>span,.conn{font-size:12px}
+button.task-reference{min-height:44px}
+@media(max-width:600px){.goal{min-height:44px}}

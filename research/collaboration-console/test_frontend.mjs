@@ -6,8 +6,8 @@ import vm from "node:vm";
 test("polling renders changed visible content and resumes from its cursor without losing UI state", async () => {
   // Exercise the shipped script, its listeners and its actual renderers without a browser or server.
   const elements = new Map(), timers = new Map(), requests = [];
-  let timerId = 0, now = Date.parse("2026-10-22T04:00:00Z"), holdEvents, failEvents = false;
-  const listeners = new Map();
+  let timerId = 0, now = Date.parse("2026-10-22T04:00:00Z"), holdEvents, failEvents = false, failWbs = false;
+  const listeners = new Map(), windowListeners = new Map();
   const document = {
     hidden: false, activeElement: null,
     getElementById: id => elements.get(id),
@@ -47,7 +47,7 @@ test("polling renders changed visible content and resumes from its cursor withou
   for (const match of html.matchAll(/<([\w-]+)[^>]*\bid="([^"]+)"[^>]*>/g)) {
     const element = new Element(match[1]); element.id = match[2]; elements.set(element.id, element);
   }
-  for (const channel of ["overview", "tasks", "runs", "checks", "wbs"]) {
+  for (const channel of ["overview", "discussions", "tasks", "runs", "checks", "wbs"]) {
     const element = new Element("button"); element.dataset.channel = channel;
     elements.set(`channel-${channel}`, element);
   }
@@ -75,7 +75,7 @@ test("polling renders changed visible content and resumes from its cursor withou
     jobs: [{ title: "현재 작업", task_id: "OPS", provider: "codex", agent: "sol", state: "running", updated: now / 1000, model: "sol-fixture", effort: "high", observed_models: [] }],
   };
   const wbs = JSON.parse(readFileSync(new URL("../llm-wiki/analysis/development-wbs/snapshot.json", import.meta.url)));
-  const context = vm.createContext({ document, window: { matchMedia: () => ({ matches: false }) },
+  const context = vm.createContext({ document, window: { matchMedia: () => ({ matches: false }), location:{hash:"#overview"}, history:{pushState(a,b,hash){context.window.location.hash=hash;}}, addEventListener:(name,callback)=>windowListeners.set(name,callback) },
     Date: class extends Date { static now() { return now; } },
     setTimeout(callback, delay) { assert.equal(delay, 2000); timers.set(++timerId, callback); return timerId; },
     clearTimeout: id => timers.delete(id),
@@ -88,7 +88,8 @@ test("polling renders changed visible content and resumes from its cursor withou
         return response({ events: events.filter(row => row.id > after), tasks, cursor,
           server_time: new Date(now).toISOString(), malformed_records: 0 });
       }
-      return response(url === "/api/runs" ? { runs } : url === "/api/worker" ? worker : wbs);
+      if (failWbs && url === "/api/wbs") return {ok:false,status:503};
+      return response(url === "/api/runs" ? { runs } : url === "/api/worker" ? worker : url === "/api/backlog" ? [{ID:"DEV-1",작업:"fixture",상태:"확인 중"}] : wbs);
     },
   });
   function response(data) { return { ok: true, json: async () => JSON.parse(JSON.stringify(data)) }; }
@@ -174,6 +175,10 @@ test("polling renders changed visible content and resumes from its cursor withou
   assert.ok($("task-list").firstChild.children.some(child => child.className === "stale"));
 
   channel("wbs");
+  assert.equal(context.window.location.hash, "#wbs");
+  context.window.location.hash = "#checks"; windowListeners.get("popstate")();
+  assert.equal(evaluate("state.channel"), "checks");
+  channel("wbs");
   $("wbs-goal-filter").value = wbs.goals[0].id;
   $("wbs-search").value = wbs.items[0].id;
   $("wbs-status-filter").value = "remaining"; $("wbs-goal-filter").fire("input");
@@ -183,6 +188,14 @@ test("polling renders changed visible content and resumes from its cursor withou
   assert.equal($("wbs-goal-filter").value, wbs.goals[0].id);
   assert.equal($("wbs-search").value, wbs.items[0].id);
   assert.equal($("wbs-status-filter").value, "remaining");
+  failWbs = true; await tick();
+  assert.match($("notice").textContent, /WBS.*조회 실패/);
+  assert.equal(evaluate("state.wbs.summary.progress"), wbs.summary.progress, "last successful WBS survives partial failure");
+  failWbs = false; await tick(); assert.equal($("notice").hidden, true);
+  assert.equal($("backlog-count").textContent, "1 / 1개");
+  $("backlog-search").value = "no-match"; $("backlog-search").fire("input");
+  assert.equal($("backlog-count").textContent, "0 / 1개");
+  assert.match(content($("backlog-rows")), /조건에 맞는 개발 항목/);
   const rowButton = $("wbs-rows").firstChild.firstChild.firstChild;
   rowButton.fire("click"); assert.equal($("detail").open, true);
   await tick(); assert.equal($("detail").open, true);
@@ -216,10 +229,11 @@ test("polling renders changed visible content and resumes from its cursor withou
   failEvents = false; await tick(); assert.equal($("connection").textContent, "연결됨");
 
   events = [event(1, { body: "replacement event" })]; cursor = 1; await tick();
-  assert.equal(evaluate("state.events.length"), 0, "decreased cursor keeps the original clear-and-adopt semantics");
+  assert.equal(evaluate("state.events.length"), 1, "decreased cursor refetches the replacement log immediately");
+  assert.equal(evaluate("state.events[0].body"), "replacement event");
   assert.equal(evaluate("state.cursor"), 1);
   events.push(event(++cursor, { body: "event after reset" }));
-  await tick(); assert.equal(evaluate("state.events[0].body"), "event after reset");
+  await tick(); assert.equal(evaluate("state.events[1].body"), "event after reset");
   events = Array.from({ length: 1002 }, (_, i) => event(i + 1)); cursor = 1002; await tick();
   assert.equal(evaluate("state.events.length"), 1000); assert.equal(evaluate("state.events[0].id"), 3);
   await tick(); assert.equal(evaluate("state.events.length"), 1000, "idle polls do not duplicate events");
@@ -229,4 +243,28 @@ test("polling renders changed visible content and resumes from its cursor withou
   assert.equal($("checks-author").value, "Claude"); assert.equal($("checks-search").value, "OPS");
   assert.match(html, /id="overview-feed"[^>]*aria-live="polite"/);
   assert.match(html, /id="thread-feed"[^>]*aria-live="polite"/);
+});
+
+
+test("current task totals deduplicate authors, reject stale message state, and preserve active jobs", () => {
+  const script = readFileSync(new URL("./static/app.js", import.meta.url), "utf8");
+  const start = script.indexOf("function currentTasks()");
+  const end = script.indexOf("\nconst rendered", start);
+  const context = vm.createContext({Date, Map, activeTaskStates:new Set(["running","queued","waiting_quota"]), providerNames:{codex:"Codex",claude:"Claude"},
+    state:{tasks:[
+      {task_id:"OLD",state:"running",timestamp:"2020-01-01T00:00:00Z"},
+      {task_id:"SAME",author:"Codex",state:"running"},
+      {task_id:"SAME",author:"System",state:"completed"},
+      {task_id:"DEDUP",author:"Codex",state:"completed",timestamp:"2026-01-01T00:00:00Z"},
+      {task_id:"DEDUP",author:"System",state:"blocked",timestamp:"2020-01-01T00:00:00Z"},
+    ],worker:{jobs:[
+      {task_id:"SAME",provider:"codex",state:"running",updated:1,phase:"implement"},
+      {task_id:"SAME",provider:"claude",state:"completed",updated:2,phase:"review"},
+      {task_id:"CHAT",provider:"claude",state:"running",updated:3,phase:"communication"},
+    ]}}});
+  const tasks = vm.runInContext(script.slice(start,end)+"\ncurrentTasks()",context);
+  assert.equal(tasks.length,3);
+  assert.equal(tasks.find(row=>row.task_id==="DEDUP").state,"completed");
+  assert.equal(tasks.find(row=>row.task_id==="OLD").state,"unverified");
+  assert.equal(tasks.find(row=>row.task_id==="SAME").state,"running");
 });

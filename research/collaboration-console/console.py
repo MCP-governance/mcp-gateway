@@ -2,12 +2,16 @@
 from __future__ import annotations
 
 import argparse
+from collections import deque
+from contextlib import closing
+from copy import deepcopy
 import csv
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -22,6 +26,7 @@ sys.path.insert(0, str(REPO_ROOT / "research/llm-wiki/tools"))
 from sheet_pull import CONFIG as SHEET_CONFIG, FILES as SHEET_FILES, SheetSource, fetch_csv, overlay_wbs, parse_csv
 
 DEFAULT_LOG = ROOT / "runtime" / "events.jsonl"
+WORKER_ROOT = REPO_ROOT.parent / "loop" / "agent-hub"
 WBS_SNAPSHOT = REPO_ROOT / "research" / "llm-wiki" / "analysis" / "development-wbs" / "snapshot.json"
 AUTHORS = {"Codex", "Claude", "Gemini", "User", "System"}
 KINDS = {"message", "task", "check"}
@@ -130,6 +135,8 @@ class EventLog:
     def __init__(self, path=DEFAULT_LOG):
         self.path = Path(path).resolve()
         self.lock_path = self.path.with_suffix(self.path.suffix + ".lock")
+        self._snapshot_lock = threading.Lock()
+        self._snapshot_cache = None
 
     def append(self, author, kind, task_id, state, body, session_id=None, *, recipient=None, reply_to=None, source_id=None):
         event = validate({"timestamp": utc_now(), "author": author, "kind": kind,
@@ -141,8 +148,22 @@ class EventLog:
         append_line(self.path, self.lock_path, payload)
         return event
 
-    def snapshot(self, after=0):
-        events, tasks, malformed, total = [], {}, 0, 0
+    def snapshot(self, after=0, *, oldest_first=False):
+        with self._snapshot_lock:
+            try:
+                stat = self.path.stat()
+                signature = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
+            except FileNotFoundError:
+                signature = None
+            key = (signature, after, oldest_first)
+            if self._snapshot_cache is None or self._snapshot_cache[0] != key:
+                self._snapshot_cache = (key, self._read_snapshot(after, oldest_first=oldest_first))
+            result = deepcopy(self._snapshot_cache[1])
+            result["server_time"] = utc_now()
+            return result
+
+    def _read_snapshot(self, after, *, oldest_first):
+        events, tasks, malformed, total, selected = deque(maxlen=1000), {}, 0, 0, 0
         if self.path.exists():
             with open(self.path, "rb") as stream:
                 for total, line in enumerate(stream, 1):
@@ -161,11 +182,13 @@ class EventLog:
                     if event["kind"] == "task":
                         tasks[(event["task_id"], event["author"])] = event
                     if total > after:
-                        events.append(event)
+                        selected += 1
+                        if not oldest_first or len(events) < 1000:
+                            events.append(event)
         # shortcut: keep the newest 1,000 visible records; add pagination when sessions need archival browsing.
-        return {"events": events[-1000:], "tasks": list(tasks.values()), "cursor": total,
+        return {"events": list(events), "tasks": list(tasks.values()), "task_source": "event_history", "cursor": total,
                 "malformed_records": malformed, "server_time": utc_now(), "empty": total == 0,
-                "truncated": len(events) > 1000, "model_request": {"model": MODEL, "effort": EFFORT}}
+                "truncated": selected > 1000, "model_request": {"model": MODEL, "effort": EFFORT}}
 
 
 class Viewer(BaseHTTPRequestHandler):
@@ -211,7 +234,7 @@ class Viewer(BaseHTTPRequestHandler):
                 self.respond(503, b'{"error":"Event log unavailable"}')
         elif url.path == "/api/runs":
             try:
-                self.respond(200, json.dumps(self.server.run_log.snapshot(), ensure_ascii=False).encode("utf-8"))
+                self.respond(200, json.dumps(run_snapshot(self.server.run_log, self.server.worker_root), ensure_ascii=False).encode("utf-8"))
             except OSError:
                 self.respond(503, b'{"error":"Run log unavailable"}')
         elif url.path == "/api/worker":
@@ -257,6 +280,7 @@ def make_server(host, port, log):
     server = ThreadingHTTPServer((host, port), Viewer)
     server.event_log = log
     server.run_log = RunLog(log.path.parent / "runs.jsonl")
+    server.worker_root = WORKER_ROOT if log.path == DEFAULT_LOG.resolve() else log.path.parent / "agent-hub"
     server.sheet_source = SheetSource(SHEET_CONFIG)
     server.allowed_hosts = allowed_hosts_for(host, server.server_port)
     server.daemon_threads = True
@@ -558,6 +582,58 @@ class RunLog:
         latest = {**latest, "phase": "gateway", "updated_at": utc_now(),
                   "gateway": {"state": "recorded" if records else "none", "count": records, "source": redact(source)[:200]}}
         return self.append(latest)
+
+
+def run_snapshot(run_log, worker_root):
+    """Merge CLI records with actual durable jobs without inventing unobserved telemetry."""
+    try:
+        snapshot = run_log.snapshot()
+        cli_source = "available"
+    except OSError:
+        snapshot = {"runs": [], "malformed_records": 0, "server_time": utc_now()}
+        cli_source = "unavailable"
+    path = Path(worker_root) / "runtime/hub.sqlite3"
+    snapshot["sources"] = {"cli_log": cli_source, "durable_worker": "missing"}
+    if not path.is_file():
+        return snapshot
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=2)) as db:
+            db.row_factory = sqlite3.Row
+            db.execute("BEGIN")
+            jobs = [dict(row) for row in db.execute("SELECT * FROM jobs WHERE attempts>0 ORDER BY updated DESC LIMIT 200")]
+            starts = {row["job"]: row["at"] for row in db.execute("SELECT job,MAX(at) AS at FROM events WHERE state='running' GROUP BY job")}
+            usage = {row["job"]: {"input_tokens": row["input_tokens"], "output_tokens": row["output_tokens"]}
+                     for row in db.execute("SELECT job,SUM(input_tokens) AS input_tokens,SUM(output_tokens) AS output_tokens FROM call_usage GROUP BY job")}
+        managed = []
+        for job in jobs:
+            models = json.loads(job.get("observed_models") or "[]")
+            if not isinstance(models, list) or any(not isinstance(model, str) for model in models):
+                raise ValueError("Invalid observed models")
+            requested = {"model": job.get("model"), "effort": job.get("effort")}
+            state = job["state"]
+            outcome = "task_failed" if state == "failed" else state
+            timestamp = lambda value: datetime.fromtimestamp(value, timezone.utc).isoformat(timespec="milliseconds") if value else None
+            managed.append({"run_id": "worker:" + job["id"], "job_id": job["id"], "source": "durable_worker",
+                            "agent": {"claude": "Claude", "codex": "Codex", "antigravity": "Gemini"}.get(job["provider"], job["provider"]),
+                            "task_id": job.get("task_id") or job["id"], "title": job["title"],
+                            "phase": job.get("phase"), "attempts": job["attempts"], "job_state": state,
+                            "started_at": timestamp(starts.get(job["id"])), "ended_at": timestamp(job["updated"]) if state in {"completed", "failed", "cancelled", "expired"} else None,
+                            "updated_at": timestamp(job["updated"]), "requested": requested,
+                            "observed": {"models": models, "usage_models": [], "source": "CLI response" if models else None},
+                            "model_check": "confirmed" if models == [requested["model"]] else "mismatch" if models and requested["model"] else "unreported",
+                            "outcome": outcome, "tool_calls": None, "no_tool_call": False,
+                            "usage": usage.get(job["id"]), "usage_scope": "all_job_attempts", "native_session_id": job.get("session"),
+                            "error": {"code": state, "message": job["error"]} if job.get("error") else None,
+                            "gateway": {"state": "unverified", "count": None, "source": None}})
+        # A native session may also have been recorded through the older CLI launcher.
+        sessions = {run["native_session_id"] for run in managed if run.get("native_session_id")}
+        snapshot["runs"] = [run for run in snapshot["runs"] if not run.get("native_session_id") or run["native_session_id"] not in sessions]
+        snapshot["runs"].extend(redact_deep(run) for run in managed)
+        snapshot["runs"] = sorted(snapshot["runs"], key=lambda run: run.get("started_at") or run.get("updated_at") or "")[-200:]
+        snapshot["sources"]["durable_worker"] = "available"
+    except (OSError, sqlite3.Error, ValueError, TypeError, OverflowError):
+        snapshot["sources"]["durable_worker"] = "unavailable"
+    return snapshot
 
 
 def codex_applied(thread_id):
