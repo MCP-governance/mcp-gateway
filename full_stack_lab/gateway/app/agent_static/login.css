@@ -2,10 +2,11 @@ body.gate{display:grid;place-items:center;min-height:100vh;min-height:100dvh;pad
 .gate-card{width:min(440px,100%);padding:32px;display:flex;flex-direction:column;gap:22px}
 .gate-brand{display:flex;align-items:center;gap:14px}
 .gate-word{display:flex;flex-direction:column;line-height:1}
-.gate-word b{font-size:40px;font-weight:800;letter-spacing:.06em}
+.gate-brand .lang-btn{margin-left:auto}
+.gate-word b{font-size:36px;font-weight:800;letter-spacing:.06em}
 .gate-brand .mark{display:grid;place-items:center;width:52px;height:52px;border-radius:12px;background:var(--brand);color:var(--panel)}
 .gate-brand .mark svg{width:28px;height:28px}
-.gate-card h1{font-size:27.5px;margin:0}
-.gate-card .form{gap:16px}.gate-card .btn.primary{min-height:46px}.gate-card input{min-height:46px}.gate-card .form>a{text-align:center;font-size:16.2px}
-.err{color:var(--block);font-size:16.2px;min-height:1em;margin:0}
+.gate-card h1{font-size:24.75px;margin:0}
+.gate-card .form{gap:16px}.gate-card .btn.primary{min-height:46px}.gate-card input{min-height:46px}.gate-card .form>a{text-align:center;font-size:14.58px}
+.err{color:var(--block);font-size:14.58px;min-height:1em;margin:0}
 .ok{color:var(--allow)}

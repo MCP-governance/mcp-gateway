@@ -1,4 +1,5 @@
 /* Sign-in. The server issues the token; this page only stores it. */
+import "./i18n.mjs";
 
 const TOKEN_KEY = "mcp-console-token";
 

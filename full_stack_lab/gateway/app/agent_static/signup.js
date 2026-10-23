@@ -1,3 +1,4 @@
+import "./i18n.mjs";
 document.documentElement.dataset.theme = localStorage.getItem("mcp-console-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 const form = document.querySelector("#signup-form");
 const message = document.querySelector("#signup-message");
