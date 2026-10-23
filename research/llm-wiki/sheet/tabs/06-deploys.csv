@@ -17,3 +17,4 @@ DEP-08,2026-10-17,솔루션 기기,ecb2587,,"{""commit"":""ecb2587"",""health"":
 DEP-14,2026-10-18,pj3,b5e4c65,,"새 키트(b5e4c65) 승인 배포 → 승격 마법사 설치 | `설치 완료 · 조직 활성화 대기 · 대상 계정 로그온 시 트레이 시작`, `장치 자격` 빈 행 없음",https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md
 DEP-09,2026-10-18,pj3,b9b00d5,,"결함 4·5 수정(b9b00d5) 후 재설치 | 설치 완료, 설치 증거 `match: true`",https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/pj3-windows-kit-1018.md
 DEP-10,2026-10-18,솔루션 기기,bb33625,,"배포: `field up` bb33625, `/api/health` 모든 구성요소 정상.",https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-1017/deploy-hi-1018.md
+DEP-19,2026-10-23,솔루션 기기,56e9a36,,"배포 | 기기 `dev_deploy_nocred.sh`, main 56e9a36 | 배포됨 | 기기 출력",https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-real-usage-local-mcp.md

@@ -39,7 +39,7 @@
       "sha256": "8755ddb662f9d8049839fbec848672bb5b6875a9a1af651a73bf8e8cb7e6d72a"
     },
     "backlog": {
-      "rows": 101,
+      "rows": 102,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -66,10 +66,10 @@
           ]
         }
       },
-      "sha256": "3d26f8fc7d0ecc35a5df4fafefa0c42bb4f89895dd064e34232200d438fc8f84"
+      "sha256": "e7f19fd053e07a8f5cc5ad4d29cf12b764a2aaf08b5d7b687bb3522edbe2f06c"
     },
     "decisions": {
-      "rows": 181,
+      "rows": 198,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -89,10 +89,10 @@
           "missing": []
         }
       },
-      "sha256": "65af1d2092b4a1b2bd11a500d26ea0d53f3f8bc93aea21ff513dff528db01d0f"
+      "sha256": "f4085bbdc35c884e9dc2a74952e991f4175e6f5ad8eb4efc6e2f0fc3add5e841"
     },
     "commits": {
-      "rows": 745,
+      "rows": 824,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -169,10 +169,10 @@
           "missing": []
         }
       },
-      "sha256": "d90d020dbc6f08b56eb9599e9db7d07e13fb187d3717d196f8f6c017e8eb1e63"
+      "sha256": "57ce7a9fc3d91bf86c03877cbde6f962de4aec15e723b08e01c66dcec0ee26f3"
     },
     "deploys": {
-      "rows": 18,
+      "rows": 19,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -182,7 +182,7 @@
           "missing": []
         }
       },
-      "sha256": "16419996e069b80f8398b58a7346ca4c328dcbfad77a56ce16452ce11caace7a"
+      "sha256": "aef46eb5ac4054c57a046db76208db942ecc3002a82c4aca2bb4595cafcdf761"
     },
     "features": {
       "rows": 64,
@@ -355,7 +355,7 @@
           "missing": []
         }
       },
-      "sha256": "0327d951983dc960b763b1fdb5cb14d8c7d1766e2c556c49caaccf4c487431ec"
+      "sha256": "fd25fb6648c73f15aa9842bb42b0d215faf1fe5b36f8f73e897065f4c9020a69"
     },
     "local-tool-risks": {
       "rows": 13,
@@ -577,7 +577,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "bfe730dd4f58446615856d0b261fc4e03c2127ca1bfe3adec11cfa4236a4a7db"
+      "sha256": "61db141def9b48d3c69e92c7cbe6627ecd0c0260c6b2db89878e789a61d1634c"
     },
     "code-structure": {
       "rows": 801,
@@ -617,7 +617,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "403896d0855ef3ab73aec4a694e82db74656ce2dedeb7b757c87fdea5e8ccd1e"
+      "sha256": "0554514e36623a67b775edcc2e4c20da974da49ec203c31aa451ef2b5a12d330"
     },
     "mcp-candidates": {
       "rows": 14,
@@ -653,18 +653,18 @@
       "sha256": "5cafbbc3f6b293f097570afa8c2ef8f30f7c77dd007912ff848b3218e75f7709"
     },
     "solutions": {
-      "rows": 15,
+      "rows": 22,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "48b3504f6bd471b76d1b6b7e165a6c06c89846cde35df3bc1a2dd7b8dd80e272"
+      "sha256": "d9342a050cf6ce62f6690407e3b8e112a67aa6b2d2a677e59bf121b121d82162"
     },
     "papers": {
-      "rows": 264,
+      "rows": 292,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "e6d53848880c37087e3fe1948f8d0ebba3a18f16d662651cf9d450c380cf8501"
+      "sha256": "6f69e87b02014359eadb5ed59096575ed0a7a126de368f9a9c2a732fe12d644e"
     },
     "reference-updates": {
       "rows": 5,
@@ -698,11 +698,11 @@
       "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
     },
     "docs": {
-      "rows": 731,
+      "rows": 785,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "7d8eb4371caf0b7c6f0f0130d1d209b0b4b0f01259519267ec603ce4e830890d"
+      "sha256": "4c5a05dd9dde42390e0b7d18847aac0a3f5ed1acb24a7e49471daa735480cace"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -712,11 +712,11 @@
       "sha256": "e14897d31d08151baf5982a4b5519061dd6906695835198c9d371b7f2784673e"
     },
     "trace": {
-      "rows": 1496,
+      "rows": 1569,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "c97c143fafadeee13223f17caf82f674a39c03fdf1953426e247b2922e416d61"
+      "sha256": "7931f8b54e658717b0f83c4f4ea8cb6a98c30a076ba67a6b79b0f0fb57693a96"
     }
   },
   "duplicate_ids": 0,

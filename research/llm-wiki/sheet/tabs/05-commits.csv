@@ -742,5 +742,84 @@ d7b0938,2026-10-23 01:32,pokochy,fix,v2,한 저장소의 여러 MCP를 따로 �
 3a1b2a1,2026-10-23 01:32,pokochy,,,Merge 10/23-repo-subpath: 저장소 하위 경로 단위 도입 신청,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/3a1b2a198ff381a36146a3f84219eb8a304f8a2b
 29fc526,2026-10-23 01:35,pokochy,docs,v2,클라우드 감사·AI 통제 벤치마크와 온프레미스 차용 분석,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/29fc52623be8e298c829a432f5918451665452dd
 0f57d0c,2026-10-23 01:42,pokochy,,,Merge 10/23-cloud-control-benchmark: 클라우드 감사·LLM 통제 방식 온프레미스 차용 벤치마킹,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/0f57d0c9c0994faf849544616c6e66939b113fd8
+afb35d4,2026-10-23 01:56,pokochy,fix,v2,콘솔의 반복·중복 요소 정리와 화면 결함 2건,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/afb35d43ac3b57304900099bc1f0a2306ad3f967
 5a530cd,2026-10-23 02:01,pokochy,fix,v2,로컬 실행 서버를 주기 카탈로그 점검에서 제외 — 정책 갱신 중 일시 거절로 ERROR가 되면 복구되지 않던 문제,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5a530cd7e6ec30389684c4adb4fa4cf00f3000f4
 e516e33,2026-10-23 02:01,pokochy,,,Merge 10/23-local-health: 로컬 실행 서버 주기 점검 제외,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e516e33e908a2023180298c604c38658086cfd1c
+9026e22,2026-10-23 02:03,pokochy,docs,v2,"시트·위키 동기 점검, 위키 첫 화면·현황·백로그 개편, 현황 이력 분리 (WIKI-07)",,WIKI-07,,,,https://github.com/MCP-governance/mcp-gateway/commit/9026e226fff9e58381618d28d7febfcf9e7a898c
+ff581fd,2026-10-23 02:05,pokochy,,,"Merge 10/23-wiki-readability: 위키 첫 화면·current 정리, 시트 백로그 반영, e516e33에 섞여 들어간 미완성 링크 복구",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/ff581fd129588f8d4b12f12473f887ebb789c1e1
+8f1999f,2026-10-23 02:09,pokochy,docs,v2,국내외 기관 규정 대비 MINT 갭 분석 74개 요구·위협 (RES-REGS),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8f1999f181cdfecf6f2610e7a6459914eec70802
+f7c1ae3,2026-10-23 02:09,pokochy,,,Merge 10/23-research-codex: 규정 갭 분석,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f7c1ae35d9c526d9c3d73f8db381fe61b4b6af1a
+85c8f6d,2026-10-23 02:09,pokochy,feat,v2,"Windows 원클릭 — 단일 .cmd 다운로드·UAC 1회, 관리 계정 프로필 자동 준비, 모델 로그인 안내 (W11, D-197)",D-197,,,,,https://github.com/MCP-governance/mcp-gateway/commit/85c8f6d2a383886dfa83574d30dc2aa96216a3c5
+8edcb95,2026-10-23 02:20,pokochy,,,"Merge 10/23-console-declutter: 운영 콘솔 불필요 내용 정리(차트 28→9, KPI 39→25), 도입 신청 관리자 화면 오류·시스템 상태 미측정 수정",,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/8edcb9507109fd669345ada0ff1bc8719478c570
+0587e57,2026-10-23 02:25,pokochy,fix,v2,서버 추가만 있는 정책 변경은 장치가 가진 MCP를 끊지 않는다 (D-198),D-198,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0587e576038a67ea630daa9cef1fa9c080985104
+41787a4,2026-10-23 02:33,pokochy,docs,v2,위협 매핑 해시 재생성(D-198 코드 변경 반영),D-198,,,,,https://github.com/MCP-governance/mcp-gateway/commit/41787a4fc857b0fe4ff5427969b1f12806cc1b64
+159e6c7,2026-10-23 02:47,pokochy,docs,v2,최신 레퍼런스·기업 사례·업계 동향 조사 묶음,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/159e6c709f20d57642ef5f9dee9f1418d398115b
+305b79d,2026-10-23 02:50,pokochy,fix,v2,"출력 검사 과잉 차단 — 숫자 ID·타임스탬프를 서식 패턴으로 오인, 문서 예시 자격 값, Gitleaks 5초 제한",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/305b79dbbf6bb63496399ea8c60947a13e2156ba
+b92ee91,2026-10-23 02:50,pokochy,,,Merge 10/23-output-overblock: 출력 검사 과잉 차단 수정,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/b92ee91007763bfbeca1cb204ce2b8336aae5f8a
+10ed7ca,2026-10-23 03:00,pokochy,,,Merge 10/23-policy-refresh-gap: 서버 추가만 있는 정책 변경은 장치 MCP를 끊지 않음 (D-198),D-198,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/10ed7ca9ab7cf46db5ae8b7d1106588dfb7282ad
+da732e3,2026-10-23 03:00,pokochy,fix,v2,출력 Secret 검사 — 잘못된 링크 하나로 문서 전체가 검사 불가가 되지 않게,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/da732e31535232878a81b459a263bdccaba1e84f
+d484a49,2026-10-23 03:00,pokochy,,,Merge 10/23-scan-url-parse: 잘못된 링크로 출력 Secret 검사가 실패하던 문제,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/d484a492e50d232fd90095805ead9e6a465565a9
+acb4374,2026-10-23 03:00,pokochy,docs,v2,위협 매핑 해시 재생성(privacy·secret_scan 변경 반영),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/acb43741fcec1c057167da423ba0dc16a0d355a8
+6ef0d59,2026-10-23 03:06,pokochy,feat,v2,원클릭 승인에서 도구별 읽기/쓰기 분류를 낮출 수 있게 (D-199),D-199,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6ef0d59e35e9b89db1e6c13ef90fe21b5297763b
+7ec42b4,2026-10-23 03:06,pokochy,,,Merge 10/23-tool-action-override: 승인 시 도구 분류 낮추기 (D-199),D-199,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/7ec42b40a74dff58d36a0b59985de7f0614bf02c
+73c7552,2026-10-23 03:06,pokochy,docs,v2,위협 매핑 해시 재생성(D-199 변경 반영),D-199,,,,,https://github.com/MCP-governance/mcp-gateway/commit/73c75520a6b766919735608a93327efe9d09eb0e
+77492fc,2026-10-23 03:09,pokochy,fix,v2,철회된 서버의 저장소·엔드포인트는 다시 신청할 수 있게 (D-199),D-199,,,,,https://github.com/MCP-governance/mcp-gateway/commit/77492fc27287d4a6bc92113c4fb1590c307afc3c
+9d40967,2026-10-23 03:09,pokochy,,,Merge 10/23-reapply-after-deregister: 철회 후 재신청 허용,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/9d40967e9948c056c962137dbe5f51fa6afcfb0a
+e54acc3,2026-10-23 03:09,pokochy,docs,v2,위협 매핑 해시 재생성,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e54acc36ec584fd8d2030c155ee182e18a35261c
+97df4c5,2026-10-23 03:13,pokochy,,,Merge 10/23-research-gemini: 최신 레퍼런스·기업 사례·업계 동향 조사 묶음,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/97df4c51dc5ac63741ce358837f8e4d8a99d226f
+8b157f3,2026-10-23 03:14,pokochy,test,v2,원클릭 승인 AST 대체 시험이 discovery를 싣지 않아 9건 실패하던 것,D-192,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8b157f30b50de1cde59b58320f6a45e255d9ea3f
+1ae8da8,2026-10-23 03:14,pokochy,,,Merge 10/23-ast-harness: 원클릭 승인 AST 대체 시험 복구,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/1ae8da8406450093e17f23e73e575bf3a009f929
+903f006,2026-10-23 03:21,pokochy,feat,v2,로컬 MCP 실행기 편의(D-200)·서버 단위 동의(D-201) — Codex 00b·00c 병합,D-200 · D-201 · D-199,,,,,https://github.com/MCP-governance/mcp-gateway/commit/903f0068478f98eb49b305837b0e14d1fd6d629d
+3f39f8a,2026-10-23 03:21,pokochy,,,Merge 10/23-runner-consent: 로컬 실행기 편의(D-200)·서버 단위 동의(D-201),D-200 · D-201,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/3f39f8a5f2336de66080371207804fc1d61d8c22
+e8028a6,2026-10-23 03:28,pokochy,fix,v2,서버 제거만 있는 정책 변경도 장치의 나머지 MCP를 끊지 않는다 (D-198 정정),D-198,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e8028a61458cd72b57c7e81383104c2c5d31f197
+c4adbcb,2026-10-23 03:28,pokochy,,,Merge 10/23-policy-removal-gap: 서버 제거로 PC 전체가 끊기지 않게 (D-198 정정),D-198,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/c4adbcb7c4f89d2c3fabea8b15acd310ccff0b5a
+53a7cdf,2026-10-23 03:34,pokochy,fix,v2,로컬 실행기 — 컨테이너 시작 전 실패의 예외 종류를 PC 로그에 남긴다,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/53a7cdfc57aefff12d80c08df03f4c6cf6a17963
+cdbe081,2026-10-23 03:34,pokochy,,,Merge 10/23-runner-failure-log,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/cdbe0812bcc87a242d7bf6aeb479d4a4b22986ad
+c2ec070,2026-10-23 03:40,pokochy,fix,v2,문서 속 자격 증명 예시로 출력 전체가 보류되지 않게 (D-202),D-202,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c2ec0707276436ce9892303c7c78e00ad4603b54
+95f38da,2026-10-23 03:40,pokochy,,,Merge 10/23-output-credential-span: 문서 속 자격 예시로 출력 보류 안 되게 (D-202),D-202,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/95f38da06063a934d577a0cb56a82181a826be5a
+687540f,2026-10-23 03:47,pokochy,fix,v2,로컬 MCP 호출 한 번에 컨테이너 한 번 (D-203),D-203,,,,,https://github.com/MCP-governance/mcp-gateway/commit/687540fe6d776e696c59b678e10fa4a55449bb60
+e4b10de,2026-10-23 03:47,pokochy,,,Merge 10/23-local-call-one-container: 로컬 호출 컨테이너 1회 (D-203),D-203,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e4b10deef4a86b013b1133a61d2c87cf8e2c8ff1
+6bb21ce,2026-10-23 03:48,pokochy,fix,v2,인자 이름 to만으로 메일 수신자로 보지 않는다 (D-204),D-204,,,,,https://github.com/MCP-governance/mcp-gateway/commit/6bb21ceec9f4bc482d407e6850d1aa1e4032caef
+aab184b,2026-10-23 03:49,pokochy,,,Merge 10/23-recipient-heuristic: to 인자 수신자 오분류 (D-204),D-204,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/aab184ba37331b6ce9a2b3baad4da976177cd748
+9ff1dbc,2026-10-23 03:52,pokochy,fix,v2,서버 목록만 바뀐 정책 변경으로 로컬 작업이 실패하지 않게 (D-198 정정 2),D-198,,,,,https://github.com/MCP-governance/mcp-gateway/commit/9ff1dbc8aa57297e521b10ee343ed6ed78100ce5
+f2ae4ff,2026-10-23 03:52,pokochy,,,Merge 10/23-local-jobs-policy-gap: 로컬 작업 정책 비교 (D-198 정정 2),D-198,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f2ae4ff96cd2ee315fb954b7fd95affe2835ec0a
+656ec81,2026-10-23 04:02,pokochy,fix,v2,승인된 로컬 MCP 컨테이너를 섀도 MCP로 보고하지 않는다 (D-205),D-205,,,,,https://github.com/MCP-governance/mcp-gateway/commit/656ec811dd129ee54f1e8a58d4a1f8adada9d185
+36e9d59,2026-10-23 04:02,pokochy,,,Merge 10/23-agent-skip-local-runner: 로컬 실행 컨테이너 섀도 오탐 (D-205),D-205,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/36e9d5973d7ff4757be5203188a9088297be757f
+41095eb,2026-10-23 04:08,pokochy,fix,v2,로컬 실행기 실패 로그에 게이트웨이 거절 사유를 남긴다,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/41095eb88fb12fc4bb2da37fdf9cb9bd41131d37
+56e9a36,2026-10-23 04:08,pokochy,,,Merge 10/23-runner-http-detail,,,,병합,DEP-19,https://github.com/MCP-governance/mcp-gateway/commit/56e9a36172149e37810eff9bcf3c57e83fe787c0
+d69044c,2026-10-23 04:14,pokochy,docs,v2,실사용 시험 보고 — 로컬 MCP 3종 PJ1 완주와 수정 10건,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d69044cfea7961216d8b2e57e48309ba8f5483a4
+8aae0c9,2026-10-23 04:14,pokochy,,,Merge 10/23-real-usage-report,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/8aae0c9f9cda2401b9c55bde889d9fa26df3826a
+10ffa83,2026-10-23 04:17,pokochy,docs,v2,기업 분석 정본의 코드 근거 해시 갱신(10-23 코드 변경 반영),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/10ffa83d5e1276875e24e38c4729e3fbcf13c1db
+e9421af,2026-10-23 04:17,pokochy,,,Merge 10/23-enterprise-code-refresh,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e9421af906057d819a45f5fa98edd2a00e118715
+e30be96,2026-10-23 04:49,pokochy,,,"Merge 10/23-windows-oneclick: Windows 원클릭(W11, D-197)",D-197,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e30be961a9a00d7982dd8565e4412c7289e85f4d
+092ab72,2026-10-23 04:56,pokochy,feat,v2,공식 MCP의 PC 격리 실행 기본값을 승인 화면이 미리 채운다,D-206,,,,,https://github.com/MCP-governance/mcp-gateway/commit/092ab72af3ca9f7eb02434cdb8d19cad54492b6e
+e220474,2026-10-23 04:56,pokochy,,,Merge 10/23-local-run-presets: 공식 로컬 MCP 격리 실행 기본값 (D-206),D-206,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/e2204740a4937e6969235b7ffbd917faa6606ab7
+5126c67,2026-10-23 06:47,pokochy,docs,v2,"발표용 경쟁·갭 매트릭스(10기능×9제품, 구현·배포·실측 구분)",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5126c67727fb328b02cccd0397833e306f117680
+5d4c832,2026-10-23 06:47,pokochy,,,Merge 10/23-gap-matrix: 경쟁·갭 매트릭스,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/5d4c8329d69afb69406c1a31b02b8a35d9113873
+8e01a18,2026-10-23 06:52,pokochy,fix,v2,루트 전용 공식 이미지(git·time)는 격리 실행 기본값에서 빼고 상태만 보인다,D-206 · D-207,,,,,https://github.com/MCP-governance/mcp-gateway/commit/8e01a18833120a6996c0a10c23649a664ab20f91
+f763a28,2026-10-23 06:52,pokochy,,,Merge 10/23-root-only-images: git·time 루트 전용 이미지 기본값 제외 (D-207),D-207,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/f763a28d1ff874416cc39182455cb1ea77380087
+eba2680,2026-10-23 08:48,pokochy,feat,v2,"LiteLLM 승인·철회 동기화 애드온(기본 꺼짐, D-208)",D-208 · D-206,AIG-01,,,,https://github.com/MCP-governance/mcp-gateway/commit/eba26806928ce9a7dd966950315c4b3ecd4b6002
+2b289e1,2026-10-23 08:50,pokochy,,,"Merge 10/23-litellm-sync: LiteLLM 승인·철회 동기화 애드온(기본 꺼짐, D-208)",D-208,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/2b289e11b9dca104f0fd2c530f89fefa06508e9c
+c2c8fee,2026-10-23 08:50,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신(LiteLLM 동기화 병합 반영),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c2c8feeb23b05bada73805ada361822bdb7a8112
+0aa5732,2026-10-23 09:05,pokochy,test,v2,오늘(10-23) 기능의 수용 시험 항목 추가(원클릭 분류 낮추기·서버 단위 동의·승인 미리보기 로컬 실행 값),D-199 · D-201 · D-206 · D-207,,,,,https://github.com/MCP-governance/mcp-gateway/commit/0aa5732541452c73855b368d93601fa9149c5de0
+49d224e,2026-10-23 09:06,pokochy,test,v2,기업 분석 코드 근거 해시 갱신(수용 시험 항목 추가 반영),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/49d224e783ef821b9cbac7f9ff4b4cf171089eaa
+cbc93c8,2026-10-23 09:07,pokochy,,,Merge 10/23-w7-acceptance-today: 오늘 기능 CI 수용 시험 항목 (D-209),D-209,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/cbc93c87fbfca3347e11c7614e58fd2f0c05d4d3
+d6ddc7d,2026-10-23 10:47,pokochy,fix,v2,한 저장소의 여러 MCP는 서버 ID를 폴더 이름으로 (D-210),D-210,,,,,https://github.com/MCP-governance/mcp-gateway/commit/d6ddc7da9e70e8b2b4a2cd860c0fabe3c5791719
+e7ca934,2026-10-23 10:48,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/e7ca934ab3097a0058c9403e24359719a8a1d115
+026ff65,2026-10-23 10:48,pokochy,,,Merge 10/23-server-id-path: 저장소 폴더 이름으로 서버 ID (D-210),D-210,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/026ff6521035af38004782bad08452f6ee370d51
+85d3610,2026-10-23 14:12,pokochy,feat,v2,"콘솔 영어 화면과 언어 전환, 글자 90%, 화면 문구 정리 (D-211)",D-211,,,,,https://github.com/MCP-governance/mcp-gateway/commit/85d3610856183ab731522b297bf411810023c408
+737e56a,2026-10-23 14:12,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/737e56a7ae505101583004f088baa87e756de706
+c33c1f4,2026-10-23 14:13,pokochy,fix,v2,영어 화면에서 단위 없는 건수를 호출이 아닌 항목으로 표기,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c33c1f40936142c2daa8f7b11f95c2207e22b8d4
+85a9581,2026-10-23 14:14,pokochy,docs,v2,콘솔 영어 화면·언어 전환·글자 90% 작업 보고서,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/85a95813fc0a0d271c16b0e38508709a690ad205
+c6649b1,2026-10-23 14:14,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/c6649b1d4bb04bef2d78a38e7cda175e53f70b8e
+875bb0e,2026-10-23 14:21,pokochy,docs,v2,"구성도 10-23판(흐름 순서·양방향·오픈소스 목적, 한/영)과 README 한/영 개편",,,,,,https://github.com/MCP-governance/mcp-gateway/commit/875bb0ef1a3f5290aec98b27a91f4d31f8ae1efc
+0fb0d5b,2026-10-23 14:22,pokochy,,,Merge 10/23-console-i18n: 콘솔 영어 화면·언어 전환·글자 90%·문구 정리 (D-211),D-211,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/0fb0d5bbab2228d3a9a041eb8551d25430418700
+84ecb55,2026-10-23 14:22,pokochy,docs,v2,생성기 사본에서 정의 없는 구성요소 ID 제거(추적 검사),,,,,,https://github.com/MCP-governance/mcp-gateway/commit/84ecb55ffac705fdac1d7557918583998819e0cf
+d6c0565,2026-10-23 14:22,pokochy,,,Merge 10/23-readme-architecture: 구성도 10-23판·README 한/영,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/d6c05655388736ec4e96f0df316b6ee6c47a7e27
+86e0ef8,2026-10-23 14:23,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/86e0ef80d9f03765caf830d924acce992bf910a5
+f0e569e,2026-10-23 14:36,pokochy,fix,v2,연속 승인 중 PC가 설치한 중간 정책을 변조로 격리하지 않게 (D-212),D-212 · D-198,,,,,https://github.com/MCP-governance/mcp-gateway/commit/f0e569e7b7f2c520f8f710c6f553549da373c6fe
+67af62e,2026-10-23 14:37,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/67af62e0cc282630679e93ad8b7db81f40ed096c
+bb0f975,2026-10-23 14:37,pokochy,,,Merge 10/23-served-policy-history: 연속 승인 중 거짓 격리 방지 (D-212),D-212,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/bb0f9755c81c943a3a48f5305bc4467b06d18337
+599daa8,2026-10-23 15:02,pokochy,fix,v2,"로컬 작업 시작·확인 경합으로 정상 실행이 멈추던 것, 읽기 실패가 재시도를 막던 것 (D-213)",D-213,,,,,https://github.com/MCP-governance/mcp-gateway/commit/599daa8d573f4626f74b1553dd5a750af5ee90a4
+5a7f992,2026-10-23 15:02,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5a7f992d6ccb9049fffab3ed1b872cd63a23bb01
+2efcd5e,2026-10-23 15:03,pokochy,,,"Merge 10/23-local-control-race: 로컬 작업 시작·확인 경합, 읽기 미확정 예약 (D-213)",D-213,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/2efcd5e1ffb744d0e5bc5e7268e2cc52fa48ac96
