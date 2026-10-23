@@ -314,7 +314,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
     async def test_policy_revision_changes_hash_without_configuration_drift(self):
         path = LAB / "gateway/app/endpoint_plane.py"
         package = ModuleType("user_commands_policy")
-        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"])
+        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
         namespace = {"__name__": "policy_under_test", "__package__": package.__name__, "os": os,
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,

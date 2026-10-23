@@ -207,7 +207,7 @@ class StatusCommand(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.linux = extract(KIT / "managed-linux.py",
-                             {"STATE_LABEL", "STATUS_STALE_SECONDS", "status_path", "render_status", "publish_status",
+                             {"STATE_LABEL", "STATUS_STALE_SECONDS", "ADDED_SHOWN_SECONDS", "status_path", "render_status", "publish_status",
                               "private_write", "kit_version", "PROGRAM_FILES", "machine_id"},
                              {"__name__": "status_under_test", "Path": Path, "PROGRAMS": Path(self.folder.name), "time": time,
                               "json": json, "os": os, "tempfile": tempfile, "hashlib": hashlib})
@@ -226,6 +226,20 @@ class StatusCommand(unittest.TestCase):
         self.assertIn("활성화하면 자동으로 연결됩니다", pending)
         self.assertIn("중지 (점검에서 격리됨)", self.linux.render_status(self.summary(state="quarantined"), time.time()))
         self.assertIn("중지 (등록 해제됨)", self.linux.render_status(self.summary(state="revoked", connected=False), time.time()))
+
+    def test_names_and_newly_added_servers_are_shown_for_an_hour(self):
+        now = time.time()
+        text = self.linux.render_status(self.summary(names=["github", "markitdown"]), now)
+        self.assertIn("서버 이름: github, markitdown", text)
+        self.assertNotIn("새로 반영된 서버", text)
+        fresh = self.linux.render_status(self.summary(names=["a", "b"], added={"servers": ["b"], "at": now - 30}), now)
+        self.assertIn("새로 반영된 서버: b (", fresh)
+        self.assertIn("다시 시작하세요", fresh)
+        old = self.linux.render_status(self.summary(names=["a", "b"], added={"servers": ["b"], "at": now - 7200}), now)
+        self.assertNotIn("새로 반영된 서버", old)
+        silent = self.linux.render_status(self.summary(updated=now - 600, added={"servers": ["b"], "at": now - 30}), now)
+        self.assertNotIn("새로 반영된 서버", silent)       # a silent service says nothing about what it applied
+        self.assertNotIn("서버 이름", self.linux.render_status(self.summary(), now))
 
     def test_empty_values_are_dashes_and_a_silent_service_is_not_shown_as_active(self):
         text = self.linux.render_status(self.summary(last_report=None, servers=None, kit=None, state="unknown", connected=False),

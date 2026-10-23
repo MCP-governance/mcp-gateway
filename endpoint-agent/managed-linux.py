@@ -44,6 +44,7 @@ PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "a
                  "offline_buffer.py", "local-runner.py")
 STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 STATUS_STALE_SECONDS = 180
+ADDED_SHOWN_SECONDS = 3600
 
 
 def load_module(name, path):
@@ -442,6 +443,11 @@ def render_status(summary, now):
              f"게이트웨이: {'연결됨' if summary.get('connected') and not silent else '연결 안 됨'}",
              "마지막 보고: " + (f"{clock(last)} ({max(0, int(now - last))}초 전)" if last else "—"),
              "승인 서버: " + (f"{servers}개" if servers is not None else "—"),
+             # The names the harness shows (mcp__<name>__tool): an employee cannot otherwise tell which servers this PC has.
+             *(["서버 이름: " + ", ".join(summary["names"])] if summary.get("names") else []),
+             *([f"새로 반영된 서버: {', '.join(added['servers'])} ({clock(added['at'])}) "
+                "— 이미 열려 있는 하네스에 보이지 않으면 다시 시작하세요."]
+               if (added := summary.get("added")) and not silent and now - added["at"] < ADDED_SHOWN_SECONDS else []),
              "로컬 MCP 준비: " + prepared + (f" ({local['note']})" if local.get("note") and local.get("total") else ""),
              "직원 문서 폴더: " + (", ".join(local["documents"]) if local.get("documents") else "—"),
              "키트 판본: " + (summary.get("kit") or "—")[:12]]
@@ -757,6 +763,7 @@ def serve(args):
         threading.Thread(target=keep_home_launchers, daemon=True).start()
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit}
+    known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
         # the activation within seconds instead of a minute; an active device keeps the slow cadence.
@@ -774,6 +781,9 @@ def serve(args):
                 config["policy_hash"] = policy["policy_hash"]
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
+            if known is not None and set(policy["servers"]) - known:
+                summary["added"] = {"servers": sorted(set(policy["servers"]) - known), "at": time.time()}
+            known = set(policy["servers"])
             findings = []
             hashes, health = checks(config, policy, findings=findings)
             beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health,
@@ -805,7 +815,8 @@ def serve(args):
                     cache.clear()
             with lock:
                 cache["state"] = report["state"]
-            summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]))
+            summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]),
+                           names=sorted(policy["servers"]))
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:

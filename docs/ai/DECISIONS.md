@@ -2366,3 +2366,15 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   - nftables 1.0.2(22.04)의 `destroy table` 미지원은 D-231.
 - 판본별 결과(수정 뒤): 20.04·22.04·24.04·25.10·26.04 모두 설치기 진입·모듈 로드·Python 확인·TOML·시각·레이블·nft·AppArmor(warn) 통과. 결속 집행(enforce) 모드 AppArmor 프로필은 모든 판에서 `unix addr=` 값이 거부돼 쓸 수 없는 상태로 남는다(기본은 warn, 후속).
 - 한계: 컨테이너는 systemd·커널 AppArmor·nft 적용을 실제로 하지 않는다. 실기기 설치는 22.04(팀원 VM)·24.04(pj2)로 확인한다.
+
+## D-233 하네스가 승인된 MCP를 알아보도록 관리형 메모리에 서버·도구 이름을 렌더링하고, 공급자 오류는 차단처럼 보이지 않게 한다 (2026-10-23)
+
+- 배경: 소유자 지시 「MCP 설치 편의성이나 하네스들이 MCP 탐지를 못하는 문제 개선」. pj2(Claude Code 2.1.309)에서 승인 MCP 11개는 모두 연결됐지만, 서버 이름을 말하지 않은 요청 4종×3회 중 MCP 도구를 쓴 것은 2/12였다(저장소 구조 0/3, 기억 0/3, 단계별 사고 0/3, 파일 폴더 2/3). Claude Code는 MCP 도구를 지연 로드해 이름과 서버 instructions만 시작에 싣고, 모델이 MCP 몫이라 판단하지 않으면 ToolSearch를 하지 않는다. 서비스 이름이 든 요청 8/8은 정상이었다. 실측·근거 URL: `research/llm-wiki/analysis/mcp-detect-1023/README.md`.
+- 결정:
+  1. `pac.harness_guidance`가 이 직원이 도구를 볼 수 있는 서버(`pac.visible`·검토된 도구)만 「표시 이름 (`mcp__<id>__*`): 도구 이름…」으로 나열한 안내문을 만들고, `managed_policy`가 Claude는 `managed-settings.json`의 `claudeMd`(managed 전용, 사용자 제외 불가), Codex는 Linux·macOS의 `managed_config.toml` `developer_instructions`에 넣는다. 새 관리형 파일을 늘리지 않는다(구형 키트는 파일 목록이 다르면 정책을 거부한다). Windows Codex는 서버 블록이 직원 자신의 `config.toml`에 들어가 키 중복 위험이 있어 제외.
+  2. 안내문에는 관리자가 검토한 표시 이름·도구 이름만 쓴다. 공급자 도구 설명은 해시로 고정돼 있어도 공급자의 글이고 이 텍스트는 조직 지침의 신뢰로 읽히므로 넣지 않는다. 이름은 허용 문자 밖을 지워 줄바꿈·백틱으로 지침을 끼울 수 없다. 차단·승인 대기 사유는 그대로 전하고 우회하지 말라는 문장을 함께 둔다(보안 약화 없음: 집행은 게이트웨이와 `allowedMcpServers`·권한 규칙이 그대로 한다).
+  3. `MCP-UPSTREAM-001`(공급자 응답 없음, 실행 안 됨)은 원장에서 Block을 유지하되 하네스에 가는 머리표를 `차단` 대신 `오류`로 하고 「정책이 막은 것이 아님, 조회는 재시도 가능, 쓰기·전송은 실행 여부 확인 뒤」를 덧붙인다.
+  4. `mcpgw-status`(Linux 키트)에 서버 이름 줄과, 정책이 서버를 추가한 뒤 1시간 동안 「새로 반영된 서버 …, 열려 있는 하네스에 보이지 않으면 다시 시작」을 보인다.
+- 효과(같은 안내문을 사용자 메모리에 임시로 두고 측정): 2/12 → 11/12, 「사내 MCP로 뭘 할 수 있나」는 도구 호출 없이 전체 목록으로 즉답. managed 경로 실측은 배포 뒤 확인.
+- 보류: 서버별 `instructions`(SDK 2.2.0은 생성 시 고정), 도구 전체 상주(`alwaysLoad`: 41개 정의가 매 대화에 상주), `managedMcpServers` 전환(재시작 없는 추가이나 강제 범위가 달라짐), 실행 중 세션 반영 실측(승인 1건 필요), 정책 조회 62초 간격 단축.
+- 시험: `tests/harness_detect_check.py` 8건(수정 전 6건 실패), `kit_continuity_check.py` 22건, 기존 `command_surfaces_check`·`managed_policy_gap_check`·`dest_pin_credential_redaction_check`·`connector_control_check`는 안내문 대역 속성을 더해 통과.

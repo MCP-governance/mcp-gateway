@@ -35,7 +35,7 @@ class PolicyGap(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.usable = ["docs", "git"]
         package = ModuleType("gap_policy")
-        package.pac = SimpleNamespace(servers_for=lambda owner: self.usable)
+        package.pac = SimpleNamespace(servers_for=lambda owner: self.usable, harness_guidance=lambda owner, servers: "")
         connection = SimpleNamespace(execute=AsyncMock())
         connection.execute.return_value = SimpleNamespace(fetchone=AsyncMock(return_value={"managed_state": "active"}))
 
