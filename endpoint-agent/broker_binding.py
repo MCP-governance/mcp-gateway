@@ -9,19 +9,23 @@ import struct
 from pathlib import Path
 
 
-def enforcing_profiles(username, harnesses=("codex", "claude")):
+def enforcing_profiles(username, harnesses=("codex", "claude"), mode="enforce"):
+    """The profiles that must be loaded in enforce mode for the installed stage. The warning stage installs the
+    legacy set (managed-linux.checks asks for the same names); only the strict stage installs the bound ones."""
     name = "mcpgw-" + username
     # A PC without one of the harnesses has no profiles for it; the others must still all enforce.
-    return {name + suffix for suffix in ("", "-bound-credential") + tuple(
-        suffix.format(h) for h in harnesses for suffix in ("-{}-entry", "-bound-{}", "-bound-{}-tool"))}
+    strict = mode == "enforce"
+    return {name + suffix for suffix in ("", "-bound-credential" if strict else "-credential") + tuple(
+        suffix.format(h) for h in harnesses
+        for suffix in (("-{}-entry", "-bound-{}", "-bound-{}-tool") if strict else ("-{}",)))}
 
 
-def kernel_ready(username, harnesses=("codex", "claude")):
+def kernel_ready(username, harnesses=("codex", "claude"), mode="enforce"):
     try:
         if Path("/sys/module/apparmor/parameters/enabled").read_text().strip() != "Y":
             return "apparmor-unavailable"
         profiles = set(Path("/sys/kernel/security/apparmor/profiles").read_text().splitlines())
-        if not {p + " (enforce)" for p in enforcing_profiles(username, harnesses)} <= profiles:
+        if not {p + " (enforce)" for p in enforcing_profiles(username, harnesses, mode)} <= profiles:
             return "profiles-not-enforcing"
         if Path("/sys/kernel/security/apparmor/features/network/af_unix").read_text().strip() != "yes":
             return "unix-mediation-unavailable"
@@ -53,7 +57,7 @@ def authorize_peer(connection, config):
             reason = "invalid-binding-mode"
             allowed = False
         else:
-            reason = kernel_ready(config["username"], config.get("harnesses", ("codex", "claude")))
+            reason = kernel_ready(config["username"], config.get("harnesses", ("codex", "claude")), mode)
             label = peer_label(connection)
             if not reason:
                 name = "mcpgw-" + config["username"] + "-bound-"

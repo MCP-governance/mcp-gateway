@@ -737,9 +737,24 @@ async def enrollment_token(owner: str) -> dict:
     return {"enrollment_token": raw, "expires_at": expires.isoformat()}
 
 
+def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None) -> bool:
+    """An earlier device of this employee's account that this install replaces: same platform and managed account,
+    and the same PC. The machine id decides when both sides report one; otherwise the host name does (installs
+    before D-217 sent none, and macOS sends none). The platform column is not compared: the observer's enroll
+    report rewrites it ("Linux 6.8"), which kept the earlier reinstall cleanup from ever finding its ghosts."""
+    detail = old.get("detail") or {}
+    if managed_platform(old) != platform:
+        return False
+    if platform == "windows" and detail.get("local_sid") != local_sid:
+        return False
+    if machine_id and detail.get("machine_id"):
+        return machine_id == detail["machine_id"]
+    return old["hostname"] == hostname
+
+
 async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int | None, *,
                              platform: str = "linux", local_sid: str | None = None,
-                             helper_command: str | None = None) -> dict:
+                             helper_command: str | None = None, machine_id: str | None = None) -> dict:
     endpoint_id = "managed-" + str(uuid.uuid4())
     async with db.transaction() as connection:
         grant = await (await connection.execute(
@@ -749,14 +764,35 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                  RETURNING owner_token""", (_hash_key(raw),))).fetchone()
         if not grant:
             raise PermissionError("설치 키트가 만료·소비됐거나 계정이 비활성 상태입니다. 새 키트를 받으세요.")
+        # The same employee on the same PC installing again (an update is the new kit's installer) replaces the
+        # earlier device. Its activation carries over only when that device was still active: a quarantined
+        # one, one the administrator stopped (revoked, or its local runs stopped) or an unactivated one starts
+        # over as pending, so a reinstall never lifts a hold (D-217).
+        earlier = [r for r in await (await connection.execute(
+            """SELECT endpoint_id,hostname,managed_state,activated_by,activated_at,detail FROM endpoint_agents
+                 WHERE owner_token=%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL
+                 ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], username))).fetchall()
+            if _same_pc(r, hostname, platform, machine_id, local_sid)]
+        inherited = None
+        if earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]:
+            held = await (await connection.execute(
+                "SELECT 1 FROM local_run_stops WHERE device_id=%s", (earlier[0]["endpoint_id"],))).fetchone()
+            inherited = None if held else earlier[0]
+        detail = ({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows"
+                  else {"managed_platform": "macos"} if platform == "macos" else {})
+        if machine_id:
+            detail["machine_id"] = machine_id
+        if inherited:
+            detail["inherited_from"] = inherited["endpoint_id"]
         await connection.execute(
             """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
-                 key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,detail)
-               VALUES (%s,%s,%s,'managed-1',%s,%s,%s,%s,'active',%s,now(),'pending',%s,%s,%s,%s)""",
+                 key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,
+                 activated_by,activated_at,detail)
+               VALUES (%s,%s,%s,'managed-1',%s,%s,%s,%s,'active',%s,now(),%s,%s,%s,%s,%s,%s,%s)""",
             (endpoint_id, hostname, platform, grant["owner_token"], _hash_key(key), key[:8],
-             Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], str(uuid.uuid4()), username, uid,
-             Jsonb({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows"
-                   else {"managed_platform": "macos"} if platform == "macos" else {})))
+             Jsonb(list(DEVICE_SCOPES)), grant["owner_token"], "active" if inherited else "pending", str(uuid.uuid4()),
+             username, uid, inherited["activated_by"] if inherited else None,
+             inherited["activated_at"] if inherited else None, Jsonb(detail)))
         await connection.execute(
             "UPDATE endpoint_enrollment_tokens SET endpoint_id=%s WHERE token_hash=%s", (endpoint_id, _hash_key(raw)))
         await connection.execute("UPDATE principals SET managed_required=true WHERE token=%s", (grant["owner_token"],))
@@ -764,13 +800,16 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
             (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
                                                        "local_uid": uid, "local_sid": local_sid})))
-    # 같은 PC·같은 관리 계정에 다시 설치하면 설치기가 이전 설치를 먼저 지운다. 남은 장치 행은 다시 보고하지 않는
-    # 유령이므로 폐기한다(10-22 PJ1 재설치마다 active 행이 쌓였다).
-    for old in await db.fetch_all(
-            """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND hostname=%s AND local_username=%s
-               AND platform=%s AND status='active' AND endpoint_id<>%s""",
-            (grant["owner_token"], hostname, username, platform, endpoint_id)):
+        if inherited:
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
+                (endpoint_id, grant["owner_token"], Jsonb({"actor": inherited["activated_by"], "inherited_from": inherited["endpoint_id"],
+                                                           "note": "같은 직원·같은 PC의 재설치로 이전 장치의 활성화를 이어받음"})))
+    # The earlier devices no longer report: revoke them (their tokens with them) and say what replaced them.
+    for old in earlier:
         await revoke_device(old["endpoint_id"], "reinstall")
+        await db.execute("UPDATE endpoint_agents SET detail = detail || %s WHERE endpoint_id=%s",
+                         (Jsonb({"superseded_by": endpoint_id}), old["endpoint_id"]))
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 

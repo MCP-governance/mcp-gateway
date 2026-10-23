@@ -550,7 +550,10 @@ def main() -> int:
         result.update(employee=employee, managed_account=account,
                       harnesses={name: item.get("digests", {}) for name, item in placed.items()})
         print(json.dumps(result, ensure_ascii=False))
-        print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+        print("\n이전 연결의 활성화를 이어받았습니다. 바로 사용할 수 있습니다." if result.get("state") == "active"
+              else "\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+        print("연결 상태 확인: mcpgw-status" + (f" (제한된 계정에서는 cat /usr/local/lib/mcpgw-managed/status-{account}.txt)"
+                                              if not companion else ""))
         # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
         print(f"새 터미널을 열어 평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
               else "이 계정에서 codex 또는 claude를 실행하세요.")

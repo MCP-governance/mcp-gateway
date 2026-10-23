@@ -8,8 +8,25 @@ from pathlib import Path
 import httpx
 
 
+# The files a Linux install copies to the PC (endpoint-agent/managed-linux.py PROGRAM_FILES). The digest of their
+# text is the kit version: the PC's status command prints the digest of what it installed, /api/health this one.
+KIT_PROGRAMS = ('managed-linux.py', 'enforce-linux.py', 'broker_binding.py', 'agent.py', 'os-observer.py',
+                'offline_buffer.py', 'local-runner.py')
+
+
+def kit_sha256() -> str | None:
+    folder = Path(os.getenv('ENDPOINT_KIT_DIR', '/endpoint-kit'))
+    digest = hashlib.sha256()
+    try:
+        for name in KIT_PROGRAMS:
+            digest.update(name.encode() + b'\0' + (folder / name).read_bytes().replace(b'\r\n', b'\n'))
+    except OSError:
+        return None
+    return digest.hexdigest()
+
+
 @lru_cache(maxsize=1)
-def build_info() -> dict:
+def _code_info() -> dict:
     root = Path(__file__).parent
     kit = root / 'agent_static/kit/mcpgw_pc.py'
     digest = hashlib.sha256()
@@ -21,6 +38,13 @@ def build_info() -> dict:
             digest.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     return {'revision': os.getenv('MCP_BUILD_REVISION', 'unknown'), 'code_sha256': digest.hexdigest(),
             'pc_kit_sha256': hashlib.sha256(kit.read_bytes()).hexdigest() if kit.is_file() else None}
+
+
+def build_info() -> dict:
+    # The kit is a bind mount that changes without a restart, so its version is read per call, not cached.
+    info = dict(_code_info())
+    info['pc_kit_sha256'] = kit_sha256() or info['pc_kit_sha256']
+    return info
 
 
 # Compare all PAC/routing modules and policy data. Reviewed capability scopes have a

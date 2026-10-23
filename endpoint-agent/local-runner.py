@@ -563,10 +563,14 @@ def recover(config, request):
 def run(config, request, log):
     import pwd
     account=pwd.getpwnam(config['username'])
+    failures,last=0,None
     while True:
         try:
             recover(config,request)
             job=request(config,'/api/endpoint/local-jobs?wait=5').get('job')
+            if last is not None:
+                log({'local_runner':'ready'})
+            failures,last=0,None
             if not job:
                 continue
             try:
@@ -576,7 +580,13 @@ def run(config, request, log):
                 answer={'error':type(exc).__name__,'stopped':False}
             request(config,f"/api/endpoint/local-jobs/{job['id']}",answer)
         except Exception as exc:
-            log({'local_runner':'error','error':type(exc).__name__})
-            time.sleep(1)
-
+            # The Gateway refuses a device that is not active (pending activation, quarantined): that is waiting, not a
+            # fault. Say it once per change and back off, instead of an error line every second (D-217).
+            status=getattr(exc,'code',None)
+            kind=('waiting',status) if status in (401,403,409) else ('error',type(exc).__name__)
+            if kind!=last:
+                log({'local_runner':kind[0],**({'status':status} if kind[0]=='waiting' else {'error':kind[1]})})
+            last=kind
+            failures+=1
+            time.sleep(min(30,2**min(failures,5)) if kind[0]=='waiting' else 1)
 
