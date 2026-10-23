@@ -59,6 +59,9 @@ class SuggestionCheck(unittest.TestCase):
         self.assertRegex(intake_proposal.server_id(first), r"^[a-z][a-z0-9-]{1,30}$")
         self.assertEqual(intake_proposal.server_id(first), intake_proposal.server_id(first))
         self.assertNotEqual(intake_proposal.server_id(first), intake_proposal.server_id({**first, "id": "c" * 32}))
+        monorepo = {**row("repository"), "repository_url": "https://github.com/modelcontextprotocol/servers",
+                    "repository_path": "src/filesystem"}
+        self.assertTrue(intake_proposal.server_id(monorepo).startswith("filesystem-"))
 
     def test_destructive_and_command_arguments_outrank_read_hint(self):
         self.assertEqual(intake_proposal.action(TOOL), "r")

@@ -16,6 +16,10 @@ def digest(value: dict) -> str:
 def server_id(row: dict) -> str:
     address = urlsplit(row.get("endpoint_url") or row.get("repository_url") or "")
     source = address.hostname if row.get("intake_kind") == "remote-endpoint" else address.path.strip("/")
+    # A monorepo holds many servers: name each by its folder, not by the owner every one of them shares
+    # (10-23: filesystem, memory and sequentialthinking all became "modelcontextprotocol-…" to the harness).
+    if row.get("intake_kind") != "remote-endpoint" and (row.get("repository_path") or "").strip("/"):
+        source = row["repository_path"].strip("/").rsplit("/", 1)[-1]
     slug = re.sub(r"[^a-z0-9]+", "-", (source or "mcp").lower()).strip("-")
     slug = re.sub(r"^[^a-z]+", "", slug)[:21].rstrip("-") or "mcp"
     return f"{slug}-{str(row['id']).replace('-', '')[:8]}"
