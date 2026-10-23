@@ -100,6 +100,13 @@ class RunnerCommand(unittest.TestCase):
         for path in ("link", "missing"):
             with self.subTest(path=path), self.assertRaises(ValueError):
                 runner.PinnedMounts(manifest(mounts=[{"path": path, "mode": "ro"}]), self.home)
+        # 첫 설치 PC: 승인된 폴더가 없으면 소유자를 받은 러너가 그 계정 소유 0700으로 만든다. 링크는 여전히 거부.
+        owner = (os.getuid(), os.getgid())
+        made = runner.PinnedMounts(manifest(mounts=[{"path": "fresh/docs", "mode": "ro"}]), self.home, owner)
+        self.addCleanup(made.close)
+        self.assertEqual(os.stat(os.path.join(self.home, "fresh", "docs")).st_mode & 0o777, 0o700)
+        with self.assertRaises(ValueError):
+            runner.PinnedMounts(manifest(mounts=[{"path": "link", "mode": "ro"}]), self.home, owner)
         with self.assertRaises(ValueError):
             runner.container_command("docker", manifest(image="mcp/filesystem:latest"), self.account,
                                      mount_options=self.pinned.options)

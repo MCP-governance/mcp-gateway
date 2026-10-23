@@ -59,8 +59,9 @@ def image_allowed(image, mirrors):
 
 class PinnedMounts:
     """Pin every parent with openat/O_NOFOLLOW; the local engine binds the held inode, not a user pathname."""
-    def __init__(self, manifest, home):
+    def __init__(self, manifest, home, owner=None):
         self.stack, self.paths, self.options = ExitStack(), [], []
+        inside = len(Path(home).parts)
         try:
             if not Path(home).is_absolute() or home in ('/','/root') or ':' in home or ',' in home:
                 raise ValueError('허용하지 않는 홈 경로')
@@ -71,7 +72,15 @@ class PinnedMounts:
                     raise ValueError('허용하지 않는 마운트 경로')
                 absolute = Path(home).joinpath(*parts)
                 parent = None
-                for part in absolute.parts:
+                for index, part in enumerate(absolute.parts):
+                    if owner and index >= inside:
+                        # 첫 설치 PC에는 승인된 폴더가 아직 없다(10-23 pj2). 관리 계정 홈 안의 승인 경로만,
+                        # 고정된 부모 FD 아래에 그 계정 소유 0700으로 만든다. 이미 있는 링크·파일은 아래 open이 거부한다.
+                        try:
+                            os.mkdir(part,0o700,dir_fd=parent)
+                            os.chown(part,*owner,dir_fd=parent,follow_symlinks=False)
+                        except FileExistsError:
+                            pass
                     try:
                         descriptor = os.open(part,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW,dir_fd=parent)
                     except OSError as exc:
@@ -256,7 +265,7 @@ class Session:
         self.stderr_done=threading.Event()
         self.exit_code=None
         self.pinned=None
-        self.pinned=PinnedMounts(manifest,account.pw_dir)
+        self.pinned=PinnedMounts(manifest,account.pw_dir,(account.pw_uid,account.pw_gid))
         try:
             _,command=container_command(engine,manifest,account,mount_options=self.pinned.options,namespace=namespace,name=name,
                                          host_paths=[str(path) for path,*_ in self.pinned.paths])
