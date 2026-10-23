@@ -185,7 +185,9 @@ def _identifier_number(number: int | float) -> str | None:
         month, day, gender = int(digits[2:4]), int(digits[4:6]), digits[6]
         if 1 <= month <= 12 and 1 <= day <= 31 and gender in "12345678":
             return "KR_RRN"
-    if 13 <= len(digits) <= 19 and _luhn(digits):
+    # 카드 IIN은 3~6으로 시작하고 현행 번호는 14자리 이상이다. 13자리 밀리초 타임스탬프(17…)가
+    # Luhn을 우연히 통과해 공개 문서 검색 결과 전체를 보류하던 오탐(10-23 Cloudflare Docs)을 막는다.
+    if 14 <= len(digits) <= 19 and digits[0] in "3456" and _luhn(digits):
         return "CARD_NUMBER"
     return None
 

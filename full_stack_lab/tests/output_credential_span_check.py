@@ -24,6 +24,11 @@ class CredentialSpan(unittest.TestCase):
         self.assertNotIn("hunter2hunter", text)
         self.assertTrue(kinds)
 
+    def test_millisecond_timestamp_is_not_card(self):
+        stamp = next(n for n in range(1761200000000, 1761200000100) if privacy._luhn(str(n)))
+        self.assertIsNone(privacy._identifier_number(stamp))
+        self.assertEqual(privacy._identifier_number(4111111111111111), "CARD_NUMBER")
+
     def test_structured_credential_is_withheld(self):
         with self.assertRaises(privacy.InspectionUnavailable):
             asyncio.run(privacy.mask_payload({"structuredContent": {"password": "hunter2hunter"}}))
