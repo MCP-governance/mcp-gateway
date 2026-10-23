@@ -159,6 +159,8 @@ class DeviceEnrollment(StrictModel):
     # Linux: the account UID. Windows: the account SID and the header command rendered into the
     # managed harness settings (the interpreter path differs per device, so the installer reports it).
     local_uid: int | None = Field(default=None, ge=501)
+    # Linux: sha256 of this machine's id, so a reinstall on the same PC is told from a copy on another (D-217).
+    machine_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     local_sid: str | None = Field(default=None, pattern=r"^S-1-5-21-\d+-\d+-\d+-\d+$")
     helper_command: str | None = Field(default=None, max_length=400,
                                        pattern=r'^"[A-Za-z]:\\[^"]+\\pythonw?\.exe" -I -S "[A-Za-z]:\\[^"]+\\managed-windows\.py" header$')
@@ -182,7 +184,8 @@ async def device_enroll(request: DeviceEnrollment):
     try:
         device = await consume_enrollment(request.enrollment_token, request.device_key, request.hostname,
                                            request.local_username, request.local_uid, platform=request.platform,
-                                           local_sid=request.local_sid, helper_command=request.helper_command)
+                                           local_sid=request.local_sid, helper_command=request.helper_command,
+                                           machine_id=request.machine_id)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {"endpoint_id": device["endpoint_id"], "state": device["managed_state"],

@@ -2224,3 +2224,21 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   상태 점검(`apparmor_enforcing`)과 헤더 브로커 결속(`broker_binding.kernel_ready`)은 그 목록의 프로필만 요구한다(없는 하네스의 프로필을 요구하면 결속 집행 모드에서 모든 헤더가 거부된다). 직원 계정 실행 연결(shim)도 배치한 하네스만 만든다.
 - 뒤에 하네스를 설치하면 키트를 다시 실행해 추가한다.
 - 시험: `header_broker_label_check.py` `test_pc_with_one_harness_needs_only_its_profiles`, 기존 키트 시험. 하네스 하나만 있는 실기기 설치는 팀원 VM 재실행으로 확인한다.
+
+## D-217 같은 직원·같은 PC의 재설치는 직전 활성 장치를 대체하고 활성화를 이어받는다 (2026-10-23)
+
+- 배경(PJ1 10-23 16:20): 키트 업데이트는 새 zip의 `install.sh` 재실행인데, 매번 새 장치 ID가 `pending`으로 시작해 관리자가 다시 활성화해야 했다. PJ1에는 active 기록이 10개(8개는 보고 끊김)였다.
+  재설치 정리(D-192)가 이전 기록을 찾지 못한 원인은 `platform` 비교였다. 관측기의 enroll 보고가 `platform`을 `Linux 6.8…`로 덮어써 `'linux'`와 같지 않았다.
+  그 밖에 하네스(`claude mcp list`)에는 대기 중에도 401 「인증이 만료되었거나 유효하지 않습니다」만 보였고, 직원이 볼 상태 확인 수단과 키트 판본(`/api/health`의 `pc_kit_sha256` null)이 없었으며, 대기 중 로컬 실행기가 2초마다 `HTTPError`를, 결속 검사가 거짓 `profiles-not-enforcing`을 남겼다.
+- 결정 1(이어받기): `endpoint_plane.consume_enrollment`는 같은 직원 계정·같은 관리 계정 이름·같은 PC의 이전 장치(`status=active`)를 찾는다. `platform` 열은 비교하지 않고 `managed_platform`(detail)만 쓴다.
+  같은 PC는 둘 다 `machine_id`(Linux `/etc/machine-id`에 고정 문구를 붙인 SHA-256, 원본은 보내지 않음)가 있으면 그 값으로, 없으면(이전 키트·macOS) 호스트 이름으로 본다. Windows는 계정 SID도 같아야 한다.
+  가장 최근 이전 장치가 `managed_state=active`이고 승인자가 있고 그 장치 범위의 `local_run_stops`가 없으면, 새 장치를 `active`로 만들고 승인자·승인 시각을 물려받아 `activated` 이벤트(`inherited_from`)를 남긴다.
+  격리된 장치, 활성화 전 장치, 등록 해제(`revoked`) 장치, 로컬 실행이 중지된 장치는 이어받지 않고 `pending`으로 시작한다(재설치로 보류를 풀 수 없다). 다른 PC·다른 직원은 지금처럼 `pending`이다.
+  어느 경우든 이전 기록은 `revoke_device(…, "reinstall")`로 폐기해 토큰을 함께 철회하고 `detail.superseded_by`에 새 장치를 남긴다.
+- 보안 경계: 신원은 그대로 transport 토큰에서만 정해진다. 이어받은 장치도 첫 보고가 정책·집행 점검에 맞아야 하고(보고가 없으면 토큰 발급 불가, 어긋나면 격리) 기존의 관리자 승인에 기대지 새 승인을 만들지 않는다. 같은 호스트 이름의 다른 PC 복제는 `machine_id`가 달라 이어받지 못한다.
+- 결정 2(대기 사유): 헤더 도우미는 서비스가 알려 준 상태에 따라 고정 거부값 `Bearer endpoint-not-active.pending|.quarantined`를 출력한다(서비스가 없으면 기존 값). `agent_contract.authenticate`가 이 값을 서명 검증 전에 401로 거절하며 사유 문장(「이 PC는 관리자 활성화를 기다리는 중입니다…」)을 응답 `detail`에 실어, 하네스가 보여 주는 401 줄에 대기 사유가 나온다. 자격으로는 어디에서도 통하지 않는다.
+- 결정 3(상태 명령): Linux 서비스가 `/usr/local/lib/mcpgw-managed/status-<계정>.json|txt`(root 소유, 0644, 요약만)를 매 주기에 쓰고, `mcpgw-status`(= `managed-linux.py status`)가 장치 상태(활성/활성화 대기/중지)·게이트웨이 연결·마지막 보고·승인 서버 수·키트 판본을 한국어로 보인다. 180초 넘게 갱신이 없으면 「확인 안 됨」이다. 프로필 안의 계정은 Python을 못 돌려 `cat …/status-<계정>.txt`를 쓴다.
+- 결정 4(판본): 키트 판본은 설치되는 프로그램 7개(`PROGRAM_FILES`)의 줄바꿈 정규화 SHA-256이다. `/api/health`의 `pc_kit_sha256`이 게이트웨이에 마운트한 키트 폴더(`compose.field.yaml`의 `../endpoint-agent:/endpoint-kit:ro`)에서 호출마다 계산하고, 상태 명령이 설치본의 앞 12자리를 보인다.
+- 결정 5(로그): 로컬 실행기는 게이트웨이가 401·403·409로 거절하면 `{"local_runner":"waiting","status":…}`를 한 번 남기고 간격을 2초에서 30초까지 늘리며, 풀리면 `ready`를 한 번 남긴다. 결속 검사의 `enforcing_profiles/kernel_ready(username, harnesses, mode)`는 설치 단계(`warn`은 기존 프로필, `enforce`는 결속 프로필)와 D-216의 하네스 목록에 맞는 프로필만 요구한다.
+- 시험: `full_stack_lab/tests/kit_continuity_check.py` 21건(수정 전 코드에서 19건 실패, 2건은 Linux 전용), 기존 `header_broker_label_check.py`의 설치기 복사 단언을 `PROGRAM_FILES`로 바꿨다. DB는 대역이라 집행·실기기 증거가 아니다.
+- 한계: macOS는 `machine_id`를 보내지 않아 호스트 이름으로만 같은 PC를 본다. Windows·macOS 키트에는 같은 이름의 상태 명령이 없다(Windows는 트레이 표시). 하네스가 401 본문을 항상 보여 주는지는 PJ1에서 확인해야 한다. 이미 설치된 장치는 키트를 한 번 다시 설치해야 `machine_id`·상태 명령이 생기고, 그 재설치는 호스트 이름으로 이어받는다.

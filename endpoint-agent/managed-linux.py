@@ -35,6 +35,12 @@ PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}
 TOKEN_CACHE_SECONDS = 180
+# Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
+# (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
+PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
+                 "offline_buffer.py", "local-runner.py")
+STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
+STATUS_STALE_SECONDS = 180
 
 
 def load_module(name, path):
@@ -42,6 +48,23 @@ def load_module(name, path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def kit_version(folder):
+    digest = hashlib.sha256()
+    for name in PROGRAM_FILES:
+        digest.update(name.encode() + b"\0" + (Path(folder) / name).read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()
+
+
+def machine_id():
+    """Names this PC to the Gateway, so a reinstall here continues the earlier device and a copy elsewhere does not.
+    A hash with a fixed label: the raw /etc/machine-id is never sent."""
+    try:
+        raw = Path("/etc/machine-id").read_text().strip()
+    except OSError:
+        return None
+    return hashlib.sha256(b"mcpgw-machine:" + raw.encode()).hexdigest() if raw else None
 
 
 def protected(path):
@@ -214,7 +237,7 @@ def install(args):
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
         raise ValueError("프로그램 경로가 root 관리 경로가 아닙니다")
-    for name in ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py"):
+    for name in PROGRAM_FILES:
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
     folder = STATE / args.user
@@ -227,7 +250,8 @@ def install(args):
         raise ValueError("이미 설치된 장치입니다. 기존 자격을 폐기하고 조직 관리자가 제거한 뒤 재설치하세요")
     bundle["device_key"] = secrets.token_urlsafe(32)
     enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
-                           "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid}, credential=False)
+                           "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid,
+                           **({"machine_id": machine_id()} if machine_id() else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     # manifest_pubkey: the approver's key for local MCP manifests, pinned here and never taken from policy.
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
@@ -272,7 +296,70 @@ def install(args):
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "--now", unit], check=True)
     args.enrollment.unlink()
-    print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "state": "pending-organization-activation", "service": unit}))
+    write_status_shim()
+    # "active": the Gateway continued the activation of the earlier device of this employee on this PC (D-217).
+    print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user,
+                      "state": "active" if enrolled.get("state") == "active" else "pending-organization-activation",
+                      "service": unit, "status_command": str(STATUS_SHIM)}))
+
+
+STATE_LABEL = {"active": "활성", "pending": "활성화 대기", "quarantined": "중지 (점검에서 격리됨)",
+               "revoked": "중지 (등록 해제됨)", "unknown": "확인 안 됨"}
+
+
+def status_path(user, suffix):
+    return PROGRAMS / f"status-{user}.{suffix}"
+
+
+def render_status(summary, now):
+    """What the employee reads: the state, the Gateway, the last report, the kit and the approved servers.
+    Only these fields leave the root-owned service; no key, token or policy text."""
+    def clock(moment):
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(moment))
+    updated = summary.get("updated") or 0
+    silent = now - updated > STATUS_STALE_SECONDS
+    state = "unknown" if silent else summary.get("state", "unknown")
+    last, servers = summary.get("last_report"), summary.get("servers")
+    lines = [f"장치 상태: {STATE_LABEL.get(state, STATE_LABEL['unknown'])}",
+             f"게이트웨이: {'연결됨' if summary.get('connected') and not silent else '연결 안 됨'}",
+             "마지막 보고: " + (f"{clock(last)} ({max(0, int(now - last))}초 전)" if last else "—"),
+             "승인 서버: " + (f"{servers}개" if servers is not None else "—"),
+             "키트 판본: " + (summary.get("kit") or "—")[:12]]
+    if silent:
+        lines.append("관리형 서비스가 응답하지 않습니다 (마지막 갱신 " + (clock(updated) if updated else "—") + ")")
+    elif state == "pending":
+        lines.append("관리자가 활성화하면 자동으로 연결됩니다.")
+    return "\n".join(lines) + "\n"
+
+
+def publish_status(summary):
+    """Root writes, anyone reads: the summary the status command prints, and the same text for an account whose
+    profile cannot run Python (`cat` is allowed there)."""
+    summary = {**summary, "updated": time.time()}
+    for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"]))):
+        path = status_path(summary["user"], suffix)
+        private_write(path, text)
+        path.chmod(0o644)
+
+
+def write_status_shim():
+    private_write(STATUS_SHIM, "#!/bin/sh\n# mcpgw managed status\n"
+                  f'exec /usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py status "$@"\n')
+    STATUS_SHIM.chmod(0o755)
+
+
+def status(args):
+    user = args.user or pwd.getpwuid(os.getuid()).pw_name
+    path = status_path(user, "json")
+    if not args.user and not path.exists():
+        # An administrator's own account differs from the managed account the harnesses run in.
+        found = sorted(PROGRAMS.glob("status-*.json"))
+        path = found[0] if len(found) == 1 else path
+    try:
+        summary = json.loads(path.read_text())
+    except (OSError, ValueError):
+        raise ValueError("이 PC에는 관리형 연결의 상태가 없습니다. 설치되지 않았거나 서비스가 아직 시작되지 않았습니다") from None
+    print(render_status(summary, time.time()), end="")
 
 
 def serve(args):
@@ -291,7 +378,8 @@ def serve(args):
             permitted = binding.authorize_peer(self.request, config)
             with lock:
                 if not permitted or time.monotonic() >= cache.get("until", 0):
-                    answer = {"error": "엔드포인트 활성화·정책 연결이 필요합니다"}
+                    # The state lets the helper tell the harness why there is no token (pending, quarantined).
+                    answer = {"error": "엔드포인트 활성화·정책 연결이 필요합니다", "state": cache.get("state", "")}
                 else:
                     answer = {"Authorization": "Bearer " + cache["token"]}
             self.request.sendall(json.dumps(answer).encode())
@@ -336,6 +424,12 @@ def serve(args):
             print(json.dumps({"endpoint_id": config["endpoint_id"], "observers": observers}), flush=True)
             time.sleep(55)
     threading.Thread(target=observe, daemon=True).start()
+    try:
+        kit = kit_version(PROGRAMS)
+    except OSError:
+        kit = None
+    summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
+               "servers": None, "kit": kit}
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
         # the activation within seconds instead of a minute; an active device keeps the slow cadence.
@@ -382,12 +476,21 @@ def serve(args):
             else:
                 with lock:
                     cache.clear()
+            with lock:
+                cache["state"] = report["state"]
+            summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]))
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()
+            # 401 on a device-key route: the Gateway no longer knows this credential (the administrator revoked it).
+            summary.update(connected=False, **({"state": "revoked"} if getattr(exc, "code", None) == 401 else {}))
             print(json.dumps({"state": "connection-stopped", "error": type(exc).__name__,
                               "status": getattr(exc, "code", None), "reason": str(exc)[:200]}), flush=True)
+        try:
+            publish_status(summary)
+        except OSError:
+            pass  # the employee's view is a convenience; it never stops the connection
         time.sleep(pause)
 
 
@@ -413,6 +516,10 @@ def rollback(args):
         else:
             target.unlink(missing_ok=True)
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
+    for suffix in ("json", "txt"):
+        status_path(args.user, suffix).unlink(missing_ok=True)
+    if not list(PROGRAMS.glob("status-*.json")):
+        STATUS_SHIM.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
     (PROGRAMS / f"ca-{person.pw_uid}.crt").unlink(missing_ok=True)
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
@@ -422,18 +529,22 @@ UNAVAILABLE = {"Authorization": "Bearer endpoint-not-active"}
 
 
 def header(args):
+    reason = ""
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
             connection.settimeout(8)
             connection.connect(args.socket)
             response = json.loads(connection.recv(8192))
         if set(response) != {"Authorization"}:
+            # The service says why it has no token; the Gateway turns the suffix into the 401 line the employee sees (D-217).
+            state = response.get("state") if isinstance(response, dict) else ""
+            reason = state if state in ("pending", "quarantined") else ""
             raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
     except (OSError, ValueError) as exc:
         # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
         # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
         print("관리형 연결 불가: " + str(exc), file=sys.stderr)
-        response = UNAVAILABLE
+        response = {"Authorization": UNAVAILABLE["Authorization"] + ("." + reason if reason else "")}
     print(json.dumps(response))
 
 
@@ -453,6 +564,9 @@ def main():
     helper = commands.add_parser("header")
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
+    show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
+    show.add_argument("--user")
+    show.set_defaults(run=status)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)

@@ -237,8 +237,13 @@ class Integration(unittest.TestCase):
         self.assertTrue(all((ROOT / "endpoint-agent" / name).is_file() for name in files["linux"]))
         tree = ast.parse((ROOT / "endpoint-agent/managed-linux.py").read_text(encoding="utf-8"))
         install = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "install")
-        self.assertTrue(any(isinstance(n, ast.Tuple) and any(isinstance(e, ast.Constant)
-                            and e.value == "broker_binding.py" for e in n.elts) for n in ast.walk(install)))
+        # The installer copies the module list PROGRAM_FILES (D-217: one list, also the kit version's input).
+        programs = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign)
+                        and any(isinstance(t, ast.Name) and t.id == "PROGRAM_FILES" for t in n.targets))
+        self.assertIn("broker_binding.py", programs)
+        self.assertLessEqual(set(programs), set(files["linux"]))
+        self.assertTrue(any(isinstance(n, ast.For) and isinstance(n.iter, ast.Name) and n.iter.id == "PROGRAM_FILES"
+                            for n in ast.walk(install)))
 
     def test_extracted_checks_need_no_new_namespace_and_follow_stage(self):
         source = (ROOT / "endpoint-agent/managed-linux.py").read_text(encoding="utf-8")

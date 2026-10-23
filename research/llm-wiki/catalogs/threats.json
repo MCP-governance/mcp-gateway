@@ -853,9 +853,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "f83992c4f7cbbd17f9f42d0ef04162acc79434fa1604683fcc9da54ad5763020",
-        "committed_sha256": "f83992c4f7cbbd17f9f42d0ef04162acc79434fa1604683fcc9da54ad5763020",
-        "normalized_sha256": "f83992c4f7cbbd17f9f42d0ef04162acc79434fa1604683fcc9da54ad5763020",
+        "sha256": "821dc502b419ac7f0a40c30ee47e473573b95a4e91857762f94daeb64763e92e",
+        "committed_sha256": "821dc502b419ac7f0a40c30ee47e473573b95a4e91857762f94daeb64763e92e",
+        "normalized_sha256": "821dc502b419ac7f0a40c30ee47e473573b95a4e91857762f94daeb64763e92e",
         "worktree_modified": false
       }
     ],
@@ -996,9 +996,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
-        "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
-        "committed_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
-        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
+        "committed_sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
+        "normalized_sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
         "worktree_modified": false
       },
       {
@@ -1098,6 +1098,7 @@
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
       "changed_review_files": [
+        "full_stack_lab/gateway/app/agent_contract.py",
         "full_stack_lab/gateway/app/pac.py"
       ]
     },
@@ -1210,16 +1211,16 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
-        "sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
-        "committed_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
-        "normalized_sha256": "48558807b085ca57bbf6b06569622a8d1381dfaa498b3162cc4929aa7262b16d",
+        "sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
+        "committed_sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
+        "normalized_sha256": "008635087bbf60b8d2c33853d1d829856ee27a646221ac1a1af4236ad358eb7d",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
-        "sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
-        "committed_sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
-        "normalized_sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
+        "sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
+        "committed_sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
+        "normalized_sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
         "worktree_modified": false
       },
       {
@@ -1294,6 +1295,7 @@
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
       "changed_review_files": [
+        "full_stack_lab/gateway/app/agent_contract.py",
         "full_stack_lab/gateway/app/idp.py"
       ]
     },
@@ -3218,9 +3220,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/idp.py",
-        "sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
-        "committed_sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
-        "normalized_sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb",
+        "sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
+        "committed_sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
+        "normalized_sha256": "d86ee69a12e22d9beeefcbf442c95ff58e96f5be801522f6fe8fe1f820ec9bff",
         "worktree_modified": false
       },
       {

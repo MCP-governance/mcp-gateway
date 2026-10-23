@@ -103,9 +103,20 @@ def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
     return jwt.encode(claims, private_key(), algorithm=ALGORITHM), claims
 
 
+# What the managed header helper prints when it has no token to give. Never a credential: it is refused like any
+# unsigned value, but the reason it was refused reaches the employee in the harness's own 401 line (D-217).
+PLACEHOLDER_REASON = {
+    "pending": "이 PC는 관리자 활성화를 기다리는 중입니다. 관리자가 활성화하면 자동으로 연결됩니다.",
+    "quarantined": "이 PC는 점검에서 격리되어 관리자의 재활성화를 기다리는 중입니다.",
+    "": "이 PC의 관리형 연결이 활성 상태가 아니거나 중단됐습니다."}
+
+
 def authenticate(authorization: str | None) -> tuple[dict, dict]:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "로그인이 필요합니다.")
+    placeholder, _, reason = authorization[7:].partition(".")
+    if placeholder == "endpoint-not-active" and reason in PLACEHOLDER_REASON:
+        raise HTTPException(401, PLACEHOLDER_REASON[reason])
     try:
         claims = jwt.decode(authorization[7:], public_key(), algorithms=[ALGORITHM], audience=AUDIENCE,
                             issuer=ISSUER, options={"require": ["sub", "iss", "aud", "exp", "iat", "nbf", "jti"]})
