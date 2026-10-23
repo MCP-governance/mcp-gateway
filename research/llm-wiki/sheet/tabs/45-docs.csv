@@ -1,5 +1,5 @@
 ID,제목,종류,날짜,경로,관련 ID,상태
-DOC-548,외부 AI 게이트웨이 애드온 (D-191),설계 정본,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/AI_GATEWAY_ADDON.md,D-191,정본
+DOC-548,외부 AI 게이트웨이 애드온 (D-191),설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/AI_GATEWAY_ADDON.md,D-191 · D-208,정본
 DOC-001,v3 아키텍처 — 직원 PC의 AI 하네스와 MCP 게이트웨이,설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/ARCHITECTURE.md,D-30 · D-35 · D-184 · D-53 · D-24 · D-196 · D-124 · D-29 · D-31 · D-54 · D-125 · D-131 · D-132 · D-133 · D-142,정본
 DOC-002,microsoft/agent-governance-toolkit(AGT) 비교 — 2026-10-05,설계 정본,2026-10-05,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/BENCHMARK_AGT_2026-10-05.md,D-73,정본
 DOC-003,게이트웨이·통제 제품 재조사 (2026-09-29),설계 정본,2026-09-30,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/BENCHMARK_GATEWAYS.md,D-52 · D-51 · D-49 · D-05 · D-25 · D-06,정본
@@ -7,15 +7,16 @@ DOC-004,IBM ContextForge와 CPEX 소스 분석 — 2026-09-30 정정·상세본,
 DOC-005,LiteLLM MCP 게이트웨이 벤치마킹 (2026-09-26),설계 정본,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/BENCHMARK_LITELLM.md,D-39 · D-40 · D-49 · D-41 · D-25,정본
 DOC-006,Microsoft MCP 관련 공개 소스 분석 — 2026-09-30 정정·상세본,설계 정본,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/BENCHMARK_MICROSOFT.md,D-05,정본
 DOC-007,Microsoft · IBM · LiteLLM UI와 조직 등록 비교,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/BENCHMARK_UI_ONBOARDING_2026-10-01.md,,정본
-DOC-008,Console — 운영 화면,설계 정본,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/CONSOLE_UI.md,D-66 · D-184 · D-136,정본
+DOC-008,Console — 운영 화면,설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/CONSOLE_UI.md,D-66 · D-200 · D-197 · D-184 · D-136 · D-211 · D-201,정본
 DOC-009,D-62/D-63 통제 범위·응답·실기기 검증,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/CONTROL_PLANES_2026-10-01.md,D-62 · D-63,정본
-DOC-010,데이터 모델,설계 정본,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DATA_MODEL.md,D-184 · D-120 · D-123 · D-181 · D-136 · D-95 · D-27 · D-96 · D-126 · D-86 · D-88 · D-145 · D-26 · D-48 · D-49,정본
+DOC-010,데이터 모델,설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DATA_MODEL.md,D-208 · D-184 · D-120 · D-123 · D-181 · D-200 · D-136 · D-95 · D-27 · D-96 · D-126 · D-86 · D-88 · D-145 · D-26,정본
 DOC-011,설계 결정 기록 (v2·v3),결정,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/DECISIONS.md,D-07 · D-01 · D-02 · D-03 · D-04 · D-05 · D-06 · D-08 · D-09 · D-10 · D-11 · D-12 · D-13 · D-14 · D-15,정본
 DOC-012,엔드포인트 연결 단순화 조사 (2026-10-04),설계 정본,2026-10-04,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/ENDPOINT_ONBOARDING_2026-10-04.md,D-71,정본
 DOC-013,솔루션 기기 배치와 직원 PC 연결,설계 정본,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FIELD.md,D-114 · D-52 · D-70 · D-57 · D-59 · D-71 · D-67 · D-61 · D-68 · D-62 · D-63 · D-53 · D-124 · D-129,정본
 DOC-014,Field MCP 후보 및 기능 확장 (2026-09-28 조사),설계 정본,2026-09-28,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FIELD_MCP_CANDIDATES.md,D-49 · D-44,정본
 DOC-015,후속 보강과 실제 LLM 하네스 검증 — 2026-10-01,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/FOLLOWUP_VALIDATION_2026-10-01.md,D-55 · D-56 · D-53,정본
 DOC-549,"원장 보존 정책과 만료 구간 폐기 (DEV-67, D-141)",설계 정본,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/LEDGER_RETENTION.md,DEV-67 · D-141 · POL-38 · DEV-63 · D-123 · DEV-66 · D-131,정본
+DOC-732,LiteLLM 승인·철회 동기화,설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/LITELLM_SYNC.md,D-208,정본
 DOC-016,"MCP 서버 10종 — 무엇을, 어떻게 띄우고, 무엇을 조심하나",설계 정본,2026-09-30,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/MCP_SERVERS.md,D-13 · D-23 · D-54,정본
 DOC-017,운영 대응,설계 정본,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/OPS_RESPONSE.md,D-120 · D-123 · D-127 · D-128 · DEV-50 · D-157 · D-178,정본
 DOC-018,오픈소스 채택과 Audit API / UI 정리,설계 정본,2026-10-03,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/OSS_ADOPTION_2026-10-03.md,,정본
@@ -23,7 +24,7 @@ DOC-019,Claude hardening 인계와 클린 검증 — 2026-09-30,설계 정본,20
 DOC-020,PAC-01~15와 이 Gateway의 통제 대응,설계 정본,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/PAC_MAPPING.md,D-94 · D-116 · DEV-41 · D-73 · D-100 · D-102,정본
 DOC-021,PAC-15 런타임 통합과 증거 경계,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/PAC_RUNTIME_2026-10-01.md,D-54,정본
 DOC-022,pj1 → 솔루션 기기 실측 (2026-10-01 13:30~13:45 KST),설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/PJ1_SIGNALS_2026-10-01.md,D-59,정본
-DOC-023,정책 (OPA/Rego),설계 정본,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/POLICY.md,D-173 · D-120 · D-123 · DEV-68 · D-137 · DEV-71 · D-143 · DEV-75 · D-177 · D-17 · D-133 · D-142 · D-138 · D-186 · D-126,정본
+DOC-023,정책 (OPA/Rego),설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/POLICY.md,D-173 · D-120 · D-123 · DEV-68 · D-137 · DEV-71 · D-143 · DEV-75 · D-177 · D-17 · D-133 · D-142 · D-138 · D-186 · D-126,정본
 DOC-024,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai — 다음 AI 작업자를 위한 문서,설계 정본,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/README.md,D-62 · D-63 · D-59 · D-56 · D-01 · D-42 · D-46 · D-120 · D-123 · D-141,정본
 DOC-025,MCP 보안·거버넌스 참고자료 모음 — 2026-10-05,설계 정본,2026-10-05,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/REFERENCES_MCP_SECURITY_2026-10-05.md,D-74 · D-100 · D-73,정본
 DOC-026,2026-10-01 개편 작업과 검증 기준,설계 정본,2026-10-01,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/REMASTER_2026-10-01.md,D-61 · D-60 · D-59,정본
@@ -32,7 +33,7 @@ DOC-028,남은 일과 한계,설계 정본,2026-09-28,https://github.com/MCP-gov
 DOC-029,"운영 런북 — 이 랩을 띄우고, 돌리고, 되돌리는 법",설계 정본,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/RUNBOOK.md,D-123 · D-24 · D-124 · D-42 · D-46 · D-48 · D-49,정본
 DOC-030,"MCP 통제 범위 재검토 — 조사, 위협 모델, 개선, 실제 서비스 시험",설계 정본,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/SECURITY_BOUNDARIES.md,D-183 · D-170 · D-61 · D-62 · DEV-73 · D-44 · D-53 · D-90 · D-94 · D-184 · D-141,정본
 DOC-031,종료·폐기 판정 모델 — 논문을 코드로,설계 정본,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/TERMINATION_MODEL.md,D-123 · D-12 · D-96 · D-99 · D-18 · D-156 · DEV-08,정본
-DOC-032,검증 — 무엇이 무엇을 보장하나,설계 정본,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/TESTING.md,D-125 · D-115 · D-52 · D-54 · D-53 · D-39 · D-40 · D-49 · D-74 · D-57 · D-59 · D-137 · D-143 · D-51 · D-90,정본
+DOC-032,검증 — 무엇이 무엇을 보장하나,설계 정본,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/TESTING.md,D-125 · D-115 · D-52 · D-54 · D-53 · D-39 · D-40 · D-49 · D-199 · D-201 · D-206 · D-207 · D-74 · D-57 · D-59,정본
 DOC-033,문제 해결 — 실제로 겪은 것들,설계 정본,2026-09-28,https://github.com/MCP-governance/mcp-gateway/blob/main/docs/ai/TROUBLESHOOTING.md,D-14 · D-13 · D-09 · D-07 · D-12 · D-17 · D-24 · D-26 · D-22 · D-47 · D-49,정본
 DOC-034,MCP 보안 관리 프레임워크 V3.0,외부,2026-10-15,https://docs.google.com/document/d/1W4-vRSRIvy-8gdBUA7a66GcaYP5Cw6TT1D_9Kaot96c/edit,,기록
 DOC-035,MCP_보안_정책_근거00.xlsx,외부,2026-10-15,https://docs.google.com/spreadsheets/d/16d9h6_1FYYiYw6xRcABK839RII7obZOW/edit,,기록
@@ -80,6 +81,7 @@ DOC-072,컴플라이언스 근거 문서 목록,분석,2026-10-17,https://github
 DOC-073,주제 × 관할 조항 수,분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/jurisdiction-theme.md,,기록
 DOC-074,핵심 일정 (2026-10-17 기준),분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/key-dates.md,,기록
 DOC-075,정책 50개별 법적·표준 근거,분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/compliance/pol-legal-basis.md,POL-01 · POL-02 · POL-03 · POL-04 · POL-05 · POL-06 · POL-07 · POL-08 · POL-09 · POL-10 · POL-11 · POL-12 · POL-13 · POL-14 · POL-15,기록
+DOC-733,서버별 동의 요청·결정 분석 — 2026-10-23,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/consent-per-server-1023/README.md,,정본
 DOC-553,잔여 통제 적대적 검토 — Codex sol,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/controls-1018/codex-sol-adversarial.md,D-131 · D-134 · D-133 · D-132,기록
 DOC-554,통제 적용 전후 효과 비교,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/controls-1018/eval-report-before-after.md,,기록
 DOC-076,DEV-53·DEV-56 목적지 고정과 오류 인증정보 가림,분석,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/dest-pin-credential-redaction/README.md,DEV-53 · DEV-56 · G03.05 · G03.08 · D-116 · DEV-64,정본
@@ -105,14 +107,19 @@ DOC-087,feature-spec.xlsx,원본,2026-10-17,https://github.com/MCP-governance/mc
 DOC-088,drive-2026-10-17T062108Z.xlsx,원본,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/feature-spec-2026-10-17/originals/drive-2026-10-17T062108Z.xlsx,,보존
 DOC-089,DEV-64 하네스–게이트웨이 TLS / D-124,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/field-tls-d124/README.md,DEV-64 · D-124 · G08.05 · POL-16,정본
 DOC-563,DEV-17 승인 실행 시 저장 요청자 토큰의 현재 유효성 재검증,분석,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/fresh-requester-d152/README.md,DEV-17 · D-140 · D-152,정본
+DOC-734,발표용 경쟁·갭 매트릭스 — 2026-10-23,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/gap-matrix-1023/README.md,D-192 · D-203 · D-202 · D-201 · D-62 · D-183 · D-205 · D-191,정본
 DOC-564,DEV-70 · 중대 영향 호출의 인적 개입 증빙,분석,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/high-impact/README.md,DEV-70 · D-139 · POL-27 · POL-38 · POL-22,정본
 DOC-565,DEV-66 사고 증빙 수정 정본,분석,,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/incident-pack/README.md,DEV-66 · D-144,정본
+DOC-735,MCP 게이트웨이·AI 에이전트 보안 업계 동향 (2026-01~10),분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/industry-trends-1023/README.md,D-74 · D-65,정본
 DOC-566,도입 한 화면 승인 — main 재배치 후보,분석,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/intake-one-click/README.md,DEV-73 · D-184,정본
 DOC-567,도입 승인 위험 시험 기대값 충돌 2건,분석,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/intake-one-click/risk-expectation-conflict.md,DEV-71 · D-143 · DEV-73 · D-187 · DEV-68 · DEV-69 · D-185,기록
 DOC-702,W5-KIT-MACOS 요구사항과 근거,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/kit-macos/README.md,D-71,정본
-DOC-703,LiteLLM이 이미 MCP를 통제할 때 MINT가 끼어드는 지점 — 솔루션·애드인 적용 설계 (2026-10-23),분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/litellm-intervention-1023/README.md,D-191 · E13 · D-175 · D-192 · D-62 · D-71,정본
+DOC-703,LiteLLM이 이미 MCP를 통제할 때 MINT가 끼어드는 지점 — 솔루션·애드인 적용 설계 (2026-10-23),분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/litellm-intervention-1023/README.md,D-208 · D-191 · E13 · D-175 · D-192 · D-62 · D-71,정본
+DOC-736,P1 승인·철회 동기화 구현 근거 (2026-10-23),분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md,D-191 · D-208,기록
 DOC-568,LiteLLM 중앙 MCP 관리에서 MINT가 추가할 수 있는 역할,분석,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/litellm-mint-opportunities-20261022.md,DEV-43 · DEV-38 · DEV-44,기록
 DOC-569,DEV-81 로컬 수신 지점 인증 적대 검토,분석,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-endpoints-1021/README.md,DEV-81 · DEV-73 · D-170 · D-119 · E13 · DEV-80 · D-147 · D-148 · D-151 · D-124 · D-159 · D-183,정본
+DOC-737,공식 MCP의 PC 격리 실행 기본값 — 근거와 한계,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-run-presets-1023/README.md,D-206 · D-192 · D-207,정본
+DOC-738,로컬 MCP 정상 기능 결함 — 요구사항·근거·검증,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-runner-usability-1023/README.md,DEV-73 · D-192,정본
 DOC-090,로컬 도구·MCP 설치와 엔드포인트 검수,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/README.md,,정본
 DOC-091,Local Git and SQLite tools with actual MCP checks,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/data.md,,기록
 DOC-092,Local desktop and browser MCP candidates,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/desktop.md,,기록
@@ -121,6 +128,7 @@ DOC-094,Desktop/browser MCP 권한·브리지 참고 조사,분석,2026-10-15,ht
 DOC-095,Linux 권한·실행 통제 레퍼런스: 역공학 엔드포인트 대조,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/permissions-reverse.md,E13,기록
 DOC-096,로컬 역공학 도구 조사: Ghidra + GhidraMCP,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/reverse.md,,기록
 DOC-097,실제 MCP 스키마의 기능 유형,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/local-tools/tool-capabilities.md,,기록
+DOC-739,MCP를 활용하는 기업 사례 조사 — 국내외 20건 (2026-10-23),분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/mcp-enterprise-cases-1023/README.md,D-74 · D-192,정본
 DOC-098,운영 대응 — D-120~D-123,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/ops-response-d120-d123/README.md,D-120 · D-123 · DEV-50 · DEV-60 · D-121 · DEV-62 · D-122 · DEV-63,정본
 DOC-099,OSS 조사 범위·분석 깊이 점검과 보완 계획,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/oss-audit/README.md,DEV-47 · DEV-29 · DEV-38 · DEV-02 · DEV-46 · DEV-41,정본
 DOC-100,"OSS 심층 코드 분석 (DEV-47, 2026-10-15)",분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/oss-deep/README.md,DEV-47 · DEV-38 · DEV-29 · D-110 · D-111 · D-112,정본
@@ -153,6 +161,8 @@ DOC-124,PJ1 9개 도구 자연어 시험 선택 초안,분석,2026-10-15,https:/
 DOC-572,DEV-02 계약 오염 정규화 후보와 평가 경계,분석,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/poisoning-d158/README.md,DEV-02 · D-158 · DEV-46,정본
 DOC-573,DEV-77 출처 서명·빌드 증명 검증,분석,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/provenance-verify/README.md,DEV-77 · DEV-73 · D-114 · D-137,정본
 DOC-704,레퍼런스 3종 비교 — Falcon Guardian · 젠아이랩스 AI-native 개발 · GensOps,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/references-1023/README.md,D-145 · D-176 · D-181 · D-182 · D-183 · D-189 · D-188,정본
+DOC-740,2026-08~10 MCP·AI 에이전트 보안 최신 레퍼런스 갱신,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/refs-update-1023/README.md,D-74 · D-192 · D-191,정본
+DOC-741,ACK RES-REGS — 국내외 기관 규정·가이드와 MINT 기능 갭 분석,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/regulation-gap-1023/README.md,DEV-66 · DEV-67 · DEV-68 · DEV-70,정본
 DOC-574,DEV-08 발급 토큰과 자원 서버의 잔존 재접근,분석,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/resource-residual/README.md,DEV-08 · D-156 · D-146 · D-123 · D-154,정본
 DOC-125,DEV-54·55 — 단일 조회 상한과 완료 변경의 재전송 차단,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/response-cap-idempotency/README.md,DEV-54 · D-125,정본
 DOC-575,결과 경로 오탐 조사 (2026-10-20),분석,2026-10-20,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/result-fp-1020/README.md,D-125 · D-149 · D-52,정본
@@ -210,6 +220,7 @@ DOC-136,pj3 Windows 키트 실기기 시험 (2026-10-18 01:30–02:10),분석,20
 DOC-137,G01–G10 목표 기능 기반 40개 원자 WBS 검토안,분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/wbs-review/review.md,D-79 · E13 · E01 · G01.01 · G01.02 · DEV-02 · G01.03 · G01.04 · G02.01 · G02.02 · G02.03 · E12 · G02.04 · G03.01 · G03.02,기록
 DOC-138,Windows 키트: 마법사·트레이·포함 Python,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/windows-kit-wizard-tray/README.md,D-118 · D-68 · DEV-25 · DEV-26 · G08.04,정본
 DOC-139,2026-10-18 보안 검토 반영,분석,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/windows-kit-wizard-tray/security-review.md,DEV-25,기록
+DOC-742,Windows 원클릭 설치의 신뢰·계정 경계,분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/analysis/windows-oneclick-2026-10-23.md,D-71,기록
 DOC-140,E01 — 승인된 공개 파일 읽기,실험,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/experiments/E01-approved-read.md,E01,정본
 DOC-141,E02 — 개인정보 결과 마스킹,실험,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/experiments/E02-pii-result-masking.md,E02,정본
 DOC-142,E03 — 개인정보 외부 반출 차단,실험,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/experiments/E03-pii-external-egress.md,E03,정본
@@ -474,6 +485,34 @@ DOC-400,"LIB-M47 · Act on Promotion of Research and Development, and Utilizatio
 DOC-401,LIB-M48 · Privacy and Other Legislation Amendment Act 2024 (Act No. 128 of 2024),레퍼런스,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-M48.md,POL-38 · POL-25 · POL-16 · POL-30 · POL-22 · POL-26 · POL-10,참고
 DOC-402,LIB-M49 · India AI Governance Guidelines: Enabling Safe and Trusted AI Innovation,레퍼런스,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-M49.md,POL-22 · POL-27 · POL-38 · POL-28 · POL-43 · POL-44 · POL-42,참고
 DOC-403,LIB-M50 · Recommendation of the Council on Artificial Intelligence (OECD/LEGAL/0449),레퍼런스,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-M50.md,POL-02 · POL-27 · POL-22 · POL-08 · POL-07 · POL-42 · POL-44 · POL-43 · POL-45 · POL-38 · POL-37,참고
+DOC-743,LIB-N01 · GatewayBench: Unified Capability and Security Evaluation Platform for MCP Gateways,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N01.md,,참고
+DOC-744,LIB-N02 · Zero-Trust Authorization and Discovery for Enterprise MCP,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N02.md,,참고
+DOC-745,"LIB-N03 · A Gateway Architecture for Enterprise MCP Authentication: Unifying Heterogeneous Auth, Identity Delegation, and the User / Non-User Persona Problem",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N03.md,,참고
+DOC-746,LIB-N04 · Hybrid Semantic Tool Discovery for Enterprise MCP Gateway: Architecture and Implementation,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N04.md,,참고
+DOC-747,"LIB-N05 · My Credentials, Please: Detecting Filesystem Capability Laundering in MCP Servers at Scale",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N05.md,D-192,참고
+DOC-748,LIB-N06 · Runtime Authorization Consistency Checking for MCP-based Agentic Workflows,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N06.md,,참고
+DOC-749,LIB-N07 · ACLE-MCP: Attested Capability Leases for Execution-Time Trust in Remote LLM Tool Use,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N07.md,,참고
+DOC-750,"LIB-N08 · TrustShiftProbe: Characterizing, Benchmarking, and Defending Staged Trust Attacks on MCP Servers",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N08.md,,참고
+DOC-751,"LIB-N09 · Local Allow, Global Deny: Why Per-Action Authorization Does Not Compose in LLM Agents",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N09.md,,참고
+DOC-752,"LIB-N10 · Approve What, Exactly? Effect Binding and Trusted Rendering for Agent Step-Up Authorization",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N10.md,,참고
+DOC-753,LIB-N11 · Agent Approval Laundering: Transitive Effects Beyond the Approved Invocation,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N11.md,,참고
+DOC-754,LIB-N12 · Runtime Authorization for Resources Acquired by AI Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N12.md,,참고
+DOC-755,LIB-N13 · Kairos: Transactional Security Enforcement at the System Boundary for LLM Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N13.md,,참고
+DOC-756,LIB-N14 · CreepScope: Measuring Post-Use Authorization Exposure in Tool-Using Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N14.md,,참고
+DOC-757,LIB-N15 · Persistent Billable State: Denial-of-Wallet Attacks and Defenses in Tool-Calling LLM Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N15.md,,참고
+DOC-758,LIB-N16 · Mandato: Protocol-Level Enforcement of Digitally Signed Mandates on AI Agent Actions with Cryptographically Chained Audit Trails,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N16.md,,참고
+DOC-759,LIB-N17 · KedgeFlow: A Programmable Control Plane for Enterprise AI Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N17.md,,참고
+DOC-760,"LIB-N18 · Registry Descriptions Go Stale Unevenly: An 89-Day Measurement of Model Context Protocol Drift, and Why Drift-Ranked Re-Auditing Under-Covers It",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N18.md,,참고
+DOC-761,"LIB-N19 · What a Random Draw from the MCP Registry Contains, and What Tool-Use Benchmarks Contain Instead",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N19.md,,참고
+DOC-762,LIB-N20 · Understanding the Hierarchical Structure and Functional Landscape of the Model Context Protocol Ecosystem,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N20.md,,참고
+DOC-763,"LIB-N21 · A Formal Security Framework for MCP-Based AI Agents: Threat Taxonomy, Verification Models, and Defense Mechanisms",레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N21.md,,참고
+DOC-764,LIB-N22 · SMCP: Secure Model Context Protocol,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N22.md,,참고
+DOC-765,LIB-N23 · Invisible Threats from Model Context Protocol: Generating Stealthy Injection Payload via Tree-based Adaptive Search,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N23.md,,참고
+DOC-766,LIB-N24 · Breaking the Protocol: Security Analysis of the Model Context Protocol Specification and Prompt Injection Vulnerabilities in Tool-Integrated LLM Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N24.md,,참고
+DOC-767,LIB-N25 · MCP Security Bench (MSB): Benchmarking Attacks Against Model Context Protocol in LLM Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N25.md,,참고
+DOC-768,LIB-N26 · AI Agents May Always Fall for Prompt Injections,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N26.md,,참고
+DOC-769,LIB-N27 · ClawMMU: Protection-Coherent Virtual Memory for Stateful LLM Agents,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N27.md,,참고
+DOC-770,LIB-N28 · Model Context Protocol (MCP): Security Design Considerations for AI-Driven Automation (Cybersecurity Information Sheet),레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/LIB-N28.md,,참고
 DOC-404,P38 · InjecAgent: Benchmarking Indirect Prompt Injections in Tool-Integrated Large Language Model Agents,레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P38.md,,참고
 DOC-405,P39 · AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents,레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P39.md,,참고
 DOC-406,P43 · MCPSecBench: A Systematic Security Benchmark and Playground for Testing Model Context Protocols,레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P43.md,,참고
@@ -487,7 +526,7 @@ DOC-413,P58 · Authorization Architectures for Tool-Using AI Agents,레퍼런스
 DOC-414,P60 · MCPTox: A Benchmark for Tool Poisoning on Real-World MCP Servers,레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P60.md,,참고
 DOC-415,"P63 · How Agents Ask for Permission: User Permissions for AI Agents, from Interfaces to Enforcement",레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P63.md,,참고
 DOC-416,P64 · SafeHarness: Lifecycle-Integrated Security Architecture for LLM-based Agent Deployment,레퍼런스,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/P64.md,,참고
-DOC-417,논문·프로토콜·보안 문서,레퍼런스,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/README.md,DEV-09 · POL-01 · POL-50 · POL-22 · POL-37 · POL-44 · POL-38 · POL-42 · POL-16 · POL-28 · POL-35 · POL-23 · POL-25 · POL-19 · POL-20,참고
+DOC-417,논문·프로토콜·보안 문서,레퍼런스,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/README.md,DEV-09 · POL-01 · POL-50 · POL-22 · POL-37 · POL-44 · POL-38 · POL-42 · POL-16 · POL-28 · POL-35 · POL-23 · POL-25 · POL-19 · POL-20,참고
 DOC-418,"Model Context Protocol (MCP): Landscape, Security Threats, and Future Research Directions",레퍼런스,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/REF-J01.md,,참고
 DOC-419,Beyond the Protocol: Unveiling Attack Vectors in the Model Context Protocol (MCP) Ecosystem,레퍼런스,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/REF-J02.md,,참고
 DOC-420,Bridging AI and software security: A comparative vulnerability assessment of LLM agent deployment paradigms,레퍼런스,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/papers/REF-J03.md,,참고
@@ -518,6 +557,7 @@ DOC-440,LiteLLM — MCP 서버 범위가 넓어지지 않는 인가 처리,제�
 DOC-441,Lunar MCPX + AI Gateway — 상용 연동 설명 확인,제품 분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/solutions/lunar-mcpx.md,,참고
 DOC-442,Microsoft MCP Gateway — 소유권·역할 권한 평가,제품 분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/solutions/ms-mcp-gateway.md,,참고
 DOC-443,Microsoft Wassette — Wasm/WASI 실행 자원 경계,제품 분석,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/solutions/ms-wassette.md,,참고
+DOC-771,OSS 게이트웨이·스캐너 최신 릴리스와 공시 (2026-08~10),제품 분석,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/solutions/oss-gateway-scanner-releases-1023.md,,참고
 DOC-444,ToolHive 런타임 재사용 검토,제품 분석,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/solutions/toolhive-runtime.md,DEV-38,참고
 DOC-445,자료 보존과 출처 이력,원본,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/README.md,,보존
 DOC-446,pipa-act-21445-20260911.pdf,원본,2026-09-11,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/compliance/LIB-L01/originals/pipa-act-21445-20260911.pdf,,보존
@@ -559,14 +599,14 @@ DOC-481,P57.pdf,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/
 DOC-482,P64.pdf,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/P64/originals/P64.pdf,,보존
 DOC-483,T19_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T19/originals/T19_supplement.txt,,보존
 DOC-484,T20_supplement.txt,원본,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/sources/policy/T20/originals/T20_supplement.txt,,보존
-DOC-485,개발 백로그,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md,DEV-78 · DEV-87 · DEV-83 · DEV-84 · DEV-88 · DEV-81 · DEV-01 · DEV-02 · D-158 · D-161 · DEV-03 · DEV-04 · DEV-05 · DEV-06 · DEV-07,정본
-DOC-486,개발 현황 — 2026-10-23,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,DEV-84 · D-192 · DEV-83 · DEV-82 · D-191 · DEV-87 · DEV-88 · DEV-73 · DEV-81 · D-194 · D-195 · D-196 · DEV-86,정본
+DOC-485,개발 백로그,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/backlog.md,DEV-78 · DEV-87 · DEV-83 · DEV-84 · DEV-88 · DEV-81 · DEV-89 · D-197 · DEV-01 · DEV-02 · D-158 · D-161 · DEV-03 · DEV-04 · DEV-05,정본
+DOC-486,개발 현황 — 2026-10-23,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/current.md,D-197 · DEV-84 · D-192 · DEV-83 · DEV-82 · D-191 · DEV-87 · D-208 · DEV-88 · DEV-73 · DEV-81 · D-194 · D-195 · D-196 · DEV-86,정본
 DOC-487,현황 변경 이력 보존 — 2026-10-15,현황,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history-2026-10-15.md,DEV-31 · D-107 · DEV-39 · DEV-38 · DEV-40 · DEV-36 · D-104 · D-105 · DEV-37 · DEV-35 · DEV-29 · DEV-34 · E13 · DEV-32 · DEV-30,기록
 DOC-726,2026-10-15 저녁~밤 현황,현황,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/2026-10-15-evening.md,DEV-38 · DEV-29 · D-114 · D-110 · D-79 · DEV-35 · E13 · DEV-47 · DEV-41 · DEV-44 · DEV-45 · D-107 · E01,정본
 DOC-727,2026-10-17 현황,현황,2026-10-17,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/2026-10-17.md,DEV-66 · DEV-50 · POL-01 · POL-26 · POL-45 · POL-21,정본
 DOC-728,2026-10-18~20 현황,현황,2026-10-18,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/2026-10-18-to-20.md,DEV-43 · D-140 · D-142 · DEV-49 · D-147 · D-148 · D-150 · D-151 · DEV-44 · D-149 · G07.04 · DEV-05 · D-153 · D-124 · D-154,정본
 DOC-729,2026-10-21~23 현황,현황,2026-10-21,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/2026-10-21-to-23.md,DEV-73 · D-175 · D-176 · DEV-74 · D-181 · D-177 · DEV-75 · D-178 · DEV-76 · D-179 · DEV-77 · D-180 · DEV-78 · DEV-79 · D-182,정본
-DOC-730,현황 이력 목차,현황,,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/README.md,D-175 · DEV-38 · DEV-29,정본
+DOC-730,현황 이력 목차,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/history/README.md,D-175 · DEV-38 · DEV-29,정본
 DOC-488,Claude 독립 코드 검토 원문 — 2026-10-13,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-claude-code-review.md,,기록
 DOC-489,2026-10-13 개발 목표와 검토 기준,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-development-goals.md,,기록
 DOC-490,코드 분석·보강 구현·실기기 검증 결과 — 2026-10-13,보고,2026-10-13,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-13-development-results.md,,기록
@@ -711,8 +751,22 @@ DOC-721,2026-10-22 위협 추적 변경 경계 독립 재대조,보고,2026-10-2
 DOC-722,"2026-10-22 정상 사용 불편 두 가지 수정 (PAC-01 사유, 활성화 직후 연결 지연)",보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-w10-ux.md,,기록
 DOC-723,2026-10-22 콘솔 정상 기능 점검 (W7),보고,2026-10-22,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-22-w7-console-check.md,,기록
 DOC-724,2026-10-23 클라우드 감사·AI 통제 벤치마크,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-cloud-control-benchmark.md,,기록
+DOC-772,ACK W15-CONSENT-UX — 서버별 직원 이용 동의 (2026-10-23),보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-consent-per-server.md,D-201,기록
+DOC-773,2026-10-23 콘솔 불필요 요소 정리,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-console-declutter.md,D-136,기록
+DOC-774,2026-10-23 콘솔 영어 화면·언어 전환·글자 90%·화면 문구 정리,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-console-i18n.md,D-211,기록
+DOC-775,ACK RES-GAP — 2026-10-23 발표용 경쟁·갭 매트릭스,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-gap-matrix.md,DEV-07 · D-191,기록
+DOC-776,2026-10-23 LiteLLM 승인·철회 동기화,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-litellm-sync.md,D-208 · D-191,기록
+DOC-777,2026-10-23 공식 MCP 격리 실행 기본값 제안,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-local-run-presets.md,D-206,기록
+DOC-778,ACK W14-LOCAL-RUNNER — 로컬 MCP 정상 기능 결함 보완,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-local-runner-usability.md,D-192 · D-200 · DEV-73,기록
+DOC-779,서버 승인 직후 기존 MCP가 끊기는 결함 — 2026-10-23,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-policy-refresh-gap.md,D-198,기록
+DOC-780,2026-10-23 실사용 시험 — 로컬 MCP 3종을 PJ1 실제 하네스로 끝까지,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-real-usage-local-mcp.md,D-199 · D-201 · D-198 · D-202 · D-203 · D-204 · D-205,기록
 DOC-725,2026-10-23 레퍼런스 3종 조사 (Falcon Guardian · 젠아이랩스 · GensOps),보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-references-3.md,,기록
+DOC-781,ACK RES-REGS — 2026-10-23 국내외 규제 갭 분석,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-regulation-gap.md,DEV-66,기록
+DOC-782,2026-10-23 조사 묶음 — 최신 레퍼런스·기업 사례·업계 동향,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-research-bundle.md,,기록
+DOC-783,2026-10-23 루트 전용 공식 이미지(git·time) 격리 실행 불가 — W14,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-root-only-images.md,D-206 · D-207,기록
+DOC-784,2026-10-23 오늘 기능의 수용 시험 항목 추가 (W7),보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-w7-acceptance-today.md,D-209 · D-199 · D-201 · D-206 · D-207,기록
 DOC-731,2026-10-23 시트·위키 동기 점검과 위키 첫 화면 정리,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-wiki-sheet-sync.md,G01.05 · G08.01 · G08.04 · DEV-72 · D-130 · D-131 · D-176 · DEV-82 · DEV-83 · DEV-84 · DEV-85 · DEV-86 · DEV-87 · DEV-88 · DEV-78,기록
+DOC-785,2026-10-23 Windows 원클릭 설치 구현,보고,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/reports/2026-10-23-windows-oneclick.md,D-68 · D-71 · D-72 · D-197,기록
 DOC-532,저장소 코드 스냅샷,현황,2026-10-23,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/status/repository-snapshot.md,,기록
 DOC-533,"Team AGI 산출물 선별: 정책, 기술 구현, 실증 및 평가",안내,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/team-agi-deliverables-2026-10-15.md,POL-01,정본
 DOC-534,Claude/Codex 공통 작업 지시,양식,2026-10-15,https://github.com/MCP-governance/mcp-gateway/blob/main/research/llm-wiki/templates/task-prompt.md,,정본
