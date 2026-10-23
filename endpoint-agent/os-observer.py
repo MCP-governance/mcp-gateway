@@ -3,6 +3,8 @@
 Received events are device observations, not attestation against compromised root.
 No argument strings, environment variables, tokens or raw journal text are sent.
 """
+from __future__ import annotations
+
 import argparse
 import importlib.util
 import json

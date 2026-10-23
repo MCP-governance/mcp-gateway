@@ -140,9 +140,9 @@ class Packages(unittest.TestCase):
 
     def test_python_versions_are_checked_for_the_installer_and_for_the_service(self):
         b = self.bootstrap
-        with patch.object(b.sys, "version_info", (3, 8, 10)), self.assertRaises(b.Failed):
+        with patch.object(b.sys, "version_info", (3, 7, 3)), self.assertRaises(b.Failed):
             b.check_python()
-        with patch.object(b.Path, "is_file", lambda path: True), patch.object(b, "out", lambda *c: "3.8"), \
+        with patch.object(b.Path, "is_file", lambda path: True), patch.object(b, "out", lambda *c: "3.6"), \
                 self.assertRaises(b.Failed):
             b.check_python()
         with patch.object(b.Path, "is_file", lambda path: True), patch.object(b, "out", lambda *c: "3.12"):

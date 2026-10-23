@@ -39,7 +39,7 @@ FUNCTIONS = Path("/etc/profile.d/mcpgw-managed.sh")
 RC_FILES = (Path("/etc/bash.bashrc"), Path("/etc/zsh/zshrc"))
 HOOK_BEGIN, HOOK_END = "# >>> mcpgw managed launchers >>>", "# <<< mcpgw managed launchers <<<"
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root", "adm"}
-MIN_PYTHON = (3, 10)
+MIN_PYTHON = (3, 8)  # Ubuntu 20.04; Claude Code·Codex themselves need 20.04+
 # 도구 → 패키지. 설치 첫머리에 한 번 조회해 없는 것만 모아 패키지 관리자를 한 번 갱신하고 한 번에 설치한다.
 # openssl은 로컬 MCP 승인 서명 검증(local-runner)이, curl은 하네스·점검 도구가 쓴다.
 REQUIRED = {"gcc": "gcc", "nft": "nftables", "apparmor_parser": "apparmor-utils", "curl": "curl", "openssl": "openssl"}
@@ -107,13 +107,13 @@ def employee_account(explicit: str | None) -> str:
 def check_python() -> None:
     """설치기와 서비스가 쓰는 /usr/bin/python3가 모두 지원 판본인지 설치 전에 확인한다(서비스는 시스템 python3로 돈다)."""
     if sys.version_info < MIN_PYTHON:
-        raise Failed("Python 3.10 이상이 필요합니다(설치기 판본 %d.%d)" % sys.version_info[:2])
+        raise Failed("Python 3.8 이상이 필요합니다(설치기 판본 %d.%d)" % sys.version_info[:2])
     system = Path("/usr/bin/python3")
     if not system.is_file():
         raise Failed("관리형 서비스가 쓰는 /usr/bin/python3가 없습니다")
     found = out(str(system), "-c", "import sys;print('%d.%d' % sys.version_info[:2])")
     if not re.fullmatch(r"\d+\.\d+", found) or tuple(map(int, found.split("."))) < MIN_PYTHON:
-        raise Failed(f"/usr/bin/python3가 3.10 미만입니다({found or '판본 확인 실패'})")
+        raise Failed(f"/usr/bin/python3가 3.8 미만입니다({found or '판본 확인 실패'})")
 
 
 def has_engine() -> bool:
@@ -134,6 +134,25 @@ def ensure_packages() -> None:
     if missing or not has_engine():
         install_missing(missing)
     start_engine()
+    ensure_toml()
+
+
+TOML_CHECK = ("import sys, importlib.util; sys.path.append('/usr/lib/python3/dist-packages'); "
+              "sys.exit(0 if any(importlib.util.find_spec(n) for n in ('tomllib', 'tomli', 'toml')) else 1)")
+
+
+def ensure_toml() -> None:
+    """The endpoint agent reads Codex's config.toml. Python 3.11+ has tomllib; Ubuntu 20.04·22.04 (3.8·3.10)
+    need the distribution's tomli (22.04) or toml (20.04) package, or Codex settings go unread. Best effort."""
+    if sys.version_info >= (3, 11) or run("/usr/bin/python3", "-I", "-c", TOML_CHECK, check=False, quiet=True,
+           stderr=subprocess.DEVNULL).returncode == 0 or not shutil.which("apt-get"):
+        return
+    env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+    for package in ("python3-tomli", "python3-toml"):
+        if run("apt-get", "install", "-y", "-qq", package, check=False, quiet=True, env=env,
+               stderr=subprocess.DEVNULL).returncode == 0:
+            return
+    print("Codex 설정(TOML)을 읽을 패키지를 설치하지 못했습니다: sudo apt-get install python3-tomli", flush=True)
 
 
 def install_missing(missing: list[str]) -> None:
