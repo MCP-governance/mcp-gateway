@@ -193,9 +193,9 @@ def build_original():
     n("litellm", "LiteLLM", "logo-litellm", 1615, 196, 56, "연동 시험", "CMP-49")
     n("keycloak", "Keycloak", "logo-keycloak", 1615, 368, 44, "시험용", "CMP-25")
     n("openbao", "OpenBao", "logo-openbao", 1615, 586, 48, "연동 시험", "CMP-52")
-    n("vector", "Vector", "logo-vector", 1535, 985, 46, "연동 시험", "CMP-78")
-    n("opensearch", "OpenSearch", "logo-opensearch", 1615, 985, 46, "연동 시험", "CMP-76")
-    n("dashboards", "Dashboards", "logo-opensearch", 1695, 985, 46, "연동 시험", "CMP-77")
+    n("vector", "Vector", "logo-vector", 1535, 985, 46, "연동 시험", "")
+    n("opensearch", "OpenSearch", "logo-opensearch", 1615, 985, 46, "연동 시험", "")
+    n("dashboards", "Dashboards", "logo-opensearch", 1695, 985, 46, "연동 시험", "")
     # ── 외부 ────────────────────────────────────────────────────────
     n("anthropic", "Anthropic", "logo-anthropic", 1820, 200, 52, cmp="CMP-51")
     n("openai", "OpenAI", "logo-openai", 1920, 200, 52, cmp="CMP-51")
