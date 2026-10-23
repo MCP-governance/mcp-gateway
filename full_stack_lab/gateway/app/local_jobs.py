@@ -737,3 +737,21 @@ async def recoverable(device):
     return await db.fetch_all("""SELECT id FROM local_jobs WHERE device_id=%s AND claimed_at IS NOT NULL
         AND stopped_at IS NULL AND (started_at IS NOT NULL OR lease_until<=clock_timestamp()) ORDER BY created_at LIMIT 16""",
         (device['endpoint_id'],))
+
+
+async def device_manifests(device):
+    """The approved local servers this device may prepare before the employee's first call (folders, image pull).
+
+    Each server passes the same `authorized` check a job does, so a withdrawn, expired, stopped or unobserved approval
+    is never listed. The device re-verifies the signature and digest with its own pinned key; this only says what to prepare."""
+    from . import pac, registry
+    device = await _device(device['endpoint_id'])
+    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device['owner_token'],))
+    listed = []
+    async with db.transaction() as connection:
+        for server_id in sorted(pac.servers_for(owner)) if owner else []:
+            local = (registry.server(server_id) or {}).get('local')
+            if local and await authorized(connection, device, server_id, local['manifest_sha256'], 'tools/call'):
+                listed.append({'server_id': server_id, 'manifest': local['manifest'], 'signature': local['signature'],
+                               'manifest_sha256': local['manifest_sha256']})
+    return listed

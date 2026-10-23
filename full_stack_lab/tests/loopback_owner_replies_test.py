@@ -101,7 +101,7 @@ class Installer(unittest.TestCase):
                      mock.patch.object(b.pwd, "getpwnam", side_effect=lambda name:
                                        SimpleNamespace(pw_uid={"owner": 1000, "managed": 1001}[name]),
                                        create=True) as getpwnam, \
-                     mock.patch.object(b, "ensure_packages"), mock.patch.object(b, "place_harnesses", return_value={}), \
+                     mock.patch.object(b, "check_python"), mock.patch.object(b, "ensure_packages"), mock.patch.object(b, "place_harnesses", return_value={}), \
                      mock.patch.object(b, "installed", return_value=False), mock.patch.object(b, "write_shims", return_value=[]), \
                      mock.patch.object(b, "install_managed", return_value={}) as install, redirect_stdout(io.StringIO()):
                     self.assertEqual(b.main(), 0)

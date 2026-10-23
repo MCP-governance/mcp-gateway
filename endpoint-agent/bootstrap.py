@@ -24,6 +24,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,9 +39,15 @@ FUNCTIONS = Path("/etc/profile.d/mcpgw-managed.sh")
 RC_FILES = (Path("/etc/bash.bashrc"), Path("/etc/zsh/zshrc"))
 HOOK_BEGIN, HOOK_END = "# >>> mcpgw managed launchers >>>", "# <<< mcpgw managed launchers <<<"
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root", "adm"}
-PACKAGES = {"apt-get": ["gcc", "nftables", "apparmor-utils"],
-            "dnf": ["gcc", "nftables", "apparmor-utils"],
-            "pacman": ["gcc", "nftables", "apparmor"]}
+MIN_PYTHON = (3, 10)
+# 도구 → 패키지. 설치 첫머리에 한 번 조회해 없는 것만 모아 패키지 관리자를 한 번 갱신하고 한 번에 설치한다.
+# openssl은 로컬 MCP 승인 서명 검증(local-runner)이, curl은 하네스·점검 도구가 쓴다.
+REQUIRED = {"gcc": "gcc", "nft": "nftables", "apparmor_parser": "apparmor-utils", "curl": "curl", "openssl": "openssl"}
+RENAMED = {"pacman": {"apparmor-utils": "apparmor"}}
+# 로컬 MCP 격리 실행용 컨테이너 엔진. 러너는 /usr/bin의 podman·docker만 쓴다. 키가 곧 지원하는 패키지 관리자다.
+ENGINES = {"apt-get": "docker.io", "dnf": "podman", "pacman": "docker"}
+ENGINE_BINARIES = ("podman", "docker")
+INSTALL_VERB = {"apt-get": "apt-get install", "dnf": "dnf install", "pacman": "pacman -S"}
 # The harness vendors ship the executable and its tool-call host side by side in one release
 # directory; taking them from anywhere else pairs mismatched builds (D-67).
 VENDOR_GLOBS = ("**/@openai/codex-*/vendor/*/bin", "**/@anthropic-ai/claude-code*/vendor/*/bin",
@@ -61,8 +68,21 @@ def out(*command: str) -> str:
     return done.stdout.strip()
 
 
+_open_step: list = []
+timings: list[tuple[str, int]] = []
+
+
 def step(message: str) -> None:
+    """한 줄 안내. 단계가 끝나는 시각(다음 단계 시작·close_step)으로 소요 시간을 재, 마지막에 한 줄로 보인다."""
+    close_step()
     print(f"[{message}]", flush=True)
+    _open_step[:] = [message, time.monotonic()]
+
+
+def close_step() -> None:
+    if _open_step:
+        timings.append((_open_step[0], round(time.monotonic() - _open_step[1])))
+        _open_step.clear()
 
 
 def groups_of(name: str) -> set[str]:
@@ -84,29 +104,64 @@ def employee_account(explicit: str | None) -> str:
 
 # -- packages and harness binaries -------------------------------------------------
 
-def ensure_packages() -> list[str]:
-    missing = [tool for tool in ("gcc", "nft", "apparmor_parser") if not shutil.which(tool)]
-    if not missing:
-        return []
-    manager = next((m for m in PACKAGES if shutil.which(m)), None)
+def check_python() -> None:
+    """설치기와 서비스가 쓰는 /usr/bin/python3가 모두 지원 판본인지 설치 전에 확인한다(서비스는 시스템 python3로 돈다)."""
+    if sys.version_info < MIN_PYTHON:
+        raise Failed("Python 3.10 이상이 필요합니다(설치기 판본 %d.%d)" % sys.version_info[:2])
+    system = Path("/usr/bin/python3")
+    if not system.is_file():
+        raise Failed("관리형 서비스가 쓰는 /usr/bin/python3가 없습니다")
+    found = out(str(system), "-c", "import sys;print('%d.%d' % sys.version_info[:2])")
+    if not re.fullmatch(r"\d+\.\d+", found) or tuple(map(int, found.split("."))) < MIN_PYTHON:
+        raise Failed(f"/usr/bin/python3가 3.10 미만입니다({found or '판본 확인 실패'})")
+
+
+def has_engine() -> bool:
+    return any(Path("/usr/bin", name).is_file() for name in ENGINE_BINARIES)
+
+
+def install_packages(manager: str, names: list[str], env: dict) -> bool:
+    command = {"apt-get": ["apt-get", "install", "-y", "-qq"], "dnf": ["dnf", "install", "-y", "-q"],
+               "pacman": ["pacman", "-S", "--needed", "--noconfirm"]}[manager]
+    return run(*command, *[RENAMED.get(manager, {}).get(name, name) for name in names],
+               check=False, quiet=True, env=env).returncode == 0
+
+
+def ensure_packages() -> None:
+    """필수 구성요소와 컨테이너 엔진을 설치 한 번에 갖춘다. 없는 도구만 한 번에 조회·설치하고(패키지 관리자 갱신도 한 번),
+    엔진은 못 받아도 설치를 멈추지 않는다: 원격 MCP는 엔진 없이 쓰고, 로컬 MCP만 엔진 설치 뒤 쓸 수 있다."""
+    missing = [tool for tool in REQUIRED if not shutil.which(tool)]
+    if missing or not has_engine():
+        install_missing(missing)
+    start_engine()
+
+
+def install_missing(missing: list[str]) -> None:
+    manager = next((m for m in ENGINES if shutil.which(m)), None)
     if not manager:
-        raise Failed("필수 구성요소를 설치할 패키지 관리자를 찾지 못했습니다: " + ", ".join(missing))
-    step("필수 구성요소 설치")
+        if missing:
+            raise Failed("필수 구성요소를 설치할 패키지 관리자를 찾지 못했습니다: " + ", ".join(missing))
+        print("컨테이너 엔진이 없습니다. 로컬 MCP는 podman 또는 docker를 설치한 뒤 사용할 수 있습니다.", flush=True)
+        return
+    step("필수 구성요소 설치" if missing else "컨테이너 엔진 설치")
     env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-    try:
-        if manager == "apt-get":
-            run("apt-get", "update", "-qq", quiet=True, env=env)
-            run("apt-get", "install", "-y", "-qq", *PACKAGES[manager], quiet=True, env=env)
-        elif manager == "dnf":
-            run("dnf", "install", "-y", "-q", *PACKAGES[manager], quiet=True)
-        else:
-            run("pacman", "-S", "--needed", "--noconfirm", *PACKAGES[manager], quiet=True)
-    except subprocess.CalledProcessError as exc:
-        raise Failed(f"필수 구성요소 설치가 실패했습니다({manager}). 사내 패키지 저장소를 확인하세요") from exc
-    still = [tool for tool in ("gcc", "nft", "apparmor_parser") if not shutil.which(tool)]
-    if still:
-        raise Failed("설치 후에도 없는 필수 구성요소: " + ", ".join(still))
-    return missing
+    refreshed = manager != "apt-get" or run("apt-get", "update", "-qq", check=False, quiet=True, env=env).returncode == 0
+    if missing:
+        if not refreshed or not install_packages(manager, [REQUIRED[tool] for tool in missing], env):
+            raise Failed(f"필수 구성요소 설치가 실패했습니다({manager}). 사내 패키지 저장소를 확인하세요")
+        still = [tool for tool in missing if not shutil.which(tool)]
+        if still:
+            raise Failed("설치 후에도 없는 필수 구성요소: " + ", ".join(still))
+    if not has_engine() and not (refreshed and install_packages(manager, [ENGINES[manager]], env)):
+        print(f"컨테이너 엔진을 설치하지 못했습니다. 로컬 MCP는 엔진 설치 뒤 사용할 수 있습니다: "
+              f"sudo {INSTALL_VERB[manager]} {ENGINES[manager]}", flush=True)
+
+
+def start_engine() -> None:
+    """docker는 데몬이 떠 있어야 하고 재부팅 뒤에도 켜져야 한다. podman은 데몬이 없다(러너는 podman을 먼저 쓴다)."""
+    if Path("/usr/bin/docker").is_file() and not Path("/usr/bin/podman").is_file():
+        if run("systemctl", "enable", "--now", "docker", check=False, quiet=True, stderr=subprocess.DEVNULL).returncode:
+            print("docker 서비스를 켜지 못했습니다. 로컬 MCP는 켠 뒤 사용할 수 있습니다: sudo systemctl enable --now docker", flush=True)
 
 
 def search_roots(employee: str) -> list[Path]:
@@ -517,6 +572,7 @@ def main() -> int:
         return 2
     try:
         if not args.remove:
+            check_python()
             if not args.enrollment.is_file():
                 raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
             spec = importlib.util.spec_from_file_location("managed_tls", HERE / "managed-linux.py")
@@ -545,6 +601,7 @@ def main() -> int:
             if installed(account) or (SHIM_DIR / "codex").is_file():
                 rollback(account)
             raise
+        close_step()  # 사람이 로그인하는 시간은 설치 소요에 넣지 않는다
         if not args.skip_login:
             result["model_signed_in"] = harness_login(account, list(placed))
         result.update(employee=employee, managed_account=account,
@@ -554,6 +611,8 @@ def main() -> int:
               else "\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
         print("연결 상태 확인: mcpgw-status" + (f" (제한된 계정에서는 cat /usr/local/lib/mcpgw-managed/status-{account}.txt)"
                                               if not companion else ""))
+        print("로컬 MCP 준비(폴더 만들기·이미지 받기)는 활성화 뒤 백그라운드로 진행됩니다. 진행과 직원 문서 폴더 위치: mcpgw-status",
+              flush=True)
         # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
         names = " 또는 ".join(placed)
         print(f"새 터미널을 열어 평소 계정({employee})에서 {names}를 실행하세요." if companion
@@ -563,6 +622,9 @@ def main() -> int:
             print("Codex 로그인: codex login --device-auth")
         if "claude" in placed and not signed.get("claude"):
             print("Claude 로그인: claude를 실행한 뒤 /login")
+        slow = [f"{label.split(':')[0]} {seconds}초" for label, seconds in timings if seconds]
+        if slow:
+            print(f"설치 소요(로그인 제외): {' · '.join(slow)} · 합계 {sum(seconds for _, seconds in timings)}초")
         return 0
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)

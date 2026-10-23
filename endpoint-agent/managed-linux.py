@@ -251,9 +251,10 @@ def install(args):
     if config_path.exists():
         raise ValueError("이미 설치된 장치입니다. 기존 자격을 폐기하고 조직 관리자가 제거한 뒤 재설치하세요")
     bundle["device_key"] = secrets.token_urlsafe(32)
+    machine = machine_id()
     enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
                            "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid,
-                           **({"machine_id": machine_id()} if machine_id() else {})}, credential=False)
+                           **({"machine_id": machine} if machine else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     # manifest_pubkey: the approver's key for local MCP manifests, pinned here and never taken from policy.
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
@@ -322,10 +323,14 @@ def render_status(summary, now):
     silent = now - updated > STATUS_STALE_SECONDS
     state = "unknown" if silent else summary.get("state", "unknown")
     last, servers = summary.get("last_report"), summary.get("servers")
+    local = summary.get("local") or {}
+    prepared = f"{local['ready']}/{local['total']}" if local.get("total") else "—"
     lines = [f"장치 상태: {STATE_LABEL.get(state, STATE_LABEL['unknown'])}",
              f"게이트웨이: {'연결됨' if summary.get('connected') and not silent else '연결 안 됨'}",
              "마지막 보고: " + (f"{clock(last)} ({max(0, int(now - last))}초 전)" if last else "—"),
              "승인 서버: " + (f"{servers}개" if servers is not None else "—"),
+             "로컬 MCP 준비: " + prepared + (f" ({local['note']})" if local.get("note") and local.get("total") else ""),
+             "직원 문서 폴더: " + (", ".join(local["documents"]) if local.get("documents") else "—"),
              "키트 판본: " + (summary.get("kit") or "—")[:12]]
     if silent:
         lines.append("관리형 서비스가 응답하지 않습니다 (마지막 갱신 " + (clock(updated) if updated else "—") + ")")
@@ -573,10 +578,13 @@ def serve(args):
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
+    local = None
     if runner.exists():
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
-        threading.Thread(target=load_module("local_runner", runner).run, daemon=True,
-                         args=(config, request, log)).start()
+        local = load_module("local_runner", runner)
+        # Separate threads: an image pull that takes minutes must not hold the job loop, and the reverse.
+        for target in (local.run, local.prepare):
+            threading.Thread(target=target, daemon=True, args=(config, request, log)).start()
 
     def observe():
         # Beside the heartbeat, not inside it: a round that spends up to 80 seconds here is 80 seconds
@@ -676,6 +684,8 @@ def serve(args):
             summary.update(connected=False, **({"state": "revoked"} if getattr(exc, "code", None) == 401 else {}))
             print(json.dumps({"state": "connection-stopped", "error": type(exc).__name__,
                               "status": getattr(exc, "code", None), "reason": str(exc)[:200]}), flush=True)
+        if local:
+            summary["local"] = dict(local.preparation)
         try:
             publish_status(summary)
         except OSError:
