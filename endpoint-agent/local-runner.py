@@ -58,6 +58,14 @@ def signed(manifest, signature, public_pem):
     return result.returncode == 0
 
 
+def iso(value):
+    """datetime.fromisoformat before Python 3.11 (Ubuntu 20.04·22.04) refuses a trailing Z and a fraction that
+    is not 3 or 6 digits; a Gateway timestamp may have either."""
+    text = re.sub(r"Z$", "+00:00", str(value))
+    text = re.sub(r"\.(\d+)(?=[+-]\d\d:\d\d$|$)", lambda m: "." + (m.group(1) + "000000")[:6], text)
+    return datetime.fromisoformat(text)
+
+
 def image_allowed(image, mirrors):
     return bool(IMAGE.fullmatch(image) and any(image.startswith(m.rstrip('/')+'/') for m in mirrors if m))
 
@@ -450,8 +458,8 @@ def check_control(job, control):
     now=time.time()
     if (control['revoked'] or control['lifecycle'] not in ('OPERATING','OBSERVING')
             or any(control[k]!=job[k] for k in ('manifest_sha256','policy_generation','device_epoch','device_policy','policy_version','control_sha256','account_uid'))
-            or datetime.fromisoformat(control['expires_at']).timestamp()<=now
-            or datetime.fromisoformat(control['deadline']).timestamp()<=now
+            or iso(control['expires_at']).timestamp()<=now
+            or iso(control['deadline']).timestamp()<=now
             or control['signature_generation']!=job['manifest']['approval']['generation']):
         raise ValueError('현재 로컬 실행 승인이 아닙니다')
 
@@ -478,7 +486,7 @@ def execute_job(config, job, request, account):
     if account.pw_uid!=job['account_uid'] or account.pw_uid!=config['uid']:
         raise ValueError('등록한 실행 계정 번호가 아닙니다')
     verify_manifest(config,manifest,job['signature'],job['manifest_sha256'],job['server_id'])
-    if datetime.fromisoformat(job['lease_until']).timestamp()<=time.time():
+    if iso(job['lease_until']).timestamp()<=time.time():
         raise ValueError('수령 기한이 지났습니다')
     engine=None
     path=f"/api/endpoint/local-jobs/{job['id']}"
@@ -513,7 +521,7 @@ def execute_job(config, job, request, account):
         check()
         started=request(config,path+'/start',{})
         check_control(job,started)
-        deadline=min(datetime.fromisoformat(started['deadline']).timestamp(),time.time()+READ_SECONDS)
+        deadline=min(iso(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
         session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
@@ -660,7 +668,7 @@ def prepare_once(config, request, log, account, done, folders, failed):
         try:
             manifest=entry['manifest']
             verify_manifest(config,manifest,entry['signature'],entry['manifest_sha256'],entry['server_id'])
-            if datetime.fromisoformat(manifest['approval']['expires_at']).timestamp()<=time.time():
+            if iso(manifest['approval']['expires_at']).timestamp()<=time.time():
                 raise ValueError('승인 기한이 지났습니다')
             folders[key]=ensure_mounts(manifest,account,documents)
             preparation.update(note='이미지 받는 중: '+name,documents=sorted({d for k in folders for d in folders[k]}))

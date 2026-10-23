@@ -2354,3 +2354,15 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: `nft_rules`는 「표 추가 → 표 삭제 → 표 정의」를 한 배치로 쓴다(있으면 지우고 다시 만드는 이식 가능한 형태, 원자적). 22.04·24.04 모두 `nft -c`와 두 번 연속 적용이 통과했다.
 - 함께 확인: 같은 22.04 컨테이너에서 경고(warn) 모드 AppArmor 프로필은 apparmor_parser 3.0.4가 받는다. 결속 집행(enforce) 모드 프로필은 22.04·24.04 모두 `unix` 규칙의 `addr=` 값을 거부해 쓸 수 없는 상태다(기본은 warn이라 설치에는 영향 없음, 후속).
 - 같이 고친 것: 설치 실패 때 설치기가 마지막 traceback 줄 대신 실패한 명령의 오류 출력과 예외 줄을 보인다.
+
+## D-232 Linux 키트는 Ubuntu 20.04~26.04에서 동작하고, 16.04·18.04는 첫 줄에서 이유를 말하고 멈춘다 (2026-10-23)
+
+- 배경: 소유자 지시 「26~16까지 문제 없도록 예외 생길 만한 거 다 패치」. 기기에서 ubuntu:16.04·18.04·20.04·22.04·24.04·25.10·26.04 컨테이너로 키트 코드(설치기·서비스 모듈 `-I -S` 로드, nft 규칙 `nft -c`, warn 모드 AppArmor `apparmor_parser -Q -T`, TOML·시각·레이블 처리)를 실측했다.
+- 실측 결과와 수정:
+  - 16.04(Python 3.5, nft 0.5)·18.04(3.6, nft 0.8.2): 키트 파이썬이 문법 오류로 멈췄다. Claude Code·Codex 자체가 Ubuntu 20.04 이상을 요구하므로 지원하지 않고, `install.sh`가 파이썬을 부르기 전에 「이 PC(Ubuntu 18.04.6 LTS, Python 3.6.9)는 지원하지 않습니다. Ubuntu 20.04 이상(Python 3.8 이상)에서 설치하세요」로 멈춘다.
+  - 20.04(Python 3.8): 설치기가 3.10을 요구해 거부했다 → 최소 3.8로 낮춤. `broker_binding`의 `removesuffix`(3.9) 제거, `os-observer.py`의 `X | None` 실행 시 평가를 `from __future__ import annotations`로.
+  - 20.04·22.04(Python 3.8·3.10, tomllib 없음): Codex `config.toml`을 못 읽어 설정 점검이 「읽을 수 없음」으로 남았다 → `toml_loads`가 tomllib → 배포판 tomli(22.04)/toml(20.04) 순으로 쓰고(서비스의 `-I -S` 때문에 root 소유 `/usr/lib/python3/dist-packages`만 그 순간 경로에 추가), 설치기가 없으면 `python3-tomli`→`python3-toml`을 받는다(최선 노력).
+  - 3.11 미만의 `datetime.fromisoformat`은 끝의 `Z`와 3·6자리 아닌 소수 초를 못 읽는다 → 로컬 러너가 `iso()`로 정규화.
+  - nftables 1.0.2(22.04)의 `destroy table` 미지원은 D-231.
+- 판본별 결과(수정 뒤): 20.04·22.04·24.04·25.10·26.04 모두 설치기 진입·모듈 로드·Python 확인·TOML·시각·레이블·nft·AppArmor(warn) 통과. 결속 집행(enforce) 모드 AppArmor 프로필은 모든 판에서 `unix addr=` 값이 거부돼 쓸 수 없는 상태로 남는다(기본은 warn, 후속).
+- 한계: 컨테이너는 systemd·커널 AppArmor·nft 적용을 실제로 하지 않는다. 실기기 설치는 22.04(팀원 VM)·24.04(pj2)로 확인한다.

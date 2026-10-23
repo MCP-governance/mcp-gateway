@@ -184,8 +184,7 @@ def user_command_settings(home):
                     if folder == ".claude":
                         document = json.loads(text, parse_constant=invalid_constant)
                     else:
-                        import tomllib
-                        document = tomllib.loads(text)
+                        document = toml_loads(text)
                     if not isinstance(document, dict):
                         raise ValueError
                     found = set(document) & keys
@@ -403,11 +402,33 @@ def all_server_entries(document: dict) -> dict:
     return entries
 
 
+
+def toml_loads(text):
+    """tomllib (3.11+), else the distribution's tomli/toml package (Ubuntu 20.04·22.04 ship Python 3.8/3.10).
+    The service runs with -I -S, so the root-owned system package folder is added for this import only."""
+    try:
+        import tomllib as parser
+    except ImportError:
+        import sys
+        system = "/usr/lib/python3/dist-packages"
+        added = system not in sys.path
+        if added:
+            sys.path.append(system)
+        try:
+            try:
+                import tomli as parser
+            except ImportError:
+                import toml as parser
+        finally:
+            if added:
+                sys.path.remove(system)
+    return parser.loads(text)
+
+
 def read_config(path: Path) -> dict | None:
     text = path.read_text(encoding="utf-8") or "{}"
     if path.suffix == ".toml":
-        import tomllib
-        document = tomllib.loads(text)
+        document = toml_loads(text)
     else:
         document = json.loads(text)
     return document if isinstance(document, dict) else None
@@ -1122,8 +1143,7 @@ def demo() -> None:
     claude = all_server_entries({"mcpServers": {"a": {"url": "u"}},
                                  "projects": {"/w": {"mcpServers": {"b": {"command": "c"}}}}})
     assert set(claude) == {"a", "b@/w"}
-    import tomllib
-    codex = server_entries(tomllib.loads('[mcp_servers.git]\nurl = "http://gateway:8080/mcp/git/"\n'))
+    codex = server_entries(toml_loads('[mcp_servers.git]\nurl = "http://gateway:8080/mcp/git/"\n'))
     assert describe("git", codex["git"])["endpoint_ref"].endswith("/mcp/git/")
 
     # 탐색 범위는 정책이 정하고, 공인 대역은 정책이 내려줘도 펼치지 않는다.

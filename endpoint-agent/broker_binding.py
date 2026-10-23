@@ -39,9 +39,10 @@ def kernel_ready(username, harnesses=("codex", "claude"), mode="enforce"):
 def peer_label(connection):
     # SO_PEERSEC is Linux UAPI 31, even on Python builds without the constant.
     raw = connection.getsockopt(socket.SOL_SOCKET, getattr(socket, "SO_PEERSEC", 31), 4096)
-    label = raw.removesuffix(b"\0").decode("utf-8", errors="strict")
+    # No str.removesuffix: Ubuntu 20.04 ships Python 3.8.
+    label = (raw[:-1] if raw.endswith(b"\0") else raw).decode("utf-8", errors="strict")
     # Stacked, complain and truncated labels must never match by prefix.
-    return label.removesuffix(" (enforce)")
+    return label[:-len(" (enforce)")] if label.endswith(" (enforce)") else label
 
 
 def authorize_peer(connection, config):

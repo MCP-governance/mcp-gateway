@@ -371,11 +371,33 @@ def codex_block(settings: dict) -> str:
     return "\n".join(lines + [END]) + "\n"
 
 
+
+def toml_loads(text):
+    """tomllib (3.11+), else the distribution's tomli/toml package (Ubuntu 20.04·22.04 ship Python 3.8/3.10).
+    The service runs with -I -S, so the root-owned system package folder is added for this import only."""
+    try:
+        import tomllib as parser
+    except ImportError:
+        import sys
+        system = "/usr/lib/python3/dist-packages"
+        added = system not in sys.path
+        if added:
+            sys.path.append(system)
+        try:
+            try:
+                import tomli as parser
+            except ImportError:
+                import toml as parser
+        finally:
+            if added:
+                sys.path.remove(system)
+    return parser.loads(text)
+
+
 def codex_conflicts(text: str, servers: list[str], table: str = "mcp_servers") -> list[str]:
     """블록 밖에서 직원이 이미 정의한 같은 이름 - 그대로 두면 TOML 중복 테이블이 된다."""
     try:
-        import tomllib
-        existing = tomllib.loads(text).get(table, {})
+        existing = toml_loads(text).get(table, {})
         return [s for s in servers if s in existing]
     except ImportError:  # Python 3.10 이하
         return [s for s in servers if re.search(rf"^\s*\[{table}\.(\"?)" + re.escape(s) + r"\1\]", text, re.M)]
@@ -630,8 +652,7 @@ def codex_items(settings: dict) -> list[dict] | None:
     if "config/read" not in answers:  # app-server를 못 읽는 판본은 사용자 config.toml로
         mode = "cached"  # Codex 기본값(WebSearchMode::Cached)
         try:
-            import tomllib
-            mode = str(tomllib.loads(codex_config().read_text(encoding="utf-8")).get("web_search", mode))
+            mode = str(toml_loads(codex_config().read_text(encoding="utf-8")).get("web_search", mode))
         except (ImportError, OSError, ValueError):
             pass
     if mode != "disabled":
