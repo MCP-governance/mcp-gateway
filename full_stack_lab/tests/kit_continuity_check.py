@@ -3,7 +3,6 @@
 DB·소켓·AppArmor는 대역이며 집행 증거가 아니다. 저장소 루트: python -B -X utf8 full_stack_lab/tests/kit_continuity_check.py
 """
 import ast
-import asyncio
 import hashlib
 import importlib.util
 import json
@@ -17,7 +16,7 @@ import time
 import unittest
 import uuid
 from pathlib import Path, PurePosixPath
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
