@@ -2333,3 +2333,11 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 측정해 하지 않은 것: `load_module("…", agent.py)` 반복 로드는 1회 13ms(20회 평균)라 캐시하지 않았다. `systemctl daemon-reload` 두 번은 집행 단위 파일과 관리 서비스 단위 파일이 서로 다른 시점에 쓰여야 부분 설치 원복(D-218)이 대칭이라 합치지 않았다. 설치의 `verify_transport` 재호출은 일회용 등록 토큰을 쓰기 전에 잘못된 주소·인증서를 거르는 검사(코드 주석)라 남겼다. 보안 검사(링크 거부·고정 FD·root 소유 경로·AppArmor/nft 순서·원복 멱등)는 한 줄도 바꾸지 않았다.
 - 죽은 코드: 키트 5개 파일의 최상위 함수·상수를 저장소 전체 참조 수로 훑었으나 참조 0인 것은 없었다(`pyflakes` 통과).
 - 시험: 기존 키트·러너 시험 전부 기대값 변경 없이 통과(`loopback_owner_replies_test`는 `check_python` 대역 한 줄만 추가).
+
+## D-228 설치 전에 열린 터미널에서도 관리 하네스가 뜨도록 직원 홈 런처를 관리 런처로 바꾼다 (2026-10-23)
+
+- 배경: pj2 실측에서 설치 전부터 열려 있던 터미널의 `claude`가 직원 계정의 비관리 `~/.local/bin/claude`를 실행해, 모델 로그인이 관리 계정이 아니라 직원 계정에 들어갔다. 키트의 셸 함수는 설치 뒤 연 셸에만 적용되고, 세션 PATH(~/.profile)는 `~/.local/bin`을 `/usr/local/bin`보다 앞에 둔다.
+- 결정: 별도 관리 계정을 쓰는 직원(설정에 `owner_uid`)이면 `managed-linux.py`가 설치 때 직원 홈의 `~/.local/bin`·`~/bin`·`~/.npm-global/bin`에 있는 `claude`·`codex` 런처(링크·파일)를 기록해 두고, `exec /usr/local/bin/<이름> "$@"` 한 줄짜리 관리 런처(직원 소유 0755)로 바꾼다. 서비스는 5분마다 다시 확인해 업데이트가 런처를 되돌렸으면 다시 바꾸고, 제거(원복) 때 원래 링크·파일을 되살린다.
+  Claude Code 공식 문서는 네이티브 설치의 `~/.local/bin/claude`를 사용자 런처로 바꿔도 자동 업데이트·`claude update`가 그대로 두고 새 판본을 `versions/`에 설치한다고 밝힌다(https://code.claude.com/docs/en/setup, Auto-updates). 이때 Claude Code는 설치된 판본을 지우지 않고 남긴다(디스크 사용 증가).
+- 안전: 모든 파일 연산은 직원 홈에서 시작해 `O_NOFOLLOW` 디렉터리 FD와 `O_EXCL|O_NOFOLLOW` 생성으로 한다(경로 중간 링크·경쟁 생성 거부). 관리자 권한 직원이라 보안 경계가 아니라 사용 경로 정리다.
+- 시험: `kit_install_upfront_check.py` `HomeLaunchers`(Linux: 교체·재확인 무변경·업데이트 뒤 복구·원복), pj2 실측.

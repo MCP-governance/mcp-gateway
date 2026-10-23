@@ -449,5 +449,36 @@ class DeviceManifests(unittest.IsolatedAsyncioTestCase):
         self.authorized.assert_not_awaited()
 
 
+@unittest.skipUnless(sys.platform.startswith("linux"), "dir_fd·O_NOFOLLOW 파일 연산은 Linux 전용")
+class HomeLaunchers(unittest.TestCase):
+    """설치 전에 열린 터미널의 PATH가 먼저 찾는 ~/.local/bin 런처를 관리 런처로 바꾸고, 업데이트가 되돌리면 다시, 제거 때 원래대로(D-228)."""
+
+    def test_replace_heal_restore(self):
+        spec = importlib.util.spec_from_file_location("managed_linux_hl", KIT / "managed-linux.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, root)
+        home = os.path.join(root, "home")
+        os.makedirs(os.path.join(home, ".local", "bin"))
+        version = os.path.join(root, "claude-2.1")
+        open(version, "w").close()
+        launcher = os.path.join(home, ".local", "bin", "claude")
+        os.symlink(version, launcher)
+        person = SimpleNamespace(pw_dir=home, pw_uid=os.getuid(), pw_gid=os.getgid())
+        config = {"owner_uid": os.getuid(), "username": "managed-u", "harnesses": ["claude"]}
+        with patch.object(module, "STATE", module.Path(root) / "state"),              patch.object(module.pwd, "getpwuid", return_value=person):
+            self.assertEqual(module.home_launchers(config), ["~/.local/bin/claude"])
+            self.assertFalse(os.path.islink(launcher))
+            self.assertIn("exec /usr/local/bin/claude", open(launcher).read())
+            self.assertEqual(module.home_launchers(config), [])
+            os.unlink(launcher)
+            os.symlink(version, launcher)
+            self.assertEqual(module.home_launchers(config), ["~/.local/bin/claude"])
+            module.restore_home_launchers(config)
+            self.assertEqual(os.readlink(launcher), version)
+            self.assertEqual(module.home_launchers({**config, "owner_uid": None}), [])
+
+
 if __name__ == "__main__":
     unittest.main()
