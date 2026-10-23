@@ -111,7 +111,7 @@ cd mcp-gateway/full_stack_lab
 
 | 실행 위치 | MCP |
 | --- | --- |
-| 원격 | GitHub · Context7 · Microsoft Learn · DeepWiki · Hugging Face · Cloudflare Docs · AWS Knowledge |
+| 원격 | GitHub · Grep · Microsoft Learn · DeepWiki · Hugging Face · Cloudflare Docs · AWS Knowledge |
 | 솔루션 격리 실행 | MarkItDown |
 | 직원 PC 격리 실행 | filesystem · memory · sequentialthinking (modelcontextprotocol/servers 공식 이미지) |
 

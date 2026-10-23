@@ -111,7 +111,7 @@ MINT is not validated against home-made mock MCPs. Real public MCP servers are r
 
 | Runs on | MCP servers |
 | --- | --- |
-| Remote | GitHub · Context7 · Microsoft Learn · DeepWiki · Hugging Face · Cloudflare Docs · AWS Knowledge |
+| Remote | GitHub · Grep · Microsoft Learn · DeepWiki · Hugging Face · Cloudflare Docs · AWS Knowledge |
 | Solution runtime | MarkItDown |
 | Employee PC isolation | filesystem · memory · sequentialthinking (official modelcontextprotocol/servers images) |
 
