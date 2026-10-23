@@ -31,7 +31,16 @@
 
 ### 위키 검사
 
-(마지막 절에서 결과 기록)
+2026-10-23 로컬(Windows, `PYTHONUTF8=1`)에서 CI 순서대로 실행했고 모두 종료 코드 0이다. 코드가 바뀌어 `map_threats.py`를 먼저 돌리고(위협 목록 해시 갱신), 변경을 커밋한 뒤(0aa5732) `build_enterprise_analysis.py --refresh-code-only`를 돌렸다(`source_commit` 0aa5732, 요구 80·통합 조건 50, 실행 기록 보존). 이 갱신이 `requirements.json`·`integration-cases.json`의 코드 근거 해시를 바꿔 둘째 커밋으로 올렸다.
+
+| 검사 | 결과 |
+| --- | --- |
+| `check_wiki.py --ci-ignored-local-sources` | 오류 0(무시된 로컬 원본 누락 경고만) |
+| `check_trace.py --self-test` | PASS |
+| `check_trace.py` | 오류 0, 경고 6(기존 미참조 ID) |
+| `check_enterprise_analysis.py` | 오류 0, 경고 0 |
+| `test_enterprise_code_refresh.py` | 3건 통과 |
+| `PYTHONUTF8=1 python research/collaboration-console/test_console.py` | 32건 통과 |
 
 ## CI에서 리더가 볼 항목
 
