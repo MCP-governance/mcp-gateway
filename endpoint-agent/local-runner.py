@@ -7,7 +7,6 @@ import base64
 import hashlib
 import json
 import os
-import pwd
 import queue
 import re
 import stat
@@ -489,9 +488,12 @@ def execute_job(config, job, request, account):
         deadline=min(datetime.fromisoformat(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
-        employee=pwd.getpwuid(config['owner_uid']) if config.get('owner_uid') is not None else None
-        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,
-                         (employee.pw_dir,employee.pw_uid,employee.pw_gid) if employee else None)
+        documents=None
+        if config.get('owner_uid') is not None:
+            import pwd
+            employee=pwd.getpwuid(config['owner_uid'])
+            documents=(employee.pw_dir,employee.pw_uid,employee.pw_gid)
+        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,documents)
         isolation=session.mapping(namespace)
         isolation['engine_version']=config['local_engine']['version']
         isolation['engine']=config['local_engine']['engine']
@@ -580,6 +582,7 @@ def recover(config, request):
 
 
 def run(config, request, log):
+    import pwd
     account=pwd.getpwnam(config['username'])
     failures,last=0,None
     while True:
