@@ -639,6 +639,7 @@ ADMIN_SCREENS = [
     ("/gw/endpoint/inventory/listeners?limit=50&classification=shadow,retired-residue", ["rows", "total", "next_cursor"]),
     ("/gw/endpoint/inventory/os-events?limit=50", ["rows", "total", "next_cursor"]),
     ("/api/accounts", ["accounts"]),
+    ("/api/accounts/deleted", ["accounts"]),
     ("/api/signup-requests", ["requests"]),
     ("/gw/suspensions", ["suspensions"]),
     ("/api/consents", ["consents"]),

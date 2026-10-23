@@ -191,10 +191,25 @@ const locationRows = (value = {}) => [
   ["처리 주체", value.processor || "—"], ["위치 근거", value.evidence_ref || "—"], ["이전 근거", value.transfer_basis || "—"],
 ];
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
-const PLATFORM_KIT = { linux: "Linux 설치 파일", windows: "Windows 설치 파일", macos: "macOS 연결 파일" };
+const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
+const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
 function preferredKitPlatform() {
   const os = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
   return /mac/i.test(os) ? "macos" : /win/i.test(os) ? "windows" : "linux";
+}
+// 설치 절차: 운영체제마다 실행 방법만 다르다. 명령 문자열 외에는 라벨만 둔다.
+function kitSteps(os) {
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code></li>`
+    : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
+    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회</span></li>`;
+  return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>관리자 활성화 뒤 사용</li></ol>
+    ${os === "linux" ? kv([["제거", html`<code>sudo ~/mcp-managed-kit/install.sh --remove</code>`]]) : ""}`;
+}
+function kitView(kit, os) {
+  const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferredKitPlatform()) - Number(a === preferredKitPlatform()));
+  return html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}</div>
+    <div class="row-actions" role="group">${platforms.map((name) => html`<button class="btn sm ${name === os ? "primary" : ""}" type="button" aria-pressed="${String(name === os)}" data-act="pc-kit-os" data-os="${name}">${PLATFORM_KIT[name] || "—"}</button>`)}</div>
+    ${platforms.includes(os) ? html`${kitSteps(os)}<div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
 }
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
@@ -222,7 +237,7 @@ const REVIEW_KIND = {
   "server-deregister": "게이트웨이 등록 해제", "contract-reapprove": "계약 재승인", "addon-result": "외부 게이트웨이 실행 결과",
   "litellm-sync": "외부 게이트웨이 동기화",
   "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
-  "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개",
+  "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개", "account-restore": "계정 복구",
   "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
   "call-reject": "중대 영향 거부", "call-revoke": "중대 영향 번복",
   "incident-created": "사고 기록 생성", "incident-supplement": "사고 범위 보완", "incident-report": "사고 보고 제출",
@@ -1323,8 +1338,8 @@ const managedEventDetail = (d) => (d && (d.reason || d.note || (d.actor ? `처�
 let peopleAccounts = [];
 let integrationItems = [];
 ROUTES.people = async (_, tab) => {
-  const [{ accounts }, { requests: signups }, inv, o, p, identity, { suspensions }] = await Promise.all([
-    api("/api/accounts"), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
+  const [{ accounts }, { accounts: deletedAccounts }, { requests: signups }, inv, o, p, identity, { suspensions }] = await Promise.all([
+    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
     gw("suspensions")]);
   peopleAccounts = accounts;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
@@ -1349,6 +1364,13 @@ ROUTES.people = async (_, tab) => {
                 <button class="btn sm" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
                 ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
+        { key: "deleted", label: "삭제된 사용자", n: deletedAccounts.length,
+          body: panel("삭제된 사용자", html`<table class="data"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>부서</th><th>삭제 시각</th><th></th></tr></thead><tbody>
+            ${deletedAccounts.map((a) => html`<tr><td><b>${a.display_name}</b></td><td class="small">${a.email}</td>
+              <td>${ROLE[a.role] || a.role}</td><td>${a.department || "—"}</td>
+              <td class="small">${when(a.status_changed_at)}<span class="sub">${a.status_changed_by || "—"}</span></td>
+              <td class="num"><button class="btn sm primary" type="button" data-act="account-restore" data-id="${a.user_id}" data-name="${a.display_name}">복구</button></td></tr>`)}
+            </tbody></table>${deletedAccounts.length ? "" : empty("삭제된 사용자 없음")}`, { flush: true }) },
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
           ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th>상태</th><th>마지막 보고</th><th></th></tr></thead><tbody>
             ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
@@ -1388,6 +1410,12 @@ ROUTES.people = async (_, tab) => {
     }),
   };
 };
+
+function requestedToolList(tools) {
+  return html`<div class="tool-list">${tools.map((t) => html`<label class="check">
+    <input type="checkbox" name="requested_tool" value="${t.name}" checked />
+    <span><b class="mono">${t.name}</b>${t.description ? html`<span class="sub">${t.description}</span>` : ""}</span></label>`)}</div>`;
+}
 
 // ── intake ───────────────────────────────────────────────────────────────────
 let intakeTimer = null;
@@ -2545,6 +2573,14 @@ const ACTIONS = {
     await reload();
     toast(r.message);
   },
+  async "account-restore"(el) {
+    const fd = await ask({ title: `${el.dataset.name} 계정 복구`,
+      body: "이전 엔드포인트와 동의는 복구되지 않습니다.", confirm: "계정 복구" });
+    if (!fd) return;
+    const r = await api(`/api/accounts/${encodeURIComponent(el.dataset.id)}/restore`, { method: "POST" });
+    await reload();
+    toast(r.message);
+  },
   async "signup-approve"(el) {
     const r = await api(`/api/signup-requests/${el.dataset.id}/approve`, { method: "POST" });
     toast(r.message); reload();
@@ -2556,10 +2592,11 @@ const ACTIONS = {
   "pc-kit"() {
     const kit = viewer.kit;
     const preferred = preferredKitPlatform();
-    const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferred) - Number(a === preferred));
-    openDrawer("내 PC 연결", html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}
-      ${platforms.map((os) => html`<button class="btn sm ${os === preferred ? "primary" : ""}" type="button" data-act="pc-kit-download" data-os="${os}">${PLATFORM_KIT[os] || "—"}</button>`)}</div>
-      ${platforms.includes("macos") ? html`<dl><dt>macOS 터미널 명령</dt><dd><code>/bin/bash "$HOME/Downloads/mcp-connect-macos.command"</code></dd><dt>관리자 암호</dt><dd>1회</dd><dt>연결 파일 유효 시간</dt><dd>5분</dd></dl>` : ""}`);
+    const os = (kit.platforms || []).includes(preferred) ? preferred : (kit.platforms || [])[0];
+    openDrawer("내 PC 연결", html`<div data-kit>${kitView(kit, os)}</div>`);
+  },
+  "pc-kit-os"(el) {
+    el.closest("[data-kit]").innerHTML = String(kitView(viewer.kit, el.dataset.os));
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
@@ -2567,12 +2604,12 @@ const ACTIONS = {
     const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
-      const r = await response.json();
+      const r = await response.json().catch(() => ({}));
       throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
     const link = document.createElement("a"); link.href = url;
-    link.download = os === "macos" ? "mcp-connect-macos.command" : os === "windows" ? "mcp-managed-setup-windows.cmd" : `mcp-managed-kit-${os}.zip`;
+    link.download = /filename="?([^";]+)"?/.exec(response.headers.get("content-disposition") || "")?.[1] || KIT_FILE[os];
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
     toast("설치 파일을 받았습니다.");
   },
@@ -2679,8 +2716,7 @@ const ACTIONS = {
   async "intake-discover"(el) {
     const form = el.closest("form");
     const found = await api("/api/mcp-requests/discover", { method: "POST", body: { endpoint: form.elements.endpoint_url.value.trim() } });
-    form.querySelector("[data-requested-tools]").innerHTML = String(html`${found.tools.map((t) => html`<label class="check">
-      <input type="checkbox" name="requested_tool" value="${t.name}" checked /><span>${t.name}<span class="sub">${t.description}</span></span></label>`)}`);
+    form.querySelector("[data-requested-tools]").innerHTML = String(requestedToolList(found.tools));
   },
   async "server-deregister"(el) {
     const fd = await ask({ title: `등록 해제 · ${el.dataset.id}`, body: "이후 호출은 차단됩니다.", confirm: "해제", danger: true });
