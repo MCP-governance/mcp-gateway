@@ -555,10 +555,14 @@ def main() -> int:
         print("연결 상태 확인: mcpgw-status" + (f" (제한된 계정에서는 cat /usr/local/lib/mcpgw-managed/status-{account}.txt)"
                                               if not companion else ""))
         # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
-        print(f"새 터미널을 열어 평소 계정({employee})에서 codex 또는 claude를 실행하세요." if companion
-              else "이 계정에서 codex 또는 claude를 실행하세요.")
-        if "codex" in placed and not (result.get("model_signed_in") or {}).get("codex"):
+        names = " 또는 ".join(placed)
+        print(f"새 터미널을 열어 평소 계정({employee})에서 {names}를 실행하세요." if companion
+              else f"이 계정에서 {names}를 실행하세요.")
+        signed = result.get("model_signed_in") or {}
+        if "codex" in placed and not signed.get("codex"):
             print("Codex 로그인: codex login --device-auth")
+        if "claude" in placed and not signed.get("claude"):
+            print("Claude 로그인: claude를 실행한 뒤 /login")
         return 0
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)
