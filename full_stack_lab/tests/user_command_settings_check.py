@@ -45,7 +45,7 @@ class UserSettings(unittest.TestCase):
         self.patch_home = patch.dict(os.environ, {"HOME": str(self.home), "CODEX_HOME": str(self.home / ".codex")})
         self.patch_home.start()
         self.addCleanup(self.patch_home.stop)
-        self.scan = selected(ROOT / "endpoint-agent/agent.py", {"user_command_settings"},
+        self.scan = selected(ROOT / "endpoint-agent/agent.py", {"user_command_settings", "toml_loads"},
                              {"Path": Path, "os": os, "json": json}).user_command_settings
 
     def write(self, name, value):
@@ -129,7 +129,7 @@ class UserSettings(unittest.TestCase):
         original = builtins.__import__
 
         def no_toml(name, *args, **kwargs):
-            if name == "tomllib":
+            if name in ("tomllib", "tomli", "toml"):  # no TOML parser at all (D-232 fallbacks too)
                 raise ImportError("PRIVATE_COMMAND_VALUE")
             return original(name, *args, **kwargs)
 
