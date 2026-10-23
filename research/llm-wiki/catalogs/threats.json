@@ -853,10 +853,10 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
+        "sha256": "f83992c4f7cbbd17f9f42d0ef04162acc79434fa1604683fcc9da54ad5763020",
         "committed_sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
-        "normalized_sha256": "8407bbe3821464154a0a7377f828aee6f596eb56e734796ed51a38a406973bb1",
-        "worktree_modified": false
+        "normalized_sha256": "f83992c4f7cbbd17f9f42d0ef04162acc79434fa1604683fcc9da54ad5763020",
+        "worktree_modified": true
       }
     ],
     "control_locations": [

@@ -1580,6 +1580,7 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
         policy = await endpoint_plane.managed_policy(device)
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
+    await endpoint_plane.record_served(device, policy)
     return policy
 
 
@@ -1621,7 +1622,10 @@ class LocalJobResult(BaseModel):
 @app.get("/api/endpoint/local-jobs")
 async def endpoint_local_job(wait: float = 25, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     """승인된 로컬 MCP 실행 요청을 그 장치에만 내준다. 장치는 바깥으로만 연결한다."""
-    return {"job": await local_jobs.claim(device, max(0.0, min(wait, 25.0)))}
+    try:
+        return {"job": await local_jobs.claim(device, max(0.0, min(wait, 25.0)))}
+    except local_jobs.NotStarted as exc:  # e.g. a quarantined device: refuse, do not fail with 500
+        raise HTTPException(409, str(exc)) from exc
 
 
 @app.post("/api/endpoint/local-jobs/{job_id}")

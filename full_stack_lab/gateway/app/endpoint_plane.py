@@ -864,11 +864,28 @@ async def _held_policy(device: dict, policy: dict, reported_hash: str) -> dict |
     Control changes (allow-list, protection settings, header helper) change the rendering for the servers the device
     already holds, so they never match here and stay fail-closed (D-198). A removed server is not one: the Gateway
     refuses it per call, and stopping every server for it let one upstream going to ERROR cut a whole PC off."""
-    held = (device.get("detail") or {}).get("policy_servers")
+    detail = device.get("detail") or {}
+    # The server list of a policy this Gateway actually served to the device, else the one last confirmed in use.
+    # Several approvals in a row served policies the device installed between heartbeats; judging those by the
+    # last confirmed list alone quarantined PJ1 and pj3 although every control check passed (10-23).
+    held = (detail.get("served_policies") or {}).get(reported_hash) or detail.get("policy_servers")
     if reported_hash == policy["policy_hash"] or not held:
         return None
     old = await managed_policy(device, servers=held)
     return old if old["policy_hash"] == reported_hash else None
+
+
+SERVED_POLICIES = 8
+
+
+async def record_served(device: dict, policy: dict) -> None:
+    """Remember which server list each served policy hash was rendered for (the last few only)."""
+    served = dict((device.get("detail") or {}).get("served_policies") or {})
+    served.pop(policy["policy_hash"], None)
+    served[policy["policy_hash"]] = policy["servers"]
+    served = dict(list(served.items())[-SERVED_POLICIES:])
+    await db.execute("UPDATE endpoint_agents SET detail = COALESCE(detail, '{}'::jsonb) || %s WHERE endpoint_id=%s",
+                     (Jsonb({"served_policies": served}), device["endpoint_id"]))
 
 
 async def policy_accepted(device: dict) -> bool:

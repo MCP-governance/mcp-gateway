@@ -113,6 +113,18 @@ class PolicyGap(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"ENDPOINT_GATEWAY_IPS": "100.64.0.9"}):
             self.assertFalse(await self.plane.policy_accepted(self.device))
 
+    async def test_a_served_but_unconfirmed_policy_is_behind_not_tampered(self):
+        # Two approvals in a row: the device installed the middle policy before any heartbeat confirmed it.
+        await self.install(["git"])                       # confirmed: policy_servers = [git]
+        self.usable = ["docs", "git"]
+        middle = await self.plane.managed_policy(self.device)
+        self.device["detail"]["served_policies"] = {middle["policy_hash"]: middle["servers"]}
+        self.device["policy_hash"] = middle["policy_hash"]
+        self.usable = ["docs", "git", "mail"]           # the next approval landed before the heartbeat
+        self.assertIsNone(await self.plane.managed_failure(self.principal, self.claims(middle["policy_hash"]), server="docs"))
+        with patch.dict(os.environ, {"ENDPOINT_GATEWAY_IPS": "100.64.0.9"}):  # a control change still stops
+            self.assertEqual(await self.plane.managed_failure(self.principal, self.claims(middle["policy_hash"]), server="docs"), OLD)
+
     async def test_heartbeat_with_older_server_set_is_compliant_but_control_drift_is_not(self):
         installed = await self.install(["git"])
         self.usable = ["docs", "git"]
