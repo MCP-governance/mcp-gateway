@@ -42,7 +42,7 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "1a43fd084c9da059917e7ca721cfba4b6dfcde6dc5a3a453befecd91e1c92da0",
+        "sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "committed_sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "normalized_sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "worktree_modified": false
@@ -182,7 +182,7 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "1a43fd084c9da059917e7ca721cfba4b6dfcde6dc5a3a453befecd91e1c92da0",
+        "sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "committed_sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "normalized_sha256": "6e25c0cffcbdd2217d5dd1f5b0bd205f23915ab8f502d3171b2a30f0546a7f02",
         "worktree_modified": false
@@ -853,7 +853,7 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "5db2d483f13e29902608618739465b2b770480a60b44e2067e15b1b6e95cd418",
+        "sha256": "d3106b7f2e51a9042c2a735698db68664842bb100a8b38d2cf647fdd3e2b302f",
         "committed_sha256": "d3106b7f2e51a9042c2a735698db68664842bb100a8b38d2cf647fdd3e2b302f",
         "normalized_sha256": "d3106b7f2e51a9042c2a735698db68664842bb100a8b38d2cf647fdd3e2b302f",
         "worktree_modified": false
@@ -997,7 +997,7 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
-        "sha256": "3e82ef33911fbb352f6e221ff0c0405595027c53c884f9d463e42c7daea2be00",
+        "sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "committed_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "worktree_modified": false
@@ -1212,7 +1212,7 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_contract.py",
-        "sha256": "3e82ef33911fbb352f6e221ff0c0405595027c53c884f9d463e42c7daea2be00",
+        "sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "committed_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
         "worktree_modified": false
