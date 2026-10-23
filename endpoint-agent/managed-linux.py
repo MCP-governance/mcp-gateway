@@ -503,7 +503,9 @@ def rollback(args):
     person = pwd.getpwnam(args.user)
     folder = STATE / args.user
     unit = f"mcpgw-managed-{args.user}.service"
-    subprocess.run(["systemctl", "disable", "--now", unit], check=False)
+    if Path("/etc/systemd/system", unit).exists():
+        subprocess.run(["systemctl", "disable", "--now", unit], check=False,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     Path("/etc/systemd/system", unit).unlink(missing_ok=True)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     if (Path("/usr/local/lib/mcpgw-enforcement") / f"mcpgw-{args.user}" / "state.json").exists():

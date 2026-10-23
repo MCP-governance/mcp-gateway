@@ -415,9 +415,14 @@ def main() -> None:
         if prior["uid"] != person.pw_uid:
             parser.error("계정 UID가 바뀌어 자동 원복할 수 없습니다")
         run("usermod", "--shell", prior["shell"], args.user)
-        run("systemctl", "disable", "--now", unit)
-        run("nft", "delete", "table", "inet", f"mcpgw_uid_{person.pw_uid}")
-        run("apparmor_parser", "-R", str(policy))
+        # 앞선 설치가 중간에 실패했으면 서비스·표·프로필 중 일부가 없다. 없는 것은 이미 원복된 것이다.
+        quiet = {"check": False, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+        if Path("/etc/systemd/system", unit).exists():
+            run("systemctl", "disable", "--now", unit, **quiet)
+            Path("/etc/systemd/system", unit).unlink(missing_ok=True)
+        run("nft", "delete", "table", "inet", f"mcpgw_uid_{person.pw_uid}", **quiet)
+        if policy.exists():
+            run("apparmor_parser", "-R", str(policy), **quiet)
         print("해당 계정의 로그인 셸·프로필·전용 방화벽 테이블을 원복했습니다")
         return
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(args.user, person.pw_gid)}
