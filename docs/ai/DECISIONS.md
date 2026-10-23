@@ -2347,3 +2347,10 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 배경: 팀원 VM(kuku, 노션 버그 리포트 「MINT 설치기 오류」)에서 D-218 이후 키트로 다시 설치해도 `[기존 설치 제거]`가 `/usr/local/lib/mcpgw-managed/enforce-linux.py`(앞선 실패 설치가 남긴 옛 코드)의 `systemctl disable` 오류로 멈췄고, 남은 `config.json` 때문에 다음 설치가 「이미 설치된 장치」로 거부됐다. 설치기는 키트의 `managed-linux.py rollback`을 부르지만, 그것이 집행 원복은 설치 경로의 옛 사본으로 실행했다.
 - 결정: `managed-linux.py rollback`은 자기 옆의 `enforce-linux.py`를 실행한다. 키트에서 부르면 키트의 새 코드, 설치본에서 부르면 설치본이다.
 - 시험: pj2에서 설치본 `enforce-linux.py`를 D-218 이전 판으로 바꾸고 egress 서비스 파일을 지운 부분 설치를 만든 뒤 새 키트로 재설치.
+
+## D-231 nftables 규칙은 Ubuntu 22.04(nftables 1.0.2)에서도 받는 문법으로 쓴다 (2026-10-23)
+
+- 배경: 팀원 VM(Ubuntu 22.04)에서 키트 설치가 집행 단계에서 실패했다. Ubuntu 22.04·24.04 컨테이너로 같은 규칙을 검사하니 22.04의 nftables 1.0.2가 첫 줄 `destroy table`(1.0.8 이후 문법)을 「syntax error, unexpected table」로 거부했다. pj2(24.04, 1.0.9)에서는 통과해 드러나지 않았다.
+- 결정: `nft_rules`는 「표 추가 → 표 삭제 → 표 정의」를 한 배치로 쓴다(있으면 지우고 다시 만드는 이식 가능한 형태, 원자적). 22.04·24.04 모두 `nft -c`와 두 번 연속 적용이 통과했다.
+- 함께 확인: 같은 22.04 컨테이너에서 경고(warn) 모드 AppArmor 프로필은 apparmor_parser 3.0.4가 받는다. 결속 집행(enforce) 모드 프로필은 22.04·24.04 모두 `unix` 규칙의 `addr=` 값을 거부해 쓸 수 없는 상태다(기본은 warn이라 설치에는 영향 없음, 후속).
+- 같이 고친 것: 설치 실패 때 설치기가 마지막 traceback 줄 대신 실패한 명령의 오류 출력과 예외 줄을 보인다.
