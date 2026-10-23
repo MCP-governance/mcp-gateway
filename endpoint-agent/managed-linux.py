@@ -19,6 +19,7 @@ import secrets
 import shutil
 import socket
 import socketserver
+import stat
 import subprocess
 import sys
 import threading
@@ -197,6 +198,114 @@ def forget_stale_sign_in(home: str) -> None:
         os.close(folder)
 
 
+# -- Launchers the employee's own shells find first. A terminal opened before the install has no launcher
+# function, and its PATH (from the session's ~/.profile) lists ~/.local/bin ahead of /usr/local/bin, so
+# `claude` there ran the unmanaged copy (10-23 pj2: the model sign-in went to the employee's account).
+# Claude Code's native installer leaves a launcher the user replaced in place and keeps installing versions
+# beside it; other installers may rewrite theirs, so the service puts ours back (D-228). --
+HOME_LAUNCHER_DIRS = (".local/bin", "bin", ".npm-global/bin")
+HOME_MARK = b"#!/bin/sh\n# mcpgw home launcher\n"
+HOME_LAUNCHER_EVERY = 300
+
+
+def _open_dir(home, sub):
+    """The folder under the employee's home, every component opened without following links."""
+    fd = os.open(home, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        for part in sub.split("/"):
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = child
+    except OSError:
+        os.close(fd)
+        raise
+    return fd
+
+
+def _is_ours(name, folder):
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=folder)
+    except OSError:
+        return False
+    try:
+        return os.read(fd, len(HOME_MARK)) == HOME_MARK
+    finally:
+        os.close(fd)
+
+
+def home_launchers(config):
+    """Point the employee's own harness launchers at the managed ones; keep what was there to restore."""
+    if config.get("owner_uid") is None:
+        return []
+    person = pwd.getpwuid(config["owner_uid"])
+    keep = STATE / config["username"] / "home-launchers"
+    keep.mkdir(mode=0o700, parents=True, exist_ok=True)
+    replaced = []
+    for sub in HOME_LAUNCHER_DIRS:
+        try:
+            folder = _open_dir(person.pw_dir, sub)
+        except OSError:
+            continue
+        try:
+            for name in config.get("harnesses") or ("codex", "claude"):
+                try:
+                    info = os.stat(name, dir_fd=folder, follow_symlinks=False)
+                except FileNotFoundError:
+                    continue
+                key = sub.replace("/", "_") + "-" + name
+                if stat.S_ISLNK(info.st_mode):
+                    (keep / (key + ".symlink")).write_text(os.readlink(name, dir_fd=folder), encoding="utf-8")
+                elif stat.S_ISREG(info.st_mode) and not _is_ours(name, folder):
+                    source = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=folder)
+                    with os.fdopen(source, "rb") as handle:
+                        (keep / key).write_bytes(handle.read())
+                else:
+                    continue
+                os.unlink(name, dir_fd=folder)
+                target = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o755, dir_fd=folder)
+                try:
+                    os.write(target, HOME_MARK + f'exec /usr/local/bin/{name} "$@"\n'.encode())
+                    os.fchown(target, person.pw_uid, person.pw_gid)
+                    os.fchmod(target, 0o755)
+                finally:
+                    os.close(target)
+                replaced.append(f"~/{sub}/{name}")
+        finally:
+            os.close(folder)
+    return replaced
+
+
+def restore_home_launchers(config):
+    if config.get("owner_uid") is None:
+        return
+    person = pwd.getpwuid(config["owner_uid"])
+    keep = STATE / config["username"] / "home-launchers"
+    for sub in HOME_LAUNCHER_DIRS:
+        try:
+            folder = _open_dir(person.pw_dir, sub)
+        except OSError:
+            continue
+        try:
+            for name in ("codex", "claude"):
+                key = sub.replace("/", "_") + "-" + name
+                link, copied = keep / (key + ".symlink"), keep / key
+                if not (link.is_file() or copied.is_file()) or not _is_ours(name, folder):
+                    continue
+                os.unlink(name, dir_fd=folder)
+                if link.is_file():
+                    os.symlink(link.read_text(encoding="utf-8"), name, dir_fd=folder)
+                    os.chown(name, person.pw_uid, person.pw_gid, dir_fd=folder, follow_symlinks=False)
+                else:
+                    target = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o755, dir_fd=folder)
+                    try:
+                        os.write(target, copied.read_bytes())
+                        os.fchown(target, person.pw_uid, person.pw_gid)
+                    finally:
+                        os.close(target)
+        finally:
+            os.close(folder)
+
+
 def install(args):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
@@ -298,12 +407,16 @@ def install(args):
         "Restart=always\nRestartSec=10\nUMask=0077\n\n[Install]\nWantedBy=multi-user.target\n")
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     subprocess.run(["systemctl", "enable", "--now", unit], check=True)
+    try:
+        config["home_launchers"] = home_launchers(config)
+    except OSError:
+        config["home_launchers"] = []  # a new terminal still gets the launcher function
     args.enrollment.unlink()
     write_status_shim()
     # "active": the Gateway continued the activation of the earlier device of this employee on this PC (D-217).
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user,
                       "state": "active" if enrolled.get("state") == "active" else "pending-organization-activation",
-                      "service": unit, "status_command": str(STATUS_SHIM)}))
+                      "service": unit, "status_command": str(STATUS_SHIM), "home_launchers": config["home_launchers"]}))
 
 
 STATE_LABEL = {"active": "활성", "pending": "활성화 대기", "quarantined": "중지 (점검에서 격리됨)",
@@ -630,6 +743,18 @@ def serve(args):
             time.sleep(wait)
     if sys.platform.startswith("linux") and config.get("harnesses"):
         threading.Thread(target=harness_inventory, daemon=True).start()
+
+    def keep_home_launchers():
+        while True:
+            try:
+                again = home_launchers(config)
+                if again:
+                    print(json.dumps({"home_launcher": "restored", "paths": again}, ensure_ascii=False), flush=True)
+            except OSError as exc:
+                print(json.dumps({"home_launcher": "failed", "error": type(exc).__name__}), flush=True)
+            time.sleep(HOME_LAUNCHER_EVERY)
+    if sys.platform.startswith("linux") and config.get("owner_uid") is not None:
+        threading.Thread(target=keep_home_launchers, daemon=True).start()
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit}
     while True:
@@ -707,6 +832,10 @@ def rollback(args):
     person = pwd.getpwnam(args.user)
     folder = STATE / args.user
     unit = f"mcpgw-managed-{args.user}.service"
+    try:
+        restore_home_launchers(json.loads((folder / "config.json").read_text()))
+    except (OSError, ValueError):
+        pass
     if Path("/etc/systemd/system", unit).exists():
         subprocess.run(["systemctl", "disable", "--now", unit], check=False,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
