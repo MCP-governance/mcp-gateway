@@ -375,7 +375,7 @@ export const EN = {
   "분석": "Analysis",
   "호출 추이": "Call trend",
   "전체 호출 추이": "Overall call trend",
-  "{n}건": "{1} {1?call:calls}",
+  "{n}건": "{1} {1?item:items}",
   "응답 처리": "Response handling",
   "전체 호출의 응답 처리 비율": "Share of response handling across all calls",
   "서버별": "By server",
