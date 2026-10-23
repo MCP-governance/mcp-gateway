@@ -51,6 +51,14 @@ class ExchangeBudget(unittest.IsolatedAsyncioTestCase):
                 await self.functions.exchange('device',self.local,'initialize',{},2.5)
             self.assertEqual(type(caught.exception),self.functions.LocalExecutionError if failure else RuntimeError)
 
+    async def test_admin_stop_is_reported_as_the_reason_not_a_timeout(self):
+        self.row={'state':'expired','stop_requested':True,'error':None,'claimed_at':datetime.now(timezone.utc)}
+        for reason,expected in (('관리자가 철회해 멈췄습니다.',self.functions.LocalExecutionError),(None,TimeoutError)):
+            self.env['stop_reason']=AsyncMock(return_value=reason)
+            with self.assertRaises(Exception) as caught:
+                await self.functions.exchange('device',self.local,'tools/call',{},2.5)
+            self.assertIs(type(caught.exception),expected)
+
     async def test_ordinary_calls_and_health_checks_keep_their_original_total_timeout(self):
         self.env['registering']=SimpleNamespace(get=lambda:None)
         for timeout in (2.5,5,30,90):

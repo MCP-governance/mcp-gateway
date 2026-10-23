@@ -306,6 +306,12 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
     end = loop.time() + timeout
     while loop.time() < end:
         row = await db.fetch_one("SELECT * FROM local_jobs WHERE id=%s", (job,))
+        if row['state'] in ('done','expired') and row.get('stop_requested') and (row.get('error') or row['state']=='expired'):
+            # 관리 조치로 멈춘 실행을 시간 초과로 보이게 하면 직원이 이유를 모른 채 재시도한다(10-23 PJ1 철회 실측).
+            reason = await stop_reason(row)
+            if reason:
+                await record_evidence(row, event)
+                raise LocalExecutionError(reason)
         if row["state"] == "done":
             await record_evidence(row, event)
             if row["error"]:
@@ -653,6 +659,19 @@ async def complete(device: dict, job_id: str, result: dict | None, error: str | 
 def is_local(server_id: str) -> bool:
     from . import registry
     return bool((registry.server(server_id) or {}).get('local'))
+
+
+async def stop_reason(row):
+    stop = await db.fetch_one("""SELECT server_id,user_token,device_id FROM local_run_stops
+        WHERE (server_id='' OR server_id=%s) AND (user_token='' OR user_token=%s) AND (device_id='' OR device_id=%s)
+        ORDER BY server_id DESC LIMIT 1""", (row['server_id'], row['user_token'], row['device_id']))
+    if not stop:
+        return None
+    if stop['server_id']:
+        return '관리자가 이 MCP 서버의 사용을 중지하거나 등록을 철회해 실행을 멈췄습니다.'
+    if stop['device_id']:
+        return '이 PC의 연결이 중지되어 실행을 멈췄습니다.'
+    return '계정 사용이 중지되어 실행을 멈췄습니다.'
 
 
 async def quiesce(*, server_id='', user_token='', device_id=''):

@@ -2209,3 +2209,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정: `privacy._identifier_number`는 14~19자리이면서 첫 자리가 3·4·5·6인 Luhn 통과 숫자만 카드번호로 본다. 문자열 안의 카드번호는 지금처럼 Presidio가 문자열 단위로 가린다.
 - 한계: 3~6으로 시작하는 14~19자리 ID가 Luhn을 통과하면 여전히 보류된다. 숫자 자리의 카드번호는 구조를 보존하며 가릴 수 없어 보류를 유지한다.
 - 시험: `tests/output_credential_span_check.py` `test_millisecond_timestamp_is_not_card`.
+
+## D-215 관리 조치로 멈춘 로컬 실행은 시간 초과가 아니라 그 이유로 직원에게 알린다 (2026-10-23)
+
+- 배경: PJ1 철회 실측(원장 1018·1029·1041)에서 등록 철회로 0.3~1.2초 만에 멈춘 호출이 하네스에 「TimeoutError: 요청 처리를 완료하지 못했습니다」로 보였다. 직원은 철회를 모른 채 재시도한다.
+- 결정: `local_jobs.exchange`는 `stop_requested`로 끝난 작업이 `local_run_stops`(서버·계정·PC 범위)에 걸리면 그 범위에 맞는 문장(「관리자가 이 MCP 서버의 사용을 중지하거나 등록을 철회해 실행을 멈췄습니다.」 등)을 `LocalExecutionError`로 낸다. 판정·원장 형식(MCP-UPSTREAM-001, 쓰기 결과 미확정 처리 D-213)은 그대로다.
+- 시험: `tests/local_runner_usability_check.py` `test_admin_stop_is_reported_as_the_reason_not_a_timeout`(수정 전 코드에서 실패).
