@@ -3,6 +3,7 @@
 // colours in a chart are the same ones the badges use, in both themes. Canvas
 // rendering keeps the page inside `style-src 'self'`.
 import { DECISIONS } from "./console-state.mjs";
+import { t } from "./i18n.mjs";
 
 const TOKENS = { Allow: "--allow", Alert: "--alert", Restrict: "--restrict", Approval: "--approval", Block: "--block" };
 export const DECISION_LABEL = { Allow: "허용", Alert: "경보", Restrict: "제한", Approval: "승인 대기", Block: "차단" };
@@ -14,22 +15,22 @@ const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 function base() {
   return {
     animation: !calm(),
-    textStyle: { fontFamily: css("--sans"), fontSize: 15, color: css("--ink-2") },
+    textStyle: { fontFamily: css("--sans"), fontSize: 13.5, color: css("--ink-2") },
     // richText: the tooltip is drawn on the canvas, not built as HTML. Series names come
     // from the audit log (a harness names itself), so nothing here may reach innerHTML;
     // HTML tooltips would also need inline style attributes, which the CSP refuses.
     tooltip: {
       renderMode: "richText", backgroundColor: css("--panel"), borderColor: css("--line-2"), borderWidth: 1,
-      textStyle: { color: css("--ink"), fontSize: 15 }, confine: true,
+      textStyle: { color: css("--ink"), fontSize: 13.5 }, confine: true,
     },
     legend: { type: "scroll", pageIconColor: css("--ink-2"), pageTextStyle: { color: css("--ink-2") }, top: 0, left: 0, icon: "circle", itemWidth: 10, itemHeight: 10, itemGap: 18,
-      textStyle: { color: css("--ink-2"), fontSize: 15 } },
+      textStyle: { color: css("--ink-2"), fontSize: 13.5 } },
     grid: { left: 4, right: 20, top: 44, bottom: 4, containLabel: true },
   };
 }
 const axis = (extra = {}) => ({
   axisLine: { lineStyle: { color: css("--line-2") } }, axisTick: { show: false },
-  axisLabel: { color: css("--ink-3"), fontSize: 15 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
+  axisLabel: { color: css("--ink-3"), fontSize: 13.5 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
 });
 
 // ── mounting ─────────────────────────────────────────────────────────────
@@ -54,8 +55,13 @@ export function mountVisible(root = document) {
 const values = (option) => (option.series || []).flatMap((s) => [...(s.data || []), ...(s.links || [])])
   .map((d) => (Array.isArray(d) ? d.at(-1) : d && typeof d === "object" ? d.value : d));
 
+// Chart text is drawn on the canvas, outside the DOM, so it is translated here.
+export const localize = (v) => (typeof v === "string" ? t(v) : Array.isArray(v) ? v.map(localize)
+  : v && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, localize(x)])) : v);
+
 function chartOption(build) {
-  const { onClick, ...option } = build();
+  const { onClick, ...built } = build();
+  const option = localize(built);
   // ECharts defaults data marks to a hand cursor, even when the chart has no click action.
   if (option.series) option.series = option.series.map((series) => ({ ...series, cursor: onClick ? "pointer" : "default" }));
   return { onClick, option };
@@ -114,7 +120,7 @@ export function redrawAll() {
 /** Stacked columns (or bars) per category: [{name, color, data}]. */
 export function stacked(categories, series, { horizontal = false, onClick, grouped = false, unit = "" } = {}) {
   const cat = axis({ type: "category", data: categories,
-    axisLabel: { color: css("--ink-2"), fontSize: 15, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
+    axisLabel: { color: css("--ink-2"), fontSize: 13.5, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
   const val = axis({ type: "value", minInterval: 1 });
   const valueFormatter = unit ? (v) => (v == null ? "—" : `${Math.round(v * 10) / 10} ${unit}`) : undefined;
   return {
@@ -144,7 +150,7 @@ export function donut(items, { total = true } = {}) {
     legend: { ...base().legend, type: "scroll", top: undefined, bottom: 0, left: "center", orient: "horizontal",
       textStyle: { ...base().legend.textStyle, width: 120, overflow: "truncate" } },
     title: total ? { text: String(sum), subtext: "건", left: "center", top: "33%",
-      textStyle: { fontSize: 38, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 15 } } : undefined,
+      textStyle: { fontSize: 34.2, fontWeight: 700, color: css("--ink") }, subtextStyle: { color: css("--ink-3"), fontSize: 13.5 } } : undefined,
     series: [{
       type: "pie", radius: ["48%", "72%"], center: ["50%", "44%"], avoidLabelOverlap: true,
       label: { show: false }, itemStyle: { borderColor: css("--panel"), borderWidth: 2 },
@@ -161,7 +167,7 @@ export function bars(items, { unit = "건", tone = "--brand", onClick } = {}) {
     grid: { ...base().grid, top: 8 },
     xAxis: axis({ type: "value", minInterval: 1 }),
     yAxis: axis({ type: "category", data: items.map((i) => i.name), inverse: true,
-      axisLabel: { color: css("--ink-2"), fontSize: 15, width: 180, overflow: "truncate" } }),
+      axisLabel: { color: css("--ink-2"), fontSize: 13.5, width: 180, overflow: "truncate" } }),
     series: [{ type: "bar", barMaxWidth: 20, data: items.map((i) => ({ value: i.value, itemStyle: { color: i.color || css(tone) } })),
       label: { show: true, position: "right", color: css("--ink-2"), formatter: `{c}${unit}` } }],
     onClick,
@@ -178,7 +184,7 @@ export function sankey({ nodes, links }) {
     series: [{
       type: "sankey", left: 8, right: 110, top: 8, bottom: 8, nodeWidth: 14, nodeGap: 12, draggable: false, nodeAlign: "left",
       emphasis: { focus: "adjacency" },
-      label: { color: css("--ink"), fontSize: 15 },
+      label: { color: css("--ink"), fontSize: 13.5 },
       lineStyle: { color: "gradient", opacity: 0.35, curveness: 0.5 },
       data: nodes.map((n) => ({ name: n.name, itemStyle: { color: decisionColor[n.name] || layerColor[n.layer] || css("--ink-3") } })),
       links,
