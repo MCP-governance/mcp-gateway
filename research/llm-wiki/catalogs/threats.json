@@ -839,9 +839,9 @@
     "code_candidates": [
       {
         "path": "endpoint-agent/enforce-linux.py",
-        "sha256": "9ce649cbde8a25b601c6fc0e0956ba80aa8839cbdee72f03e0dd0ac7ac05921a",
-        "committed_sha256": "9ce649cbde8a25b601c6fc0e0956ba80aa8839cbdee72f03e0dd0ac7ac05921a",
-        "normalized_sha256": "9ce649cbde8a25b601c6fc0e0956ba80aa8839cbdee72f03e0dd0ac7ac05921a",
+        "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
+        "committed_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
+        "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
         "worktree_modified": false
       },
       {
