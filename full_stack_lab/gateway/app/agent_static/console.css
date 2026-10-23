@@ -208,7 +208,7 @@ dialog .tool-pick label{flex-direction:row;align-items:center;justify-content:sp
 .form input:not([type="checkbox"]):not([type="radio"]),.form select,.form textarea{width:100%;min-height:42px;padding:10px 12px;background:var(--panel);border:1px solid var(--line-2);border-radius:7px}
 .form textarea{min-height:120px;resize:vertical}fieldset{display:flex;flex-direction:column;gap:12px;min-width:0;margin:0;padding:18px;border:1px solid var(--line);border-radius:8px}
 legend{padding:0 6px;font-size:14.58px;color:var(--ink-2);font-weight:700}label.check{flex-direction:row;align-items:center;gap:10px;font-weight:400;min-height:32px}
-.kit-steps{margin:16px 0;padding-left:22px;display:flex;flex-direction:column;gap:10px}.kit-steps code{display:block;margin-top:4px}.kit-steps .sub{display:block;font-size:13.5px;color:var(--ink-3)}
+.kit-steps{margin:16px 0;padding-left:22px;display:flex;flex-direction:column;gap:10px}.kit-steps code{display:block;margin-top:4px}.kit-steps code,.kv code{overflow-wrap:anywhere}.kit-steps .sub{display:block;font-size:13.5px;color:var(--ink-3)}
 .tool-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:360px;overflow:auto}
 .tool-list label.check{align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:7px}
 .tool-list input[type="checkbox"]{flex:none;width:16px;height:16px;min-height:0;margin:3px 0 0}
