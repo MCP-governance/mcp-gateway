@@ -832,6 +832,7 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     current = [r["id"] for r in rows if r["id"] in usable]
     servers = current if servers is None else list(servers)  # servers: re-render what a device installed earlier (D-198)
+    guidance = pac.harness_guidance(owner, servers)
     windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
@@ -863,6 +864,8 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
                 # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                 # same gate narrows statusLine and fileSuggestion to managed values (D-147).
                 "allowManagedHooksOnly": True}
+    if guidance:
+        settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
     if proxy:
         settings["env"] = proxy
     codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
@@ -883,7 +886,11 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
         # their definitions go in the account's own config.toml as one marked block.
         files["codex-config.toml"] = codex_servers
     else:
-        files["managed_config.toml"] = 'mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n' + codex_servers
+        # developer_instructions is a top-level key, so it precedes the server tables.
+        # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
+        files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
+                                        + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
+                                        + codex_servers)
     policy = {"version": 2, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],

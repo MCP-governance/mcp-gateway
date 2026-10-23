@@ -340,7 +340,7 @@ class KitCredentials(unittest.TestCase):
 class ManagedKitCredentials(unittest.IsolatedAsyncioTestCase):
     async def test_endpoint_managed_policy_and_os_file_writers_use_only_helpers(self):
         package = ModuleType("policy_under_test")
-        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"])
+        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
         module = selected(APP / "endpoint_plane.py", ["managed_policy", "managed_platform", "json_document"],
                           {"__package__": "policy_under_test", "os": os, "urlsplit": urlsplit,
                            "ipaddress": __import__("ipaddress"), "hashlib": hashlib,

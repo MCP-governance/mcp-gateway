@@ -70,7 +70,7 @@ class ManagedCommandSurfaces(unittest.TestCase):
         nodes = [n for n in ast.parse(path.read_text(encoding="utf-8")).body if getattr(n, "name", None) in names]
         self.assertEqual({n.name for n in nodes}, names)
         package = ModuleType("policy_under_test")
-        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"])
+        package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
         namespace = {"__name__": "endpoint_under_test", "__package__": "policy_under_test", "os": os,
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,

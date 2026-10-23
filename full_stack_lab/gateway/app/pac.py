@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import posixpath
+import re
 import time
 from datetime import datetime
 
@@ -168,6 +169,34 @@ def servers_for(principal: dict) -> list[str]:
                for tool, action in spec.get("tools", {}).items() if tool in registry.reviewed_tools(server_id)):
             usable.append(server_id)
     return usable
+
+
+_NAME_SAFE = re.compile(r"[^0-9A-Za-z가-힣 ._()·\-]")
+
+
+def harness_guidance(principal: dict | None, servers: list[str]) -> str:
+    """Which approved MCP servers this person has, written into the harness's own memory (D-233).
+
+    A harness defers MCP tools behind a search (Claude Code ToolSearch, Codex tool search) and shows the
+    model only tool names, so a request that names no server ("react 저장소 구조 알려줘") is often answered
+    from memory or with a built-in tool (pj2 10-23: 4 of 12 such requests never reached an MCP tool).
+    Only the administrator-reviewed display name and tool names go in: an upstream tool description is
+    hash-pinned but still the supplier's text, and this text is loaded with the organisation's own trust."""
+    lines = []
+    for server_id in servers:
+        spec = registry.server(server_id) or {}
+        tools = [t for t, action in (spec.get("tools") or {}).items()
+                 if principal and t in registry.reviewed_tools(server_id) and visible(principal, server_id, t, action)]
+        if tools:
+            lines.append(f"- {_NAME_SAFE.sub('', spec.get('display_name') or '').strip()[:60] or server_id} (`mcp__{server_id}__*`): "
+                         + ", ".join(_NAME_SAFE.sub("", tool)[:48] for tool in tools[:12]))
+    if not lines:
+        return ""
+    return ("# 조직 승인 MCP 도구\n"
+            "이 PC에서는 조직 게이트웨이가 승인한 MCP 서버만 쓸 수 있습니다. 사용자가 서버 이름을 말하지 않아도 요청이 아래 서버가 맡는 일"
+            "(저장소·문서 검색, 파일 열람, 변환, 기억 등)이면 기억이나 일반 지식으로 답하기 전에 먼저 해당 서버의 도구를 찾아(도구 검색) 사용합니다.\n"
+            + "\n".join(lines)
+            + "\n도구가 '차단'이나 '승인 대기'로 답하면 사유를 사용자에게 그대로 전하고, 같은 요청을 되풀이하거나 다른 경로로 우회하지 않습니다.\n")
 
 
 def leaves(value, path=()):

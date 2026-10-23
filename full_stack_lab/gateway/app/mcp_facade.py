@@ -194,7 +194,10 @@ def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToo
         "response_withheld": response_disposition(outcome) == "withheld",
         "restrictions_applied": outcome.get("restrictions_applied") or [],
     }
-    header = f"[MCP Gateway · {DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
+    # The supplier did not answer: the ledger keeps Block (fail-closed), but "차단" reads as a policy refusal
+    # and the model then stops or reports a block (pj2 10-23 grep.app), so the employee sees an error instead.
+    unanswered = decision == "Block" and outcome.get("policy_id") == "MCP-UPSTREAM-001" and not outcome.get("upstream_executed")
+    header = f"[MCP Gateway · {'오류' if unanswered else DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
     result = outcome.get("result")
     if (outcome.get("upstream_executed") and result and decision in {"Allow", "Alert", "Restrict"}
             and gateway["response_disposition"] in {"returned", "masked"}):
@@ -225,6 +228,9 @@ def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToo
                 "쓰기·전송 효과는 이 보류로 되돌려지지 않습니다.")
     else:
         text = header + (f"\n오류: {outcome['error']}" if outcome.get("error") else "")
+        if unanswered:
+            text += ("\n정책이 막은 것이 아니라 공급자의 응답을 받지 못했습니다. 조회 요청은 한 번 더 시도할 수 있고, "
+                     "쓰기·전송 요청은 실행 여부를 확인한 뒤에 다시 시도하세요. 반복되면 관리자에게 알려 주세요.")
     return types.CallToolResult(content=[types.TextContent(type="text", text=text)], isError=True,
                                 _meta={"gateway": gateway})
 
