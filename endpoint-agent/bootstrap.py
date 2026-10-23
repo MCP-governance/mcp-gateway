@@ -422,6 +422,27 @@ def close_sessions(account: str) -> None:
     run("loginctl", "terminate-user", account, check=False, quiet=True,
         stderr=subprocess.DEVNULL)
     run("pkill", "-u", account, check=False, quiet=True, stderr=subprocess.DEVNULL)
+    # The enforcer refuses while any process of the account is alive; a harness or a pending model
+    # sign-in takes a moment to exit after the signal (10-23 kuku VM). Wait, then force.
+    for _ in range(20):
+        if run("pgrep", "-u", account, check=False, quiet=True).returncode:
+            return
+        time.sleep(0.5)
+    run("pkill", "-KILL", "-u", account, check=False, quiet=True, stderr=subprocess.DEVNULL)
+    time.sleep(1)
+
+
+def failure_reason(output: str) -> str:
+    """The line that says why, not the last one: the enforcer's refusal ("...: error: ...") is printed
+    before the wrapper's "Command [...] returned non-zero" line, which only names the program (10-23 kuku VM)."""
+    lines = [line.strip() for line in (output or "").splitlines() if line.strip()]
+    for line in reversed(lines):
+        if ": error: " in line:
+            return line.split(": error: ", 1)[1][:300]
+    for line in reversed(lines):
+        if not line.startswith(("Traceback", "File ", "raise ", "subprocess.")) and "returned non-zero" not in line:
+            return line[:300]
+    return lines[-1][:300] if lines else ""
 
 
 def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None) -> dict:
@@ -432,8 +453,7 @@ def install_managed(account: str, placed: dict[str, dict], enrollment: Path, own
                            *(["--owner-uid", str(owner_uid)] if owner_uid is not None else []),
                            "--enrollment", str(enrollment), *clients], capture_output=True, text=True)
     if done.returncode:
-        raise Failed((done.stderr or done.stdout).strip().splitlines()[-1][:300] if (done.stderr or done.stdout)
-                     else "관리형 연결 설치가 실패했습니다")
+        raise Failed(failure_reason(done.stderr or done.stdout) or "관리형 연결 설치가 실패했습니다")
     return json.loads(done.stdout.splitlines()[-1])
 
 
