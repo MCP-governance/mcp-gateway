@@ -58,8 +58,9 @@ test("내 PC 연결: 운영체제 버튼은 선택만 하고 받기는 별도 �
 test("내 PC 연결: 선택한 운영체제의 절차만 보인다", () => {
   const context = sandbox("Linux x86_64");
   const linux = context.kit("linux");
-  assert.ok(linux.includes("sudo bash ~/Downloads/mint-install.sh"));
-  assert.ok(linux.includes("sudo mint-uninstall"));
+  assert.ok(linux.includes("unzip ~/Downloads/mcp-managed-kit-linux.zip -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh"));
+  assert.ok(linux.includes("sudo ~/mcp-managed-kit/install.sh --remove"));
+  assert.ok(!linux.includes("mint-"));
   assert.ok(!linux.includes("mcp-connect-macos") && !linux.includes(".cmd"));
   const mac = context.kit("macos");
   assert.ok(mac.includes("mcp-connect-macos.command") && !mac.includes("sudo"));
@@ -75,7 +76,7 @@ test("내 PC 연결: 기본 선택은 브라우저가 알려 주는 운영체제
 
 test("내 PC 연결: 내려받는 파일 이름은 서버가 주는 값을 쓴다", () => {
   assert.match(source, /content-disposition/);
-  assert.ok(!source.includes("mcp-managed-kit-"));
+  assert.match(source, /link\.download = \/filename=.*content-disposition.*\|\| KIT_FILE\[os\]/);
 });
 
 test("삭제된 사용자: 목록 탭과 복구 동작이 있다", () => {

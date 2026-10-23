@@ -192,18 +192,18 @@ const locationRows = (value = {}) => [
 ];
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
-const KIT_FILE = { linux: "mint-install.sh", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
+const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
 function preferredKitPlatform() {
   const os = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
   return /mac/i.test(os) ? "macos" : /win/i.test(os) ? "windows" : "linux";
 }
 // 설치 절차: 운영체제마다 실행 방법만 다르다. 명령 문자열 외에는 라벨만 둔다.
 function kitSteps(os) {
-  const run = os === "linux" ? html`<li>터미널에서 실행<code>sudo bash ~/Downloads/${KIT_FILE.linux}</code></li>`
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code></li>`
     : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
     : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회</span></li>`;
   return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>관리자 활성화 뒤 사용</li></ol>
-    ${os === "linux" ? kv([["제거", html`<code>sudo mint-uninstall</code>`]]) : ""}`;
+    ${os === "linux" ? kv([["제거", html`<code>sudo ~/mcp-managed-kit/install.sh --remove</code>`]]) : ""}`;
 }
 function kitView(kit, os) {
   const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferredKitPlatform()) - Number(a === preferredKitPlatform()));
@@ -1339,7 +1339,7 @@ let peopleAccounts = [];
 let integrationItems = [];
 ROUTES.people = async (_, tab) => {
   const [{ accounts }, { accounts: deletedAccounts }, { requests: signups }, inv, o, p, identity, { suspensions }] = await Promise.all([
-    api("/api/accounts"), api("/api/accounts/deleted"), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
+    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
     gw("suspensions")]);
   peopleAccounts = accounts;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
@@ -2604,7 +2604,7 @@ const ACTIONS = {
     const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
-      const r = await response.json();
+      const r = await response.json().catch(() => ({}));
       throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
     }
     const url = URL.createObjectURL(await response.blob());
