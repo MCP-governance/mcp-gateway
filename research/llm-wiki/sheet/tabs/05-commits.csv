@@ -823,3 +823,7 @@ bb0f975,2026-10-23 14:37,pokochy,,,Merge 10/23-served-policy-history: 연속 승
 599daa8,2026-10-23 15:02,pokochy,fix,v2,"로컬 작업 시작·확인 경합으로 정상 실행이 멈추던 것, 읽기 실패가 재시도를 막던 것 (D-213)",D-213,,,,,https://github.com/MCP-governance/mcp-gateway/commit/599daa8d573f4626f74b1553dd5a750af5ee90a4
 5a7f992,2026-10-23 15:02,pokochy,docs,v2,기업 분석 코드 근거 해시 갱신,,,,,,https://github.com/MCP-governance/mcp-gateway/commit/5a7f992d6ccb9049fffab3ed1b872cd63a23bb01
 2efcd5e,2026-10-23 15:03,pokochy,,,"Merge 10/23-local-control-race: 로컬 작업 시작·확인 경합, 읽기 미확정 예약 (D-213)",D-213,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/2efcd5e1ffb744d0e5bc5e7268e2cc52fa48ac96
+55bba3d,2026-10-23 15:34,pokochy,docs,v2,"시트 내보내기 갱신(결정 D-213까지·커밋·ID 추적), 백로그 W11 행을 DEV-89로",D-213,DEV-89,,,,https://github.com/MCP-governance/mcp-gateway/commit/55bba3df42537608df07960c689ac9f8cf58185e
+be4c719,2026-10-23 15:34,pokochy,,,Merge 10/23-sheet-refresh: 시트 내보내기 갱신,,,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/be4c7197a76c6e2303bfcd5ef6f90b0ff4af5be3
+23a95e7,2026-10-23 15:38,pokochy,docs,v2,"백로그 DEV-83에 10-23 실사용·결함 수정 반영, 시트 내보내기 재생성",,DEV-83,,,,https://github.com/MCP-governance/mcp-gateway/commit/23a95e799fce189a04a9076b413229b61ea03ff4
+d2275c6,2026-10-23 15:38,pokochy,,,Merge 10/23-sheet-sync2: 백로그 DEV-83 진행 반영,,DEV-83,,병합,,https://github.com/MCP-governance/mcp-gateway/commit/d2275c6da58e66eca0b327aacd374875a2b99e32
