@@ -194,6 +194,9 @@ class Signup(StrictModel):
     invitation_token: str = Field(default="", max_length=150)
 
 
+DELETED_USERNAME = "삭제된 아이디입니다. 관리자에게 복구를 요청하세요."
+
+
 @app.post("/auth/signup")
 async def request_signup(request: Signup, http_request: Request):
     username = request.username.strip().lower()
@@ -207,8 +210,8 @@ async def request_signup(request: Signup, http_request: Request):
     if not login_allowed(key):
         raise HTTPException(429, "가입 신청이 너무 많습니다. 잠시 후 다시 시도하세요.")
     record_failed_login(key)
-    if await db.fetch_one("SELECT 1 FROM principals WHERE lower(email)=%s", (username,)):
-        raise HTTPException(409, "이미 사용 중인 아이디입니다.")
+    if existing := await db.fetch_one("SELECT status FROM principals WHERE lower(email)=%s", (username,)):
+        raise HTTPException(409, DELETED_USERNAME if existing["status"] == "deleted" else "이미 사용 중인 아이디입니다.")
     if request.invitation_token:
         async with db.transaction() as connection:
             invitation = await (await connection.execute(
@@ -904,6 +907,57 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
             raise HTTPException(502, "계정은 삭제됐지만 내부 Git에 연결하지 못했습니다. 삭제를 다시 시도하세요.") from exc
         _gitea_ready.difference_update({f"{login}|True", f"{login}|False"})
     return {"message": f"{row['email']} 계정을 삭제했습니다."}
+
+
+@app.get("/api/accounts/deleted")
+async def list_deleted_accounts(user: dict = Depends(admin_caller)):
+    field_filter = " AND email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
+    return {"accounts": await db.fetch_all(
+        """SELECT user_id, email, display_name, role, department, status_changed_by, status_changed_at
+           FROM principals WHERE status = 'deleted'""" + field_filter + " ORDER BY status_changed_at DESC")}
+
+
+@app.post("/api/accounts/{user_id}/restore")
+async def restore_account(user_id: str, user: dict = Depends(admin_caller)):
+    """삭제된 계정을 다시 쓸 수 있게 한다. 삭제 기록은 고치지 않고 복구 사건을 원장에 더한다.
+
+    삭제 때 닫은 것(토큰·세션·로컬 실행 정지)은 그대로 두고, 삭제 동안 남아 있던 이 사람의 엔드포인트와
+    동의는 되살리지 않는다. 먼저 닫고 마지막에 상태를 바꾸므로 중간에 실패하면 계정은 삭제 상태로 남는다.
+    """
+    from . import endpoint_plane, local_jobs
+    target = await db.fetch_one(
+        "SELECT token, status_changed_by, status_changed_at FROM principals WHERE user_id=%s AND status='deleted'",
+        (user_id,))
+    if not target:
+        raise HTTPException(404, "삭제된 계정이 아닙니다.")
+    devices = await db.fetch_all(
+        "SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active'", (target["token"],))
+    for device in devices:
+        await endpoint_plane.revoke_device(device["endpoint_id"], user["principal"])
+    async with db.transaction() as connection:
+        row = await (await connection.execute(
+            """UPDATE principals SET status='active', status_changed_by=%s, status_changed_at=now()
+               WHERE user_id=%s AND status='deleted' RETURNING token, user_id, email, display_name, role, status""",
+            (user["principal"], user_id))).fetchone()
+        if not row:
+            raise HTTPException(409, "이미 복구됐거나 삭제된 계정이 아닙니다.")
+        consents = await (await connection.execute(
+            """UPDATE user_consents SET status='REVOKED', decided_at=now()
+               WHERE user_token=%s AND status='GRANTED' RETURNING id, server_id, tool_name, grade, terms_hash""",
+            (row["token"],))).fetchall()
+        for item in consents:
+            await review.record_event("user-consent", "rejected", "consent", item["id"], user["principal"],
+                                      applicant=row["token"], reason="계정 복구로 동의 철회",
+                                      scope={"server": item["server_id"], "tool": item["tool_name"],
+                                             "grade": item["grade"], "terms": item["terms_hash"],
+                                             "status": "REVOKED"}, connection=connection)
+        await review.record_event("account-restore", "approved", "account", row["user_id"], user["principal"],
+                                  applicant=row["token"], reason="삭제된 계정 복구",
+                                  scope={"deleted_by": target["status_changed_by"], "deleted_at": target["status_changed_at"],
+                                         "revoked_devices": [d["endpoint_id"] for d in devices],
+                                         "revoked_consents": len(consents)}, connection=connection)
+    await local_jobs.resume(user_token=row["token"])
+    return {"account": row, "message": f"{row['display_name'] or row['email']} 계정을 복구했습니다."}
 
 
 @app.get("/health")
