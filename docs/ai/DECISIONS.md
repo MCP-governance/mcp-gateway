@@ -2215,3 +2215,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 배경: PJ1 철회 실측(원장 1018·1029·1041)에서 등록 철회로 0.3~1.2초 만에 멈춘 호출이 하네스에 「TimeoutError: 요청 처리를 완료하지 못했습니다」로 보였다. 직원은 철회를 모른 채 재시도한다.
 - 결정: `local_jobs.exchange`는 `stop_requested`로 끝난 작업이 `local_run_stops`(서버·계정·PC 범위)에 걸리면 그 범위에 맞는 문장(「관리자가 이 MCP 서버의 사용을 중지하거나 등록을 철회해 실행을 멈췄습니다.」 등)을 `LocalExecutionError`로 낸다. 판정·원장 형식(MCP-UPSTREAM-001, 쓰기 결과 미확정 처리 D-213)은 그대로다.
 - 시험: `tests/local_runner_usability_check.py` `test_admin_stop_is_reported_as_the_reason_not_a_timeout`(수정 전 코드에서 실패).
+
+## D-216 키트는 PC에 있는 하네스만 관리하고, 없는 하네스 때문에 설치를 멈추지 않는다 (2026-10-23)
+
+- 배경: 팀원 Ubuntu VM에서 Linux 키트가 「공식 claude 설치를 찾지 못했습니다」로 멈췄다. Linux 설치기는 codex·claude 둘 다를 요구했다(Windows는 이미 둘 중 하나).
+- 결정: `bootstrap.place_harnesses`는 찾은 하네스만 배치하고 없는 것은 「건너뜁니다」로 알린다. 둘 다 없을 때만 실패한다. 키트가 하네스를 대신 설치하지 않는다(소유자 지시).
+  `managed-linux install`은 받은 하네스만 실행 파일 검증·래퍼·AppArmor 프로필로 만들고, 설정에 `harnesses`를 남긴다.
+  상태 점검(`apparmor_enforcing`)과 헤더 브로커 결속(`broker_binding.kernel_ready`)은 그 목록의 프로필만 요구한다(없는 하네스의 프로필을 요구하면 결속 집행 모드에서 모든 헤더가 거부된다). 직원 계정 실행 연결(shim)도 배치한 하네스만 만든다.
+- 뒤에 하네스를 설치하면 키트를 다시 실행해 추가한다.
+- 시험: `header_broker_label_check.py` `test_pc_with_one_harness_needs_only_its_profiles`, 기존 키트 시험. 하네스 하나만 있는 실기기 설치는 팀원 VM 재실행으로 확인한다.

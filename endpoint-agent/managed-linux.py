@@ -125,6 +125,8 @@ def checks(config, policy, *, findings=None):
     suffixes = (("", "-codex-entry", "-claude-entry", "-bound-codex", "-bound-claude",
                  "-bound-codex-tool", "-bound-claude-tool", "-bound-credential")
                 if config.get("broker_binding", "warn") == "enforce" else ("", "-codex", "-claude", "-credential"))
+    absent = {"codex", "claude"} - set(config.get("harnesses", ("codex", "claude")))
+    suffixes = [suffix for suffix in suffixes if not any(h in suffix for h in absent)]
     return hashes, {"apparmor_enforcing": all(f"{name}{suffix} (enforce)" in profiles for suffix in suffixes),
                     "nftables_active": expected.returncode == 0 and stable(json.loads(nft.stdout)) == stable(baseline),
                     "protected_configs": all(protected(p) and not p.is_symlink() and p.stat().st_mode & 0o777 == 0o644 for p in FILES.values()),
@@ -194,15 +196,20 @@ def install(args):
     if args.owner_uid is not None:
         pwd.getpwuid(args.owner_uid)
     binaries = {}
+    selected_clients = dict(s.split("=", 1) for s in args.client)
     for name in ("codex", "claude"):
-        selected = dict(s.split("=", 1) for s in args.client).get(name)
-        candidate = selected or str(Path("/opt/mcpgw-approved") / name)
+        candidate = selected_clients.get(name) or str(Path("/opt/mcpgw-approved") / name)
+        if name not in selected_clients and not Path(candidate).is_file():
+            continue  # 이 PC에 없는 하네스는 관리 대상에서 뺀다
         binary = enforcer.trusted_binary(candidate)
         if binary.read_bytes()[:4] != b"\x7fELF":
             raise ValueError("공식 native ELF 배포판이 필요합니다: " + name)
         binaries[name] = str(binary)
     # Before the one-time enrollment token is spent, not halfway through the install.
-    enforcer.companions("codex", Path(binaries["codex"]))
+    if not binaries:
+        raise ValueError("관리할 하네스(codex·claude)가 없습니다")
+    if "codex" in binaries:
+        enforcer.companions("codex", Path(binaries["codex"]))
     source = Path(__file__).parent
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
@@ -230,7 +237,7 @@ def install(args):
         ca_path.chmod(0o644)
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=args.owner_uid,
-                  broker_binding=args.broker_binding,
+                  broker_binding=args.broker_binding, harnesses=sorted(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     policy = request(config, "/api/endpoint/managed-policy")
