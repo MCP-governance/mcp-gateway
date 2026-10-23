@@ -262,8 +262,9 @@ class OutcomeAndQueue(unittest.IsolatedAsyncioTestCase):
         namespace={'_record_decision':AsyncMock(return_value=7),'_release_call':AsyncMock(),'time':time,'_Laps':object}
         core=load_functions(APP/'core.py',{'_decision_payload'},namespace)
         laps=SimpleNamespace(view=lambda:{},started=time.perf_counter())
-        for attempted,expected in ((False,'confirmed_not_executed'),(True,'uncertain')):
-            event={'request_id':str(uuid.uuid4()),'upstream_attempted':attempted,'upstream_executed':False,
+        # An unconfirmed write keeps its place; an unconfirmed read does not (it can be retried safely, 10-23).
+        for attempted,action,expected in ((False,'w','confirmed_not_executed'),(True,'w','uncertain'),(True,'r',None)):
+            event={'request_id':str(uuid.uuid4()),'upstream_attempted':attempted,'upstream_executed':False,'action':action,
                    'client':{'local_execution':True,'local_jobs':[{'id':'job','state':'expired'}]}}
             await core._decision_payload(event,laps)
             self.assertEqual(namespace['_release_call'].await_args.args[2],expected)

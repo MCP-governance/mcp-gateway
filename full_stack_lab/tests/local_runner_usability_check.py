@@ -216,6 +216,17 @@ class GatewayControl(unittest.IsolatedAsyncioTestCase):
                   'db':SimpleNamespace(transaction=transaction,fetch_one=AsyncMock(return_value={'stop_requested':False}))}
         self.functions=load_functions(APP/'local_jobs.py',{'validate_job','failure_message','LocalExecutionError'},self.env)
 
+    async def test_control_racing_start_judges_the_started_row_not_the_stale_one(self):
+        # /control read the row before /start committed; under the locks the job has started (10-23 PJ1 read_graph).
+        def started(*_):
+            self.row={**self.row,'started_at':datetime.now(timezone.utc)}
+        self.env['lock_execution']=AsyncMock(side_effect=started)
+        self.renewed=0  # a renewal against the started job would update nothing
+        with patch.dict(sys.modules,{PACKAGE:self.package}):
+            control=await self.functions.validate_job(self.device,'job')
+        self.assertFalse(any('SET lease_until=' in q for q,_ in self.statements))
+        self.assertEqual(control['deadline'],self.row['deadline'].isoformat())
+
     async def test_control_renews_unstarted_lease_only_after_authorization(self):
         with patch.dict(sys.modules,{PACKAGE:self.package}):
             control=await self.functions.validate_job(self.device,'job')
