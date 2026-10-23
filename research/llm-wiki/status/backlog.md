@@ -10,7 +10,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
-| W11-WINDOWS-ONECLICK | Windows 단일 파일/UAC 설치 | [보고](reports/2026-10-23-windows-oneclick.md), D-197 | 독립 검토와 pj3에서 UAC 1회·직원 로그아웃 없는 등록·활성화 대기·관리 계정/모델 로그인 안내 확인 | 미커밋 구현·기존 Windows16/새9 통과. 실제 Windows 실설치 미실행; 리더 검수 대기 |
+| DEV-89 | Windows 단일 파일/UAC 설치 (W11) | [보고](reports/2026-10-23-windows-oneclick.md), D-197 | 독립 검토와 pj3에서 UAC 1회·직원 로그아웃 없는 등록·활성화 대기·관리 계정/모델 로그인 안내 확인 | main e30be96 병합·배포(10-23). Codex 검토 코드 결함 없음. pj3 실설치 장치(managed-13327735) 활성 — UAC 1회 원클릭 경로 실측은 남음 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
 | WIKI-03 | 협업 콘솔 통합 시트 연동 | [작업 보고](reports/2026-10-18-sheet-sync.md) | CSV 게시 URL 설정 후 실제 시트 수정·캐시 만료·조회 실패 대체 확인 | 구현·격리 시험 32개·sheet_pull 자체 시험 통과. WBS·백로그 웹 게시 CSV 연결, 콘솔 #wbs '시트 기준' 표시 확인(10-18 14:16, main 29fe6a0) |
 | DEV-01 | 실제 관리형 하네스 증거 연결 | [실기기 결과](reports/2026-10-13-development-results.md), [통제 증거](../methodology/control-design.md) | 활성화 상태와 fresh 신원, model→MCP→원장 IDs, 정상/차단의 독립 효과 | 새 PJ1 Codex 세션2개·원장3건 일치. 공급자 quota 응답·PII 차단 확인; 정상 문서·독립 수신 trace는 미완료 |
