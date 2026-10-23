@@ -365,6 +365,11 @@ def status(args):
     try:
         summary = json.loads(path.read_text())
     except (OSError, ValueError):
+        # Right after install the service has not written its first summary yet (10-23 pj2): not a failure.
+        if list(Path("/etc/systemd/system").glob("mcpgw-managed-*.service")):
+            print("장치 상태: 연결 준비 중")
+            print("잠시 뒤 다시 확인하세요.")
+            return
         raise ValueError("이 PC에는 관리형 연결의 상태가 없습니다. 설치되지 않았거나 서비스가 아직 시작되지 않았습니다") from None
     print(render_status(summary, time.time()), end="")
 
