@@ -615,7 +615,9 @@ def main() -> int:
               flush=True)
         # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
         names = " 또는 ".join(placed)
-        print(f"새 터미널을 열어 평소 계정({employee})에서 {names}를 실행하세요." if companion
+        # With the employee's own launchers replaced (D-228) a terminal opened before the install works too.
+        print((f"평소 계정({employee})에서 {names}를 실행하세요." if result.get("home_launchers")
+               else f"새 터미널을 열어 평소 계정({employee})에서 {names}를 실행하세요.") if companion
               else f"이 계정에서 {names}를 실행하세요.")
         signed = result.get("model_signed_in") or {}
         if "codex" in placed and not signed.get("codex"):
