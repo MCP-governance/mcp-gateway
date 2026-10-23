@@ -570,6 +570,10 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
         if not row:
             raise NotStarted("이 엔드포인트의 요청이 아닙니다.")
         await lock_execution(connection,row)
+        # Read the row again under the locks: a /control that arrived with /start would otherwise judge the
+        # pre-start row, fail its lease renewal against the started job and stop a healthy run (10-23 PJ1 read_graph).
+        row = await (await connection.execute('SELECT * FROM local_jobs WHERE id=%s AND device_id=%s',
+                                              (job_id,device['endpoint_id']))).fetchone()
         allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                    generation=row['policy_generation'])
         # The job was made under the device's policy (current_job). A policy that differs from the latest only by

@@ -2198,7 +2198,9 @@ async def _decision_payload(event: dict, laps: _Laps) -> dict:
     if event.get("request_id"):
         attempted = bool(event.get("upstream_attempted"))
         intent = ('confirmed_not_executed' if not attempted and (event.get('client') or {}).get('local_execution')
-                  else None if not attempted else 'resolved' if event.get('upstream_executed') else 'uncertain')
+                  else None if not attempted else 'resolved' if event.get('upstream_executed')
+                  # Only a write can do harm twice; an unconfirmed read keeps no place, so it can simply be retried.
+                  else 'uncertain' if event.get('action') in ('w', 'x') else None)
         await _release_call(event["request_id"], decision_id,
                             intent)
     return {**event, "decision_id": decision_id, "latency_ms": int((time.perf_counter() - laps.started) * 1000)}
