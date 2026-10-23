@@ -2242,3 +2242,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 결정 5(로그): 로컬 실행기는 게이트웨이가 401·403·409로 거절하면 `{"local_runner":"waiting","status":…}`를 한 번 남기고 간격을 2초에서 30초까지 늘리며, 풀리면 `ready`를 한 번 남긴다. 결속 검사의 `enforcing_profiles/kernel_ready(username, harnesses, mode)`는 설치 단계(`warn`은 기존 프로필, `enforce`는 결속 프로필)와 D-216의 하네스 목록에 맞는 프로필만 요구한다.
 - 시험: `full_stack_lab/tests/kit_continuity_check.py` 21건(수정 전 코드에서 19건 실패, 2건은 Linux 전용), 기존 `header_broker_label_check.py`의 설치기 복사 단언을 `PROGRAM_FILES`로 바꿨다. DB는 대역이라 집행·실기기 증거가 아니다.
 - 한계: macOS는 `machine_id`를 보내지 않아 호스트 이름으로만 같은 PC를 본다. Windows·macOS 키트에는 같은 이름의 상태 명령이 없다(Windows는 트레이 표시). 하네스가 401 본문을 항상 보여 주는지는 PJ1에서 확인해야 한다. 이미 설치된 장치는 키트를 한 번 다시 설치해야 `machine_id`·상태 명령이 생기고, 그 재설치는 호스트 이름으로 이어받는다.
+
+## D-218 키트 원복은 부분 설치에서도 끝까지 간다 (2026-10-23)
+
+- 배경: 팀원 Ubuntu VM에서 앞선 설치가 중간에 실패한 뒤 재설치하자, `enforce-linux.py --rollback`이 없는 `mcpgw-egress-<계정>.service`를 `systemctl disable`하다 종료 코드 1로 멈췄다. 원복이 중간에 끝나 `config.json`이 남고 다음 설치가 「이미 설치된 장치」로 거부됐다.
+- 결정: 원복의 각 단계는 대상이 있을 때만 지우고(서비스 파일·AppArmor 프로필 존재 확인, nft 표 삭제 실패는 무시), 없는 것은 이미 원복된 것으로 본다. `managed-linux.py rollback`도 없는 서비스의 오류를 출력하지 않는다. 계정 UID가 바뀐 경우의 거부는 그대로다.
+- 시험: WSL에서 상태 파일만 있는 부분 설치를 원복해 종료 코드 0. 팀원 VM 재실행으로 실기기 확인.
