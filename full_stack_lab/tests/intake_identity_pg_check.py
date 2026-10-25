@@ -550,7 +550,10 @@ async def accepted_risk_lifecycle(console: httpx.AsyncClient, intake: str) -> No
     contract = await core._contract("codesrv", "search")
     check(contract["critical_vulnerabilities"] == 1 and contract["critical_accepted"] == 0, f"만료 뒤 계약: {contract}")
     before = Upstream.calls
-    blocked = await call("wbsb-emp", "codesrv", "search", {"q": "x"})
+    # 등록 범위(evidence.audience_principals)를 지정하지 않은 저장소 도입은 신청자에게만 좁혀진다(D-234,
+    # core.register_server의 allowed_principals 기본값). 호출자는 그 신청자(row["submitted_by"])여야
+    # MCP-REGISTRY-003이 아니라 공급망 관문(MCP-SUPPLY-001)을 실제로 시험한다.
+    blocked = await call(row["submitted_by"], "codesrv", "search", {"q": "x"})
     check(blocked["decision"] == "Block" and blocked["policy_id"] == "MCP-SUPPLY-001" and Upstream.calls == before, f"만료 뒤 호출: {blocked['policy_id']}")
     lapsed = await review.lapse_expired_acceptances()
     check([r["id"] for r in lapsed] == [row["id"]] and await status_of(intake) == "HOLD", f"보류 복귀: {lapsed}")
