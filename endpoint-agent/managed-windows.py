@@ -573,6 +573,22 @@ def ours(text, gateway_url):
     return (gateway_url + "/mcp/") in text or '"allowManagedHooksOnly": true' in text or "allow_managed_hooks_only = true" in text
 
 
+def file_version(path):
+    """major.minor.build of a PE file's VS_FIXEDFILEINFO, or None."""
+    try:
+        api = ctypes.WinDLL("version")
+        size = api.GetFileVersionInfoSizeW(str(path), None)
+        buffer = ctypes.create_string_buffer(size) if size else None
+        info, length = ctypes.c_void_p(), ctypes.c_uint()
+        if not size or not api.GetFileVersionInfoW(str(path), 0, size, buffer) or not api.VerQueryValueW(
+                buffer, "\\", ctypes.byref(info), ctypes.byref(length)) or length.value < 16:
+            return None
+        fixed = ctypes.cast(info, ctypes.POINTER(ctypes.c_uint32 * 4)).contents  # signature, struct version, MS, LS
+        return f"{fixed[2] >> 16}.{fixed[2] & 0xFFFF}.{fixed[3] >> 16}" if fixed[0] == 0xFEEF04BD else None
+    except (AttributeError, OSError):
+        return None
+
+
 def harness_versions(profile):
     """claude·codex versions read from their install folders, never by running them: this is the SYSTEM service,
     and the employee's own executable must not run with its rights (D-239)."""
@@ -582,6 +598,14 @@ def harness_versions(profile):
                     key=lambda v: [int(x) if x.isdigit() else 0 for x in re.split(r"[.+_-]", v)], reverse=True)
     if native:
         found["claude"] = native[0][:40]
+    # WinGet and the Codex desktop installer keep no version in the path: the executable's own version resource
+    # (read as data, not run). pj3 10-25: WinGet claude.exe 2.1.302.0; codex.exe carries none.
+    for name, pattern in (("claude", "AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode*/claude.exe"),
+                          ("claude", ".local/bin/claude.exe"), ("codex", "AppData/Local/Programs/OpenAI/Codex/bin/codex.exe")):
+        for path in sorted(Path(profile).glob(pattern)):
+            value = file_version(path)
+            if name not in found and value:
+                found[name] = value
     for name, package in (("claude", "@anthropic-ai/claude-code"), ("codex", "@openai/codex")):
         manifest = Path(profile) / "AppData/Roaming/npm/node_modules" / package / "package.json"
         if name not in found and manifest.is_file():
@@ -603,14 +627,16 @@ def broadcast_environment():
         pass
 
 
+# Ends on ConvertTo-Json: a silenced "no such user" leaves $? false, and powershell.exe -Command then exits 1 (pj3 10-25).
 REMOVE_COMPANION = """
-$u = Get-LocalUser -Name $in.name -ErrorAction SilentlyContinue
+$sid = $null
+$u = @(Get-LocalUser | Where-Object { $_.Name -eq $in.name })[0]
 if ($u -and $u.FullName -eq 'MCP managed harness account') {
   $sid = $u.SID.Value
   Get-ScheduledTask -TaskName ('MCPGatewayTray-' + $sid) -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
   Remove-LocalUser -SID $sid
-  $sid
 }
+ConvertTo-Json -InputObject $sid -Compress
 """
 
 
@@ -763,6 +789,7 @@ def serve(args):
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
         "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
+    last_state = None
     from windows_status import publish
     status_path = PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"] / "status.json"
 
@@ -845,10 +872,13 @@ def serve(args):
                 token = request(config, "/oauth/device-token", {})
                 with lock:
                     cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
-                pause = 60
+                # One fast round after the activation: the active-state guidance comes with the next policy fetch;
+                # until then Claude tells the employee the PC still waits (pj3 10-25: up to a minute).
+                pause = 60 if last_state == "active" else 10
             else:
                 with lock:
                     cache.clear()
+            last_state = report["state"]
             with lock:
                 inventory_status, os_observer = latest["inventory"], latest["os"]
             record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
@@ -869,19 +899,27 @@ def serve(args):
         time.sleep(pause)
 
 
+# Simple mode has no firewall rules: the silenced misses leave $? false, so the script ends on a statement that succeeds.
+STOP_SERVICE = """
+$t = Get-ScheduledTask -TaskName $in.name -ErrorAction SilentlyContinue
+if ($t) {
+  Stop-ScheduledTask -TaskName $in.name; $end = [DateTime]::UtcNow.AddSeconds(30)
+  while ((Get-ScheduledTask -TaskName $in.name).State -eq 'Running') {
+    if ([DateTime]::UtcNow -gt $end) { throw '엔드포인트 종료 시간 초과' }; Start-Sleep -Milliseconds 100 }
+  Unregister-ScheduledTask -TaskName $in.name -Confirm:$false
+}
+foreach ($n in $in.rules) { Remove-NetFirewallRule -Name $n -ErrorAction SilentlyContinue }
+"@ok" | Out-Null
+"""
+
+
 def rollback(args):
     """Run after the device credential is revoked in the Console and the account is signed out."""
     if not ctypes.windll.shell32.IsUserAnAdmin():
         raise ValueError("관리자 권한 PowerShell에서 실행하세요")
     folder = STATE / args.user.lower()
     config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
-    powershell("$t = Get-ScheduledTask -TaskName $in.name -ErrorAction SilentlyContinue; "
-               "if ($t) { Stop-ScheduledTask -TaskName $in.name; $end = [DateTime]::UtcNow.AddSeconds(30); "
-               "while ((Get-ScheduledTask -TaskName $in.name).State -eq 'Running') { "
-               "if ([DateTime]::UtcNow -gt $end) { throw '엔드포인트 종료 시간 초과' }; Start-Sleep -Milliseconds 100 }; "
-               "Unregister-ScheduledTask -TaskName $in.name -Confirm:$false }; "
-               "foreach ($n in $in.rules) { Remove-NetFirewallRule -Name $n -ErrorAction SilentlyContinue }",
-               {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
+    powershell(STOP_SERVICE, {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
     for name, target in FILES.items():
         backup = folder / (name + ".backup")
         if backup.exists():

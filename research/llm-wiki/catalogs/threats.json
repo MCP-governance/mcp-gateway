@@ -850,10 +850,10 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
+        "sha256": "6dc5fdf672a57509c6f1b819e48309287e811e0d2f45ff666af2ea1e82a13b65",
         "committed_sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
-        "normalized_sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
-        "worktree_modified": false
+        "normalized_sha256": "6dc5fdf672a57509c6f1b819e48309287e811e0d2f45ff666af2ea1e82a13b65",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",

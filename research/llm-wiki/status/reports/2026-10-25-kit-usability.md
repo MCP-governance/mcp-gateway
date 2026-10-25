@@ -5,7 +5,7 @@
 - 시작 근거: 소유자 지시(10-25 저녁) 「보안을 좀 느슨하게 하더라도 키트 편의·자동화 극대화, Windows 메인, GUI 못 띄우면 TUI」,
   지시서 `지시서_세션배분_20261025.md` S1, 10-25 제안서 P0-3(이 지시로 대체), 10-23 키트 결함 D-216~D-232
 - 완료 조건(지시서): ① 구현·단위·Windows unittest·CI 수용 시험·보고서 1차 → 브랜치 push → ② 리더 배포 뒤 pj2·pj3 실측 → 보고서 최종
-- **현재 단계: ① 완료, ② 미실행**(기기 배포 전). 아래 「실기기」 칸은 전부 미실행이다.
+- **현재 단계: ① 완료, ② pj2 완료·pj3 결함 수정 뒤 배포 대기**. 실측은 아래 「2단계 실측」.
 
 ## 결과
 
@@ -99,8 +99,8 @@ Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보�
 | 정적 | `pyflakes gateway/app/*.py tests/*.py endpoint-agent/*.py tests-windows/*.py`, `open_endpoints.py` | 0건 · PASS | 로컬 |
 | 실제 Linux | WSL kali Python 3.13 pty(`script`): `bootstrap.py --self-check`, curses 화면·평문 폴백·상태 글 | OK | 로컬 |
 | CI 수용 | `acceptance.py endpoint-simple-mode-auto-activation`(실제 등록·정책·heartbeat·토큰, 설정 원복·장치 폐기) | 미실행(CI 일회용 스택에서 실행) | — |
-| 실기기 pj2 | 클린 스냅샷 첫 설치→자동 활성화→Learn/DeepWiki·filesystem Allow, `--isolated` 회귀 | 미실행(②단계) | — |
-| 실기기 pj3 | `.cmd` 같은 계정·UAC·트레이·재부팅·재연결·제거·재설치 | 미실행(②단계). SSH 키 접속만 확인(pj2·pj3 BatchMode 성공) | — |
+| 실기기 pj2 | 클린 스냅샷 첫 설치→자동 활성화→Learn/DeepWiki·filesystem Allow, `--isolated` 회귀 | 통과(사람 개입 0, 설치 6초·확인 32초), 결함 2건 수정 | 원장 1272~1275, 「2단계 실측」 |
+| 실기기 pj3 | `.cmd` 같은 계정·UAC·트레이·재부팅·재연결·제거·재설치 | 실패 → 원클릭 요청 검사 결함 수정(cb663ff), 재측정은 배포 대기 | 「2단계 실측」 |
 
 ### 회귀 결과
 
@@ -130,6 +130,43 @@ Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보�
   MCP를 포트로 구분할 수 없어 효과가 없다고 판단해 넣지 않았다.
 - 설치 끝 모델 응답 측정은 모델 호출 1회(토큰 소량)를 쓴다. 조직이 원하면 설정으로 끌 수 있게 하는 것을 다음 작업으로 둔다.
 - 자동 활성화를 「같은 직원의 두 번째 PC부터 관리자 확인」처럼 수량으로 제한하는 안을 검토할 만하다(지금은 PC 수 제한 없음).
+
+## 2단계 실측(10-25, 기기 배포본 `10/25-integrate` 4c060ef)
+
+기기·하네스·원장은 실제다. 키트는 비밀번호 로그인 없이 agent-service 내부 함수(`download_managed_kit`, 직원 `user` 명의)로 받았다.
+관리자 활성화(격리 회귀)도 내부 함수 `activate_managed`(처리 root)로 대행했다. 시각은 UTC.
+
+### pj2 (Ubuntu 24.04.5, 커널 7.0, 직원 `pj2` = sudo·docker 그룹, Claude 2.1.309·Codex 0.164.0 로그인된 스냅샷 `clean-sudo-1023`)
+
+| 단계 | 결과 | 시간·증거 |
+| --- | --- | --- |
+| 준비 | 이전 격리 장치(`managed-ad48cce3`) 자격 폐기 → 스냅샷 복원 | 폐기하지 않으면 재설치가 활성화를 이어받아 자동 활성화를 잴 수 없다 |
+| 첫 설치(간편, SSH 비대화형, 질문 0) | 성공. gcc 없음·관리 계정 없음·sudoers/shim/rc 블록 없음, 헬퍼 스크립트·`/etc/environment` CA 블록만 | 설치 6초, 확인까지 32초(`install_seconds`·`total_seconds`) |
+| 자동 활성화 | `enrolled` 08:30:06 → `activated`(처리 auto, 「설치 점검 통과로 자동 활성화」) 08:30:10 | 4초, 원장 `endpoint_managed_events` |
+| 설치 확인 세 칸 | 모델 응답 claude 정상 9.5초 · 도구 40개(서버 10/10) · 서버 연결 `docs-mcp-cloudflare…` 정상 | 설치 출력 JSON `checks` |
+| 로컬 MCP 준비 | filesystem·memory·sequentialthinking 3/3 prepared, 문서 폴더 `/home/pj2/mcp-docs`(직원 홈) | 활성화 뒤 약 50초 |
+| 직원 Claude → Microsoft Learn | `microsoft_docs_search` Allow `P-AUTHZ-ALLOW-001`, 실행됨 | 원장 1272, 따로 재실행 11.7초 |
+| 직원 Claude → DeepWiki | `read_wiki_structure` Allow | 원장 1273, 12.7초 |
+| 직원 Claude → filesystem 로컬 읽기 | `list_allowed_directories`·`read_file` Allow, 파일 내용 그대로 반환 | 원장 1274·1275, 18.9초 |
+| 사람 개입 | **0회**(모델 로그인은 스냅샷에 이미 있음) | 설치 시작부터 첫 Allow까지 약 2분 10초(로컬 준비 대기 포함) |
+| 설치 전 터미널(CA 변수 없음) | Claude가 `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`로 연결 실패, `mcpgw-status`는 「새 터미널(또는 다시 로그인)」 안내 | 새 SSH 세션(pam_env)은 정상 |
+| 〃 해결 확인 | `claude --settings '{"env":{"NODE_EXTRA_CA_CERTS":…}}' mcp list`에서 전부 Connected → 관리형 설정 env로 CA를 렌더링하도록 수정(eec3e22, 배포 필요) | Codex는 세션 변수만 읽어 Codex만 새 터미널 |
+| 하네스 판본(D-220 대체 관측) | heartbeat `host.harnesses` = claude 2.1.309·codex 0.164.0 | 장치 detail |
+| 격리 회귀(`--isolated` 키트, 간편 위에) | 간편 설치 원복 → gcc 설치 → `managed-pj2` 생성 → AppArmor 8개 enforce·nft `mcpgw_uid_1001` → **대기**(자동 활성화 안 함) → 관리자 활성화 → 하네스 shim으로 10/10 Connected, `mcpgw-status --check` 도구 40개 | 모델 호출은 「Not logged in」(관리 계정은 모델 로그인을 따로 해야 함 — 간편 모드가 없앤 마찰) |
+| 결함 ① | 격리 모드 무인 설치가 Codex 장치 코드 로그인을 띄워 멈춤(최대 15분) | 수정(eec3e22): 터미널이 없으면 두 모드 모두 묻지 않고, 모델 칸이 로그인 필요면 다음 할 일에 로그인 명령 |
+| 결함 ② | 간편→격리 전환 뒤 간편 장치가 활성으로 남음(유령) | 수정(eec3e22): `companion_names`가 동반 계정에서 직원 이름으로도 찾는다 |
+| 격리→간편 전환 | `managed-pj2` 삭제(홈 유지)·AppArmor 0·nft 0·shim·sudoers·rc 없음, 새 장치가 관리자 활성화를 이어받고 이전 두 장치 폐기 | 설치 8초·확인까지 30초 |
+
+### pj3 (Windows 11 26300, 관리자 `pj3` 콘솔 로그인 중, SSH 토큰 High, Claude WinGet·Codex 로그인됨)
+
+| 단계 | 결과 | 비고 |
+| --- | --- | --- |
+| 키 접속 | 성공(BatchMode) | — |
+| 이전 상태 | 10-22 시험의 표준 계정 `pj3user` 관리형 설치가 남아 있었다 | 같은 PC의 다른 직원 설치와 기계 공용 Claude 설정이 겹쳐 서로 덮어쓴다 — 롤백·트레이 작업·승인 설치기를 정리(이 세션 소유 시험 상태) |
+| 원클릭 실행 | 콘솔 세션 1에서 관리자 권한 예약 작업으로 `.cmd` 실행(UAC 클릭 대신) | SSH는 UAC 보안 데스크톱에 닿지 않는다. 실제 사용자는 `.cmd` 더블클릭 → UAC 「예」 1회가 유일한 클릭 지점 |
+| 결과 | **실패** — 작업자가 결과 파일 없이 끝나고 템플릿이 실패 대화 상자에서 대기 | `Read-EndpointManagedRequest`가 원클릭 요청에 없는 `gateway_url`에 대입해 예외(10-18부터 있던 결함). 수정·시험(cb663ff) — 배포 필요 |
+| 결함 ③ | 원클릭으로 한 번 설치한 PC는 새 판본 원클릭을 「IT must update the approved installer」로 거부 | 수정(cb663ff): 원클릭이 만든 승인에 표식을 남겨 새 원클릭으로 갱신 가능. 표식 이전 설치는 한 번 정리 필요, IT 승인은 그대로 |
+| 같은 계정 설치·세 칸·트레이·재부팅·재연결·제거·재설치 | **미실행** | 위 결함 수정본 배포 대기 |
 
 ## 2단계 실측 계획(리더 배포 뒤)
 
