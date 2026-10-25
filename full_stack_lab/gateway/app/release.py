@@ -7,6 +7,8 @@ from pathlib import Path
 
 import httpx
 
+from . import cache, connections
+
 
 # The files a Linux install copies to the PC (endpoint-agent/managed-linux.py PROGRAM_FILES). The digest of their
 # text is the kit version: the PC's status command prints the digest of what it installed, /api/health this one.
@@ -57,37 +59,70 @@ def _canonical(value) -> str:
                                      separators=(',', ':')).encode()).hexdigest()
 
 
+# /api/health is unauthenticated and reads every file below on every call. Keyed by
+# (mtime_ns, size) rather than a TTL: these are reviewed files that change on deploy,
+# not on a clock, so a correct answer never has to wait out a cache window.
+_file_cache: dict[Path, tuple[tuple[int, int], object]] = {}
+
+
+def _cached(path: Path, loader):
+    stat = path.stat()
+    key = (stat.st_mtime_ns, stat.st_size)
+    cached = _file_cache.get(path)
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    value = loader(path)
+    _file_cache[path] = (key, value)
+    return value
+
+
+# The other half of the same call is two round trips to OPA (rules + one per data
+# document). OPA's loaded policy does not change between two /api/health calls a
+# few seconds apart, so that half is worth a short TTL on top of the file cache above.
+_opa_query_cache = cache.TTLCache(5)
+
+
+async def _query_opa(opa_url: str, modules: tuple[str, ...], document_keys: tuple[str, ...]) -> dict:
+    base = opa_url.split('/v1/')[0]
+    client = connections.shared('opa', lambda: httpx.AsyncClient(timeout=5))
+    result = {'loaded_sha256': None, 'loaded_data_sha256': None}
+    response = await client.get(base + '/v1/policies', timeout=3)
+    response.raise_for_status()
+    rules = {p['id'].rsplit('/', 1)[-1]: p['raw'] for p in response.json()['result']
+             if p['id'].rsplit('/', 1)[-1] in modules}
+    if set(rules) == set(modules):
+        result['loaded_sha256'] = _canonical({name: hashlib.sha256(rules[name].encode()).hexdigest() for name in modules})
+    loaded = {}
+    for key in document_keys:
+        answer = (await client.get(f'{base}/v1/data/{key}', timeout=3)).json()
+        if 'result' not in answer:
+            break  # a document the files define and OPA does not serve
+        loaded[key] = answer['result']
+    else:
+        result['loaded_data_sha256'] = _canonical(loaded)
+    return result
+
+
 async def policy_info(opa_url: str) -> dict:
     root = Path('/policy')
     modules = ('policy.rego', 'pac15.rego', 'decision.rego')
-    expected = _canonical({name: hashlib.sha256((root/name).read_bytes()).hexdigest() for name in modules})
+    expected = _canonical({name: _cached(root / name, lambda p: hashlib.sha256(p.read_bytes()).hexdigest())
+                           for name in modules})
     documents: dict = {}
     for name in POLICY_DATA_FILES:
-        documents.update(json.loads((root / name).read_text(encoding='utf-8')))
+        documents.update(_cached(root / name, lambda p: json.loads(p.read_text(encoding='utf-8'))))
     result = {'expected_sha256': expected, 'loaded_sha256': None,
               'expected_data_sha256': _canonical(documents), 'loaded_data_sha256': None,
               'rules_match': False, 'data_match': False, 'matches': False}
     from . import registry
-    result['capabilities_sha256'] = hashlib.sha256((registry.REGISTRY_DIR/'capabilities.json').read_bytes()).hexdigest()
-    base = opa_url.split('/v1/')[0]
+    result['capabilities_sha256'] = _cached(registry.REGISTRY_DIR / 'capabilities.json',
+                                            lambda p: hashlib.sha256(p.read_bytes()).hexdigest())
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            response = await client.get(base + '/v1/policies')
-            response.raise_for_status()
-            rules = {p['id'].rsplit('/',1)[-1]: p['raw'] for p in response.json()['result']
-                     if p['id'].rsplit('/',1)[-1] in modules}
-            if set(rules) == set(modules):
-                result['loaded_sha256'] = _canonical({name: hashlib.sha256(rules[name].encode()).hexdigest() for name in modules})
-                result['rules_match'] = result['loaded_sha256'] == expected
-            loaded = {}
-            for key in documents:
-                answer = (await client.get(f'{base}/v1/data/{key}')).json()
-                if 'result' not in answer:
-                    break  # a document the files define and OPA does not serve
-                loaded[key] = answer['result']
-            else:
-                result['loaded_data_sha256'] = _canonical(loaded)
-                result['data_match'] = result['loaded_data_sha256'] == result['expected_data_sha256']
+        loaded = await _opa_query_cache.get(opa_url, lambda: _query_opa(opa_url, modules, tuple(documents)))
+        result['loaded_sha256'] = loaded['loaded_sha256']
+        result['rules_match'] = loaded['loaded_sha256'] == expected
+        result['loaded_data_sha256'] = loaded['loaded_data_sha256']
+        result['data_match'] = loaded['loaded_data_sha256'] == result['expected_data_sha256']
     except (httpx.HTTPError, KeyError, TypeError, ValueError):
         pass
     result['matches'] = result['rules_match'] and result['data_match']

@@ -19,7 +19,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from psycopg.types.json import Jsonb
 
-from . import addon, connectors, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
+from . import addon, cache, connections, connectors, core, db, decommission, dispatch, disposal, endpoint_plane, local_jobs, ops_response, privacy, secret_scan, upstream, user_suspend
 from .core import (
     OPA_URL,
     approve_request,
@@ -399,26 +399,36 @@ async def _absent() -> None:
     return None
 
 
-async def _probe(url: str) -> bool:
+async def _probe(client: httpx.AsyncClient, url: str) -> bool:
     try:
-        async with httpx.AsyncClient(timeout=2) as client:
-            response = await client.get(url)
-            return response.status_code < 500
+        response = await client.get(url, timeout=2)
+        return response.status_code < 500
     except Exception:
         return False
 
 
+# Unauthenticated, so a slow or absent health check must not become a way to pile up
+# OPA/Presidio round trips or policy-bundle re-hashing: one computation is shared by
+# every caller within the window, and it is still fresh enough to show an outage
+# within TTL seconds of it starting.
+_health_cache = cache.TTLCache(5)
+
+
 @app.get("/api/health")
 async def health() -> dict:
+    return await _health_cache.get(None, _compute_health)
+
+
+async def _compute_health() -> dict:
     policy = await policy_info(OPA_URL)
     opa_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
-        _probe(OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
-        _probe(JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
-        _probe(privacy.ANALYZER + "/health"),
-        _probe(privacy.ANONYMIZER + "/health"),
+        _probe(core._opa(), OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
+        _probe(connections.shared("jaeger", lambda: httpx.AsyncClient()), JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),
+        _probe(privacy._client(), privacy.ANALYZER + "/health"),
+        _probe(privacy._client(), privacy.ANONYMIZER + "/health"),
     )
     try:
-        rows = await db.fetch_all("SELECT id, status FROM mcp_servers ORDER BY id")
+        rows = await db.admin_fetch_all("SELECT id, status FROM mcp_servers ORDER BY id")
         db_ok = True
     except Exception:
         rows, db_ok = [], False
@@ -508,21 +518,33 @@ async def registry_export(format: Literal["json", "csv"] = Query("json"), user: 
                              "Content-Disposition": f'attachment; filename="mint-registry.{format}"'})
 
 
+_overview_cache = cache.TTLCache(5)
+
+
 @app.get("/api/overview")
 async def overview(user: dict = Depends(admin_caller)) -> dict:
-    """Everything the first Console screen shows, in one round trip."""
-    today, per_server, stations, alerts, approvals, intake_actions, cases, series, flows, execution = await asyncio.gather(
-        db.fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
-                          WHERE created_at > {TODAY} AND {decommission.REAL_CALL} GROUP BY decision"""),
-        db.fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
+    """Everything the first Console screen shows, in one round trip.
+
+    Content does not vary by caller (admin_caller only gates who may ask), so one
+    cache entry serves every admin. Queries run one at a time on the small admin
+    pool instead of asyncio.gather()-ing ten at once, so a Console poll cannot hold
+    as many connections as the judging path has in total (D-0-6).
+    """
+    return await _overview_cache.get(None, _compute_overview)
+
+
+async def _compute_overview() -> dict:
+    today = await db.admin_fetch_all(f"""SELECT decision, count(*) AS n FROM decisions d
+                          WHERE created_at > {TODAY} AND {decommission.REAL_CALL} GROUP BY decision""")
+    per_server = await db.admin_fetch_all(f"""SELECT s.id, s.display_name, s.status, s.lifecycle, s.deployment, s.status_reason,
                                count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours') AS calls,
                                count(d.id) FILTER (WHERE d.created_at > now() - interval '24 hours' AND d.decision='Block') AS blocked,
                                max(d.created_at) AS last_call,
                                (SELECT count(*) FROM mcp_tools t WHERE t.server_id=s.id AND t.enabled) AS tools
                           FROM mcp_servers s LEFT JOIN decisions d ON d.server_id = s.id AND {decommission.REAL_CALL}
                          WHERE s.id = ANY(%s::text[])
-                         GROUP BY s.id ORDER BY s.id""", (sorted(registry.servers()),)),
-        db.fetch_all("""SELECT a.endpoint_id, a.hostname, a.owner_token, a.last_seen_at, p.display_name, p.department, p.role,
+                         GROUP BY s.id ORDER BY s.id""", (sorted(registry.servers()),))
+    stations = await db.admin_fetch_all("""SELECT a.endpoint_id, a.hostname, a.owner_token, a.last_seen_at, p.display_name, p.department, p.role,
                                (SELECT count(*) FROM endpoint_inventory i WHERE i.endpoint_id=a.endpoint_id AND i.classification='shadow') AS shadow,
                                (SELECT max(d.created_at) FROM decisions d WHERE d.client->>'workstation' = a.endpoint_id
                                    AND COALESCE(d.client->>'event_kind','tools/call')='tools/call') AS last_call,
@@ -534,28 +556,28 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                                    AND d.created_at > now() - interval '24 hours'
                                    AND COALESCE(d.client->>'event_kind','tools/call')='tools/call') AS calls
                           FROM endpoint_agents a LEFT JOIN principals p ON p.token = a.owner_token
-                         WHERE a.status='active' ORDER BY a.endpoint_id"""),
-        db.fetch_all(f"""SELECT decision, policy_id, count(*) AS n FROM decisions d
+                         WHERE a.status='active' ORDER BY a.endpoint_id""")
+    alerts = await db.admin_fetch_all(f"""SELECT decision, policy_id, count(*) AS n FROM decisions d
                           WHERE created_at > now() - interval '24 hours' AND decision IN ('Block','Alert')
                             AND {decommission.REAL_CALL}
                             AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
-                         GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8"""),
-        db.fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()"),
-        db.fetch_one("""SELECT count(*) AS n FROM mcp_intake_requests
+                         GROUP BY decision, policy_id ORDER BY n DESC LIMIT 8""")
+    approvals = await db.admin_fetch_one("SELECT count(*) AS n FROM approvals WHERE status='PENDING' AND expires_at > now()")
+    intake_actions = await db.admin_fetch_one("""SELECT count(*) AS n FROM mcp_intake_requests
                           WHERE status IN ('HOLD','VALIDATED','REMOTE_REVIEWED','FAILED')
-                             OR (status='APPROVED' AND registered_server_id IS NULL)"""),
-        decommission.summary(),
-        # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
-        db.fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
+                             OR (status='APPROVED' AND registered_server_id IS NULL)""")
+    cases = await decommission.summary(db.admin_fetch_all, db.admin_fetch_one)
+    # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
+    series = await db.admin_fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
                           WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
                             AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
-                         GROUP BY 1, 2 ORDER BY 1"""),
-        db.fetch_all(f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), 'unknown') AS harness,
+                         GROUP BY 1, 2 ORDER BY 1""")
+    flows = await db.admin_fetch_all(f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), 'unknown') AS harness,
                                d.server_id AS server, d.decision, count(*) AS n
                           FROM decisions d WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
                             AND COALESCE(d.client->>'event_kind','tools/call')='tools/call'
-                         GROUP BY 1, 2, 3"""),
-        db.fetch_one(f"""SELECT count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='mcp-connection') AS connections,
+                         GROUP BY 1, 2, 3""")
+    execution = await db.admin_fetch_one(f"""SELECT count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='mcp-connection') AS connections,
                                count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call') AS tool_calls,
         count(*) FILTER (WHERE COALESCE(client->>'event_kind','tools/call')='tools/call'
                          AND decision='Block') AS blocked,
@@ -565,10 +587,9 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
                                count(*) FILTER (WHERE result_preview->>'disposition'='masked') AS masked,
                                count(*) FILTER (WHERE upstream_executed AND (result_preview->>'disposition'='withheld'
                                                 OR policy_id='MCP-OUTPUT-001')) AS withheld
-                          FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}"""),
-    )
+                          FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}""")
     # decision -> sent? -> executed? -> what came back, for today's tool calls (D-63 Sankey).
-    pipeline = await db.fetch_all(f"""SELECT decision, upstream_attempted AS attempted, upstream_executed AS executed,
+    pipeline = await db.admin_fetch_all(f"""SELECT decision, upstream_attempted AS attempted, upstream_executed AS executed,
                                              COALESCE(result_preview->>'disposition',
                                                       CASE WHEN upstream_executed AND policy_id='MCP-OUTPUT-001' THEN 'withheld'
                                                            WHEN upstream_executed THEN 'returned'
@@ -585,7 +606,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
         "pending_approvals": int(approvals["n"] or 0),
         "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
-        "enforcement": await enforcement_mode(), "catalog_version": registry.catalog_version(),
+        "enforcement": await enforcement_mode(db.admin_fetch_one), "catalog_version": registry.catalog_version(),
     }
 
 
@@ -596,14 +617,20 @@ LATENCY_STAGES = ("identity", "reserve", "schema", "inspect_in", "context", "pol
 UPSTREAM_STAGES = ("connect", "list", "call", "close")
 
 
+_latency_cache = cache.TTLCache(5)
+
+
 @app.get("/api/latency")
 async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(admin_caller)) -> dict:
     """Where a tools/call spends its time, from the per-stage timings kept with each decision."""
+    return await _latency_cache.get(hours, lambda: _compute_latency(hours))
+
+
+async def _compute_latency(hours: int) -> dict:
     upstream_ms = " + ".join(f"COALESCE((d.timings->>'{stage}')::float8, 0)" for stage in UPSTREAM_STAGES)
     window = f"""FROM decisions d WHERE d.created_at > now() - make_interval(hours => %s)
                    AND d.timings IS NOT NULL AND d.action <> 'connect' AND {decommission.REAL_CALL}"""
-    summary, stages, servers, series = await asyncio.gather(
-        db.fetch_one(f"""WITH t AS (SELECT (d.timings->>'total')::float8 AS total, {upstream_ms} AS upstream,
+    summary = await db.admin_fetch_one(f"""WITH t AS (SELECT (d.timings->>'total')::float8 AS total, {upstream_ms} AS upstream,
                                           d.timings ? 'call' AS dispatched {window})
                          SELECT count(*) AS calls, count(*) FILTER (WHERE dispatched) AS dispatched,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY total - upstream) AS gateway_p50,
@@ -613,24 +640,23 @@ async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(adm
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY total) AS total_p95,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p95
-                           FROM t""", (hours,)),
-        db.fetch_all(f"""SELECT s.key AS stage, count(*) AS n,
+                           FROM t""", (hours,))
+    stages = await db.admin_fetch_all(f"""SELECT s.key AS stage, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY s.value::float8) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY s.value::float8) AS p95
                            {window.replace("FROM decisions d", "FROM decisions d, jsonb_each_text(d.timings) s")}
-                            AND s.key <> 'total' GROUP BY s.key""", (hours,)),
-        db.fetch_all(f"""SELECT d.server_id, count(*) AS n,
+                            AND s.key <> 'total' GROUP BY s.key""", (hours,))
+    servers = await db.admin_fetch_all(f"""SELECT d.server_id, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY {upstream_ms}) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY {upstream_ms}) AS p95,
                                 count(*) FILTER (WHERE d.policy_id = 'MCP-UPSTREAM-001') AS failed
-                           {window} AND d.timings ? 'connect' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,)),
-        db.fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
+                           {window} AND d.timings ? 'connect' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,))
+    series = await db.admin_fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
                                           (d.timings->>'total')::float8 - ({upstream_ms}) AS gateway {window})
                          SELECT hour, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY gateway) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY gateway) AS p95
-                           FROM t GROUP BY hour ORDER BY hour""", (hours,)),
-    )
+                           FROM t GROUP BY hour ORDER BY hour""", (hours,))
     order = {stage: index for index, stage in enumerate(LATENCY_STAGES)}
 
     def ms(value):
