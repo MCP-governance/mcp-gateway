@@ -1,24 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T19:42:35+09:00
+확인 시각: 2026-10-25T20:11:16+09:00
 
-HEAD: `df8f36aba09e6228390496642ee6cd751970f602` · 로컬 브랜치: `10/25-integrate`
+HEAD: `4edec3966e96b42435c76328d7027b3396ebbcf6` · 로컬 브랜치: `main`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
- M docs/ai/FIELD.md
- M docs/ai/POLICY.md
- M research/llm-wiki/analysis/auto-suspend/README.md
- M research/llm-wiki/analysis/endpoint-offline-buffer/README.md
- M research/llm-wiki/analysis/integration-cases.json
- M research/llm-wiki/analysis/poisoning-d158/README.md
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/status/decisions-index.md
-?? docs/ai/decisions/
+M  research/llm-wiki/status/reports/2026-10-25-litellm-addon.md
 ```
 
 ## 주요 파일 바이트

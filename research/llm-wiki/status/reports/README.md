@@ -9,7 +9,7 @@
 | 2026-10-25 | [2026-10-25 위키 구조·최신화 점검 (WIKI-08)](2026-10-25-wiki-structure.md) | 읽기량은 줄었고, 낡음을 재는 도구가 생겼다. | WIKI-08 DEV-72 WIKI-04 AIG-02 D-237 D-230 D-238 |
 | 2026-10-25 | [2026-10-25 릴리스 판본·기업 적용 패키징·위생·브랜치 정리](2026-10-25-release-packaging.md) | VERSION = 0.9.0, CHANGELOG.md(Keep a Changelog, 한국어). | DEV-73 DEV-38 DEV-71 DEV-69 D-242 D-59 D-241 |
 | 2026-10-25 | [2026-10-25 정책 동기화 모델 교체 (P0-1, D-238)](2026-10-25-policy-sync-split.md) | 판정 모델. | DEV-90 D-198 D-212 D-238 |
-| 2026-10-25 | [2026-10-25 LiteLLM 애드온 — 기업 적용·정상 기능(S5)](2026-10-25-litellm-addon.md) | 실제 1.105에서 새로 찾은 결함과 정정(D-249 6항): 동기화는 서버를 만들기 전에 require_key_mcp_access_define… | D-250 D-208 D-249 |
+| 2026-10-25 | [2026-10-25 LiteLLM 애드온 — 기업 적용·정상 기능(S5)](2026-10-25-litellm-addon.md) | 대역이 가렸던 실제 결함 다섯 가지(CI 반복으로 찾아 모두 정정) — ① 1.105는 require_key_mcp_access_defined를… | D-208 D-250 D-249 |
 | 2026-10-25 | [2026-10-25 엔드포인트 키트 편의·자동화 — 간편 모드 기본, 자동 활성화, Windows 같은 계정, TUI (D-239)](2026-10-25-kit-usability.md) | 코드: bootstrap.connect(모드 분기·이전 설치 원복·격리 계정 정리), managed-linux.install --mode sim… | D-238 D-216 D-218 |
 | 2026-10-25 | [2026-10-25 게이트웨이 결함 수정 — 실사용 버그 시험(S4) 후속](2026-10-25-gw-bugfix.md) | S4-03(관찰기 명령줄 표지)·S4-11(mcpgw-status 표시)은 endpoint-agent/(S1 소유)라 손대지 않았다. | D-238 D-246 D-214 |
 | 2026-10-25 | [2026-10-25 GitHub 직원별 계정 연결 (D-235)](2026-10-25-github-per-user.md) | 구현됨: 암호화 저장(AES-GCM, USER_CREDENTIAL_KEY), 선택 순서(직원 연결 → 운영자 파일의 그 직원 행 → 없음, 같은… | D-235 |
