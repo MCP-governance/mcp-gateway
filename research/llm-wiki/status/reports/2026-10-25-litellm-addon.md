@@ -60,3 +60,7 @@
 없음. (기기 `mint-llm` 실측은 리더 실행 명령으로 위에 적었다.)
 
 ## CI 결과
+
+- [실행 40181172632](https://github.com/MCP-governance/mcp-gateway/actions/runs/40181172632) (fa28c53): ① 통과, 두 서버 실제 등록(READY), 동기화 사건이 원장 제약에 걸려 `pending` → 62bf87f에서 수정.
+- [실행 40182011434](https://github.com/MCP-governance/mcp-gateway/actions/runs/40182011434) (62bf87f): **실제 LiteLLM 1.105 + 실제 MINT로 통과한 것** — 동기화 완료 learn 6.2초·msdocs 0.1초(LiteLLM 서버 `https://<MINT>/mcp/<서버>/`·`oauth_delegate`), 직원 2명 A 호출 성공(결과 36,966자·47,062자, `learn-microsoft_docs_search`), 원장 `decisions` 1·2번 = `emp-emp1`·`emp-emp2` `Allow` `P-AUTHZ-ALLOW-001` 실행, MINT 토큰 없는 호출은 도구 목록 자체가 비어 거절, LiteLLM에서 지운 키 권한을 재조회로 **15.1초** 만에 복구(재조회 30초 설정), 틀린 매핑(emp3) 중 emp1 호출 성공·작업은 `failed/key-owner-mismatch`, 관리 키 회전 뒤 옛 키 삭제·점검 통과, 철회 3.2초 뒤 learn 거절·새 Allow 없음·msdocs는 계속 성공. **실패**: 재승인 복구에서 동기화가 `key-owner-mismatch`로 완료되지 않음 — 매핑에서 뺀 옛 키가 보존 대상으로 남아 매번 오류, 철회 때 LiteLLM이 지운 서버를 키 권한에서 빼 버린 것을 재조회 불일치로 봄. 다음 커밋에서 두 경우를 정정(단위 `test_removed_mapping_and_stripped_revocation_do_not_block_completion`, 이전 코드에서 실패).
+

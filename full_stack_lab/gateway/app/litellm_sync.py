@@ -281,7 +281,17 @@ async def _propagate(api, plan, config, observations):
                 observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(), "absent": True})
                 continue
             info = data["info" if kind == "key" else "team_info"]
-            check_subject(info, subject)
+            stale = current_by_id.get((kind, identifier)) != subject
+            try:
+                check_subject(info, subject)
+            except SyncError as exc:
+                if not stale:
+                    raise
+                # A mapping the operator has since removed or corrected: no longer ours to write, and no grant
+                # can reach it through MINT (it is not in the current bindings). Seen in CI after a mapping fix.
+                observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
+                                     "stale": True, "skipped": str(exc)})
+                continue
             permissions = merged_permissions(info.get("object_permission"), sid, tools)
             await api.request("POST", "/key/update" if kind == "key" else "/team/update",
                               {**params, "object_permission": permissions})
@@ -292,7 +302,11 @@ async def _propagate(api, plan, config, observations):
             observed = (actual.get("mcp_tool_permissions") or {}).get(sid)
             observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
                                  "tools": observed, "server_granted": sid in (actual.get("mcp_servers") or [])})
-            if actual != permissions and {k: v for k, v in actual.items() if k != "object_permission_id"} != permissions:
+            if not active:
+                # LiteLLM 1.105 drops a deleted server from a key's permission on write (CI); absent and empty both deny.
+                if observed not in (None, []):
+                    raise SyncError("permissions-readback-mismatch")
+            elif actual != permissions and {k: v for k, v in actual.items() if k != "object_permission_id"} != permissions:
                 raise SyncError("permissions-readback-mismatch")
         except (SyncError, KeyError, TypeError) as exc:
             # One wrong key or team stops only that subject; the others keep the server (D-249).

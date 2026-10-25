@@ -40,7 +40,8 @@ class State:
         self.fail = None
         self.keep_server = self.wrong_server = self.keep_permissions = self.keep_credentials = self.keep_sessions = False
         self.explicit_access = True
-        self.field_refused = False  # LiteLLM 1.105: /config/field/info answers 400 for require_key_mcp_access_defined
+        self.field_refused = False
+        self.strip_deleted = False  # LiteLLM 1.105 drops a deleted server from key permissions on write  # LiteLLM 1.105: /config/field/info answers 400 for require_key_mcp_access_defined
         self.cascade_credentials = False
 
 
@@ -93,7 +94,11 @@ class Handler(BaseHTTPRequestHandler):
         elif path in {"/key/update", "/team/update"}:
             if not state.keep_permissions:
                 target = state.keys[body["key"]] if path.startswith("/key") else state.teams[body["team_id"]]
-                target["object_permission"] = body["object_permission"]
+                target["object_permission"] = copy.deepcopy(body["object_permission"])
+                if state.strip_deleted and state.server is None:
+                    permission = target["object_permission"]
+                    permission["mcp_servers"] = [x for x in permission.get("mcp_servers", []) if x != "mint_approved"]
+                    permission.get("mcp_tool_permissions", {}).pop("mint_approved", None)
             result = {"status": "success"}
         elif path.startswith("/v1/mcp/server/"):
             if method == "DELETE":
@@ -245,6 +250,20 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(sync.SyncError, "key-owner-mismatch.*team-membership-mismatch"):
             await self.run_plan()
         self.assertFalse([r for r in self.state.requests if r[1] in {"/key/update", "/team/update"}])
+
+    async def test_removed_mapping_and_stripped_revocation_do_not_block_completion(self):
+        # CI on 1.105: after an operator removed a wrong mapping it kept failing as a retained subject, and the
+        # revocation readback failed because LiteLLM dropped the deleted server from the key's permission.
+        await self.run_plan()
+        stale = {"kind": "key", "id": OTHER_KEY, "users": ["eve"], "owners": ["lite-nobody"]}
+        self.state.keys[OTHER_KEY] = {"user_id": "lite-eve", "object_permission": {}}
+        self.plan["subjects"] = [stale]
+        await self.run_plan()
+        self.assertTrue(any(o.get("stale") for o in self.observations))
+        self.assertEqual(self.state.keys[OTHER_KEY]["object_permission"], {})
+        self.plan["active"], self.state.strip_deleted = False, True
+        await self.run_plan()
+        self.assertNotIn("mint_approved", self.state.keys[KEY]["object_permission"].get("mcp_tool_permissions", {}))
 
     async def test_one_wrong_key_does_not_stop_the_other_employee(self):
         self.state.keys[OTHER_KEY] = {"user_id": "mallory", "object_permission": {}}
