@@ -175,13 +175,16 @@ CI 정적 검사에 같은 판본 gitleaks의 작업 트리 스캔을 넣고, �
 | compose 렌더링(로컬, 기동 없음) | WSL `docker compose --env-file <가짜 값> -f deploy/compose.yaml config`, 10-25 | 서비스 11, 게시 2(443·3128, 지정 주소), 외부 이미지 digest 고정 | 이 세션 출력 |
 | 비밀 스캔(로컬 일회성 컨테이너) | `zricethezav/gitleaks:v8.30.1 git --log-opts=--all`(이력 763 커밋) / `dir`(작업 트리, `.gitleaks.toml`), 10-25 | 이력 70건 전부 가짜·예시 / 작업 트리 no leaks | 위 표 |
 | 위키 | `check_wiki.py --ci-ignored-local-sources`, `check_trace.py`, 10-25 | 오류 0(경고는 기존 참조 0 항목) | 이 세션 출력 |
-| CI 정적 검사 | GitHub Actions `full_stack_lab 검증 / 정적 검사` | CI_STATIC | CI_LINK |
-| CI 운영 배포 설치 | `full_stack_lab 검증 / 운영 배포 설치 검증`(새 ubuntu-latest 실행기) | CI_DEPLOY | CI_LINK |
-| CI 실습 전체 회귀 | `full_stack_lab 검증 / 완료 조건 전체 검증` | CI_VERIFY | CI_LINK |
+| CI 정적 검사 | GitHub Actions `full_stack_lab 검증 / 정적 검사` | 통과(판본·위생 `deploy/check.py`, gitleaks 작업 트리 no leaks 포함) | [실행 40174899586](https://github.com/MCP-governance/mcp-gateway/actions/runs/40174899586) |
+| CI 운영 배포 설치 | `full_stack_lab 검증 / 운영 배포 설치 검증`(새 ubuntu-latest 실행기) | 통과. 설치 2분(08:03:27~08:05:27 UTC). `/api/health` `status=ok`, `build.revision=0.9.0+g2d7ce1675809`, `jaeger=null`; `mint.sh status` 준비 예·정책 일치 True; 게시 `10.1.0.153:443->8080`, `10.1.0.153:3128->3128` 두 개뿐; 콘솔 HTTP 닫힘; `root` 초기 비밀번호 200, `root/root`·`user/user` 거절; 재기동 뒤 비밀번호 파일 불변; 백업(DB 덤프 175 KB + 볼륨 5개) → 복구 → health ok·같은 비밀번호 로그인, 복구 전후 루트 CA 지문 같음 | [실행 40174899586](https://github.com/MCP-governance/mcp-gateway/actions/runs/40174899586) |
+| CI 실습 전체 회귀 | `full_stack_lab 검증 / 완료 조건 전체 검증` | **실패(기존)** — 게이트웨이 수용 시험 30 통과·1 실패·1 건너뜀. 실패는 `my-connections-and-missing-credential-block`(「도구 이용 상태를 확인할 수 없어」 `P-CONTROL-FAIL-CLOSED`)로, 시작 기준 main `7687a9e`의 CI(실행 40167507969)에서도 같은 항목·같은 메시지로 실패한다. 이 브랜치는 게이트웨이 코드를 바꾸지 않았다. S4 중간 발견 S4-01(도구 이용 상태 조회의 DB 풀 교착, `tool_sunset.py`)과 같은 계열로 보인다 | [실행 40174899586](https://github.com/MCP-governance/mcp-gateway/actions/runs/40174899586) |
 | 실제 모델·하네스 | — | 미실행(이 작업 범위 밖, 코드 변경 없음) | — |
 | 기기 배포 | — | 미실행(리더 몫, 소유자 규칙상 이 세션은 기기를 쓰지 않음) | — |
 
 ## 실패·미완료·한계
+
+- **완료 조건 「CI 통과」는 부분 충족**: 정적 검사·운영 배포 설치 검증은 통과, 실습 전체 회귀는 main에서도 나는 기존 실패 1건으로 실패. 게이트웨이 코드 수정이 필요해 이 세션 범위 밖이다(S4-01 수정 담당에게).
+- CI에서 고친 것: ① 서명 키를 만드는 `compose run`이 폐기 볼륨을 먼저 만들어 「볼륨이 없을 때만 초기화」가 첫 설치에서도 건너뛰어짐 → 목록 파일로 판정(`19df994`) ② 보고서에 인용한 가짜 자격 값이 gitleaks에 걸림 → 인용 삭제 ③ `mint.sh`의 `install` 함수가 coreutils `install`을 가려 루트 인증서 내보내기가 자기 자신을 다시 부름 → `install_stack`으로 이름 변경. 세 번째 실행에서 통과.
 
 - 운영 배포 CI는 설치·로그인·백업·복구까지다. 직원 PC 키트 설치와 실제 MCP 호출은 필드 카탈로그에 승인 서버가 없어 넣지 않았다(실습 스택 CI의 `field up` 단계가 같은 코드 경로를 본다). 고객 인증서, 이전 판본에서의 업그레이드, 실제 고객 서버 설치는 미실행.
 - 판본 표시(게이트웨이 `version` 필드·콘솔 하단·`mcpgw-status`)는 설계만 했다. 지금은 `build.revision` 문자열로만 보인다.
