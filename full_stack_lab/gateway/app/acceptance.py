@@ -1165,8 +1165,10 @@ async def _github_registration():
         "valid_until": (now + timedelta(days=1)).isoformat(timespec="seconds"), "registered_by": PRINCIPAL["admin"],
         "registered_at": now.isoformat(timespec="seconds"), "intake_id": str(uuid4()), "allowed_principals": ["*"],
         "parameter_constraints": {"get_me": {"type": "object", "additionalProperties": False}},
-        "tool_reviews": {"get_me": {"purpose": "수용 시험용 GitHub 계정 조회", "asset": "github.com", "destinations": [],
-                                    "consent": False}}}
+        # 정상 등록과 같은 정규화로 만든다: 도구 이용 상태(reviewed_at 등)가 없으면 fail-closed가 먼저 막는다.
+        "tool_reviews": review.normalize_tool_reviews(
+            {"get_me": "r"}, {"get_me": {"purpose": "수용 시험용 GitHub 계정 조회", "asset": "github.com",
+                                         "destinations": [], "consent": False}}, PRINCIPAL["admin"], now)}
     registry.save_runtime(doc)
     await registry.sync()
     try:
