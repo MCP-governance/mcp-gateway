@@ -1,8 +1,8 @@
-# 문제 해결 — 실제로 겪은 것들
+# 문제 해결
 
 | 증상 | 원인 | 해결 |
 | --- | --- | --- |
-| 컨테이너가 한꺼번에 사라짐 | WSL VM 유휴 종료 | 백그라운드 `wsl.exe -d kali-linux -- sleep infinity`, 서비스는 `restart: unless-stopped` |
+| 컨테이너가 한꺼번에 사라짐 | WSL VM 유휴 종료 | 백그라운드 `wsl.exe -d <배포판> -- sleep infinity`, 서비스는 `restart: unless-stopped` |
 | gateway·agent-service가 `Exited (0)`, 8000/8080에 다른 스택 | 같은 WSL의 다른 작업 트리 랩(v1)이 포트 선점 | 그 스택은 건드리지 말고 `.env`에 `CONSOLE_PORT`/`GATEWAY_PORT` 등을 다른 값으로(D-14) |
 | `curl 127.0.0.1:8080`이 이상한 데이터(예: `read_document`, `mock-http-mcp`) | 다른 스택의 v1 Gateway에 붙었다 | `docker ps --format '{{.Names}} {{.Ports}}'`로 포트 주인 확인 |
 | 브라우저가 옛 JS를 계속 씀 | 해시만 바꾼 navigate는 새로 고침이 아니다 | `location.reload()` (응답은 `no-store`) |
@@ -25,7 +25,6 @@
 | gitea 도구가 401 | 종료 케이스가 PAT 폐기 | `./console.sh restore-token gitea` |
 | workday `--check` 대량 실패, 사유 `MCP-DECOMM-001` | 누가 연 종료 케이스로 서버가 TERMINATING | 케이스 확인 후 종결/복원(`./console.sh restore <server>`) |
 | Console 목록 500 한 번 | Gateway 재시작 중 프록시 연결 실패 | 이제 503 "Gateway에 연결할 수 없습니다"로 응답 |
-| Git Bash에서 보낸 스크립트의 `\n`·`$변수`가 사라짐 | heredoc/따옴표 처리 | 스크립트를 `\\wsl.localhost\kali-linux\tmp\`에 파일로 쓰고 실행 |
 | `all predefined address pools have been fully subnetted` | 명시 대역(D-24) 이전에 만든 스택 | `./console.sh down` 뒤 `up`(볼륨 유지) — 이후에는 `MCP_NET_PREFIX` 아래 `/24`만 쓴다 |
 | `네트워크 대역 자동 선택 실패` | `10.200`~`10.249` 전부 다른 망·라우트와 겹침 | 안 쓰는 자기 복제본 `down`, 또는 `.env`에 `MCP_NET_PREFIX=10.x` 직접 지정 |
 | 원격 MCP 승인이 409 "…증거 문서로 확인해야…" | 종료 조건 검증 기록 없음(D-26) | 도입 신청 → **종료 조건 검증**(관리자, HTTPS 근거 문서) 뒤 승인 |
@@ -38,7 +37,7 @@
 | `./console.sh: Permission denied` | Windows 도구로 `\\wsl.localhost\…` 파일을 편집하면 새 파일로 다시 써져 실행 비트가 사라진다 | `chmod +x console.sh tests/security_regression.sh`, 커밋 전 `git diff --summary`로 mode change 확인 |
 | `git` "dubious ownership"(시드) | root로 남의 디렉터리 | `git -c safe.directory=*` |
 | Gitea `PUT /orgs/bob/members` 405 | API가 팀 경유만 허용 | Owners 팀 멤버 PUT |
-| Codex가 "MCP tool call requires approval, but approval policy is never" | `approval_policy="never"`인데 서버별 승인 모드가 비어 있음 | 서버마다 `default_tools_approval_mode="approve"` |
+| Codex CLI가 "MCP tool call requires approval, but approval policy is never" | `approval_policy="never"`인데 서버별 승인 모드가 비어 있음 | 서버마다 `default_tools_approval_mode="approve"` |
 | 컨테이너에서 Codex 셸 도구가 "No permissions to create new namespace" | bwrap 네임스페이스 생성 불가 | 컴팩트 모드(`BOB_HARNESS_COMPACT=1`)가 셸 도구를 꺼서 우회 |
 | `codex mcp list`가 다 연결된 것처럼 보이는데 실제로는 안 붙음 | 이 명령은 설정만 보여 주고 연결을 확인하지 않음 | `codex app-server`의 `mcpServerStatus/list`(`harness-check`가 씀) |
 | Gemini CLI에서 MCP 서버가 전부 Disabled | 비신뢰 폴더에서 MCP를 끔 | `~/.gemini/trustedFolders.json`에 작업 디렉터리 신뢰 등록 |

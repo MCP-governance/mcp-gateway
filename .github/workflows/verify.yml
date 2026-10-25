@@ -164,8 +164,72 @@ jobs:
           print(f"PASS {len(services)}개 서비스의 망·포트·키 경계")
           PY
 
+      # 고객에게 가는 판본·배포 묶음·문서는 판본 고정과 위생 규칙을 지킨다(deploy/check.py).
+      # 비밀은 gitleaks(게이트웨이 이미지와 같은 판본)가 작업 트리 전체를 본다. 의도적 가짜 자격 경로는 .gitleaks.toml.
+      - name: 릴리스 판본·배포 묶음·비밀 스캔
+        run: |
+          python3 ../deploy/check.py
+          bash -n ../deploy/mint.sh ../deploy/install.sh
+          docker run --rm -v "$PWD/..:/repo:ro" zricethezav/gitleaks:v8.30.1 dir /repo --config /repo/.gitleaks.toml --redact --no-banner
+
       - name: Rego 단위 테스트
         run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
+
+  # 운영 배포 묶음(deploy/)을 빈 서버로 본 새 실행기에 README 절차 그대로 설치한다. 실습 스택과 같은 실행기를 쓰지 않는다.
+  deploy:
+    name: 운영 배포 설치 검증
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: static
+    defaults:
+      run:
+        working-directory: deploy
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: ./install.sh --bind <실행기 IPv4>
+        run: |
+          bind="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i < NF; i++) if ($i == "src") print $(i + 1)}')"
+          echo "MINT_BIND=$bind" >> "$GITHUB_ENV"
+          ./install.sh --bind "$bind"
+
+      - name: 기동·인증서·게시 범위·첫 관리자
+        run: |
+          base="https://$MINT_BIND"
+          ca=ca/root.crt
+          test -s "$ca" && test "$(stat -c %a .env)" = 600 && test "$(stat -c %a initial-admin-password)" = 600
+          curl -fsS --cacert "$ca" "$base/api/health" | tee /tmp/health.json
+          python3 -c 'import json; d = json.load(open("/tmp/health.json")); v = open("../VERSION").read().strip(); assert d["status"] == "ok" and d["build"]["revision"].startswith(v + "+g") and d["components"]["jaeger"] is None, d'
+          ./mint.sh status
+          # 게시 포트는 MINT_BIND의 443·3128뿐이다.
+          ports="$(docker ps --format '{{.Ports}}' | tr ',' '\n' | grep -- '->' | sed 's/^ *//' | sort -u)"
+          echo "$ports"
+          test "$(echo "$ports" | grep -vcE "^$MINT_BIND:(443|3128)->")" = 0
+          if curl -s --max-time 5 -o /dev/null "http://$MINT_BIND:8000/"; then echo "콘솔 HTTP가 열려 있음"; exit 1; fi
+          login() { python3 -c 'import json,sys; print(json.dumps({"email": sys.argv[1], "password": sys.stdin.read().strip()}))' "$1"             | curl -s --cacert "$ca" -o /dev/null -w '%{http_code}' -X POST "$base/auth/mock-login" -H 'content-type: application/json' --data-binary @-; }
+          test "$(login root < initial-admin-password)" = 200
+          test "$(echo root | login root)" != 200
+          test "$(echo user | login user)" != 200
+
+      - name: 재기동·백업·복구가 관리자 비밀번호와 폐기 목록을 지킨다
+        run: |
+          base="https://$MINT_BIND"
+          cp initial-admin-password /tmp/admin-pw
+          ./mint.sh up
+          cmp initial-admin-password /tmp/admin-pw
+          ./mint.sh backup /tmp/mint-backup
+          ls -l /tmp/mint-backup
+          ./mint.sh restore /tmp/mint-backup
+          curl -fsS --cacert ca/root.crt "$base/api/health" | python3 -c 'import json,sys; assert json.load(sys.stdin)["status"] == "ok"'
+          python3 -c 'import json,sys; print(json.dumps({"email": "root", "password": open("/tmp/admin-pw").read().strip()}))'             | curl -fsS --cacert ca/root.crt -o /dev/null -X POST "$base/auth/mock-login" -H 'content-type: application/json' --data-binary @-
+
+      - name: 실패 시 컨테이너 로그
+        if: failure()
+        run: ./mint.sh logs
+
+      - name: 정리
+        if: always()
+        run: ./mint.sh compose --profile siem down -v --remove-orphans || true
 
   verify:
     name: 완료 조건 전체 검증
