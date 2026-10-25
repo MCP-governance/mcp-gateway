@@ -1,37 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T00:05:36+09:00
+확인 시각: 2026-10-26T00:06:01+09:00
 
-HEAD: `cdef0bbf38dd4775747ac5094bbfd8f3477bbf07` · 로컬 브랜치: `10/25-stage0-nested-tx`
+HEAD: `2955521c8d1012f15a2a155c32c0da29e83e62a3` · 로컬 브랜치: `10/25-stage0-nested-tx`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M .github/workflows/verify.yml
- M docs/ai/OPS_RESPONSE.md
- M full_stack_lab/gateway/app/agent_service.py
- M full_stack_lab/gateway/app/db.py
- M full_stack_lab/gateway/app/endpoint_plane.py
- M full_stack_lab/gateway/app/idp.py
- M full_stack_lab/gateway/app/local_jobs.py
- M full_stack_lab/gateway/app/ops_response.py
- M full_stack_lab/gateway/app/review.py
- M full_stack_lab/tests/dev73_integration_check.py
- M full_stack_lab/tests/endpoint_auto_activation_check.py
- M full_stack_lab/tests/incident_pack_check.py
- M full_stack_lab/tests/intake_one_click_check.py
- M full_stack_lab/tests/managed_policy_gap_check.py
- M full_stack_lab/tests/root_solo_behavior_check.py
+M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/decisions-index.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
- M research/llm-wiki/threats/control-map.md
-?? docs/ai/decisions/D-251-300.md
-?? full_stack_lab/tests/nested_tx_check.py
-?? full_stack_lab/tests/nested_tx_refactor_check.py
 ```
 
 ## 주요 파일 바이트
