@@ -42,9 +42,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
-        "committed_sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
-        "normalized_sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
+        "sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
+        "committed_sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
+        "normalized_sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
         "worktree_modified": false
       }
     ],
@@ -182,9 +182,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
-        "committed_sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
-        "normalized_sha256": "725c8f0d661c9bdd35e39aa872b0ff7e741eb047352d3ef5145f751b070fe6c6",
+        "sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
+        "committed_sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
+        "normalized_sha256": "ac5e7ab9f2f54a23c40225c871629ac5476fbb274408d575168d0bf18276d239",
         "worktree_modified": false
       },
       {
@@ -1442,6 +1442,7 @@
       "changed_review_files": [
         "full_stack_lab/gateway/app/core.py",
         "full_stack_lab/gateway/app/local_jobs.py",
+        "full_stack_lab/tests/dispatch_recheck_check.py",
         "full_stack_lab/tests/fresh_requester_check.py"
       ]
     },
@@ -2840,7 +2841,8 @@
       "files_match_review": false,
       "changed_review_files": [
         "full_stack_lab/gateway/app/core.py",
-        "full_stack_lab/gateway/app/registry.py"
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/tests/output_contract_check.py"
       ]
     },
     "verification": "static-candidate-mapping",

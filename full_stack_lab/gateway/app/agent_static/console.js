@@ -230,6 +230,7 @@ const REVIEW_KIND = {
   "tool-sunset-check": "이용 상태 확인", "tool-approval-extension": "승인 기간 연장",
   "auto-suspend-count-failed": "자동 중지 집계 실패",
   "intake-one-click": "도입 승인",
+  "mcp-source-download": "소스 다운로드",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지", "runtime-egress": "외부 통신", "runtime-image-scan": "이미지 검사",
@@ -436,7 +437,7 @@ function renderNav(active) {
     groups.get(p.group).push(p);
   }
   const shortcuts = [
-    viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" data-i18n-ctx="nav" target="_blank" rel="noopener" aria-label="사내 저장소 (새 탭)" title="사내 저장소">${icon("git")}<span>사내 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
+    viewer.admin && viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" data-i18n-ctx="nav" target="_blank" rel="noopener" aria-label="사내 저장소 (새 탭)" title="사내 저장소">${icon("git")}<span>사내 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
     viewer.kit && html`<a href="#" data-i18n-ctx="nav" data-act="pc-kit" aria-label="PC 연결 설정" title="PC 연결 설정">${icon("plug")}<span>PC 연결 설정</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group" data-i18n-ctx="group">${group}</div>${pages.map((p) => html`
@@ -1460,7 +1461,7 @@ async function refreshIntake() {
     const next = document.createElement("div");
     next.innerHTML = markup;
     const view = $("#view");
-    for (const key of ["list"]) {
+    for (const key of ["list", "approved"]) {
       patchIntakePanel(view, next, key);
       const oldCount = view.querySelector(`#p-tab-${key} .n`);
       const newCount = next.querySelector(`#p-tab-${key} .n`);
@@ -1471,10 +1472,10 @@ async function refreshIntake() {
 }
 function catalogResults(data) {
   const requests = data.requests || [], registry = data.registry || [];
-  return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th><th>사내 저장소</th></tr></thead><tbody>
+  return html`${requests.length ? html`<table class="data"><thead><tr><th>MCP</th><th>신청자</th><th>상태</th>${viewer.admin ? html`<th>사내 저장소</th>` : ""}</tr></thead><tbody>
     ${requests.map((r) => html`<tr><td><b>${r.display_name}</b><span class="sub mono">${r.endpoint_url || [r.repository_url, r.repository_path].filter(Boolean).join("/") || ""}</span></td>
       <td>${r.submitted_by_name}</td><td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}</td>
-      <td>${r.internal_repo_url ? html`<a href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td></tr>`)}</tbody></table>` : empty(data.query ? "조건에 맞는 신청 없음" : "신청 없음")}
+      ${viewer.admin ? html`<td>${r.internal_repo_url ? html`<a href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">열기 ↗</a>` : NONE}</td>` : ""}</tr>`)}</tbody></table>` : empty(data.query ? "조건에 맞는 신청 없음" : "신청 없음")}
     ${registry.length ? html`<p class="small muted">등록된 MCP: ${registry.map((r) => r.display_name).join(", ")}</p>` : ""}`;
 }
 const CONSENT_STATUS = { PENDING: ["alert", "확인 필요"], GRANTED: ["allow", "동의"], DENIED: ["block", "거부"],
@@ -1533,8 +1534,17 @@ ROUTES.connections = async () => {
     body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
 };
 
+function approvedMcpTable(servers) {
+  const execution = { remote: "원격", pc: "PC 격리", runtime: "솔루션 런타임" };
+  return servers.length ? html`<table class="data"><thead><tr><th>서버</th><th>출처</th><th>고정 커밋</th><th>승인 기한</th><th>실행 방식</th><th></th></tr></thead>
+    <tbody>${servers.map((s) => html`<tr><td><b>${s.display_name || s.server_id}</b></td><td class="mono small">${s.source_url || "—"}</td>
+      <td><code>${s.commit_sha || "—"}</code></td><td class="nowrap">${when(s.valid_until)}</td><td>${execution[s.execution] || "—"}</td>
+      <td>${s.source_available ? html`<button class="btn sm" data-act="mcp-source-download" data-id="${s.server_id}" data-commit="${s.commit_sha}">소스 받기</button>`
+        : html`<dl><dt>MCP 주소</dt><dd><code>${s.connection_url || "—"}</code></dd></dl>`}</td></tr>`)}</tbody></table>` : empty("승인된 MCP 없음");
+}
+
 ROUTES.intake = async (_, tab) => {
-  const [{ requests }, catalog] = await Promise.all([api("/api/mcp-requests"),
+  const [{ requests }, { servers }, catalog] = await Promise.all([api("/api/mcp-requests"), api("/api/approved-mcp"),
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
   return {
     html: page({
@@ -1546,7 +1556,7 @@ ROUTES.intake = async (_, tab) => {
           ${requests.map((r) => {
             return html`<tr><td><b>${r.display_name}</b><span class="sub">${entityRef(r.endpoint_url || [r.repository_url, r.repository_path].filter(Boolean).join("/"), 52)}</span>
               <span class="sub">${r.intake_kind === "remote-endpoint" ? "원격 MCP" : "소스 코드"} · ${TRANSPORT[r.requested_transport] || r.requested_transport}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</span>
-              ${r.internal_repo_url ? html`<a class="sub" href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
+              ${viewer.admin && r.internal_repo_url ? html`<a class="sub" href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
               ${r.registered_server_id ? html`<span class="sub">${chip("allow", "게이트웨이 등록")} <code>/mcp/${r.registered_server_id}/</code></span>` : ""}
               ${r.runtime ? html`<span class="sub">${chip(...(RUNTIME_STATUS[r.runtime.status] || ["", r.runtime.status]))}
                 ${r.runtime.status === "ACTIVE" ? html`<code>${r.runtime.endpoint}</code>` : r.runtime.status === "FAILED" && r.runtime.error ? short(r.runtime.error, 80) : ""}</span>` : ""}</td>
@@ -1563,6 +1573,7 @@ ROUTES.intake = async (_, tab) => {
               ${!r.own && ["HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"].includes(r.status) && !r.registered_server_id
                 ? html`<button class="btn sm primary" data-act="intake-one-click" data-id="${r.id}">검토</button>` : ""}</div></td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
+        { key: "approved", label: "승인된 MCP", body: panel("승인된 MCP", approvedMcpTable(servers), { flush: true }) },
         { key: "new", label: "새 신청", body: html`<div class="stack">
           ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
             aria-label="MCP 이름 또는 저장소 검색" placeholder="MCP 이름 또는 저장소" /></div>
@@ -2731,6 +2742,18 @@ const ACTIONS = {
       method: "POST", body: { generation: Number(el.dataset.generation), note: fd.get("note") },
     });
     toast(r.message); reload();
+  },
+  async "mcp-source-download"(el) {
+    const response = await fetch(`/api/approved-mcp/${encodeURIComponent(el.dataset.id)}/source?commit=${encodeURIComponent(el.dataset.commit)}`,
+      { headers: { authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      if (response.status === 401) { localStorage.removeItem(TOKEN_KEY); location.replace("/login"); }
+      const body = await response.json().catch(() => ({}));
+      throw new Error(detailText(body.detail) || `다운로드하지 못했습니다 (${response.status}).`);
+    }
+    const url = URL.createObjectURL(await response.blob());
+    Object.assign(document.createElement("a"), { href: url, download: `${el.dataset.id}-${el.dataset.commit.slice(0, 12)}.zip` }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
   async "intake-download"(el) {
     const response = await fetch(`/api/mcp-requests/${el.dataset.id}/artifacts/${encodeURIComponent(el.dataset.kind)}`,
