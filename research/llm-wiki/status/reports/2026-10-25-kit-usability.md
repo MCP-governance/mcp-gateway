@@ -1,11 +1,12 @@
 # 2026-10-25 엔드포인트 키트 편의·자동화 — 간편 모드 기본, 자동 활성화, Windows 같은 계정, TUI (D-239)
 
 - 작업자: Claude Code (Opus 5.5), 세션 `kit-usability`
-- 코드 기준: `10/25-policy-sync-split` 끝 `cbc5195`(D-238 포함)에서 분기, 브랜치 `10/25-kit-usability`, 코드 커밋 `3090e75`·`532b2d9`. 변경 32개 파일 + 새 시험 2개
+- 코드 기준: `10/25-policy-sync-split` 끝 `cbc5195`(D-238 포함)에서 분기, 브랜치 `10/25-kit-usability`(통합 브랜치 `10/25-integrate` 위로 rebase).
+  1단계 `3090e75`·`532b2d9`, 2단계 실측 수정 `eec3e22`·`cb663ff`·`8bd0040`·`383ee4d`·`9f9d04f`·`0ba8b38`. 기기 배포본은 리더가 4c060ef → 4679160 → 283d93e로 올렸다
 - 시작 근거: 소유자 지시(10-25 저녁) 「보안을 좀 느슨하게 하더라도 키트 편의·자동화 극대화, Windows 메인, GUI 못 띄우면 TUI」,
   지시서 `지시서_세션배분_20261025.md` S1, 10-25 제안서 P0-3(이 지시로 대체), 10-23 키트 결함 D-216~D-232
 - 완료 조건(지시서): ① 구현·단위·Windows unittest·CI 수용 시험·보고서 1차 → 브랜치 push → ② 리더 배포 뒤 pj2·pj3 실측 → 보고서 최종
-- **현재 단계: ① 완료, ② pj2 완료·pj3 결함 수정 뒤 배포 대기**. 실측은 아래 「2단계 실측」.
+- **현재 단계: ①·② 완료**(pj3 재부팅 뒤 측정만 소유자 로그인 대기). 실측은 아래 「2단계 실측」.
 
 ## 결과
 
@@ -57,7 +58,7 @@
 
 ### 5. Windows 관측(D-220은 Windows 제외)
 
-SYSTEM 서비스가 하네스 판본(직원 실행 파일을 실행하지 않고 `~/.local/share/claude/versions`·npm `package.json`에서 읽음), 관리형 설정
+SYSTEM 서비스가 하네스 판본(직원 실행 파일을 실행하지 않고 `~/.local/share/claude/versions`·npm `package.json`·WinGet·Codex 실행 파일의 버전 리소스에서 읽음 — pj3 claude 2.1.302, codex.exe는 리소스 없음), 관리형 설정
 해시(heartbeat 기존), 게이트웨이 연결(heartbeat 기존)을 보고한다. 판본은 heartbeat `host.harnesses`(새 선택 필드)와 트레이 `status.json`에 간다.
 Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보낸다.
 
@@ -76,6 +77,10 @@ Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보�
 | 41095eb | 실패 로그에 게이트웨이 사유 | 해당 없음 — 로컬 실행기 Linux 전용 | — |
 | (제거 뒤 복원) | 관리형 파일 백업이 키트 자신의 렌더링이면 제거 때 관리형 설정이 원본으로 남음 | 수정함(Linux·Windows) — 키트 렌더링은 백업하지 않음(`ours`) | `kit_simple_mode_check` |
 
+실측(pj3, 「2단계 실측」): 재설치 연속성은 격리된 이전 장치 뒤 재설치가 `held_from`으로 대기(설계대로), 폐기 뒤 재설치는 자동 활성화로 확인.
+원복은 작업자 제거 경로에서 예약 작업·관리형 파일·직원 config.toml 블록·CA 환경 변수·프로그램 폴더가 모두 사라짐을 확인(D-218 행 「부분 확인」 → 제거 경로 확인).
+실측에서 이 표 밖의 Windows 결함 8건이 더 나왔다(「S1 몫 결함」).
+
 ## 간편 모드가 포기하는 것
 
 - 직원 계정의 임의 프로세스(셸·SDK·다른 클라이언트·악성 코드)가 헤더 헬퍼를 불러 MCP 토큰을 받을 수 있다. UID가 유일한 경계다.
@@ -89,52 +94,67 @@ Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보�
 
 | 확인 종류 | 명령·환경·실행 시각(10-25) | 결과 | 원본 증거 |
 | --- | --- | --- | --- |
-| 회귀 기준선(작업 전) | `run_local_suite.py`, Windows 노트북 venv 3.12 | 통과 108 · 실패 6 · 외부 의존 17(실패: acceptance_tls·intake_one_click_ast·macos_kit·output_credential_span·sbom_impact·threat_trace_mapping) | scratchpad `baseline.json` |
-| 회귀(작업 후) | 같은 명령, 코드 `532b2d9` | 통과 111 · 실패 5(전부 기준선) · 외부 17 · 새 실패 0 | scratchpad `after3.json` |
-| 새 시험 | `endpoint_auto_activation_check.py`(3), `kit_simple_mode_check.py`(10) | 통과 | 로컬 |
-| 고친 시험 | `kit_continuity_check`(모드·held_from·모드 전환·자동 활성화 상속 금지·다음 할 일), `kit_install_upfront_check`(화면 단계 시간), `user_command_settings_check`, `managed_policy_gap_check`, `macos_kit_check`(Windows 우선) | 통과 | 로컬 |
-| Windows 키트 | `py -3 -X utf8 -m unittest discover -s endpoint-agent/tests-windows` | 27 통과(간편 설치·원클릭 같은 계정 추가) | 로컬 |
-| PowerShell 구문 | `Parser.ParseFile` 전 ps1·ps1.in | 오류 0 | 로컬 |
-| 콘솔 | `node --check console.js`, `node --test tests/*.test.mjs` | 통과(i18n 영어 사전 12개 추가) | 로컬 |
-| 정적 | `pyflakes gateway/app/*.py tests/*.py endpoint-agent/*.py tests-windows/*.py`, `open_endpoints.py` | 0건 · PASS | 로컬 |
-| 실제 Linux | WSL kali Python 3.13 pty(`script`): `bootstrap.py --self-check`, curses 화면·평문 폴백·상태 글 | OK | 로컬 |
-| CI 수용 | `acceptance.py endpoint-simple-mode-auto-activation`(실제 등록·정책·heartbeat·토큰, 설정 원복·장치 폐기) | 미실행(CI 일회용 스택에서 실행) | — |
-| 실기기 pj2 | 클린 스냅샷 첫 설치→자동 활성화→Learn/DeepWiki·filesystem Allow, `--isolated` 회귀 | 통과(사람 개입 0, 설치 6초·확인 32초), 결함 2건 수정 | 원장 1272~1275, 「2단계 실측」 |
-| 실기기 pj3 | `.cmd` 같은 계정·UAC·트레이·재부팅·재연결·제거·재설치 | 실패 → 원클릭 요청 검사 결함 수정(cb663ff), 재측정은 배포 대기 | 「2단계 실측」 |
+| 회귀 기준선(작업 전) | `run_local_suite.py`, Windows 노트북 venv 3.12 | 통과 108 · 실패 6 · 외부 의존 17 | scratchpad `baseline.json` |
+| 회귀(최종) | 같은 명령, 코드 9f9d04f(통합 브랜치 283d93e 위) | 통과 116 · 실패 4(acceptance_tls·output_credential_span·sbom_impact·threat_trace_mapping — 전부 기준선 실패) · 외부 17 · **새 실패 0** | scratchpad `after4.json` |
+| 새 시험 | `endpoint_auto_activation_check`(4: 자동 활성화·끈 설정·격리·보류·격리 장치·점검 실패·옛 키트·간편 장치 관리형 설정 CA), `kit_simple_mode_check`(11: 모드 분기·CA 블록·간편 점검·백업 금지·설치 확인 HTTP 대역·모델 응답·하네스 명령줄 S4-03·브로커 UID) | 통과 | 로컬 |
+| 고친 시험 | `kit_continuity_check`(모드·held_from·두 방향 모드 전환·자동 활성화 상속 금지·다음 할 일·철회 서버 S4-11), `kit_install_upfront_check`, `user_command_settings_check`, `managed_policy_gap_check`, `macos_kit_check`, `connector_control_check`, `loopback_owner_replies_test`, `notion-bugs-ui.test.mjs` | 통과 | 로컬 |
+| Windows 키트 | `py -3 -X utf8 -m unittest discover -s endpoint-agent/tests-windows` | 31 통과(따뜻한 실행). 첫 냉실행에서 `test_managed_request_is_snapshotted…`가 PowerShell 30초 한도에 걸리는 기존 간헐 오류 | 로컬 |
+| PowerShell 실행 시험 | `REMOVE_COMPANION`·`STOP_SERVICE`를 실제 PowerShell로(없는 계정·없는 규칙), `Read-EndpointManagedRequest` 원클릭 모양 요청(옛 코드에서 실패 확인), runtime-check 모듈 집합(옛 코드에서 실패 확인) | 통과 | 로컬 |
+| 콘솔·정적 | `node --check`, `node --test tests/*.test.mjs`, pyflakes 전체, `open_endpoints.py` | 통과·0건·PASS | 로컬 |
+| 실제 Linux | WSL pty: `bootstrap.py --self-check`, curses 화면·평문 폴백 | OK | 로컬 |
+| 위키 | `refresh_generated.py`, `check_trace.py`·`check_enterprise_analysis.py` rc 0, `check_wiki.py` 오류 29(전부 Git 제외 `local-sources/compliance/*` 부재, 기존·새 오류 0) | — | — |
+| CI 수용 | `acceptance.py endpoint-simple-mode-auto-activation` | 리더 통합 CI에서 실행(이 세션 미실행) | — |
+| 실기기 pj2 | 아래 「2단계 실측」 | **통과**: 사람 개입 0, 설치 6초·확인까지 32초·자동 활성화 4초, Learn·DeepWiki·filesystem Allow | 원장 1272~1275 |
+| 실기기 pj3 | 아래 「2단계 실측」 | **통과(재부팅 제외)**: UAC 1회 대행, 설치 15초·활성 17초, 트레이 자동 확인 정상, Learn·DeepWiki 실행, 끊김 복귀 6초, 제거·재설치 | 원장 1284·1285 |
 
-### 회귀 결과
+## S1 몫 결함(실측·S4에서 나온 것)
 
-`run_local_suite.py`(코드 `532b2d9`): 통과 111 · 실패 5 · 외부 의존 17. **새 실패 0.** 남은 실패 5개(acceptance_tls·intake_one_click_ast·output_credential_span·sbom_impact·threat_trace_mapping)는 기준선과 같은 기존 실패다. `macos_kit_check`는 기준선 실패에서 통과로 바뀌었다(Windows 우선 콘솔에 맞춰 시험을 고침). 새 시험 `endpoint_auto_activation_check`·`kit_simple_mode_check` 통과. 중간 실행에서 새로 실패한 3개(console_copy_check — 콘솔 주석의 D-번호, connector_control_check — 판본 수집 이름, loopback_owner_replies_test — `install_managed` 인자)는 `532b2d9`에서 고쳤다.
-
-`check_wiki.py`: 오류 29개, 전부 `Missing local file: local-sources/compliance/LIB-M*/provenance.json` — 기존 분석 파일(`consent-per-server-1023`, `dest-pin-credential-redaction`)이 가리키는 Git 제외(`.gitignore`) 로컬 원본이 이 노트북에 없어서다. 이 작업의 변경과 무관하며 새 오류는 0이다. `map_threats.py`·`build_enterprise_analysis.py --refresh-code-only`·`capture_status.py`·`build_wiki.py`는 재생성했다.
+| ID | 내용 | 처리 |
+| --- | --- | --- |
+| pj2-① | 격리 모드 무인 설치가 모델 장치 코드 로그인에서 최대 15분 멈춤 | eec3e22 |
+| pj2-② | 간편→격리 전환 뒤 직원 계정 장치가 활성으로 남음 | eec3e22 |
+| pj2-③ | 설치 전 터미널의 Claude가 사설 CA를 몰라 MCP 연결 실패 | eec3e22(관리형 설정 `env`), Codex는 새 터미널 안내 |
+| pj3-① | 원클릭 요청 검사가 없는 속성에 대입 → 모든 원클릭 설치 실패(10-18부터) | cb663ff |
+| pj3-② | 원클릭으로 설치한 PC가 새 판본 원클릭을 거부 | cb663ff(표식 승인 갱신) |
+| pj3-③ | runtime-check가 tomli·toml을 요구 → 모든 Windows 설치 실패(10-23 D-232부터) | 8bd0040 |
+| pj3-④ | 동반 계정이 없으면 PowerShell 종료 코드 1로 간편 설치·제거 실패 | 8bd0040 |
+| pj3-⑤ | 자동 활성화 직후 최대 60초 「활성화 대기」 안내문(Linux·Windows) | 8bd0040 |
+| pj3-⑥ | 재설치가 실행 중 서비스의 런타임을 덮어써 python.exe 소실 | 9f9d04f |
+| pj3-⑦ | 직원 Codex 앱이 config.toml을 다시 쓰면 블록 해시 불일치로 PC 격리 | 383ee4d(간편 모드는 heartbeat 전 블록 복원) |
+| pj3-⑧ | WinGet Claude 판본 「—」 | 8bd0040(실행 파일 버전 리소스) |
+| S4-03 | 하네스 명령줄의 직원 프롬프트(`modelcontextprotocol…`)가 섀도 stdio MCP로 → `MCP-SHADOW-002` 오탐 | 9f9d04f(claude·codex 실행 파일과 그 npm 패키지를 실행하는 node는 제외, 하네스가 띄운 서버는 그대로 검사) |
+| S4-11 | `mcpgw-status`가 1시간 안에 철회된 서버를 「새로 반영된 서버」로 표시 | 9f9d04f |
+| pj3 `node_repl` | pj3 호출이 Alert `MCP-SHADOW-002` — 원인은 직원 `~/.codex/config.toml`에 Codex 앱이 둔 실제 stdio MCP 항목(설정 인벤토리) | 결함 아님(간편 모드는 직원 계정 설정을 그대로 관측한다). 실행은 됐다. Codex 앱 기본 항목을 허용 목록으로 둘지는 소유자 판단 |
+| 자기 회귀 | eec3e22의 `managed_mode` 호출이 `managed_policy`만 적재하는 시험 3개를 깨뜨림(통합 브랜치에 들어감) | 9f9d04f |
 
 ## 실패·미완료·한계
 
-- 기기 배포 전이라 실제 설치·자동 활성화·세 칸·Windows GUI는 전부 미실행이다. 대역 시험 통과는 동작 증거가 아니다.
-- `/etc/environment`(Linux)·사용자 환경 변수(Windows)는 새 로그인·새 프로세스부터 적용된다. 설치 전에 열린 터미널의 하네스는 사설 CA를
-  모르고 게이트웨이 TLS에 실패할 수 있다 → `mcpgw-status`·트레이가 「새 터미널」을 안내(pj2에서 확인 예정).
-- Claude Code가 관리형 설정 `env`의 프록시를 쓰는지, `NODE_EXTRA_CA_CERTS`를 세션 환경에서 읽는지는 격리 모드 실측(래퍼 환경)으로만 확인됐다.
-  간편 모드 경로는 pj2·pj3에서 확인한다. Windows Codex는 프록시 환경을 받지 않는다.
-- Windows 비대화형 SSH에서 `.cmd`의 `Start-Process -Verb RunAs`는 UAC 보안 데스크톱을 띄울 수 없다(측정 예정). 그 경우 소유자 1회 클릭 지점을
-  ②단계 보고에 적는다.
-- 트레이 「다시 연결」은 서비스 재시작에 UAC가 필요하다(표준 직원이면 관리자 자격 입력). 자동 재시작은 예약 작업의 1분 재시작 설정에 맡긴다.
-- 간편 모드 Windows의 판본 수집은 native 설치기·npm 경로만 읽는다(WinGet·기타 경로는 「—」).
-- `main.py`(heartbeat `host.harnesses`, `/api/endpoint/settings`)·`idp.py`(`mode`)·`lifecycle_tables.sql`·`integrations.py`·`i18n-en.mjs`는
-  지시서 소유 목록 밖이지만 자동 활성화·통제 범위 표시에 필요한 최소 변경이다. 옛 게이트웨이는 `mode`·`host.harnesses`를 422로 거부하므로
-  **게이트웨이를 먼저 배포**한다(키트는 heartbeat 422에서 `host`를 빼고 다시 보낸다. 등록 `mode`는 다시 보내지 않으므로 옛 게이트웨이에 새 키트로 등록하면 실패).
-- `research/llm-wiki/status/current.md`·`backlog.md`는 S3(위키 세션) 소유라 이 브랜치에서 고치지 않았다. 병합 뒤 리더가 갱신한다.
+- **pj3 재부팅 뒤 측정 미완**: 18:52 KST 재부팅 뒤 pj3가 Tailscale 주소로 돌아오지 않았다(15분 이상). Windows Tailscale은
+  「unattended」 모드가 아니면 로그인한 사용자가 없을 때 연결하지 않는다 — 자동 로그온이 없는 pj3는 소유자가 콘솔에서 한 번 로그인해야 SSH와
+  관리형 서비스(게이트웨이 접속)가 돌아온다. 그때 트레이는 로그온 예약 작업으로 시작한다(코드·작업 등록 확인, 실측 미완). 관리형 서비스는
+  SYSTEM 부팅 작업이라 망만 있으면 로그인 없이 다시 붙는다(네트워크 끊김 시험에서 복귀 6초 확인).
+- pj3 원클릭 5차는 이 브랜치 키트를 기기 다운로드 파일에 다시 묶은 것이다(9f9d04f가 기기에 없어서). 기기 배포본 그대로의 원클릭 성공은 다음 배포 뒤.
+- UAC 「예」는 사람이 눌러야 한다. SSH 비대화형 세션은 보안 데스크톱에 닿지 않아, 직원 세션의 관리자 권한 예약 작업으로 대행했다.
+- 트레이 상태 창·언어 전환·콘솔 열기·모델 로그인 단추는 클릭 자동화 없이 화면 렌더링을 보지 못했다(백엔드 명령·구문 검사·캡처의 완료 대화 상자만).
+- Windows 관리형 Codex 블록은 직원 파일이라 간편 모드는 되돌리기만 한다. Codex 앱이 표식을 지우고 표를 남기는 식으로 다시 쓰면 표가 겹칠 수 있다(관찰되지 않음).
+- `/etc/environment`·사용자 환경 변수는 새 로그인·새 프로세스부터다. Claude는 관리형 설정 `env`로 해결했고 Codex는 새 터미널이 필요하다.
+- 같은 PC의 서로 다른 두 직원을 모두 관리형으로 연결하면 기계 공용 Claude 설정을 서로 덮어쓴다(pj3의 옛 `pj3user` 설치). 한 PC 한 직원을 전제로 한다.
+- Windows 서비스의 설정 인벤토리 관측기(`agent.py --once`)가 프로세스 스냅숏 「partial」 때 종료 코드 1이라 로그에 `CalledProcessError`가 간헐로 남는다(보고는 됨, 기존 동작).
+- 옛 게이트웨이는 등록 `mode`·heartbeat `host.harnesses`를 422로 거부한다 — 게이트웨이를 먼저 배포한다.
+- `research/llm-wiki/status/current.md`·`backlog.md`는 S3 소유라 고치지 않았다.
 
 ## 방향 제안
 
-- 간편 모드에서도 Windows SID 방화벽을 「게이트웨이 + 모델 프록시 + 일반 인터넷 허용, 다른 MCP 포트 차단」 같은 좁은 규칙으로 둘 수 있으나
-  MCP를 포트로 구분할 수 없어 효과가 없다고 판단해 넣지 않았다.
-- 설치 끝 모델 응답 측정은 모델 호출 1회(토큰 소량)를 쓴다. 조직이 원하면 설정으로 끌 수 있게 하는 것을 다음 작업으로 둔다.
-- 자동 활성화를 「같은 직원의 두 번째 PC부터 관리자 확인」처럼 수량으로 제한하는 안을 검토할 만하다(지금은 PC 수 제한 없음).
+- Windows 현장 PC는 Tailscale을 `--unattended`로 두거나 사내망 경로를 써야 재부팅 뒤 로그인 전에도 관리형 서비스가 붙는다(설치 안내에 넣을 것).
+- Codex 데스크톱 앱 기본 MCP(`node_repl` 등)를 섀도에서 「벤더 내장」으로 분류할지 소유자 결정이 필요하다(지금은 Alert, 실행은 됨).
+- 설치 끝 모델 응답 측정은 모델 호출 1회를 쓴다. 조직 설정으로 끌 수 있게 하는 것을 다음 작업으로 둔다.
+- 자동 활성화를 「같은 직원의 두 번째 PC부터 관리자 확인」처럼 수량으로 제한하는 안.
 
-## 2단계 실측(10-25, 기기 배포본 `10/25-integrate` 4c060ef)
+## 2단계 실측(10-25)
 
 기기·하네스·원장은 실제다. 키트는 비밀번호 로그인 없이 agent-service 내부 함수(`download_managed_kit`, 직원 `user` 명의)로 받았다.
-관리자 활성화(격리 회귀)도 내부 함수 `activate_managed`(처리 root)로 대행했다. 시각은 UTC.
+관리자 활성화(격리 회귀)도 내부 함수 `activate_managed`(처리 root)로 대행했다. 원장 시각은 UTC, 기기 표시는 KST.
+pj2 측정은 배포본 4c060ef(키트 1단계 코드), pj3는 4679160·283d93e와 이 브랜치 키트다.
 
 ### pj2 (Ubuntu 24.04.5, 커널 7.0, 직원 `pj2` = sudo·docker 그룹, Claude 2.1.309·Codex 0.164.0 로그인된 스냅샷 `clean-sudo-1023`)
 
@@ -157,31 +177,56 @@ Linux도 같은 필드로 `claude/codex --version`(직원 UID로 실행)을 보�
 | 결함 ② | 간편→격리 전환 뒤 간편 장치가 활성으로 남음(유령) | 수정(eec3e22): `companion_names`가 동반 계정에서 직원 이름으로도 찾는다 |
 | 격리→간편 전환 | `managed-pj2` 삭제(홈 유지)·AppArmor 0·nft 0·shim·sudoers·rc 없음, 새 장치가 관리자 활성화를 이어받고 이전 두 장치 폐기 | 설치 8초·확인까지 30초 |
 
-### pj3 (Windows 11 26300, 관리자 `pj3` 콘솔 로그인 중, SSH 토큰 High, Claude WinGet·Codex 로그인됨)
+### pj3 (Windows 11 26300, 관리자 `pj3` 콘솔 로그인 중, SSH 토큰 High, Claude 2.1.302 WinGet·Codex 데스크톱 로그인됨)
 
-| 단계 | 결과 | 비고 |
+기기 배포본은 4679160 → 283d93e. 마지막 원클릭은 283d93e에서 받은 파일의 등록·CA·런타임을 그대로 두고 이 브랜치 키트 파일로 다시 묶은 것이다
+(`windows_oneclick.launcher`·매니페스트 해시 재계산, scratchpad `rebuild_oneclick.py`) — 그 뒤 수정(9f9d04f)이 아직 기기에 없어서다.
+UAC 클릭은 SSH에서 보안 데스크톱에 닿지 않으므로, 직원 콘솔 세션(세션 1)의 관리자 권한 예약 작업이 `.cmd`를 실행해 대신했다.
+**실사용에서 사람 손이 가는 곳은 `.cmd` 더블클릭 → UAC 「예」 1회와, 끝난 뒤 완료 대화 상자의 「확인」뿐이다.**
+
+| 단계 | 결과 | 시간·증거 |
 | --- | --- | --- |
-| 키 접속 | 성공(BatchMode) | — |
-| 이전 상태 | 10-22 시험의 표준 계정 `pj3user` 관리형 설치가 남아 있었다 | 같은 PC의 다른 직원 설치와 기계 공용 Claude 설정이 겹쳐 서로 덮어쓴다 — 롤백·트레이 작업·승인 설치기를 정리(이 세션 소유 시험 상태) |
-| 원클릭 실행 | 콘솔 세션 1에서 관리자 권한 예약 작업으로 `.cmd` 실행(UAC 클릭 대신) | SSH는 UAC 보안 데스크톱에 닿지 않는다. 실제 사용자는 `.cmd` 더블클릭 → UAC 「예」 1회가 유일한 클릭 지점 |
-| 결과 | **실패** — 작업자가 결과 파일 없이 끝나고 템플릿이 실패 대화 상자에서 대기 | `Read-EndpointManagedRequest`가 원클릭 요청에 없는 `gateway_url`에 대입해 예외(10-18부터 있던 결함). 수정·시험(cb663ff) — 배포 필요 |
-| 결함 ③ | 원클릭으로 한 번 설치한 PC는 새 판본 원클릭을 「IT must update the approved installer」로 거부 | 수정(cb663ff): 원클릭이 만든 승인에 표식을 남겨 새 원클릭으로 갱신 가능. 표식 이전 설치는 한 번 정리 필요, IT 승인은 그대로 |
-| 같은 계정 설치·세 칸·트레이·재부팅·재연결·제거·재설치 | **미실행** | 위 결함 수정본 배포 대기 |
+| 이전 상태 정리 | 10-22 시험의 표준 계정 `pj3user` 관리형 설치(같은 PC 다른 직원 — 기계 공용 Claude 설정을 서로 덮어씀)와 표식 이전 원클릭 승인을 정리 | 이 세션 소유 시험 상태 |
+| 원클릭 1차(4c060ef) | 실패 — 결과 파일 없이 템플릿이 실패 대화 상자에서 대기 | `Read-EndpointManagedRequest`가 원클릭 요청에 없는 속성에 대입(10-18 결함) → cb663ff |
+| 원클릭 2차(4679160) | 실패 「실행 파일 준비」 | `runtime-check.py`가 D-232의 tomli·toml을 요구(10-23 이후 모든 Windows 설치) → 8bd0040 |
+| Python 단계 직접 실행 | `REMOVE_COMPANION`이 PowerShell 종료 코드 1(동반 계정 없을 때) | 8bd0040, 제거 스크립트도 같은 결함 수정 |
+| 원클릭 3차(283d93e) | 실패 「실행 파일 준비」, `python.exe` 사라짐 | 작업자가 실행 중 서비스가 연 런타임을 덮어씀(재설치 거부가 숨기던 경로) → 9f9d04f |
+| 원클릭 4차(브랜치 키트) | **완료**(준비 > 설치 위치 확인 > 실행 파일 준비 > 실행 파일 점검 > 연결 등록 > 로그온 시작 등록 > 설치 완료). 표식 승인 갱신 경로로 이전 승인 교체, 망가진 런타임 복구 | 이전 장치가 격리 상태라 새 장치는 `held_from`으로 **대기**(설계대로 사람 확인) |
+| 제거(트레이 「제거」의 작업자 경로) | 완료 9초. 예약 작업·관리형 Claude/Codex 파일·직원 config.toml 블록·CA 환경 변수·프로그램 폴더 없음, 트레이 종료 | 승인 설치기(`MCPGatewayInstaller`)는 남김(설계) |
+| **재설치(원클릭 5차, 무개입)** | **설치 15초, 활성 17초**(자동 활성화), 트레이 세션 1 실행, CA 사용자 환경·관리형 설정 `env`, 방화벽 규칙 0, 하네스 판본 claude 2.1.302 | 결과 `completed`, 장치 `managed-…`(`activated_by=auto`) |
+| 트레이 첫 활성화 자동 확인 | 모델 claude 정상 5.2초 · `initialize` 10/10 · 도구 40 | `%LOCALAPPDATA%\MCPGatewaySetup\tray-<SID>\probe.json` |
+| 직원 Claude → Learn·DeepWiki | 실행됨(13초·10초). 판정 Alert `MCP-SHADOW-002` | 원장 1284·1285. 직원 `~/.codex/config.toml`에 Codex 앱이 둔 `node_repl` stdio MCP가 섀도로 보고됨(아래) |
+| 활성화 직후 안내문 | 1차(4679160 키트)는 활성화 뒤 최대 60초 「활성화 대기」 안내문으로 Claude가 도구를 안 씀 → 8bd0040 뒤 즉시 활성 안내문 | 「guidance active: True」 |
+| 네트워크 끊김·복귀 | 끊김 10초 안에 「연결 끊김」, 그동안 하네스 EACCES, 복구 6초 만에 「활성」(격리 없음) | 방화벽 차단 규칙으로 게이트웨이 호스트 차단·해제 |
+| 다시 연결(트레이 명령, 세션 1 비승격) | `completed`(준비 > 게이트웨이 연결 확인) | 트레이와 같은 명령줄 |
+| Codex 앱이 config.toml 재작성 | 블록 해시 불일치로 PC 격리(직접 설치 장치) | 383ee4d: 간편 모드는 heartbeat 전에 블록 복원. 재설치 뒤 복원 기록 0회(그 사이 재작성 없음) |
+| 재부팅 | 아래 「재부팅」 | — |
 
-## 2단계 실측 계획(리더 배포 뒤)
+#### 트레이 메뉴(사람 클릭 없이 확인한 범위)
 
-1. pj2: `vmrun revertToSnapshot … clean-sudo-1023` → 콘솔 대신 SSH 키 경로로 키트 받기(리더가 준 방법) → `./install.sh`(NOPASSWD sudo,
-   비대화형) → JSON의 `checks`·`install_seconds`·`total_seconds` 기록 → 직원 계정 `claude -p`로 Microsoft Learn(또는 DeepWiki) 호출·filesystem
-   로컬 MCP 읽기 → 원장 Allow·policy_id 확인. 사람 개입 횟수·소요 시간. 설치 전 연 SSH 세션에서 `mcpgw-status`(새 터미널 안내).
-2. pj2 `--isolated` 회귀: 같은 키트를 `--isolated`로 → 격리 계정 생성·AppArmor·nft·대기 상태 → 관리자 활성화를 서버 내부 함수로 대행 → 호출 확인 →
-   다시 간편 모드로 전환(격리 계정 삭제·홈 유지·장치 이어받기).
-3. pj3: `.cmd` 업로드·실행 → UAC 측정 → 트레이 상태 창·연결 확인·재부팅 뒤 자동 시작·네트워크 끊김 복귀·제거·재설치·메뉴 전부 표.
-4. GitHub(D-235 「내 연결」 필요)는 별도 항목.
+| 메뉴 | 확인 | 방법 |
+| --- | --- | --- |
+| 상태 창 | 상태 파일 내용(연결·관리 상태·모드·서버 10개 이름·하네스 판본·게이트웨이) | `status.json`, 창 렌더링은 미확인 |
+| 연결 확인 | 통과(위 자동 확인과 같은 `managed-windows.py probe`) | `probe.json` |
+| 모델 로그인 | 미실행(누르면 `cmd /k claude auth login` — 브라우저 OAuth라 사람 필요) | 코드 |
+| 다시 연결 | 통과 | 세션 1 비승격 작업 |
+| 콘솔 열기·English/한국어 | 미실행(창·클릭 필요) | PowerShell 구문 검사·Windows 시험 |
+| 제거 | 통과(작업자 경로, 마법사 단추 클릭은 대행) | 위 제거 행 |
+| 최근 차단 | 간편 모드는 커널 차단 기록이 없어 「—」 | — |
+
+화면: 세션 1 캡처에 완료 대화 상자(단계·「지금 계정 그대로 사용」·「트레이 아이콘 > 연결 확인/모델 로그인」 한글 정상)와 작업 표시줄 숨김 영역의 트레이를 확인했다(scratchpad `pj3-desktop.png`).
+
+#### 재부팅
+
+18:52 KST `shutdown /r` 뒤 15분 넘게 Tailscale 주소(SSH)가 돌아오지 않았다. 자동 로그온이 없는 pj3에서 Windows Tailscale은 사용자 로그인 전에
+연결하지 않는다(unattended 모드 아님). **소유자 1회 조작: pj3 콘솔에서 `pj3`로 로그인** — 그 뒤 트레이 자동 시작(로그온 예약 작업)과 서비스 재연결을 확인할 수 있다.
 
 ## 다음 작업
 
-②단계 실측(위 계획). 실패하면 같은 브랜치에서 고치고 보고서 최종본에 반영한다.
+- pj3 소유자 로그인 뒤 재부팅 항목(트레이 자동 시작·재연결) 확인. 9f9d04f 이후 기기 배포본 그대로의 원클릭 1회.
+- GitHub(D-235 「내 연결」 필요) 호출은 별도 항목으로 남았다.
 
 ## 사용자에게 필요한 입력
 
-없음(①단계). ②단계에서 pj3 UAC가 비대화형으로 안 되면 소유자의 화면 클릭 1회가 필요할 수 있다.
+- pj3 콘솔에서 `pj3` 계정으로 한 번 로그인(재부팅 뒤 Tailscale 재연결). 비밀번호는 이 세션이 입력하지 않는다.
+- Codex 데스크톱 앱 기본 MCP(`node_repl`)를 섀도로 둘지(지금 Alert) 결정.
