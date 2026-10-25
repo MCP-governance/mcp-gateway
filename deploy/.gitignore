@@ -1,0 +1,6 @@
+.env
+initial-admin-password
+backups/
+ca/
+siem/
+litellm/

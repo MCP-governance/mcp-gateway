@@ -14,6 +14,8 @@ state   gateway_enforced · endpoint_enforced · vendor_enforced · observed_onl
 
 `endpoint_enforced` needs a Linux managed device whose last heartbeat (under 180 s) says
 the AppArmor profiles, the UID nftables table and the protected harness files match.
+A simple-mode device (D-239: the employee's own account, nothing confined) is `observed_only`
+even when healthy: the Gateway still decides every call, the endpoint enforces nothing.
 Any other account on that device, an old agent that did not report the others, Windows
 or WSL is a bypass, not an enforcement. `vendor_enforced` needs an administrator's
 recorded check of the vendor admin console; it is labelled as a manual record.
@@ -30,7 +32,7 @@ from psycopg.types.json import Jsonb
 from . import classify, db, registry
 from .agent_contract import StrictModel, authenticated_user
 from .connectors import DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
-from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_platform
+from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_mode, managed_platform
 
 router = APIRouter()
 PLATFORM_LABEL = {"wsl": "WSL", "windows": "Windows", "linux": "Linux", "macos": "macOS", "other": "이 플랫폼"}
@@ -103,8 +105,15 @@ def device_state(device: dict, now: datetime) -> dict:
     if device.get("status") != "active":
         bypass, unmanaged = [], []  # a revoked device is no path at all; it is listed only as history
     managed = device.get("managed_state")
+    simple = bool(device.get("device_epoch")) and managed_mode(device) == "simple"
     if device.get("status") != "active":
         state, evidence = "unknown_not_enrolled", "등록 해제됨"
+    elif simple:
+        fresh = managed == "active" and age is not None and age < HEARTBEAT_SECONDS
+        state = "observed_only"
+        evidence = ("간편 모드 · 게이트웨이 판정 적용" if fresh else
+                    "간편 모드 · 활성화 대기" if managed == "pending" else
+                    "간편 모드 · 격리" if managed == "quarantined" else "간편 모드 · 점검 보고 만료")
     elif platform != "linux" and not managed_windows and not managed_macos:
         state, evidence = "observed_only", f"{PLATFORM_LABEL[platform]} 엔드포인트 통제 미지원"
     elif (managed == "active" and age is not None and age < HEARTBEAT_SECONDS
@@ -119,7 +128,9 @@ def device_state(device: dict, now: datetime) -> dict:
         state, evidence = "observed_only", "보고만 있음"
     return {"endpoint_id": device["endpoint_id"], "hostname": device.get("hostname"), "owner": device.get("owner_token"),
             "platform": platform, "account": device.get("local_username"), "uid": device.get("local_uid"),
-            "account_state": state, "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" else state,
+            "account_state": state, "mode": managed_mode(device) if device.get("device_epoch") else None,
+            # Simple mode claims no endpoint control to lose; its other paths are listed, not re-labelled (D-239).
+            "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" and not simple else state,
             "evidence": evidence, "bypass": bypass, "verified_at": device.get("heartbeat_at") or device.get("last_seen_at"),
             # What the state rests on: the kernel heartbeat for a confined account, else the agent's own report.
             "evidence_kind": ("kernel" if state == "endpoint_enforced" else "none" if state == "unknown_not_enrolled" else "report"),
@@ -329,9 +340,9 @@ if __name__ == "__main__":
     legacy = {**base, "enforcement_checks": legacy_checks, "detail": {"host": host([])["host"]}}
     assert device_state(legacy, now)["state"] == "endpoint_enforced"
     assert device_state({**legacy, "detail": host([])}, now)["state"] == "bypass_possible"  # a scanned device cannot downgrade
-    shared = device_state({**base, "detail": host([{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
+    shared = device_state({**base, "detail": host([{"name": "lab-admin", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
     assert shared["account_state"] == "endpoint_enforced" and shared["state"] == "bypass_possible", shared
-    assert shared["unmanaged_accounts"] == [{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
+    assert shared["unmanaged_accounts"] == [{"name": "lab-admin", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
     assert all("통제 범위 밖" in label for label in shared["bypass"]), shared
     assert clean["unmanaged_accounts"] == [] and clean["kernel_denials_state"] == "unknown", clean
     observed = {**base, "detail": {**host([]), "observation": {"os": {"state": "success", "reported_at": fresh}}}}
@@ -359,4 +370,11 @@ if __name__ == "__main__":
     assert endpoint_item_state(None, True)[0] == "observed_only" and endpoint_item_state(None, False)[0] == "bypass_possible"
     assert endpoint_item_state(clean, False)[0] == "endpoint_enforced"
     assert endpoint_item_state(shared, False)[0] == "bypass_possible"
+    # Simple mode (D-239): healthy is still observed only, labelled as the Gateway's decision, never endpoint control.
+    simple = {**win, "enforcement_checks": {"protected_configs": True},
+              "detail": {"local_sid": "S-1-5-21-1-2-3-1001", "mode": "simple", **host([{"name": "other", "uid": 1002}])}}
+    healthy = device_state(simple, now)
+    assert healthy["state"] == healthy["account_state"] == "observed_only" and healthy["mode"] == "simple", healthy
+    assert healthy["evidence"] == "간편 모드 · 게이트웨이 판정 적용" and healthy["bypass"], healthy
+    assert device_state({**simple, "managed_state": "pending"}, now)["evidence"] == "간편 모드 · 활성화 대기"
     print("integrations self-check OK")

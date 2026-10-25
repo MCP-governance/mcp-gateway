@@ -1,0 +1,380 @@
+# MINT 운영 배포. ./mint.sh가 .env를 만들고 이 파일로 스택을 올린다(직접 docker compose를 부를 때도 같은 .env를 쓴다).
+# 서비스·망 이름은 실습 스택(full_stack_lab/compose.yaml + compose.field.yaml)과 같다: 실행기는 compose 서비스 이름
+# gateway와 <프로젝트>_edge 망을 찾고, Caddyfile은 corp-git·agent-service·gateway를 이름으로 부른다.
+# 실습용 직원 PC·시나리오·MCP 서버·추적 수집기·메일 수신기·로컬 LLM은 넣지 않는다. SSE 전용 진입점(gateway-sse)은
+# Caddy가 경로를 주지 않아 밖에서 닿지 않으므로 뺐다.
+# 게시 포트는 Caddy(HTTPS)와 모델 프록시 둘뿐이고 MINT_BIND 한 주소에만 묶는다.
+name: ${MINT_PROJECT:-mint}
+
+x-hardened: &hardened
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+
+x-gateway-build: &gateway-build
+  context: ../full_stack_lab/gateway
+  args:
+    MCP_BUILD_REVISION: ${MCP_BUILD_REVISION:-unknown}
+
+x-gateway-env: &gateway-env
+  DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?}@db:5432/mcp_governance
+  OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
+  MCP_FIELD_MODE: "1"
+  REGISTRY_DIR: /registry-field
+  REGISTRY_RUNTIME_DIR: /registry-runtime
+  DISPOSAL_DIR: /disposal
+  DISPOSAL_PRIVATE_KEY: ${DISPOSAL_PRIVATE_KEY:?}
+  DISPOSAL_PUBLIC_KEY: ${DISPOSAL_PUBLIC_KEY:?}
+  AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY:?}
+  IDP_ISSUER: https://${MINT_BIND:?}:443
+  IDP_INTERNAL_URL: http://agent-service:8000
+  GATEWAY_PUBLIC_URL: https://${MINT_BIND}:443
+  GATEWAY_PUBLIC_MCP_URL: https://${MINT_BIND}:443/mcp/
+  CONSOLE_PUBLIC_URL: https://${MINT_BIND}:443/
+  FIELD_PUBLIC_NAME: ${MINT_PUBLIC_NAME:-}
+  ENDPOINT_GATEWAY_IPS: ${MINT_BIND}
+  ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
+  MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
+  LOCAL_MANIFEST_PUBKEY: ${LOCAL_MANIFEST_PUBKEY:-}
+  LOCAL_IMAGE_MIRRORS: ${LOCAL_IMAGE_MIRRORS:-docker.io/mcp,mcp}
+  LOCAL_ENGINE_SETTINGS: ${LOCAL_ENGINE_SETTINGS:-}
+  MCP_UPSTREAM_CREDENTIALS_FILE: ${MCP_UPSTREAM_CREDENTIALS_FILE:-}
+  USER_CREDENTIAL_KEY: ${USER_CREDENTIAL_KEY:?}
+  FLOW_MATCH_MODE: ${FLOW_MATCH_MODE:-coarse}
+  FLOW_FINGERPRINT_PEPPER: ${FLOW_FINGERPRINT_PEPPER:?}
+  TERMINATION_SLA_DAYS: ${TERMINATION_SLA_DAYS:-14}
+  OPS_AUTO_STOP_SOURCES: ${OPS_AUTO_STOP_SOURCES-drift,anomaly,volume}
+  OPS_AUTO_STOP_SERVERS: ${OPS_AUTO_STOP_SERVERS-*}
+  AUTO_SUSPEND_THRESHOLD: ${AUTO_SUSPEND_THRESHOLD:-5}
+  AUTO_SUSPEND_WINDOW_SECONDS: ${AUTO_SUSPEND_WINDOW_SECONDS:-600}
+  AUTO_SUSPEND_DURATION_SECONDS: ${AUTO_SUSPEND_DURATION_SECONDS:-900}
+  TOOL_SUNSET_IDLE_DAYS: ${TOOL_SUNSET_IDLE_DAYS:-90}
+  # LiteLLM 동기화: ./mint.sh litellm enable이 litellm/ 아래 파일과 아래 값을 채운다. 관리 키는 파일로만 받는다.
+  MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
+  MINT_LITELLM_SYNC_BINDINGS_FILE: /run/mint-litellm/bindings.json
+  MINT_LITELLM_SYNC_KEY_FILE: ${MINT_LITELLM_SYNC_KEY_FILE:-}
+  MINT_LITELLM_SYNC_CA_FILE: ${MINT_LITELLM_SYNC_CA_FILE:-}
+  MINT_LITELLM_ROUTE: ${MINT_LITELLM_ROUTE:-mint}
+  MINT_LITELLM_SYNC_RECHECK_SECONDS: ${MINT_LITELLM_SYNC_RECHECK_SECONDS:-300}
+  MINT_LITELLM_KEY_ACCESS_CONFIRMED: ${MINT_LITELLM_KEY_ACCESS_CONFIRMED:-}
+  GITEA_ADMIN_URL: http://corp-git:3000
+  GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
+  GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:?}
+  PRESIDIO_ANALYZER_URL: http://presidio-analyzer:3000
+  PRESIDIO_ANONYMIZER_URL: http://presidio-anonymizer:3000
+  # 추적은 고객의 OpenTelemetry 수집기가 있을 때만 켠다. 없으면 상태 점검에서도 빠진다.
+  OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_SERVICE_NAME: mcp-security-gateway
+  JAEGER_QUERY_URL: ${JAEGER_QUERY_URL:-}
+
+services:
+  db:
+    image: postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mcp_governance
+      POSTGRES_USER: mcp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mcp -d mcp_governance"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ../full_stack_lab/db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ../full_stack_lab/db/002-litellm.sql:/docker-entrypoint-initdb.d/002-litellm.sql:ro
+    networks: [data]
+
+  opa:
+    image: openpolicyagent/opa:1.20.2-static@sha256:bb245e9e36be0d0ed486c240b606c56be7aba96014a4a87895fed4ba7a6dfa8d
+    restart: unless-stopped
+    command: [run, --server, --addr=0.0.0.0:8181, --set=decision_logs.console=true, --log-level=info, /policy]
+    healthcheck:
+      test: ["CMD", "/opa", "eval", "1"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - ../full_stack_lab/opa:/policy:ro
+    networks: [policy]
+
+  presidio-analyzer:
+    image: mcpgw/presidio-analyzer:${MINT_VERSION:?}
+    build: {context: ../full_stack_lab/privacy, dockerfile: analyzer.Dockerfile}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    networks: [privacy]
+    <<: *hardened
+
+  presidio-anonymizer:
+    image: ghcr.io/data-privacy-stack/presidio-anonymizer:2.2.364@sha256:e567013893ebc80994e3799f6f55c86aa1f0b0fadb779571ab346f0ec45365c1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+    networks: [privacy]
+    <<: *hardened
+
+  gateway:
+    image: mcpgw/gateway:${MINT_VERSION}
+    build: *gateway-build
+    restart: unless-stopped
+    environment:
+      <<: *gateway-env
+    depends_on:
+      db: {condition: service_healthy}
+      opa: {condition: service_healthy}
+      presidio-analyzer: {condition: service_healthy}
+      presidio-anonymizer: {condition: service_healthy}
+    volumes:
+      - ../full_stack_lab/opa:/policy:ro
+      - ../full_stack_lab/registry/field:/registry-field:ro
+      - ../endpoint-agent:/endpoint-kit:ro
+      - registry_runtime:/registry-runtime
+      - disposal_journal:/disposal
+      - upstream_credentials:/run/upstream-credentials:ro
+      - ./litellm:/run/mint-litellm:ro
+    networks: [edge, policy, privacy, tools, data, ops]
+    <<: *hardened
+
+  # 콘솔과 IdP. MCP를 호출하지 않는다. 서명 개인 키는 발급자인 이 서비스만 받는다.
+  agent-service:
+    image: mcpgw/gateway:${MINT_VERSION}
+    restart: unless-stopped
+    command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD}@db:5432/mcp_governance
+      GATEWAY_URL: http://gateway:8080
+      MCP_FIELD_MODE: "1"
+      REGISTRY_DIR: /registry-field
+      REGISTRY_RUNTIME_DIR: /registry-runtime
+      INTAKE_REPORT_DIR: /intake-reports
+      AGENT_JWT_PRIVATE_KEY: ${AGENT_JWT_PRIVATE_KEY:?}
+      AGENT_JWT_PUBLIC_KEY: ${AGENT_JWT_PUBLIC_KEY}
+      DISPOSAL_DIR: /disposal
+      DISPOSAL_PRIVATE_KEY: ${DISPOSAL_PRIVATE_KEY}
+      DISPOSAL_PUBLIC_KEY: ${DISPOSAL_PUBLIC_KEY}
+      MOCK_SSO_PASSWORD: ${MOCK_SSO_PASSWORD:?}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-10}
+      REFRESH_TOKEN_HOURS: ${REFRESH_TOKEN_HOURS:-8}
+      IDP_ISSUER: https://${MINT_BIND}:443
+      ENDPOINT_GATEWAY_IPS: ${MINT_BIND}
+      ENDPOINT_TAILSCALE_NODE_ID: ${ENDPOINT_TAILSCALE_NODE_ID:-}
+      MODEL_PROXY_PORT: ${MODEL_PROXY_PORT:-3128}
+      FIELD_CA_FILE: /field-ca/root.crt
+      FORWARDED_ALLOW_IPS: ${MINT_NET_PREFIX:-10.246}.1.250
+      ROOT_SOLO_APPROVAL: ${ROOT_SOLO_APPROVAL:-0}
+      CONNECTOR_REVIEW_DAYS: ${CONNECTOR_REVIEW_DAYS:-14}
+      USER_CREDENTIAL_KEY: ${USER_CREDENTIAL_KEY}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_SCOPES: ${GITHUB_OAUTH_SCOPES:-repo read:org read:user}
+      MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
+      MCP_PROVENANCE_REGISTRY_ALLOWLIST: ${MCP_PROVENANCE_REGISTRY_ALLOWLIST:-}
+      LOCAL_MANIFEST_PUBKEY: ${LOCAL_MANIFEST_PUBKEY:-}
+      LOCAL_MANIFEST_PRIVATE_KEY: ${LOCAL_MANIFEST_PRIVATE_KEY:-}
+      LOCAL_IMAGE_MIRRORS: ${LOCAL_IMAGE_MIRRORS:-docker.io/mcp,mcp}
+      LOCAL_ENGINE_SETTINGS: ${LOCAL_ENGINE_SETTINGS:-}
+      MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
+      MINT_LITELLM_SYNC_BINDINGS_FILE: /run/mint-litellm/bindings.json
+      MINT_LITELLM_ROUTE: ${MINT_LITELLM_ROUTE:-mint}
+      LITELLM_URL: ""
+      GITEA_ADMIN_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD}
+      GITEA_PUBLIC_URL: https://${MINT_BIND}:443/git
+      OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: agent-service
+    depends_on:
+      gateway: {condition: service_started}
+      corp-git: {condition: service_healthy}
+    volumes:
+      - intake_reports:/intake-reports:ro
+      - disposal_journal:/disposal
+      - registry_runtime:/registry-runtime:ro
+      - ../full_stack_lab/registry/field:/registry-field:ro
+      - ../full_stack_lab/registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
+      - ../full_stack_lab/field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
+      - ../full_stack_lab/runtime/recipes:/runtime-recipes:ro
+      - ../endpoint-agent:/endpoint-kit:ro
+      - ./ca:/field-ca:ro
+      # 동기화 상태 표시는 매핑만 읽는다. 관리 키는 게이트웨이만 받는다.
+      - ./litellm/bindings.json:/run/mint-litellm/bindings.json:ro
+    networks: [edge, data]
+    <<: *hardened
+
+  # 제출된 저장소를 복제·검사만 한다. 정책·도구 망에는 붙지 않는다.
+  intake-worker:
+    image: mcpgw/intake-worker:${MINT_VERSION}
+    build: {context: ../full_stack_lab/supply_chain, dockerfile: intake-worker.Dockerfile}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD}@db:5432/mcp_governance
+      REPORT_DIR: /reports
+      INTAKE_WORK_DIR: /work
+      SEMGREP_RULES: /rules/semgrep-mcp.yml
+      INTAKE_POLL_SECONDS: ${INTAKE_POLL_SECONDS:-5}
+      INTAKE_WORKER_ID: intake-worker-1
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
+    depends_on:
+      db: {condition: service_healthy}
+    volumes:
+      - intake_reports:/reports
+      - intake_work:/work
+      - intake_trivy_cache:/trivy-cache
+      - ../full_stack_lab/supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
+    networks: [data, scanner]
+    <<: *hardened
+
+  # 승인한 소스 MCP를 고정 레시피로 빌드·실행하는 유일한 프로세스. 엔진 소켓은 이 컨테이너만 받는다.
+  runtime-worker:
+    image: mcpgw/runtime-worker:${MINT_VERSION}
+    build: {context: ../full_stack_lab, dockerfile: runtime/Dockerfile}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD}@db:5432/mcp_governance
+      REGISTRY_RUNTIME_DIR: /registry-runtime
+      MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
+      GITEA_ADMIN_URL: http://corp-git:3000
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD}
+      RUNTIME_EGRESS_IMAGE: mcpgw/model-proxy:${MINT_VERSION}
+      RUNTIME_SCAN_INTERVAL_SECONDS: ${RUNTIME_SCAN_INTERVAL_SECONDS:-86400}
+      RUNTIME_CRITICAL_DEADLINE_DAYS: ${RUNTIME_CRITICAL_DEADLINE_DAYS:-7}
+      TRIVY_CACHE_DIR: /trivy-cache
+    depends_on:
+      db: {condition: service_healthy}
+      corp-git: {condition: service_healthy}
+    volumes:
+      - ../full_stack_lab/registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - registry_runtime:/registry-runtime:ro
+      - runtime_trivy_cache:/trivy-cache
+    tmpfs: [/work]
+    networks: [data, ops, scanner]
+    security_opt: ["no-new-privileges:true"]
+
+  # 승인된 소스의 사내 사본. 신원은 콘솔 로그인이고 Caddy(고정 IP)가 실은 헤더만 믿는다.
+  corp-git:
+    image: gitea/gitea:1.27.3-rootless@sha256:1c17ecaead42eb3b5391553d8708103a4beb0e86edf5b9ebc1eb269c318845f2
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/corp/gitea-entrypoint.sh"]
+    environment:
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__ROOT_URL: https://${MINT_BIND}:443/git/
+      GITEA__server__OFFLINE_MODE: "true"
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
+      GITEA__service__ENABLE_REVERSE_PROXY_AUTHENTICATION: "true"
+      GITEA__service__ENABLE_REVERSE_PROXY_AUTO_REGISTRATION: "false"
+      GITEA__service__ENABLE_PASSWORD_SIGNIN_FORM: "false"
+      GITEA__service__SHOW_REGISTRATION_BUTTON: "false"
+      GITEA__openid__ENABLE_OPENID_SIGNIN: "false"
+      GITEA__security__REVERSE_PROXY_AUTHENTICATION_USER: X-WEBAUTH-USER
+      GITEA__security__REVERSE_PROXY_TRUSTED_PROXIES: ${MINT_NET_PREFIX:-10.246}.1.250/32
+      GITEA__security__REVERSE_PROXY_LIMIT: "1"
+      GITEA__repository__DEFAULT_BRANCH: main
+      GITEA__log__LEVEL: Warn
+      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD}
+    volumes:
+      - git_data:/var/lib/gitea
+      - ../full_stack_lab/corp/gitea-entrypoint.sh:/corp/gitea-entrypoint.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /var/lib/gitea/.admin-ready && wget -qO- http://127.0.0.1:3000/api/healthz >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+    networks: [edge, ops]
+
+  caddy:
+    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    restart: unless-stopped
+    depends_on:
+      gateway: {condition: service_started}
+      agent-service: {condition: service_started}
+    ports:
+      - "${MINT_BIND}:443:8080"
+    environment:
+      FIELD_TLS_ADDRESSES: ${MINT_TLS_ADDRESSES:?}
+      APPLIANCE_BIND: ${MINT_BIND}
+    volumes:
+      - ../full_stack_lab/field/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    networks:
+      edge:
+        # corp-git이 신원 헤더를 믿는 유일한 주소.
+        ipv4_address: ${MINT_NET_PREFIX:-10.246}.1.250
+    security_opt: ["no-new-privileges:true"]
+
+  # 관리형 엔드포인트의 모델 API 경로. model-domains.txt의 도메인만 허용한다.
+  model-proxy:
+    image: mcpgw/model-proxy:${MINT_VERSION}
+    build: ../full_stack_lab/model-proxy
+    restart: unless-stopped
+    ports:
+      - "${MINT_BIND}:${MODEL_PROXY_PORT:-3128}:3128"
+    networks: [edge]
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+
+  siem-worker:
+    profiles: [siem]
+    image: mcpgw/gateway:${MINT_VERSION}
+    restart: unless-stopped
+    command: ["python", "-m", "app.siem"]
+    environment:
+      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD}@db:5432/mcp_governance
+      SIEM_URL: ${SIEM_URL:-}
+      SIEM_TOKEN_FILE: ${SIEM_TOKEN_FILE:-}
+      SIEM_CA_FILE: ${SIEM_CA_FILE:-}
+    volumes:
+      - ./siem:/run/siem:ro
+    depends_on:
+      gateway: {condition: service_started}
+    networks: [data, edge]
+    <<: *hardened
+
+networks:
+  edge:
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.1.0/24"}]}
+  policy:
+    internal: true
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.3.0/24"}]}
+  privacy:
+    internal: true
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.4.0/24"}]}
+  tools:
+    internal: true
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.5.0/24"}]}
+  data:
+    internal: true
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.6.0/24"}]}
+  scanner:
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.9.0/24"}]}
+  ops:
+    internal: true
+    ipam: {config: [{subnet: "${MINT_NET_PREFIX:-10.246}.11.0/24"}]}
+
+volumes:
+  db_data: {}
+  registry_runtime: {}
+  disposal_journal: {}
+  upstream_credentials: {}
+  intake_reports: {}
+  intake_work: {}
+  intake_trivy_cache: {}
+  runtime_trivy_cache: {}
+  git_data: {}
+  caddy_data: {}

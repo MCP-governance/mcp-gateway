@@ -38,9 +38,11 @@ $script:jobAction = ''
 $script:completed = $false
 $script:resultPath = Join-Path $work 'result.json'
 $script:jobStarted = [DateTime]::MinValue
+$script:lang = 'ko'
+function T([string]$Key) { return (Get-EndpointText $Key $script:lang) }
 
 $form = New-Object Windows.Forms.Form
-$form.Text = if ($Remove) { '엔드포인트 제거' } else { '엔드포인트 설치' }
+$form.Text = if ($Remove) { T 'title_remove' } else { T 'title_install' }
 $form.Font = New-Object Drawing.Font('맑은 고딕', 10)
 $form.AutoScaleMode = 'Dpi'
 $form.AutoSize = $true
@@ -60,11 +62,13 @@ $layout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize'))) | O
 $layout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100))) | Out-Null
 $form.Controls.Add($layout)
 
+$script:captions = @{}
 function Add-EndpointRow([string]$Label, [Windows.Forms.Control]$Control) {
     $row = $layout.RowCount
     $layout.RowCount++
     $caption = New-Object Windows.Forms.Label
-    $caption.Text = $Label
+    if ($Label) { $script:captions[$Label] = $caption }
+    $caption.Text = if ($Label) { T $Label } else { '' }
     $caption.AutoSize = $true
     $caption.Margin = New-Object Windows.Forms.Padding(3, 7, 12, 7)
     $Control.Dock = 'Fill'
@@ -76,30 +80,40 @@ function Add-EndpointRow([string]$Label, [Windows.Forms.Control]$Control) {
 $title = New-Object Windows.Forms.Label
 $title.AutoSize = $true
 $title.Font = New-Object Drawing.Font('맑은 고딕', 14, [Drawing.FontStyle]::Bold)
-Add-EndpointRow '단계' $title
+Add-EndpointRow 'step' $title
 $url = New-Object Windows.Forms.TextBox
 $url.Text = $GatewayUrl
 $url.ReadOnly = $mode -eq 'managed' -or $Remove
-Add-EndpointRow '게이트웨이' $url
+Add-EndpointRow 'gateway' $url
 $location = New-Object Windows.Forms.TextBox
 $location.Text = $directory
 $location.ReadOnly = $mode -eq 'managed' -or $Remove
-Add-EndpointRow '설치 위치' $location
+Add-EndpointRow 'location' $location
 $user = New-Object Windows.Forms.TextBox
 $user.Text = $targetUser
 $user.ReadOnly = $Remove -or $mode -eq 'observer'
-Add-EndpointRow '대상 계정' $user
+Add-EndpointRow 'account' $user
 $scope = New-Object Windows.Forms.TextBox
 $scope.Multiline = $true
 $scope.Height = 65
 $scope.ScrollBars = 'Vertical'
 $scope.ReadOnly = $mode -eq 'managed' -or $Remove
 $scope.Text = if ($mode -eq 'managed') { '대상 계정의 하네스 설정 · 실행 중인 도구 · 운영체제 차단 기록' } else { $ScanPath -join "`r`n" }
-Add-EndpointRow '관측 범위' $scope
+Add-EndpointRow 'scope' $scope
 $permission = New-Object Windows.Forms.Label
 $permission.AutoSize = $true
-$permission.Text = if ($mode -eq 'managed') { '관리자 권한 · 대상 계정 로그아웃 필요' } else { '현재 사용자' }
-Add-EndpointRow '설치 권한' $permission
+function Set-EndpointPermissionText {
+    $permission.Text = if ($mode -ne 'managed') { '—' } elseif ($isolatedBox.Checked) { T 'permission_isolated' } else { T 'permission_simple' }
+}
+Add-EndpointRow 'permission' $permission
+# Simple mode is the default (D-239): the signed-in account as it is. The companion account is the advanced option.
+$isolatedBox = New-Object Windows.Forms.CheckBox
+$isolatedBox.AutoSize = $true
+$isolatedBox.Text = T 'isolated'
+$isolatedBox.Visible = $mode -eq 'managed' -and -not $Remove
+$isolatedBox.Add_CheckedChanged({ Set-EndpointPermissionText })
+if ($isolatedBox.Visible) { Add-EndpointRow '' $isolatedBox }
+Set-EndpointPermissionText
 $key = New-Object Windows.Forms.Button
 $key.AutoSize = $true
 $key.Text = if ($KeyFile) { '장치 키 파일 선택 완료' } else { '장치 키 파일 선택' }
@@ -112,31 +126,41 @@ $key.Add_Click({
 })
 if ($mode -eq 'observer' -and -not $Remove) { Add-EndpointRow '장치 자격' $key }
 $progress = New-Object Windows.Forms.ProgressBar
-Add-EndpointRow '진행률' $progress
+Add-EndpointRow 'progress' $progress
 $results = New-Object Windows.Forms.TextBox
 $results.Multiline = $true
 $results.ReadOnly = $true
 $results.ScrollBars = 'Vertical'
 $results.Height = 135
-Add-EndpointRow '결과' $results
+Add-EndpointRow 'result' $results
 $log = New-Object Windows.Forms.TextBox
 $log.ReadOnly = $true
 $log.Text = Join-Path $work 'setup.log'
-Add-EndpointRow '로그 파일' $log
+Add-EndpointRow 'log' $log
 $buttons = New-Object Windows.Forms.FlowLayoutPanel
 $buttons.AutoSize = $true
 $next = New-Object Windows.Forms.Button
 $next.AutoSize = $true
-$next.Text = '시작'
+$next.Text = T 'start'
 $retry = New-Object Windows.Forms.Button
 $retry.AutoSize = $true
-$retry.Text = '다시 시도'
+$retry.Text = T 'retry'
 $retry.Enabled = $false
 $close = New-Object Windows.Forms.Button
 $close.AutoSize = $true
-$close.Text = '닫기'
+$close.Text = T 'close'
 $close.Add_Click({ $form.Close() })
-$buttons.Controls.AddRange(@($next, $retry, $close))
+$language = New-Object Windows.Forms.Button
+$language.AutoSize = $true
+$language.Text = T 'language'
+$language.Add_Click({
+    $script:lang = if ($script:lang -eq 'ko') { 'en' } else { 'ko' }
+    foreach ($key in $script:captions.Keys) { $script:captions[$key].Text = T $key }
+    $retry.Text = T 'retry'; $close.Text = T 'close'; $language.Text = T 'language'; $isolatedBox.Text = T 'isolated'
+    $form.Text = if ($Remove) { T 'title_remove' } else { T 'title_install' }
+    Set-EndpointPermissionText
+})
+$buttons.Controls.AddRange(@($next, $retry, $close, $language))
 Add-EndpointRow '' $buttons
 $form.AcceptButton = $next
 
@@ -148,7 +172,7 @@ function Start-EndpointJob([string]$Action) {
         ca_certificate = $bundle.ca_certificate; ca_sha256 = $bundle.ca_sha256;
         endpoint_id = $EndpointId; scan_paths = @($scope.Lines | Where-Object { $_.Trim() }); key_file = $script:keyPath;
         tailscale_node_id = $TailscaleNodeId; enrollment = (Join-Path $PSScriptRoot 'enrollment.json'); settings = $SettingsPath;
-        requester_sid = $identity.User.Value }
+        requester_sid = $identity.User.Value; isolated_account = [bool]$isolatedBox.Checked }
     [IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     try {
         $worker = Join-Path $PSScriptRoot 'windows-worker.ps1'
@@ -185,6 +209,7 @@ function Start-EndpointJob([string]$Action) {
         if ($_.Exception.NativeErrorCode -eq 1223 -or $_.Exception.InnerException.NativeErrorCode -eq 1223) {
             $results.Text = '관리자 권한 승인 취소'
         }
+        $results.AppendText("`r`n" + (T 'next') + ': ' + (Get-EndpointNextAction $results.Text $script:lang))
         $retry.Enabled = $true
     }
 }
@@ -217,16 +242,18 @@ $timer.Add_Tick({
         Remove-Item -LiteralPath (Join-Path $work 'request.json') -Force -ErrorAction SilentlyContinue
         if ($exitCode -ne 0 -or -not $result -or $result.state -ne 'completed') {
             if (-not $result) { $results.Text = '조직 승인 설치기 검증 또는 실행 권한 확인 필요' }
+            # What failed, then the one thing to press next.
+            $results.AppendText("`r`n" + (T 'next') + ': ' + (Get-EndpointNextAction $(if ($result) { $result.detail } else { $results.Text }) $script:lang))
             $retry.Enabled = $true
             $next.Enabled = $false
         } elseif ($script:jobAction -eq 'health') {
             $script:step = 2
-            $title.Text = '설치 위치 · 관측 범위 확인'
-            $next.Text = if ($Remove) { '제거' } else { '설치' }
+            $title.Text = T 'confirm'
+            $next.Text = if ($Remove) { T 'remove' } else { T 'install' }
             $next.Enabled = $true
         } else {
             $script:completed = $true
-            $title.Text = if ($Remove) { '제거 완료' } else { '설치 완료' }
+            $title.Text = if ($Remove) { T 'done_remove' } else { T 'done_install' }
             $next.Enabled = $false
             $retry.Enabled = $false
         }
@@ -235,11 +262,11 @@ $timer.Add_Tick({
 $next.Add_Click({
     if ($script:step -eq 0) {
         $script:step = 1
-        $title.Text = '게이트웨이 연결 확인'
+        $title.Text = T 'checking_gateway'
         if ($Remove) {
             $script:step = 2
             $title.Text = '엔드포인트 제거 확인'
-            $next.Text = '제거'
+            $next.Text = T 'remove'
             $results.Text = '예약 작업 · 엔드포인트 설정 제거'
         } else { Start-EndpointJob 'health' }
     } elseif ($script:step -eq 2) {

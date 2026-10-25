@@ -194,7 +194,7 @@ def _render(outcome: dict, protocol_version: str | None = None) -> types.CallToo
         "restrictions_applied": outcome.get("restrictions_applied") or [],
     }
     # The supplier did not answer: the ledger keeps Block (fail-closed), but "차단" reads as a policy refusal
-    # and the model then stops or reports a block (pj2 10-23 grep.app), so the employee sees an error instead.
+    # and the model then stops or reports a block, so the employee sees an error instead.
     unanswered = decision == "Block" and outcome.get("policy_id") == "MCP-UPSTREAM-001" and not outcome.get("upstream_executed")
     header = f"[MCP Gateway · {'오류' if unanswered else DECISION_LABEL.get(decision, decision)} · {outcome.get('policy_id')}] {outcome.get('reason', '')}"
     result = outcome.get("result")

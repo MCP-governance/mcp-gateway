@@ -1,4 +1,4 @@
-"""Adapted from MCP-governance/Agent-Service miso@81177a4 (login/workspace/chat)."""
+"""Console login, workspace and chat routes, and the administrator operations behind them."""
 from __future__ import annotations
 
 import asyncio
@@ -99,7 +99,8 @@ async def bootstrap_field_accounts() -> None:
         "UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])",
         (["ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"],),
     )
-    await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin'")
+    # AI 게이트웨이 전용 직원은 PC 키트가 없다. 그 경로의 통제는 게이트웨이 판정이 맡는다(D-250).
+    await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin' AND NOT ai_gateway_only")
 
 
 @asynccontextmanager
@@ -345,8 +346,7 @@ async def login(request: Login, http_request: Request):
 
     이전 판은 모든 계정이 같은 환경변수 하나(`MOCK_SSO_PASSWORD`)를 비밀번호로
     썼다. 그러면 한 계정만 잠그거나 한 계정의 비밀번호만 바꾸는 일이 불가능하고,
-    "계정을 끈다"는 조치가 배포가 된다. 팀원 저장소 Agent-Service의 `miso` 브랜치가
-    쓰던 `crypt()` 검증 방식을 이 관리대장에 맞춰 가져왔다.
+    "계정을 끈다"는 조치가 배포가 된다. 계정마다 `crypt()` 해시로 검증한다.
     """
     caller = http_request.client.host if http_request.client else "unknown"
     row = await password_principal(request.email, request.password, caller)
@@ -445,14 +445,17 @@ async def pc_kit() -> dict | None:
     rows = await db.fetch_all(
         "SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
-    return {"url": "/api/pc-kit", "servers": servers, "platforms": sorted(KIT_FILES)}
+    automatic = await db.fetch_one("SELECT auto_activate FROM endpoint_settings WHERE id=1")
+    # Windows first: the main target (D-239). The Console selects the first platform.
+    return {"url": "/api/pc-kit", "servers": servers, "platforms": ["windows", "macos", "linux"],
+            "auto_activate": bool(automatic["auto_activate"]) if automatic else True}
 
 
 @app.post("/api/pc-kit")
 async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = "linux",
                                delivery: Literal["zip", "command"] = "zip",
                                authorization: str | None = Header(default=None),
-                               packaging: Literal["zip", "oneclick"] = "zip"):
+                               packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False):
     from .endpoint_plane import enrollment_token
     download_prefix = "Bearer kit-download."
     if authorization and authorization.startswith(download_prefix):
@@ -511,6 +514,9 @@ async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = 
         raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    if isolated:
+        # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
+        bundle["isolated"] = True
     if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
         bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
         bundle['local_engine']=json.loads(os.getenv('LOCAL_ENGINE_SETTINGS') or '{}')
@@ -2221,6 +2227,8 @@ class OneClickApproval(StrictModel):
     # 사용 대상(D-234): 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
     audience: Literal["all", "requester", "selected"] = "all"
     audience_users: list[str] = Field(default_factory=list, max_length=100)
+    # 주소 인자가 있는 도구의 허용 호스트. 제안값과 다를 때만 범위에 남는다.
+    destinations: dict[str, list[str]] = Field(default_factory=dict, max_length=300)
 
 
 ALL_PRINCIPALS = "*"  # registry.ALL_PRINCIPALS (D-234); this service does not load the registry
@@ -2424,14 +2432,15 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
         blockers.append({"code": "tools-missing", "message": "도구가 없습니다. 실행 계약을 확인하세요."})
     registry_state = await gateway_proxy("/api/registry", authorization)
     proposed_risk = intake_proposal.risk_input(row, tools)
-    scopes = intake_proposal.tool_reviews(row, tools)
+    addressed = {t["name"] for t in tools if review.has_address_argument(t.get("input_schema"))}
+    scopes = intake_proposal.tool_reviews(row, tools, addressed)
     proposal = {"server_id": sid, "endpoint": endpoint, "catalog": found, "provenance": record, "basis": intake_proposal.basis(row),
                 "local": local, "local_execution": {k: found.get(k) for k in ("observer_device", "observer_uid", "isolation_scope",
                                                                              "user_mapping", "image_signature")} if local and found else None,
                 "scan_sha256": intake_proposal.scan_basis(gate),
                 "commit_sha": row.get("commit_sha"), "purpose": row["purpose"], "data_class": proposed_risk["data_class"],
                 "risk_input": proposed_risk, "risk": risk_tier.assess(proposed_risk), "tool_reviews": scopes,
-                "tools": {t["name"]: intake_proposal.action(t) for t in tools},
+                "tools": {t["name"]: intake_proposal.action(t) for t in tools}, "address_tools": sorted(addressed),
                 "parameter_constraints": review.derived_constraints({t["name"]: t for t in tools}, scopes),
                 "supplier_assurance": {k: v for k, v in intake_proposal.supplier(row).items()
                                        if k in supplier_assurance.ASSURANCE_FIELDS},
@@ -2473,6 +2482,13 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
         if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
             raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
+        destinations = {name: sorted({str(h).strip().lower() for h in hosts if str(h).strip()})
+                        for name, hosts in request.destinations.items()}
+        destinations = {name: hosts for name, hosts in destinations.items()
+                        if hosts != (proposal["tool_reviews"].get(name) or {}).get("destinations")}
+        if not set(destinations) <= set(selected) or not set(destinations) <= set(proposal.get("address_tools") or []) or any(
+                len(hosts) > 10 or not all(review.DESTINATION.fullmatch(h) for h in hosts) for hosts in destinations.values()):
+            raise HTTPException(422, "허용 주소는 주소 인자가 있는 선택 도구에 호스트 이름 10개 이하로 적으세요.")
         # 두 번째 관리자까지 가기 전에, 첫 클릭에서 사용 대상을 확인한다.
         audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
         assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
@@ -2487,6 +2503,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if errors:
             raise HTTPException(422, " / ".join(errors))
         scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
+                 **({"destinations": destinations} if destinations else {}),
                  "valid_days": request.valid_days,
                  **({"audience": request.audience, "audience_users": sorted(request.audience_users)}
                     if request.audience != "all" else {}),
@@ -2554,7 +2571,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if critical and not (gate.get("critical") or {}).get("covered"):
             await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
         tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
-        reviews = {name: proposal["tool_reviews"][name] for name in selected}
+        reviews = {name: {**proposal["tool_reviews"][name], **({"destinations": destinations[name]} if name in destinations else {})}
+                   for name in selected}
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
@@ -2569,7 +2587,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         internal_url = row.get("internal_repo_url")
         if row["intake_kind"] == "remote-endpoint":
             contract = {"registration": registration.model_dump(), "allowed_principals": audience,
-                        "parameter_constraints": {n: proposal["parameter_constraints"][n] for n in selected},
+                        "parameter_constraints": {n: review.repin_addresses(proposal["parameter_constraints"][n], destinations[n])
+                                                  if n in destinations else proposal["parameter_constraints"][n] for n in selected},
                         "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
                         "valid_until": scope["valid_until"],
                         "advertised_name": found["server_name"], "version": found["version"],

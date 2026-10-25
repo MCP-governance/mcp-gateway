@@ -1,6 +1,7 @@
 """Time out unused, human-scoped tools using the append-only decision ledger (DEV-75)."""
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime, timedelta, timezone
 
@@ -11,6 +12,7 @@ OBSERVATION_DAYS = int(os.getenv("TOOL_SUNSET_OBSERVATION_DAYS", "30"))
 GRACE_DAYS = int(os.getenv("TOOL_SUNSET_GRACE_DAYS", "30"))
 TARGET = "tool-sunset"
 EVENTS = ("tool-sunset", "tool-sunset-extension", "tool-sunset-review")
+logger = logging.getLogger(__name__)
 
 
 def target_id(server_id: str, tool_name: str) -> str:
@@ -64,8 +66,7 @@ async def _last_check(connection, server_id: str, tool_name: str) -> dict | None
              ORDER BY id DESC LIMIT 1""", (TARGET, target_id(server_id, tool_name)))).fetchone()
 
 
-async def _coverage(connection, cutoff: datetime) -> tuple[bool, str]:
-    setting = await retention.setting()
+async def _coverage(connection, cutoff: datetime, setting: dict) -> tuple[bool, str]:
     if max(IDLE_DAYS + GRACE_DAYS, OBSERVATION_DAYS) > int(setting["days"]):
         return False, "미사용 판정 기간이 원장 보존 기간보다 깁니다."
     seal = retention.current_seal()
@@ -92,6 +93,9 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
     reviewed_text = tool_review.get("reviewed_at")
     try:
         reviewed_at = datetime.fromisoformat(str(reviewed_text).replace("Z", "+00:00"))
+        # Read before taking the transaction's connection: a second pool connection per check deadlocked
+        # the pool when a harness listed ten servers at once.
+        setting = await retention.setting()
         async with db.transaction() as connection:
             key = target_id(server_id, tool_name)
             await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (key,))
@@ -101,12 +105,12 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
                         "last_use": event["scope"].get("last_use"),
                         "deadline": event["scope"].get("deadline"), "status": "재심사 필요"}
             cutoff = now - timedelta(days=max(IDLE_DAYS + GRACE_DAYS, OBSERVATION_DAYS))
-            covered, coverage_reason = await _coverage(connection, cutoff)
+            covered, coverage_reason = await _coverage(connection, cutoff, setting)
             if not covered:
                 check_event = await _last_check(connection, server_id, tool_name)
                 if not check_event or check_event["scope"].get("window_start") != cutoff.isoformat():
                     await review.record_event(
-                        "tool-sunset-check", "failed", TARGET, key, "automatic", reason=coverage_reason,
+                        "tool-sunset-check", "recorded", TARGET, key, "automatic", reason=coverage_reason,
                         scope={"server": server_id, "tool": tool_name, "window_start": cutoff.isoformat(),
                                "observation_days": OBSERVATION_DAYS, "idle_days": IDLE_DAYS,
                                "grace_days": GRACE_DAYS}, connection=connection)
@@ -130,8 +134,11 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
                 await review.record_event("tool-sunset", "held", TARGET, key, "automatic",
                                           reason="도구 이용 기한 만료", scope=scope, connection=connection)
                 return {"active": False, "available": True, "eligible": True, **result, "status": "재심사 필요"}
+            # The deadline moves with every call by seconds; one extension a day per tool is the record worth keeping
+            # (an event per call grew the ledger by the call count). The decision still uses the exact last use.
             if result["recent"] and last_use and (not event or event["kind"] != "tool-sunset-extension"
-                                                   or event["scope"].get("deadline") != result["deadline"].isoformat()):
+                                                   or str(event["scope"].get("deadline") or "")[:10]
+                                                   != result["deadline"].astimezone(timezone.utc).date().isoformat()):
                 scope = {"server": server_id, "tool": tool_name, "last_use": last_use.isoformat(),
                          "observation_days": OBSERVATION_DAYS, "idle_days": IDLE_DAYS, "grace_days": GRACE_DAYS,
                          "window_start": cutoff.isoformat(), "deadline": result["deadline"].isoformat(),
@@ -143,11 +150,11 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
     except Exception as exc:
         try:
             await review.record_event(
-                "tool-sunset-check", "failed", TARGET, target_id(server_id, tool_name), "automatic",
+                "tool-sunset-check", "recorded", TARGET, target_id(server_id, tool_name), "automatic",
                 reason=type(exc).__name__, scope={"server": server_id, "tool": tool_name,
                                                   "observation_days": OBSERVATION_DAYS})
         except Exception:
-            pass
+            logger.exception("도구 이용 상태 확인 실패를 기록하지 못했습니다: %s/%s", server_id, tool_name)
         return {"active": True, "available": False, "eligible": True, "last_use": None, "deadline": None,
                 "status": "자료 없음", "reason": type(exc).__name__}
 
@@ -184,7 +191,7 @@ async def recently_used(server_id: str, tool_names: list[str], now: datetime) ->
             if rows and int(rows[0]["entries"]) != int(rows[0]["retained"]):
                 reason = "원장 봉인 자료를 확인할 수 없습니다."
         if reason:
-            await review.record_event("tool-sunset-check", "failed", TARGET, server_id, "automatic", reason=reason,
+            await review.record_event("tool-sunset-check", "recorded", TARGET, server_id, "automatic", reason=reason,
                                       scope={"server": server_id, "observation_days": OBSERVATION_DAYS,
                                              "idle_days": IDLE_DAYS, "grace_days": GRACE_DAYS,
                                              "window_start": cutoff.isoformat()})
@@ -198,11 +205,11 @@ async def recently_used(server_id: str, tool_names: list[str], now: datetime) ->
         return rows
     except Exception as exc:
         try:
-            await review.record_event("tool-sunset-check", "failed", TARGET, server_id, "automatic",
+            await review.record_event("tool-sunset-check", "recorded", TARGET, server_id, "automatic",
                                       reason=type(exc).__name__, scope={"server": server_id,
                                                                        "observation_days": OBSERVATION_DAYS})
         except Exception:
-            pass
+            logger.exception("도구 이용 이력 확인 실패를 기록하지 못했습니다: %s", server_id)
         return None
 
 

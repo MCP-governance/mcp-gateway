@@ -570,16 +570,15 @@ PATH_ARGS = ("path", "source", "destination", "file_path", "outputPath")
 
 
 def result_items(payload: dict) -> int:
-    """Count arrays in each released representation, including JSON inside text."""
+    """Count arrays in each released representation, including JSON inside text.
+
+    Only records count. A document's lines are not records: a long handbook was withheld as "more than
+    1000 items". Text stays bounded by the byte limit."""
     def count(value: Any) -> int:
         if isinstance(value, list):
             return len(value) + sum(count(item) for item in value)
         if isinstance(value, dict):
             return sum(count(item) for item in value.values())
-        if isinstance(value, str):
-            # Records serialized inside one JSON string (CSV, key dumps) are still records.
-            lines = sum(bool(line.strip()) for line in value.splitlines())
-            return lines if lines > 1 else 0
         return 0
 
     counts = [count(payload.get("structured")), len(payload.get("content") or [])]
@@ -591,8 +590,7 @@ def result_items(payload: dict) -> int:
             # A UTF-8 BOM is an encoding marker, not a reason to count every JSON line as a record.
             value = json.loads(item["text"].removeprefix("\ufeff"))
         except (ValueError, RecursionError):
-            # Plain text has no record schema; nonempty lines are a conservative unit.
-            text_count += sum(bool(line.strip()) for line in item["text"].splitlines())
+            continue
         else:
             text_count += count(value)
     return max(*counts, text_count)

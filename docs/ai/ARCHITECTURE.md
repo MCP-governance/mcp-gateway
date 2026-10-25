@@ -62,12 +62,27 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 
 ## 3. 직원 PC — 하네스와 관리형 설정
 
+직원 PC 키트는 두 모드다(D-239). **간편 모드(기본)**: 직원 계정과 직원이 설치한 Claude Code·Codex를 그대로 쓰고, 키트는 관리형 설정·
+헤더 헬퍼·root/SYSTEM 보고 서비스·상태 도구만 놓는다. 설치 점검(통제 해시 + 보호된 관리형 설정)을 통과한 새 PC는 조직 설정
+「새 PC 자동 활성화」(기본 켬)에 따라 게이트웨이가 첫 heartbeat에서 활성화한다. 엔드포인트 집행이 없으므로 통제 범위는
+`observed_only`(근거 「간편 모드 · 게이트웨이 판정 적용」)이고, 모든 MCP 호출은 지금처럼 게이트웨이가 판정한다.
+**격리 계정(고급)**: Linux `--isolated`·Windows 「고급: 격리 계정」. 별도 관리 계정·AppArmor/nft(Windows SID 방화벽)·관리자 활성화로
+아래 기존 설명 그대로이며 `endpoint_enforced`를 주장할 수 있는 유일한 경로다. 설치 끝에 모델 응답·도구 수·승인 서버 1건 `initialize`를
+실측해 보인다(Linux 설치기·`mcpgw-status`의 curses 화면, Windows 트레이 「연결 확인」). 간편 모드가 포기하는 것은
+[SECURITY_BOUNDARIES](SECURITY_BOUNDARIES.md#2026-10-25--간편-모드-기본이-포기하는-것-d-239).
+
 macOS 키트(D-196)는 기존 관리형 정책과 Linux 브로커 루프를 재사용하고 dscl 일반 계정·pf 하위 anchor·launchd를
 어댑터로 연결한다. `/auth/me`의 `kit.platforms`와 개인별 다운로드는 macOS를 포함한다. 브라우저에서 받은 연결 파일을
 한 줄 터미널 명령으로 실행하며 5분·1회용 다운로드 자격은 파일로만 전달한다. Claude 파일은 macOS 공식 관리 경로,
 Codex 파일은 `/etc/codex`를 사용한다. 플랫폼은 관측 열과 별도로 등록 detail에 보존하고 macOS의 실제 점검 항목만 요구한다.
 pf는 UID별 TCP/UDP egress 대상이며 AppArmor·전체 프로토콜 격리를 주장하지 않는다. 구현·정적 검사와 macOS 실검증은
 분리하며 [키트 보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md)를 따른다.
+
+관리형 정책(`endpoint_plane.managed_policy`)은 `control_hash`(주소·IP·포트·노드·계정·프록시와, 자리표시 서버 하나·안내문 없이
+렌더링한 관리형 파일)와 `servers_version`(진단용 전역 시퀀스)을 담는다. `policy_hash`는 `control_hash`와 파일 해시의 결속값이라
+게이트웨이가 heartbeat만으로 다시 계산하고, 내려 준 정책을 기억하지 않는다. 호출·heartbeat 격리·토큰 발급은 통제 해시만 비교하고,
+서버 목록 차이는 서버별로(철회 서버 거절, PC가 아직 받지 않은 새 서버 대기) 판정한다. 안내문은 해시에 넣지 않아 활성화가
+보고 해시를 바꾸지 않는다(D-238).
 
 현장 하네스–게이트웨이 구간은 Tailscale IP에 바인딩한 Caddy의 사설 CA HTTPS를 쓴다(D-124).
 공개 URL과 관리형 정책은 HTTPS이며 원격 HTTP 입력을 거부한다. 루트·지문은 개인별 키트에 담고,

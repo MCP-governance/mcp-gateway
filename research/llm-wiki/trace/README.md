@@ -10,7 +10,7 @@
 
 | 계열 | 형식 | 정의 정본(여기에 있어야 정의) | 건수 |
 | --- | --- | --- | ---: |
-| 결정 | `D-n`(1~9는 `D-01`) | `docs/ai/DECISIONS.md`의 `## D-n 제목` | 185 |
+| 결정 | `D-n`(1~9는 `D-01`) | `docs/ai/DECISIONS.md`의 `## D-n 제목`(번호대별로 나눈 뒤에는 `docs/ai/decisions/D-*.md`, 검사기가 둘 다 읽는다) | 185 |
 | 백로그 | `DEV-nn` `WIKI-nn` `AIG-nn` `RM-nn` `OPS-nn` | `research/llm-wiki/status/backlog.md` 표의 첫 열(상태 정본은 구글 시트 「백로그」) | 89 |
 | 백로그 옛 번호 | `RES-01` | 위 표의 한 줄. 시트 번호는 `WIKI-02`(manifest `backlog_aliases`) | 1 |
 | WBS 작업 | `Gnn.nn` | `research/llm-wiki/analysis/development-wbs/snapshot.json`의 `items[].id` | 57 |

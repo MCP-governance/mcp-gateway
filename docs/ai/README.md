@@ -1,6 +1,6 @@
 # docs/ai — 다음 AI 작업자를 위한 문서
 
-처음이면 이 순서로 읽는다: **ARCHITECTURE → RUNBOOK → TESTING**, 그리고 손댈 영역의 문서.
+처음이면 [START_HERE](../../research/llm-wiki/START_HERE.md)(규칙 → 현황 → 내 작업의 결정·보고서, 하려는 일별 경로)부터, 설계는 이 순서로 읽는다: **ARCHITECTURE → RUNBOOK → TESTING**, 그리고 손댈 영역의 문서.
 저장소 규칙과 작업 방식은 루트의 [AGENTS.md](../../AGENTS.md), 바뀌지 않는 원칙은 [README](../../README.md#원칙).
 날짜가 붙은 문서는 그 시점의 기록이며 현재 상태는 [개발 현황](../../research/llm-wiki/status/current.md)이 기준이다.
 
@@ -22,8 +22,8 @@
 | [BENCHMARK_AGT_2026-10-05.md](BENCHMARK_AGT_2026-10-05.md) | microsoft/agent-governance-toolkit(MIT)의 OWASP MCP Top 10 자체 평가와 소스를 우리 통제와 대조, 가져올 것 2가지·가져오지 않을 것 | 도구 설명 검사·MCP Top 10 대응을 바꿀 때 |
 | [REFERENCES_MCP_SECURITY_2026-10-05.md](REFERENCES_MCP_SECURITY_2026-10-05.md) | MCP 보안·거버넌스 표준·연구·오픈소스 12건(확인 수준·라이선스 표시)과 다음 작업 연결 | 새 탐지·정책·시험 코퍼스를 찾기 전 |
 | [architecture.html](architecture.html) · [architecture.png](architecture.png) | 구성도(archify로 생성, HTML은 브라우저로 — 확대·경로 추적·가이드 뷰) | 그림이 필요할 때 |
-| [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" |
-| [RUNBOOK.md](RUNBOOK.md) | 환경(WSL·포트·비밀번호 1111), `console.sh` 명령(field 포함), 계정, 자주 하는 일, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
+| [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유 — 본문은 번호대 파일 `decisions/D-xxx-yyy.md`(50개 단위), 한 건은 `split_decisions.py show D-n`, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" — 처음부터 읽지 않는다: [결정 색인](../../research/llm-wiki/status/decisions-index.md)에서 번호를 찾고 `python research/llm-wiki/tools/split_decisions.py show D-번호` |
+| [RUNBOOK.md](RUNBOOK.md) | 운영 배포(`deploy/`)·실습 스택 명령, 백업·복구·업그레이드·롤백, 계정, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
 | [TESTING.md](TESTING.md) | 검증 층, 개별 실행, 시험 작성 규칙 | 고친 뒤 |
 | [MCP_SERVERS.md](MCP_SERVERS.md) | 10종 서버, 설치·실행, 함정, 추가 절차 | 서버를 만질 때 |
 | [POLICY.md](POLICY.md) | Rego 구조, 우선순위, PAC15·검토된 capability, 예외, 정책 추가 절차 | 판정을 바꿀 때 |

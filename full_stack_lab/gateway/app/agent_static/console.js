@@ -193,23 +193,25 @@ const locationRows = (value = {}) => [
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
 const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
+// Windows is the main target: selected first whatever browser opened the Console.
 function preferredKitPlatform() {
-  const os = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
-  return /mac/i.test(os) ? "macos" : /win/i.test(os) ? "windows" : "linux";
+  return "windows";
 }
 // 설치 절차: 운영체제마다 실행 방법만 다르다. 명령 문자열 외에는 라벨만 둔다.
-function kitSteps(os) {
-  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code></li>`
+function kitSteps(os, kit = {}) {
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code><span class="sub">관리자 암호 1회</span></li>`
     : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
-    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회</span></li>`;
-  return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>관리자 활성화 뒤 사용</li></ol>
+    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회 · 지금 계정 그대로</span></li>`;
+  const ready = kit.auto_activate === false ? "관리자 활성화 뒤 사용" : "설치가 끝나면 바로 사용";
+  return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>${ready}</li></ol>
     ${os === "linux" ? kv([["제거", html`<code>sudo ~/mcp-managed-kit/install.sh --remove</code>`]]) : ""}`;
 }
 function kitView(kit, os) {
   const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferredKitPlatform()) - Number(a === preferredKitPlatform()));
   return html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}</div>
     <div class="row-actions" role="group">${platforms.map((name) => html`<button class="btn sm ${name === os ? "primary" : ""}" type="button" aria-pressed="${String(name === os)}" data-act="pc-kit-os" data-os="${name}">${PLATFORM_KIT[name] || "—"}</button>`)}</div>
-    ${platforms.includes(os) ? html`${kitSteps(os)}<div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
+    ${platforms.includes(os) ? html`${kitSteps(os, kit)}${os === "macos" ? "" : html`<label class="check"><input type="checkbox" name="kit-isolated"> 고급: 격리 계정<span class="sub">관리자 활성화</span></label>`}
+      <div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
 }
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
@@ -1169,7 +1171,7 @@ function showServer(id) {
       ${tools.map((t) => { const [lastUse, deadline, sunsetStatus] = toolSunsetRow(id, t.name); return html`<tr><td><code>${t.name}</code></td><td>${chip({ r: "allow", w: "alert", x: "block" }[t.action] || "", ACTION[t.action] || t.action)}</td>
         <td>${!t.enabled ? (registration?.tools?.[t.name] ? chip("block", "범위 미심사") : chip("outline", "미승인")) : t.contract_ok ? chip("allow", "일치") : chip("alert", "불일치")}</td>
         <td>${lastUse}</td><td>${deadline}</td><td>${sunsetStatus}</td></tr>`; })}</tbody></table>` },
-    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class, registration.intake_id ? s.id : null) }] : []),
+    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class, registration.intake_id ? s.id : null, registration.address_tools || []) }] : []),
     { key: "exit", label: "종료 조건", body: html`<div class="pill-list">${Object.entries(EXIT_TERMS).map(([k, label]) => bool(terms[k], label))}</div>
       ${creds.length ? kv([["보유 자격", html`${creds.map((c) => html`<code>${c.id}</code> `)}`]]) : ""}
       ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.purpose, html`${u.organization} · ${(REL_STATUS[u.status] || [, u.status])[1]}
@@ -1342,6 +1344,7 @@ function osEventTarget(e) {
   return d.executable || d.operation || "—";
 }
 const MANAGED_STATE = { active: "활성", pending: "활성화 대기", quarantined: "격리" };
+const MANAGED_MODE = { simple: "간편 모드", isolated: "격리 계정" };
 const SIGNUP_STATUS = { pending: ["approval", "대기"], approved: ["allow", "승인"], rejected: ["block", "거부"] };
 const MANAGED_EVENT = {
   "kit-issued": ["outline", "설치 파일 발급"], enrolled: ["approval", "설치 보고"], activated: ["allow", "활성화"],
@@ -1358,6 +1361,7 @@ ROUTES.people = async (_, tab) => {
     api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
     gw("suspensions")]);
   peopleAccounts = accounts;
+  const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
   const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
   const managed = inv.agents.filter((a) => a.managed_state && a.managed_state !== "unmanaged");
@@ -1392,11 +1396,12 @@ ROUTES.people = async (_, tab) => {
             ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
               <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : NONE}</td>
               <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관찰만")}
-                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state}</span>` : ""}</td>
+                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state} · ${MANAGED_MODE[deviceState[a.endpoint_id]?.mode] || "—"}</span>` : ""}</td>
               <td class="small">${ago(a.last_seen_at)}</td>
               <td class="num nowrap">${a.status === "revoked" ? chip("outline", "등록 해제됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">등록 해제</button>`}
                 ${["pending", "quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">활성화</button>` : ""}</td></tr>`)}
-            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true,
+            tools: html`<label>새 PC 활성화<select data-act-change="endpoint-auto" aria-label="새 PC 활성화">${option("on", "자동", inv.settings?.auto_activate === false ? "off" : "on")}${option("off", "관리자 확인", inv.settings?.auto_activate === false ? "off" : "on")}</select></label>` })}</div>` },
         { key: "suspensions", label: "이용 중지", n: suspensions.filter((x) => !x.resumed_at).length,
           body: panel("이용 중지", html`<table class="data"><thead><tr><th>사용자</th><th>서버</th><th>사유</th><th>중지</th><th>해제 예정</th><th>상태</th><th>재개</th><th></th></tr></thead><tbody>
             ${suspensions.map((x) => html`<tr><td>${x.display_name || "—"}</td><td>${x.server_name || x.server_id}</td><td class="small">${x.reason}</td>
@@ -1721,6 +1726,8 @@ function intakeApprovalFields(out) {
     <span><b>${t.name}</b>${pending ? html`<span>${ACTION[scope.actions?.[t.name] || p.tools[t.name]]}</span>`
       : html`<select name="action_${t.name}">${Object.entries(ACTION).slice(0, "rwx".indexOf(p.tools[t.name]) + 1).map(([k, v]) =>
         html`<option value="${k}" ${k === p.tools[t.name] ? raw("selected") : ""}>${v}</option>`)}</select>`}<span class="sub">${t.description || "—"}</span>
+      ${(p.address_tools || []).includes(t.name) ? (pending ? kv([["허용 주소", destinationText(scope.destinations?.[t.name] || p.tool_reviews[t.name].destinations)]])
+        : field.text(`destinations_${t.name}`, "허용 주소", 'maxlength="300"', p.tool_reviews[t.name].destinations.join(", "))) : ""}
       ${(t.warnings || []).length ? chip("alert", "도구 설명 경고") : ""}
       <details><summary>계약·인자 제한</summary><pre>${JSON.stringify({ input: t.input_schema, output: t.output_schema,
         constraints: p.parameter_constraints[t.name], scope: p.tool_reviews[t.name] }, null, 2)}</pre></details></span></label>`)}</fieldset>
@@ -1791,6 +1798,8 @@ async function showIntakeApproval(id) {
   if (!selected.length) { toast("도구를 하나 이상 선택하세요.", true); return; }
   const actions = scope ? scope.actions || {} : Object.fromEntries(selected.map((name) => [name, fd.get(`action_${name}`)])
     .filter(([name, action]) => action && action !== out.proposal.tools[name]));
+  const destinations = scope ? scope.destinations || {} : Object.fromEntries(selected
+    .filter((name) => (out.proposal.address_tools || []).includes(name)).map((name) => [name, hostList(fd.get(`destinations_${name}`))]));
   const assurance = scope?.supplier_assurance || Object.fromEntries(Object.keys(ASSURANCE_LABELS)
     .map((key) => [key, String(fd.get(`assurance_${key}`) || "").trim()]).filter(([, value]) => value));
   const location = scope?.residency || Object.fromEntries(Object.keys(LOCATION_LABELS).map((key) => {
@@ -1799,7 +1808,7 @@ async function showIntakeApproval(id) {
   }));
   const result = await api(`/api/mcp-requests/${id}/approve-and-register`, { method: "POST", body: {
     proposal_sha256: out.proposal_sha256, tools: selected, valid_days: scope?.valid_days || Number(fd.get("valid_days")),
-    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions,
+    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions, destinations,
     ...(scope ? { audience: scope.audience || "all", audience_users: scope.audience_users || [] } : audienceBody(fd)) } });
   toast(result.message); reload();
 }
@@ -1880,7 +1889,7 @@ function scopeTerms(item) {
     item.high_impact && `중대 영향 · ${(item.impact_domains || []).map((d) => IMPACT_DOMAIN[d] || "—").join(" · ")}`].filter(Boolean);
   return terms.length ? html`<div class="pill-list">${terms.map((t) => chip("plain", t))}</div>` : NONE;
 }
-function scopeTable(tools, reviews, dataClass, serverId = null) {
+function scopeTable(tools, reviews, dataClass, serverId = null, addressTools = []) {
   const names = Object.keys(tools || {});
   if (!names.length) return empty("범위 없음");
   return html`${dataClass ? kv([["데이터 등급", DATA_CLASS[dataClass] || dataClass]]) : ""}
@@ -1888,7 +1897,8 @@ function scopeTable(tools, reviews, dataClass, serverId = null) {
     ${names.map((name) => { const item = reviews?.[name]; return html`<tr><td><code>${name}</code></td>
       <td>${chip({ r: "allow", w: "alert", x: "block" }[tools[name]] || "", ACTION[tools[name]] || tools[name])}</td>
       ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td><td>${scopeTerms(item)}
-        ${serverId ? html`<button class="btn sm" data-act="impact-scope" data-id="${serverId}" data-tool="${name}">중대 영향 심사</button>` : ""}</td>`
+        ${serverId ? html`<button class="btn sm" data-act="impact-scope" data-id="${serverId}" data-tool="${name}">중대 영향 심사</button>` : ""}
+        ${serverId && addressTools.includes(name) ? html`<button class="btn sm" data-act="destination-scope" data-id="${serverId}" data-tool="${name}">허용 주소</button>` : ""}</td>`
         : html`<td colspan="4">${chip("block", "범위 미심사")}</td>`}</tr>`; })}</tbody></table>`;
 }
 function toolSunsetRow(serverId, name) {
@@ -2677,7 +2687,8 @@ const ACTIONS = {
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
-    const query = os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "";
+    const isolated = el.closest("[data-kit]")?.querySelector('[name="kit-isolated"]')?.checked ? "&isolated=true" : "";
+    const query = (os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "") + isolated;
     const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
@@ -2851,6 +2862,18 @@ const ACTIONS = {
     await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: {
       reviews: { [el.dataset.tool]: { purpose, asset, destinations, inputs, mask, grade, accepts_from, consent,
         high_impact: domains.length > 0, impact_domains: domains } } } });
+    toast("기록했습니다."); closeDrawer(); reload();
+  },
+  async "destination-scope"(el) {
+    const item = registry?.registrations?.[el.dataset.id]?.tool_reviews?.[el.dataset.tool];
+    if (!item) return;
+    const fd = await ask({ title: `허용 주소 · ${el.dataset.tool}`,
+      fields: field.text("destinations", "허용 주소", 'maxlength="300"', (item.destinations || []).join(", ")), confirm: "기록" });
+    if (!fd) return;
+    const { purpose, asset, inputs, mask, grade, accepts_from, consent, high_impact, impact_domains } = item;
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: {
+      reviews: { [el.dataset.tool]: { purpose, asset, destinations: hostList(fd.get("destinations")), inputs, mask, grade, accepts_from, consent,
+        high_impact: Boolean(high_impact), impact_domains: impact_domains || [] } } } });
     toast("기록했습니다."); closeDrawer(); reload();
   },
   async "residency-review"(el) {
@@ -3125,6 +3148,12 @@ document.addEventListener("change", (event) => {
     feed.filters[filter.dataset.filter] = filter.value.trim();
     feed.page = 1;
     reload();
+    return;
+  }
+  if (event.target.matches('[data-act-change="endpoint-auto"]')) {
+    gw("endpoint/settings", { method: "PUT", body: { auto_activate: event.target.value === "on" } })
+      .then(() => toast(event.target.value === "on" ? "새 PC를 자동으로 활성화합니다." : "새 PC는 관리자가 활성화합니다."))
+      .catch((error) => { toast(error.message); reload(); });
     return;
   }
   if (event.target.matches('[data-act-change="tool-filter"]')) {

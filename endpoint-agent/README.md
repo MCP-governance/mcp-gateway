@@ -12,7 +12,32 @@ Codex 최상위/프로필 `notify`는 빈 값도 실패입니다. 명령 값은 
 Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있으면 값과 무관하게 실패로 보고합니다(D-151).
 프로젝트 설정·그 밖의 대체 설정 위치·검사 사이 파일 변경은 범위 밖입니다. [범위와 전환 절차](../research/llm-wiki/analysis/user-command-settings/README.md).
 
+## 간편 모드(기본)와 격리 계정(고급) — D-239
+
+| | 간편 모드(기본) | 격리 계정(고급) |
+| --- | --- | --- |
+| 선택 | 기본 | 콘솔 「내 PC 연결 → 고급: 격리 계정」, Linux `install.sh --isolated`, Windows 마법사 체크 |
+| 실행 계정 | 지금 로그인한 직원 계정(관리자·표준 모두, 로그아웃 없음) | 별도 관리 계정 `managed-<직원>`(Linux)·`mcpgw-<직원>`(Windows) |
+| 하네스 | 직원이 설치한 그대로 | `/opt/mcpgw-approved`·`%ProgramFiles%\MCPGatewayManaged\harness`에 복사·SHA-256 |
+| 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mcpgw-status`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
+| 패키지 | curl·openssl·컨테이너 엔진을 시도만(실패해도 계속) | gcc·nftables·apparmor-utils·curl·openssl 필수 + 엔진 |
+| 활성화 | 설치 점검 통과 시 자동(콘솔 「새 PC 활성화」에서 끌 수 있음) | 관리자 |
+| 콘솔 통제 범위 | `observed_only` · 「간편 모드 · 게이트웨이 판정 적용」 | `endpoint_enforced`(다른 계정이 있으면 `bypass_possible`) |
+
+설치는 파일 하나 실행·관리자 확인 1회·질문 0개다. 끝에 세 칸을 실측해 보인다: **모델 응답**(하네스가 실제로 답하는지), **도구**
+(직원 하네스와 같은 헤더로 승인 서버의 `tools/list` 도구 수), **서버 연결**(승인 서버 1건 `initialize`). 자격 파일이 있다는 것만으로
+성공 처리하지 않는다. Linux는 터미널이면 curses 풀화면(단계·소요·세 칸·다음 할 일), 아니면 한 줄씩 출력한다.
+`mcpgw-status`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mcpgw-status --check`는 세 칸 중 두 칸을 다시 잰다.
+같은 파일이 재설치·복구·모드 전환이다: 이전 설치를 모드와 무관하게 먼저 원복하고, 간편 모드로 바꾸면 키트가 만든 격리 계정을
+지운다(홈·프로필 폴더는 남김). 간편 모드가 포기하는 것은 [SECURITY_BOUNDARIES](../docs/ai/SECURITY_BOUNDARIES.md)에 있다.
+
+Windows 트레이: 상태 창(연결·관리 상태·모드·승인 서버·하네스 판본·세 칸·다음 할 일), 연결 확인, 모델 로그인(Claude·Codex),
+다시 연결(게이트웨이 점검, 서비스가 멈췄으면 관리자 권한으로 다시 시작), 콘솔 열기, English/한국어, 제거. 처음 활성화되면 한 번 스스로
+연결을 확인한다. 콘솔에서는 `python.exe windows_status.py <status.json>`이 같은 상태를 글로 보인다.
+
 ## 가입자용 관리형 Linux 설치
+
+아래 3~5와 관리 계정·실행 연결·AppArmor 설명은 **격리 계정(`--isolated`) 기준**이다. 간편 모드는 위 절.
 
 1. 가입 승인·초대 수락 → Console 로그인 → **내 PC 연결**에서 개인별 키트 다운로드. 등록 토큰은 30분·1회용입니다.
 2. 조직 IT가 게이트웨이 HTTPS와 배치 루트·SHA-256 지문, 승인된 설치기, 공식 native ELF 배포판을 확인합니다.
@@ -47,6 +72,9 @@ Linux Codex 모델 로그인은 설치기가 `codex login --device-auth`로 실�
    자체 보고는 원격 하드웨어 attestation이 아닙니다. 확인 없이 자동 활성화하거나 자기 장치를 승인하지 않습니다.
 
 root 서비스 `mcpgw-managed-<계정>.service`는 실제 커널 규칙과 파일 해시를 활성화 전에는 10초, 활성화 뒤에는 60초마다 보고합니다.
+보고하는 `policy_hash`는 게이트웨이가 내려 준 값을 그대로 돌려 주며, 게이트웨이는 그 값과 파일 해시로 현재 통제 설정(`control_hash`)으로
+렌더링된 파일인지 계산합니다. 서버 승인·철회나 활성화로 바뀌는 서버 목록·안내문은 통제 해시에 들어가지 않아 격리 사유가 아닙니다.
+통제 설정이 다르거나 파일이 바뀌면 지금처럼 차단·격리합니다(D-238). 이 방식은 키트 변경 없이 게이트웨이 배포만으로 적용됩니다.
 AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니다. 비슷한 다른 계정의 프로필명으로 정상 처리하지 않습니다.
 `mcpgw-egress-<계정>.service`는 부팅 후에도 UID별 방화벽을 유지합니다. 180초 heartbeat 만료·격리·폐기는
 아직 만료되지 않은 JWT도 Gateway에서 거부합니다. 설정이 복구돼도 독립 관리자 활성화가 다시 필요합니다.
@@ -63,6 +91,10 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
 ## 가입자용 관리형 Windows 설치 (D-68)
+
+간편 모드(기본)는 로그인 중인 직원 계정에 그대로 설치한다(관리자 직원도 별도 계정 없이, 실행 중인 세션 유지). 방화벽 규칙·하네스 복사·
+PATH 변경이 없고 CA 경로만 사용자 환경 변수(`NODE_EXTRA_CA_CERTS`·`CODEX_CA_CERTIFICATE`)로 둔다. 아래 계정·방화벽·로그아웃 설명은
+**「고급: 격리 계정」 기준**이다.
 
 콘솔의 **내 PC 연결 → Windows**는 `mcp-managed-setup-windows.cmd` 한 파일을 내려줍니다(D-197).
 실행 후 UAC 한 번을 승인하면 포함된 ZIP을 메모리에서 검증하고 보호된 승인 설치기를 준비한 뒤 등록까지 실행합니다.

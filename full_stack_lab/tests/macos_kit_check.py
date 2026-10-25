@@ -82,7 +82,7 @@ class MacOSKitCheck(unittest.TestCase):
                 commands.macos_bootstrap(public, ticket, 'certificate')
 
     def test_platform_detection_and_check_sets(self):
-        names = {'MANAGED_CHECKS', 'MANAGED_CHECKS_BY_PLATFORM', 'managed_platform', 'managed_checks'}
+        names = {'MANAGED_CHECKS', 'MANAGED_CHECKS_BY_PLATFORM', 'managed_platform', 'managed_checks', 'managed_mode', 'SIMPLE_CHECKS'}
         scope = definitions(APP / 'endpoint_plane.py', names)
         self.assertEqual(scope['managed_platform']({'platform': 'Darwin', 'detail': {'managed_platform': 'macos'}}), 'macos')
         self.assertEqual(scope['managed_platform']({'detail': {'local_sid': 'S-1-5-21-1'}}), 'windows')
@@ -180,17 +180,18 @@ class MacOSKitCheck(unittest.TestCase):
         self.assertNotEqual(hashlib.sha256(b'x' * 43).digest(), hashlib.sha256(b'kit-download:' + b'x' * 43).digest())
         self.assertIn('timedelta(minutes=5)', body)
 
-    def test_console_prioritizes_browser_os(self):
+    def test_console_puts_windows_first(self):
+        # D-239: Windows is the main target, selected first whatever browser opened the Console.
         console = (APP / 'agent_static/console.js').read_text(encoding='utf-8')
-        self.assertIn('function preferredKitPlatform()', console)
-        self.assertIn('navigator.userAgentData?.platform', console)
-        self.assertIn('Number(b === preferred) - Number(a === preferred)', console)
+        self.assertIn('function preferredKitPlatform() {\n  return "windows";\n}', console)
+        self.assertIn('Number(b === preferredKitPlatform()) - Number(a === preferredKitPlatform())', console)
         self.assertIn('mcp-connect-macos.command', console)
         self.assertIn('&delivery=command', console)
 
     def test_macos_control_state_uses_actual_pf_checks(self):
         scope = definitions(APP / 'endpoint_plane.py',
-                            {'MANAGED_CHECKS', 'MANAGED_CHECKS_BY_PLATFORM', 'managed_platform', 'managed_checks'})
+                            {'MANAGED_CHECKS', 'MANAGED_CHECKS_BY_PLATFORM', 'managed_platform', 'managed_checks',
+                             'managed_mode', 'SIMPLE_CHECKS'})
         scope.update(datetime=datetime, HEARTBEAT_SECONDS=180,
                      host_report=lambda device, now: device['detail'].get('host'),
                      os_telemetry=lambda device, now: 'unknown')

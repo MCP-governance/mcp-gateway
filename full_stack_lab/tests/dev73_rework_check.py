@@ -45,7 +45,8 @@ G={'asyncio':asyncio,'datetime':datetime,'timedelta':timedelta,'UTC':timezone.ut
    'REASONS':{'local_file':'로컬 파일'},'Jsonb':lambda v:v,
    'RUN_SECONDS':20,'MAX_PARAMS_BYTES':65536,'QUEUE_LIMIT':8,'ACTIVE_LIMIT':1,'RATE_LIMIT':30,'POLL_SECONDS':.001,
    'RETENTION_SECONDS':3600,'evidence_context':contextvars.ContextVar('evidence',default=None),
-   'transport_context':contextvars.ContextVar('transport',default={})}
+   'transport_context':contextvars.ContextVar('transport',default={}),
+   '_device_control':AsyncMock(return_value='policy')}
 jobs=load_functions(APP/'local_jobs.py',{'NotStarted','canonical','validate_params','approval_window','mirror_image','manifest_errors',
        'remember','record_evidence','exchange','authorized','current_job','applicant_device','LocalClient'},G)
 
@@ -298,11 +299,11 @@ class OutcomeAndQueue(unittest.IsolatedAsyncioTestCase):
     async def test_F9_result_evidence_retains_uuid_timestamps_state_hash(self):
         row={'id':str(uuid.uuid4()),'request_id':str(uuid.uuid4()),'device_id':'device','server_id':'local-files',
              'method':'tools/call','manifest_sha256':'a'*64,'state':'done','result_sha256':'b'*64,
-             'claimed_at':datetime.now(timezone.utc),'finished_at':datetime.now(timezone.utc)}
+             'claimed_at':datetime.now(timezone.utc),'started_at':datetime.now(timezone.utc),'finished_at':datetime.now(timezone.utc)}
         event={};jobs.remember(row,event)
         evidence=event['client']['local_jobs'][0]
         self.assertTrue(event['upstream_attempted'])
-        for key in ('id','request_id','claimed_at','finished_at','state','result_sha256'):
+        for key in ('id','request_id','claimed_at','started_at','finished_at','state','result_sha256'):
             self.assertEqual(evidence[key],str(row[key]))
 
     async def test_F8_bound_observer_survives_a_newer_device_heartbeat(self):

@@ -55,6 +55,8 @@ def register(base: str, requester: str, approver: str, *, endpoint: str, server_
         raise SystemExit(f"selected tools carry description warnings, read them and pass --ack-warnings: {flagged}")
     request = _call(base, "POST", "/api/mcp-requests", requester, {
         "display_name": name, "intake_kind": "remote-endpoint", "endpoint_url": endpoint,
+        # The intake API asks which advertised tools the requester needs (same as the one-click screen).
+        "requested_tools": sorted(tools),
         "requested_transport": "streamable-http", "purpose": purpose, "risk_input": impact_input})["request"]
     # Every approved tool carries a person's scope: why, on which asset, reaching which outside hosts.
     reviews = tool_reviews or {name: {"purpose": purpose[:200], "asset": endpoint.split("/")[2], "destinations": []}

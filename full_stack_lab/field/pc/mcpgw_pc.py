@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """mcpgw_pc: 직원 PC의 Claude Code·Codex CLI를 솔루션 기기의 거버넌스 Gateway에 연결한다.
 
-    python mcpgw_pc.py setup --url https://100.83.175.111 --ca root.crt --ca-sha256 SHA256 --servers filesystem,git
+    python mcpgw_pc.py setup --url https://<게이트웨이 주소> --ca root.crt --ca-sha256 SHA256 --servers filesystem,git
     python mcpgw_pc.py login         # 다시 로그인(리프레시 토큰이 만료·폐기됐을 때)
     python mcpgw_pc.py doctor        # 이름 해석·TLS·로그인·서버별 연결·하네스 설정을 한 줄씩 확인
     python mcpgw_pc.py report        # 하네스 기본 커넥터·기능을 보고하고 관리자가 거부한 것을 끈다(D-51)

@@ -48,10 +48,33 @@ def risk_input(row: dict, tools: list[dict]) -> dict:
             "users": 1, "autonomy": "autonomous"}
 
 
-def tool_reviews(row: dict, tools: list[dict]) -> dict:
-    # Inferring a URL destination from an argument name would grant arbitrary egress. Keep it empty.
+# A host the contract itself names: written with a scheme, or ending in a common public suffix so that file
+# names (README.md, index.js) are not read as hosts.
+_HOST = re.compile(r"(?<![\w@.-])(?:(https?)://)?((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*[a-z0-9])(?![\w-])", re.I)
+_PUBLIC_SUFFIX = {"com", "org", "net", "io", "dev", "aws", "ai", "app", "cloud", "co", "gov", "edu", "kr", "info"}
+_NOT_DESTINATION = {"json-schema.org", "www.w3.org"}
+
+
+def suggested_destinations(row: dict, tool: dict) -> list[str]:
+    """Hosts an address argument is meant for: a remote server's own host and hosts its contract names.
+
+    Only a suggestion on the approval screen; the person approving confirms or edits it (with nothing
+    suggested, a documentation reader's URL argument was registered to match no address at all)."""
+    hosts = [urlsplit(row.get("endpoint_url") or "").hostname] if row.get("intake_kind") == "remote-endpoint" else []
+    text = json.dumps({"description": tool.get("description"), "input_schema": tool.get("input_schema")}, ensure_ascii=False)
+    hosts += [host for scheme, host in _HOST.findall(text) if scheme or host.rsplit(".", 1)[-1].lower() in _PUBLIC_SUFFIX]
+    found = []
+    for host in (h.lower() for h in hosts if h):
+        if host not in found and host not in _NOT_DESTINATION:
+            found.append(host)
+    return found[:10]
+
+
+def tool_reviews(row: dict, tools: list[dict], addressed: frozenset | set = frozenset()) -> dict:
+    # Only tools with an address argument get suggested destinations; an argument name alone grants nothing.
     return {t["name"]: {"purpose": row["purpose"][:200], "asset": row["display_name"][:200],
-                        "destinations": [], "inputs": list((t.get("input_schema") or {}).get("properties") or {}),
+                        "destinations": suggested_destinations(row, t) if t["name"] in addressed else [],
+                        "inputs": list((t.get("input_schema") or {}).get("properties") or {}),
                         "mask": True, "grade": "public", "accepts_from": [], "consent": True}
             for t in tools}
 
@@ -96,7 +119,7 @@ LOCAL_RUN_PRESETS = {
                    "reason_text": "PC 폴더에 지식 그래프 영구 저장"},
     "src/sequentialthinking": {**_LOCAL, "image": "mcp/sequentialthinking", "reason_text": "PC 안에서 도는 단계별 사고 도구"},
 }
-# git·time 이미지는 인터프리터가 /root(0700) 아래 uv 설치에 있어 관리 계정(UID)으로 exec가 거부된다(10-23 PJ1 docker 29.8.1 실측).
+# git·time 이미지는 인터프리터가 /root(0700) 아래 uv 설치에 있어 관리 계정(UID)으로 exec가 거부된다(Docker 29.8.1).
 # 환경 변수·tmpfs로 풀 수 없고 루트 실행은 허용하지 않으므로 제안하지 않고 상태만 보인다.
 ROOT_ONLY_IMAGES = {"src/git", "src/time"}
 ROOT_ONLY_STATUS = "관리 계정으로 실행할 수 없는 이미지"

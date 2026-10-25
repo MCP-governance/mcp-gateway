@@ -88,6 +88,70 @@ function Start-Process {
             self.assertEqual(self.managed.managed_user('employee'), ('employee', employee, False))
             ps.assert_not_called()
 
+    def test_one_click_installs_the_signed_in_account_unless_the_kit_asks_for_isolation(self):
+        # D-239: the employee's own account by default; 「고급: 격리 계정」 puts "isolated": true in enrollment.json.
+        template = (ROOT / 'endpoint-agent/windows-oneclick.ps1.in').read_text(encoding='utf-8')
+        self.assertIn("isolated_account=$isolated", template)
+        self.assertNotIn("isolated_account=$true", template)
+        self.assertIn("ConvertFrom-Json).isolated -eq $true", template)
+        worker = (ROOT / 'endpoint-agent/windows-worker.ps1').read_text(encoding='utf-8-sig')
+        self.assertNotIn("throw '기존 엔드포인트 제거 후 재설치 필요'", worker)  # a reinstall rolls back instead
+        # ...and the running service lets go of the runtime before it is replaced, then starts again (pj3 10-25).
+        self.assertLess(worker.index("foreach ($name in $stoppedTasks) { Stop-ScheduledTask"), worker.index("Install-EndpointRuntime $PSScriptRoot $root"))
+        self.assertIn("Start-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue", worker)
+        self.assertIn("if ($isolated) { $managedArguments += '--isolated-account' }", worker)
+        # A one-click approval can be updated by a newer one-click file; an IT approval (no marker) still needs IT.
+        self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
+        self.assertIn("if ($replace -and -not (Test-Path -LiteralPath $oneclickMark)) { throw 'IT must update the approved installer' }", template)
+
+    def test_runtime_check_imports_only_what_the_embedded_python_has(self):
+        # pj3 10-25: the D-232 fallbacks (tomli, toml) made every Windows install stop at 「실행 파일 준비」.
+        check = load('runtime_check', 'endpoint-agent/runtime-check.py')
+        modules = check.modules_of(ROOT / 'endpoint-agent')
+        self.assertFalse({'toml', 'tomli', 'pwd', 'grp', 'fcntl'} & modules)
+        self.assertIn('tomllib', modules)
+        missing = [name for name in sorted(modules)  # the kit's own modules sit beside the script
+                   if not (ROOT / 'endpoint-agent' / (name + '.py')).is_file() and importlib.util.find_spec(name) is None]
+        self.assertEqual(missing, [], 'modules a standard CPython 3.12+ lacks')
+
+    @unittest.skipUnless(os.name == 'nt', 'PowerShell required')
+    def test_no_companion_to_retire_is_not_a_powershell_failure(self):
+        # pj3 10-25: a PC that never had an isolated install aborted every simple install on this script.
+        self.assertIsNone(self.managed.powershell(self.managed.REMOVE_COMPANION, {'name': 'mcpgw-no-such-account-s1'}))
+        # Removing a simple-mode install: no firewall rule and (here) no task either is still a success.
+        self.assertIsNone(self.managed.powershell(self.managed.STOP_SERVICE, {
+            'name': 'MCPGatewayManaged-no-such-account-s1', 'rules': ['MCPGW-no-such-account-s1-egress']}))
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows version resources')
+    def test_winget_harness_version_is_read_from_the_file_not_by_running_it(self):
+        import shutil
+        folder = self.root / 'profile/AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode_x'
+        folder.mkdir(parents=True)
+        notepad = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'notepad.exe'
+        shutil.copyfile(notepad, folder / 'claude.exe')  # any PE with a version resource
+        expected = self.managed.file_version(folder / 'claude.exe')
+        self.assertRegex(expected, r'^\d+\.\d+\.\d+$')
+        with mock.patch.object(self.managed.subprocess, 'run', side_effect=AssertionError('a harness was run')):
+            self.assertEqual(self.managed.harness_versions(self.root / 'profile'), {'claude': expected})
+        self.assertIsNone(self.managed.file_version(self.root / 'missing.exe'))
+
+    def test_simple_mode_puts_its_codex_block_back_after_the_codex_app_rewrites_the_file(self):
+        # pj3 10-25: the Codex app rewrote the employee's config.toml and the PC was quarantined for it.
+        profile = self.root / 'profile'
+        (profile / '.codex').mkdir(parents=True)
+        block = '\n[mcp_servers.learn]\nurl = "https://gw.example/mcp/learn/"\n'
+        path = profile / '.codex/config.toml'
+        path.write_text(self.managed.with_codex_block('model = "x"\n', block), encoding='utf-8')
+        config, policy = {'profile': str(profile)}, {'files': {self.managed.CODEX_BLOCK: block}}
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
+        path.write_text(path.read_text(encoding='utf-8').replace('learn/"', 'learn/" # edited') +
+                        '\n[plugins."pdf"]\nenabled = true\n', encoding='utf-8')
+        self.assertTrue(self.managed.restore_codex_block(config, policy))
+        text = path.read_text(encoding='utf-8')
+        self.assertEqual(self.managed.codex_block(text), block)
+        self.assertIn('[plugins."pdf"]', text)  # the app's own settings stay
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
+
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \
                 mock.patch.object(self.managed, 'powershell'):

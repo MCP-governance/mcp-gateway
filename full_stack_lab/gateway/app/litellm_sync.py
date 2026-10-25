@@ -21,6 +21,12 @@ from urllib.parse import quote, urlencode, urlsplit
 LOG = logging.getLogger(__name__)
 STATES = {"pending": "동기화 대기", "failed": "동기화 실패", "verified": "동기화 완료"}
 MAX_BODY = 2 * 1024 * 1024
+# A: LiteLLM's MCP server points at MINT /mcp/<server>/ and forwards the employee's own MINT token (oauth_delegate
+# passes the caller's per-server header through; LiteLLM stores nothing). B: LiteLLM calls the upstream directly and the
+# guardrail asks MINT before each call. One setting chooses both the registered address and the auth mode (D-249).
+ROUTES = {"mint": "oauth_delegate", "direct": None}
+# Subject-level failures deny that key or team only; these make the registered server itself untrustworthy.
+SERVER_LEVEL = {"server-readback-mismatch", "worker-server-readback-mismatch", "invalid-worker-server-response"}
 
 
 class SyncError(Exception):
@@ -37,6 +43,46 @@ def origin(value):
             or parsed.password or parsed.query or parsed.fragment or parsed.path not in {"", "/"}):
         raise SyncError("invalid-management-origin")
     return value.rstrip("/")
+
+
+def route():
+    value = os.getenv("MINT_LITELLM_ROUTE", "mint").strip() or "mint"
+    if value not in ROUTES:
+        raise SyncError("invalid-route")
+    return value
+
+
+def mint_endpoint(server_id):
+    base = os.getenv("MINT_LITELLM_MINT_MCP_URL") or os.getenv("GATEWAY_PUBLIC_MCP_URL", "")
+    parsed = urlsplit(base)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.query or parsed.fragment:
+        raise SyncError("invalid-mint-mcp-url")
+    return base.rstrip("/") + "/" + quote(server_id, safe="") + "/"
+
+
+async def team_ceiling(api, config):
+    """True when key grants cannot leak through a team MINT grants (D-249).
+
+    LiteLLM 1.105 only uses require_key_mcp_access_defined to stop a key without its own MCP list from inheriting
+    its team's servers, and its /config/field API refuses that field (a config-file setting). With no team bindings
+    MINT grants keys explicitly and that inheritance never carries a MINT grant, so the switch is irrelevant. With
+    team bindings the switch must be read back, or the operator must state it is set in the config file.
+    """
+    if not config["teams"]:
+        return "no-team-grants"
+    try:
+        setting = await api.request("GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
+        if isinstance(setting, dict) and setting.get("field_value") is True:
+            return "read-back"
+    except SyncError:
+        pass
+    if os.getenv("MINT_LITELLM_KEY_ACCESS_CONFIRMED") == "1":
+        return "operator-confirmed"
+    raise SyncError("explicit-key-access-required")
+
+
+def recheck_seconds():
+    return max(30, int(os.getenv("MINT_LITELLM_SYNC_RECHECK_SECONDS", "300")))
 
 
 def configuration():
@@ -69,7 +115,8 @@ def configuration():
     workers = config.get("workers", [])
     if not isinstance(workers, list) or not workers:
         raise SyncError("worker-inventory-required")
-    return url, {"users": users, "teams": teams, "workers": [origin(w) for w in workers], "management_origin": url}
+    return url, {"users": users, "teams": teams, "workers": [origin(w) for w in workers], "management_origin": url,
+                 "route": route()}
 
 
 def management_key():
@@ -97,8 +144,10 @@ class ManagementAPI:
 
     def _request(self, method, path, body, params, missing, key):
         parsed = urlsplit(self.url)
-        connection = (http.client.HTTPSConnection(parsed.hostname, parsed.port, timeout=8,
-                      context=ssl.create_default_context()) if parsed.scheme == "https" else
+        # A private CA for the management origin only; other outbound TLS keeps the system store.
+        context = ssl.create_default_context(cafile=os.getenv("MINT_LITELLM_SYNC_CA_FILE") or None)
+        connection = (http.client.HTTPSConnection(parsed.hostname, parsed.port, timeout=8, context=context)
+                      if parsed.scheme == "https" else
                       http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=8))
         try:
             target = path + ("?" + urlencode(params) if params else "")
@@ -157,8 +206,8 @@ def check_subject(info, subject):
 async def propagate(api, plan, config, observations):
     try:
         await _propagate(api, plan, config, observations)
-    except Exception:
-        if plan["active"]:
+    except Exception as exc:
+        if plan["active"] and getattr(exc, "server_level", True):
             path = "/v1/mcp/server/" + quote(plan["remote_id"], safe="")
             try:
                 current = await api.request("GET", path, missing=True)
@@ -178,22 +227,22 @@ async def _propagate(api, plan, config, observations):
     if existing is not None and (existing.get("mcp_info") or {}).get("mint_server_id") != plan["server_id"]:
         raise SyncError("server-ownership-conflict")
     active = plan["active"]
-    expected_auth = (existing.get("auth_type") or "none") if existing else "none"
+    existing_auth = (existing.get("auth_type") or "none") if existing else "none"
+    # Direct routing must not inherit pass-through auth from A: it would hand the employee's MINT token to the upstream.
+    expected_auth = plan.get("auth") or ("none" if existing_auth == "oauth_delegate" else existing_auth)
     expected_byok = bool(existing.get("is_byok")) if existing else False
-    errors, credential_targets = [], []
+    errors, subject_errors, failed_subjects, credential_targets = [], [], [], []
     session_users = set(plan.get("session_users", []))
     if active:
-        setting = await api.request("GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
-        if not isinstance(setting, dict) or setting.get("field_value") is not True:
-            raise SyncError("explicit-key-access-required")
+        observations.append({"kind": "team-ceiling", "basis": await team_ceiling(api, config)})
         if plan.get("unsupported"):
             raise SyncError("unsupported-or-credentialed-endpoint")
         payload = {"server_id": sid, "server_name": plan["server_id"], "alias": plan["server_id"], "url": plan["endpoint"],
-                   "transport": "http", "auth_type": "none", "allowed_tools": plan["tools"],
+                   "transport": "http", "auth_type": expected_auth, "allowed_tools": plan["tools"],
                    "allow_all_keys": False, "available_on_public_internet": False,
                    "mcp_info": {"mint_server_id": plan["server_id"]}}
-        if existing:
-            if existing.get("url") != plan["endpoint"] and expected_auth != "none":
+        if existing and existing_auth not in {"none", "oauth_delegate"}:
+            if existing.get("url") != plan["endpoint"]:
                 raise SyncError("credential-origin-change-refused")
             # Existing OAuth/BYOK configuration belongs to LiteLLM; never downgrade it or copy its secrets.
             payload.pop("auth_type")
@@ -232,7 +281,17 @@ async def _propagate(api, plan, config, observations):
                 observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(), "absent": True})
                 continue
             info = data["info" if kind == "key" else "team_info"]
-            check_subject(info, subject)
+            stale = current_by_id.get((kind, identifier)) != subject
+            try:
+                check_subject(info, subject)
+            except SyncError as exc:
+                if not stale:
+                    raise
+                # A mapping the operator has since removed or corrected: no longer ours to write, and no grant
+                # can reach it through MINT (it is not in the current bindings). Seen in CI after a mapping fix.
+                observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
+                                     "stale": True, "skipped": str(exc)})
+                continue
             permissions = merged_permissions(info.get("object_permission"), sid, tools)
             await api.request("POST", "/key/update" if kind == "key" else "/team/update",
                               {**params, "object_permission": permissions})
@@ -243,12 +302,18 @@ async def _propagate(api, plan, config, observations):
             observed = (actual.get("mcp_tool_permissions") or {}).get(sid)
             observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
                                  "tools": observed, "server_granted": sid in (actual.get("mcp_servers") or [])})
-            if actual != permissions and {k: v for k, v in actual.items() if k != "object_permission_id"} != permissions:
+            if not active:
+                # LiteLLM 1.105 drops a deleted server from a key's permission on write (CI); absent and empty both deny.
+                if observed not in (None, []):
+                    raise SyncError("permissions-readback-mismatch")
+            elif actual != permissions and {k: v for k, v in actual.items() if k != "object_permission_id"} != permissions:
                 raise SyncError("permissions-readback-mismatch")
         except (SyncError, KeyError, TypeError) as exc:
-            errors.append(str(exc) if isinstance(exc, SyncError) else "invalid-permissions-response")
-    if active and errors:
-        await api.request("DELETE", path, missing=True)
+            # One wrong key or team stops only that subject; the others keep the server (D-249).
+            subject_errors.append(str(exc) if isinstance(exc, SyncError) else "invalid-permissions-response")
+            failed_subjects.append(hashlib.sha256(identifier.encode()).hexdigest())
+    if failed_subjects:
+        observations.append({"kind": "partial", "failed_subjects_sha256": sorted(failed_subjects)})
     if not active:
         # The admin inventory works after server deletion and never returns credential values.
         try:
@@ -315,12 +380,50 @@ async def _propagate(api, plan, config, observations):
         observations.append({"kind": "server", "present": final is not None})
         if final is not None:
             errors.append("server-delete-readback-mismatch")
+    if active and SERVER_LEVEL & set(errors):
+        await api.request("DELETE", path, missing=True)
+        observations.append({"kind": "server-removed", "reason": "server-level-mismatch"})
     if plan.get("unsupported"):
         errors.append("unsupported-or-credentialed-endpoint")
     if plan.get("inventory_unknown"):
         errors.append("credential-owner-inventory-unknown")
-    if errors:
-        raise SyncError(",".join(sorted(set(errors))))
+    if errors or subject_errors:
+        error = SyncError(",".join(sorted(set(errors + subject_errors))))
+        error.server_level = bool(SERVER_LEVEL & set(errors))
+        raise error
+
+
+async def observe(api, plan, config):
+    """Read-only check of a verified state. Returns mismatch codes and writes nothing (D-249)."""
+    path = "/v1/mcp/server/" + quote(plan["remote_id"], safe="")
+    found, problems = await api.request("GET", path, missing=True), []
+    if plan["active"]:
+        if (not isinstance(found, dict) or found.get("url") != plan["endpoint"]
+                or found.get("allowed_tools") != plan["tools"] or found.get("approval_status") != "active"
+                or (plan.get("auth") and (found.get("auth_type") or "none") != plan["auth"])
+                or (found.get("mcp_info") or {}).get("mint_server_id") != plan["server_id"]
+                or found.get("allow_all_keys") is not False):
+            problems.append("server-drift")
+    elif found is not None:
+        problems.append("server-drift")
+    for subject in subjects(config):
+        kind, identifier = subject["kind"], subject["id"]
+        params = {"key" if kind == "key" else "team_id": identifier}
+        try:
+            data = await api.request("GET", "/key/info" if kind == "key" else "/team/info", params=params, missing=True)
+            info = data["info" if kind == "key" else "team_info"] if data else None
+            if info is None:
+                continue
+            check_subject(info, subject)
+            granted = plan["active"] and set(subject["users"]) <= set(plan["allowed_users"])
+            tools = ((info.get("object_permission") or {}).get("mcp_tool_permissions") or {}).get(plan["remote_id"])
+            if (tools or []) != (plan["tools"] if granted else []):
+                problems.append(kind + "-drift")
+        except SyncError as exc:
+            problems.append(str(exc) if "mismatch" in str(exc) else kind + "-unreadable")
+        except (KeyError, TypeError):
+            problems.append(kind + "-unreadable")
+    return sorted(set(problems))
 
 
 async def initialize():
@@ -365,10 +468,15 @@ async def desired(server_id):
                                 (registry.ALL_PRINCIPALS in audience, audience))
     endpoint = spec["endpoint"]
     parsed = urlsplit(endpoint)
-    if (parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username
-            or parsed.password or parsed.query or parsed.fragment):
+    mode = route()
+    # Device-run servers have no network address; a credential in the URL may only stay inside MINT (route A).
+    if (parsed.scheme not in {"http", "https"} or not parsed.hostname
+            or (mode == "direct" and (parsed.username or parsed.password or parsed.query or parsed.fragment))):
         result["unsupported"] = True
         return result
+    if mode == "mint":
+        endpoint = mint_endpoint(server_id)
+    result["auth"] = ROUTES[mode]
     result.update(active=bool(tools and people), tools=sorted(set(t["name"] for t in tools) & set(spec["tools"])),
                   allowed_users=sorted(set(p["user_id"] for p in people)), endpoint=endpoint)
     result["active"] = bool(result["active"] and result["tools"])
@@ -423,8 +531,19 @@ async def _reconcile(url, config):
         try:
             plan = await desired(server_id)
             digest = fingerprint(plan, config)
+            now = datetime.now(timezone.utc)
             if row["fingerprint"] == digest:
-                if row["status"] == "verified" or row["retry_at"] > datetime.now(timezone.utc):
+                if row["status"] == "verified":
+                    if (now - row["updated_at"]).total_seconds() < recheck_seconds():
+                        continue
+                    # A verified state is re-read on a timer: LiteLLM-side edits are invisible from MINT otherwise.
+                    problems = await observe(ManagementAPI(url), plan, config)
+                    if not problems:
+                        await db.execute("UPDATE litellm_sync_jobs SET updated_at=now() WHERE server_id=%s AND revision=%s",
+                                         (server_id, row["revision"]))
+                        continue
+                    observations.append({"kind": "drift", "problems": problems})
+                elif row["retry_at"] > now:
                     continue
             plan["subjects"] = row["subjects"]
             plan["session_users"] = row["session_users"]
@@ -456,8 +575,9 @@ async def _reconcile(url, config):
             superseded = current["revision"] != row["revision"]
             if superseded:
                 state, failure = "failed", "queued-revision-changed"
-            event_id = await review.record_event("litellm-sync", state, "server", server_id, "system",
-                scope={"evidence_class": "G5", "revision": row["revision"], "attempt": current["attempts"] + 1,
+            # The ledger's outcome vocabulary is fixed (approval_events CHECK); the sync state travels in scope.
+            event_id = await review.record_event("litellm-sync", "recorded", "server", server_id, "system",
+                scope={"evidence_class": "G5", "state": state, "revision": row["revision"], "attempt": current["attempts"] + 1,
                        "desired_sha256": digest, "observed_at": datetime.now(timezone.utc).isoformat(),
                        "desired": {k: (plan or {}).get(k) for k in ("remote_id", "active", "tools", "allowed_users")},
                        "observations": observations, "failure": failure,
@@ -497,3 +617,33 @@ async def watch():
         except Exception as exc:
             LOG.error("LiteLLM synchronization unavailable: %s", type(exc).__name__)
         await asyncio.sleep(5)
+
+
+async def check():
+    """Pre-start diagnosis for the installer: settings, secret, explicit key access and every worker, no writes."""
+    report = {"enabled": enabled()}
+    if not enabled():
+        return report
+    try:
+        url, config = configuration()
+        report.update(route=config["route"], users=len(config["users"]), teams=len(config["teams"]),
+                      workers=len(config["workers"]))
+        if config["route"] == "mint":
+            report["mint_mcp_url"] = mint_endpoint("example")[:-len("example/")]
+        management_key()
+        report["team_ceiling"] = await team_ceiling(ManagementAPI(url), config)
+        for worker in config["workers"]:
+            await ManagementAPI(worker).request("GET", "/v1/mcp/server")
+        report["ok"] = True
+    except (SyncError, OSError, KeyError, ValueError) as exc:
+        report.update(ok=False, failure=str(exc) if isinstance(exc, SyncError) else type(exc).__name__)
+    return report
+
+
+if __name__ == "__main__":
+    import sys
+    if sys.argv[1:] != ["check"]:
+        raise SystemExit("usage: python -m app.litellm_sync check")
+    result = asyncio.run(check())
+    print(json.dumps(result, ensure_ascii=False))
+    sys.exit(0 if result.get("ok", True) else 1)

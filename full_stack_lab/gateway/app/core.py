@@ -503,7 +503,7 @@ async def refresh_all_catalogs() -> dict:
         if (registry.server(server_id) or {}).get("deployment") == "local":
             # 로컬 실행 서버는 호출하는 직원 PC의 실행기가 승인 계약을 호출마다 대조한다(local-runner control contracts).
             # 관찰 PC 한 대가 정책 갱신 중이라 거절한 것을 서버 전체 ERROR로 내리면, ERROR는 로컬 실행 허가에서 빠져
-            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다(10-23 실측).
+            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다.
             results[server_id] = "LOCAL"
             continue
         try:
@@ -663,7 +663,9 @@ async def register_server(request: dict, actor: str) -> dict:
                 or {n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
                     request["tools"], request.get("tool_reviews"), actor).items()} != {
                     n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
-                        expected["tools"], {n: proposal["tool_reviews"][n] for n in selected}, actor).items()}):
+                        expected["tools"], {n: {**proposal["tool_reviews"][n], **({"destinations": scope["destinations"][n]}
+                                                if n in (scope.get("destinations") or {}) else {})}
+                                            for n in selected}, actor).items()}):
             raise ValueError("화면에서 승인한 범위와 다릅니다. 도입 검토를 다시 열어 확인하세요.")
     # Registration repeats the checks approval made: provenance recorded and compared with the copy in
     # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
@@ -950,6 +952,11 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
             spec["parameter_constraints"].update(review.derived_constraints(
                 {name: {"input_schema": pinned.get(name) or spec["parameter_constraints"][name]} for name in normalized},
                 normalized))
+        else:
+            # A remote registration keeps the scope its contract review recorded; only patterns derived from reviewed
+            # destinations follow them (a one-click registration with none matched no address at all).
+            spec["parameter_constraints"].update({name: review.repin_addresses(spec["parameter_constraints"][name], item["destinations"])
+                                                  for name, item in normalized.items() if name in spec["parameter_constraints"]})
         doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
                                "at": datetime.now(UTC).isoformat(timespec="seconds"), "tools": sorted(normalized)})
         registry.save_runtime(doc)
@@ -2356,7 +2363,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         laps.lap("reserve")
 
         # A schema rarely bounds length, and the arguments go to the provider as they are:
-        # a 200 KB string reached an outside provider before it refused it (D-59, pj1).
+        # a 200 KB string reached an outside provider before it refused it (D-59).
         if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
             base_event.update(local_verdict(
                 "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))

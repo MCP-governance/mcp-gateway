@@ -8,6 +8,7 @@ LiteLLM 선택 동기화(D-208)는 `litellm_sync_jobs`에 서버별 revision·fi
 > 스키마 파일: `full_stack_lab/db/init.sql`(기본) → `gateway/app/agent_tables.sql` →
 > `lifecycle_tables.sql` → `v2_tables.sql`(v2 추가·제약 재정의) → `oidc_tables.sql` → `ops_tables.sql`. Gateway와 agent-service가 기동할 때
 > 이 순서로 멱등 실행한다. 마이그레이션 도구는 없다 — `CREATE … IF NOT EXISTS`/`ALTER … ADD COLUMN IF NOT EXISTS`.
+> 실습 합성 계정은 `full_stack_lab/db/seed-lab.sql`에 있고 실습 compose만 싣는다. 운영 배포(`deploy/compose.yaml`)는 계정 없이 시작한다(D-248).
 
 D-120~D-123 추가: `runtime_image_scans`(이미지 검사 이력), `alert_self_tests`(합성 자체 시험), `ops_alerts`(경보·합성 표식), `ops_suspensions`(중지와 사람 복귀), `disposal_blocks`(외부 서명 목록에서 재구성한 차단 상태). 검사·경보·자체 시험 이력과 `approval_events`는 추가만 한다. `ops_suspensions`는 관리자가 복귀할 때 복귀 필드를 채우는 상태 기록이며 감사 판정을 수정하는 테이블이 아니다. 서명 목록 정본은 `/disposal` 볼륨이다. [운영 대응](OPS_RESPONSE.md).
 D-181 추가: `user_server_suspensions`(직원×서버 이용 중지 상태, 조합당 활성 행 1개). 재개는 복귀 필드를 채우는 상태 갱신이고, 누가 언제 무엇을 했는지는 같은 트랜잭션의 `approval_events`(`user-server-suspend`·`user-server-resume`)가 추가만으로 남긴다.

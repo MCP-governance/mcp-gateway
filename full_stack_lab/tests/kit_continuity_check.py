@@ -69,7 +69,7 @@ def device(endpoint_id, hostname, state="active", machine=None, activated_by="ad
 
 class Reinstall(unittest.IsolatedAsyncioTestCase):
     async def enroll(self, earlier, *, stopped=False, hostname="pc-1", machine="a" * 64, platform="linux", sid=None,
-                     username="emp"):
+                     username="emp", mode="isolated"):
         connection = FakeConnection(earlier, stopped)
 
         class Transaction:
@@ -82,11 +82,11 @@ class Reinstall(unittest.IsolatedAsyncioTestCase):
                              fetch_one=AsyncMock(return_value={"endpoint_id": "new"}))
         revoke = AsyncMock()
         plane = extract(LAB / "gateway/app/endpoint_plane.py",
-                        {"_same_pc", "consume_enrollment", "managed_platform", "_hash_key", "DEVICE_SCOPES"},
+                        {"_same_pc", "consume_enrollment", "managed_platform", "_hash_key", "DEVICE_SCOPES", "companion_names"},
                         {"__name__": "continuity_under_test", "db": db, "uuid": uuid, "hashlib": hashlib, "os": os,
-                         "Jsonb": lambda value: value, "revoke_device": revoke})
+                         "Jsonb": lambda value: value, "revoke_device": revoke, "re": __import__("re")})
         await plane.consume_enrollment("t" * 43, "k" * 43, hostname, username, 1001, platform=platform,
-                                       local_sid=sid, machine_id=machine)
+                                       local_sid=sid, machine_id=machine, mode=mode)
         self.db, self.revoke, self.connection = db, revoke, connection
         insert = connection.inserts[0]
         return {"state": insert[8], "activated_by": insert[12], "detail": insert[14]}
@@ -117,6 +117,40 @@ class Reinstall(unittest.IsolatedAsyncioTestCase):
     async def test_an_unactivated_device_does_not_become_active(self):
         new = await self.enroll([device("old", "pc-1", state="pending", activated_by=None)])
         self.assertEqual(new["state"], "pending")
+        self.assertNotIn("held_from", new["detail"])  # never activated is not a hold: automatic activation may follow
+
+    async def test_the_mode_is_recorded_and_a_held_pc_is_marked_for_a_person(self):
+        # D-239: the Gateway activates new simple-mode PCs itself, but never a reinstall of a quarantined or stopped one.
+        new = await self.enroll([], mode="simple")
+        self.assertEqual((new["detail"]["mode"], new["state"]), ("simple", "pending"))
+        self.assertNotIn("held_from", new["detail"])
+        held = await self.enroll([device("old", "pc-1", state="quarantined", machine="a" * 64)], mode="simple")
+        self.assertEqual((held["state"], held["detail"]["held_from"]), ("pending", "old"))
+        stopped = await self.enroll([device("old", "pc-1", machine="a" * 64)], stopped=True, mode="simple")
+        self.assertEqual((stopped["state"], stopped["detail"]["held_from"]), ("pending", "old"))
+        self.assertEqual((await self.enroll([]))["detail"]["mode"], "isolated")
+
+    async def test_switching_from_an_isolated_companion_replaces_that_device(self):
+        # The isolated install ran as mcpgw-emp (its own SID); the simple one is emp itself on the same PC.
+        companion = {**device("old", "pc-1", platform="Windows 11", detail={"local_sid": "S-1-5-21-1-2-3-1002"}),
+                     "local_username": "mcpgw-emp"}
+        new = await self.enroll([companion], platform="windows", sid="S-1-5-21-1-2-3-1001", machine=None, mode="simple")
+        self.assertEqual((new["state"], new["detail"]["inherited_from"]), ("active", "old"))
+        self.revoke.assert_awaited_once_with("old", "reinstall")
+        other = {**device("other", "pc-1", platform="Windows 11", detail={"local_sid": "S-1-5-21-1-2-3-1003"}),
+                 "local_username": "emp"}
+        new = await self.enroll([other], platform="windows", sid="S-1-5-21-1-2-3-1001", machine=None, mode="simple")
+        self.assertEqual(new["state"], "pending")  # the same name with another SID is another account
+        # Simple -> isolated: the employee's own device is the earlier one of its companion (pj2 10-25 left it active).
+        simple = {**device("own", "pc-1", machine="a" * 64, activated_by="auto"), "local_username": "emp"}
+        switched = await self.enroll([simple], username="managed-emp", mode="isolated")
+        self.assertEqual(switched["state"], "pending")
+        self.revoke.assert_awaited_with("own", "reinstall")
+        # Back to isolated from an automatically activated PC: the administrator checks it again.
+        auto = await self.enroll([device("old", "pc-1", machine="a" * 64, activated_by="auto")], mode="isolated")
+        self.assertEqual(auto["state"], "pending")
+        again = await self.enroll([device("old", "pc-1", machine="a" * 64, activated_by="auto")], mode="simple")
+        self.assertEqual(again["state"], "active")
 
     async def test_administrator_stopped_local_runs_are_not_lifted_by_reinstall(self):
         new = await self.enroll([device("old", "pc-1", machine="a" * 64)], stopped=True)
@@ -207,7 +241,8 @@ class StatusCommand(unittest.TestCase):
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.linux = extract(KIT / "managed-linux.py",
-                             {"STATE_LABEL", "STATUS_STALE_SECONDS", "ADDED_SHOWN_SECONDS", "status_path", "render_status", "publish_status",
+                             {"STATE_LABEL", "MODE_LABEL", "next_step", "STATUS_STALE_SECONDS", "ADDED_SHOWN_SECONDS", "status_path",
+                              "render_status", "publish_status",
                               "private_write", "kit_version", "PROGRAM_FILES", "machine_id"},
                              {"__name__": "status_under_test", "Path": Path, "PROGRAMS": Path(self.folder.name), "time": time,
                               "json": json, "os": os, "tempfile": tempfile, "hashlib": hashlib})
@@ -227,6 +262,22 @@ class StatusCommand(unittest.TestCase):
         self.assertIn("중지 (점검에서 격리됨)", self.linux.render_status(self.summary(state="quarantined"), time.time()))
         self.assertIn("중지 (등록 해제됨)", self.linux.render_status(self.summary(state="revoked", connected=False), time.time()))
 
+    def test_the_last_line_says_what_to_do_next(self):
+        # D-239: one line of what the employee does next, always last (the live screen lifts it out).
+        now = time.time()
+        line = lambda **fields: self.linux.render_status(self.summary(**fields), now, {}).splitlines()[-1]
+        self.assertEqual(line(), "다음 할 일: claude 또는 codex를 실행하세요")
+        self.assertIn("관리자 활성화 대기", line(state="pending"))
+        self.assertIn("새 설치 파일", line(state="revoked", connected=False))
+        self.assertIn("systemctl restart mcpgw-managed-emp", line(updated=now - 600))
+        # A terminal opened before a simple-mode install lacks the CA variable; a new one has it.
+        ca = "/usr/local/lib/mcpgw-managed/ca-1000.crt"
+        self.assertIn("새 터미널", line(mode="simple", ca=ca))
+        self.assertEqual(self.linux.next_step(self.summary(mode="simple", ca=ca), now, {"NODE_EXTRA_CA_CERTS": ca}),
+                         "claude 또는 codex를 실행하세요")
+        self.assertIn("연결 방식: 간편 모드", self.linux.render_status(self.summary(mode="simple"), now, {}))
+        self.assertIn("연결 방식: 격리 계정", self.linux.render_status(self.summary(), now, {}))
+
     def test_names_and_newly_added_servers_are_shown_for_an_hour(self):
         now = time.time()
         text = self.linux.render_status(self.summary(names=["github", "markitdown"]), now)
@@ -237,6 +288,11 @@ class StatusCommand(unittest.TestCase):
         self.assertIn("다시 시작하세요", fresh)
         old = self.linux.render_status(self.summary(names=["a", "b"], added={"servers": ["b"], "at": now - 7200}), now)
         self.assertNotIn("새로 반영된 서버", old)
+        # S4-11: a server revoked within the hour is no longer "newly reflected".
+        revoked = self.linux.render_status(self.summary(names=["a"], added={"servers": ["b"], "at": now - 30}), now)
+        self.assertNotIn("새로 반영된 서버", revoked)
+        partly = self.linux.render_status(self.summary(names=["a", "c"], added={"servers": ["b", "c"], "at": now - 30}), now)
+        self.assertIn("새로 반영된 서버: c (", partly)
         silent = self.linux.render_status(self.summary(updated=now - 600, added={"servers": ["b"], "at": now - 30}), now)
         self.assertNotIn("새로 반영된 서버", silent)       # a silent service says nothing about what it applied
         self.assertNotIn("서버 이름", self.linux.render_status(self.summary(), now))

@@ -10,3 +10,6 @@ full_stack_lab/.native/
 .vscode/settings.json
 # Ephemeral CI TLS keys and generated registry, never publish as evidence.
 full_stack_lab/.acceptance-tls/
+
+# 개발 환경 값(기기 주소·계정·로컬 비밀번호). 저장소에 올리지 않는다.
+.agents.local.md

@@ -77,5 +77,5 @@ general_settings:
   allow_user_auth: false
   # 키가 MCP 서버 접근을 명시하지 않으면 어떤 MCP 서버도 쓸 수 없다(모델 전용 키의 기본값).
   require_key_mcp_access_defined: true
-  # 프롬프트·응답 본문을 지출 로그에 남긴다(보존·접근 통제는 운영 정책, 보고서 한계 참조).
-  store_prompts_in_spend_logs: true
+  # 프롬프트·응답 본문은 지출 로그에 남기지 않는다(기본). 남기려면 보존 기간·접근 통제를 먼저 정하고 true로 바꾼다.
+  store_prompts_in_spend_logs: false

@@ -1,58 +1,38 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-23T08:49:11+09:00
+확인 시각: 2026-10-25T19:42:35+09:00
 
-HEAD: `f763a28d1ff874416cc39182455cb1ea77380087` · 로컬 브랜치: `leader-main`
+HEAD: `df8f36aba09e6228390496642ee6cd751970f602` · 로컬 브랜치: `10/25-integrate`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M  addons/litellm/README.md
-A  addons/litellm/sync-bindings.example.json
-M  docs/ai/AI_GATEWAY_ADDON.md
-M  docs/ai/DATA_MODEL.md
-M  docs/ai/DECISIONS.md
-A  docs/ai/LITELLM_SYNC.md
-M  full_stack_lab/compose.yaml
-M  full_stack_lab/gateway/app/agent_service.py
-M  full_stack_lab/gateway/app/agent_static/console.js
-M  full_stack_lab/gateway/app/core.py
-M  full_stack_lab/gateway/app/decommission.py
-A  full_stack_lab/gateway/app/litellm_sync.py
-A  full_stack_lab/gateway/app/litellm_sync_tables.sql
-M  full_stack_lab/gateway/app/main.py
-M  full_stack_lab/gateway/app/ops_response.py
-M  full_stack_lab/tests/dev73_integration_check.py
-A  full_stack_lab/tests/litellm_sync_check.py
-M  research/llm-wiki/README.md
-M  research/llm-wiki/analysis/litellm-intervention-1023/README.md
-A  research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py
-A  research/llm-wiki/analysis/litellm-intervention-1023/sync-evidence.json
-A  research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md
-A  research/llm-wiki/analysis/litellm-intervention-1023/sync-requirements.json
-M  research/llm-wiki/analysis/threat-trace-review-1020/README.md
-UU research/llm-wiki/catalogs/threats.json
-M  research/llm-wiki/status/backlog.md
-M  research/llm-wiki/status/current.md
-A  research/llm-wiki/status/reports/2026-10-23-litellm-sync.md
-UU research/llm-wiki/status/repository-snapshot.json
-UU research/llm-wiki/status/repository-snapshot.md
+M docs/ai/DECISIONS.md
+ M docs/ai/FIELD.md
+ M docs/ai/POLICY.md
+ M research/llm-wiki/analysis/auto-suspend/README.md
+ M research/llm-wiki/analysis/endpoint-offline-buffer/README.md
+ M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/poisoning-d158/README.md
+ M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/status/decisions-index.md
+?? docs/ai/decisions/
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `e103f09cd4e4eacd93ad0dd3c271938ce2d0a65a13d9440f430c3956ef9e3a71` |
-| `full_stack_lab/gateway/app/pac.py` | `cae8716e4ff17a9f417019bb529fd515c166c5c3595693a3cc991e8c9b3363e9` |
+| `full_stack_lab/gateway/app/core.py` | `5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898` |
+| `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
-| `full_stack_lab/gateway/app/idp.py` | `31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb` |
-| `full_stack_lab/gateway/app/privacy.py` | `11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e` |
+| `full_stack_lab/gateway/app/idp.py` | `46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216` |
+| `full_stack_lab/gateway/app/privacy.py` | `592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `1a87609297cd312b102f912ee2e617baba0732fe474d3d1c03efee5e45dd485b` |
-| `endpoint-agent/managed-linux.py` | `0ee2acafb280b14c1f0d39b457a4dc2d68565e1ebabc6dd2afccfd90da30482c` |
-| `endpoint-agent/enforce-linux.py` | `1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146` |
+| `endpoint-agent/bootstrap.py` | `b03eb6ae28534e6aaccf7e4deb9c35d4da0099421235efe7610022919f3b27a6` |
+| `endpoint-agent/managed-linux.py` | `dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9` |
+| `endpoint-agent/enforce-linux.py` | `cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9` |

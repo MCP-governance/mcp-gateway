@@ -705,13 +705,25 @@ MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
                               "windows": {"firewall_enforcing", "protected_configs", "ordinary_account", "user_command_helpers"}}
 
 
+# Simple mode (D-239): the harness runs in the employee's own account with no kernel confinement, so the only
+# endpoint fact the Gateway can hold it to is that the managed settings it rendered are in place and root-owned.
+SIMPLE_CHECKS = {"protected_configs"}
+
+
 def managed_platform(device: dict) -> str:
     # Not the platform column: the observer's own enroll report rewrites it ("Windows 10", "Linux 6.8").
     detail = device.get("detail") or {}
     return "windows" if detail.get("local_sid") else "macos" if detail.get("managed_platform") == "macos" else "linux"
 
 
+def managed_mode(device: dict) -> str:
+    """simple (the employee's own account, D-239) or isolated. Kits before D-239 enrolled isolated installs only."""
+    return "simple" if (device.get("detail") or {}).get("mode") == "simple" else "isolated"
+
+
 def managed_checks(device: dict, reported: dict | None = None) -> set[str]:
+    if managed_mode(device) == "simple":
+        return SIMPLE_CHECKS
     required = MANAGED_CHECKS_BY_PLATFORM[managed_platform(device)]
     # Agents installed before D-148 do not scan user settings and cannot be updated remotely;
     # quarantining them all on deploy would cut off every enrolled PC. Once a device has reported
@@ -737,7 +749,15 @@ async def enrollment_token(owner: str) -> dict:
     return {"enrollment_token": raw, "expires_at": expires.isoformat()}
 
 
-def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None) -> bool:
+def companion_names(username: str) -> list[str]:
+    """The account itself and the companions an isolated install of it creates (Linux, Windows): a switch between
+    the modes (D-239) replaces the earlier device instead of leaving it as an active record nobody reports for."""
+    base = re.sub(r"^(managed|mcpgw)-", "", username)  # from the companion back to the employee, too (pj2 10-25)
+    return sorted({base, ("managed-" + base)[:31], ("mcpgw-" + base)[:20], username})
+
+
+def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None,
+             username: str | None = None) -> bool:
     """An earlier device of this employee's account that this install replaces: same platform and managed account,
     and the same PC. The machine id decides when both sides report one; otherwise the host name does (installs
     before D-217 sent none, and macOS sends none). The platform column is not compared: the observer's enroll
@@ -745,16 +765,33 @@ def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, lo
     detail = old.get("detail") or {}
     if managed_platform(old) != platform:
         return False
-    if platform == "windows" and detail.get("local_sid") != local_sid:
+    # A Windows companion account has its own SID; that row is matched by the host name below.
+    if platform == "windows" and detail.get("local_sid") != local_sid and old.get("local_username", username) == username:
         return False
     if machine_id and detail.get("machine_id"):
         return machine_id == detail["machine_id"]
     return old["hostname"] == hostname
 
 
+async def endpoint_settings() -> dict:
+    row = await db.fetch_one("SELECT auto_activate, updated_by, updated_at FROM endpoint_settings WHERE id=1")
+    item = dict(row) if row else {"auto_activate": True, "updated_by": None, "updated_at": None}
+    if item.get("updated_at"):
+        item["updated_at"] = item["updated_at"].isoformat()
+    return item
+
+
+async def set_endpoint_settings(actor: str, auto_activate: bool) -> dict:
+    await db.execute("""INSERT INTO endpoint_settings(id,auto_activate,updated_by,updated_at) VALUES (1,%s,%s,now())
+                        ON CONFLICT (id) DO UPDATE SET auto_activate=EXCLUDED.auto_activate,
+                          updated_by=EXCLUDED.updated_by, updated_at=EXCLUDED.updated_at""", (auto_activate, actor))
+    return await endpoint_settings()
+
+
 async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int | None, *,
                              platform: str = "linux", local_sid: str | None = None,
-                             helper_command: str | None = None, machine_id: str | None = None) -> dict:
+                             helper_command: str | None = None, machine_id: str | None = None,
+                             mode: str = "isolated") -> dict:
     endpoint_id = "managed-" + str(uuid.uuid4())
     async with db.transaction() as connection:
         grant = await (await connection.execute(
@@ -769,28 +806,35 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
         # one, one the administrator stopped (revoked, or its local runs stopped) or an unactivated one starts
         # over as pending, so a reinstall never lifts a hold (D-217).
         earlier = [r for r in await (await connection.execute(
-            """SELECT endpoint_id,hostname,managed_state,activated_by,activated_at,detail FROM endpoint_agents
-                 WHERE owner_token=%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL
-                 ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], username))).fetchall()
-            if _same_pc(r, hostname, platform, machine_id, local_sid)]
+            """SELECT endpoint_id,hostname,managed_state,activated_by,activated_at,detail,local_username FROM endpoint_agents
+                 WHERE owner_token=%s AND local_username=ANY(%s) AND status='active' AND device_epoch IS NOT NULL
+                 ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], companion_names(username)))).fetchall()
+            if _same_pc(r, hostname, platform, machine_id, local_sid, username)]
         # Another employee's device on this PC and managed account was just removed by this install's
-        # cleanup; its record would stay "active" forever (10-23 PJ1: user's device beside aaaa's).
+        # cleanup; its record would stay "active" forever.
         # It is retired, never inherited: an activation belongs to the person it was granted to.
         displaced = [r for r in await (await connection.execute(
             """SELECT endpoint_id,hostname,detail FROM endpoint_agents
                  WHERE owner_token<>%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL""",
             (grant["owner_token"], username))).fetchall() if _same_pc(r, hostname, platform, machine_id, local_sid)]
-        inherited = None
-        if earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]:
+        inherited, held = None, None
+        if earlier:
             held = await (await connection.execute(
                 "SELECT 1 FROM local_run_stops WHERE device_id=%s", (earlier[0]["endpoint_id"],))).fetchone()
+        # An isolated install keeps the administrator's check: it does not inherit an automatic activation (D-239).
+        if (earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]
+                and not (mode == "isolated" and earlier[0]["activated_by"] == "auto")):
             inherited = None if held else earlier[0]
         detail = ({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows"
                   else {"managed_platform": "macos"} if platform == "macos" else {})
+        detail["mode"] = mode
         if machine_id:
             detail["machine_id"] = machine_id
         if inherited:
             detail["inherited_from"] = inherited["endpoint_id"]
+        elif earlier and (held or earlier[0]["managed_state"] == "quarantined"):
+            # Automatic activation never lifts a hold (D-217): a reinstall of a stopped or quarantined PC waits for a person.
+            detail["held_from"] = earlier[0]["endpoint_id"]
         await connection.execute(
             """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
                  key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,
@@ -806,7 +850,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
         await connection.execute(
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
             (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
-                                                       "local_uid": uid, "local_sid": local_sid})))
+                                                       "local_uid": uid, "local_sid": local_sid, "mode": mode})))
         if inherited:
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
@@ -820,7 +864,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 
-async def managed_policy(device: dict, servers: list | None = None) -> dict:
+async def managed_policy(device: dict) -> dict:
     from . import pac
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
@@ -837,10 +881,10 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     # in tools/list, not about every operating server.
     owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],))
     usable = set(pac.servers_for(owner)) if owner else set()
-    current = [r["id"] for r in rows if r["id"] in usable]
-    servers = current if servers is None else list(servers)  # servers: re-render what a device installed earlier (D-198)
+    servers = [r["id"] for r in rows if r["id"] in usable]
+    version = await db.fetch_one("SELECT last_value FROM mcp_servers_version")
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
-    # in the user's files or try to run the harness from its shell (10-23 PJ1).
+    # in the user's files or try to run the harness from its shell.
     guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
                 "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
                 if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
@@ -852,7 +896,6 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
               else f'/usr/local/lib/mcpgw-enforcement/mcpgw-{device["local_username"]}/header-helper')
     if not helper:
         raise ValueError("관리형 설치의 헤더 명령이 등록되지 않았습니다.")
-    routes = {s: public + "/mcp/" + s + "/" for s in servers}
     # The managed account reaches nothing but the Gateway host, so the harness reaches its model
     # through the approved proxy there. MCP traffic to the Gateway itself stays direct (NO_PROXY).
     proxy_port = int(os.getenv("MODEL_PROXY_PORT") or 0) or None
@@ -860,48 +903,65 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     if proxy_port:
         proxy_url = f"http://{parsed.hostname}:{proxy_port}"
         proxy = {"HTTPS_PROXY": proxy_url, "HTTP_PROXY": proxy_url, "NO_PROXY": ",".join(sorted({parsed.hostname, *addresses}))}
-    settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
-                "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
-                "strictKnownMarketplaces": [],
-                # Account-synced plugins and skills load from the claude.ai account, outside the managed set
-                # (PJ1 10-23: productivity@synced loaded); only `false` is honoured, so this cannot be undone
-                # from the user's settings. Web tools reach the web through the account, not the Gateway:
-                # the deny rules close them, and only managed permission rules count so the account cannot
-                # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.
-                "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False,
-                "allowManagedPermissionRulesOnly": True,
-                "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": ["WebFetch", "WebSearch"]},
-                # User, project and plugin hooks run commands the harness starts; a hook could call the
-                # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
-                # same gate narrows statusLine and fileSuggestion to managed values (D-147).
-                "allowManagedHooksOnly": True}
-    if guidance:
-        settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
-    if proxy:
-        settings["env"] = proxy
-    codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
-                            'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
-    files = {
-        "managed-mcp.json": json_document({"mcpServers": {s: {"type": "http", "url": url,
-                    "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
-        "managed-settings.json": json_document(settings),
-        # Codex user and plugin hooks are the same command surface as Claude's (D-147).
-        "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
-                    'allow_managed_hooks_only = true\n'
-                    + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
-                    + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
-                    + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
-    }
-    if windows:
-        # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
-        # their definitions go in the account's own config.toml as one marked block.
-        files["codex-config.toml"] = codex_servers
-    else:
-        # developer_instructions is a top-level key, so it precedes the server tables.
-        # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
-        files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
-                                        + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
-                                        + codex_servers)
+    # Simple mode (D-239): the employee's own Claude takes the Gateway's private CA from the managed settings, so a terminal
+    # opened before the install connects too; the session variable alone left it at UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+    # (pj2 10-25). The path is where the kit writes the CA. Codex still needs the session variable.
+    # ponytail: field mode stands for "kits carry the private CA"; record the kit's CA at enrollment if that ever differs.
+    ca_env = {}
+    if (device.get("detail") or {}).get("mode") == "simple" and os.getenv("MCP_FIELD_MODE") == "1":  # managed_mode written out: some checks load managed_policy alone
+        if windows:
+            programs = re.search(r'"([A-Za-z]:\\[^"]+)\\managed-windows\.py"', helper or "")
+            if programs and detail.get("local_sid"):
+                ca_env = {"NODE_EXTRA_CA_CERTS": programs.group(1) + "\\launchers\\" + detail["local_sid"] + "\\root.crt"}
+        elif managed_platform(device) == "linux":
+            ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
+    def render(servers: list, guidance: str | None) -> dict:
+        routes = {s: public + "/mcp/" + s + "/" for s in servers}
+        settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
+                    "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
+                    "strictKnownMarketplaces": [],
+                    # Account-synced plugins and skills load from the claude.ai account, outside the managed set
+                    # (a synced productivity plugin loaded); only `false` is honoured, so this cannot be undone
+                    # from the user's settings. Web tools reach the web through the account, not the Gateway:
+                    # the deny rules close them, and only managed permission rules count so the account cannot
+                    # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.
+                    "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False,
+                    "allowManagedPermissionRulesOnly": True,
+                    "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": ["WebFetch", "WebSearch"]},
+                    # User, project and plugin hooks run commands the harness starts; a hook could call the
+                    # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
+                    # same gate narrows statusLine and fileSuggestion to managed values (D-147).
+                    "allowManagedHooksOnly": True}
+        if guidance:
+            settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
+        if proxy or ca_env:
+            settings["env"] = {**proxy, **ca_env}
+        codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
+                                'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
+        files = {
+            "managed-mcp.json": json_document({"mcpServers": {s: {"type": "http", "url": url,
+                        "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
+            "managed-settings.json": json_document(settings),
+            # Codex user and plugin hooks are the same command surface as Claude's (D-147).
+            "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
+                        'allow_managed_hooks_only = true\n'
+                        + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
+                        + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
+                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
+        }
+        if windows:
+            # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
+            # their definitions go in the account's own config.toml as one marked block.
+            files["codex-config.toml"] = codex_servers
+        else:
+            # developer_instructions is a top-level key, so it precedes the server tables.
+            # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
+            files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
+                                            + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
+                                            + codex_servers)
+        return files
+
+    files = render(servers, guidance)
     policy = {"version": 2, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
               "local_username": device["local_username"], "local_uid": device["local_uid"],
@@ -914,7 +974,20 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     elif managed_platform(device) == "macos":
         policy["platform"] = "macos"
     policy["configuration_hashes"] = {k: hashlib.sha256(v.encode()).hexdigest() for k, v in files.items()}
-    policy["policy_hash"] = hashlib.sha256(json_document(policy).encode()).hexdigest()
+    # control_hash is what the device must enforce and nothing that changes in ordinary use (D-238):
+    # - the policy fields above: Gateway URL, IPs, port, Tailscale node, account and UID, heartbeat cadence,
+    #   platform and SID, model proxy port and environment;
+    # - the managed files rendered for one placeholder server and no guidance: the allow-list form
+    #   (allowManagedMcpServersOnly, allowedMcpServers entry shape), protection settings (allowAllClaudeAiMcps,
+    #   disableClaudeAiConnectors, strictKnownMarketplaces, sync*, allowManaged*Only, Codex requirements and
+    #   features), permissions.deny, web_search, the header helper and the per-server template (approval, timeouts).
+    # Left out: which servers are listed (judged per call, managed_failure) and the guidance text, which follows
+    # the activation state; putting either in made every approval or activation look like tampering.
+    control = {k: v for k, v in policy.items() if k not in ("servers", "files", "configuration_hashes")}
+    control["files"] = render(["server"], None)
+    policy["control_hash"] = hashlib.sha256(json_document(control).encode()).hexdigest()
+    policy["servers_version"] = (version or {}).get("last_value") or 0
+    policy["policy_hash"] = installed_hash(policy["control_hash"], policy["configuration_hashes"])
     return policy
 
 
@@ -923,77 +996,96 @@ def json_document(value) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
 
 
-async def _held_policy(device: dict, policy: dict, reported_hash: str) -> dict | None:
-    """The policy a device installed earlier, when it differs from the current one only by its server list.
-
-    Control changes (allow-list, protection settings, header helper) change the rendering for the servers the device
-    already holds, so they never match here and stay fail-closed (D-198). A removed server is not one: the Gateway
-    refuses it per call, and stopping every server for it let one upstream going to ERROR cut a whole PC off."""
-    detail = device.get("detail") or {}
-    # The server list of a policy this Gateway actually served to the device, else the one last confirmed in use.
-    # Several approvals in a row served policies the device installed between heartbeats; judging those by the
-    # last confirmed list alone quarantined PJ1 and pj3 although every control check passed (10-23).
-    held = (detail.get("served_policies") or {}).get(reported_hash) or detail.get("policy_servers")
-    if reported_hash == policy["policy_hash"] or not held:
-        return None
-    old = await managed_policy(device, servers=held)
-    return old if old["policy_hash"] == reported_hash else None
+def installed_hash(control_hash: str, hashes: dict) -> str:
+    """policy_hash: the control a rendering was made under, bound to its file hashes. The kit echoes it with the
+    hashes of the files it holds, so a heartbeat alone proves which control they were rendered for (D-238)."""
+    return hashlib.sha256(json_document({"control_hash": control_hash, "configuration_hashes": hashes}).encode()).hexdigest()
 
 
-SERVED_POLICIES = 8
+def legacy_hash(policy: dict) -> str:
+    """policy_hash as Gateways before D-238 computed it, over the same rendering."""
+    return hashlib.sha256(json_document({k: v for k, v in policy.items() if k not in ("policy_hash", "control_hash", "servers_version")}).encode()).hexdigest()
 
 
-async def record_served(device: dict, policy: dict) -> None:
-    """Remember which server list each served policy hash was rendered for (the last few only)."""
-    served = dict((device.get("detail") or {}).get("served_policies") or {})
-    served.pop(policy["policy_hash"], None)
-    served[policy["policy_hash"]] = policy["servers"]
-    served = dict(list(served.items())[-SERVED_POLICIES:])
-    await db.execute("UPDATE endpoint_agents SET detail = COALESCE(detail, '{}'::jsonb) || %s WHERE endpoint_id=%s",
-                     (Jsonb({"served_policies": served}), device["endpoint_id"]))
+def policy_installed(policy: dict, reported: str | None, hashes: dict | None) -> bool:
+    """The device holds a rendering of the current control; its server list and guidance may lag behind."""
+    hashes = hashes or {}
+    if set(hashes) != set(policy["configuration_hashes"]):
+        return False
+    # ponytail: the legacy branch carries kits that installed before D-238 to their next fetch; drop it once none reports one.
+    return reported == installed_hash(policy["control_hash"], hashes) or (
+        reported == legacy_hash(policy) and hashes == policy["configuration_hashes"])
 
 
-async def policy_accepted(device: dict) -> bool:
-    """The device runs the current policy, or one that differs from it only by its server list (D-198)."""
-    policy = await managed_policy(device)
-    return device["policy_hash"] == policy["policy_hash"] or bool(await _held_policy(device, policy, device["policy_hash"]))
+def control_matches(policy: dict, value: str | None) -> bool:
+    """A token or local job bound at issue to the control now in force (legacy: to the same rendering)."""
+    return value in (policy["control_hash"], legacy_hash(policy))
+
+
+def held_servers(device: dict, policy: dict) -> list:
+    """The servers this device's files list: all current ones when its managed-mcp.json is the current one,
+    else the list last confirmed by a heartbeat (only ever behind; a removed server is refused per call)."""
+    if (device.get("configuration_hashes") or {}).get("managed-mcp.json") == policy["configuration_hashes"]["managed-mcp.json"]:
+        return policy["servers"]
+    return (device.get("detail") or {}).get("policy_servers") or []
+
+
+async def policy_accepted(device: dict, policy: dict | None = None) -> bool:
+    return policy_installed(policy or await managed_policy(device), device.get("policy_hash"), device.get("configuration_hashes"))
 
 
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
                     quality: dict | None = None, user_command_settings: list | None = None) -> dict:
-    latest = await managed_policy(device)
-    # A device one policy behind only because servers were added since is judged against what it installed (D-198).
-    policy = await _held_policy(device, latest, policy_hash) or latest
-    if user_command_settings:
+    policy = await managed_policy(device)
+    simple = managed_mode(device) == "simple"
+    # In simple mode any process of the employee can reach the header helper anyway, so a personal command helper
+    # in the employee's settings is recorded (detail below), not a reason to cut the PC off (D-239).
+    if user_command_settings and not simple:
         checks = {**checks, "user_command_helpers": False}
-    compliant = (policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"]
+    # Only control decides (D-238): a device that has not yet fetched a server change or the guidance of its
+    # new activation state is behind, not tampered with.
+    installed = policy_installed(policy, policy_hash, hashes)
+    compliant = (installed
                  and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
-                 and not user_command_settings)
+                 and (simple or not user_command_settings))
+    # A new simple-mode PC whose install checks pass is activated by the Gateway itself when the organization
+    # allows it (D-239); isolated installs and reinstalls of a held PC still wait for an administrator.
+    automatic = (compliant and simple and device["managed_state"] == "pending"
+                 and not (device.get("detail") or {}).get("held_from") and (await endpoint_settings())["auto_activate"])
     # The host report is not a compliance input: another account on the device does not
     # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
     # A heartbeat without the report drops the previous one: an old "no other account"
     # must not keep standing in for a check that is no longer made.
     detail = {"host": {**host, "reported_at": datetime.now(UTC).isoformat(timespec="seconds")}} if host else {}
     detail["user_command_settings"] = user_command_settings or []
-    if policy_hash == policy["policy_hash"]:
-        detail["policy_servers"] = policy.get("servers")
+    if hashes.get("managed-mcp.json") == policy["configuration_hashes"]["managed-mcp.json"]:
+        detail["policy_servers"] = policy["servers"]  # held_servers: newly approved ones wait for this
     if "user_command_helpers" in checks:
         detail["command_settings_checked"] = True
     # What the Gateway rendered (provider artifact) beside what the device says is installed.
     detail["install_receipt"] = {
         "provider_artifact_sha256": policy["configuration_hashes"], "installed_sha256": hashes,
         "policy_sha256": {"expected": policy["policy_hash"], "installed": policy_hash},
-        "match": policy_hash == policy["policy_hash"] and hashes == policy["configuration_hashes"],
+        "control_sha256": policy["control_hash"], "match": installed,
         "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
                  configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,
-                 managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END
+                 managed_state=CASE WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
+                                    ELSE managed_state END,
+                 activated_by=CASE WHEN %s AND managed_state='pending' THEN 'auto' ELSE activated_by END,
+                 activated_at=CASE WHEN %s AND managed_state='pending' THEN now() ELSE activated_at END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
-            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device["endpoint_id"]))).fetchone()
+            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, automatic, automatic, automatic,
+             device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
+        if automatic and row["managed_state"] == "active" and device["managed_state"] == "pending":
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
+                (device["endpoint_id"], device["owner_token"], Jsonb({"actor": "auto", "note": "설치 점검 통과로 자동 활성화",
+                                                                      "policy_hash": policy_hash})))
         if quality:
             await connection.execute(
                 """INSERT INTO endpoint_network_samples(endpoint_id,measured_at,rtt_p50_ms,rtt_p95_ms,jitter_ms,failure_pct,probes)
@@ -1002,15 +1094,15 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  quality["jitter_ms"], quality["failure_pct"], quality["probes"]))
             await connection.execute("DELETE FROM endpoint_network_samples WHERE measured_at < now() - make_interval(days => %s)",
                                      (NETWORK_RETENTION_DAYS,))
-        if not compliant or row["managed_state"] != device["managed_state"]:
+        if not compliant or (row["managed_state"] != device["managed_state"] and not automatic):
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
                 (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,
                  "user_command_settings": user_command_settings or [],
-                 "policy_match": policy_hash == policy["policy_hash"],
+                 "policy_match": installed,
                  "mismatched_files": sorted(name for name, expected in policy["configuration_hashes"].items()
                                             if hashes.get(name) != expected)})))
-    return {"state": row["managed_state"], "compliant": compliant, "policy_hash": latest["policy_hash"]}
+    return {"state": row["managed_state"], "compliant": compliant, "policy_hash": policy["policy_hash"]}
 
 
 async def network_quality() -> dict:
@@ -1056,15 +1148,16 @@ async def activate_managed(endpoint_id: str, actor: str, expected_hash: str, not
     device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
     if not device or device["owner_token"] == actor:
         raise ValueError("등록 장치가 없거나 자기 소유 장치는 스스로 활성화할 수 없습니다.")
-    policy = await managed_policy(device)
+    # Activation changes only the guidance the device is served next, so the hash it reports stays valid (D-238).
+    installed = policy_installed(await managed_policy(device), expected_hash, device["configuration_hashes"])
     async with db.transaction() as connection:
         changed = await connection.execute(
             """UPDATE endpoint_agents SET managed_state='active',activated_by=%s,activated_at=now()
-               WHERE endpoint_id=%s AND status='active' AND policy_hash=%s AND policy_hash=%s
+               WHERE endpoint_id=%s AND status='active' AND policy_hash=%s
                  AND heartbeat_at>now()-interval '180 seconds' AND configuration_hashes=%s AND enforcement_checks=%s""",
-            (actor, endpoint_id, expected_hash, policy["policy_hash"], Jsonb(policy["configuration_hashes"]),
+            (actor, endpoint_id, expected_hash, Jsonb(device["configuration_hashes"]),
              Jsonb({key: True for key in managed_checks(device)})))
-        if not changed.rowcount:
+        if not installed or not changed.rowcount:
             raise ValueError("최근 정상 설치 증거가 없거나 검토한 정책이 바뀌었습니다. 장치 설치를 확인하세요.")
         await connection.execute(
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
@@ -1084,15 +1177,15 @@ async def managed_failure(principal: dict, claims: dict, *, mint: bool = False, 
     if not device["heartbeat_at"] or (datetime.now(UTC) - device["heartbeat_at"]).total_seconds() >= HEARTBEAT_SECONDS:
         return "엔드포인트 점검 보고가 만료되어 연결을 중단했습니다."
     policy = await managed_policy(device)
-    if device["policy_hash"] != policy["policy_hash"] or (not mint and claims.get("device_policy") != policy["policy_hash"]):
-        # Servers added or removed since the device's policy: the ones it holds and may still use keep working until
-        # it applies the new one (D-198). Anything else that differs is a control change and stops everything.
-        held = None if mint else await _held_policy(device, policy, device["policy_hash"])
-        if not held or claims.get("device_policy") != device["policy_hash"]:
-            return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
-        if server and server not in policy["servers"]:
+    # A control change stops everything; a server list the device has not fetched yet is judged per server (D-238).
+    if (not policy_installed(policy, device["policy_hash"], device["configuration_hashes"])
+            or (not mint and not control_matches(policy, claims.get("device_policy")))):
+        return "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
+    held = held_servers(device, policy)
+    if server and held is not policy["servers"]:
+        if server not in policy["servers"]:
             return "사용할 수 없는 서버입니다."
-        if server and server not in held["servers"]:
+        if server not in held:
             return "새로 승인된 서버입니다. PC가 새 정책을 적용하면 사용할 수 있습니다."
     return None
 

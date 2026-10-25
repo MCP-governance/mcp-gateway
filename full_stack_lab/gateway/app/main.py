@@ -490,6 +490,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
                                                                     "allowed_principals", "supplier_assurance", "supplier_assurance_unconfirmed", "residency", "residency_review", "risk_assessment")}
+                                  | {"address_tools": sorted(name for name, constraint in (spec.get("parameter_constraints") or {}).items()
+                                                             if review.pinned_addresses(constraint))}
                                   | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 
@@ -1464,6 +1466,9 @@ class HostReport(StrictModel):
     kernel: str = Field(max_length=120)
     wsl: bool
     other_accounts: list[HostAccount] = Field(default_factory=list, max_length=64)
+    # The harness versions installed for the managed account: what a simple-mode Windows PC reports (D-239).
+    harnesses: dict[Literal["claude", "codex"], Annotated[str, Field(max_length=40, pattern=r"^[0-9A-Za-z.+_-]*$")]] = Field(
+        default_factory=dict)
 
 
 class NetworkQuality(StrictModel):
@@ -1540,6 +1545,10 @@ class ListenerReport(StrictModel):
         return self
 
 
+class EndpointSettingsUpdate(StrictModel):
+    auto_activate: bool
+
+
 class ScanPolicyUpdate(StrictModel):
     enabled: bool | None = None
     allowed_cidrs: list[str] | None = Field(default=None, max_length=16)
@@ -1596,7 +1605,6 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
         policy = await endpoint_plane.managed_policy(device)
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
-    await endpoint_plane.record_served(device, policy)
     return policy
 
 
@@ -1751,6 +1759,16 @@ async def endpoint_scan_policy_update(request: ScanPolicyUpdate,
         raise HTTPException(422, str(exc)) from exc
 
 
+@app.get("/api/endpoint/settings")
+async def endpoint_settings_read(user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.endpoint_settings()
+
+
+@app.put("/api/endpoint/settings")
+async def endpoint_settings_update(request: EndpointSettingsUpdate, user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.set_endpoint_settings(user["principal"], request.auto_activate)
+
+
 @app.post("/api/endpoint/inventory")
 async def endpoint_report(request: EndpointReport,
                           device: dict = Depends(endpoint_device("inventory"))) -> dict:
@@ -1825,6 +1843,7 @@ async def endpoint_inventory(classification: str | None = None,
         "entries": entries["rows"],
         "listeners": listeners["rows"],
         "scan_policy": await endpoint_plane.scan_policy(),
+        "settings": await endpoint_plane.endpoint_settings(),
         "os_events": events["rows"],
         "managed_events": managed,
         "pages": {name: {key: page[key] for key in ("total", "limit", "next_cursor")}

@@ -239,9 +239,20 @@ def server_of(endpoint: str | None) -> str | None:
     return value[len(PREFIX):] if value.startswith(PREFIX) and value[len(PREFIX):] else None
 
 
-def control_generation():
+# Renewal moves only the deadline of an approval; it is not a change of what the job may do.
+RENEWAL_FIELDS = ('valid_until', 'approval_days')
+
+
+def control_generation(server_id: str) -> str:
+    """What a job's own server may do: its registration (renewal aside), the reviewed catalog and PaC capabilities.
+
+    The whole servers.json used to be hashed, so a registration or an automatic renewal of any other server stopped
+    every running local job on the PC."""
     from . import pac, registry
-    return hashlib.sha256(canonical({'catalog':registry.catalog_version(),'capabilities':pac.capabilities()})).hexdigest()
+    reviewed = registry.CATALOG_PATH.read_bytes() if registry.CATALOG_PATH.exists() else b''
+    spec = {key: value for key, value in (registry.server(server_id) or {}).items() if key not in RENEWAL_FIELDS}
+    return hashlib.sha256(canonical({'catalog': hashlib.sha256(reviewed).hexdigest(), 'server': spec,
+                                     'capabilities': pac.capabilities()})).hexdigest()
 
 
 async def _device(device_id: str | None) -> dict:
@@ -253,9 +264,16 @@ async def _device(device_id: str | None) -> dict:
     return device
 
 
+async def _device_control(device: dict) -> str:
+    """A job is bound to the control in force, not to the server list: an approval elsewhere keeps it (D-238)."""
+    from . import endpoint_plane
+    return (await endpoint_plane.managed_policy(device))['control_hash']
+
+
 async def exchange(device_id: str, local: dict, method: str, params: dict, timeout: float) -> dict:
     validate_params(params)
     device = await _device(device_id)
+    control = await _device_control(device)
     principal=transport_context.get().get('_principal')
     if (principal is not None and principal!=device['owner_token']) or (method=='tools/call' and principal is None):
         raise NotStarted('전송 신원과 실행 엔드포인트 소유자가 다릅니다.')
@@ -297,8 +315,8 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
                  (SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1),%s
                  FROM local_approvals a WHERE a.server_id=%s""",
             (job,device_id,device['owner_token'],server,local['manifest_sha256'],Jsonb(local['manifest']),local['signature'],
-             method,Jsonb(params),datetime.now(UTC)+timedelta(seconds=timeout),device['device_epoch'],device['policy_hash'],
-             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(),run_timeout,server))
+             method,Jsonb(params),datetime.now(UTC)+timedelta(seconds=timeout),device['device_epoch'],control,
+             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(server),run_timeout,server))
     if event is not None and method=='tools/call':
         # An unreadable job is uncertain until a durable row proves it was never claimed.
         event['upstream_attempted']=True
@@ -307,7 +325,7 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
     while loop.time() < end:
         row = await db.fetch_one("SELECT * FROM local_jobs WHERE id=%s", (job,))
         if row['state'] in ('done','expired') and row.get('stop_requested') and (row.get('error') or row['state']=='expired'):
-            # 관리 조치로 멈춘 실행을 시간 초과로 보이게 하면 직원이 이유를 모른 채 재시도한다(10-23 PJ1 철회 실측).
+            # 관리 조치로 멈춘 실행을 시간 초과로 보이게 하면 직원이 이유를 모른 채 재시도한다.
             reason = await stop_reason(row)
             if reason:
                 await record_evidence(row, event)
@@ -345,7 +363,9 @@ def remember(row: dict, event: dict | None):
             ('id','request_id','device_id','server_id','method','manifest_sha256','claimed_at','started_at','finished_at','stopped_at','state','result_sha256')}
     event.setdefault('client', {}).setdefault('local_jobs', []).append(view)
     if row['method'] == 'tools/call':
-        event['upstream_attempted'] = row['claimed_at'] is not None
+        # The runner starts its container only after /start succeeds: a job refused before that never ran, so it
+        # holds no write reservation and its retry is not a duplicate.
+        event['upstream_attempted'] = row.get('started_at') is not None
 
 
 async def record_evidence(row, event=None, connection=None):
@@ -433,7 +453,7 @@ class LocalClient:
     # A call's own container initializes and checks the approved contract (description, input and output
     # schema hashes, protocol) on the device before it calls (local-runner execute_job). Answering a call's
     # initialize and tools/list from that approval here saves two container starts per call, which used to
-    # spend the call's time budget before the call itself ran (10-23 PJ1). Observation still asks the server.
+    # spend the call's time budget before the call itself ran. Observation still asks the server.
     async def start(self) -> None:
         if not self.discovery:
             from . import registry
@@ -559,12 +579,19 @@ async def current_job(connection,row,device):
     policy=await (await connection.execute("SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1")).fetchone()
     revoked=await (await connection.execute('SELECT jti FROM agent_revoked_tokens WHERE jti=%s',(row['token_jti'],))).fetchone() if row['token_jti'] else None
     return (bool(policy) and row['policy_version']==policy['source_sha256'] and not revoked
-            and row['control_sha256']==control_generation()
-            and row['device_epoch']==device['device_epoch'] and row['device_policy']==device['policy_hash'])
+            and row['control_sha256']==control_generation(row['server_id'])
+            and row['device_epoch']==device['device_epoch'] and await _same_control(row,device))
+
+
+async def _same_control(row,device):
+    """The job's control is still in force and the device holds it; server-list changes elsewhere keep the job (D-238)."""
+    from . import endpoint_plane
+    policy=await endpoint_plane.managed_policy(device)
+    return endpoint_plane.control_matches(policy,row['device_policy']) and await endpoint_plane.policy_accepted(device,policy)
 
 
 async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
-    from . import endpoint_plane, registry
+    from . import registry
     device = await _device(device['endpoint_id'])
     stop = await db.fetch_one('SELECT stop_requested FROM local_jobs WHERE id=%s AND device_id=%s',
                               (job_id, device['endpoint_id']))
@@ -577,17 +604,16 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
             raise NotStarted("이 엔드포인트의 요청이 아닙니다.")
         await lock_execution(connection,row)
         # Read the row again under the locks: a /control that arrived with /start would otherwise judge the
-        # pre-start row, fail its lease renewal against the started job and stop a healthy run (10-23 PJ1 read_graph).
+        # pre-start row, fail its lease renewal against the started job and stop a healthy run.
         row = await (await connection.execute('SELECT * FROM local_jobs WHERE id=%s AND device_id=%s',
                                               (job_id,device['endpoint_id']))).fetchone()
         allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                    generation=row['policy_generation'])
-        # The job was made under the device's policy (current_job). A policy that differs from the latest only by
-        # servers added or removed elsewhere keeps the job; any control change stops it (D-198, 10-23 PJ1: one
-        # approval or one upstream in ERROR made every local job on the PC fail until the kit refreshed).
+        # The job was made under the control still in force (current_job). Servers added or removed elsewhere keep
+        # the job; any control change stops it (D-238: one approval or one upstream in ERROR made every local job
+        # on the PC fail until the kit refreshed).
         if (not allowed or row['stop_requested'] or row['state']!='claimed' or row['deadline']<=datetime.now(UTC)
-                or row['lease_until']<=datetime.now(UTC) or row['device_policy']!=device['policy_hash']
-                or not await current_job(connection,row,device) or not await endpoint_plane.policy_accepted(device)):
+                or row['lease_until']<=datetime.now(UTC) or not await current_job(connection,row,device)):
             raise NotStarted("정책·서명 세대·철회 상태가 바뀌었거나 실행 기한이 지났습니다.")
         if start:
             run_seconds=min(RUN_SECONDS,row['run_seconds'])

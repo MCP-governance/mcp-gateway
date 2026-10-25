@@ -696,6 +696,24 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
     return seen[container]
 
 
+# A harness's own command line carries the employee's prompt (`claude -p "…modelcontextprotocol/python-sdk…"`): matching
+# the markers there reported the harness itself as a stdio MCP server (S4-03, PJ1 10-25). The servers it starts are
+# separate processes and are still checked.
+HARNESS_PROGRAM = re.compile(r"(?:^|[\\/])(?:claude|codex)(?:\.exe|\.cmd)?$", re.I)
+HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code|@openai[\\/]codex)[\\/]", re.I)
+
+
+def harness_process(command_line: str) -> bool:
+    program = command_line.strip().strip('"').split('" ', 1)[0] if command_line.strip().startswith('"') \
+        else command_line.strip().split(" ", 1)[0]
+    if HARNESS_PROGRAM.search(program):
+        return True
+    # node (or bun) running the harness package's entry script
+    words = command_line.split()
+    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?\"?$", words[0], re.I) is not None \
+        and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
+
+
 def stdio_processes() -> list[dict]:
     """설정에 없이 직접 실행된 stdio MCP 서버.
 
@@ -705,7 +723,7 @@ def stdio_processes() -> list[dict]:
     found = []
     if platform.system() == "Windows":
         for name, raw in _windows_processes().values():
-            if raw and PROCESS_MARKERS.search(raw):
+            if raw and PROCESS_MARKERS.search(raw) and not harness_process(raw):
                 found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                               "process_name": name, "command_line": command_digest(raw), "mcp_evidence": "suspected"},
                               {"process_name": name, "command_line": raw}, "process-table"))
@@ -714,7 +732,7 @@ def stdio_processes() -> list[dict]:
         output = _run(["ps", "-eo", "pid=,comm=,args="])
         for line in output.splitlines():
             parts = line.strip().split(None, 2)
-            if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]):
+            if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]) or harness_process(parts[2]):
                 continue
             found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                           "process_name": parts[1][:120], "command_line": command_digest(parts[2]),
@@ -733,7 +751,7 @@ def stdio_processes() -> list[dict]:
         except OSError:
             SCAN_ERRORS.add("process_unreadable")
             continue
-        if not raw or not PROCESS_MARKERS.search(raw) or _approved_local_run(pid_dir, containers):
+        if not raw or not PROCESS_MARKERS.search(raw) or harness_process(raw) or _approved_local_run(pid_dir, containers):
             continue
         found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                       "process_name": raw.split(" ")[0].rsplit("/", 1)[-1][:120],
@@ -805,6 +823,68 @@ def _parse_initialize(payload: str) -> dict | None:
                     "server_version": str(server.get("version") or "")[:80],
                     "protocol_version": str(result.get("protocolVersion") or "")[:40]}
     return None
+
+
+def _rpc_result(payload: str) -> dict:
+    for chunk in [payload] + [line[5:].strip() for line in payload.splitlines() if line.startswith("data:")]:
+        try:
+            document = json.loads(chunk)
+        except ValueError:
+            continue
+        if isinstance(document, dict) and isinstance(document.get("result"), dict):
+            return document["result"]
+    raise ValueError("JSON-RPC 결과 없음")
+
+
+def connection_check(gateway_url: str, context: ssl.SSLContext, authorization: str, servers: list[str],
+                     timeout: float = 20) -> dict:
+    """설치 확인(D-239): 직원 하네스와 같은 헤더로 승인 서버마다 initialize·tools/list만 보낸다. 도구는 실행하지 않는다.
+    {initialized: [서버], failed: {서버: 사유}, tools: 도구 수}. 헤더 값은 돌려주지도 기록하지도 않는다."""
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
+                                         urllib.request.HTTPSHandler(context=context))
+    result = {"initialized": [], "failed": {}, "tools": 0}
+    for server in servers:
+        headers = {"Authorization": authorization, "Content-Type": "application/json",
+                   "Accept": "application/json, text/event-stream", "MCP-Protocol-Version": "2025-06-18"}
+
+        def post(body: dict) -> str:
+            request = urllib.request.Request(f"{gateway_url}/mcp/{server}/", data=json.dumps(body).encode(),
+                                             headers=headers, method="POST")
+            with opener.open(request, timeout=timeout) as response:
+                if response.headers.get("mcp-session-id"):
+                    headers["Mcp-Session-Id"] = response.headers["mcp-session-id"]
+                return response.read(4_000_000).decode("utf-8", "replace")
+        try:
+            post({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+                "protocolVersion": "2025-06-18", "capabilities": {},
+                "clientInfo": {"name": "mcpgw-install-check", "version": AGENT_VERSION}}})
+            post({"jsonrpc": "2.0", "method": "notifications/initialized"})
+            # ponytail: one page of tools/list; follow nextCursor if a server ever pages its tools.
+            tools = _rpc_result(post({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})).get("tools") or []
+            result["initialized"].append(server)
+            result["tools"] += len(tools)
+        except urllib.error.HTTPError as exc:
+            result["failed"][server] = f"HTTP {exc.code}"
+        except (OSError, ValueError) as exc:
+            result["failed"][server] = type(exc).__name__
+    return result
+
+
+MODEL_PROMPT = "Reply with the single word OK."
+
+
+def model_check(argv: list[str], *, env: dict | None = None, cwd: str | None = None, timeout: int = 120) -> dict:
+    """하네스가 모델 응답을 실제로 받는지. 자격 파일이 있다는 것만으로 성공 처리하지 않는다(D-239). 응답 본문은 남기지 않는다."""
+    started = time.monotonic()
+    try:
+        done = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
+                              env=env, cwd=cwd, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return {"ok": False, "seconds": round(time.monotonic() - started, 1), "detail": type(exc).__name__}
+    ok = done.returncode == 0 and bool((done.stdout or "").strip())
+    last = ((done.stderr or "").strip() or (done.stdout or "").strip()).splitlines()
+    return {"ok": ok, "seconds": round(time.monotonic() - started, 1),
+            "detail": "" if ok else (last[-1][:160] if last else f"종료 코드 {done.returncode}")}
 
 
 def tcp_open(address: str, port: int, timeout: float) -> bool:

@@ -99,7 +99,7 @@ root·SYSTEM 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼
 하네스는 `HTTPS_PROXY`로 프록시에 접속하고, 프록시(tinyproxy)는 `full_stack_lab/model-proxy/model-domains.txt`의
 모델 도메인만 허용합니다(TLS 터널은 443만, D-67). MCP 호출은 `NO_PROXY`로 게이트웨이에 직접 갑니다. 하네스의 모델 로그인(`codex login`·
 `claude` 로그인)은 관리 계정에서 직원이 한 번 합니다. 재설치·제거 절차와 실측 증거는 [Endpoint Agent](../../endpoint-agent/README.md),
-설계 결정은 [D-61](DECISIONS.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
+설계 결정은 [D-61](decisions/D-051-100.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
 
 `field/pc/mcpgw_pc.py`의 비관리 setup은 기존 랩·관측용으로 남습니다. field 일반 계정의 실행 인증을 발급하지 않습니다.
 
@@ -161,7 +161,7 @@ cd full_stack_lab
 ./console.sh field up
 ./console.sh field ca
 openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256
-curl --cacert field/ca/root.crt https://100.83.175.111/api/health
+curl --cacert field/ca/root.crt https://<기기 IP>/api/health
 ```
 
 `field ca`는 공개 루트와 DER 기준 SHA-256 지문만 내보냅니다. 개인 키는 꺼내지 않습니다.
@@ -178,7 +178,7 @@ Linux 설치기는 지문 불일치·다중 인증서를 등록 요청과 설치
 `CODEX_CA_CERTIFICATE`로 전달합니다. 직원 PC 도구를 별도로 쓰는 경우 다음처럼 실행합니다.
 
 ```bash
-python3 mcpgw_pc.py setup --url https://100.83.175.111 --servers 승인서버 --ca root.crt --ca-sha256 운영자가확인한지문
+python3 mcpgw_pc.py setup --url https://<기기 IP> --servers 승인서버 --ca root.crt --ca-sha256 운영자가확인한지문
 python3 ~/.mcpgw/mcpgw_pc.py harness claude
 python3 ~/.mcpgw/mcpgw_pc.py harness codex
 ```

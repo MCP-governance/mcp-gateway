@@ -164,6 +164,8 @@ class DeviceEnrollment(StrictModel):
     local_sid: str | None = Field(default=None, pattern=r"^S-1-5-21-\d+-\d+-\d+-\d+$")
     helper_command: str | None = Field(default=None, max_length=400,
                                        pattern=r'^"[A-Za-z]:\\[^"]+\\pythonw?\.exe" -I -S "[A-Za-z]:\\[^"]+\\managed-windows\.py" header$')
+    # simple: the employee's own account, no kernel confinement (D-239). Kits before it sent nothing and installed isolated.
+    mode: Literal["simple", "isolated"] = "isolated"
 
     @model_validator(mode="after")
     def per_platform(self):
@@ -185,7 +187,7 @@ async def device_enroll(request: DeviceEnrollment):
         device = await consume_enrollment(request.enrollment_token, request.device_key, request.hostname,
                                            request.local_username, request.local_uid, platform=request.platform,
                                            local_sid=request.local_sid, helper_command=request.helper_command,
-                                           machine_id=request.machine_id)
+                                           machine_id=request.machine_id, mode=request.mode)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {"endpoint_id": device["endpoint_id"], "state": device["managed_state"],
@@ -209,12 +211,12 @@ async def device_token(x_endpoint_key: str | None = Header(default=None)):
         return _error("invalid_grant", failure, 403)
     policy = await managed_policy(device)
     token, signed = issue_token(row, minutes=5, client_id=device["endpoint_id"],
-                               extra={**claims, "scope": "mcp", "device_policy": policy["policy_hash"]})
+                               extra={**claims, "scope": "mcp", "device_policy": policy["control_hash"]})
     await db.execute(
         """INSERT INTO oauth_issued_tokens(jti,user_id,client_id,family_id,expires_at,device_id,device_epoch,device_policy)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
         (signed["jti"], row["user_id"], device["endpoint_id"], uuid.uuid4(), signed["exp"],
-         device["endpoint_id"], device["device_epoch"], policy["policy_hash"]))
+         device["endpoint_id"], device["device_epoch"], policy["control_hash"]))
     return JSONResponse({"access_token": token, "token_type": "Bearer", "expires_in": 300, "scope": "mcp"},
                         headers={"Cache-Control": "no-store"})
 

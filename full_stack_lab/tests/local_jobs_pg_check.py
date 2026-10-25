@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
-from app import db, endpoint_plane, local_jobs, registry
+from app import db, local_jobs, registry
 from termination_lab_support import APP, Checks, add_principal, add_server, apply_schema, isolated_disposal, run
 
 CHECKS = Checks("local MCP job channel PostgreSQL")
@@ -71,7 +71,8 @@ async def main() -> int:
     local_jobs.transport_context.set({"_principal": OWNER})
     with isolated_disposal(), patch.object(registry, "server", return_value={"local": LOCAL}), \
             patch.object(local_jobs, "control_generation", return_value="control-1"), \
-            patch.object(endpoint_plane, "managed_policy", AsyncMock(return_value={"policy_hash": None})):
+            patch.object(local_jobs, "_device_control", AsyncMock(return_value="control")), \
+            patch.object(local_jobs, "_same_control", AsyncMock(return_value=True)):
         return await scenarios(a, b, stale, silent)
 
 

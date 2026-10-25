@@ -94,8 +94,14 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
         self.disposal = NS(blocked=Mock(side_effect=lambda **kw: self.signed_block))
         self.dispatch = NS(record=AsyncMock(return_value=None))
         self.endpoint = ModuleType("fresh_requester_unit.endpoint_plane")
-        endpoint = production("endpoint_plane.py", {"managed_failure"}, {"db": self.db, "datetime": datetime,
-            "UTC": UTC, "HEARTBEAT_SECONDS": 180, "managed_policy": AsyncMock(return_value={"policy_hash": "policy"})})
+        # A device holding the current control (D-238): the token is bound to control_hash "policy".
+        managed = {"control_hash": "policy", "servers": ["existing-oss"], "configuration_hashes": {"managed-mcp.json": "m"}}
+        endpoint = production("endpoint_plane.py", {"managed_failure", "policy_installed", "control_matches", "held_servers",
+                                                   "installed_hash", "legacy_hash", "json_document"},
+            {"db": self.db, "datetime": datetime, "hashlib": hashlib, "UTC": UTC, "HEARTBEAT_SECONDS": 180,
+             "managed_policy": AsyncMock(return_value=managed)})
+        managed["policy_hash"] = endpoint.installed_hash("policy", managed["configuration_hashes"])
+        self.device.update(policy_hash=managed["policy_hash"], configuration_hashes=managed["configuration_hashes"])
         self.endpoint.managed_failure = endpoint.managed_failure
         self.endpoint.shadow_count_for = AsyncMock(return_value=0)
         self.endpoint.shadow_listener_count_for = AsyncMock(return_value=0)
