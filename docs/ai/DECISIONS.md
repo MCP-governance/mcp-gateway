@@ -2612,3 +2612,22 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   2. `gateway/app/**`·`field/pc/mcpgw_pc.py`·`opa/policy_ledger.json`의 주석·자체 점검 값·사용 예에서 시험 PC 이름, 날짜 실측 메모, 세션 번호, 팀원 저장소·브랜치 문구, 기기 주소를 뺐다. 주석의 이유는 남기고 근거 번호(D-번호)는 유지한다. 작업 번호(DEV-xx)는 이번 범위가 아니다.
 - 시험: `tests/seed_split_check.py` 3건(스키마에 계정 INSERT 없음, 실습 compose는 스키마 뒤 시드 적재, 운영 묶음은 스키마만 적재). 수정 전 2건 실패. 일회용 PostgreSQL에 `init.sql` → `seed-lab.sql` 적재해 계정 7개 확인.
 - 한계: 실습 데이터(사내 Git 시드 `corp/seed.py`·`console.sh` 로그인 예·시험 기대값)의 같은 이름은 실습 전용이라 바꾸지 않았다. `agent_tables.sql`의 옛 실습 계정 이전 UPDATE는 해당 행이 없으면 아무 일도 하지 않아 남겼다. 이미 만들어진 솔루션 기기의 DB에는 계정이 그대로 있다.
+
+## D-249 LiteLLM 애드온: 경로 선택 하나, deploy 설치 연결, 완료 상태 재조회, 대상 단위 실패 격리, 1.105 고정 (2026-10-25)
+
+- 배경(astra 10-25 검토, 판정 「수정 필요」): 동기화는 원래 upstream 주소를 LiteLLM에 등록하는데 standalone은 LiteLLM 출구를 MINT로만 열어 등록과 호출이 따로 놀았다. `deploy/`에는 매핑·키·CA 연결이 없었고, `verified` 뒤에는 외부 변경을 다시 보지 않았으며, 키 하나의 오류가 서버를 지워 다른 직원까지 멈췄다. 정상 호출은 대역으로만 확인돼 있었다.
+- 결정:
+  1. **경로는 `MINT_LITELLM_ROUTE` 하나로 정한다.** `mint`(기본, A 경유): LiteLLM MCP 서버 주소 = `GATEWAY_PUBLIC_MCP_URL`(또는 `MINT_LITELLM_MINT_MCP_URL`)`/<서버>/`, `auth_type=oauth_delegate` — LiteLLM은 직원이 보낸 `x-mcp-<서버>-authorization`(본인 MINT 토큰)을 그대로 넘기고 보관하지 않는다. upstream 자격·URL 속 자격은 MINT 안에만 있으므로 A에서는 등록을 막지 않는다(장치 실행 서버만 제외). `direct`(B): 원래 주소, `auth_type=none`, 호출 직전 가드레일이 판정 API를 부른다. A에서 B로 바꿀 때 우리가 넣은 `oauth_delegate`를 물려받지 않고 `none`으로 바꾼다(직원 토큰이 upstream으로 가지 않게). 경로 값은 동기화 지문에 들어가 바꾸면 다시 전파된다. standalone(출구가 MINT뿐)은 A 전용 묶음으로 명시한다.
+  2. **설치 연결**: `./mint.sh litellm enable --url --bindings [--ca] [--route]`(관리 키는 표준 입력) → 매핑을 `deploy/litellm/`에, 관리 키를 게이트웨이 이미지 안에서 `0400`·소유 10001 파일로 쓰고 → `python -m app.litellm_sync check`(매핑·키·`require_key_mcp_access_defined`·워커 연결, 쓰기 없음)가 통과할 때만 게이트웨이를 다시 만든다. `rotate-key`는 재기동 없이 키 파일만 바꾸고 점검한다(키는 요청마다 다시 읽음). 관리 origin 전용 사설 CA(`MINT_LITELLM_SYNC_CA_FILE`)는 다른 외부 TLS의 시스템 저장소를 바꾸지 않는다. 매핑·CA는 백업에 들어가고 관리 키는 비밀 저장소가 정본이라 복구 뒤 `rotate-key`로 넣는다.
+  3. **재조회**: `verified`도 `MINT_LITELLM_SYNC_RECHECK_SECONDS`(기본 300초, 최소 30초)마다 읽기 전용으로 서버·키·팀을 다시 읽는다(`observe`). 일치하면 원장에 아무것도 쓰지 않고 시각만 갱신, 다르면 `drift` 관측과 함께 다시 전파해 되돌리고 그때만 `litellm-sync` 사건을 남긴다(5분마다 원장이 늘지 않게).
+  4. **실패 격리**: 키·팀 하나의 소유자 불일치·권한 재조회 불일치·관리 API 오류는 그 대상만 실패로 두고(`partial` 관측에 대상 해시) 서버와 다른 대상의 권한은 유지한다. 서버 자체 재조회 불일치(`server-readback-mismatch`·워커 불일치)일 때만 서버를 지운다. 서버는 `allow_all_keys=false`이고 키 권한이 명시돼야 쓰이므로(`require_key_mcp_access_defined`) 실패 대상이 남은 서버로 권한을 얻지 않는다.
+  5. **판본·위생**: 지원 판본은 LiteLLM 1.105.0(digest 고정, standalone·CI 동일). 프롬프트·응답 지출 로그 저장은 기본 끔. 가드레일은 `recorded:false`도 경고로 남긴다. `deploy/check.py`가 `addons/litellm`·`llm/standalone`·`integrations/litellm`도 위생 검사한다.
+- 시험: `tests/litellm_sync_check.py` 25건(새 7건 — 경로 A/B 인증, A의 MINT 주소·자격 비노출, 키 하나 오류·관리 API 오류에도 서버 유지, 재조회 drift, 대상 단위 실패), `tests/ai_gateway_addon_check.py` 13건(`recorded:false`). 새 7건·1건은 이전 코드에서 실패한다. 실제 검수는 CI `litellm` 작업(`tests/litellm_addon_e2e.py`, 보고서 2026-10-25-litellm-addon).
+- 한계: B의 사람 승인은 여전히 차단으로 끝난다(D-191). 동기화는 관리 상태 관측이지 호출별 통제·T1 종료 증거가 아니다. 직원 하네스의 헤더 자동 구성(토큰 복사 없는 연결)은 설계만 했다.
+
+## D-250 중앙 AI 게이트웨이 전용 직원은 관리형 PC 없이 자기 MCP 토큰을 받는다 (2026-10-25)
+
+- 배경: 필드 모드는 기동 때마다 관리자가 아닌 모든 계정을 「관리형 PC 필수」로 되돌린다(`bootstrap_field_accounts`). LiteLLM 등 중앙 AI 게이트웨이로만 MCP를 쓰는 직원은 PC 키트가 없어 비밀번호 인증으로 MCP 토큰을 받을 수 없었고, 애드온 시험은 승인 대상이 아닌 root로만 할 수 있었다.
+- 결정: `principals.ai_gateway_only`(기본 false)를 두고, 이 계정은 기동 때 관리형 PC 요구를 되살리지 않는다. `./mint.sh add-account <아이디> --role 직원 --ai-gateway`로만 만든다(관리자에는 쓰지 않음). 신원은 여전히 그 직원의 전송 토큰이고, 승인 사용 대상·정책 판정·원장 귀속은 다른 직원과 같다. 이 직원이 나중에 키트를 설치하면 장치 등록이 관리형 요구를 다시 켠다(기존 동작).
+- 근거: 소유자 지시(10-25) 「보안은 타 솔루션이 받친다는 전제에서 편의 우선」. 엔드포인트 통제를 중앙 게이트웨이 경로가 대신하며, 직원 PC의 다른 경로(하네스 직접 연결)는 엔드포인트 통제 범위 밖으로 남는다.
+- 한계: 콘솔은 이 계정을 따로 표시하지 않는다(통제 범위 화면의 `observed_only` 구분은 후속). 비밀번호 인증 토큰은 장치에 결속되지 않은 bearer 토큰이다.

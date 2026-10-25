@@ -60,6 +60,27 @@ def mint_endpoint(server_id):
     return base.rstrip("/") + "/" + quote(server_id, safe="") + "/"
 
 
+async def team_ceiling(api, config):
+    """True when key grants cannot leak through a team MINT grants (D-249).
+
+    LiteLLM 1.105 only uses require_key_mcp_access_defined to stop a key without its own MCP list from inheriting
+    its team's servers, and its /config/field API refuses that field (a config-file setting). With no team bindings
+    MINT grants keys explicitly and that inheritance never carries a MINT grant, so the switch is irrelevant. With
+    team bindings the switch must be read back, or the operator must state it is set in the config file.
+    """
+    if not config["teams"]:
+        return "no-team-grants"
+    try:
+        setting = await api.request("GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
+        if isinstance(setting, dict) and setting.get("field_value") is True:
+            return "read-back"
+    except SyncError:
+        pass
+    if os.getenv("MINT_LITELLM_KEY_ACCESS_CONFIRMED") == "1":
+        return "operator-confirmed"
+    raise SyncError("explicit-key-access-required")
+
+
 def recheck_seconds():
     return max(30, int(os.getenv("MINT_LITELLM_SYNC_RECHECK_SECONDS", "300")))
 
@@ -213,9 +234,7 @@ async def _propagate(api, plan, config, observations):
     errors, subject_errors, failed_subjects, credential_targets = [], [], [], []
     session_users = set(plan.get("session_users", []))
     if active:
-        setting = await api.request("GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
-        if not isinstance(setting, dict) or setting.get("field_value") is not True:
-            raise SyncError("explicit-key-access-required")
+        observations.append({"kind": "team-ceiling", "basis": await team_ceiling(api, config)})
         if plan.get("unsupported"):
             raise SyncError("unsupported-or-credentialed-endpoint")
         payload = {"server_id": sid, "server_name": plan["server_id"], "alias": plan["server_id"], "url": plan["endpoint"],
@@ -597,14 +616,10 @@ async def check():
         if config["route"] == "mint":
             report["mint_mcp_url"] = mint_endpoint("example")[:-len("example/")]
         management_key()
-        setting = await ManagementAPI(url).request(
-            "GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
-        report["explicit_key_access"] = isinstance(setting, dict) and setting.get("field_value") is True
+        report["team_ceiling"] = await team_ceiling(ManagementAPI(url), config)
         for worker in config["workers"]:
             await ManagementAPI(worker).request("GET", "/v1/mcp/server")
-        report["ok"] = report["explicit_key_access"]
-        if not report["ok"]:
-            report["failure"] = "explicit-key-access-required"
+        report["ok"] = True
     except (SyncError, OSError, KeyError, ValueError) as exc:
         report.update(ok=False, failure=str(exc) if isinstance(exc, SyncError) else type(exc).__name__)
     return report

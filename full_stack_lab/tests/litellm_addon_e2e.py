@@ -185,16 +185,15 @@ def prepare() -> None:
         s["keys"][name] = lite("POST", "/key/generate", {"user_id": "mint-sync", "key_alias": name})["key"]
         Path(f"/tmp/{name}.key").write_text(s["keys"][name] + "\n")
         Path(f"/tmp/{name}.key").chmod(0o600)
-    # MINT creates servers only after reading this switch back from the management API.
-    lite("POST", "/config/field/update", {"field_name": "require_key_mcp_access_defined", "field_value": True,
-                                          "config_type": "general_settings"})
-    field = lite("GET", "/config/field/info", params={"field_name": "require_key_mcp_access_defined"})
+    # 1.105 keeps require_key_mcp_access_defined in the config file only; record what the field API says (D-249).
+    field = httpx.get(LITE + "/config/field/info", params={"field_name": "require_key_mcp_access_defined"},
+                      headers={"Authorization": f"Bearer {MASTER}"}, timeout=30)
     for who in EMPLOYEES:
         fresh_token(who)  # an AI-gateway-only employee gets a grant without a managed PC
     save(s)
     write_bindings(s, mismatched=False)
     evidence("prepare", litellm_version=lite("GET", "/health/readiness").get("litellm_version"),
-             explicit_key_access=field.get("field_value"), employees=list(EMPLOYEES))
+             field_api_status=field.status_code, employees=list(EMPLOYEES))
 
 
 def write_bindings(s: dict, mismatched: bool) -> None:

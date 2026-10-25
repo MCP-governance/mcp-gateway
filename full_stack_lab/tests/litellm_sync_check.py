@@ -40,6 +40,7 @@ class State:
         self.fail = None
         self.keep_server = self.wrong_server = self.keep_permissions = self.keep_credentials = self.keep_sessions = False
         self.explicit_access = True
+        self.field_refused = False  # LiteLLM 1.105: /config/field/info answers 400 for require_key_mcp_access_defined
         self.cascade_credentials = False
 
 
@@ -70,7 +71,7 @@ class Handler(BaseHTTPRequestHandler):
         if state.fail == (method, path):
             status, result = 503, {"error": "synthetic failure"}
         elif path == "/config/field/info":
-            result = {"field_value": state.explicit_access}
+            status, result = (400, {"detail": "Invalid field"}) if state.field_refused else (200, {"field_value": state.explicit_access})
         elif path == "/v1/mcp/server" and method in {"POST", "PUT"}:
             state.server = {**(state.server or {}), **body, "approval_status": "active"}
             status = 201 if method == "POST" else 202
@@ -302,6 +303,21 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         self.state.server = {"mcp_info": {"mint_server_id": "someone-else"}}
         with self.assertRaisesRegex(sync.SyncError, "server-ownership-conflict"):
             await self.run_plan()
+        self.assertIsNotNone(self.state.server)
+
+    async def test_team_ceiling_on_litellm_1_105_where_the_switch_is_not_readable(self):
+        # Seen on the real 1.105 image (CI): the field API refuses the switch. Key-only bindings do not need it.
+        self.state.field_refused = True
+        with self.assertRaisesRegex(sync.SyncError, "explicit-key-access-required"):
+            await self.run_plan()
+        self.assertIsNone(self.state.server)
+        with patch.dict(os.environ, {"MINT_LITELLM_KEY_ACCESS_CONFIRMED": "1"}):
+            await self.run_plan()
+        self.assertEqual(self.observations[0], {"kind": "team-ceiling", "basis": "operator-confirmed"})
+        self.state.server, self.observations[:] = None, []
+        self.config["teams"] = []
+        await self.run_plan()
+        self.assertEqual(self.observations[0], {"kind": "team-ceiling", "basis": "no-team-grants"})
         self.assertIsNotNone(self.state.server)
 
     async def test_secret_rotation_and_error_bodies_are_not_exposed(self):
