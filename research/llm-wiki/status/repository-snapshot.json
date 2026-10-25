@@ -1,13 +1,10 @@
 {
-  "captured_at": "2026-10-26T00:23:14+09:00",
-  "head": "ce79f39934e7df6717780451012c3dd7414004a6",
+  "captured_at": "2026-10-26T00:48:57+09:00",
+  "head": "eed9465ca3631e74fa3cc248ab02f50315f03c60",
   "branch": "10/25-stage0-ci",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
-    " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/threats/control-map.md"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
