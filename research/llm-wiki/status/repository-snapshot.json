@@ -1,10 +1,31 @@
 {
-  "captured_at": "2026-10-25T20:16:01+09:00",
-  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
-  "branch": "main",
+  "captured_at": "2026-10-26T00:05:36+09:00",
+  "head": "cdef0bbf38dd4775747ac5094bbfd8f3477bbf07",
+  "branch": "10/25-stage0-nested-tx",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    "M .github/workflows/verify.yml",
+    " M docs/ai/OPS_RESPONSE.md",
+    " M full_stack_lab/gateway/app/agent_service.py",
+    " M full_stack_lab/gateway/app/db.py",
+    " M full_stack_lab/gateway/app/endpoint_plane.py",
+    " M full_stack_lab/gateway/app/idp.py",
+    " M full_stack_lab/gateway/app/local_jobs.py",
+    " M full_stack_lab/gateway/app/ops_response.py",
+    " M full_stack_lab/gateway/app/review.py",
+    " M full_stack_lab/tests/dev73_integration_check.py",
+    " M full_stack_lab/tests/endpoint_auto_activation_check.py",
+    " M full_stack_lab/tests/incident_pack_check.py",
+    " M full_stack_lab/tests/intake_one_click_check.py",
+    " M full_stack_lab/tests/managed_policy_gap_check.py",
+    " M full_stack_lab/tests/root_solo_behavior_check.py",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/decisions-index.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
+    " M research/llm-wiki/threats/control-map.md",
+    "?? docs/ai/decisions/D-251-300.md",
+    "?? full_stack_lab/tests/nested_tx_check.py",
+    "?? full_stack_lab/tests/nested_tx_refactor_check.py"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -24,7 +45,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216"
+      "sha256": "4b39777eff78031cb178ce9a317756fda1bf2cab1f032f901e4c22aa60a7c152"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",

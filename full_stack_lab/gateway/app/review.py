@@ -50,20 +50,20 @@ async def events_for(target_kind: str, target_id: Any) -> list[dict]:
             WHERE target_kind=%s AND target_id=%s ORDER BY id""", (target_kind, str(target_id)))
 
 
-async def same_person(first: str | None, second: str | None) -> bool:
+async def same_person(first: str | None, second: str | None, *, connection=None) -> bool:
     """Two principal tokens that name one person: the same token, or two tokens of one user id."""
     if not first or not second:
         return False
     if first == second:
         return True
-    rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE token = ANY(%s::text[])", ([first, second],))
+    rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE token = ANY(%s::text[])", ([first, second],), connection=connection)
     users = {row["token"]: row["user_id"] for row in rows}
     return bool(users.get(first)) and users.get(first) == users.get(second)
 
 
 async def require_independent(kind: str, target_kind: str, target_id: Any, actor: str, applicant: str | None,
                               scope: dict | None = None, *, actor_user: str | None = None,
-                              applicant_user: str | None = None) -> None:
+                              applicant_user: str | None = None, connection=None) -> None:
     """Server-side rule behind every approval: the person who asked cannot be the one who approves.
     The refusal is itself recorded, so an attempt is visible and not only a missing approval.
     Callers that already hold both user ids pass them and save the lookup."""
@@ -72,8 +72,9 @@ async def require_independent(kind: str, target_kind: str, target_id: Any, actor
     elif actor_user and applicant_user:
         same = actor_user == applicant_user
     else:
-        same = await same_person(actor, applicant)
+        same = await same_person(actor, applicant, connection=connection)
     if same:
+        # A refused approval must remain visible after the caller rolls back.
         await record_event(kind, "refused", target_kind, target_id, actor, applicant=applicant,
                            reason="신청자와 승인자가 같습니다.", scope=scope)
         raise NotIndependent("본인이 신청한 건은 본인이 승인할 수 없습니다. 다른 관리자가 처리해야 합니다.")
@@ -115,10 +116,10 @@ async def record_solo_mode_observation() -> bool:
         return True
 
 
-async def transition(query: str, params: tuple, **event: Any) -> dict | None:
+async def transition(query: str, params: tuple, *, connection=None, **event: Any) -> dict | None:
     """A status change and its approval event in one transaction. None when the row was no longer in
     the expected state, in which case nothing is recorded."""
-    async with db.transaction() as connection:
+    async with (db.transaction() if connection is None else db.transaction(connection=connection)) as connection:
         row = await (await connection.execute(query, params)).fetchone()
         if row:
             await record_event(**event, connection=connection)
@@ -127,21 +128,21 @@ async def transition(query: str, params: tuple, **event: Any) -> dict | None:
 
 # ── intake gate: provenance, freshness, critical findings ───────────────────────
 
-async def intake_reports(row: dict) -> list[dict]:
+async def intake_reports(row: dict, *, connection=None) -> list[dict]:
     return await db.fetch_all(
         """SELECT id, scanner, scanner_version, source_ref, status, critical_count, high_count, medium_count,
                   summary, imported_at, vuln_db_updated_at
              FROM supply_chain_reports WHERE source_ref=%s AND report_path LIKE %s ORDER BY id""",
-        (row.get("source_ref"), f"%/intake-{row['id']}-%"))
+        (row.get("source_ref"), f"%/intake-{row['id']}-%"), connection=connection)
 
 
-async def active_acceptance(intake_id: Any, commit: str | None) -> dict | None:
+async def active_acceptance(intake_id: Any, commit: str | None, *, connection=None) -> dict | None:
     return await db.fetch_one(
         """SELECT * FROM accepted_risks WHERE intake_id=%s AND commit_sha=%s AND expires_at>now()
-              AND revoked_at IS NULL ORDER BY expires_at DESC LIMIT 1""", (intake_id, commit or ""))
+              AND revoked_at IS NULL ORDER BY expires_at DESC LIMIT 1""", (intake_id, commit or ""), connection=connection)
 
 
-async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None = None) -> dict:
+async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None = None, connection=None) -> dict:
     """Why an intake cannot be approved (or registered) yet. `verified` also demands that the
     artifact was compared with the copy in use, which approval does itself and registration re-checks."""
     now = now or datetime.now(UTC)
@@ -165,7 +166,7 @@ async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None
                             "scanners": [], "vuln_db": None, "critical": None}
     if not remote:
         states = (row.get("evidence") or {}).get("scanners") or {}
-        reports = {report["scanner"]: report for report in await intake_reports(row)}
+        reports = {report["scanner"]: report for report in await intake_reports(row, connection=connection)}
         for name in SCANNERS:
             state, report = (states.get(name.lower()) or {}).get("status"), reports.get(name)
             gate["scanners"].append({"scanner": name, "version": report and report["scanner_version"],
@@ -189,7 +190,7 @@ async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None
         count = sum(int(report["critical_count"]) for report in reports.values())
         ids = sorted({finding["id"] for report in reports.values() for finding in (report["summary"] or {}).get("findings", [])
                       if finding.get("severity") == "CRITICAL"})
-        acceptance = await active_acceptance(row["id"], row.get("commit_sha")) if count else None
+        acceptance = await active_acceptance(row["id"], row.get("commit_sha"), connection=connection) if count else None
         covered = bool(acceptance and acceptance["critical_count"] >= count and set(ids) <= set(acceptance["finding_ids"]))
         gate["critical"] = {"count": count, "ids": ids, "covered": covered, "acceptance": acceptance}
         if count and not covered:
@@ -198,24 +199,24 @@ async def intake_gate(row: dict, *, verified: bool = False, now: datetime | None
     return gate
 
 
-async def accept_risk(intake_id: UUID, actor: str, reason: str, days: int) -> dict:
+async def accept_risk(intake_id: UUID, actor: str, reason: str, days: int, *, connection=None) -> dict:
     """An operator accepts the critical findings of one validated commit until expires_at."""
     reason = reason.strip()
     if len(reason) < RISK_ACCEPTANCE_MIN_REASON:
         raise ValueError(f"위험 수용 사유는 {RISK_ACCEPTANCE_MIN_REASON}자 이상이어야 합니다.")
     if not 1 <= days <= RISK_ACCEPTANCE_MAX_DAYS:
         raise ValueError(f"위험 수용 기한은 1~{RISK_ACCEPTANCE_MAX_DAYS}일입니다.")
-    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (intake_id,))
+    row = await db.fetch_one("SELECT * FROM mcp_intake_requests WHERE id=%s", (intake_id,), connection=connection)
     if (not row or row["intake_kind"] != "repository" or row["status"] not in {"HOLD", "VALIDATED"}
             or row["risk_level"] != "CRITICAL" or not row.get("validated_at") or not row.get("commit_sha")):
         raise ValueError("치명적 발견으로 보류된, 검증을 마친 소스 도입 요청만 위험을 수용할 수 있습니다.")
-    await require_independent("risk-accept", "intake", intake_id, actor, row["submitted_by"])
-    gate = await intake_gate(row)
+    await require_independent("risk-accept", "intake", intake_id, actor, row["submitted_by"], connection=connection)
+    gate = await intake_gate(row, connection=connection)
     if any(item["code"] in {"scan-incomplete", "scan-report-missing"} for item in gate["blockers"]):
         raise ValueError("검사가 모두 끝나지 않은 요청은 위험을 수용할 수 없습니다.")
     critical = gate["critical"]
     expires = datetime.now(UTC) + timedelta(days=days)
-    async with db.transaction() as connection:
+    async with (db.transaction() if connection is None else db.transaction(connection=connection)) as connection:
         accepted = await (await connection.execute(
             """INSERT INTO accepted_risks(intake_id, commit_sha, critical_count, finding_ids, reason, accepted_by, expires_at)
                VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING *""",

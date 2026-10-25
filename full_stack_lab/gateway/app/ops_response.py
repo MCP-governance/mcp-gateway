@@ -230,19 +230,31 @@ async def self_test(opa_url):
 
 
 async def tick(opa_url):
-    # A single transaction-scoped lease prevents SSE and HTTP ingress testing the same deployment twice.
-    async with db.transaction() as connection:
-        row = await (await connection.execute("SELECT pg_try_advisory_xact_lock(721017121) AS acquired")).fetchone()
-        if not row["acquired"]:
-            return
-        from . import incidents
+    # Keep cross-process exclusion through the work, without holding a database transaction across HTTP.
+    async with (await db.pool()).connection() as guard:
         try:
-            await incidents.check_deadlines()
-        except Exception:
-            LOG.exception("Incident deadline check failed")
-        await observed_alerts()
-        await contain_repeated()
-        await self_test(opa_url)
+            row = await (await guard.execute("SELECT pg_try_advisory_lock(721017121) AS acquired")).fetchone()
+            await guard.commit()
+            if not row["acquired"]:
+                return
+            from . import incidents
+            try:
+                await incidents.check_deadlines()
+            except Exception:
+                LOG.exception("Incident deadline check failed")
+            await observed_alerts()
+            await contain_repeated()
+            await self_test(opa_url)
+        finally:
+            try:
+                # Cancellation may arrive after acquisition but before its result was received.
+                await guard.rollback()
+                await guard.execute("SELECT pg_advisory_unlock(721017121)")
+                await guard.commit()
+            except BaseException:
+                # A pooled connection must not carry the session lock into its next borrower.
+                await guard.close()
+                raise
 
 
 async def watch(opa_url):

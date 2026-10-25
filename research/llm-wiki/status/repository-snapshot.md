@@ -1,16 +1,37 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T20:16:01+09:00
+확인 시각: 2026-10-26T00:05:36+09:00
 
-HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
+HEAD: `cdef0bbf38dd4775747ac5094bbfd8f3477bbf07` · 로컬 브랜치: `10/25-stage0-nested-tx`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
- M research/llm-wiki/analysis/requirements.json
+M .github/workflows/verify.yml
+ M docs/ai/OPS_RESPONSE.md
+ M full_stack_lab/gateway/app/agent_service.py
+ M full_stack_lab/gateway/app/db.py
+ M full_stack_lab/gateway/app/endpoint_plane.py
+ M full_stack_lab/gateway/app/idp.py
+ M full_stack_lab/gateway/app/local_jobs.py
+ M full_stack_lab/gateway/app/ops_response.py
+ M full_stack_lab/gateway/app/review.py
+ M full_stack_lab/tests/dev73_integration_check.py
+ M full_stack_lab/tests/endpoint_auto_activation_check.py
+ M full_stack_lab/tests/incident_pack_check.py
+ M full_stack_lab/tests/intake_one_click_check.py
+ M full_stack_lab/tests/managed_policy_gap_check.py
+ M full_stack_lab/tests/root_solo_behavior_check.py
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/status/decisions-index.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
+ M research/llm-wiki/threats/control-map.md
+?? docs/ai/decisions/D-251-300.md
+?? full_stack_lab/tests/nested_tx_check.py
+?? full_stack_lab/tests/nested_tx_refactor_check.py
 ```
 
 ## 주요 파일 바이트
@@ -20,7 +41,7 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/gateway/app/core.py` | `5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
-| `full_stack_lab/gateway/app/idp.py` | `46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216` |
+| `full_stack_lab/gateway/app/idp.py` | `4b39777eff78031cb178ce9a317756fda1bf2cab1f032f901e4c22aa60a7c152` |
 | `full_stack_lab/gateway/app/privacy.py` | `592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
