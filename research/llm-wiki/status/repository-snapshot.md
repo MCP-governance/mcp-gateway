@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T00:46:58+09:00
+확인 시각: 2026-10-26T00:48:18+09:00
 
-HEAD: `db9e771d95afb5d90bded65d6564363660e3732a` · 로컬 브랜치: `10/25-stage0-sunset`
+HEAD: `7b5f4759432ada6499e40f38c6cb383350687be1` · 로컬 브랜치: `10/25-stage0-sunset`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,8 +11,6 @@ HEAD: `db9e771d95afb5d90bded65d6564363660e3732a` · 로컬 브랜치: `10/25-sta
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/threats/control-map.md
 ```
 
 ## 주요 파일 바이트
