@@ -101,6 +101,37 @@ function Start-Process {
         self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
         self.assertIn("if ($replace -and -not (Test-Path -LiteralPath $oneclickMark)) { throw 'IT must update the approved installer' }", template)
 
+    def test_runtime_check_imports_only_what_the_embedded_python_has(self):
+        # pj3 10-25: the D-232 fallbacks (tomli, toml) made every Windows install stop at 「실행 파일 준비」.
+        check = load('runtime_check', 'endpoint-agent/runtime-check.py')
+        modules = check.modules_of(ROOT / 'endpoint-agent')
+        self.assertFalse({'toml', 'tomli', 'pwd', 'grp', 'fcntl'} & modules)
+        self.assertIn('tomllib', modules)
+        missing = [name for name in sorted(modules)  # the kit's own modules sit beside the script
+                   if not (ROOT / 'endpoint-agent' / (name + '.py')).is_file() and importlib.util.find_spec(name) is None]
+        self.assertEqual(missing, [], 'modules a standard CPython 3.12+ lacks')
+
+    @unittest.skipUnless(os.name == 'nt', 'PowerShell required')
+    def test_no_companion_to_retire_is_not_a_powershell_failure(self):
+        # pj3 10-25: a PC that never had an isolated install aborted every simple install on this script.
+        self.assertIsNone(self.managed.powershell(self.managed.REMOVE_COMPANION, {'name': 'mcpgw-no-such-account-s1'}))
+        # Removing a simple-mode install: no firewall rule and (here) no task either is still a success.
+        self.assertIsNone(self.managed.powershell(self.managed.STOP_SERVICE, {
+            'name': 'MCPGatewayManaged-no-such-account-s1', 'rules': ['MCPGW-no-such-account-s1-egress']}))
+
+    @unittest.skipUnless(os.name == 'nt', 'Windows version resources')
+    def test_winget_harness_version_is_read_from_the_file_not_by_running_it(self):
+        import shutil
+        folder = self.root / 'profile/AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode_x'
+        folder.mkdir(parents=True)
+        notepad = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32' / 'notepad.exe'
+        shutil.copyfile(notepad, folder / 'claude.exe')  # any PE with a version resource
+        expected = self.managed.file_version(folder / 'claude.exe')
+        self.assertRegex(expected, r'^\d+\.\d+\.\d+$')
+        with mock.patch.object(self.managed.subprocess, 'run', side_effect=AssertionError('a harness was run')):
+            self.assertEqual(self.managed.harness_versions(self.root / 'profile'), {'claude': expected})
+        self.assertIsNone(self.managed.file_version(self.root / 'missing.exe'))
+
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \
                 mock.patch.object(self.managed, 'powershell'):

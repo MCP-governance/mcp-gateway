@@ -1118,7 +1118,9 @@ def serve(args):
                 with lock:
                     token = request(config, "/oauth/device-token", {})
                     cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
-                pause = 60
+                    # One fast round after the activation: the guidance of the new state arrives with the next policy
+                    # fetch, and until then the harness is told the PC still waits (pj3 10-25: up to a minute).
+                    pause = 60 if cache.get("state") == "active" else 10
             else:
                 with lock:
                     cache.clear()
