@@ -64,6 +64,10 @@ class MintGuardrail(CustomGuardrail):
     async def async_pre_call_hook(self, user_api_key_dict, cache, data, call_type):
         if "mcp_tool_name" not in data:
             return data  # MCP 호출이 아니면 관여하지 않는다
+        # 1.105는 tools/list 때도 같은 훅으로 도구 설명을 검사한다(tool_catalog_guard). 목록은 실행이 아니므로 판정하지
+        # 않는다 — 여기서 막으면 모든 도구가 목록에서 사라진다(CI 실측). 호출(call_mcp_tool 등)은 그대로 판정한다.
+        if str(getattr(call_type, "value", call_type)) == "list_mcp_tools":
+            return data
         token = data.get("incoming_bearer_token")
         if not token:
             _deny("직원 MINT 토큰(Authorization: Bearer)이 없어 도구 호출을 막았습니다.")
