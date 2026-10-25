@@ -299,11 +299,11 @@ class OutcomeAndQueue(unittest.IsolatedAsyncioTestCase):
     async def test_F9_result_evidence_retains_uuid_timestamps_state_hash(self):
         row={'id':str(uuid.uuid4()),'request_id':str(uuid.uuid4()),'device_id':'device','server_id':'local-files',
              'method':'tools/call','manifest_sha256':'a'*64,'state':'done','result_sha256':'b'*64,
-             'claimed_at':datetime.now(timezone.utc),'finished_at':datetime.now(timezone.utc)}
+             'claimed_at':datetime.now(timezone.utc),'started_at':datetime.now(timezone.utc),'finished_at':datetime.now(timezone.utc)}
         event={};jobs.remember(row,event)
         evidence=event['client']['local_jobs'][0]
         self.assertTrue(event['upstream_attempted'])
-        for key in ('id','request_id','claimed_at','finished_at','state','result_sha256'):
+        for key in ('id','request_id','claimed_at','started_at','finished_at','state','result_sha256'):
             self.assertEqual(evidence[key],str(row[key]))
 
     async def test_F8_bound_observer_survives_a_newer_device_heartbeat(self):

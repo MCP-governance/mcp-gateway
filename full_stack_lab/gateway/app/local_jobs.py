@@ -239,9 +239,20 @@ def server_of(endpoint: str | None) -> str | None:
     return value[len(PREFIX):] if value.startswith(PREFIX) and value[len(PREFIX):] else None
 
 
-def control_generation():
+# Renewal moves only the deadline of an approval; it is not a change of what the job may do.
+RENEWAL_FIELDS = ('valid_until', 'approval_days')
+
+
+def control_generation(server_id: str) -> str:
+    """What a job's own server may do: its registration (renewal aside), the reviewed catalog and PaC capabilities.
+
+    The whole servers.json used to be hashed, so a registration or an automatic renewal of any other server stopped
+    every running local job on the PC (10-25 field test, S4-07)."""
     from . import pac, registry
-    return hashlib.sha256(canonical({'catalog':registry.catalog_version(),'capabilities':pac.capabilities()})).hexdigest()
+    reviewed = registry.CATALOG_PATH.read_bytes() if registry.CATALOG_PATH.exists() else b''
+    spec = {key: value for key, value in (registry.server(server_id) or {}).items() if key not in RENEWAL_FIELDS}
+    return hashlib.sha256(canonical({'catalog': hashlib.sha256(reviewed).hexdigest(), 'server': spec,
+                                     'capabilities': pac.capabilities()})).hexdigest()
 
 
 async def _device(device_id: str | None) -> dict:
@@ -305,7 +316,7 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
                  FROM local_approvals a WHERE a.server_id=%s""",
             (job,device_id,device['owner_token'],server,local['manifest_sha256'],Jsonb(local['manifest']),local['signature'],
              method,Jsonb(params),datetime.now(UTC)+timedelta(seconds=timeout),device['device_epoch'],control,
-             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(),run_timeout,server))
+             (event or {}).get('request_id'),transport_context.get().get('jti'),control_generation(server),run_timeout,server))
     if event is not None and method=='tools/call':
         # An unreadable job is uncertain until a durable row proves it was never claimed.
         event['upstream_attempted']=True
@@ -352,7 +363,9 @@ def remember(row: dict, event: dict | None):
             ('id','request_id','device_id','server_id','method','manifest_sha256','claimed_at','started_at','finished_at','stopped_at','state','result_sha256')}
     event.setdefault('client', {}).setdefault('local_jobs', []).append(view)
     if row['method'] == 'tools/call':
-        event['upstream_attempted'] = row['claimed_at'] is not None
+        # The runner starts its container only after /start succeeds: a job refused before that never ran, so it
+        # holds no write reservation and its retry is not a duplicate (S4-07).
+        event['upstream_attempted'] = row.get('started_at') is not None
 
 
 async def record_evidence(row, event=None, connection=None):
@@ -566,7 +579,7 @@ async def current_job(connection,row,device):
     policy=await (await connection.execute("SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1")).fetchone()
     revoked=await (await connection.execute('SELECT jti FROM agent_revoked_tokens WHERE jti=%s',(row['token_jti'],))).fetchone() if row['token_jti'] else None
     return (bool(policy) and row['policy_version']==policy['source_sha256'] and not revoked
-            and row['control_sha256']==control_generation()
+            and row['control_sha256']==control_generation(row['server_id'])
             and row['device_epoch']==device['device_epoch'] and await _same_control(row,device))
 
 

@@ -26,7 +26,7 @@ class ExchangeBudget(unittest.IsolatedAsyncioTestCase):
         self.env={**G,'db':self.db,'PREPARE_SECONDS':runner.PREPARE_SECONDS,'ROW_LIMIT':10000,'ACTIVE_TOTAL_LIMIT':64,
                   '_device':AsyncMock(return_value=device),'authorized':AsyncMock(return_value=True),
                   'cleanup':AsyncMock(),'admission_locks':AsyncMock(),'lock_execution':AsyncMock(),
-                  'control_generation':lambda:'control','record_evidence':AsyncMock(),
+                  'control_generation':lambda server:'control','record_evidence':AsyncMock(),
                   'registering':SimpleNamespace(get=lambda:True),
                   'transport_context':SimpleNamespace(get=lambda:{'_principal':'owner'})}
         self.functions=load_functions(APP/'local_jobs.py',{'exchange','LocalExecutionError'},self.env)

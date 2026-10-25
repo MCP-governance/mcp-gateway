@@ -2569,3 +2569,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 배경: 하네스가 승인 서버 10개에 동시에 붙으면 tools/list 10건이 함께 `tool_sunset.check`를 불렀다. 각 확인이 트랜잭션 연결을 쥔 채 `_coverage`에서 `retention.setting()`으로 풀의 두 번째 연결을 요구해, 풀(최대 10·대기 10초)이 교착됐다. 10초 뒤 서버마다 이름순 첫 도구가 목록에서 빠졌고(도구가 하나인 서버는 서버째), 같은 순간 정책 받기·장치 등록·콘솔 화면 API가 `PoolTimeout`으로 500이었다(10-25 실사용 시험: 54분에 11번). 실패 기록 `record_event("tool-sunset-check", "failed")`는 `approval_events.outcome` CHECK에 없는 값이라 매번 INSERT가 실패하고 `except: pass`로 사라졌다(원장 0행).
 - 결정: 보존 기간 설정은 트랜잭션 전에 읽어 `_coverage`에 넘긴다(확인 하나 = 연결 하나). 확인 결과 기록은 `outcome="recorded"`로 남기고, 그 기록마저 실패하면 삼키지 않고 오류 로그를 남긴다. 확인을 못 하면 목록에서 빼고 호출은 `P-CONTROL-FAIL-CLOSED`로 막는 규칙(D-177)은 그대로다.
 - 시험: `tests/tool_sunset_pool_pg_check.py`(실제 PostgreSQL, 풀 대기 3초) — 동시 10건 모두 사용 가능, 보존 기간 부족과 내부 오류가 원장에 1건씩. 수정 전 3건 모두 실패(3.05초 뒤 2건 사용 불가, 기록 0). `tool_sunset_check.py`·`tool_sunset_paths_check.py` 기대값을 `recorded`로.
+
+## D-244 로컬 작업은 자기 서버의 통제 세대에만 묶이고, 시작 전 거절은 미실행이다 (2026-10-25, S4-07)
+
+- 배경: D-238 뒤에도 `local_jobs.control_generation()`은 `registry.catalog_version()`(catalog.toml과 servers.json 전체 바이트, 등록 이력 포함)을 담았다. 다른 서버의 등록·철회와 하루 기한 서버의 자동 승인 연장(`core.py`의 `registry.save_runtime`)이 servers.json을 다시 쓰면 그 PC에서 실행 중이던 모든 로컬 작업이 `/start`·`/control`에서 409(「정책·서명 세대·철회 상태가 바뀌었거나…」)로 멈췄다(10-25 실사용 시험 원장 1234·1262·1266). 시작 전에 거절된 쓰기 분류 도구의 재시도는 `P-RATE-003`으로 막혔다. 원장은 작업을 PC가 받기만 해도(`claimed_at`) 실행 시도로 셌다.
+- 결정:
+  1. `control_generation(server_id)` = sha256({catalog.toml 해시, 그 서버의 등록 내용에서 `valid_until`·`approval_days`를 뺀 것, PaC capabilities}). 다른 서버의 변경과 기한 연장은 작업을 멈추지 않고, 그 서버의 도구·분류·제약·사용 대상 변경과 검토 카탈로그·capabilities 변경은 지금처럼 멈춘다. 장치 통제(`control_hash`, D-238) 결속은 그대로다.
+  2. 로컬 `tools/call`의 실행 시도 여부는 `started_at`으로 판단한다. PC 실행기는 `/start`가 성공한 뒤에만 컨테이너를 띄우므로(`endpoint-agent/local-runner.py`) 시작 기록이 없는 작업은 실행되지 않은 것이 확실하다. 그런 거절은 `confirmed_not_executed`로 예약을 풀어 재시도가 중복 실행으로 막히지 않는다. 시작 뒤 `/control`에서 멈춘 쓰기는 실제로 일부 실행됐을 수 있어 지금처럼 미확정으로 남긴다.
+- 시험: `tests/local_job_control_check.py` 3건(다른 서버 등록·자동 연장에도 세대 유지, 이 서버의 범위·검토 카탈로그 변경은 세대 변경, 시작 전 거절은 미시도). 수정 전 3건 실패. `local_jobs_pg_check`(13)·`dev73_rework_pg_check`(29) 실제 PostgreSQL 통과, `local_runner_usability_check`·`dev73_rework_check` 대역을 새 서명·실제 행 모양(`started_at`)에 맞췄다.
+- 한계: 시작 뒤 통제 변경으로 멈춘 쓰기의 재시도는 여전히 사람 확인이 필요하다. 실기기 재시험은 배포 뒤다.
