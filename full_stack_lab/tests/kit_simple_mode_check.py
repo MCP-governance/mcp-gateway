@@ -212,6 +212,27 @@ class InstallCheck(unittest.TestCase):
         self.assertFalse(missing["ok"])
 
 
+class HarnessCommandLine(unittest.TestCase):
+    """S4-03: the employee's prompt is in the harness's argv; the harness itself is not a stdio MCP server."""
+
+    def test_harnesses_are_not_stdio_servers_but_the_servers_still_are(self):
+        agent = load("agent_markers", KIT / "agent.py")
+        harnesses = [
+            '/home/pj2/.local/bin/claude -p "modelcontextprotocol/python-sdk 위키 목차"',
+            r'"C:\Users\pj3\AppData\Local\Microsoft\WinGet\Packages\Anthropic.ClaudeCode_x\claude.exe" -p "modelcontextprotocol"',
+            "/usr/bin/node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js -p fastmcp",
+            'codex exec "mcp-server 예제를 보여줘"',
+            r"C:\Users\pj3\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe exec \"fastmcp\"",
+        ]
+        servers = ["npx -y @modelcontextprotocol/server-filesystem /tmp", "node /home/u/mcp-server/index.js",
+                   "python -m mcp_server_git", "/usr/bin/node /opt/claude-mcp/server.js modelcontextprotocol"]
+        for line in harnesses:
+            self.assertTrue(agent.PROCESS_MARKERS.search(line), line)  # the marker matches: that was the false alarm
+            self.assertTrue(agent.harness_process(line), line)
+        for line in servers:
+            self.assertFalse(agent.harness_process(line), line)
+
+
 class Broker(unittest.TestCase):
     def test_simple_mode_answers_the_account_uid_only(self):
         binding = load("broker_simple", KIT / "broker_binding.py")

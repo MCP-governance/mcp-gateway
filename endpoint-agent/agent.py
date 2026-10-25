@@ -696,6 +696,24 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
     return seen[container]
 
 
+# A harness's own command line carries the employee's prompt (`claude -p "…modelcontextprotocol/python-sdk…"`): matching
+# the markers there reported the harness itself as a stdio MCP server (S4-03, PJ1 10-25). The servers it starts are
+# separate processes and are still checked.
+HARNESS_PROGRAM = re.compile(r"(?:^|[\\/])(?:claude|codex)(?:\.exe|\.cmd)?$", re.I)
+HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code|@openai[\\/]codex)[\\/]", re.I)
+
+
+def harness_process(command_line: str) -> bool:
+    program = command_line.strip().strip('"').split('" ', 1)[0] if command_line.strip().startswith('"') \
+        else command_line.strip().split(" ", 1)[0]
+    if HARNESS_PROGRAM.search(program):
+        return True
+    # node (or bun) running the harness package's entry script
+    words = command_line.split()
+    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?\"?$", words[0], re.I) is not None \
+        and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
+
+
 def stdio_processes() -> list[dict]:
     """설정에 없이 직접 실행된 stdio MCP 서버.
 
@@ -705,7 +723,7 @@ def stdio_processes() -> list[dict]:
     found = []
     if platform.system() == "Windows":
         for name, raw in _windows_processes().values():
-            if raw and PROCESS_MARKERS.search(raw):
+            if raw and PROCESS_MARKERS.search(raw) and not harness_process(raw):
                 found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                               "process_name": name, "command_line": command_digest(raw), "mcp_evidence": "suspected"},
                               {"process_name": name, "command_line": raw}, "process-table"))
@@ -714,7 +732,7 @@ def stdio_processes() -> list[dict]:
         output = _run(["ps", "-eo", "pid=,comm=,args="])
         for line in output.splitlines():
             parts = line.strip().split(None, 2)
-            if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]):
+            if len(parts) < 3 or not PROCESS_MARKERS.search(parts[2]) or harness_process(parts[2]):
                 continue
             found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                           "process_name": parts[1][:120], "command_line": command_digest(parts[2]),
@@ -733,7 +751,7 @@ def stdio_processes() -> list[dict]:
         except OSError:
             SCAN_ERRORS.add("process_unreadable")
             continue
-        if not raw or not PROCESS_MARKERS.search(raw) or _approved_local_run(pid_dir, containers):
+        if not raw or not PROCESS_MARKERS.search(raw) or harness_process(raw) or _approved_local_run(pid_dir, containers):
             continue
         found.append(sealed_listener({"source": "stdio-process", "address": "local-process", "port": None,
                       "process_name": raw.split(" ")[0].rsplit("/", 1)[-1][:120],

@@ -908,7 +908,7 @@ async def managed_policy(device: dict) -> dict:
     # (pj2 10-25). The path is where the kit writes the CA. Codex still needs the session variable.
     # ponytail: field mode stands for "kits carry the private CA"; record the kit's CA at enrollment if that ever differs.
     ca_env = {}
-    if managed_mode(device) == "simple" and os.getenv("MCP_FIELD_MODE") == "1":
+    if (device.get("detail") or {}).get("mode") == "simple" and os.getenv("MCP_FIELD_MODE") == "1":  # managed_mode written out: some checks load managed_policy alone
         if windows:
             programs = re.search(r'"([A-Za-z]:\\[^"]+)\\managed-windows\.py"', helper or "")
             if programs and detail.get("local_sid"):
