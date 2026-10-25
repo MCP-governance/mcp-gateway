@@ -2227,6 +2227,8 @@ class OneClickApproval(StrictModel):
     # 사용 대상(D-234): 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
     audience: Literal["all", "requester", "selected"] = "all"
     audience_users: list[str] = Field(default_factory=list, max_length=100)
+    # 주소 인자가 있는 도구의 허용 호스트. 제안값과 다를 때만 범위에 남는다(S4-02).
+    destinations: dict[str, list[str]] = Field(default_factory=dict, max_length=300)
 
 
 ALL_PRINCIPALS = "*"  # registry.ALL_PRINCIPALS (D-234); this service does not load the registry
@@ -2430,14 +2432,15 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
         blockers.append({"code": "tools-missing", "message": "도구가 없습니다. 실행 계약을 확인하세요."})
     registry_state = await gateway_proxy("/api/registry", authorization)
     proposed_risk = intake_proposal.risk_input(row, tools)
-    scopes = intake_proposal.tool_reviews(row, tools)
+    addressed = {t["name"] for t in tools if review.has_address_argument(t.get("input_schema"))}
+    scopes = intake_proposal.tool_reviews(row, tools, addressed)
     proposal = {"server_id": sid, "endpoint": endpoint, "catalog": found, "provenance": record, "basis": intake_proposal.basis(row),
                 "local": local, "local_execution": {k: found.get(k) for k in ("observer_device", "observer_uid", "isolation_scope",
                                                                              "user_mapping", "image_signature")} if local and found else None,
                 "scan_sha256": intake_proposal.scan_basis(gate),
                 "commit_sha": row.get("commit_sha"), "purpose": row["purpose"], "data_class": proposed_risk["data_class"],
                 "risk_input": proposed_risk, "risk": risk_tier.assess(proposed_risk), "tool_reviews": scopes,
-                "tools": {t["name"]: intake_proposal.action(t) for t in tools},
+                "tools": {t["name"]: intake_proposal.action(t) for t in tools}, "address_tools": sorted(addressed),
                 "parameter_constraints": review.derived_constraints({t["name"]: t for t in tools}, scopes),
                 "supplier_assurance": {k: v for k, v in intake_proposal.supplier(row).items()
                                        if k in supplier_assurance.ASSURANCE_FIELDS},
@@ -2479,6 +2482,13 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
         if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
             raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
+        destinations = {name: sorted({str(h).strip().lower() for h in hosts if str(h).strip()})
+                        for name, hosts in request.destinations.items()}
+        destinations = {name: hosts for name, hosts in destinations.items()
+                        if hosts != (proposal["tool_reviews"].get(name) or {}).get("destinations")}
+        if not set(destinations) <= set(selected) or not set(destinations) <= set(proposal.get("address_tools") or []) or any(
+                len(hosts) > 10 or not all(review.DESTINATION.fullmatch(h) for h in hosts) for hosts in destinations.values()):
+            raise HTTPException(422, "허용 주소는 주소 인자가 있는 선택 도구에 호스트 이름 10개 이하로 적으세요.")
         # 두 번째 관리자까지 가기 전에, 첫 클릭에서 사용 대상을 확인한다.
         audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
         assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
@@ -2493,6 +2503,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if errors:
             raise HTTPException(422, " / ".join(errors))
         scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
+                 **({"destinations": destinations} if destinations else {}),
                  "valid_days": request.valid_days,
                  **({"audience": request.audience, "audience_users": sorted(request.audience_users)}
                     if request.audience != "all" else {}),
@@ -2560,7 +2571,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         if critical and not (gate.get("critical") or {}).get("covered"):
             await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
         tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
-        reviews = {name: proposal["tool_reviews"][name] for name in selected}
+        reviews = {name: {**proposal["tool_reviews"][name], **({"destinations": destinations[name]} if name in destinations else {})}
+                   for name in selected}
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
@@ -2575,7 +2587,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         internal_url = row.get("internal_repo_url")
         if row["intake_kind"] == "remote-endpoint":
             contract = {"registration": registration.model_dump(), "allowed_principals": audience,
-                        "parameter_constraints": {n: proposal["parameter_constraints"][n] for n in selected},
+                        "parameter_constraints": {n: review.repin_addresses(proposal["parameter_constraints"][n], destinations[n])
+                                                  if n in destinations else proposal["parameter_constraints"][n] for n in selected},
                         "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
                         "valid_until": scope["valid_until"],
                         "advertised_name": found["server_name"], "version": found["version"],

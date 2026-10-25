@@ -38,6 +38,12 @@ CATALOG = {"endpoint": "https://example.test/mcp", "catalog_hash": "a" * 64,
            "server_name": "documentation", "version": "1.0", "protocol_version": "2025-11-25", "tools": [TOOL]}
 
 
+URL_TOOL = {"name": "read_page", "description": "Read a page from docs.example.org or https://kb.example.net/articles. See README.md",
+            "input_schema": {"$schema": "http://json-schema.org/draft-07/schema#", "type": "object",
+                             "properties": {"url": {"type": "string"}}, "required": ["url"]},
+            "output_schema": None, "annotations": {"readOnlyHint": True}, "suggested": "r", "warnings": []}
+
+
 def row(kind="remote-endpoint", grade="public"):
     source = kind == "repository"
     return {"id": REQUEST_ID, "status": "VALIDATED" if source else "HOLD", "intake_kind": kind,
@@ -84,6 +90,26 @@ class SuggestionCheck(unittest.TestCase):
         self.assertEqual(scope["accepts_from"], [])
         self.assertTrue(scope["consent"])
         self.assertTrue(scope["mask"])
+
+    def test_address_tool_gets_its_server_and_contract_hosts_as_a_suggestion(self):
+        # S4-02: with no suggestion an address argument was registered to match nothing at all.
+        hosts = intake_proposal.tool_reviews(row(), [URL_TOOL], {"read_page"})["read_page"]["destinations"]
+        self.assertEqual(hosts, ["example.test", "docs.example.org", "kb.example.net"])
+        self.assertEqual(intake_proposal.tool_reviews(row(), [URL_TOOL])["read_page"]["destinations"], [])
+        self.assertEqual(intake_proposal.tool_reviews(row("repository"), [URL_TOOL], {"read_page"})["read_page"]["destinations"],
+                         ["docs.example.org", "kb.example.net"])
+
+    @unittest.skipIf(review is None, "review needs the gateway dependencies")
+    def test_registered_address_pattern_follows_new_destinations_only_when_derived(self):
+        derived = review.derived_constraints({"read_page": URL_TOOL}, {"read_page": {"destinations": []}})["read_page"]
+        self.assertEqual(derived["properties"]["url"]["pattern"], "(?!)")
+        self.assertTrue(review.pinned_addresses(derived))
+        moved = review.repin_addresses(derived, ["docs.example.org"])
+        self.assertRegex("https://docs.example.org/a", moved["properties"]["url"]["pattern"])
+        self.assertNotRegex("https://evil.example/a", moved["properties"]["url"]["pattern"])
+        written = {"type": "object", "properties": {"url": {"type": "string", "pattern": "^https://intranet\\.test/"}}}
+        self.assertEqual(review.repin_addresses(written, ["docs.example.org"]), written)
+        self.assertFalse(review.pinned_addresses(written))
 
     def test_fingerprint_binds_source_grade_tools_and_scan_counts(self):
         original = row("repository")
@@ -274,6 +300,36 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
                 await service.core.register_server(body, "admin-a")
             with self.assertRaises(ValueError):
                 await service.core.register_server({**body, "tools": {"lookup": "w"}}, "admin-a")
+
+    async def test_url_tool_suggested_hosts_reach_the_contract_and_the_approver_may_edit_them(self):
+        self.catalog["tools"] = [URL_TOOL]
+        preview = await self.preview()
+        proposal = preview["proposal"]
+        self.assertEqual(proposal["address_tools"], ["read_page"])
+        self.assertRegex("https://docs.example.org/x", proposal["parameter_constraints"]["read_page"]["properties"]["url"]["pattern"])
+        for wrong in ({"read_page": ["https://docs.example.org/"]}, {"lookup": ["docs.example.org"]}):
+            with self.assertRaises(HTTPException) as raised:
+                await service.approve_and_register(REQUEST_ID, self.approval(preview, destinations=wrong), self.admin, "console-token")
+            self.assertEqual(raised.exception.status_code, 422)
+        await service.approve_and_register(REQUEST_ID, self.approval(preview, destinations={"read_page": [" Learn.Example.org", "docs.example.org"]}),
+                                           self.admin, "console-token")
+        pattern = self.state["evidence"]["remote_contract"]["parameter_constraints"]["read_page"]["properties"]["url"]["pattern"]
+        self.assertRegex("https://learn.example.org/a", pattern)
+        self.assertNotRegex("https://kb.example.net/a", pattern)
+        self.assertEqual(self.state["evidence"]["one_click_scope"]["destinations"], {"read_page": ["docs.example.org", "learn.example.org"]})
+        body = self.registered[0]
+        self.assertEqual(body["tool_reviews"]["read_page"]["destinations"], ["docs.example.org", "learn.example.org"])
+
+        class ReachedGate(Exception):
+            pass
+
+        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(service.core.registry, "catalog", return_value={}):
+            with self.assertRaises(ReachedGate):  # the gateway's scope guard accepts the edited destinations
+                await service.core.register_server(body, "admin-a")
+            edited = copy.deepcopy(body)
+            edited["tool_reviews"]["read_page"]["destinations"] = ["evil.example"]
+            with self.assertRaises(ValueError):
+                await service.core.register_server(edited, "admin-a")
 
     async def test_second_review_keeps_scope_but_contract_drift_discards_first_approval(self):
         self.state = row(grade="important")

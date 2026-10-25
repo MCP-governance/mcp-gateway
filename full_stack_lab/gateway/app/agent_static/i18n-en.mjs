@@ -885,6 +885,7 @@ export const EN = {
   "중대 영향 심사": "High-impact review",
   "자산": "Asset",
   "외부 목적지": "External destinations",
+  "허용 주소": "Allowed hosts",
   "취약점 DB 갱신": "Vulnerability DB updated",
   "{n}일 전 · 기준 {n}일": "{1} {1?day:days} ago · limit {2} {2?day:days}",
   "치명적 발견": "Critical findings",

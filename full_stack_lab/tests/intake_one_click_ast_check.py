@@ -37,7 +37,7 @@ class Jsonb:
 class HTTPException(Exception):
     def __init__(self, status_code, detail):
         super().__init__(detail)
-        self.status_code = status_code
+        self.status_code, self.detail = status_code, detail
 
 
 async def unpatched(*args, **kwargs):
@@ -79,7 +79,9 @@ contract = load("app.intake_contract_ast", "agent_contract.py", ["StrictModel", 
 classify = load("app.intake_classify_ast", "classify.py", ["ADDRESS_ARG"], {})
 review = load("app.intake_review_ast", "review.py", ["SCANNERS", "DESTINATION", "ARGUMENT", "SERVER", "_ADDRESS_ARG",
     "RISK_ACCEPTANCE_MAX_DAYS", "RISK_ACCEPTANCE_MIN_REASON", "NotIndependent", "require_independent", "intake_gate",
-    "normalize_tool_reviews", "scope_terms", "check_inputs", "derived_constraints", "solo_mode_enabled", "solo_operator"],
+    "normalize_tool_reviews", "scope_terms", "check_inputs", "_PINNED_TAIL", "address_pattern", "_address_nodes",
+    "has_address_argument", "_derived_pattern", "pinned_addresses", "repin_addresses", "derived_constraints",
+    "solo_mode_enabled", "solo_operator"],
     {"db": db, "os": __import__("os"), "ADDRESS_ARG": classify.ADDRESS_ARG, "record_event": unpatched, "same_person": unpatched,
      "intake_reports": unpatched, "active_acceptance": unpatched, "accept_risk": unpatched})
 review.transition = unpatched
@@ -88,7 +90,8 @@ _artifact_provenance = importlib.util.module_from_spec(_ap_spec)
 _ap_spec.loader.exec_module(_artifact_provenance)
 service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview", "OneClickApproval", "IntakeRegistration",
     "ProvenanceMismatch", "approval_row", "preview_intake_approval", "approve_and_register", "register_mcp_request",
-    "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance", "discovery", "LOCAL_DISCOVER_SECONDS"],
+    "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance", "discovery", "LOCAL_DISCOVER_SECONDS",
+    "ALL_PRINCIPALS", "resolve_audience"],
     {"db": db, "review": review, "StrictModel": contract.StrictModel, "ResidencyFields": contract.ResidencyFields,
      "ToolReview": contract.ToolReview, "Depends": lambda value: None, "Header": lambda **kwargs: None,
      "admin_caller": None, "INTAKE_APPROVAL_LOCK": asyncio.Lock(), "current_identity": unpatched, "gateway_proxy": unpatched,

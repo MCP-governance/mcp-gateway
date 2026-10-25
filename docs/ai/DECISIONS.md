@@ -2578,3 +2578,13 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   2. 로컬 `tools/call`의 실행 시도 여부는 `started_at`으로 판단한다. PC 실행기는 `/start`가 성공한 뒤에만 컨테이너를 띄우므로(`endpoint-agent/local-runner.py`) 시작 기록이 없는 작업은 실행되지 않은 것이 확실하다. 그런 거절은 `confirmed_not_executed`로 예약을 풀어 재시도가 중복 실행으로 막히지 않는다. 시작 뒤 `/control`에서 멈춘 쓰기는 실제로 일부 실행됐을 수 있어 지금처럼 미확정으로 남긴다.
 - 시험: `tests/local_job_control_check.py` 3건(다른 서버 등록·자동 연장에도 세대 유지, 이 서버의 범위·검토 카탈로그 변경은 세대 변경, 시작 전 거절은 미시도). 수정 전 3건 실패. `local_jobs_pg_check`(13)·`dev73_rework_pg_check`(29) 실제 PostgreSQL 통과, `local_runner_usability_check`·`dev73_rework_check` 대역을 새 서명·실제 행 모양(`started_at`)에 맞췄다.
 - 한계: 시작 뒤 통제 변경으로 멈춘 쓰기의 재시도는 여전히 사람 확인이 필요하다. 실기기 재시험은 배포 뒤다.
+
+## D-245 원클릭 승인은 주소 인자 도구에 허용 호스트를 제안하고, 승인자와 기존 등록이 고칠 수 있다 (2026-10-25, S4-02)
+
+- 배경: 원클릭 제안(`intake_proposal.tool_reviews`)은 모든 도구의 외부 목적지를 비워 두고, 목적지가 없으면 주소 인자는 `"(?!)"`(어떤 값도 맞지 않음)로 묶인다(빈 목록이 모든 HTTPS를 허용하던 문제를 막은 fail-closed). 승인 요청에는 목적지 입력이 없어, 원클릭으로 등록한 문서 읽기 도구(AWS Knowledge `aws___read_documentation`, Microsoft Learn `microsoft_docs_fetch`)가 모든 호출에서 PAC-01이었다(10-25 실사용 시험 원장 1177). 하네스 안내문은 이 도구를 쓸 수 있다고 알렸다. 원격 등록은 `constraints_derived=False`라 기존 범위 심사 API로 목적지를 넣어도 패턴이 그대로였다.
+- 결정:
+  1. 제안: 입력 스키마에 주소 인자가 있는 도구(`review.has_address_argument`, 기존 고정 규칙과 같은 판정)에만 원격 서버 자신의 호스트와 그 도구의 계약(설명·스키마)에 적힌 호스트를 최대 10개 제안한다. 스킴이 붙었거나 흔한 공개 접미사(com·org·net·io·dev·aws 등)로 끝나는 이름만 호스트로 보고(`README.md` 같은 파일 이름 제외) `json-schema.org`는 뺀다. 인자 이름만으로는 아무 것도 허용하지 않는다. 제안은 승인 화면에 미리 채울 뿐이다.
+  2. 승인: `OneClickApproval.destinations`(도구 → 호스트)로 승인자가 고친다. 주소 인자 도구·선택 도구에만, 호스트 이름 형식(`review.DESTINATION`) 10개 이하만 받는다. 제안과 다른 값만 `one_click_scope.destinations`에 남아 공동 승인 범위 비교·감사 기록·게이트웨이 등록 가드(`core.register_server`)에 같이 쓰인다. 원격 계약의 인자 범위는 같은 호스트로 다시 묶는다.
+  3. 기존 등록: 서버 상세 범위 표의 주소 인자 도구에 「허용 주소」 버튼을 두고 기존 범위 심사 API(`POST /api/registry/servers/{id}/tool-reviews`, 독립 심사자 규칙 그대로)를 쓴다. 원격 등록은 파생된 주소 패턴(`(?!)` 또는 `^https://(…)(:443)?([/?#]|$)`)만 새 목적지로 바꾸고(`review.repin_addresses`), 사람이 직접 쓴 패턴은 그대로 둔다. `/api/registry`는 등록별 `address_tools`를 준다. 이미 등록된 AWS·Microsoft Learn은 배포 뒤 관리자가 이 버튼으로 `docs.aws.amazon.com`·`learn.microsoft.com`을 넣는다(재신청 불필요).
+- 시험: `intake_one_click_check.py` 3건(제안 호스트, 패턴 재결속·수기 패턴 유지, 승인자 수정이 계약·범위·등록 가드까지 가고 다른 호스트로 바꾼 등록은 가드가 거절), `address_destinations_check.py`(원격 등록의 `(?!)`가 범위 심사로 바뀜, 다른 도구 범위 불변). 수정 전 각각 3건·1건 실패. 기존 `intake_one_click_ast_check.py`가 D-234 이후 `resolve_audience`와 예외 `detail`을 몰라 10건 오류이던 것을 같이 고쳤다(14건 통과). 콘솔 JS 시험 10종·화면 하네스 2종 통과.
+- 한계: 계약 설명에 호스트가 없는 범용 가져오기 도구(GitMCP `fetch_generic_url_content` 등)는 서버 자신의 호스트만 제안된다. 허용 호스트는 하위 경로를 구분하지 않는다(기존 규칙).

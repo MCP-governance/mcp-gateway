@@ -301,6 +301,55 @@ def check_inputs(name: str, schema: dict, inputs: list[str]) -> None:
         raise ValueError(f"{name}: 필수 입력 항목은 뺄 수 없습니다: " + ", ".join(sorted(missing)))
 
 
+_PINNED_TAIL = r")(:443)?([/?#]|$)"
+
+
+def address_pattern(hosts: list[str]) -> str:
+    # No reviewed destination means no address at all: an empty list used to admit any HTTPS host.
+    return "^https://(" + "|".join(re.escape(h) for h in hosts) + _PINNED_TAIL if hosts else "(?!)"
+
+
+def _address_nodes(node, key=""):
+    """String nodes that carry an address. Addresses nest: a list of URLs, an object with a url field,
+    a $defs entry, an anyOf branch."""
+    if not isinstance(node, dict):
+        return
+    if node.get("type") == "string" and (node.get("format") in ("uri", "url", "iri") or _ADDRESS_ARG.search(key)):
+        yield node
+    for child_key, child in (node.get("properties") or {}).items():
+        yield from _address_nodes(child, child_key)
+    for child in (node.get("$defs") or node.get("definitions") or {}).values():
+        yield from _address_nodes(child)
+    items = node.get("items")
+    for child in (items if isinstance(items, list) else [items]):
+        yield from _address_nodes(child, key)
+    for branch in ("anyOf", "oneOf", "allOf"):
+        for child in node.get(branch) or []:
+            yield from _address_nodes(child, key)
+
+
+def has_address_argument(schema: dict | None) -> bool:
+    return any(True for _ in _address_nodes(schema or {}))
+
+
+def _derived_pattern(pattern) -> bool:
+    return pattern == "(?!)" or (isinstance(pattern, str) and pattern.startswith("^https://(") and pattern.endswith(_PINNED_TAIL))
+
+
+def pinned_addresses(constraint: dict | None) -> bool:
+    """The registered argument scope pins addresses to reviewed destinations (none reviewed = none allowed)."""
+    return any(_derived_pattern(node.get("pattern")) for node in _address_nodes(constraint or {}))
+
+
+def repin_addresses(constraint: dict, hosts: list[str]) -> dict:
+    """The same scope with its address patterns moved to new reviewed destinations; a hand-written pattern stays."""
+    out = json.loads(json.dumps(constraint))
+    for node in _address_nodes(out):
+        if _derived_pattern(node.get("pattern")):
+            node["pattern"] = address_pattern(hosts)
+    return out
+
+
 def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -> dict[str, dict]:
     """The argument scope a registration gets without anyone writing JSON Schema.
 
@@ -311,28 +360,9 @@ def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -
     out = {}
     for name, item in reviews.items():
         schema = json.loads(json.dumps(advertised[name].get("input_schema") or {}))
-        hosts = item.get("destinations") or []
-        # No reviewed destination means no address at all: an empty list used to admit any HTTPS host.
-        pattern = ("^https://(" + "|".join(re.escape(h) for h in hosts) + r")(:443)?([/?#]|$)" if hosts else "(?!)")
-
-        def pin(node, key=""):
-            # Addresses nest: a list of URLs, an object with a url field, a $defs entry, an anyOf branch.
-            if not isinstance(node, dict):
-                return
-            if node.get("type") == "string" and (node.get("format") in ("uri", "url", "iri") or _ADDRESS_ARG.search(key)):
-                node["pattern"] = pattern
-            for child_key, child in (node.get("properties") or {}).items():
-                pin(child, child_key)
-            for child in (node.get("$defs") or node.get("definitions") or {}).values():
-                pin(child)
-            items = node.get("items")
-            for child in (items if isinstance(items, list) else [items]):
-                pin(child, key)
-            for branch in ("anyOf", "oneOf", "allOf"):
-                for child in node.get(branch) or []:
-                    pin(child, key)
-
-        pin(schema)
+        pattern = address_pattern(item.get("destinations") or [])
+        for node in _address_nodes(schema):
+            node["pattern"] = pattern
         if item.get("inputs") is not None:
             check_inputs(name, schema, item["inputs"])
             schema["properties"] = {k: v for k, v in (schema.get("properties") or {}).items() if k in item["inputs"]}

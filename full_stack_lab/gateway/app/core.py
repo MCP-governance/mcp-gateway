@@ -663,7 +663,9 @@ async def register_server(request: dict, actor: str) -> dict:
                 or {n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
                     request["tools"], request.get("tool_reviews"), actor).items()} != {
                     n: review.scope_terms(item) for n, item in review.normalize_tool_reviews(
-                        expected["tools"], {n: proposal["tool_reviews"][n] for n in selected}, actor).items()}):
+                        expected["tools"], {n: {**proposal["tool_reviews"][n], **({"destinations": scope["destinations"][n]}
+                                                if n in (scope.get("destinations") or {}) else {})}
+                                            for n in selected}, actor).items()}):
             raise ValueError("화면에서 승인한 범위와 다릅니다. 도입 검토를 다시 열어 확인하세요.")
     # Registration repeats the checks approval made: provenance recorded and compared with the copy in
     # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
@@ -950,6 +952,11 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
             spec["parameter_constraints"].update(review.derived_constraints(
                 {name: {"input_schema": pinned.get(name) or spec["parameter_constraints"][name]} for name in normalized},
                 normalized))
+        else:
+            # A remote registration keeps the scope its contract review recorded; only patterns derived from reviewed
+            # destinations follow them (a one-click registration with none matched no address at all, S4-02).
+            spec["parameter_constraints"].update({name: review.repin_addresses(spec["parameter_constraints"][name], item["destinations"])
+                                                  for name, item in normalized.items() if name in spec["parameter_constraints"]})
         doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
                                "at": datetime.now(UTC).isoformat(timespec="seconds"), "tools": sorted(normalized)})
         registry.save_runtime(doc)
