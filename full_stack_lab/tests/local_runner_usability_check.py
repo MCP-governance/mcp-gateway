@@ -247,7 +247,8 @@ class GatewayControl(unittest.IsolatedAsyncioTestCase):
         for change in ('revoked','policy','epoch','lease','deadline','stop'):
             original=self.row.copy();self.statements.clear()
             self.env['authorized']=AsyncMock(return_value=None if change=='revoked' else self.allowed)
-            self.env['current_job']=AsyncMock(return_value=change!='epoch')
+            # The job's control is judged inside current_job since D-238 (managed_policy_gap_check covers it).
+            self.env['current_job']=AsyncMock(return_value=change not in ('epoch','policy'))
             if change=='policy':self.row['device_policy']='old'
             if change in ('lease','deadline'):
                 self.row['lease_until' if change=='lease' else 'deadline']=datetime.now(timezone.utc)-timedelta(seconds=1)

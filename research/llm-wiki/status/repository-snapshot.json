@@ -1,38 +1,33 @@
 {
-  "captured_at": "2026-10-23T08:49:11+09:00",
-  "head": "f763a28d1ff874416cc39182455cb1ea77380087",
-  "branch": "leader-main",
+  "captured_at": "2026-10-25T15:45:43+09:00",
+  "head": "7687a9eb8706052c16772e2cdba371f62d3448f5",
+  "branch": "10/25-policy-sync-split",
   "status": [
-    "M  addons/litellm/README.md",
-    "A  addons/litellm/sync-bindings.example.json",
-    "M  docs/ai/AI_GATEWAY_ADDON.md",
-    "M  docs/ai/DATA_MODEL.md",
-    "M  docs/ai/DECISIONS.md",
-    "A  docs/ai/LITELLM_SYNC.md",
-    "M  full_stack_lab/compose.yaml",
-    "M  full_stack_lab/gateway/app/agent_service.py",
-    "M  full_stack_lab/gateway/app/agent_static/console.js",
-    "M  full_stack_lab/gateway/app/core.py",
-    "M  full_stack_lab/gateway/app/decommission.py",
-    "A  full_stack_lab/gateway/app/litellm_sync.py",
-    "A  full_stack_lab/gateway/app/litellm_sync_tables.sql",
-    "M  full_stack_lab/gateway/app/main.py",
-    "M  full_stack_lab/gateway/app/ops_response.py",
-    "M  full_stack_lab/tests/dev73_integration_check.py",
-    "A  full_stack_lab/tests/litellm_sync_check.py",
-    "M  research/llm-wiki/README.md",
-    "M  research/llm-wiki/analysis/litellm-intervention-1023/README.md",
-    "A  research/llm-wiki/analysis/litellm-intervention-1023/collect_sync_evidence.py",
-    "A  research/llm-wiki/analysis/litellm-intervention-1023/sync-evidence.json",
-    "A  research/llm-wiki/analysis/litellm-intervention-1023/sync-implementation.md",
-    "A  research/llm-wiki/analysis/litellm-intervention-1023/sync-requirements.json",
-    "M  research/llm-wiki/analysis/threat-trace-review-1020/README.md",
-    "UU research/llm-wiki/catalogs/threats.json",
-    "M  research/llm-wiki/status/backlog.md",
-    "M  research/llm-wiki/status/current.md",
-    "A  research/llm-wiki/status/reports/2026-10-23-litellm-sync.md",
-    "UU research/llm-wiki/status/repository-snapshot.json",
-    "UU research/llm-wiki/status/repository-snapshot.md"
+    "M docs/ai/ARCHITECTURE.md",
+    " M docs/ai/DECISIONS.md",
+    " M endpoint-agent/README.md",
+    " M full_stack_lab/gateway/app/endpoint_plane.py",
+    " M full_stack_lab/gateway/app/idp.py",
+    " M full_stack_lab/gateway/app/lifecycle_tables.sql",
+    " M full_stack_lab/gateway/app/local_jobs.py",
+    " M full_stack_lab/gateway/app/local_run_tables.sql",
+    " M full_stack_lab/gateway/app/main.py",
+    " M full_stack_lab/tests/command_surfaces_check.py",
+    " M full_stack_lab/tests/dest_pin_credential_redaction_check.py",
+    " M full_stack_lab/tests/dev73_rework_check.py",
+    " M full_stack_lab/tests/dev73_rework_pg_check.py",
+    " M full_stack_lab/tests/endpoint_evidence_pg_check.py",
+    " M full_stack_lab/tests/fresh_requester_check.py",
+    " M full_stack_lab/tests/harness_detect_check.py",
+    " M full_stack_lab/tests/local_jobs_pg_check.py",
+    " M full_stack_lab/tests/local_runner_usability_check.py",
+    " M full_stack_lab/tests/managed_policy_gap_check.py",
+    " M full_stack_lab/tests/user_command_settings_check.py",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/backlog.md",
+    " M research/llm-wiki/status/current.md",
+    "?? research/llm-wiki/status/reports/2026-10-25-policy-sync-split.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -40,11 +35,11 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "e103f09cd4e4eacd93ad0dd3c271938ce2d0a65a13d9440f430c3956ef9e3a71"
+      "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
-      "sha256": "cae8716e4ff17a9f417019bb529fd515c166c5c3595693a3cc991e8c9b3363e9"
+      "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55"
     },
     {
       "path": "full_stack_lab/gateway/app/poisoning.py",
@@ -52,11 +47,11 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "31aa48ff5e934c609ae6b2f5b38638c8257b8075de98c84b0452eb65145250eb"
+      "sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
-      "sha256": "11df61bccbafa39b4ed1ca929ed9cb2881966c500766b70d79fb7eadbc18ba5e"
+      "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1"
     },
     {
       "path": "full_stack_lab/gateway/app/secret_scan.py",
@@ -72,15 +67,15 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "1a87609297cd312b102f912ee2e617baba0732fe474d3d1c03efee5e45dd485b"
+      "sha256": "74fee5d708275b1136c9c36c639571b872350ce0f9a3d029af738f54f453792f"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "0ee2acafb280b14c1f0d39b457a4dc2d68565e1ebabc6dd2afccfd90da30482c"
+      "sha256": "6619ea490e962d25862402bc928a2eb4e896fa869f592fde5c3441efaf52404e"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "1c59802910ae4393af160b1834688c8bc8d6f2bfc6b8938efb3baa941b8c3146"
+      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
     }
   ]
 }

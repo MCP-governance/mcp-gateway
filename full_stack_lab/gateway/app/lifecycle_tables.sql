@@ -368,6 +368,18 @@ ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS device_epoch text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_username text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_uid integer;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS policy_hash text;
+-- servers_version in the managed policy (D-238): moves whenever the operating server set may have changed.
+-- A diagnostic, never a decision input; per-person scope (D-234) and department changes do not move it.
+CREATE SEQUENCE IF NOT EXISTS mcp_servers_version;
+CREATE OR REPLACE FUNCTION bump_mcp_servers_version() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN PERFORM nextval('mcp_servers_version'); RETURN NULL; END $$;
+DROP TRIGGER IF EXISTS servers_version_rows ON mcp_servers;
+CREATE TRIGGER servers_version_rows AFTER INSERT OR DELETE ON mcp_servers
+  FOR EACH STATEMENT EXECUTE FUNCTION bump_mcp_servers_version();
+DROP TRIGGER IF EXISTS servers_version_state ON mcp_servers;
+CREATE TRIGGER servers_version_state AFTER UPDATE ON mcp_servers FOR EACH ROW
+  WHEN (OLD.status IS DISTINCT FROM NEW.status OR OLD.lifecycle IS DISTINCT FROM NEW.lifecycle)
+  EXECUTE FUNCTION bump_mcp_servers_version();
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS heartbeat_at timestamptz;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS configuration_hashes jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS enforcement_checks jsonb NOT NULL DEFAULT '{}';

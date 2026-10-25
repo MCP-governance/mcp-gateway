@@ -2004,6 +2004,8 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 
 ## D-198 서버 추가만 있는 정책 변경은 장치가 가진 서버를 막지 않는다 (2026-10-23)
 
+> 2026-10-25 D-238로 대체: 정책 판정은 통제 해시만 보고, 재렌더링 비교와 내려 준 정책 기억은 삭제했다.
+
 - **문제**: 관리자가 서버 하나를 승인하면 관리형 정책 해시가 바뀌어(`endpoint_plane.managed_policy`가 서버 경로·허용 목록을
   해시에 넣는다), PC가 새 정책을 받는 최대 60초 동안 그 직원의 모든 MCP가 `ENDPOINT-MANAGED-001`로 끊겼다.
   `managed_failure`가 장치 보고 해시·토큰의 `device_policy`를 현재 해시와 통째로 비교하기 때문이다.
@@ -2182,6 +2184,8 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   정책 목록의 이름·조건, 감사 사유 같은 서버 데이터는 영어 모드에서도 한국어다(서버가 언어를 받아 응답하도록 바꾸는 일이 남았다).
 
 ## D-212 게이트웨이가 내려 준 정책을 기억해, 연속 승인 중 설치된 중간 정책을 변조로 보지 않는다 (2026-10-23)
+
+> 2026-10-25 D-238로 대체: 정책 판정은 통제 해시만 보고, 재렌더링 비교와 내려 준 정책 기억은 삭제했다.
 
 - **문제**: 실제 MCP 8개를 연달아 다시 등록하는 동안 PJ1이, 10-22에는 pj3 Windows 장치가 `endpoint_managed_events` 「quarantined」
   (모든 통제 점검 true, `policy_match: false`)로 격리됐다. PC가 점검 보고 사이에 중간 정책을 설치했는데, D-198 판정은 마지막으로
@@ -2436,3 +2440,39 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   5. 수용 시험(`acceptance.py`)에 `one-click-audience-everyone-then-narrowed`(기본 `*`, 지정 직원 없음·없는 아이디 422, 직원 403·없는 서버 404, 신청자만·지정 직원·전체 직원 복귀와 목록·호출 `MCP-REGISTRY-003`, 변경 사건 3건)와 `my-connections-and-missing-credential-block`(직원·관리자 목록 200, 일반 서버 연결·해제 404, GitHub 호스트 서버를 등록부에 올려 미연결 호출이 `MCP-CREDENTIAL-001`로 막히고 상위 호출이 없는지, 가짜 토큰 422·저장 없음)을 더했다. 메뉴 집합에 `connections`를 더했다. 실제 GitHub 토큰은 쓰지 않는다.
 - 한계: 새 수용 시험 항목은 대역(`acceptance_w7_check.py`)으로 요청·응답 모양만 확인했고 CI 스택에서는 아직 돌리지 않았다. `my-connections-and-missing-credential-block`은 서비스가 만든 등록이 아니라 등록부 파일에 직접 올린 임시 서버(`acceptance-github`)를 쓰고 끝나면 해제한다.
 - 시험: `tests/audience-connections-console.test.mjs` 8건(승인·서버 상세 사용 대상, 「내 연결」 연결 없음·연결됨·만료·불가·빈 상태, 연결·해제 뒤 갱신, 한국어), `audience_all_check.py` 변경 API 2건, `intake_one_click_check.py` 사용 대상 2건, `acceptance_w7_check.py` 항목 5건. 하네스 `intake_one_click_ui_check`·`intake_d189_ui_check`가 `AUDIENCE`를 몰라 실패하던 것을 고쳤고, 콘솔 JS 시험(`tests/*.test.mjs`와 두 하네스)을 `verify.yml`에 넣었다.
+
+## D-238 관리형 정책은 통제 해시로만 판정하고, 서버 목록과 안내문은 해시에서 뺀다 (2026-10-25, D-198·D-212 대체)
+
+- **문제**: 정책 해시(`managed_policy`의 `policy_hash`)가 통제 설정뿐 아니라 서버 목록과 상태별 안내문(활성화 대기 문구,
+  `pac.harness_guidance`)까지 담아, 승인·철회·원격 MCP 오류 하나로 PC의 MCP 전체가 끊기거나(D-198), 연속 승인 중 중간 정책이
+  격리로 이어졌다(D-212). 10-25 코드 검토에서 두 결함이 더 나왔다. (a) 활성화는 `managed_state`만 바꾸는데 안내문이 해시에 있어
+  활성화 직후 해시가 바뀌어 heartbeat와 경합했다. (b) `record_served`가 jsonb 객체를 삽입 순서로 8개 자르는데 jsonb는 키 순서를
+  보존하지 않고, 읽기-수정-쓰기 경합도 있어 정상 정책을 다시 잃을 수 있었다.
+- **결정**:
+  1. `control_hash` = 정책 필드(게이트웨이 주소·IP·포트·Tailscale 노드·계정·UID·heartbeat 주기·플랫폼·SID·모델 프록시 포트와 환경)
+     + 자리표시 서버 하나·안내문 없이 렌더링한 관리형 파일(허용 목록 형식, `allowManaged*`·`sync*`·`strictKnownMarketplaces`·
+     `disableClaudeAiConnectors` 같은 보호 설정, `permissions.deny`, `web_search`, Codex `requirements.toml`·features, 헤더 도우미,
+     서버별 틀(승인 방식·시간 제한)). 서버 목록과 안내문은 어느 해시에도 넣지 않고 설정 파일에만 렌더링한다.
+  2. `policy_hash` = sha256({`control_hash`, `configuration_hashes`}). 키트는 받은 값을 그대로 돌려 보내므로, 게이트웨이는 heartbeat의
+     보고 해시와 파일 해시만으로 "현재 통제로 렌더링된 파일을 갖고 있다"를 다시 계산한다(`policy_installed`). 내려 준 정책을
+     기억하지 않는다. 파일 하나라도 바뀌거나 빠지면 결속이 깨져 격리한다.
+  3. `managed_failure`·heartbeat 격리·토큰 발급은 `policy_installed`와 토큰의 `device_policy`(= 발급 때의 `control_hash`)만 본다.
+     서버 차이는 호출마다: 장치의 `managed-mcp.json`이 현재와 같으면 판정을 PaC에 넘기고, 다르면 현재 목록에 없는 서버는
+     「사용할 수 없는 서버」, heartbeat가 마지막으로 확인한 목록(`detail.policy_servers`)에 없는 서버는 「PC가 새 정책을 적용하면 사용」.
+  4. 로컬 작업은 생성 때 `control_hash`에 묶는다(`local_jobs._device_control`·`_same_control`). `local_execution_transition`
+     트리거는 `endpoint_agents.policy_hash` 변경을 더는 전이로 보지 않는다(서버 승인마다 움직이므로). 통제 변경은 작업마다 걸린다.
+  5. `servers_version`은 `mcp_servers`의 상태·수명주기·추가·삭제 때 오르는 전역 시퀀스(`mcp_servers_version`) 값이다. 진단값이며
+     판정에 쓰지 않는다. 사람별 사용 대상(D-234)·소속 변경은 올리지 않는다.
+  6. 활성화는 장치가 보고한 해시와 파일 해시를 비교-교체 조건으로 쓴다. 활성화 뒤 안내문이 바뀌어도 통제 해시가 같아 경합이 없다.
+  7. D-198 재렌더링 비교, D-212 `record_served`·`detail.served_policies`를 삭제했다.
+- **전환 경로**(게이트웨이 먼저, 키트 변경 없음): 배포 직후 장치 행과 토큰에는 옛 방식 해시가 남는다. `legacy_hash`(옛 계산식,
+  같은 렌더링)를 장치 보고(파일 해시가 현재와 같을 때)와 토큰·로컬 작업 결속에서 함께 받는다. 키트는 다음 루프에서 정책을 받고
+  해시가 달라져 같은 파일을 다시 쓴 뒤 새 해시로 보고한다. 옛 키트가 모두 한 번 보고하면 legacy 분기를 지운다.
+  main(7687a9e) 렌더링과 비교: Linux·macOS·Windows × 대기·활성·격리 × 프록시 유무 18가지에서 파일이 같고 `legacy_hash`가 옛 `policy_hash`와 같다.
+- **시험**: `managed_policy_gap_check.py`를 다시 썼다(12건: 통제 해시가 서버·안내문·상태를 빼는지, 주소·프록시·헤더 도우미 변경 차단과
+  격리, 파일 변조·누락, 서버 추가·제거, 연속 승인, 활성화 전후 보고 해시 유효, 활성화 비교 조건, 토큰 결속, 옛 키트 전환, 로컬 작업,
+  삭제한 기억 코드 부재). 변이 시험: 결속 검사를 끄거나 서버 목록을 통제 해시에 넣으면 각각 6건이 실패한다.
+- **한계**: 연속 승인 중 PC가 중간 정책을 가진 동안 그 중간 정책에서 새로 생긴 서버는 다음 확인까지(활성 장치 최대 60초) 「새 정책을
+  적용하면 사용」으로 거절된다(D-212는 통과시켰다). PC 전체는 끊기지 않는다. 게이트웨이 쪽 통제 설정 변경(주소·프록시 등)은 지금처럼
+  장치가 새 정책을 설치하기 전 heartbeat에서 격리될 수 있다. 결속 해시는 비밀 없는 sha256이라 장치 키를 가진 root 키트의 자기 보고를
+  넘어서는 증명이 아니다(기존 신뢰 모델과 같음). PostgreSQL 시험과 실기기(PJ1) 확인은 하지 않았다.

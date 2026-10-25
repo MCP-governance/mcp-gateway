@@ -79,7 +79,7 @@ def render_policy(guide, platform="linux"):
     package = ModuleType("detect_pkg")
     package.pac = SimpleNamespace(servers_for=lambda owner: ["github"], harness_guidance=lambda owner, servers: guide)
     package.registry = SimpleNamespace()
-    names = {"managed_policy", "managed_platform", "json_document"}
+    names = {"managed_policy", "managed_platform", "json_document", "installed_hash"}
     namespace = extract(APP / "endpoint_plane.py", names, {
         "__name__": "detect_under_test", "__package__": package.__name__, "os": os, "urlsplit": urlsplit, "ipaddress": ipaddress,
         "hashlib": hashlib, "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,

@@ -42,6 +42,7 @@
 | LiteLLM 개입 지점 설계 | `4968d7b` | [설계](../analysis/litellm-intervention-1023/README.md) |
 | 레퍼런스 3종 조사 | `8d3b1a8` | [보고](reports/2026-10-23-references-3.md), WIKI-05 |
 | 클라우드 감사·AI 통제 벤치마크 | `0f57d0c` | [보고](reports/2026-10-23-cloud-control-benchmark.md), WIKI-06 |
+| 정책 동기화: 통제 해시만으로 판정(main 밖, 브랜치 `10/25-policy-sync-split`) | 미병합 | [보고](reports/2026-10-25-policy-sync-split.md), D-238, DEV-90 |
 
 ## 시트와 위키의 연결 상태 (10-23 점검)
 

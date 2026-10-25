@@ -69,6 +69,12 @@ Codex 파일은 `/etc/codex`를 사용한다. 플랫폼은 관측 열과 별도�
 pf는 UID별 TCP/UDP egress 대상이며 AppArmor·전체 프로토콜 격리를 주장하지 않는다. 구현·정적 검사와 macOS 실검증은
 분리하며 [키트 보고](../../research/llm-wiki/status/reports/2026-10-22-kit-macos.md)를 따른다.
 
+관리형 정책(`endpoint_plane.managed_policy`)은 `control_hash`(주소·IP·포트·노드·계정·프록시와, 자리표시 서버 하나·안내문 없이
+렌더링한 관리형 파일)와 `servers_version`(진단용 전역 시퀀스)을 담는다. `policy_hash`는 `control_hash`와 파일 해시의 결속값이라
+게이트웨이가 heartbeat만으로 다시 계산하고, 내려 준 정책을 기억하지 않는다. 호출·heartbeat 격리·토큰 발급은 통제 해시만 비교하고,
+서버 목록 차이는 서버별로(철회 서버 거절, PC가 아직 받지 않은 새 서버 대기) 판정한다. 안내문은 해시에 넣지 않아 활성화가
+보고 해시를 바꾸지 않는다(D-238).
+
 현장 하네스–게이트웨이 구간은 Tailscale IP에 바인딩한 Caddy의 사설 CA HTTPS를 쓴다(D-124).
 공개 URL과 관리형 정책은 HTTPS이며 원격 HTTP 입력을 거부한다. 루트·지문은 개인별 키트에 담고,
 Linux 실행기와 직원 PC 도구의 `harness` 명령이 프로세스별 CA 환경값을 전달한다. 시스템 저장소는 변경하지 않는다.

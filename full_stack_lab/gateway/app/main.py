@@ -1596,7 +1596,6 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
         policy = await endpoint_plane.managed_policy(device)
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
-    await endpoint_plane.record_served(device, policy)
     return policy
 
 

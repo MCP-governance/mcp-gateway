@@ -66,7 +66,7 @@ class ManagedCommandSurfaces(unittest.TestCase):
 
     def test_endpoint_managed_policy(self):
         path = LAB / "gateway/app/endpoint_plane.py"
-        names = {"managed_policy", "managed_platform", "json_document"}
+        names = {"managed_policy", "managed_platform", "json_document", "installed_hash"}
         nodes = [n for n in ast.parse(path.read_text(encoding="utf-8")).body if getattr(n, "name", None) in names]
         self.assertEqual({n.name for n in nodes}, names)
         package = ModuleType("policy_under_test")

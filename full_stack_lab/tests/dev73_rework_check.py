@@ -45,7 +45,8 @@ G={'asyncio':asyncio,'datetime':datetime,'timedelta':timedelta,'UTC':timezone.ut
    'REASONS':{'local_file':'로컬 파일'},'Jsonb':lambda v:v,
    'RUN_SECONDS':20,'MAX_PARAMS_BYTES':65536,'QUEUE_LIMIT':8,'ACTIVE_LIMIT':1,'RATE_LIMIT':30,'POLL_SECONDS':.001,
    'RETENTION_SECONDS':3600,'evidence_context':contextvars.ContextVar('evidence',default=None),
-   'transport_context':contextvars.ContextVar('transport',default={})}
+   'transport_context':contextvars.ContextVar('transport',default={}),
+   '_device_control':AsyncMock(return_value='policy')}
 jobs=load_functions(APP/'local_jobs.py',{'NotStarted','canonical','validate_params','approval_window','mirror_image','manifest_errors',
        'remember','record_evidence','exchange','authorized','current_job','applicant_device','LocalClient'},G)
 

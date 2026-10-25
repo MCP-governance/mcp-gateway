@@ -33,7 +33,8 @@ async def fixture():
     intake=str(uuid.uuid4())
     await db.execute("""INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,status,
         managed_state,local_username,local_uid,device_epoch,policy_hash,heartbeat_at)
-        VALUES(%s,'synthetic','linux','synthetic',%s,'active','active','synthetic',2001,'epoch','policy',now())""",(DEVICE,OWNER))
+        VALUES(%s,'synthetic','linux','synthetic',%s,'active','active','synthetic',2001,'epoch',%s,now())""",
+        (DEVICE,OWNER,endpoint_plane.installed_hash('policy',{})))
     await db.execute("""INSERT INTO mcp_intake_requests(id,submitted_by,display_name,repository_url,requested_transport,
         purpose,status,reviewed_by,local_observer_device) VALUES(%s,%s,'synthetic','https://example.test/repository',
         'stdio','synthetic','APPROVED','synthetic-reviewer',%s)""",(intake,OWNER,DEVICE))
@@ -142,7 +143,8 @@ async def main():
     await db.execute((APP/'local_run_tables.sql').read_text(encoding='utf-8'))
     intake,local=await fixture()
     device=await db.fetch_one('SELECT * FROM endpoint_agents WHERE endpoint_id=%s',(DEVICE,))
-    policy={'policy_hash':'policy'}
+    # Jobs are bound to control_hash 'policy'; the device holds that control with no managed files (D-238).
+    policy={'control_hash':'policy','servers':[],'configuration_hashes':{},'policy_hash':endpoint_plane.installed_hash('policy',{})}
     with isolated_disposal(),patch.object(endpoint_plane,'managed_policy',AsyncMock(return_value=policy)),patch.object(registry,'server',return_value={'local':local}),patch.object(local_jobs,'control_generation',return_value='control-1'):
         # F2: the same transition cancels old queued jobs and persists the withdrawn generation.
         identity=await queued(local)
