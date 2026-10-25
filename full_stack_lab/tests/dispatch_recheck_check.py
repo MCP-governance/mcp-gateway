@@ -397,6 +397,7 @@ class Checks(unittest.IsolatedAsyncioTestCase):
 
     async def test_important_read_publisher_takes_advisory_before_chain(self):
         core = production("core.py", {"_record_decision"}, {"db": self.db, "_storable": lambda v: v,
+            "tool_sunset": SimpleNamespace(invalidate=lambda *_: None),
             "outcome_axes": lambda e: {}, "secret_scan": SimpleNamespace(redact_error=AsyncMock(return_value=None)),
             "GATEWAY_ENVIRONMENT": "prod", "_audit_payload": lambda v: v, "response_disposition": lambda e: "released",
             "hashlib": hashlib, "_audit_fingerprint": lambda r: "fp", "datetime": datetime, "UTC": UTC,
