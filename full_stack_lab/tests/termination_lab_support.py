@@ -53,8 +53,9 @@ class Checks:
 
 async def apply_schema() -> None:
     await db.wait_until_ready()
-    # The same files, in the same order, as core.bootstrap().
-    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql", "ops_tables.sql", "siem_tables.sql"):
+    # 토큰 철회도 로컬 실행 정지 열을 사용하므로 부트스트랩 순서를 그대로 따른다.
+    for name in ("agent_tables.sql", "lifecycle_tables.sql", "v2_tables.sql", "oidc_tables.sql", "ops_tables.sql",
+                 "local_run_tables.sql", "siem_tables.sql"):
         await db.execute((APP / name).read_text(encoding="utf-8"))
 
 

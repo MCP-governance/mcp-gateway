@@ -250,7 +250,8 @@ async def decision(token, created, client):
     return await scalar(
         """INSERT INTO decisions(request_id,trace_id,created_at,user_token,role,tool_name,data_class,action,decision,policy_id,reason,server_id,client)
            VALUES (%s,%s,%s,%s,'employee','git_log','important','r','Allow','P-AUTHZ-ALLOW-001','fixture','git',%s) RETURNING id""",
-        (uuid.uuid4(), uuid.uuid4().hex, created, token, Jsonb(client)))
+        (uuid.uuid4(), client["traceparent"].split("-")[1] if client.get("traceparent") else uuid.uuid4().hex,
+         created, token, Jsonb(client)))
 
 
 async def check_correlation():
@@ -269,7 +270,10 @@ async def check_correlation():
     await endpoint_plane.ingest_listeners("ep-a", [{"source": "network", "address": "10.9.9.9", "port": 7777, "mcp_evidence": "confirmed"}],
                                           complete=False, origin="automatic")
     found = await endpoint_plane.correlate(decision_id=near)
-    assert found["bound"] and found["anchor"]["traceparent"] == traceparent and found["anchor"]["endpoint_id"] == "ep-a"
+    assert found["bound"] and found["anchor"]["trace_id"] == traceparent.split("-")[1] and found["anchor"]["endpoint_id"] == "ep-a"
+    projected = next(record for record in found["records"] if record["kind"] == "decision")
+    assert projected["request_id"] == found["anchor"]["request_id"] and projected["trace_id"] == found["anchor"]["trace_id"]
+    assert projected["decision"] == "Allow" and projected["policy_id"] == "P-AUTHZ-ALLOW-001"
     kinds = {record["kind"] for record in found["records"]}
     assert {"os-event", "listener"} <= kinds, kinds
     titles = {record["title"] for record in found["records"] if record["kind"] == "os-event"}

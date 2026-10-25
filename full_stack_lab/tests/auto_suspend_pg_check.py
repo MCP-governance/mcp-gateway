@@ -70,6 +70,8 @@ def discovered(changed_schema: bool = False) -> dict:
 async def waiting(fragment: str, timeout: float = 8) -> None:
     observer = await connect("auto-suspend-observer")
     try:
+        # 관측 트랜잭션의 통계 스냅샷을 다음 폴링까지 재사용하지 않는다.
+        await observer.set_autocommit(True)
         deadline = asyncio.get_running_loop().time() + timeout
         while asyncio.get_running_loop().time() < deadline:
             row = await (await observer.execute(
@@ -189,7 +191,7 @@ async def dispatch_wins_race() -> None:
     try:
         await asyncio.wait_for(reached.wait(), 8)
         detector_task = asyncio.create_task(ops_response.suspend(server, "anomaly", "lab stop", {"test": "race"}))
-        await waiting("SELECT id FROM mcp_servers")
+        await waiting("SELECT status FROM mcp_servers")
         release.set()
         CHECKS.ok("dispatch holding server SHARE commits one intent before suspension", await dispatch_task is None)
         await detector_task
@@ -214,7 +216,7 @@ async def suspension_wins_race() -> None:
     detector_task = dispatch_task = None
     try:
         detector_task = asyncio.create_task(ops_response.suspend(server, "anomaly", "lab stop", {"test": "race"}))
-        await waiting("SELECT id FROM mcp_servers")
+        await waiting("SELECT status FROM mcp_servers")
         dispatch_task = asyncio.create_task(dispatch.record(request_id, "r"))
         await waiting("FOR SHARE OF s, t")
         await gate.commit()

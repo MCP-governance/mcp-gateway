@@ -40,7 +40,7 @@ from intake_fixture import approval_body, impact_input
 from termination_lab_support import isolated_disposal, signing_keys
 
 PASSED: list[str] = []
-ENDPOINT = "http://notes-srv:9000/mcp"
+ENDPOINT = "https://notes.example.test/mcp"
 SEARCH_SCHEMA = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"], "additionalProperties": False}
 CONSTRAINT = {"type": "object", "properties": {"q": {"type": "string"}}, "required": ["q"], "additionalProperties": False}
 READ_SCHEMA = {"type": "object", "properties": {"id": {"type": "string"}}, "required": ["id"], "additionalProperties": False}
@@ -87,7 +87,7 @@ class Upstream:
         ]
 
     @classmethod
-    async def discover(cls, endpoint: str) -> dict:
+    async def discover(cls, endpoint: str, principal: str | None = None) -> dict:
         return {"advertised_name": "notes", "version": cls.version, "protocol_version": "2025-06-18", "tools": cls.tools()}
 
     @classmethod
@@ -104,6 +104,8 @@ async def no_masking(value, ignore=None):
 async def proxy(path, authorization, method="GET", body=None, timeout=15):
     """The Console's hop to the Gateway, in process: the Gateway functions are the real ones."""
     try:
+        if path == "/api/registry/intake-discover":
+            return await main.registry_intake_discover(main.RegistryDiscover(**body), dict(WHO))
         if path == "/api/registry/discover":
             return await core.discover_for_registration(body["endpoint"])
         if path == "/api/registry/servers" and method == "POST":
@@ -143,7 +145,7 @@ async def set_runtime(server_id: str, **changes) -> None:
 
 
 def scope_of(body: dict) -> dict:
-    return {key: body[key] for key in ("server_id", "endpoint", "catalog_hash", "tools", "data_class", "valid_days", "poisoning_ack", "tool_reviews")}
+    return {key: body[key] for key in ("server_id", "endpoint", "catalog_hash", "tools", "data_class", "valid_days", "poisoning_ack", "tool_reviews", "parameter_constraints")}
 
 
 def review_body(server_id: str, catalog_hash: str, tools: dict, reviews: dict, allowed: list[str]) -> dict:
@@ -187,7 +189,7 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
     as_("wbsb-emp")
     made = await console.post("/api/mcp-requests", json={"display_name": "Notes", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
                                                        "requested_transport": "streamable-http", "purpose": "공개 노트를 검색하고 읽는 데 씁니다.",
-                                                       "risk_input": impact_input()})
+                                                       "risk_input": impact_input(), "requested_tools": list(tools)})
     check(made.status_code == 200, f"신청: {made.text}")
     intake = made.json()["request"]["id"]
     consent = await events("user-consent", intake)
@@ -217,11 +219,12 @@ async def remote_service_flow(console: httpx.AsyncClient) -> str:
 
     # the applicant (also an administrator) cannot review or approve what they asked for
     as_("wbsb-admin-b")
-    own = await console.post("/api/mcp-requests", json={"display_name": "Notes (own)", "intake_kind": "remote-endpoint", "endpoint_url": "http://other-srv:9000/mcp",
-                                                       "requested_transport": "streamable-http", "purpose": "관리자 본인 신청을 본인이 승인하는지 확인합니다."})
+    own = await console.post("/api/mcp-requests", json={"display_name": "Notes (own)", "intake_kind": "remote-endpoint", "endpoint_url": "https://other.example.test/mcp",
+                                                       "requested_transport": "streamable-http", "purpose": "관리자 본인 신청을 본인이 승인하는지 확인합니다.",
+                                                       "risk_input": impact_input(), "requested_tools": list(tools)})
     check(own.status_code == 200, f"본인 신청: {own.status_code} {own.text}")
     own_id = own.json()["request"]["id"]
-    own_body = {**body, "endpoint": "http://other-srv:9000/mcp"}
+    own_body = {**body, "endpoint": "https://other.example.test/mcp"}
     refused_review = await console.post(f"/api/mcp-requests/{own_id}/review-contract", json=own_body)
     check(refused_review.status_code == 403, f"신청자의 계약 검토: {refused_review.status_code}")
     refused_approve = await console.post(f"/api/mcp-requests/{own_id}/approve", json=approval_body(risk_acceptance="자기 승인 시험입니다. 거부되어야 합니다."))
@@ -345,7 +348,7 @@ async def minimal_set(console: httpx.AsyncClient) -> None:
     as_("wbsb-emp")
     made = (await console.post("/api/mcp-requests", json={"display_name": "Notes 2", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
                                                         "requested_transport": "streamable-http", "purpose": "하네스별 최소 집합을 확인합니다.",
-                                                        "risk_input": impact_input()})).json()["request"]["id"]
+                                                        "risk_input": impact_input(), "requested_tools": ["search"]})).json()["request"]["id"]
     as_("wbsb-admin-a")
     body = review_body("notes2", found["catalog_hash"], {"search": "r"}, {"search": REVIEWS["search"]}, ["wbsb-emp"])
     check((await console.post(f"/api/mcp-requests/{made}/review-contract", json=body)).status_code == 200, "계약 검토")
@@ -385,7 +388,7 @@ async def delegation(console: httpx.AsyncClient) -> None:
     as_("wbsb-emp")
     made = (await console.post("/api/mcp-requests", json={"display_name": "Notes 3", "intake_kind": "remote-endpoint", "endpoint_url": ENDPOINT,
                                                         "requested_transport": "streamable-http", "purpose": "위임 호출 거부를 확인합니다.",
-                                                        "risk_input": impact_input()})).json()["request"]["id"]
+                                                        "risk_input": impact_input(), "requested_tools": ["search"]})).json()["request"]["id"]
     as_("wbsb-admin-a")
     body = review_body("notes3", found["catalog_hash"], {"search": "r"}, {"search": REVIEWS["search"]}, ["wbsb-emp"])
     await console.post(f"/api/mcp-requests/{made}/review-contract", json=body)

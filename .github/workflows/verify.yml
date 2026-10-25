@@ -480,6 +480,7 @@ jobs:
         run: |
           docker compose exec -T gateway python - < tests/secret_engine_parity_check.py
           docker compose exec -T gateway python - < tests/textscan_parity_check.py
+          docker compose exec -T gateway python - < tests/output_credential_span_check.py
 
       # 실기기 배치(README "실제 기기로 배치하기"): 같은 스택에 Caddy를 얹고, 러너를 직원 PC로 삼는다 —
       # loopback HTTP → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.

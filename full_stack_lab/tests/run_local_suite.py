@@ -9,8 +9,8 @@ separate disposable databases. --inventory fails when a test has no CI/runner/sk
 Usage (from the repository root, with the venv interpreter):
     python full_stack_lab/tests/run_local_suite.py [--out result.json]
 
-Output: JSON list, one entry per file (including captured output for executed tests).
-status is one of 통과, 실패, 외부 의존 생략. Exit code 1 if any file is 실패.
+Output: JSON object with results (one entry per file) and counts (each status separately).
+status is one of 통과, 실패, 외부 의존 생략, 검토 갱신 대기. Exit code 1 if any file is 실패.
 Triage details: research/llm-wiki/status/reports/2026-10-21-test-triage.md
 """
 from __future__ import annotations
@@ -46,6 +46,7 @@ EXTERNAL = {
     "managed_enrollment_check": (("all",), "실행 중인 게이트웨이·agent-service·공유 DB 필요"),
     "mcp_result_services_check": (("all",), "이미지 빌드 산출물 libmcpgw_gitleaks.so와 실제 Presidio 서비스 필요"),
     "oss_audit_test": (("all",), "게이트웨이 이미지 빌드 산출물 libmcpgw_gitleaks.so 필요"),
+    "output_credential_span_check": (("all",), "실제 Presidio analyzer·anonymizer 필요; verify job의 게이트웨이 이미지에서 실행"),
     "pac_boundary_check": (("all",), "게이트웨이 이미지의 /registry/field 마운트 필요"),
     "policy_replay_lab_check": (("all",), "부트스트랩된 게이트웨이 DB와 실제 OPA 필요"),
     "provenance_gitea_check": (("all",), "격리 Gitea와 GITEA_USER·GITEA_PASSWORD 필요"),
@@ -83,12 +84,15 @@ SUPPORT = {
     "tool_scope_review.py": "관리자의 도구 범위 검토를 기록하는 운영 도우미",
 }
 
-# 실패 중 분류 보고서에서 (D)·(E)로 표시한 항목. 상태는 그대로 실패이며 note로만 구분한다.
-KNOWN = {
-    "threat_trace_mapping_check": "(E) 독립 검토 고정 해시 낡음, 설계상 실패",
+# 실패를 생략하지 않고 검토 기록의 갱신과 실행 도구 장애를 구분한다(D-252).
+REVIEW_PENDING = {
+    "threat_trace_mapping_check.py": "독립 검토 기록(threat-trace-review-1020/review.json)의 고정 해시가 현재 코드와 다름. "
+                                     "0단계 병합 뒤 독립 재검토로 갱신(D-252)",
 }
+KNOWN = {}
 
 UNITTEST_RAN = re.compile(r"^Ran (\d+) tests?", re.M)
+UNITTEST_FAILURES = re.compile(r"^FAILED \(failures=[1-9]\d*(?:, skipped=\d+)?\)\r*$", re.M)
 
 
 def discover(pg: bool = False) -> list[Path]:
@@ -159,12 +163,20 @@ def run_one(path: Path, env: dict | None = None) -> dict:
     if reason:
         entry.update(status="외부 의존 생략", note=reason)
         return entry
+    env = child_env() if env is None else dict(env)
+    if stem == "mcp_result_contract_check":
+        # 메모리 span의 누출 검사는 실제 SDK가 기록해야 하므로 이 자식만 중지를 해제한다.
+        env["OTEL_SDK_DISABLED"] = "false"
     source = path.read_text(encoding="utf-8", errors="replace")
     unittest_mode = "unittest.TestCase" in source
     cmd = [sys.executable, "-m", "unittest", stem] if unittest_mode else [sys.executable, str(path)]
+    if path.name.endswith("_pg_check.py"):
+        # 서명 폐기 저장소가 없는 CI에서도 실제 서명·초기화·임시 디렉터리 정리를 거친다.
+        cmd = [sys.executable, "-c", "import runpy, sys\nfrom termination_lab_support import isolated_disposal\n"
+               "with isolated_disposal():\n    runpy.run_path(sys.argv[1], run_name='__main__')\n", str(path)]
     started = time.time()
     try:
-        proc = subprocess.run(cmd, cwd=TESTS, env=env if env is not None else child_env(),
+        proc = subprocess.run(cmd, cwd=TESTS, env=env,
                               capture_output=True, timeout=TIMEOUT_S)
         rc, raw = proc.returncode, proc.stdout + proc.stderr
     except subprocess.TimeoutExpired as exc:
@@ -180,6 +192,9 @@ def run_one(path: Path, env: dict | None = None) -> dict:
     ok = rc == 0 and (ran is None or ran > 0)
     entry.update(status="통과" if ok else "실패", rc=rc, seconds=round(time.time() - started, 1),
                  ran=ran, last_line=lines[-1][:200] if lines else "", output=text)
+    # 완료된 assertion 불일치만 대기다. import·시험 예외·0개 실행·도구 종료는 실패로 남긴다.
+    if path.name in REVIEW_PENDING and rc == 1 and ran and UNITTEST_FAILURES.search(text):
+        entry.update(status="검토 갱신 대기", note=REVIEW_PENDING[path.name])
     if unittest_mode and rc == 0 and not ran:
         entry["note"] = (entry["note"] + "; " if entry["note"] else "") + "시험 0개 실행"
     return entry
@@ -209,6 +224,7 @@ def run_pg(path: Path) -> dict:
                 with tempfile.TemporaryDirectory(prefix="mint-pg-") as folder:
                     env = child_env()
                     env.update(DATABASE_URL=target, EVIDENCE_LAB="isolated", OTEL_SDK_DISABLED="true",
+                               IDP_ISSUER="https://gateway.lab.test", ENDPOINT_GATEWAY_IPS="127.0.0.1",
                                REGISTRY_DIR=str(TESTS.parent / "registry"), REGISTRY_RUNTIME_DIR=folder,
                                REPORT_DIR=folder)
                     entry = run_one(path, env)
@@ -245,14 +261,14 @@ def main() -> int:
     else:
         with ThreadPoolExecutor(max_workers=WORKERS) as pool:
             results = list(pool.map(run_one, files))
-    data = json.dumps(results, ensure_ascii=False, indent=1) + "\n"
+    counts = {status: 0 for status in ("통과", "실패", "외부 의존 생략", "검토 갱신 대기")}
+    for entry in results:
+        counts[entry["status"]] += 1
+    data = json.dumps({"results": results, "counts": counts}, ensure_ascii=False, indent=1) + "\n"
     if args.out:
         Path(args.out).write_text(data, encoding="utf-8")
     else:
         sys.stdout.buffer.write(data.encode("utf-8"))
-    counts = {}
-    for entry in results:
-        counts[entry["status"]] = counts.get(entry["status"], 0) + 1
     print(f"total {len(results)} " + " ".join(f"{k}={v}" for k, v in sorted(counts.items())), file=sys.stderr)
     return 1 if not results or counts.get("실패") else 0
 
