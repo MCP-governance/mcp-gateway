@@ -62,8 +62,9 @@ BEGIN
     IF TG_OP='UPDATE' THEN changed := ROW(OLD.status,OLD.role,OLD.department) IS DISTINCT FROM ROW(NEW.status,NEW.role,NEW.department); END IF;
   ELSIF TG_TABLE_NAME='endpoint_agents' THEN
     d := OLD.endpoint_id;
-    IF TG_OP='UPDATE' THEN changed := ROW(OLD.status,OLD.managed_state,OLD.device_epoch,OLD.policy_hash,OLD.owner_token,OLD.local_uid)
-       IS DISTINCT FROM ROW(NEW.status,NEW.managed_state,NEW.device_epoch,NEW.policy_hash,NEW.owner_token,NEW.local_uid); END IF;
+    -- policy_hash is left out: it moves with every server approval. A control change is caught per job (D-238).
+    IF TG_OP='UPDATE' THEN changed := ROW(OLD.status,OLD.managed_state,OLD.device_epoch,OLD.owner_token,OLD.local_uid)
+       IS DISTINCT FROM ROW(NEW.status,NEW.managed_state,NEW.device_epoch,NEW.owner_token,NEW.local_uid); END IF;
   ELSIF TG_TABLE_NAME='mcp_tools' THEN
     s := OLD.server_id;
     IF TG_OP='UPDATE' THEN changed := ROW(OLD.enabled,OLD.action,OLD.scope_review,OLD.approval_valid_until,OLD.approved_description_hash,OLD.approved_schema_hash,OLD.approved_output_schema_hash)

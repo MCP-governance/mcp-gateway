@@ -209,12 +209,12 @@ async def device_token(x_endpoint_key: str | None = Header(default=None)):
         return _error("invalid_grant", failure, 403)
     policy = await managed_policy(device)
     token, signed = issue_token(row, minutes=5, client_id=device["endpoint_id"],
-                               extra={**claims, "scope": "mcp", "device_policy": policy["policy_hash"]})
+                               extra={**claims, "scope": "mcp", "device_policy": policy["control_hash"]})
     await db.execute(
         """INSERT INTO oauth_issued_tokens(jti,user_id,client_id,family_id,expires_at,device_id,device_epoch,device_policy)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
         (signed["jti"], row["user_id"], device["endpoint_id"], uuid.uuid4(), signed["exp"],
-         device["endpoint_id"], device["device_epoch"], policy["policy_hash"]))
+         device["endpoint_id"], device["device_epoch"], policy["control_hash"]))
     return JSONResponse({"access_token": token, "token_type": "Bearer", "expires_in": 300, "scope": "mcp"},
                         headers={"Cache-Control": "no-store"})
 

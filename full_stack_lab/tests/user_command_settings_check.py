@@ -257,16 +257,19 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
             async def __aexit__(inner, *args):
                 return False
 
-        self.policy = {"policy_hash": "new", "configuration_hashes": {"settings": "digest"}}
+        self.policy = {"control_hash": "control", "servers": [], "configuration_hashes": {"managed-mcp.json": "digest"}}
         self.device = {"endpoint_id": "managed-check", "owner_token": "owner", "managed_state": "active", "detail": {}}
         self.plane = selected(LAB / "gateway/app/endpoint_plane.py",
-                              {"MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_platform", "managed_checks", "heartbeat", "_held_policy"},
-                              {"managed_policy": AsyncMock(return_value=self.policy), "Jsonb": lambda value: value,
+                              {"MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_platform", "managed_checks", "heartbeat",
+                               "policy_installed", "installed_hash", "legacy_hash", "json_document"},
+                              {"managed_policy": AsyncMock(return_value=self.policy), "Jsonb": lambda value: value, "hashlib": hashlib,
                                "datetime": datetime, "UTC": timezone.utc,
                                "db": SimpleNamespace(transaction=Transaction)})
 
-    async def beat(self, checks, findings=None, policy_hash="new"):
+    async def beat(self, checks, findings=None, policy_hash=None):
         self.connection.execute.reset_mock()
+        self.policy["policy_hash"] = self.plane.installed_hash("control", self.policy["configuration_hashes"])
+        policy_hash = policy_hash or self.policy["policy_hash"]
         result = await self.plane.heartbeat(self.device, policy_hash, self.policy["configuration_hashes"], checks,
                                              user_command_settings=findings)
         update = self.connection.execute.call_args_list[0].args[1]
@@ -319,7 +322,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,
                      "db": SimpleNamespace(fetch_all=AsyncMock(return_value=[{"id": "git"}]), fetch_one=AsyncMock(return_value={}))}
-        policy_module = selected(path, {"managed_policy", "managed_platform", "json_document"}, namespace)
+        policy_module = selected(path, {"managed_policy", "managed_platform", "json_document", "installed_hash"}, namespace)
         device = {**self.device, "device_epoch": "epoch", "local_username": "unit", "local_uid": 1000}
         with patch.dict(sys.modules, {package.__name__: package}), \
              patch.dict(os.environ, {"IDP_ISSUER": "https://gateway.example", "ENDPOINT_GATEWAY_IPS": "100.64.0.2"}):

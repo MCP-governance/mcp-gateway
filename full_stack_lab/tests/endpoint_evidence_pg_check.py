@@ -300,7 +300,8 @@ async def check_correlation():
 
 async def check_network():
     now = datetime.now(UTC)
-    policy = {"policy_hash": "a" * 64, "configuration_hashes": {"managed-mcp.json": "b" * 64}}
+    policy = {"control_hash": "a" * 64, "servers": [], "configuration_hashes": {"managed-mcp.json": "b" * 64}}
+    policy["policy_hash"] = endpoint_plane.installed_hash(policy["control_hash"], policy["configuration_hashes"])
     checks = {key: True for key in endpoint_plane.MANAGED_CHECKS}
 
     async def beat(endpoint_id, quality, hashes=None):
