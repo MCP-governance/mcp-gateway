@@ -805,7 +805,8 @@ async def register_server(request: dict, actor: str) -> dict:
         # A remote service is scoped to the principals its contract review named. A source-validated
         # server is scoped to the person who asked for it, with arguments derived from its pinned contract
         # and the reviewed destinations: an administrator enters an address, not JSON Schema (10-15).
-        "allowed_principals": remote_review["allowed_principals"] if remote_review else [intake["submitted_by"]],
+        "allowed_principals": (remote_review["allowed_principals"] if remote_review
+                               else (intake.get("evidence") or {}).get("audience_principals") or [intake["submitted_by"]]),
         "parameter_constraints": (remote_review.get("parameter_constraints", {}) if remote_review
                                   else review.derived_constraints(advertised, tool_reviews)),
         "constraints_derived": not remote_review,
@@ -962,6 +963,42 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
         await local_jobs.resume(server_id=server_id)
     return {"server_id": server_id, "reviewed": sorted(normalized),
             "unreviewed": sorted(set(spec["tools"]) - set(spec["tool_reviews"]))}
+
+
+async def update_server_audience(server_id: str, audience: str, users: list[str], actor: str) -> dict:
+    """Widen or narrow who may use an approved server (D-234). The reviewed tools, actions and argument
+    constraints stay as approved; only the people change. Narrowing takes effect on the next call."""
+    async with REGISTER_LOCK:
+        doc = registry.runtime()
+        spec = doc["servers"].get(server_id)
+        if not spec or not spec.get("intake_id"):
+            raise LookupError(server_id)
+        intake = await db.fetch_one("SELECT submitted_by FROM mcp_intake_requests WHERE id=%s::uuid", (spec["intake_id"],))
+        if audience == "all":
+            principals = [registry.ALL_PRINCIPALS]
+        elif audience == "requester":
+            if not intake:
+                raise ValueError("도입 신청자를 확인할 수 없습니다.")
+            principals = [intake["submitted_by"]]
+        else:
+            wanted = sorted({u.strip() for u in users if u.strip()})
+            rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE status='active' AND user_id=ANY(%s::text[])",
+                                      (wanted,)) if wanted else []
+            missing = sorted(set(wanted) - {r["user_id"] for r in rows})
+            if not wanted or missing:
+                raise ValueError("활성 계정이 아닌 사용자: " + ", ".join(missing) if missing else "사용 대상 직원을 지정하세요.")
+            principals = sorted(r["token"] for r in rows)
+        previous = spec.get("allowed_principals")
+        at = datetime.now(UTC).isoformat(timespec="seconds")
+        await review.record_event("server-audience", "approved", "server", server_id, actor,
+                                  applicant=intake["submitted_by"] if intake else None,
+                                  scope={"audience": audience, "principals": principals, "previous": previous})
+        spec["allowed_principals"] = principals
+        doc["history"].append({"type": "audience-changed", "server_id": server_id, "actor": actor, "at": at,
+                               "principals": principals, "previous": previous})
+        registry.save_runtime(doc)
+        await registry.sync()
+    return {"server_id": server_id, "audience": audience, "principals": principals}
 
 
 async def review_server_residency(server_id: str, location: dict, actor: str) -> dict:
@@ -2276,7 +2313,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("ENDPOINT-MANAGED-001", "Block", failure))
             return await _decision_payload(base_event, laps)
         allowed = registry.allowed_principals(server_id)
-        if allowed is not None and user_token not in allowed:
+        if not registry.permits(allowed, user_token):
             base_event.update(local_verdict("MCP-REGISTRY-003", "Block",
                 "이 서비스의 도입 승인 사용 주체에 포함되지 않습니다." if allowed else
                 "도입 신청·승인 기록이 없는 직접 등록입니다. 도입 신청으로 다시 등록해야 실행합니다."))

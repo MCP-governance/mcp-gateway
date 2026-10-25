@@ -553,6 +553,7 @@ const decisionTable = (rows, id = "") => html`<table class="data call-table"><th
 
 // A registration is approved until a date; past it the calls are blocked.
 const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1년" };
+const AUDIENCE = { all: "전체 직원", requester: "신청자만", selected: "지정 직원" };
 function validityChip(registration) {
   if (!registration?.valid_until) return "";
   const days = Math.ceil((new Date(registration.valid_until).getTime() - Date.now()) / 86400000);
@@ -1678,7 +1679,9 @@ function intakeApprovalFields(out) {
       <details><summary>계약·인자 제한</summary><pre>${JSON.stringify({ input: t.input_schema, output: t.output_schema,
         constraints: p.parameter_constraints[t.name], scope: p.tool_reviews[t.name] }, null, 2)}</pre></details></span></label>`)}</fieldset>
   ${pending ? kv([["승인", `${pending.approvers.length} / ${p.risk.tier === "high" || p.risk.tier === "very_high" ? 2 : 1}`],
-    ["사용 기한", `${scope.valid_days}일`]]) : field.select("valid_days", "사용 기한", VALIDITY, "90")}
+    ["사용 기한", `${scope.valid_days}일`], ["사용 대상", AUDIENCE[scope.audience || "all"] + (scope.audience_users?.length ? ` · ${scope.audience_users.join(", ")}` : "")]])
+    : html`${field.select("valid_days", "사용 기한", VALIDITY, "90")}${field.select("audience", "사용 대상", AUDIENCE, "all")}
+      ${field.text("audience_users", "지정 직원", 'maxlength="2000" placeholder="아이디, 아이디"', "")}`}
   ${count && !pending ? field.text("critical_reason", "치명적 발견 수용 사유", 'required minlength="10" maxlength="1000"') : ""}
   ${p.risk.tier === "very_high" ? field.text("risk_reason", "위험 수용 사유", 'required minlength="10" maxlength="1000"') : ""}
   <details ${p.jurisdiction_pack_enabled ? raw("open") : ""}><summary>${p.jurisdiction_pack_enabled ? "추가 정보" : "추가 정보(선택)"}</summary>
@@ -1751,7 +1754,9 @@ async function showIntakeApproval(id) {
   }));
   const result = await api(`/api/mcp-requests/${id}/approve-and-register`, { method: "POST", body: {
     proposal_sha256: out.proposal_sha256, tools: selected, valid_days: scope?.valid_days || Number(fd.get("valid_days")),
-    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions } });
+    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions,
+    audience: scope ? scope.audience || "all" : String(fd.get("audience") || "all"),
+    audience_users: scope ? scope.audience_users || [] : String(fd.get("audience_users") || "").split(",").map((v) => v.trim()).filter(Boolean) } });
   toast(result.message); reload();
 }
 
@@ -1871,7 +1876,7 @@ async function showIntakeReport(id) {
       {key: "contract", label: "계약·범위", body: html`<div class="stack">
         ${panel("서비스", kv([["MCP 주소", html`<span class="mono">${r.endpoint_url}</span>`], ["사용 목적", r.purpose]]))}
         ${panel("계약 검토", review ? kv([["검토 내용", review.review_note], ["검토자", `${review.reviewed_by} · ${when(review.reviewed_at)}`],
-          ["허용 사용자", review.allowed_principals.join(", ")], ["사용 기한", when(review.valid_until)],
+          ["허용 사용자", review.allowed_principals.includes("*") ? AUDIENCE.all : review.allowed_principals.join(", ")], ["사용 기한", when(review.valid_until)],
           ["서버", `${review.advertised_name} ${review.version}`], ["계약 해시", html`<code>${review.registration.catalog_hash}</code>`],
           ["승인 도구", Object.keys(review.registration.tools || {}).join(", ")], ...locationRows(review.registration.residency)]) : empty("검토 전"))}
         ${panel("허용 인자 범위", review ? html`<pre>${JSON.stringify(review.parameter_constraints || {}, null, 2)}</pre>` : empty("검토 전"))}

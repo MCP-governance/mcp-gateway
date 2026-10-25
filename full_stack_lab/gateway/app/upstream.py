@@ -63,7 +63,8 @@ def credential_headers(endpoint: str, principal: str | None = None) -> dict:
         url = urlsplit(endpoint)
         if url.scheme != 'https' or url.username or url.password or url.fragment:
             raise ValueError('credential transport')
-        if principal is not None and principal not in principals:
+        # "*": the operator shares this credential with every caller the server's approval admits (D-234).
+        if principal is not None and "*" not in principals and principal not in principals:
             raise ValueError('principal binding')
         expiry = row['expires_at']
         if type(expiry) not in (int, float) or not math.isfinite(expiry) or expiry < 0 or (expiry and expiry <= time.time()):

@@ -113,7 +113,7 @@ class Checks(unittest.IsolatedAsyncioTestCase):
         self.allowed, self.hidden, self.unreviewed = None, set(), set()
         self.registry = SimpleNamespace(
             server=lambda server: self.spec if server == "files" else None,
-            allowed_principals=lambda server: self.allowed,
+            permits=lambda allowed, token: allowed is None or "*" in allowed or token in allowed, ALL_PRINCIPALS="*", allowed_principals=lambda server: self.allowed,
             reviewed_tools=lambda server: set(self.spec["tools"]) - self.unreviewed)
         self.consent = definitions(APP / "consent.py", {
             "os": os, "db": self.db, "registry": self.registry,

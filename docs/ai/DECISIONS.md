@@ -2389,3 +2389,14 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 효과(같은 안내문을 사용자 메모리에 임시로 두고 측정): 2/12 → 11/12, 「사내 MCP로 뭘 할 수 있나」는 도구 호출 없이 전체 목록으로 즉답. managed 경로 실측은 배포 뒤 확인.
 - 보류: 서버별 `instructions`(SDK 2.2.0은 생성 시 고정), 도구 전체 상주(`alwaysLoad`: 41개 정의가 매 대화에 상주), `managedMcpServers` 전환(재시작 없는 추가이나 강제 범위가 달라짐), 실행 중 세션 반영 실측(승인 1건 필요), 정책 조회 62초 간격 단축.
 - 시험: `tests/harness_detect_check.py` 8건(수정 전 6건 실패), `kit_continuity_check.py` 22건, 기존 `command_surfaces_check`·`managed_policy_gap_check`·`dest_pin_credential_redaction_check`·`connector_control_check`는 안내문 대역 속성을 더해 통과.
+
+## D-234 승인한 MCP의 기본 사용 대상은 전체 직원이고, 승인 화면에서 신청자만·지정 직원으로 좁힌다 (2026-10-25)
+
+- 배경: PJ1에서 MINT 계정 aaaa의 하네스에 MCP가 하나도 없었다. 원클릭 승인이 사용 대상을 신청자 한 명(`allowed_principals=[신청자]`)으로 고정해, 승인된 11개 모두 `user`만 쓸 수 있었다. 다른 직원은 장치가 활성이어도 관리형 설정에 서버가 0개로 내려간다. 소유자 결정: 기본은 전체 직원, 승인 화면에서 좁힐 수 있게.
+- 결정:
+  - 사용 대상 `"*"`는 「활성 직원 전체」다. 승인 봉투(envelope)는 그대로라 검토한 도구·읽기/쓰기 분류·인자 제한·기한은 계속 묶인다(`pac.scope`의 봉투 판정은 사람 목록만 넓어진다). 모든 판정 경로가 `registry.permits(allowed, token)` 하나로 묻는다(게이트웨이 판정·tools/list·동의·관리형 설정·통제 범위·LiteLLM 동기화).
+  - 원클릭 승인 `audience`: `all`(기본)·`requester`·`selected`(+로그인 아이디 목록, 활성 계정만). 원격은 검토 계약에, 저장소 도입은 신청 증거(`audience_principals`)에 남겨 등록이 그대로 쓴다. 2차 승인은 1차와 같은 대상이어야 한다. 콘솔 승인 화면에 「사용 대상」 선택과 「지정 직원」 입력, 원장 화면에 「전체 직원」 표시.
+  - 이미 승인된 서버의 사용 대상 변경: `POST /api/registry/servers/{id}/audience`(관리자, 원장 `server-audience` 사건, 이전 값 보존).
+  - 운영자 자격 파일(`upstream`)의 `allowed_principals`도 `"*"`를 받아, 서버 보유 자격을 승인 대상 전체와 공유할 수 있다.
+- 같이 고친 것: 활성화 대기·격리 장치에는 「관리자 활성화를 기다리는 중이라 MCP를 아직 쓸 수 없다」는 안내를, 쓸 수 있는 서버가 없는 직원에게는 「도입 신청·사용 대상 추가 요청」 안내를 관리형 메모리로 내려, 모델이 사용자 설정 파일을 뒤지거나 셸에서 하네스를 실행하려 하지 않게 한다. 같은 PC·같은 관리 계정에 다른 직원의 키트가 설치되면 이전 직원의 장치 기록은 이어받지 않고 해제한다.
+- 시험: `audience_all_check.py`, 원클릭·동의·LiteLLM·tools/list 관련 시험의 대역 갱신(`permits`), `harness_detect_check`(빈 경우 안내), `kit_continuity_check`(다른 직원 장치 해제 중복 없음).

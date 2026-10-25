@@ -199,7 +199,7 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
         await service.approve_and_register(REQUEST_ID, self.approval(preview), self.admin, "console-token")
         self.assertEqual(len(self.registered), 1)
         self.assertEqual(self.registered[0]["tools"], {"lookup": "r"})
-        self.assertEqual(self.state["evidence"]["remote_contract"]["allowed_principals"], ["employee"])
+        self.assertEqual(self.state["evidence"]["remote_contract"]["allowed_principals"], ["*"])  # D-234 default: all employees
         self.assertEqual(self.events[-1]["actor"], "admin-a")
 
     async def test_repository_one_approval_publishes_and_registers(self):

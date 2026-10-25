@@ -73,8 +73,7 @@ async def _request(user_token: str, server_id: str, tool: str, grade: str, tool_
 async def request_server(principal: dict, server_id: str, data_class: str) -> None:
     """Queue reviewed, permitted tools together; this creates no grant or execution authority."""
     user_token = principal["token"]
-    allowed = registry.allowed_principals(server_id)
-    if allowed is not None and user_token not in allowed:
+    if not registry.permits(registry.allowed_principals(server_id), user_token):
         return
     spec = registry.server(server_id) or {}
     reviewed = registry.reviewed_tools(server_id)

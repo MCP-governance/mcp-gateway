@@ -1949,11 +1949,13 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
     principals = await db.fetch_all(
         "SELECT token, user_id FROM principals WHERE status='active' AND (token=ANY(%s::text[]) OR user_id=ANY(%s::text[]))",
         (proposal.allowed_principals, proposal.allowed_principals))
-    named = {p["token"] for p in principals} | {p["user_id"] for p in principals}
+    named = {p["token"] for p in principals} | {p["user_id"] for p in principals} | {ALL_PRINCIPALS}
     missing = sorted(set(proposal.allowed_principals) - named)
     if missing:
         raise HTTPException(422, f"활성 계정이 아닌 사용자: {', '.join(missing)}")
-    proposal = proposal.model_copy(update={"allowed_principals": sorted({p["token"] for p in principals})})
+    everyone = ALL_PRINCIPALS in proposal.allowed_principals
+    proposal = proposal.model_copy(update={"allowed_principals": [ALL_PRINCIPALS] if everyone
+                                           else sorted({p["token"] for p in principals})})
     found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                 {"endpoint": proposal.endpoint}, timeout=45)
     advertised = {tool["name"]: tool for tool in found["tools"]}
@@ -2076,6 +2078,28 @@ class OneClickApproval(StrictModel):
     residency: dict = Field(default_factory=dict)
     # 관리자가 제안된 읽기/쓰기 분류를 낮춘 도구만. 주석이 없는 공개 MCP는 읽기 도구도 쓰기로 제안된다.
     actions: dict[str, Literal["r", "w", "x"]] = Field(default_factory=dict, max_length=300)
+    # 사용 대상(D-234): 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
+    audience: Literal["all", "requester", "selected"] = "all"
+    audience_users: list[str] = Field(default_factory=list, max_length=100)
+
+
+ALL_PRINCIPALS = "*"  # registry.ALL_PRINCIPALS (D-234); this service does not load the registry
+
+
+async def resolve_audience(audience: str, users: list[str], requester: str) -> list[str]:
+    """The approval's audience in principal tokens; "*" is every active employee."""
+    if audience == "all":
+        return [ALL_PRINCIPALS]
+    if audience == "requester":
+        return [requester]
+    wanted = sorted({u.strip() for u in users if u.strip()})
+    if not wanted:
+        raise HTTPException(422, "사용 대상 직원을 한 명 이상 지정하세요.")
+    rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE status='active' AND user_id=ANY(%s::text[])", (wanted,))
+    missing = sorted(set(wanted) - {r["user_id"] for r in rows})
+    if missing:
+        raise HTTPException(422, f"활성 계정이 아닌 사용자: {', '.join(missing)}")
+    return sorted(r["token"] for r in rows)
 
 
 async def approval_row(request_id: UUID, user: dict) -> dict:
@@ -2322,6 +2346,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             raise HTTPException(422, " / ".join(errors))
         scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
                  "valid_days": request.valid_days,
+                 **({"audience": request.audience, "audience_users": sorted(request.audience_users)}
+                    if request.audience != "all" else {}),
                  "supplier_assurance": assurance, "residency": location,
                  "valid_until": pending["scope"]["valid_until"] if pending else (
                      datetime.now(UTC) + timedelta(days=request.valid_days)).isoformat()}
@@ -2387,19 +2413,21 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
         tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
         reviews = {name: proposal["tool_reviews"][name] for name in selected}
+        audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
         risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
                        "reasons": risk_reasons, "solo_mode": solo_mode, "solo_operator": solo}
         updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
+                   "audience_principals": audience,
                    "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
                    "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
                                          "risk_reasons": risk_reasons}}
         record = dict(proposal["provenance"])
         internal_url = row.get("internal_repo_url")
         if row["intake_kind"] == "remote-endpoint":
-            contract = {"registration": registration.model_dump(), "allowed_principals": [row["submitted_by"]],
+            contract = {"registration": registration.model_dump(), "allowed_principals": audience,
                         "parameter_constraints": {n: proposal["parameter_constraints"][n] for n in selected},
                         "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
                         "valid_until": scope["valid_until"],
@@ -2425,6 +2453,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             kind="intake-one-click", outcome="approved", target_kind="intake", target_id=request_id,
             actor=user["principal"], applicant=row["submitted_by"], reason=reason or None,
             scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews,
+                   "audience": request.audience, "audience_principals": audience,
                    "solo_mode": solo_mode, "solo_operator": solo,
                    "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)})
         if not changed:

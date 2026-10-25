@@ -99,7 +99,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
         self.endpoint.shadow_count_for = AsyncMock(return_value=0)
         self.endpoint.shadow_listener_count_for = AsyncMock(return_value=0)
         registry = NS(server=lambda _: {"endpoint": "http://unit.invalid", "tool_reviews": {}},
-                      allowed_principals=lambda _: None, pinned_protocol=lambda _: "pinned",
+                      permits=lambda allowed, token: allowed is None or "*" in allowed or token in allowed, ALL_PRINCIPALS="*", allowed_principals=lambda _: None, pinned_protocol=lambda _: "pinned",
                       catalog_version=lambda: "unit", review_matches=lambda *args: True,
                       catalog=lambda: {"organization": {}})
         scope = {"allowed": True, "resources_allowed": True, "actions": ["w"], "environments": ["prod"],

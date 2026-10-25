@@ -331,7 +331,7 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         database = SimpleNamespace(transaction=transaction, fetch_one=fetch_one, execute=execute,
                                    pool=AsyncMock(return_value=SimpleNamespace(connection=guard_connection)),
                                    fetch_all=AsyncMock(side_effect=lambda q: [{"server_id": s} for s in jobs]))
-        registry = SimpleNamespace(runtime=lambda: {"servers": {"approved": {}}})
+        registry = SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": {}}})
         review = SimpleNamespace(record_event=record)
         json_module = SimpleNamespace(Jsonb=lambda obj: SimpleNamespace(obj=obj))
         self.state.fail = ("POST", "/v1/mcp/server")
@@ -426,11 +426,11 @@ class BoundaryTests(unittest.IsolatedAsyncioTestCase):
         async def fetch_all(query, params):
             if "mcp_tools" in query:
                 return [{"name": "read"}, {"name": "not-in-approved-spec"}]
-            self.assertEqual(params, (["employee-token"],))
+            self.assertEqual(params, (False, ["employee-token"]))  # (everyone?, tokens) D-234
             return [{"user_id": "alice"}]
 
         database = SimpleNamespace(fetch_one=fetch_one, fetch_all=fetch_all)
-        registry = SimpleNamespace(runtime=lambda: {"servers": {"approved": spec}})
+        registry = SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": spec}})
         with patch.object(package, "db", database, create=True), patch.object(package, "registry", registry, create=True):
             plan = await sync.desired("approved")
             self.assertTrue(plan["active"])
@@ -456,7 +456,7 @@ class BoundaryTests(unittest.IsolatedAsyncioTestCase):
                                    if "mcp_servers" in q else {"scope": {"intake": "intake"}}),
                                    fetch_all=AsyncMock(side_effect=lambda q, p: [{"name": "read"}] if "mcp_tools" in q else [{"user_id": "alice"}]))
         with patch.object(package, "db", database, create=True), \
-             patch.object(package, "registry", SimpleNamespace(runtime=lambda: {"servers": {"approved": spec}}), create=True):
+             patch.object(package, "registry", SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": spec}}), create=True):
             for endpoint in ("local-run://approved", "https://user:secret@upstream.test/mcp", "https://upstream.test/mcp?token=secret"):
                 spec["endpoint"] = endpoint
                 plan = await sync.desired("approved")

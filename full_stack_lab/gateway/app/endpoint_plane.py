@@ -773,6 +773,13 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                  WHERE owner_token=%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL
                  ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], username))).fetchall()
             if _same_pc(r, hostname, platform, machine_id, local_sid)]
+        # Another employee's device on this PC and managed account was just removed by this install's
+        # cleanup; its record would stay "active" forever (10-23 PJ1: user's device beside aaaa's).
+        # It is retired, never inherited: an activation belongs to the person it was granted to.
+        displaced = [r for r in await (await connection.execute(
+            """SELECT endpoint_id,hostname,detail FROM endpoint_agents
+                 WHERE owner_token<>%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL""",
+            (grant["owner_token"], username))).fetchall() if _same_pc(r, hostname, platform, machine_id, local_sid)]
         inherited = None
         if earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]:
             held = await (await connection.execute(
@@ -806,7 +813,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                 (endpoint_id, grant["owner_token"], Jsonb({"actor": inherited["activated_by"], "inherited_from": inherited["endpoint_id"],
                                                            "note": "같은 직원·같은 PC의 재설치로 이전 장치의 활성화를 이어받음"})))
     # The earlier devices no longer report: revoke them (their tokens with them) and say what replaced them.
-    for old in earlier:
+    for old in {r["endpoint_id"]: r for r in earlier + displaced}.values():
         await revoke_device(old["endpoint_id"], "reinstall")
         await db.execute("UPDATE endpoint_agents SET detail = detail || %s WHERE endpoint_id=%s",
                          (Jsonb({"superseded_by": endpoint_id}), old["endpoint_id"]))
@@ -832,7 +839,11 @@ async def managed_policy(device: dict, servers: list | None = None) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     current = [r["id"] for r in rows if r["id"] in usable]
     servers = current if servers is None else list(servers)  # servers: re-render what a device installed earlier (D-198)
-    guidance = pac.harness_guidance(owner, servers)
+    # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
+    # in the user's files or try to run the harness from its shell (10-23 PJ1).
+    guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
+                "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
+                if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
     windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
