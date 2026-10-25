@@ -1,22 +1,19 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T23:45:31+09:00
+확인 시각: 2026-10-26T00:23:14+09:00
 
-HEAD: `cdef0bbf38dd4775747ac5094bbfd8f3477bbf07` · 로컬 브랜치: `10/25-stage0-ci`
+HEAD: `ce79f39934e7df6717780451012c3dd7414004a6` · 로컬 브랜치: `10/25-stage0-ci`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M .github/workflows/verify.yml
- M docs/ai/TESTING.md
- M full_stack_lab/tests/intake_identity_pg_check.py
- M full_stack_lab/tests/run_local_suite.py
- M full_stack_lab/tests/siem_queue_pg_check.py
- M research/llm-wiki/analysis/integration-cases.json
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
-?? full_stack_lab/tests/run_local_suite_test.py
+ M research/llm-wiki/analysis/threat-trace-review-1020/README.md
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/threats/control-map.md
 ```
 
 ## 주요 파일 바이트

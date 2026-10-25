@@ -1,16 +1,13 @@
 {
-  "captured_at": "2026-10-25T23:45:31+09:00",
-  "head": "cdef0bbf38dd4775747ac5094bbfd8f3477bbf07",
+  "captured_at": "2026-10-26T00:23:14+09:00",
+  "head": "ce79f39934e7df6717780451012c3dd7414004a6",
   "branch": "10/25-stage0-ci",
   "status": [
-    "M .github/workflows/verify.yml",
-    " M docs/ai/TESTING.md",
-    " M full_stack_lab/tests/intake_identity_pg_check.py",
-    " M full_stack_lab/tests/run_local_suite.py",
-    " M full_stack_lab/tests/siem_queue_pg_check.py",
-    " M research/llm-wiki/analysis/integration-cases.json",
+    "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    "?? full_stack_lab/tests/run_local_suite_test.py"
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/threats/control-map.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
