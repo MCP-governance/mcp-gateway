@@ -185,7 +185,8 @@ async def triggers_and_restart(config, received, failures, store, folder):
 
 async def main():
     target = conninfo_to_dict(db.DATABASE_URL)
-    if target.get("host") != "wbs-c-pg" or not target.get("dbname", "").startswith("t_siem_queue_pg_check_py_"):
+    if (target.get("host") not in {"wbs-c-pg", "127.0.0.1", "localhost"}
+            or not target.get("dbname", "").startswith("t_siem_queue_pg_check_py_")):
         raise RuntimeError("Use termination_dispatch_lab.sh with a fresh disposable SIEM test database")
     with isolated_disposal():
         await apply_schema()

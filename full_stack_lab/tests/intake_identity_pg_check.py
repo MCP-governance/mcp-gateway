@@ -37,6 +37,7 @@ for candidate in (Path(__file__).resolve().parent.parent / "gateway", Path("/app
 from app import activity, agent_service, audit, core, db, endpoint_plane, main, mcp_facade, privacy, registry, review, upstream
 from app.agent_contract import AUDIENCE, ISSUER
 from intake_fixture import approval_body, impact_input
+from termination_lab_support import isolated_disposal, signing_keys
 
 PASSED: list[str] = []
 ENDPOINT = "http://notes-srv:9000/mcp"
@@ -613,4 +614,6 @@ async def amain() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(amain())
+    signing_keys()
+    with isolated_disposal():
+        asyncio.run(amain())

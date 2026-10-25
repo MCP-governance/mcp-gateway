@@ -1,10 +1,16 @@
 {
-  "captured_at": "2026-10-25T20:16:01+09:00",
-  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
-  "branch": "main",
+  "captured_at": "2026-10-25T23:45:31+09:00",
+  "head": "cdef0bbf38dd4775747ac5094bbfd8f3477bbf07",
+  "branch": "10/25-stage0-ci",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    "M .github/workflows/verify.yml",
+    " M docs/ai/TESTING.md",
+    " M full_stack_lab/tests/intake_identity_pg_check.py",
+    " M full_stack_lab/tests/run_local_suite.py",
+    " M full_stack_lab/tests/siem_queue_pg_check.py",
+    " M research/llm-wiki/analysis/integration-cases.json",
+    " M research/llm-wiki/analysis/requirements.json",
+    "?? full_stack_lab/tests/run_local_suite_test.py"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

@@ -1,16 +1,22 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T20:16:01+09:00
+확인 시각: 2026-10-25T23:45:31+09:00
 
-HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
+HEAD: `cdef0bbf38dd4775747ac5094bbfd8f3477bbf07` · 로컬 브랜치: `10/25-stage0-ci`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M .github/workflows/verify.yml
+ M docs/ai/TESTING.md
+ M full_stack_lab/tests/intake_identity_pg_check.py
+ M full_stack_lab/tests/run_local_suite.py
+ M full_stack_lab/tests/siem_queue_pg_check.py
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+?? full_stack_lab/tests/run_local_suite_test.py
 ```
 
 ## 주요 파일 바이트
