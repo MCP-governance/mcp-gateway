@@ -34,16 +34,18 @@
 
 ## 3. 지금 진행 중인 세션 (10-25)
 
-소유자 지시(10-25)로 리더가 나눈 4개 세션이다. 세션이 시작·종료되면 이 표를 고친다. 이 표는 리더 지시서와 세션 목록에서 옮겼으며 각 세션의 완료 여부는 보고서가 정본이다.
+소유자 지시(10-25)로 리더가 나눈 세션이다. 세션이 시작·종료되면 이 표를 고친다. 이 표는 리더 연락(10-25)에서 옮겼으며 각 세션의 완료 여부는 보고서가 정본이다.
 
-| 이름 | 브랜치 | 하는 일 | 소유 범위 | 보고서(끝난 뒤) |
+통합 브랜치 `10/25-integrate`(`9c870cb`)가 있다. 238번 결정(정책 동기화 해시 분리)과 S1·S2·S3·S4 브랜치를 모았고 main에는 아직 없다. 같은 번호대 결정이 겹쳐 S2의 239번 결정은 242번으로 재번호됐다.
+
+| 이름 | 브랜치 | 상태 | 하는 일 | 보고서 |
 | --- | --- | --- | --- | --- |
-| kit-usability (S1) | `claude/kit-usability-0c35cc`, 기준 `10/25-policy-sync-split` | 키트 간편 모드 기본·자동 활성화·Windows 같은 계정 설치·GUI/TUI | `endpoint-agent/**`, 게이트웨이의 장치 활성화·「내 PC 연결」 부분, 키트 시험 | `reports/2026-10-25-kit-usability.md` |
-| release-packaging (S2) | `claude/release-packaging-154ea4` | 버전 체계·`deploy/` 패키징·실배포본 위생·README 개편·브랜치 정리 | 루트 문서, `.github/**`, `full_stack_lab/compose*`·`field/**`·`scripts/**`, 새 `deploy/` | `reports/2026-10-25-release-packaging.md`, `history/readme-2026-10-25.md`(S2가 README에서 옮긴 작업 과정 서술) |
-| wiki-structure (S3) | `claude/wiki-structure-332d12` | 위키 구조·최신화 점검(이 파일을 만든 세션) | `research/llm-wiki/**`, `docs/ai/README.md` | [reports/2026-10-25-wiki-structure.md](status/reports/2026-10-25-wiki-structure.md) |
-| bugbash-pj1 (S4) | `claude/bugbash-pj1-44f413` | PJ1·솔루션 기기 실사용 버그 시험(코드 수정 금지) | PJ1·솔루션 기기 상태 | `reports/2026-10-25-bugbash-pj1.md` |
+| kit-usability (S1) | `claude/kit-usability-0c35cc`, 기준 `10/25-policy-sync-split` | **2단계 대기**: pj2·pj3 실측 | 키트 간편 모드·자동 활성화·Windows 같은 계정 설치·GUI/TUI | `reports/2026-10-25-kit-usability.md` |
+| release-packaging (S2) | `claude/release-packaging-154ea4` | 완료(통합 브랜치에 병합) | 버전 체계·`deploy/` 패키징·실배포본 위생·README 개편·브랜치 정리 | `reports/2026-10-25-release-packaging.md`, `history/readme-2026-10-25.md` |
+| wiki-structure (S3) | `claude/wiki-structure-332d12` | 완료(통합 브랜치에 병합) | 위키 구조·최신화 점검, 이 파일 | [reports/2026-10-25-wiki-structure.md](status/reports/2026-10-25-wiki-structure.md) |
+| bugbash-pj1 (S4) | `claude/bugbash-pj1-44f413`, 후속 게이트웨이 수정 `10/25-gw-bugfix` | 버그 시험은 완료(통합 브랜치에 병합), **게이트웨이 수정 진행 중** | PJ1·솔루션 기기 실사용 버그 시험, 찾은 결함의 게이트웨이 수정 | `reports/2026-10-25-bugbash-pj1.md` |
 
-병합 전 브랜치: `10/25-policy-sync-split`(238번 결정, 정책 동기화 해시 분리)는 키트 세션의 기준이며 main에 없다. 세션끼리 같은 파일을 고치지 않도록 소유 범위를 지킨다. 위키 생성물(`catalogs/threats.json`, `analysis/enterprise*`, `status/repository-snapshot.*`)은 코드 세션이 재생성한다.
+남은 순서: S1 2단계와 게이트웨이 수정이 끝나면 리더가 결정 기록 분할(`tools/split_decisions.py split --write`)을 실행하고 main에 병합한다. 그 전에는 `docs/ai/DECISIONS.md`를 번호대 파일로 옮기지 않는다. 세션끼리 같은 파일을 고치지 않도록 소유 범위를 지킨다. 위키 생성물(`catalogs/threats.json`, `analysis/enterprise*`, `status/repository-snapshot.*`)은 코드 세션이 재생성한다.
 
 ## 4. 정본 지도 — 같은 사실은 한 곳에만 쓴다
 
