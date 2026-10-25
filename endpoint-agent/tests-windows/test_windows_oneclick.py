@@ -95,7 +95,10 @@ function Start-Process {
         self.assertNotIn("isolated_account=$true", template)
         self.assertIn("ConvertFrom-Json).isolated -eq $true", template)
         worker = (ROOT / 'endpoint-agent/windows-worker.ps1').read_text(encoding='utf-8-sig')
-        self.assertNotIn("Get-ScheduledTask -TaskName 'MCPGatewayManaged-*'", worker)  # a reinstall rolls back instead
+        self.assertNotIn("throw '기존 엔드포인트 제거 후 재설치 필요'", worker)  # a reinstall rolls back instead
+        # ...and the running service lets go of the runtime before it is replaced, then starts again (pj3 10-25).
+        self.assertLess(worker.index("foreach ($name in $stoppedTasks) { Stop-ScheduledTask"), worker.index("Install-EndpointRuntime $PSScriptRoot $root"))
+        self.assertIn("Start-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue", worker)
         self.assertIn("if ($isolated) { $managedArguments += '--isolated-account' }", worker)
         # A one-click approval can be updated by a newer one-click file; an IT approval (no marker) still needs IT.
         self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
