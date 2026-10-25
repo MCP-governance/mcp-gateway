@@ -164,7 +164,7 @@ export_ca() {
     sleep 1
   done
   openssl x509 -in "$tmp" -noout >/dev/null 2>&1 || { rm -f "$tmp"; die "Caddy 루트 인증서를 읽지 못했습니다."; }
-  install -m 0644 "$tmp" ca/root.crt; rm -f "$tmp"
+  cp "$tmp" ca/root.crt && chmod 644 ca/root.crt; rm -f "$tmp"
   openssl x509 -in ca/root.crt -noout -fingerprint -sha256 | cut -d= -f2 > ca/root.sha256
   echo "루트 인증서: $DEPLOY_DIR/ca/root.crt"
   echo "SHA-256    : $(cat ca/root.sha256)"
@@ -193,7 +193,7 @@ up() {
   export_ca
 }
 
-install() {
+install_stack() {
   local bind="" name=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -344,7 +344,7 @@ print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었�
 }
 
 case "${1:-help}" in
-  install) shift; install "$@" ;;
+  install) shift; install_stack "$@" ;;
   up) shift; up "$@" ;;
   status) status ;;
   ca) load_env; export_ca ;;
