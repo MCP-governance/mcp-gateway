@@ -192,7 +192,7 @@ async def snapshot() -> dict:
         spec = registry.server(server["id"]) or {}
         provider = classify.url_destination(server["endpoint"]).external
         allowed = registry.allowed_principals(server["id"])
-        holders = sorted(allowed if allowed is not None else {p["token"] for p in people})
+        holders = sorted({p["token"] for p in people} if allowed is None or registry.ALL_PRINCIPALS in allowed else allowed)
         operating = server["status"] == "READY" and server["lifecycle"] == "OPERATING"
         # A server the Gateway refuses has no holders; direct use of the SaaS is `residual`.
         bypass = [f"{p}: 관리형 엔드포인트 없음" for p in holders if p not in enforced_owners] if operating else []

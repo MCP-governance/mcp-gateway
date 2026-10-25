@@ -138,7 +138,7 @@ class ToolSunsetListIsolationCheck(unittest.TestCase):
         namespace = {
             "types": types.SimpleNamespace(Tool=Tool),
             "db": types.SimpleNamespace(fetch_all=fetch_all, fetch_one=fetch_one),
-            "registry": types.SimpleNamespace(allowed_principals=lambda _server: None,
+            "registry": types.SimpleNamespace(permits=lambda allowed, token: allowed is None or "*" in allowed or token in allowed, ALL_PRINCIPALS="*", allowed_principals=lambda _server: None,
                                               reviewed_tools=lambda _server: {"a", "b"}),
             "tool_sunset": types.SimpleNamespace(check=status, listable=tool_sunset.listable),
             "pac": types.SimpleNamespace(visible=lambda *_args: True),

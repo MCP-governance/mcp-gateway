@@ -109,6 +109,15 @@ def server(server_id: str) -> dict | None:
     return servers().get(server_id)
 
 
+# An approval's audience may be every active employee (D-234). The approval stays an envelope: its
+# reviewed tools, actions and argument constraints still bind, only the list of people is open.
+ALL_PRINCIPALS = "*"
+
+
+def permits(allowed: list[str] | None, token: str) -> bool:
+    return allowed is None or ALL_PRINCIPALS in allowed or token in allowed
+
+
 def allowed_principals(server_id: str) -> list[str] | None:
     """Who may call a server; None means whoever the policy allows.
 

@@ -138,8 +138,7 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
     person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
     tools = []
     for row in rows:
-        allowed = registry.allowed_principals(row["server_id"])
-        if allowed is not None and principal not in allowed:
+        if not registry.permits(registry.allowed_principals(row["server_id"]), principal):
             continue
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
             continue  # a tool nobody scoped is neither listed here nor callable (D-91)

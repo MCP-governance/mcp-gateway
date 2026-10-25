@@ -72,7 +72,7 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
     envelope = spec.get("allowed_principals")
     if envelope is not None:
         terms = (spec.get("tool_reviews") or {}).get(tool) or {}
-        allowed = principal["token"] in envelope and tool in spec.get("tools", {})
+        allowed = registry.permits(envelope, principal["token"]) and tool in spec.get("tools", {})
         # A remote review approves the explicitly selected feature and declared
         # data class. An argument-induced escalation is outside that approval.
         allowed = allowed and action == spec.get("tools", {}).get(tool)
@@ -162,8 +162,7 @@ def servers_for(principal: dict) -> list[str]:
     them and what a managed harness configuration may carry (D-93)."""
     usable = []
     for server_id, spec in sorted(registry.servers().items()):
-        allowed = registry.allowed_principals(server_id)
-        if allowed is not None and principal["token"] not in allowed:
+        if not registry.permits(registry.allowed_principals(server_id), principal["token"]):
             continue
         if any(visible(principal, server_id, tool, action)
                for tool, action in spec.get("tools", {}).items() if tool in registry.reviewed_tools(server_id)):
@@ -191,7 +190,8 @@ def harness_guidance(principal: dict | None, servers: list[str]) -> str:
             lines.append(f"- {_NAME_SAFE.sub('', spec.get('display_name') or '').strip()[:60] or server_id} (`mcp__{server_id}__*`): "
                          + ", ".join(_NAME_SAFE.sub("", tool)[:48] for tool in tools[:12]))
     if not lines:
-        return ""
+        return ("# 조직 승인 MCP 도구\n이 사용자에게 승인된 MCP 서버가 아직 없습니다. 필요한 MCP가 있으면 MINT 콘솔에서 도입을 신청하거나 "
+                "관리자에게 사용 대상 추가를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
     return ("# 조직 승인 MCP 도구\n"
             "이 PC에서는 조직 게이트웨이가 승인한 MCP 서버만 쓸 수 있습니다. 사용자가 서버 이름을 말하지 않아도 요청이 아래 서버가 맡는 일"
             "(저장소·문서 검색, 파일 열람, 변환, 기억 등)이면 기억이나 일반 지식으로 답하기 전에 먼저 해당 서버의 도구를 찾아(도구 검색) 사용합니다.\n"

@@ -956,6 +956,22 @@ async def registry_residency_review(server_id: str, request: ResidencyReview,
         raise HTTPException(422, str(exc)) from exc
 
 
+class ServerAudience(StrictModel):
+    audience: Literal["all", "requester", "selected"]
+    users: list[str] = Field(default_factory=list, max_length=100)
+
+
+@app.post("/api/registry/servers/{server_id}/audience")
+async def registry_server_audience(server_id: str, request: ServerAudience,
+                                   user: dict = Depends(admin_caller)) -> dict:
+    try:
+        return await core.update_server_audience(server_id, request.audience, request.users, user["principal"])
+    except LookupError as exc:
+        raise HTTPException(404, "도입 승인으로 Console에서 등록한 서버가 아닙니다.") from exc
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 @app.delete("/api/registry/servers/{server_id}")
 async def registry_deregister(server_id: str, user: dict = Depends(admin_caller)) -> dict:
     try:

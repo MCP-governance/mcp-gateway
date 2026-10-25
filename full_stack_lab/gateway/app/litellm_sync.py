@@ -359,8 +359,10 @@ async def desired(server_id):
         return result
     tools = await db.fetch_all("""SELECT name FROM mcp_tools WHERE server_id=%s AND enabled
                                  AND approved_schema_hash IS NOT NULL AND scope_review IS NOT NULL ORDER BY name""", (server_id,))
-    people = await db.fetch_all("""SELECT user_id FROM principals WHERE token=ANY(%s::text[])
-                                  AND status='active' AND user_id IS NOT NULL""", (spec.get("allowed_principals") or [],))
+    audience = spec.get("allowed_principals") or []
+    people = await db.fetch_all("""SELECT user_id FROM principals WHERE (%s OR token=ANY(%s::text[]))
+                                  AND status='active' AND user_id IS NOT NULL""",
+                                (registry.ALL_PRINCIPALS in audience, audience))
     endpoint = spec["endpoint"]
     parsed = urlsplit(endpoint)
     if (parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username

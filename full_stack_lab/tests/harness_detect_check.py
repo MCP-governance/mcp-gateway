@@ -60,10 +60,11 @@ class Guidance(unittest.TestCase):
         self.assertIn("도구 검색", text)
         self.assertLess(len(text), 4096)
 
-    def test_nothing_to_say_is_an_empty_document(self):
-        self.assertEqual(guidance([]), "")
-        self.assertEqual(guidance(["github"], principal={}), "")
-        self.assertEqual(guidance(["closed"]), "")
+    def test_no_usable_server_says_so_instead_of_leaving_the_model_to_search(self):
+        # D-234: an empty memory left the model hunting ~/.claude.json and running the harness (10-23 PJ1).
+        for text in (guidance([]), guidance(["github"], principal={}), guidance(["closed"])):
+            self.assertIn("승인된 MCP 서버가 아직 없습니다", text)
+            self.assertNotIn("mcp__", text)
 
     def test_names_cannot_smuggle_instructions_into_organisation_memory(self):
         text = guidance(["evil"])
