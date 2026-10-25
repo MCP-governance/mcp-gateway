@@ -5,9 +5,10 @@
 T1~T3 모델로 판정한다.
 
 ## 소유자 규칙 (2026-10-03, 다른 모든 문서보다 우선)
-1. **솔루션은 솔루션 기기에서만 띄운다**(`user@100.83.175.111`, `./console.sh field up`). 이 노트북 WSL에는 compose 스택을
+1. **솔루션은 솔루션 기기에서만 띄운다**(`./console.sh field up`). 개발 노트북 WSL에는 compose 스택을
    띄우지 않는다(대시보드 보기·간단한 데모만). 로컬에서 하는 것은 정적 검사와 일회성 `opa test` 컨테이너까지.
-2. **솔루션 시험은 PJ1**(`pj1@100.110.81.60`)의 실제 하네스로 한다.
+2. **솔루션 시험은 지정 시험 PC**의 실제 하네스로 한다. 운영 배포 묶음(`deploy/`)은 GitHub CI 일회용 스택에서 검증한다.
+   기기 주소·접속 계정·시험 PC·로컬 비밀번호는 저장소에 두지 않고 Git 제외 파일 `.agents.local.md`에 둔다.
 3. **콘솔은 즉시 판매 가능한 제품 화면이다.** 프로젝트 진행 중이라는 흔적을 남기지 않는다.
    - 설명 문단·도움말·주석 같은 안내문(“~합니다”, “~는 자기 신고”), 브레드크럼, 부제, 중복 로고·중복 사용자 표시 금지. 라벨과 값만.
    - 개발 흔적 금지: D-번호, PAC-15·팀원·실습·v3/v4·WIP, 빌드 SHA·버전 표, 시험 데이터, 참고 제품 이름, 영어 enum 원문.
@@ -41,18 +42,18 @@ T1~T3 모델로 판정한다.
 
 1. [docs/ai/README.md](docs/ai/README.md) — 문서 지도
 2. [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) — 정본 설계
-3. [docs/ai/RUNBOOK.md](docs/ai/RUNBOOK.md) — 환경·명령·계정 (로컬 비밀번호는 전부 `1111`)
+3. [docs/ai/RUNBOOK.md](docs/ai/RUNBOOK.md) — 운영·실습 명령, 백업·복구·업그레이드·롤백 (개발 환경 값은 `.agents.local.md`)
 4. 손댈 영역의 문서(POLICY / TERMINATION_MODEL / MCP_SERVERS / CONSOLE_UI / DATA_MODEL)
 
 ## 명령
-검증 순서(소유자 규칙): ① 로컬 정적 검사 → ② 솔루션 기기에 `field up`으로 배포 → ③ PJ1의 실제 하네스로 기능 확인.
+검증 순서(소유자 규칙): ① 로컬 정적 검사 → ② 솔루션 기기에 `field up`으로 배포 → ③ 지정 시험 PC의 실제 하네스로 기능 확인.
 로컬 정적 검사: `pyflakes gateway/app/*.py tests/*.py …`, `node --check gateway/app/agent_static/console.js`,
 `node --test tests/console-state.test.mjs`, `python3 tests/open_endpoints.py`,
 Rego는 `docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy`.
 ```bash
 cd full_stack_lab
 ./console.sh field up|ca|status|pc-command|set-password|register-pc|down   # 솔루션 기기에서만 (docs/ai/FIELD.md)
-./console.sh test          # 실습 스택 전체 회귀 — 이 노트북에서는 돌리지 않는다
+./console.sh test          # 실습 스택 전체 회귀 — 개발 노트북에서는 돌리지 않는다
 ./console.sh watch         # 판정 흐름
 ```
 
@@ -84,8 +85,8 @@ cd full_stack_lab
 - 다른 사람이 연 종료 케이스·실행 중인 다른 랩을 되돌리거나 멈추지 않는다.
 
 ## 환경 주의
-- 스택은 솔루션 기기에서만 돌린다(위 소유자 규칙 1). 기기 접속은 WSL의 `/home/kali/.ssh/id_ed25519` 키로 한다.
-- WSL은 유휴 시 꺼진다 → `wsl.exe -d kali-linux -- sleep infinity`를 백그라운드로.
+- 스택은 솔루션 기기에서만 돌린다(위 소유자 규칙 1). 기기 접속 키·WSL 배포판 이름은 `.agents.local.md`에 있다.
+- WSL은 유휴 시 꺼진다 → `wsl.exe -d <배포판> -- sleep infinity`를 백그라운드로.
 - Windows Git Bash에서 WSL로 여러 줄 스크립트를 보낼 때는 파일로 써서 실행한다(따옴표·`$`·`\` 손실).
 
 ## 코드 스타일
@@ -97,6 +98,10 @@ cd full_stack_lab
 - **2026-10-13 소유자 지시:** 팀원 합류 이후 개발·시험 설계·보고 변경은 작업별 새 브랜치에서 수행한다.
   새 이름은 `MM/DD-branchname`(Git ref에 공백 불가). 통합 브랜치에 직접 변경을 올리지 않고, 다른 작업자의 미커밋 변경은 보존한다.
   시작 기준 commit과 변경·검증 범위를 보고한다. PR을 만들면 본문에 검증 결과를 붙인다.
-  원격 기본 브랜치는 2026-10-13 `git ls-remote --symref origin HEAD`로 확인한 `feat/2026-09-v3.1-field-deploy`다.
-  새 작업 시작 시 원격 HEAD를 다시 확인한다. 이전 `main` 표기는 현재 원격 상태와 달라 정정했다.
+  원격 기본 브랜치는 2026-10-25 `git ls-remote --symref origin HEAD`로 확인한 `main`이다.
+  새 작업 시작 시 원격 HEAD를 다시 확인한다.
 - 커밋 메시지: 첫 줄 `feat|fix|docs|test(v2): …`, 본문에 이유.
+- **릴리스**: 판본은 최상위 `VERSION`(유의적 버전) 하나가 정하고, 사용자에게 보이는 변경은 `CHANGELOG.md`의 「미배포」에 적는다.
+  태그 `vX.Y.Z`는 `VERSION`과 같은 커밋에만 붙인다. 원격 브랜치는 병합 뒤 지우고, 지우기 전 미병합 브랜치는 `archive/<날짜>-<이름>` 태그로 보존한다.
+- **위생**: 제품 코드·README·운영 문서·배포 묶음에 기기 주소·계정·로컬 경로·비밀번호·작업 과정 서술을 쓰지 않는다
+  (`python3 deploy/check.py`, 비밀은 CI의 gitleaks가 검사). 역사 기록은 `docs/ai/DECISIONS.md`와 `research/llm-wiki`에 남긴다.

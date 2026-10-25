@@ -161,7 +161,7 @@ cd full_stack_lab
 ./console.sh field up
 ./console.sh field ca
 openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256
-curl --cacert field/ca/root.crt https://100.83.175.111/api/health
+curl --cacert field/ca/root.crt https://<기기 IP>/api/health
 ```
 
 `field ca`는 공개 루트와 DER 기준 SHA-256 지문만 내보냅니다. 개인 키는 꺼내지 않습니다.
@@ -178,7 +178,7 @@ Linux 설치기는 지문 불일치·다중 인증서를 등록 요청과 설치
 `CODEX_CA_CERTIFICATE`로 전달합니다. 직원 PC 도구를 별도로 쓰는 경우 다음처럼 실행합니다.
 
 ```bash
-python3 mcpgw_pc.py setup --url https://100.83.175.111 --servers 승인서버 --ca root.crt --ca-sha256 운영자가확인한지문
+python3 mcpgw_pc.py setup --url https://<기기 IP> --servers 승인서버 --ca root.crt --ca-sha256 운영자가확인한지문
 python3 ~/.mcpgw/mcpgw_pc.py harness claude
 python3 ~/.mcpgw/mcpgw_pc.py harness codex
 ```

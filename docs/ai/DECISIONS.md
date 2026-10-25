@@ -2533,3 +2533,33 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - **한계**: 대역·단위 시험이다. pj2·pj3 실설치·자동 활성화·세 칸 실측은 기기 배포 뒤 같은 작업의 2단계에서 한다.
   `/etc/environment`는 새 로그인부터 읽힌다(설치 전 열린 터미널은 `mcpgw-status`가 「새 터미널」을 안내). Windows 사용자 환경 변수도 새
   프로세스부터다. Windows Codex는 프록시 환경을 받지 않는다(간편 모드는 모델 도메인 제한을 주장하지 않음).
+## D-239 판본은 유의적 버전, 정본은 최상위 `VERSION` 하나, 첫 판본은 0.9.0 (2026-10-25)
+
+- 배경: 판본 번호 없이 기능 단위로 기기에 배포했고, 이미지 태그(`gateway` 무태그·`workstation:3.0`·`runtime-worker:1.0`), FastAPI `version`(1.1.0·2.0.0), 브랜치 이름(v3.1) 같은 내부 세대 표기가 섞여 있었다. 고객 서버 배포·업그레이드·롤백에는 하나의 판본이 필요하다.
+- 결정:
+  1. [유의적 버전](https://semver.org/lang/ko/)을 쓴다. 정본은 저장소 최상위 `VERSION` 한 줄이고, 사용자에게 보이는 변경은 `CHANGELOG.md`(Keep a Changelog)의 「미배포」에 쌓았다가 판본을 올릴 때 옮긴다. 태그 `vX.Y.Z`는 `VERSION`이 그 값인 커밋에만 붙인다. 1.0.0 전에는 부 판본이 바뀔 때 호환되지 않는 변경이 있을 수 있고 「업그레이드 주의」에 적는다.
+  2. 첫 판본은 **0.9.0**. 근거: 도입 심사·호출 전 판정·원장·종료 판정·키트(Linux 실기기, Windows 설치·활성화)가 한 기기에서 실사용 중이라 기능은 1.0 범위에 가깝지만, 최종 검수 0건, macOS 실기기 미검증, 고객 서버 설치는 CI 일회용 스택에서만 실증, 이전 판본에서 올라오는 이행 경로 미검증이라 1.0.0(안정 약속)은 이르다. 0.1.0은 실제 성숙도보다 낮게 알린다.
+  3. 태그 위치는 `VERSION`·`CHANGELOG.md`·`deploy/`가 들어간 이 브랜치의 main 병합 커밋을 권고한다(지금 main `7687a9e`에는 `VERSION`이 없어 판본 표시와 태그가 어긋난다). 다음 S1(간편 모드 기본·자동 활성화)은 동작 기본값이 바뀌므로 0.10.0으로 낸다.
+  4. 판본 표시(설계, 코드는 후속): 빌드 인자로 `MCP_BUILD_REVISION=<VERSION>+g<커밋 12자>`를 넣는다 — `deploy/mint.sh`는 이미 이렇게 해서 `/api/health`·`/api/readiness`의 `build.revision`에 판본이 보인다. 후속으로 ① 게이트웨이 Dockerfile에 `ARG MINT_VERSION`을 두고 `release.build_info()`에 `version`을 더하고 ② 콘솔 하단은 `/api/readiness`의 `build.console.version`을 라벨 없이 `v0.9.0`으로 보이고 ③ 키트 묶음(`agent_service`가 `/endpoint-kit`에서 만드는 ZIP)에 `VERSION`을 넣어 `mcpgw-status`가 「키트 0.9.0 · 게이트웨이 0.9.0」과 불일치 경고를 보인다. 판본 비교는 같은 문자열 일치만 쓰고 해시(`pc_kit_sha256`)는 그대로 둔다(같은 판본 안의 핫픽스 구분).
+- 검사: `deploy/check.py`(VERSION 형식, CHANGELOG 첫 판본 = VERSION)를 CI 정적 검사에 넣었다.
+
+## D-240 운영 배포 묶음은 `deploy/` 하나, 실습 스택과 같은 이름·코드를 쓰고 게시는 한 주소의 443·3128 (2026-10-25)
+
+- 배경: 운영은 `full_stack_lab/compose.yaml`+`compose.field.yaml`을 `console.sh field`가 얹는 방식이었다. 랩 서비스(직원 PC 4대·회사 시스템·MCP 10종·Jaeger·GreenMail·Ollama)가 같은 파일에 있고, Tailscale IP 탐지와 `root/root` 기본 계정, `.env`의 랩 기본 비밀번호에 기대어 고객 서버에 그대로 줄 수 없었다.
+- 결정:
+  1. `deploy/compose.yaml`은 독립 파일이다. 서비스 11개(db·opa·presidio 2·gateway·agent-service·intake-worker·runtime-worker·corp-git·caddy·model-proxy, 선택 siem-worker). 실습용·Jaeger·GreenMail·LLM·SSE 진입점(gateway-sse, Caddy 경로가 없어 밖에서 닿지 않음)은 뺀다. 서비스·망 이름은 랩과 같게 둔다 — 실행기가 compose 서비스 `gateway`와 `<프로젝트>_edge` 망을, Caddyfile이 `corp-git`·`agent-service`를 이름으로 찾기 때문이다. Caddyfile·OPA 정책·레지스트리·키트·빌드 문맥은 `../full_stack_lab`·`../endpoint-agent`를 그대로 마운트해 정본을 하나로 둔다.
+  2. 이미지 고정: 외부 이미지는 판본 태그+digest(postgres 18.6-alpine3.24, opa 1.20.2-static, presidio-anonymizer 2.2.364, gitea 1.27.3-rootless, caddy 2.11.4-alpine), 자체 이미지는 `mcpgw/*:<VERSION>`. 판본별 이미지가 서버에 남아 롤백 때 다시 빌드하지 않는다.
+  3. 게시: `MINT_BIND`(필수, 0.0.0.0·loopback 거절)의 443(HTTPS)과 3128(모델 프록시)만. Tailscale을 전제하지 않으며 콘솔 HTTP(8000, D-129)는 게시하지 않는다 — 고객 사내망은 Tailscale 터널 암호화가 없으므로 콘솔도 HTTPS로만 연다. 이는 실기기 게시 불변식(Caddy·모델 프록시만, 특정 주소에만)을 고객 배치에 옮긴 것이며 `compose.field.yaml`은 그대로다.
+  4. 추적은 고객 수집기가 있을 때만(`OTEL_SDK_DISABLED=true` 기본, `JAEGER_QUERY_URL` 빈 값이면 상태 점검에서 빠짐 — 코드 변경 없음).
+  5. 첫 관리자: 콘솔이 필드 모드에서 `root/root`·`user/user`를 만드는 코드(`agent_service.bootstrap_field_accounts`)는 그대로 두고, `mint.sh`가 HTTPS를 열기 **전에** 비밀번호가 아직 기본값인 `root`만 임의 값으로 바꿔 `initial-admin-password`(0600)에 쓰고 기본값인 `user`를 중지한다. 이미 바꾼 서버(업그레이드·복구)는 건드리지 않는다. 승인 기본은 `ROOT_SOLO_APPROVAL=0`(신청자와 다른 관리자, README 원칙 4).
+  6. 복구는 서명 폐기 목록과 사설 CA 볼륨을 같은 서버에서는 되돌리지 않는다(D-123: 남은 목록이 복원 DB의 빠진 철회를 다시 막음, D-124: 루트 교체는 모든 PC 연결을 끊음). 현재 `.env`의 키가 백업과 다르면 멈춘다. 새 서버(볼륨·`.env` 없음)에서만 백업의 키·볼륨을 가져온다.
+  7. 검증은 GitHub CI `deploy` 작업: 새 실행기에 `./install.sh --bind <실행기 IPv4>` → `/api/health` ok·판본·게시 포트 2개·콘솔 HTTP 닫힘·`root` 초기 비밀번호 로그인·기본 비밀번호 거절 → 재기동 뒤 비밀번호 유지 → 백업·복구 왕복. 소유자 규칙대로 노트북·시험 VM·솔루션 기기에는 띄우지 않는다.
+- 한계: 서버용 `install.ps1`은 만들지 않았다(Linux 컨테이너 호스트가 전제). 고객 인증서(공인·사내 CA) 사용, 이전 판본에서의 업그레이드, 직원 PC 키트로 실제 MCP 호출까지는 CI에서 확인하지 않았다(필드 카탈로그에 승인 서버가 없음). `db/init.sql`의 랩 시드 계정 행이 고객 DB에 중지 상태로 남는다(인계 표).
+
+## D-241 제품 표면 위생 규칙과 원격 브랜치 정리 (2026-10-25)
+
+- 결정:
+  1. 고객에게 가는 표면(최상위 README 한/영·CHANGELOG·`AGENTS.md`·`CLAUDE.md`·`docs/ai/RUNBOOK.md`·`TROUBLESHOOTING.md`·`FIELD.md`·`deploy/**`)에는 기기 주소·시험 PC·계정 이름·로컬 경로·비밀번호·작업 과정 서술(레인·작업 번호·질책 등)을 쓰지 않는다. `deploy/check.py`가 CI에서 검사한다. 개발 환경 값은 Git 제외 `.agents.local.md`(CLAUDE.md가 `@` 가져오기)로 옮겼다.
+  2. 비밀: gitleaks v8.30.1로 전체 이력(원격 브랜치 포함 763 커밋)을 스캔해 70건 모두 시험용 가짜 값·RFC 예시·해시임을 확인했다(실제 자격 0건, 이력 재작성 불필요). CI 정적 검사가 작업 트리를 같은 판본으로 매번 스캔하고, 의도적 가짜 자격 경로만 `.gitleaks.toml`로 뺀다.
+  3. `docs/ai/DECISIONS.md`·`research/llm-wiki`·날짜가 붙은 `docs/ai/*_2026-*.md`는 역사 기록이라 고치지 않는다. 제품 코드(`gateway/app`·`endpoint-agent`)의 주석·시험 값은 소유 세션이 처리하도록 파일:행 표로 넘긴다(보고서).
+  4. 원격 브랜치: main에 완전히 병합되고 마지막 커밋이 10-24 이전인 브랜치는 삭제, 미병합은 `archive/<마지막 커밋 날짜>-<이름>` 태그로 보존한 뒤 삭제 후보로만 둔다. `main`·`feat/web-ui`·`10/25-*`·진행 중 세션 브랜치는 보호. 10-25에 81개 → 18개(삭제 63, 보존 태그 10).

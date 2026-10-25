@@ -1,15 +1,112 @@
-# 운영 런북 — 이 랩을 띄우고, 돌리고, 되돌리는 법
+# 운영 런북
 
-> 단일 진입점은 `full_stack_lab/console.sh`. 모든 명령은 `full_stack_lab/`에서 실행한다.
+이 문서는 두 부분이다. **1부**는 고객 서버에 올린 운영 배포(`deploy/`), **2부**는 개발·검증용 실습 스택(`full_stack_lab/`)이다.
+설치 요약과 명령 표는 [deploy/README.md](../../deploy/README.md)에 있고, 여기에는 운영 절차와 그 이유를 둔다.
 
-D-123 최초 배포 전 솔루션 기기에서 `./console.sh field init-disposal`을 한 번 실행한 뒤 `./console.sh field up`으로 배포한다. 기존 목록이 있으면 초기화하지 않는다. 폐기 볼륨과 키를 DB 복원과 함께 되돌리지 않는다. 동일 폐기 식별자의 `restore`는 거부한다. 설정·복귀 API·일회용 랩 시험 조건은 [운영 대응](OPS_RESPONSE.md)을 따른다.
+## 1부. 운영 배포 (`deploy/`)
 
-## 2026-09-30 이후 배포 확인과 원격 MCP 자격
+모든 명령은 `deploy/`에서 `./mint.sh`로 실행한다. 판본은 저장소 최상위 `VERSION`이 정하며, 이미지 태그(`mcpgw/*:<VERSION>`)와
+`/api/health`·`/api/readiness`의 `build.revision`(`<VERSION>+g<커밋>`)이 같은 값을 보인다.
+
+### 1.1 설치와 첫 관리자
+
+```bash
+git clone --branch v0.9.0 https://github.com/MCP-governance/mcp-gateway.git
+cd mcp-gateway/deploy
+./install.sh --bind <사내 IPv4> [--name <DNS 이름>]
+```
+
+- `.env`(0600)를 `.env.example`에서 만들고 비어 있는 비밀 값을 생성한다. 서명 키(JWT·폐기 목록)는 게이트웨이 이미지 안에서 만든다.
+- 폐기 목록 볼륨은 첫 설치에서 한 번만 초기화한다. 이미 있으면 그대로 둔다.
+- 콘솔은 기동할 때 관리자 `root`와 직원 `user` 기본 계정을 아이디와 같은 비밀번호로 만든다. 설치 스크립트는 **HTTPS 포트를 열기 전에**
+  기본 비밀번호가 남은 `root`를 임의 값으로 바꿔 `deploy/initial-admin-password`(0600)에 적고, 기본 비밀번호의 `user`는 중지한다.
+  첫 로그인 뒤 `./mint.sh set-password root`로 바꾸면 이 파일은 지워진다.
+- 승인은 기본으로 신청자와 다른 관리자가 한다(`ROOT_SOLO_APPROVAL=0`). 두 번째 관리자는 `./mint.sh add-account <아이디> --role 관리자`.
+  비밀번호는 표준 입력이나 프롬프트로만 받는다(명령줄·로그에 남지 않게).
+- 게시 포트는 `MINT_BIND`의 443(Caddy HTTPS)과 3128(모델 프록시) 둘뿐이다. 0.0.0.0·loopback은 거절한다.
+  이 주소는 관리형 직원 PC만 닿는 사내 구간(VPN·사설 망)이어야 한다.
+
+### 1.2 사설 CA
+
+Caddy가 배치 볼륨(`caddy_data`)에 사설 루트 CA를 만들고 `MINT_BIND`(와 `MINT_PUBLIC_NAME`)용 인증서를 발급한다.
+`./mint.sh ca`는 공개 루트를 `deploy/ca/root.crt`로, DER SHA-256 지문을 `ca/root.sha256`으로 내보낸다. CA 개인 키는 내보내지 않는다.
+
+- 직원 PC 키트는 콘솔 「내 PC 연결」에서 받으며 루트와 지문이 들어 있다. 설치기는 등록 전에 단일 PEM과 지문을 검증한다.
+- 관리자 브라우저에는 지문을 대조한 뒤 루트를 넣는다(조직 배포 도구로 관리 PC에만).
+- CA는 배치 수명 동안 유지한다. 루트가 바뀌면 모든 PC의 연결이 끊기므로, 교체는 새 루트 지문 공지 → 새 키트 재설치 순서로 한다.
+  그래서 `caddy_data`는 백업에 들어가고, 같은 서버로 복구할 때는 덮어쓰지 않는다.
+
+### 1.3 백업
+
+```bash
+./mint.sh backup                 # deploy/backups/<UTC 시각>/
+./mint.sh backup /안전한/경로
+```
+
+| 파일 | 내용 |
+| --- | --- |
+| `mcp_governance.dump` | PostgreSQL 사용자 지정 형식 덤프(원장·승인·계정·장치) |
+| `disposal_journal.tgz` | 서명 폐기 목록(DB 밖) |
+| `git_data.tgz` | 승인된 소스의 내부 Git 사본 |
+| `caddy_data.tgz` | 사설 CA와 발급 인증서 |
+| `registry_runtime.tgz`, `intake_reports.tgz` | 등록한 서버 목록, 도입 검사 보고서 |
+| `env` | `.env` 사본 — 서명 키·자격 암호화 키 포함 |
+| `VERSION` | 백업 시점의 판본 |
+
+DB 덤프 뒤 폐기 목록·내부 Git을 같은 시점으로 묶기 위해 게이트웨이·콘솔·실행기·내부 Git을 잠시 멈춘다(수십 초).
+백업 디렉터리는 0700이며 `env`에 키가 있으므로 서버 밖의 접근 통제된 저장소로 옮긴다. `USER_CREDENTIAL_KEY`를 잃으면 직원이 연결한
+자격이 모두 「연결 안 됨」이 되고, 폐기 서명 키를 잃으면 폐기 목록을 이어 쓸 수 없다.
+
+### 1.4 복구
+
+```bash
+./mint.sh restore deploy/backups/<시각>
+```
+
+- **같은 서버**: 지금 `.env`를 그대로 쓰고, 백업의 키와 다르면 멈춘다. DB·내부 Git·등록 목록·보고서를 백업 시점으로 되돌린다.
+  **폐기 목록과 사설 CA는 되돌리지 않는다** — 남아 있는 폐기 목록이 복원된 DB에서 빠진 토큰 철회·자격 회수를 기동 때 다시 막고(서명 폐기 목록),
+  CA가 그대로라 PC 연결이 유지된다.
+- **새 서버**: `.env` 없이 복구하면 백업의 `env`와 모든 볼륨을 가져온다. 같은 `MINT_BIND` 주소를 새 서버로 옮겨야 직원 PC가 그대로 붙는다.
+  주소가 바뀌면 `.env`의 `MINT_BIND`를 고친 뒤 직원 PC 키트를 다시 설치한다.
+- 감사 원장은 덧붙이기만 하는 기록이다. 복구는 재해 복구 수단이며, 백업 이후 원장 행은 복구로 사라지므로 복구 전에 현재 상태를
+  `./mint.sh backup`으로 먼저 보존한다(가능한 경우).
+
+### 1.5 업그레이드
+
+```bash
+git fetch --tags && git checkout v<새 판본>
+./mint.sh upgrade                # 백업 → 새 판본 빌드 → 재기동 → 준비 확인
+```
+
+- 업그레이드 전에 `CHANGELOG.md`의 「업그레이드 주의」를 읽는다. 1.0.0 전에는 부 판본이 바뀔 때 설정·화면·키트 동작이 바뀔 수 있다.
+- DB 스키마는 기동 때 덧붙이는 방식(`CREATE … IF NOT EXISTS`, 열 추가)으로 올라가며 기존 계정·원장을 보존한다. 되돌리는 이행은 없다.
+- OPA와 게이트웨이는 정책 파일을 기동할 때만 읽으므로 `up`이 둘을 다시 만든다. `status`의 「정책 일치」가 `True`이고 준비가 「예」여야 끝이다.
+- 키트가 바뀐 판본이면 콘솔 PC 목록의 키트 판본이 게이트웨이와 다른 PC에 새 키트를 설치하게 한다.
+
+### 1.6 롤백
+
+업그레이드가 실패하거나 새 판본에서 정상 업무가 막히면:
+
+```bash
+./mint.sh backup                         # 실패한 판본의 상태도 증거로 남긴다
+git checkout v<이전 판본>
+./mint.sh restore deploy/backups/<업그레이드 직전 시각>
+```
+
+`upgrade`가 만든 직전 백업으로 DB를 되돌리고 이전 판본 이미지(태그가 남아 있으면 다시 빌드하지 않음)로 기동한다. 폐기 목록은 되돌리지 않으므로
+업그레이드 뒤에 철회한 토큰·자격은 롤백 뒤에도 막힌다. 업그레이드 뒤 새로 승인한 서버·계정은 사라지므로 다시 승인한다.
+
+### 1.7 폐기 목록
+
+서명 폐기 목록은 DB 밖 전용 볼륨(`disposal_journal`)에 Ed25519 서명·연쇄 해시로 남는다. 최초 초기화는 설치 때 한 번이고 이미 있으면 초기화하지 않는다.
+동일 폐기 식별자의 복원은 거부하며 새 도입 승인을 요구한다. 설정·복귀 API는 [운영 대응](OPS_RESPONSE.md)을 따른다.
+
+### 1.8 원격 MCP 자격과 배포 확인
 
 Console **정책 → 배포 확인**은 Gateway/Console code revision·content hash와 OPA 로드 정책을 대조한다.
 `/api/health`의 `build`·`policy`, `/api/readiness`의 `build`·`policy`도 같은 정보를 준다.
 직접 Compose로 빌드한다면 `MCP_BUILD_REVISION=$(git rev-parse HEAD)`를 먼저 export한다.
-`console.sh`는 revision을 넣고 추적/미추적 코드·문서 변경이 있으면 `+dirty`를 붙인다.
+`console.sh`와 `deploy/mint.sh`는 revision을 넣고(`mint.sh`는 `<VERSION>+g<커밋>`) 추적/미추적 코드·문서 변경이 있으면 `+dirty`를 붙인다.
 DB migration은 기존 계정·원장을 보존하며, 이미지 갱신 후 gateway·gateway-sse·agent-service를 함께 재기동하고
 OPA를 재기동해 파일이 아니라 **로드된** 정책이 일치하는지 확인한다. 정책 mismatch는 readiness 불가다.
 
@@ -26,7 +123,7 @@ OPA를 재기동해 파일이 아니라 **로드된** 정책이 일치하는지 
 직원이 콘솔 「내 연결」에서 개인 액세스 토큰(권장: fine-grained)을 붙여넣거나, 조직이 `GITHUB_OAUTH_CLIENT_ID`(OAuth App,
 client secret 불필요, 기본 비어 있으면 화면에서 숨김; 범위는 `GITHUB_OAUTH_SCOPES`)를 설정해 두면 인증 코드(device flow)로 연결한다.
 저장 전에 `GET https://api.github.com/user`로 확인하고, 값은 AES-GCM으로 암호화해 DB(`user_upstream_credentials`)에만 둔다.
-키 `USER_CREDENTIAL_KEY`는 `console.sh`가 `.env`에 한 번 만들고 gateway·gateway-sse·agent-service가 받는다 — 잃으면 저장된 연결은
+키 `USER_CREDENTIAL_KEY`는 `console.sh`·`mint.sh`가 `.env`에 한 번 만들고 gateway·gateway-sse·agent-service가 받는다 — 잃으면 저장된 연결은
 「연결 안 됨」으로 읽히고 직원이 다시 연결한다. 자격 선택 순서는 ① 그 직원의 연결 ② 위 자격 파일에서 그 직원에게 묶인 행
 ③ 없음이며, 직원별 자격이 필요한 서버에서 ③이면 상위 서비스를 부르지 않고 `MCP-CREDENTIAL-001`로 차단해
 「MINT 콘솔 『내 연결』에서 GitHub 계정을 연결하세요」를 하네스에 보낸다. 운영자 공유 행을 직원 전체에 쓰게 하려면 `allowed_principals`에
@@ -37,37 +134,31 @@ client secret 불필요, 기본 비어 있으면 화면에서 숨김; 범위는 
 등록 metadata discovery는 control plane의 관리자 작업이며 principal 없는 별도 조회다. 실제 도구 dispatch는
 검증된 principal을 반드시 넘긴다. principal/resource/expiry/permission 오류는 전달 전 fail-closed다.
 서버가 주장하는 read-only 옵션과 OAuth 권한은 서로 다르다. SaaS 프로젝트·자원·토큰 권한도 별도로 제한한다.
-이번 실험 자격은 로컬 격리 볼륨의 `admin-demo`에만 묶였고 field 배포나 일반 사용자에게 복제하지 않았다.
 
 MCP 토큰으로 관리 API가 403이면 올바른 동작이다. 대화형 Console 로그인으로 `console` scope를 받는다.
 scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 다시 로그인해야 한다.
 
-## 1. 작업 환경 (이 노트북 기준)
 
-| 항목 | 값 |
-| --- | --- |
-| 호스트 | Windows 11 + WSL2 `kali-linux` (Docker Desktop 없음, WSL 안의 Docker Engine 28) |
-| 자원 | WSL VM 메모리 7.6GB, 호스트 15.4GB, 16 논리 CPU (Intel Ultra 7 255H, P/E/LP-E 하이브리드) |
-| 저장소 | WSL `/home/kali/mcpgw-v2` = Windows `\\wsl.localhost\kali-linux\home\kali\mcpgw-v2` |
-| 브랜치 | `feat/2026-09-v3.0-harness-gateway` |
-| 비밀번호 | **WSL sudo를 포함해 로컬 비밀번호는 전부 `1111`** (sudo는 무암호 설정) |
-| 랩 계정 비밀번호 | `test-password` (`.env`의 `MOCK_SSO_PASSWORD`) |
-| 호스트 포트 | 이 노트북은 `.env`에 `CONSOLE_PORT=18000`, `GATEWAY_PORT=18080`, `JAEGER_PORT=26686`, `GITEA_PORT=13000` |
+## 2부. 실습 스택 (`full_stack_lab/`)
 
-이 노트북에 있던 다른 작업 트리의 v1 랩 스택은 2026-09-25에 사용자 승인을 받아 내렸다. 지금은 이
-저장소의 `mcpgw-v2` 스택만 떠 있다. 프로젝트 이름은 `.env`의 `MCP_COMPOSE_PROJECT`.
+> 단일 진입점은 `full_stack_lab/console.sh`. 모든 명령은 `full_stack_lab/`에서 실행한다. 실습 스택은 합성 회사·직원 PC 4대·MCP 서버 10종·
+> 로컬 LLM을 함께 띄우는 개발·검증용이며 운영 배포에 쓰지 않는다.
 
-### 망 대역 (주소 풀 소진 방지)
-한 Docker 호스트에 랩 복제본이 여러 개 뜰 수 있다(이 노트북도 한때 그랬다). 랩은 처음 실행할 때 겹치지 않는
+### 2.1 실습 환경
+
+솔루션 기기에 실습 스택을 올릴 때는 `./console.sh field init-disposal`을 한 번 실행한 뒤 `./console.sh field up`으로 배포한다.
+
+#### 망 대역 (주소 풀 소진 방지)
+한 Docker 호스트에 랩 복제본이 여러 개 뜰 수 있다. 랩은 처음 실행할 때 겹치지 않는
 `/16`을 골라 `.env`의 `MCP_NET_PREFIX`에 고정하고 12개 망에 `/24`를 명시하므로 Docker 기본 주소 풀을 쓰지 않는다
 (D-24). 이 방식 이전에 만든 스택은 `./console.sh down` 뒤 `up`. 후보 대역이 모두 겹친다는 오류가 나면 쓰지 않는
 **자기** 복제본만 내린다. 남의 스택 네트워크를 지우지 않는다.
 
-### 실제 PC에 단말 에이전트 설치
+#### 실제 PC에 엔드포인트 에이전트 설치
 랩의 직원 PC는 `endpoint-agent/agent.py`를 이미지에 복사해 쓴다. 실제 PC(Linux·Windows)에는 저장소 루트의
 [`endpoint-agent/README.md`](../../endpoint-agent/README.md) 절차(장치 키 발급 → 설치기 → 1회 보고 확인 → 제거)를 따른다.
 
-### 랩 전체를 실제 기기 세 종류에 나눠 올리기
+#### 랩 전체를 실제 기기 세 종류에 나눠 올리기
 솔루션 기기(Docker 호스트) · 관리자 PC · 직원 PC로 나누는 절차는 [FIELD.md](FIELD.md)에
 있다. `./console.sh field up|ca|status|pc-command|set-password|register-pc|down` — Tailscale IP를 자동으로 찾아
 `https://<IP>`에 게시한다. `field ca`로 배치 루트·SHA-256 지문을 확인하고 키트로 하네스 범위에 배포한다(D-124). 기본 `up`은 바뀌지 않고, CI는
@@ -76,18 +167,7 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
   `./console.sh reset`이면 지워진다. 파일로 검토·보관하려면 `docker compose exec gateway cat /registry-runtime/servers.json`.
 - 내부 Git(`/git/`)은 솔루션 계정으로만 열린다(D-48). 클론은 같은 ID/PW, Gitea 관리는 관리자 역할 계정으로 로그인한 브라우저에서.
 
-### WSL이 유휴로 꺼지는 문제
-WSL VM은 열린 프로세스가 없으면 몇 분 뒤 종료되고 컨테이너도 같이 죽는다. 작업 중에는 백그라운드로
-`wsl.exe -d kali-linux -- sleep infinity`를 하나 띄워 둔다. 모든 장기 서비스는 `restart: unless-stopped`라
-VM이 다시 뜨면 스스로 올라온다.
-
-### Git Bash에서 WSL 명령을 부를 때 (Claude Code 작업자용)
-- Git Bash의 heredoc·따옴표가 백슬래시와 `$변수`를 망가뜨린다. 여러 줄 스크립트는 **파일로 쓴 뒤**
-  (`\\wsl.localhost\kali-linux\tmp\x.sh`) `export MSYS_NO_PATHCONV=1; wsl.exe -d kali-linux -- bash /tmp/x.sh`로 실행.
-- `wsl.exe -- bash -c '…'` 안의 for 루프 변수(`$f`)가 비는 일이 있었다. 루프는 파일로.
-- 파일 편집은 UNC 경로(`\\wsl.localhost\…`)로 Read/Edit/Write 도구를 쓰면 된다.
-
-## 2. console.sh 명령
+### 2.2 console.sh 명령
 
 | 명령 | 하는 일 |
 | --- | --- |
@@ -107,24 +187,26 @@ VM이 다시 뜨면 스스로 올라온다.
 | `./console.sh openapi` | `docs/openapi/{gateway,agent-service}.json` 생성 |
 | `./console.sh status` / `logs [svc]` / `down` / `reset` | 상태·로그·중지·볼륨까지 초기화(잠금 파일은 유지) |
 
-## 3. 계정
+### 2.3 실습 계정
 
-| 이메일 | 이름 | 역할 | 부서 | 워크스테이션 |
-| --- | --- | --- | --- | --- |
-| kkg@bob.local | 김경곤 | admin | 거버넌스팀 | — |
-| mks@bob.local | 문광석 | admin | 보안운영팀 | — |
-| ysg@bob.local | 양승권 | employee | 플랫폼개발팀 | ws-ysg |
-| jwj@bob.local | 정원재 | employee | 데이터분석팀 | ws-jwj |
-| pse@bob.local | 박소은 | employee | 보안기술팀 | ws-pse |
-| miso@bob.local | 김미소 | employee | 보안기술팀 | — |
-| nkk@bob.local | 권노경 | partner | 협력사 A | ws-nkk (섀도 MCP 설정 보유) |
+랩 계정은 모두 합성 계정이고 비밀번호는 `.env`의 `MOCK_SSO_PASSWORD`(기본 `test-password`)다.
+
+| 이메일 | 역할 | 부서 | 워크스테이션 |
+| --- | --- | --- | --- |
+| kkg@bob.local | admin | 거버넌스팀 | — |
+| mks@bob.local | admin | 보안운영팀 | — |
+| ysg@bob.local | employee | 플랫폼개발팀 | ws-ysg |
+| jwj@bob.local | employee | 데이터분석팀 | ws-jwj |
+| pse@bob.local | employee | 보안기술팀 | ws-pse |
+| miso@bob.local | employee | 보안기술팀 | — |
+| nkk@bob.local | partner | 협력사 A | ws-nkk (섀도 MCP 설정 보유) |
 
 Gitea 관리자: `corpadmin` / `corp-admin-lab-only` (`GITEA_ADMIN_*`). Console은 관리자면 전체, 아니면
 자기 활동·도입 신청만 보인다.
 
-## 4. 자주 하는 일
+### 2.4 자주 하는 일
 
-### 처음부터
+#### 처음부터
 ```bash
 cd full_stack_lab && ./console.sh up          # 첫 실행은 모델 다운로드 포함 수십 분
 ./console.sh workday                          # 네 직원의 하루(LLM 모드)
@@ -132,7 +214,7 @@ cd full_stack_lab && ./console.sh up          # 첫 실행은 모델 다운로�
 ```
 브라우저: `http://localhost:${CONSOLE_PORT}` → kkg@bob.local.
 
-### 코드만 바꿨을 때
+#### 코드만 바꿨을 때
 - Gateway/Console Python·정적 파일: `docker compose build -q gateway agent-service && docker compose up -d gateway gateway-sse agent-service`
   (정적 파일은 이미지에 들어간다 — 볼륨 마운트 아님).
 - Rego: `docker compose restart opa` (OPA는 `--watch` 없이 뜬다).
@@ -140,22 +222,22 @@ cd full_stack_lab && ./console.sh up          # 첫 실행은 모델 다운로�
 - MCP 서버 이미지: `docker compose build mcp-filesystem && docker compose up -d --force-recreate mcp-…` →
   `./console.sh contracts --check`.
 
-### 종료 판정 시연
+#### 종료 판정 시연
 Console `#/termination` → 이용 관계 "종료 시작" → 케이스 화면에서 증거 수집 → 판정 → (gitea) 하위 시스템
 자격 폐기 → 증거 수집 → 판정(T1) → 종결 → `./console.sh restore gitea`·`./console.sh restore-token gitea`.
 자동 버전: `python3 tests/termination_flow.py`.
 
-### 누가 연 종료 케이스가 남아 서버가 막혀 있을 때
+#### 누가 연 종료 케이스가 남아 서버가 막혀 있을 때
 `TERMINATING` 서버는 모든 호출이 `MCP-DECOMM-001`이다. acceptance는 그런 서버를 SKIP하고, workday
 `--check`는 실패한다. 케이스를 종결하거나 `./console.sh restore <server>`로 되돌린다.
 **다른 사람이 연 케이스인지 먼저 확인할 것**(Console에서 개시자·사유 확인).
 
-## 5. 초기화
+### 2.5 초기화
 - `./console.sh down` — 컨테이너만 중지(데이터 유지).
 - `./console.sh reset` — DB·회사 시스템·모델 볼륨 삭제. 다음 `up`이 시드부터 다시(모델 재다운로드 포함).
 - 회사 시드만 다시: `docker compose run --rm corp-seed --force`.
 
-## 6. 실제 PC에서 하네스를 손으로 쓰기
+### 2.6 컨테이너 직원 PC에서 하네스를 손으로 쓰기
 `bob-ask`·`workday`를 거치지 않고, 직원이 평소 쓰듯 하네스를 직접 불러도 된다.
 
 ```bash
@@ -176,11 +258,11 @@ claude -p "..."                                      # 하네스를 직접 불�
 `/etc/bob/harness-prompt.md`로 줄인다. 클라우드 모델을 붙일 때는 `0`으로 하네스 본래 프롬프트를 쓴다.
 
 로컬 모델은 `LOCAL_LLM_MODEL`(기본 `qwen3.5:2b-q4_K_M`, 적재 1.7GB)·`LOCAL_LLM_CONTEXT`(기본 12288)로
-바꾼다. 품질이 더 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`이지만 16K 컨텍스트에서 +3.4GB가 더 든다 — 이
-노트북의 WSL VM은 7.6GB(호스트 15.4GB)뿐이라 스택(~3.6GB) 위에 얹었다가 WSL이 두 번 멎은 적이 있다
-(복구는 `wsl --shutdown`). 모델을 여러 개 동시에 올리지 말 것(`OLLAMA_MAX_LOADED_MODELS=1`), 평소엔 2B로 둔다.
+바꾼다. 품질이 더 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`이지만 16K 컨텍스트에서 +3.4GB가 더 든다. 메모리 8GB 안팎의
+WSL VM에서는 스택(~3.6GB) 위에 4B를 얹으면 VM이 멎을 수 있다(복구는 `wsl --shutdown`). 모델을 여러 개 동시에 올리지
+말 것(`OLLAMA_MAX_LOADED_MODELS=1`).
 
-## 도입 신청 자동 검증과 보고서
+### 2.7 도입 신청 자동 검증과 보고서
 직원이 `#/intake`에서 신청하면 즉시 검증 대기열에 들어간다. 관리자에게 검증 시작 클릭을 요구하지 않는다. 워커가 GitHub 저장소를 격리 복제하여 commit을 고정하고 문서 종료조건 조사, Syft SBOM(Software Bill of Materials), Trivy SCA(Software Composition Analysis), Semgrep SAST(Static Application Security Testing)를 수행한다. 신청 목록은 비어 있어도 5초마다 갱신하며 입력 폼·보고서·검증 기록 대화상자를 방해하지 않는다.
 
 관리자는 신청의 **검증 보고서**에서 요약, 검사 오류, 취약점과 수정 버전, 구성요소·라이선스, C1~C4 문서 후보 근거를 확인하고 보고서 JSON과 원본 JSON을 내려받는다. 목록에서 FAILED는 재검증할 수 있다. 자동 조사만으로 제공자 종료조건이 검증됐다고 표시하지 않으며, 근거 문서를 확인해 종료조건 기록 후 승인한다. 스캐너 오류는 발견 0건으로 처리하지 않는다.

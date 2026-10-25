@@ -1,0 +1,19 @@
+# CI 비밀 스캔(gitleaks v8.30.1) 설정. 기본 규칙에, 의도적으로 가짜 자격 문자열을 담는 경로만 뺀다.
+# 검사기 시험 데이터(가짜 키·JWT), 표준 문서 원문(RFC 예시), 위키 생성물이다. 새 경로를 더할 때는 그 파일이
+# 실제 자격을 담지 않는 이유를 커밋 본문에 적는다.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "검사기 시험 데이터와 표준 문서 예시"
+paths = [
+  '''(^|/)\.git/''',
+  '''(^|/)full_stack_lab/tests/''',
+  '''(^|/)full_stack_lab/gateway/app/classify\.py$''',
+  '''(^|/)research/llm-wiki/sources/''',
+  '''(^|/)research/llm-wiki/web/content\.js$''',
+  '''(^|/)research/llm-wiki/analysis/''',
+  '''(^|/)research/llm-wiki/sheet/tabs/''',
+  '''(^|/)full_stack_lab/siem/compose\.yaml$''',
+  '''(^|/)full_stack_lab/\.env\.example$''',
+]
