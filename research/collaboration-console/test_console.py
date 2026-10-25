@@ -191,7 +191,9 @@ class SheetSyncTests(unittest.TestCase):
             self.assertEqual(data["items"][0]["stage_scores"], sheet_pull.scores_for(self.rows[0]))
             with urlopen(base + "/api/backlog") as response:
                 backlog = json.load(response)
-            self.assertEqual(backlog[0]["ID"], "WIKI-01")
+            # The backlog tab is refreshed from the live sheet, so its first row is not a fixed ID.
+            with (sheet_pull.WIKI / "sheet/tabs/03-backlog.csv").open(encoding="utf-8-sig", newline="") as source:
+                self.assertEqual(backlog[0]["ID"], next(csv.DictReader(source))["ID"])
             self.configure(wbs_csv=(self.root / "missing.csv").as_uri(), backlog_csv="")
             with urlopen(base + "/api/wbs") as response:
                 data = json.load(response)
