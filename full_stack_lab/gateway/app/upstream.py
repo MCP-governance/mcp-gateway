@@ -27,7 +27,7 @@ from mcp.client.streamable_http import streamable_http_client
 from mcp_types.version import HANDSHAKE_PROTOCOL_VERSIONS, MODERN_PROTOCOL_VERSIONS
 from pydantic import ValidationError
 
-from . import db, output_contract, registry, upstream_sessions
+from . import db, output_contract, registry, upstream_sessions, user_credentials
 from .destination import pin_transport
 
 CONNECT_TIMEOUT = float(os.getenv("UPSTREAM_TIMEOUT_SECONDS", "90"))
@@ -37,45 +37,105 @@ class CredentialUnavailable(ValueError):
     pass
 
 
-def credential_headers(endpoint: str, principal: str | None = None) -> dict:
-    """Operator-provisioned SaaS credentials, bound to an exact resource and principals.
+# Credentials employees connected themselves (D-235), by (principal, endpoint). A copy of the database row for the
+# synchronous header choice: refresh_connected() fills it before each dispatch and every pool maintenance round, and
+# close_pool() drops what it closes, so a disconnect reaches a warm session within one sweep.
+_connected: dict[tuple[str, str], tuple[str, float]] = {}
 
-    None is reserved for control-plane metadata discovery. Dispatch always supplies
-    the transport-authenticated principal. No request header or SSO token enters here.
-    """
-    location = os.getenv('MCP_UPSTREAM_CREDENTIALS_FILE', '')
-    if not location:
-        return {}
+
+async def refresh_connected(endpoint: str, principal: str | None) -> None:
+    if not principal or not user_credentials.service_for({"endpoint": endpoint}):
+        return
     try:
+        found = await user_credentials.lookup(principal, endpoint)
+    except Exception:
+        # An unreadable store is "not connected", never a reason to reuse a copy that may have been removed.
+        found = None
+    if found:
+        _connected[(principal, endpoint)] = (found["secret"], found["expires_at"])
+    else:
+        _connected.pop((principal, endpoint), None)
+
+
+def _private_file(path: Path) -> bool:
+    return not path.stat().st_mode & 0o077
+
+
+def _bearer(endpoint: str, token: object, expiry: object) -> dict:
+    url = urlsplit(endpoint)
+    if url.scheme != 'https' or url.username or url.password or url.fragment:
+        raise ValueError('credential transport')
+    if type(expiry) not in (int, float) or not math.isfinite(expiry) or expiry < 0 or (expiry and expiry <= time.time()):
+        raise ValueError('credential expiration')
+    if not isinstance(token, str) or not token or any(c in token for c in '\r\n'):
+        raise ValueError('credential format')
+    return {'Authorization': 'Bearer ' + token}
+
+
+def credential_choice(endpoint: str, principal: str | None = None) -> tuple[dict, str]:
+    """The headers for one call and where they come from: "employee", "operator" or "none".
+
+    1. the credential this employee connected for exactly this endpoint,
+    2. the operator's file row bound to this principal (an exact name beats "*"; several rows per endpoint are fine),
+    3. nothing - the caller decides whether a service that needs an employee credential may be called without one.
+    None is reserved for control-plane metadata discovery. Dispatch always supplies the transport-authenticated
+    principal. No request header or SSO token enters here, and a connected value is only ever sent to its own endpoint.
+    """
+    try:
+        mine = _connected.get((principal, endpoint)) if principal else None
+        if mine:
+            return _bearer(endpoint, mine[0], mine[1]), 'employee'
+        location = os.getenv('MCP_UPSTREAM_CREDENTIALS_FILE', '')
+        if not location:
+            return {}, 'none'
         path = Path(location)
-        if path.stat().st_mode & 0o077:
+        if not _private_file(path):
             raise ValueError('credential file permissions')
-        rows = json.loads(path.read_text())['credentials']
-        matches = [r for r in rows if r['endpoint'] == endpoint]
-        if not matches:
-            return {}
-        if len(matches) != 1:
-            raise ValueError('ambiguous resource binding')
-        row = matches[0]
-        principals = row['allowed_principals']
-        if not isinstance(principals, list) or not principals or any(not isinstance(p, str) or not p for p in principals):
-            raise ValueError('principal binding format')
-        url = urlsplit(endpoint)
-        if url.scheme != 'https' or url.username or url.password or url.fragment:
-            raise ValueError('credential transport')
+        rows = [r for r in json.loads(path.read_text())['credentials'] if r['endpoint'] == endpoint]
+        if not rows:
+            return {}, 'none'
+        for r in rows:
+            names = r['allowed_principals']
+            if not isinstance(names, list) or not names or any(not isinstance(p, str) or not p for p in names):
+                raise ValueError('principal binding format')
         # "*": the operator shares this credential with every caller the server's approval admits (D-234).
-        if principal is not None and "*" not in principals and principal not in principals:
-            raise ValueError('principal binding')
-        expiry = row['expires_at']
-        if type(expiry) not in (int, float) or not math.isfinite(expiry) or expiry < 0 or (expiry and expiry <= time.time()):
-            raise ValueError('credential expiration')
-        token = row['access_token']
-        if not isinstance(token, str) or not token or any(c in token for c in '\n'):
-            raise ValueError('credential format')
-        return {'Authorization': 'Bearer ' + token}
+        if principal is None:
+            row = next((r for r in rows if '*' in r['allowed_principals']), rows[0])
+        else:
+            exact = [r for r in rows if principal in r['allowed_principals']]
+            shared = [r for r in rows if '*' in r['allowed_principals']]
+            matches = exact or shared
+            if len(matches) > 1:
+                raise ValueError('ambiguous resource binding')
+            if not matches:
+                raise ValueError('principal binding')
+            row = matches[0]
+        return _bearer(endpoint, row['access_token'], row['expires_at']), 'operator'
     except (OSError, ValueError, TypeError, KeyError) as exc:
         # Do not include the file content, path, vendor error or token in audit/logs.
         raise CredentialUnavailable('Upstream credential is unavailable, expired, or outside its binding') from exc
+
+
+def credential_headers(endpoint: str, principal: str | None = None) -> dict:
+    return credential_choice(endpoint, principal)[0]
+
+
+def credential_source(endpoint: str, principal: str) -> str:
+    try:
+        return credential_choice(endpoint, principal)[1]
+    except CredentialUnavailable:
+        return 'none'
+
+
+async def missing_connection(spec: dict, principal: str) -> bool:
+    """True when this server needs the employee's own account and the employee has no usable connection."""
+    if not user_credentials.service_for(spec):
+        return False
+    await refresh_connected(spec["endpoint"], principal)
+    try:
+        return not credential_headers(spec["endpoint"], principal)
+    except CredentialUnavailable:
+        return True
 
 
 class _Lease:
@@ -132,6 +192,8 @@ async def close_pool(endpoint: str | None = None, principal: str | None = None) 
     it was built with, so this is also how a removed credential leaves memory.
     """
     sessions = await _sessions.close(endpoint, principal)
+    for held in [k for k in _connected if (endpoint is None or k[1] == endpoint) and (principal is None or k[0] == principal)]:
+        del _connected[held]
     doomed = [key for key in _pool if (endpoint is None or key[0] == endpoint) and (principal is None or key[1] == principal)]
     loop = asyncio.get_running_loop()
     for key in doomed:
@@ -221,6 +283,7 @@ async def maintain_pool() -> None:
             await _sweep()
             for key in list(_sessions.entries):
                 try:
+                    await refresh_connected(key.endpoint, key.principal)
                     changed = credential_hash(credential_headers(key.endpoint, key.principal)) != key.credential
                     valid = await _dispatch_allowed(key.principal, key.server, key.endpoint)
                     if changed or not valid:
@@ -337,6 +400,7 @@ async def session(endpoint: str, timeout: float = CONNECT_TIMEOUT, principal: st
         await _sweep()
     generation = _sessions.generation
     try:
+        await refresh_connected(endpoint, principal)
         headers = credential_headers(endpoint, principal)
         internal = await _internal_endpoint(endpoint)
     except Exception:

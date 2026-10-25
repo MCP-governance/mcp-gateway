@@ -439,3 +439,17 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS observed_output_schema_hash text
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approved_output_schema_hash text;
 
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS requested_tools jsonb NOT NULL DEFAULT '[]';
+
+-- D-235: credentials an employee connects for a service that must see that employee (GitHub). Ciphertext only
+-- (AES-GCM bound to principal and endpoint); the key is the device secret USER_CREDENTIAL_KEY, not stored here.
+CREATE TABLE IF NOT EXISTS user_upstream_credentials (
+  principal    text NOT NULL,
+  endpoint     text NOT NULL,
+  kind         text NOT NULL CHECK (kind IN ('token', 'device')),
+  account      text NOT NULL,
+  ciphertext   bytea NOT NULL,
+  expires_at   timestamptz,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  last_used_at timestamptz,
+  PRIMARY KEY (principal, endpoint)
+);

@@ -2104,6 +2104,54 @@
         "PAC-09"
       ]
     },
+    "MCP-CREDENTIAL-001": {
+      "name": "직원 본인 계정 연결 확인",
+      "purpose": "직원별 자격이 필요한 서비스는 그 직원이 연결한 계정이 있을 때만 호출하고, 없으면 상위 서비스를 부르지 않은 채 연결 방법을 알린다.",
+      "enforced_by": "gateway",
+      "risk_ids": [
+        "RSK-01"
+      ],
+      "requirement_ids": [
+        "REQ-03"
+      ],
+      "control_ids": [
+        "CTL-03"
+      ],
+      "principle_ids": [
+        "PRN-02"
+      ],
+      "owner": "거버넌스팀",
+      "author": "보안기술팀",
+      "reviewer": "보안 담당자",
+      "approver": "승인권자",
+      "scope": "직원별 자격이 필요한 서비스의 모든 도구 호출",
+      "environments": [
+        "dev",
+        "stage",
+        "prod"
+      ],
+      "inputs": [
+        "user_upstream_credentials",
+        "MCP_UPSTREAM_CREDENTIALS_FILE"
+      ],
+      "condition": "직원별 자격이 필요한 서버를 호출하는 직원에게 연결된 유효한 계정도, 그 직원에게 묶인 운영자 자격도 없다.",
+      "outcome": "차단",
+      "enforcement": "실행 전 거부",
+      "priority": 2015,
+      "automation": "자동화",
+      "version": "1.0.0",
+      "status": "운영",
+      "approval_status": "승인",
+      "effective_from": "2026-10-25T00:00:00Z",
+      "obligations": [
+        "evidence.standard"
+      ],
+      "test_ids": [
+        "user_credential_check"
+      ],
+      "pac_candidate_id": "PAC-CAND-01",
+      "pac_ids": []
+    },
     "PAC-01": {
       "name": "승인 상태·유효기간",
       "purpose": "승인된 서버만 승인 기간 안에서 실행한다.",

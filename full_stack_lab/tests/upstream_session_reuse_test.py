@@ -272,7 +272,7 @@ class WiringTests(unittest.IsolatedAsyncioTestCase):
             "MODERN_PROTOCOL_VERSIONS": {"2026-07-28"}, "Client": object, "MAX_TOOL_PAGES": 50,
             "hashlib": hashlib, "json": json, "upstream_sessions": sessions, "_sessions": sessions.Pool(),
             "_dispatch_allowed": AsyncMock(return_value=True), "asyncio": asyncio,
-            "_sweep_lock": asyncio.Lock(),
+            "_sweep_lock": asyncio.Lock(), "_connected": {}, "refresh_connected": AsyncMock(),
             "_internal_endpoint": AsyncMock(return_value=False),
         })
 
@@ -577,7 +577,8 @@ class DispatchTests(unittest.IsolatedAsyncioTestCase):
                 review_matches=review_matches),
             "upstream": NS(session=session, list_all_tools=self.listed, release_pool=self.release,
                            tool_view=lambda _: {"description": "description", "input_schema": {}},
-                           content_items=lambda _: [], session_terminated=lambda exc: str(exc) == "expired"),
+                           content_items=lambda _: [], session_terminated=lambda exc: str(exc) == "expired",
+                           credential_source=lambda *args: "none"),
             "db": NS(fetch_all=fetch_all, fetch_one=fetch_one), "canonical_hash": lambda value: value,
             "disposal": NS(blocked=lambda **kwargs: False),
             "Draft202012Validator": lambda _: NS(is_valid=lambda args: True),

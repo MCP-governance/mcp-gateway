@@ -30,7 +30,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, review, upstream
+from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, registry, review, upstream, user_credentials
 from . import intake_proposal, local_jobs, residency, risk_tier, sbom_impact, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
@@ -851,6 +851,7 @@ async def set_account_status(user_id: str, request: AccountStatus,
     if not row:
         raise HTTPException(404, "관리대장에 없는 계정입니다.")
     if request.status != "active":
+        await user_credentials.remove(row["token"], None, "계정 " + ("중지" if request.status == "disabled" else "잠금"), user["principal"])
         await upstream.release_pool(None, row["token"], "principal")
         await idp.revoke_principal_tokens(row["user_id"])
         await db.execute("DELETE FROM console_sessions WHERE user_id=%s", (row["user_id"],))
@@ -884,6 +885,7 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
            WHERE user_id=%s AND status <> 'deleted' RETURNING email, token""",
         (user["principal"], user_id))
     if row:
+        await user_credentials.remove(row["token"], None, "계정 삭제", user["principal"])
         await upstream.release_pool(None, row["token"], "principal")
         await idp.revoke_principal_tokens(user_id)
         await db.execute("DELETE FROM console_sessions WHERE user_id=%s", (user_id,))
@@ -1039,10 +1041,10 @@ async def gateway_proxy(path: str, authorization: str | None, method: str = "GET
 PAGES_BY_ROLE = {
     # 직원·협력사 직원에게 필요한 것은 "내 호출이 어떻게 판정됐는가"와 "쓰고 싶은
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
-    "partner": ("activity", "consent", "intake"),
-    "employee": ("activity", "consent", "intake"),
+    "partner": ("activity", "consent", "intake", "connections"),
+    "employee": ("activity", "consent", "intake", "connections"),
     "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake", "sbom-impact",
-              "termination", "policy"),
+              "termination", "policy", "connections"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -2529,6 +2531,90 @@ async def decide_consent(consent_id: int, request: ConsentDecision, authorizatio
     if not row:
         raise HTTPException(409, "이미 처리됐거나 본인의 동의 요청이 아닙니다.")
     return row
+
+
+class ConnectToken(StrictModel):
+    token: str = Field(min_length=8, max_length=2000)
+
+
+class DeviceFlow(StrictModel):
+    flow_id: str = Field(min_length=8, max_length=64)
+
+
+def own_service(server_id: str, user: dict) -> tuple[dict, dict]:
+    """A server this employee may use that needs the employee's own account: (registration, service)."""
+    spec = registry.server(server_id)
+    service = user_credentials.service_for(spec)
+    if not service or not registry.permits(registry.allowed_principals(server_id), user["principal"]):
+        raise HTTPException(404, "직원별 연결이 필요한 서버가 아닙니다.")
+    return spec, service
+
+
+async def release_connection(endpoint: str, principal: str) -> None:
+    await upstream.release_pool(endpoint, principal, "credential")
+
+
+@app.get("/api/my-connections")
+async def my_connections(user: dict = Depends(caller)):
+    held = await user_credentials.listing(user["principal"])
+    rows = []
+    for server_id, spec in sorted(registry.servers().items()):
+        service = user_credentials.service_for(spec)
+        if not service or not registry.permits(registry.allowed_principals(server_id), user["principal"]):
+            continue
+        mine = held.get(spec["endpoint"])
+        rows.append({
+            "server_id": server_id, "name": spec.get("display_name") or server_id, "service": service["label"],
+            "token_url": service["token_url"], "device": bool(user_credentials.device_client_id()),
+            "connected": bool(mine), "account": mine and mine["account"], "kind": mine and mine["kind"],
+            "connected_at": mine and mine["created_at"], "expires_at": mine and mine["expires_at"],
+            "last_used_at": mine and mine["last_used_at"]})
+    return {"connections": rows, "available": user_credentials.available()}
+
+
+@app.post("/api/my-connections/{server_id}/token")
+async def connect_token(server_id: str, request: ConnectToken, user: dict = Depends(caller)):
+    spec, service = own_service(server_id, user)
+    token = request.token.strip()
+    try:
+        account, expires = await user_credentials.verify(service, token)
+        row = await user_credentials.save(user["principal"], spec["endpoint"], token, "token", account, expires)
+    except user_credentials.Rejected as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except user_credentials.Unavailable as exc:
+        raise HTTPException(503, "직원 연결을 보관할 수 없습니다. 관리자에게 알려 주세요.") from exc
+    await release_connection(spec["endpoint"], user["principal"])
+    return {"account": row["account"], "expires_at": row["expires_at"], "connected_at": row["created_at"]}
+
+
+@app.post("/api/my-connections/{server_id}/device/start")
+async def connect_device_start(server_id: str, user: dict = Depends(caller)):
+    spec, service = own_service(server_id, user)
+    if not user_credentials.available():
+        raise HTTPException(503, "직원 연결을 보관할 수 없습니다. 관리자에게 알려 주세요.")
+    try:
+        return await user_credentials.device_start(user["principal"], spec["endpoint"], service)
+    except user_credentials.Rejected as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/my-connections/{server_id}/device/poll")
+async def connect_device_poll(server_id: str, request: DeviceFlow, user: dict = Depends(caller)):
+    spec, service = own_service(server_id, user)
+    result = await user_credentials.device_poll(user["principal"], request.flow_id, service)
+    if result["state"] == "connected":
+        await release_connection(spec["endpoint"], user["principal"])
+    return result
+
+
+@app.delete("/api/my-connections/{server_id}")
+async def disconnect(server_id: str, user: dict = Depends(caller)):
+    spec = registry.server(server_id)
+    if not user_credentials.service_for(spec):
+        raise HTTPException(404, "직원별 연결이 필요한 서버가 아닙니다.")
+    await user_credentials.remove(user["principal"], spec["endpoint"], "직원이 연결 해제")
+    await release_connection(spec["endpoint"], user["principal"])
+    return {"connected": False}
 
 
 @app.get("/approvals")

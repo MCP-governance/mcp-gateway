@@ -104,7 +104,7 @@ const DISCOVERED = {
 };
 const VERIFICATION = {
   "gateway-probe": "게이트웨이 차단 확인", "endpoint-report": "엔드포인트 보고", "gitea-token": "조직 직접 확인",
-  "provider-attestation": "제공자 증명", stateless: "만료 시각",
+  "provider-attestation": "제공자 증명", stateless: "만료 시각", "credential-store": "조직 보관소 확인",
 };
 const PROVIDER_SIDE = { rejected: "거부 확인", accepted: "수락함", unverified: "미확인" };
 const TARGET_STATUS = { OUTSTANDING: ["alert", "미회수"], REVOKED: ["allow", "회수됨"], EXPIRED: ["allow", "만료"], UNVERIFIABLE: ["block", "확인 불가"] };
@@ -238,6 +238,7 @@ const REVIEW_KIND = {
   "litellm-sync": "외부 게이트웨이 동기화",
   "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
   "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개", "account-restore": "계정 복구",
+  "upstream-credential-connect": "계정 연결", "upstream-credential-disconnect": "계정 연결 해제",
   "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
   "call-reject": "중대 영향 거부", "call-revoke": "중대 영향 번복",
   "incident-created": "사고 기록 생성", "incident-supplement": "사고 범위 보완", "incident-report": "사고 보고 제출",
@@ -310,6 +311,7 @@ const ICON = {
   termination: '<path d="m19 5 3-3M2 22l3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>',
   git: '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
   plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
+  connections: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   policy: '<path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
 };
 const icon = (name) => raw(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ""}</svg>`);
@@ -420,6 +422,7 @@ const PAGES = [
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
   { id: "sbom-impact", label: "공급망 영향", group: "도입 및 종료" },
   { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
+  { id: "connections", label: "내 연결", group: "내 계정" },
 ];
 let viewer = null;
 let routeSeq = 0;
@@ -1509,6 +1512,27 @@ ROUTES.consent = async (_, tab) => {
   });
 };
 
+const CONNECTION_KIND = { token: "개인 액세스 토큰", device: "인증 코드" };
+ROUTES.connections = async () => {
+  const { connections, available } = await api("/api/my-connections");
+  const card = (c) => panel(c.name, c.connected ? html`<table class="data"><tbody>
+      <tr><th>계정</th><td><b>${c.account}</b></td></tr>
+      <tr><th>방식</th><td>${CONNECTION_KIND[c.kind] || NONE}</td></tr>
+      <tr><th>연결 시각</th><td>${when(c.connected_at)}</td></tr>
+      <tr><th>만료</th><td>${c.expires_at ? when(c.expires_at) : NONE}</td></tr>
+      <tr><th>마지막 사용</th><td>${c.last_used_at ? when(c.last_used_at) : NONE}</td></tr></tbody></table>
+    <div class="row-actions"><button class="btn danger" data-act="disconnect" data-id="${c.server_id}">연결 해제</button></div>`
+    : available ? html`<form class="stack form" data-form="connect-token" data-id="${c.server_id}">
+        <label>개인 액세스 토큰<input name="token" type="password" autocomplete="off" required minlength="8" maxlength="2000" /></label>
+        <div class="row-actions"><button class="btn primary" type="submit">연결</button>
+          ${c.device ? html`<button class="btn" type="button" data-act="connect-device" data-id="${c.server_id}">인증 코드로 연결</button>` : ""}
+          <a class="btn" href="${c.token_url}" target="_blank" rel="noopener noreferrer">토큰 만들기 ↗</a></div></form>`
+      : chip("block", "연결 불가"),
+    { sub: c.service, end: c.connected ? chip("allow", "연결됨") : chip("outline", "연결 안 됨") });
+  return page({ head: head("내 연결"), active: "list", tabs: [{ key: "list", label: "연결",
+    body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
+};
+
 ROUTES.intake = async (_, tab) => {
   const [{ requests }, catalog] = await Promise.all([api("/api/mcp-requests"),
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
@@ -2227,6 +2251,34 @@ const ACTIONS = {
     toast(`중지 ${result.counts.succeeded}건 · 건너뜀 ${result.counts.skipped}건 · 실패 ${result.counts.failed}건`, result.counts.failed > 0);
     reload();
   },
+  async disconnect(el) {
+    await api(`/api/my-connections/${encodeURIComponent(el.dataset.id)}`, { method: "DELETE" });
+    toast("연결을 해제했습니다.");
+    reload();
+  },
+  async "connect-device"(el) {
+    const base = `/api/my-connections/${encodeURIComponent(el.dataset.id)}/device`;
+    const flow = await api(`${base}/start`, { method: "POST" });
+    const dialog = $("#dialog");
+    const outcome = { connected: ["연결했습니다.", false], expired: ["인증 코드가 만료되었습니다.", true],
+      denied: ["연결이 거부되었습니다.", true], failed: ["연결하지 못했습니다.", true] };
+    let timer = null;
+    const poll = async () => {
+      let result;
+      try { result = await api(`${base}/poll`, { method: "POST", body: { flow_id: flow.flow_id } }); } catch { result = { state: "failed" }; }
+      if (result.state === "pending") { timer = setTimeout(poll, (result.interval || flow.interval) * 1000); return; }
+      timer = null;
+      toast(...(outcome[result.state] || outcome.failed));
+      if (dialog.open) dialog.close("cancel");
+      reload();
+    };
+    timer = setTimeout(poll, flow.interval * 1000);
+    const link = String(flow.verification_uri).startsWith("https://github.com/") ? flow.verification_uri : "https://github.com/login/device";
+    await ask({ title: "인증 코드로 연결", confirm: "닫기",
+      fields: html`<label>코드<input value="${flow.user_code}" readonly /></label>
+        <a href="${link}" target="_blank" rel="noopener noreferrer">${link.replace("https://", "")} ↗</a>` });
+    clearTimeout(timer);
+  },
   async consent(el) {
     await api(`/api/consents/${el.dataset.id}`, { method: "POST", body: { decision: el.dataset.decision } });
     toast({ grant: "동의했습니다.", deny: "거부했습니다.", revoke: "철회했습니다." }[el.dataset.decision]);
@@ -2944,6 +2996,14 @@ const ACTIONS = {
 let lastDocument = null;
 
 const FORMS = {
+  async "connect-token"(form) {
+    const data = new FormData(form);
+    const result = await api(`/api/my-connections/${encodeURIComponent(form.dataset.id)}/token`, {
+      method: "POST", body: { token: String(data.get("token") || "").trim() } });
+    form.reset();
+    toast(`${result.account} 계정을 연결했습니다.`);
+    reload();
+  },
   "sbom-impact"(form) {
     const q = new URLSearchParams(new FormData(form));
     location.hash = `#/sbom-impact?${q}`;
