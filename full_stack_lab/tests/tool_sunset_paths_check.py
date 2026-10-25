@@ -103,7 +103,7 @@ class ToolSunsetBranchCheck(unittest.TestCase):
         self.assertTrue(state["active"])
         self.assertEqual(state["status"], "자료 없음")
         self.assertEqual(state["reason"], "관측 창 일부가 폐기된 원장 구간과 겹칩니다.")
-        self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "failed"))
+        self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "recorded"))
 
     def test_seal_count_mismatch_returns_no_evidence(self):
         ports.db.transaction = lambda: Transaction(Connection(entries=12, retained=11))
@@ -111,7 +111,7 @@ class ToolSunsetBranchCheck(unittest.TestCase):
         self.assertTrue(state["active"])
         self.assertEqual(state["status"], "자료 없음")
         self.assertEqual(state["reason"], "원장 봉인 자료를 확인할 수 없습니다.")
-        self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "failed"))
+        self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "recorded"))
 
 
 class ToolSunsetListIsolationCheck(unittest.TestCase):

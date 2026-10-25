@@ -1171,7 +1171,7 @@ function showServer(id) {
       ${tools.map((t) => { const [lastUse, deadline, sunsetStatus] = toolSunsetRow(id, t.name); return html`<tr><td><code>${t.name}</code></td><td>${chip({ r: "allow", w: "alert", x: "block" }[t.action] || "", ACTION[t.action] || t.action)}</td>
         <td>${!t.enabled ? (registration?.tools?.[t.name] ? chip("block", "범위 미심사") : chip("outline", "미승인")) : t.contract_ok ? chip("allow", "일치") : chip("alert", "불일치")}</td>
         <td>${lastUse}</td><td>${deadline}</td><td>${sunsetStatus}</td></tr>`; })}</tbody></table>` },
-    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class, registration.intake_id ? s.id : null) }] : []),
+    ...(registration ? [{ key: "scope", label: "범위", body: scopeTable(registration.tools, registration.tool_reviews, registration.data_class, registration.intake_id ? s.id : null, registration.address_tools || []) }] : []),
     { key: "exit", label: "종료 조건", body: html`<div class="pill-list">${Object.entries(EXIT_TERMS).map(([k, label]) => bool(terms[k], label))}</div>
       ${creds.length ? kv([["보유 자격", html`${creds.map((c) => html`<code>${c.id}</code> `)}`]]) : ""}
       ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.purpose, html`${u.organization} · ${(REL_STATUS[u.status] || [, u.status])[1]}
@@ -1726,6 +1726,8 @@ function intakeApprovalFields(out) {
     <span><b>${t.name}</b>${pending ? html`<span>${ACTION[scope.actions?.[t.name] || p.tools[t.name]]}</span>`
       : html`<select name="action_${t.name}">${Object.entries(ACTION).slice(0, "rwx".indexOf(p.tools[t.name]) + 1).map(([k, v]) =>
         html`<option value="${k}" ${k === p.tools[t.name] ? raw("selected") : ""}>${v}</option>`)}</select>`}<span class="sub">${t.description || "—"}</span>
+      ${(p.address_tools || []).includes(t.name) ? (pending ? kv([["허용 주소", destinationText(scope.destinations?.[t.name] || p.tool_reviews[t.name].destinations)]])
+        : field.text(`destinations_${t.name}`, "허용 주소", 'maxlength="300"', p.tool_reviews[t.name].destinations.join(", "))) : ""}
       ${(t.warnings || []).length ? chip("alert", "도구 설명 경고") : ""}
       <details><summary>계약·인자 제한</summary><pre>${JSON.stringify({ input: t.input_schema, output: t.output_schema,
         constraints: p.parameter_constraints[t.name], scope: p.tool_reviews[t.name] }, null, 2)}</pre></details></span></label>`)}</fieldset>
@@ -1796,6 +1798,8 @@ async function showIntakeApproval(id) {
   if (!selected.length) { toast("도구를 하나 이상 선택하세요.", true); return; }
   const actions = scope ? scope.actions || {} : Object.fromEntries(selected.map((name) => [name, fd.get(`action_${name}`)])
     .filter(([name, action]) => action && action !== out.proposal.tools[name]));
+  const destinations = scope ? scope.destinations || {} : Object.fromEntries(selected
+    .filter((name) => (out.proposal.address_tools || []).includes(name)).map((name) => [name, hostList(fd.get(`destinations_${name}`))]));
   const assurance = scope?.supplier_assurance || Object.fromEntries(Object.keys(ASSURANCE_LABELS)
     .map((key) => [key, String(fd.get(`assurance_${key}`) || "").trim()]).filter(([, value]) => value));
   const location = scope?.residency || Object.fromEntries(Object.keys(LOCATION_LABELS).map((key) => {
@@ -1804,7 +1808,7 @@ async function showIntakeApproval(id) {
   }));
   const result = await api(`/api/mcp-requests/${id}/approve-and-register`, { method: "POST", body: {
     proposal_sha256: out.proposal_sha256, tools: selected, valid_days: scope?.valid_days || Number(fd.get("valid_days")),
-    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions,
+    critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions, destinations,
     ...(scope ? { audience: scope.audience || "all", audience_users: scope.audience_users || [] } : audienceBody(fd)) } });
   toast(result.message); reload();
 }
@@ -1885,7 +1889,7 @@ function scopeTerms(item) {
     item.high_impact && `중대 영향 · ${(item.impact_domains || []).map((d) => IMPACT_DOMAIN[d] || "—").join(" · ")}`].filter(Boolean);
   return terms.length ? html`<div class="pill-list">${terms.map((t) => chip("plain", t))}</div>` : NONE;
 }
-function scopeTable(tools, reviews, dataClass, serverId = null) {
+function scopeTable(tools, reviews, dataClass, serverId = null, addressTools = []) {
   const names = Object.keys(tools || {});
   if (!names.length) return empty("범위 없음");
   return html`${dataClass ? kv([["데이터 등급", DATA_CLASS[dataClass] || dataClass]]) : ""}
@@ -1893,7 +1897,8 @@ function scopeTable(tools, reviews, dataClass, serverId = null) {
     ${names.map((name) => { const item = reviews?.[name]; return html`<tr><td><code>${name}</code></td>
       <td>${chip({ r: "allow", w: "alert", x: "block" }[tools[name]] || "", ACTION[tools[name]] || tools[name])}</td>
       ${item ? html`<td>${item.purpose}</td><td>${item.asset}</td><td>${destinationText(item.destinations)}</td><td>${scopeTerms(item)}
-        ${serverId ? html`<button class="btn sm" data-act="impact-scope" data-id="${serverId}" data-tool="${name}">중대 영향 심사</button>` : ""}</td>`
+        ${serverId ? html`<button class="btn sm" data-act="impact-scope" data-id="${serverId}" data-tool="${name}">중대 영향 심사</button>` : ""}
+        ${serverId && addressTools.includes(name) ? html`<button class="btn sm" data-act="destination-scope" data-id="${serverId}" data-tool="${name}">허용 주소</button>` : ""}</td>`
         : html`<td colspan="4">${chip("block", "범위 미심사")}</td>`}</tr>`; })}</tbody></table>`;
 }
 function toolSunsetRow(serverId, name) {
@@ -2857,6 +2862,18 @@ const ACTIONS = {
     await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: {
       reviews: { [el.dataset.tool]: { purpose, asset, destinations, inputs, mask, grade, accepts_from, consent,
         high_impact: domains.length > 0, impact_domains: domains } } } });
+    toast("기록했습니다."); closeDrawer(); reload();
+  },
+  async "destination-scope"(el) {
+    const item = registry?.registrations?.[el.dataset.id]?.tool_reviews?.[el.dataset.tool];
+    if (!item) return;
+    const fd = await ask({ title: `허용 주소 · ${el.dataset.tool}`,
+      fields: field.text("destinations", "허용 주소", 'maxlength="300"', (item.destinations || []).join(", ")), confirm: "기록" });
+    if (!fd) return;
+    const { purpose, asset, inputs, mask, grade, accepts_from, consent, high_impact, impact_domains } = item;
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: {
+      reviews: { [el.dataset.tool]: { purpose, asset, destinations: hostList(fd.get("destinations")), inputs, mask, grade, accepts_from, consent,
+        high_impact: Boolean(high_impact), impact_domains: impact_domains || [] } } } });
     toast("기록했습니다."); closeDrawer(); reload();
   },
   async "residency-review"(el) {

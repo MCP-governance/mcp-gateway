@@ -178,7 +178,7 @@ def harness_guidance(principal: dict | None, servers: list[str]) -> str:
 
     A harness defers MCP tools behind a search (Claude Code ToolSearch, Codex tool search) and shows the
     model only tool names, so a request that names no server ("react 저장소 구조 알려줘") is often answered
-    from memory or with a built-in tool (pj2 10-23: 4 of 12 such requests never reached an MCP tool).
+    from memory or with a built-in tool (4 of 12 such requests in one trial never reached an MCP tool).
     Only the administrator-reviewed display name and tool names go in: an upstream tool description is
     hash-pinned but still the supplier's text, and this text is loaded with the organisation's own trust."""
     lines = []
@@ -279,7 +279,7 @@ async def build(payload: dict, principal: dict, cls, tool: dict | None, contract
         elif ((key in {"to", "cc", "bcc", "recipient"} or
                (isinstance(key, int) and len(path) > 1 and path[-2] in {"recipients", "cc", "bcc"})) and isinstance(value, str)
               # A name alone is not a recipient: a knowledge graph's relation {"from": .., "to": "stdio"} was held
-              # to the mail domain list (10-23 PJ1). An address, or a call the classifier read as mail, still is.
+              # to the mail domain list. An address, or a call the classifier read as mail, still is.
               and ("@" in value or any(d.kind == "email" for d in cls.destinations))):
             kind = "recipient"
             targets["recipients"].append(value)

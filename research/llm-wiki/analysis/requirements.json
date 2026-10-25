@@ -7,7 +7,7 @@
     "deployment_inferred": false,
     "runtime_test_results_inferred": false,
     "code_observation": {
-      "commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd",
+      "commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0",
       "scope": "current_structural_source_only",
       "runtime_test_results_inferred": false
     }
@@ -32,7 +32,7 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -63,7 +63,7 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -94,7 +94,7 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -125,7 +125,7 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -156,7 +156,7 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -182,12 +182,12 @@
           "symbol": "refresh_catalog",
           "line_start": 219,
           "line_end": 382,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -213,12 +213,12 @@
           "symbol": "refresh_catalog",
           "line_start": 219,
           "line_end": 382,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -244,12 +244,12 @@
           "symbol": "refresh_catalog",
           "line_start": 219,
           "line_end": 382,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -275,12 +275,12 @@
           "symbol": "refresh_catalog",
           "line_start": 219,
           "line_end": 382,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -306,12 +306,12 @@
           "symbol": "refresh_catalog",
           "line_start": 219,
           "line_end": 382,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -342,7 +342,7 @@
           "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -373,7 +373,7 @@
           "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -404,7 +404,7 @@
           "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -435,7 +435,7 @@
           "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -466,7 +466,7 @@
           "normalized_sha256": "d627b1d15ed8905d73b3a0fe254d28977c929d62eb7c9ec2989a2b39f06aa23c",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -492,12 +492,12 @@
           "symbol": "scope",
           "line_start": 70,
           "line_end": 116,
-          "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "head_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "normalized_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
+          "sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "head_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "normalized_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -523,12 +523,12 @@
           "symbol": "scope",
           "line_start": 70,
           "line_end": 116,
-          "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "head_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "normalized_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
+          "sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "head_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "normalized_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -554,12 +554,12 @@
           "symbol": "scope",
           "line_start": 70,
           "line_end": 116,
-          "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "head_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "normalized_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
+          "sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "head_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "normalized_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -585,12 +585,12 @@
           "symbol": "scope",
           "line_start": 70,
           "line_end": 116,
-          "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "head_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "normalized_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
+          "sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "head_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "normalized_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -616,12 +616,12 @@
           "symbol": "scope",
           "line_start": 70,
           "line_end": 116,
-          "sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "head_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
-          "normalized_sha256": "989be607612fe56e8fa259feca0863f1798b0e298d1800fb79842fc22be25f55",
+          "sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "head_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
+          "normalized_sha256": "852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -645,14 +645,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 2248,
-          "line_end": 2633,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2255,
+          "line_end": 2640,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -676,14 +676,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 2248,
-          "line_end": 2633,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2255,
+          "line_end": 2640,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -707,14 +707,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 2248,
-          "line_end": 2633,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2255,
+          "line_end": 2640,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -738,14 +738,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 2248,
-          "line_end": 2633,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2255,
+          "line_end": 2640,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -769,14 +769,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "execute_call",
-          "line_start": 2248,
-          "line_end": 2633,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2255,
+          "line_end": 2640,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -800,14 +800,14 @@
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
           "symbol": "mask_payload",
-          "line_start": 195,
-          "line_end": 253,
-          "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "head_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "normalized_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
+          "line_start": 206,
+          "line_end": 271,
+          "sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "head_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "normalized_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -831,14 +831,14 @@
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
           "symbol": "mask_payload",
-          "line_start": 195,
-          "line_end": 253,
-          "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "head_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "normalized_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
+          "line_start": 206,
+          "line_end": 271,
+          "sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "head_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "normalized_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -862,14 +862,14 @@
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
           "symbol": "mask_payload",
-          "line_start": 195,
-          "line_end": 253,
-          "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "head_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "normalized_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
+          "line_start": 206,
+          "line_end": 271,
+          "sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "head_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "normalized_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -911,14 +911,14 @@
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
           "symbol": "mask_payload",
-          "line_start": 195,
-          "line_end": 253,
-          "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "head_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "normalized_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
+          "line_start": 206,
+          "line_end": 271,
+          "sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "head_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "normalized_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -942,14 +942,14 @@
         {
           "path": "full_stack_lab/gateway/app/privacy.py",
           "symbol": "mask_payload",
-          "line_start": 195,
-          "line_end": 253,
-          "sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "head_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
-          "normalized_sha256": "7a6515e267a1b9a8c2690f96c502acacd1a7a42885e3a4020dd61463ed8791e1",
+          "line_start": 206,
+          "line_end": 271,
+          "sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "head_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
+          "normalized_sha256": "592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -973,14 +973,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1004,14 +1004,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1035,14 +1035,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1066,14 +1066,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1097,14 +1097,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1135,7 +1135,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1166,7 +1166,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1197,7 +1197,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1228,7 +1228,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1259,7 +1259,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1283,14 +1283,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1675,
-          "line_end": 1877,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1682,
+          "line_end": 1884,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1314,14 +1314,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1675,
-          "line_end": 1877,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1682,
+          "line_end": 1884,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1345,14 +1345,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1675,
-          "line_end": 1877,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1682,
+          "line_end": 1884,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1376,14 +1376,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1675,
-          "line_end": 1877,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1682,
+          "line_end": 1884,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1407,14 +1407,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_call_upstream",
-          "line_start": 1675,
-          "line_end": 1877,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1682,
+          "line_end": 1884,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1440,12 +1440,12 @@
           "symbol": "_render",
           "line_start": 182,
           "line_end": 234,
-          "sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "head_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "normalized_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
+          "sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "head_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "normalized_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1490,12 +1490,12 @@
           "symbol": "_render",
           "line_start": 182,
           "line_end": 234,
-          "sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "head_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "normalized_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
+          "sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "head_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "normalized_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1537,12 +1537,12 @@
           "symbol": "_render",
           "line_start": 182,
           "line_end": 234,
-          "sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "head_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "normalized_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
+          "sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "head_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "normalized_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1586,14 +1586,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_guarded_result",
-          "line_start": 1980,
-          "line_end": 2008,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 1987,
+          "line_end": 2015,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1648,12 +1648,12 @@
           "symbol": "_render",
           "line_start": 182,
           "line_end": 234,
-          "sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "head_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
-          "normalized_sha256": "fd48ed534e52f86421ab7e022eb17a5709fbe36c4280a1b3893faee5535e5dae",
+          "sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "head_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
+          "normalized_sha256": "c847e28b4eb023ea6a007fb30abf6d6a464bb3806954230e22df2c2055d9db7b",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1684,7 +1684,7 @@
           "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1715,7 +1715,7 @@
           "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1746,7 +1746,7 @@
           "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1777,7 +1777,7 @@
           "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1808,7 +1808,7 @@
           "normalized_sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1832,14 +1832,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 2048,
-          "line_end": 2165,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2055,
+          "line_end": 2172,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1863,14 +1863,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 2048,
-          "line_end": 2165,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2055,
+          "line_end": 2172,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1894,14 +1894,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 2048,
-          "line_end": 2165,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2055,
+          "line_end": 2172,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1925,14 +1925,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 2048,
-          "line_end": 2165,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2055,
+          "line_end": 2172,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1956,14 +1956,14 @@
         {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "_record_decision",
-          "line_start": 2048,
-          "line_end": 2165,
-          "sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "head_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
-          "normalized_sha256": "58654fa21f28e34e1b64458ffa3c6c6d0d906357fbda6f0939874082382864f7",
+          "line_start": 2055,
+          "line_end": 2172,
+          "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "head_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
+          "normalized_sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -1994,7 +1994,7 @@
           "normalized_sha256": "0d97f2255cf295cf8d8ab09d725134e1ebf5f2b7cd103566f742d90970594a3a",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2025,7 +2025,7 @@
           "normalized_sha256": "0d97f2255cf295cf8d8ab09d725134e1ebf5f2b7cd103566f742d90970594a3a",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2056,7 +2056,7 @@
           "normalized_sha256": "0d97f2255cf295cf8d8ab09d725134e1ebf5f2b7cd103566f742d90970594a3a",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2087,7 +2087,7 @@
           "normalized_sha256": "0d97f2255cf295cf8d8ab09d725134e1ebf5f2b7cd103566f742d90970594a3a",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2118,7 +2118,7 @@
           "normalized_sha256": "0d97f2255cf295cf8d8ab09d725134e1ebf5f2b7cd103566f742d90970594a3a",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2149,7 +2149,7 @@
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2180,7 +2180,7 @@
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2211,7 +2211,7 @@
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2242,7 +2242,7 @@
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2273,7 +2273,7 @@
           "normalized_sha256": "e4d7f545e01ae2960bed2f003644d237f69252c52b52f01ecd5d20676f7075ad",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2304,7 +2304,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2335,7 +2335,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2366,7 +2366,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2397,7 +2397,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2428,7 +2428,7 @@
           "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2459,7 +2459,7 @@
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2490,7 +2490,7 @@
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2521,7 +2521,7 @@
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2552,7 +2552,7 @@
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],
@@ -2583,7 +2583,7 @@
           "normalized_sha256": "07a7a2d0791f466e8b46e10d1e7ae3250bef2216d9ace9023ba4f2ce3c768816",
           "source_state": "committed_source",
           "symbol_found": true,
-          "source_commit": "5b8b9955fd1a39ad90b3fba7bf18cddc469217cd"
+          "source_commit": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0"
         }
       ],
       "test_evidence": [],

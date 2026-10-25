@@ -340,9 +340,9 @@ if __name__ == "__main__":
     legacy = {**base, "enforcement_checks": legacy_checks, "detail": {"host": host([])["host"]}}
     assert device_state(legacy, now)["state"] == "endpoint_enforced"
     assert device_state({**legacy, "detail": host([])}, now)["state"] == "bypass_possible"  # a scanned device cannot downgrade
-    shared = device_state({**base, "detail": host([{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
+    shared = device_state({**base, "detail": host([{"name": "lab-admin", "uid": 1000, "privileged_groups": ["sudo", "docker"]}])}, now)
     assert shared["account_state"] == "endpoint_enforced" and shared["state"] == "bypass_possible", shared
-    assert shared["unmanaged_accounts"] == [{"name": "pj1", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
+    assert shared["unmanaged_accounts"] == [{"name": "lab-admin", "uid": 1000, "privileged_groups": ["sudo", "docker"], "scope": "out_of_scope"}], shared
     assert all("통제 범위 밖" in label for label in shared["bypass"]), shared
     assert clean["unmanaged_accounts"] == [] and clean["kernel_denials_state"] == "unknown", clean
     observed = {**base, "detail": {**host([]), "observation": {"os": {"state": "success", "reported_at": fresh}}}}

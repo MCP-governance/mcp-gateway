@@ -490,6 +490,8 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
                                                                     "allowed_principals", "supplier_assurance", "supplier_assurance_unconfirmed", "residency", "residency_review", "risk_assessment")}
+                                  | {"address_tools": sorted(name for name, constraint in (spec.get("parameter_constraints") or {}).items()
+                                                             if review.pinned_addresses(constraint))}
                                   | {"risk_review": risk_tier.legacy_review(spec, doc.get("risk_tier_grace_started_at"))}
                               for sid, spec in console.items() if sid not in registry.reviewed_servers()}}
 

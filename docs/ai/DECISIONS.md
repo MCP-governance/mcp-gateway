@@ -2563,3 +2563,52 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   2. 비밀: gitleaks v8.30.1로 전체 이력(원격 브랜치 포함 763 커밋)을 스캔해 70건 모두 시험용 가짜 값·RFC 예시·해시임을 확인했다(실제 자격 0건, 이력 재작성 불필요). CI 정적 검사가 작업 트리를 같은 판본으로 매번 스캔하고, 의도적 가짜 자격 경로만 `.gitleaks.toml`로 뺀다.
   3. `docs/ai/DECISIONS.md`·`research/llm-wiki`·날짜가 붙은 `docs/ai/*_2026-*.md`는 역사 기록이라 고치지 않는다. 제품 코드(`gateway/app`·`endpoint-agent`)의 주석·시험 값은 소유 세션이 처리하도록 파일:행 표로 넘긴다(보고서).
   4. 원격 브랜치: main에 완전히 병합되고 마지막 커밋이 10-24 이전인 브랜치는 삭제, 미병합은 `archive/<마지막 커밋 날짜>-<이름>` 태그로 보존한 뒤 삭제 후보로만 둔다. `main`·`feat/web-ui`·`10/25-*`·진행 중 세션 브랜치는 보호. 10-25에 81개 → 18개(삭제 63, 보존 태그 10).
+
+## D-243 도구 이용 상태 확인은 풀 연결 하나로 하고, 확인 실패는 원장에 남긴다 (2026-10-25, S4-01)
+
+- 배경: 하네스가 승인 서버 10개에 동시에 붙으면 tools/list 10건이 함께 `tool_sunset.check`를 불렀다. 각 확인이 트랜잭션 연결을 쥔 채 `_coverage`에서 `retention.setting()`으로 풀의 두 번째 연결을 요구해, 풀(최대 10·대기 10초)이 교착됐다. 10초 뒤 서버마다 이름순 첫 도구가 목록에서 빠졌고(도구가 하나인 서버는 서버째), 같은 순간 정책 받기·장치 등록·콘솔 화면 API가 `PoolTimeout`으로 500이었다(10-25 실사용 시험: 54분에 11번). 실패 기록 `record_event("tool-sunset-check", "failed")`는 `approval_events.outcome` CHECK에 없는 값이라 매번 INSERT가 실패하고 `except: pass`로 사라졌다(원장 0행).
+- 결정: 보존 기간 설정은 트랜잭션 전에 읽어 `_coverage`에 넘긴다(확인 하나 = 연결 하나). 확인 결과 기록은 `outcome="recorded"`로 남기고, 그 기록마저 실패하면 삼키지 않고 오류 로그를 남긴다. 확인을 못 하면 목록에서 빼고 호출은 `P-CONTROL-FAIL-CLOSED`로 막는 규칙(D-177)은 그대로다.
+- 시험: `tests/tool_sunset_pool_pg_check.py`(실제 PostgreSQL, 풀 대기 3초) — 동시 10건 모두 사용 가능, 보존 기간 부족과 내부 오류가 원장에 1건씩. 수정 전 3건 모두 실패(3.05초 뒤 2건 사용 불가, 기록 0). `tool_sunset_check.py`·`tool_sunset_paths_check.py` 기대값을 `recorded`로.
+
+## D-244 로컬 작업은 자기 서버의 통제 세대에만 묶이고, 시작 전 거절은 미실행이다 (2026-10-25, S4-07)
+
+- 배경: D-238 뒤에도 `local_jobs.control_generation()`은 `registry.catalog_version()`(catalog.toml과 servers.json 전체 바이트, 등록 이력 포함)을 담았다. 다른 서버의 등록·철회와 하루 기한 서버의 자동 승인 연장(`core.py`의 `registry.save_runtime`)이 servers.json을 다시 쓰면 그 PC에서 실행 중이던 모든 로컬 작업이 `/start`·`/control`에서 409(「정책·서명 세대·철회 상태가 바뀌었거나…」)로 멈췄다(10-25 실사용 시험 원장 1234·1262·1266). 시작 전에 거절된 쓰기 분류 도구의 재시도는 `P-RATE-003`으로 막혔다. 원장은 작업을 PC가 받기만 해도(`claimed_at`) 실행 시도로 셌다.
+- 결정:
+  1. `control_generation(server_id)` = sha256({catalog.toml 해시, 그 서버의 등록 내용에서 `valid_until`·`approval_days`를 뺀 것, PaC capabilities}). 다른 서버의 변경과 기한 연장은 작업을 멈추지 않고, 그 서버의 도구·분류·제약·사용 대상 변경과 검토 카탈로그·capabilities 변경은 지금처럼 멈춘다. 장치 통제(`control_hash`, D-238) 결속은 그대로다.
+  2. 로컬 `tools/call`의 실행 시도 여부는 `started_at`으로 판단한다. PC 실행기는 `/start`가 성공한 뒤에만 컨테이너를 띄우므로(`endpoint-agent/local-runner.py`) 시작 기록이 없는 작업은 실행되지 않은 것이 확실하다. 그런 거절은 `confirmed_not_executed`로 예약을 풀어 재시도가 중복 실행으로 막히지 않는다. 시작 뒤 `/control`에서 멈춘 쓰기는 실제로 일부 실행됐을 수 있어 지금처럼 미확정으로 남긴다.
+- 시험: `tests/local_job_control_check.py` 3건(다른 서버 등록·자동 연장에도 세대 유지, 이 서버의 범위·검토 카탈로그 변경은 세대 변경, 시작 전 거절은 미시도). 수정 전 3건 실패. `local_jobs_pg_check`(13)·`dev73_rework_pg_check`(29) 실제 PostgreSQL 통과, `local_runner_usability_check`·`dev73_rework_check` 대역을 새 서명·실제 행 모양(`started_at`)에 맞췄다.
+- 한계: 시작 뒤 통제 변경으로 멈춘 쓰기의 재시도는 여전히 사람 확인이 필요하다. 실기기 재시험은 배포 뒤다.
+
+## D-245 원클릭 승인은 주소 인자 도구에 허용 호스트를 제안하고, 승인자와 기존 등록이 고칠 수 있다 (2026-10-25, S4-02)
+
+- 배경: 원클릭 제안(`intake_proposal.tool_reviews`)은 모든 도구의 외부 목적지를 비워 두고, 목적지가 없으면 주소 인자는 `"(?!)"`(어떤 값도 맞지 않음)로 묶인다(빈 목록이 모든 HTTPS를 허용하던 문제를 막은 fail-closed). 승인 요청에는 목적지 입력이 없어, 원클릭으로 등록한 문서 읽기 도구(AWS Knowledge `aws___read_documentation`, Microsoft Learn `microsoft_docs_fetch`)가 모든 호출에서 PAC-01이었다(10-25 실사용 시험 원장 1177). 하네스 안내문은 이 도구를 쓸 수 있다고 알렸다. 원격 등록은 `constraints_derived=False`라 기존 범위 심사 API로 목적지를 넣어도 패턴이 그대로였다.
+- 결정:
+  1. 제안: 입력 스키마에 주소 인자가 있는 도구(`review.has_address_argument`, 기존 고정 규칙과 같은 판정)에만 원격 서버 자신의 호스트와 그 도구의 계약(설명·스키마)에 적힌 호스트를 최대 10개 제안한다. 스킴이 붙었거나 흔한 공개 접미사(com·org·net·io·dev·aws 등)로 끝나는 이름만 호스트로 보고(`README.md` 같은 파일 이름 제외) `json-schema.org`는 뺀다. 인자 이름만으로는 아무 것도 허용하지 않는다. 제안은 승인 화면에 미리 채울 뿐이다.
+  2. 승인: `OneClickApproval.destinations`(도구 → 호스트)로 승인자가 고친다. 주소 인자 도구·선택 도구에만, 호스트 이름 형식(`review.DESTINATION`) 10개 이하만 받는다. 제안과 다른 값만 `one_click_scope.destinations`에 남아 공동 승인 범위 비교·감사 기록·게이트웨이 등록 가드(`core.register_server`)에 같이 쓰인다. 원격 계약의 인자 범위는 같은 호스트로 다시 묶는다.
+  3. 기존 등록: 서버 상세 범위 표의 주소 인자 도구에 「허용 주소」 버튼을 두고 기존 범위 심사 API(`POST /api/registry/servers/{id}/tool-reviews`, 독립 심사자 규칙 그대로)를 쓴다. 원격 등록은 파생된 주소 패턴(`(?!)` 또는 `^https://(…)(:443)?([/?#]|$)`)만 새 목적지로 바꾸고(`review.repin_addresses`), 사람이 직접 쓴 패턴은 그대로 둔다. `/api/registry`는 등록별 `address_tools`를 준다. 이미 등록된 AWS·Microsoft Learn은 배포 뒤 관리자가 이 버튼으로 `docs.aws.amazon.com`·`learn.microsoft.com`을 넣는다(재신청 불필요).
+- 시험: `intake_one_click_check.py` 3건(제안 호스트, 패턴 재결속·수기 패턴 유지, 승인자 수정이 계약·범위·등록 가드까지 가고 다른 호스트로 바꾼 등록은 가드가 거절), `address_destinations_check.py`(원격 등록의 `(?!)`가 범위 심사로 바뀜, 다른 도구 범위 불변). 수정 전 각각 3건·1건 실패. 기존 `intake_one_click_ast_check.py`를 직접 실행하면 D-234 이후 `resolve_audience`와 예외 `detail`을 몰라 10건 오류이던 것(스위트 실행에서는 드러나지 않음)을 같이 고쳤다(14건 통과). 콘솔 JS 시험 10종·화면 하네스 2종 통과.
+- 한계: 계약 설명에 호스트가 없는 범용 가져오기 도구(GitMCP `fetch_generic_url_content` 등)는 서버 자신의 호스트만 제안된다. 허용 호스트는 하위 경로를 구분하지 않는다(기존 규칙).
+
+## D-246 출력 건수 상한은 JSON 레코드에만 적용하고, JSON을 담은 텍스트는 JSON으로 검사한다 (2026-10-25, S4-05·S4-06)
+
+- 배경: (S4-05) `classify.result_items`가 JSON이 아닌 텍스트의 비어 있지 않은 줄을 레코드로 세어, 1,192줄 135KB Markdown 문서와 GitMCP가 가져온 Flask 문서(113KB)가 「도구 결과가 1000건 상한을 넘었습니다」로 보류됐다(10-25 실사용 시험 원장 1210·1245, 바이트 상한 262,144의 절반 이하). (S4-06) `privacy.mask_payload`는 결과의 텍스트를 통째로 Presidio에 맡겨, JSON 텍스트 속 16자리 주문 ID(Luhn 통과)를 따옴표 없는 `[REDACTED]`로 바꿔 JSON을 깨뜨렸고, 깨진 JSON이 줄 단위로 세어져 「검사 후 도구 결과가 반환 상한을 넘었습니다」라는 엉뚱한 사유로 보류됐다(원장 1212).
+- 결정:
+  1. 건수 상한(`MAX_RESULT_ITEMS`)은 구조화 결과와 텍스트 속 JSON의 배열 원소·레코드에만 센다. 평문 줄과 JSON 문자열 값 안의 줄은 세지 않는다. 텍스트는 바이트 상한(`MAX_RESULT_BYTES`)과 비밀·개인정보·지시문 검사를 그대로 받는다. 기존 시험의 「평문 줄 = 레코드」 기대값(`response_cap_idempotency_test`·`result_fp_check`)을 이 규칙으로 바꿨다.
+  2. 결과의 문자열이 JSON 객체·배열이면 JSON으로 풀어 구조화 결과와 같은 규칙으로 검사한다. 문자열 값은 그 안에서 가리고(JSON은 유효하게 다시 직렬화, 찾은 것이 없으면 원문 그대로), 키와 숫자 값은 D-214대로 숫자 자체로 검증되는 주민번호·카드번호만 보고 있으면 보류한다. 보류 사유는 「결과의 키나 숫자 값에 개인정보 형태가 있어 JSON 구조를 바꾸지 않고는 가릴 수 없습니다: CARD_NUMBER」처럼 실제 원인을 쓴다.
+- 시험: `tests/output_json_text_check.py` 5건(분석기 대역: 1,200줄 문서 통과, JSON 레코드 상한·바이트 상한 유지, JSON 숫자 자리 카드번호는 그 사유로 보류, 문자열 속 카드번호는 가리고 JSON 유지, 찾은 것 없으면 원문 그대로). 수정 전 2건 실패.
+- 한계: 숫자 자리의 카드번호 형태(3~6으로 시작하는 14~19자리 Luhn 통과) ID는 여전히 결과 전체를 보류한다(D-214, 구조를 보존하며 가릴 수 없음). JSON 텍스트 안의 키·값 쌍 자격 증명도 이제 구조화 결과처럼 보류된다(D-202). 실제 Presidio로는 이미지 시험(`output_credential_span_check`)에서 확인해야 한다.
+
+## D-247 도구 이용 기간 연장은 도구마다 하루에 한 번 기록한다 (2026-10-25, S4-10)
+
+- 배경: 연장 기록 조건이 「직전 연장 이벤트의 기한 ≠ 새 기한」이었는데 기한이 `마지막 사용 + 120일`이라 호출마다 초 단위로 바뀌어, 실행된 도구 호출마다 `approval_events`에 `tool-sunset-extension`이 1건씩 쌓였다(10-25 실사용 시험: 실행 91건에 이벤트 89건, 같은 도구를 5초에 세 번 불러도 3건). 호출 경로마다 advisory lock·INSERT·SIEM 큐가 더해졌다.
+- 결정: 직전 연장 이벤트의 기한 날짜(UTC)가 새 기한 날짜와 다를 때만 기록한다. 판정(만료·사용 가능)은 지금처럼 원장에서 계산한 정확한 마지막 사용 시각으로 하고, 이벤트는 감사 기록일 뿐이라 하루 단위 오차가 판정을 바꾸지 않는다.
+- 시험: `tool_sunset_check.py` `test_extension_is_recorded_once_a_day_not_per_call`(같은 날 두 번째 사용은 기록 없음, 다음 날은 기록). 수정 전 실패.
+
+## D-248 실습 합성 계정은 실습 시드로 분리하고, 제품 코드 주석에서 시험 PC·기기 주소·실측 메모를 뺀다 (2026-10-25)
+
+- 배경: `full_stack_lab/db/init.sql`(스키마)이 실명 합성 계정 7개를 넣었고 운영 묶음 `deploy/compose.yaml`이 그 파일을 싣기 때문에 고객 DB가 그 계정들로 시작했다. 릴리스 위생 점검(D-241)의 인계 표에서 게이트웨이 코드 주석의 시험 PC 이름(PJ1·pj2)·날짜 실측 메모·팀원 저장소 문구, 키트 사용 예의 기기 주소, 정책 원장 시험 ID의 PC 이름이 나왔다.
+- 결정:
+  1. 계정 INSERT를 `db/seed-lab.sql`로 옮기고 실습 compose(`full_stack_lab/compose.yaml`)만 `003-seed-lab.sql`로 싣는다. 격리 PostgreSQL 실습(`termination_dispatch_remote.sh`)도 같은 순서로 싣는다. 운영 묶음은 계정 없이 시작해 기존대로 콘솔 기본 계정(`root`)과 `mint.sh`의 초기 관리자 절차를 쓴다.
+  2. `gateway/app/**`·`field/pc/mcpgw_pc.py`·`opa/policy_ledger.json`의 주석·자체 점검 값·사용 예에서 시험 PC 이름, 날짜 실측 메모, 세션 번호, 팀원 저장소·브랜치 문구, 기기 주소를 뺐다. 주석의 이유는 남기고 근거 번호(D-번호)는 유지한다. 작업 번호(DEV-xx)는 이번 범위가 아니다.
+- 시험: `tests/seed_split_check.py` 3건(스키마에 계정 INSERT 없음, 실습 compose는 스키마 뒤 시드 적재, 운영 묶음은 스키마만 적재). 수정 전 2건 실패. 일회용 PostgreSQL에 `init.sql` → `seed-lab.sql` 적재해 계정 7개 확인.
+- 한계: 실습 데이터(사내 Git 시드 `corp/seed.py`·`console.sh` 로그인 예·시험 기대값)의 같은 이름은 실습 전용이라 바꾸지 않았다. `agent_tables.sql`의 옛 실습 계정 이전 UPDATE는 해당 행이 없으면 아무 일도 하지 않아 남겼다. 이미 만들어진 솔루션 기기의 DB에는 계정이 그대로 있다.

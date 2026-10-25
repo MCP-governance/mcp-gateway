@@ -810,7 +810,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
                  ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], companion_names(username)))).fetchall()
             if _same_pc(r, hostname, platform, machine_id, local_sid, username)]
         # Another employee's device on this PC and managed account was just removed by this install's
-        # cleanup; its record would stay "active" forever (10-23 PJ1: user's device beside aaaa's).
+        # cleanup; its record would stay "active" forever.
         # It is retired, never inherited: an activation belongs to the person it was granted to.
         displaced = [r for r in await (await connection.execute(
             """SELECT endpoint_id,hostname,detail FROM endpoint_agents
@@ -883,7 +883,7 @@ async def managed_policy(device: dict) -> dict:
     servers = [r["id"] for r in rows if r["id"] in usable]
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version")
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
-    # in the user's files or try to run the harness from its shell (10-23 PJ1).
+    # in the user's files or try to run the harness from its shell.
     guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
                 "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
                 if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
@@ -908,7 +908,7 @@ async def managed_policy(device: dict) -> dict:
                     "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
                     "strictKnownMarketplaces": [],
                     # Account-synced plugins and skills load from the claude.ai account, outside the managed set
-                    # (PJ1 10-23: productivity@synced loaded); only `false` is honoured, so this cannot be undone
+                    # (a synced productivity plugin loaded); only `false` is honoured, so this cannot be undone
                     # from the user's settings. Web tools reach the web through the account, not the Gateway:
                     # the deny rules close them, and only managed permission rules count so the account cannot
                     # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.

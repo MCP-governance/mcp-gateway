@@ -3198,7 +3198,7 @@
       ],
       "test_ids": [
         "managed_enrollment_check",
-        "PJ1-managed-install"
+        "field-managed-install"
       ],
       "pac_candidate_id": null,
       "pac_ids": [
