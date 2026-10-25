@@ -43,7 +43,7 @@
 | wiki-structure (S3) | `claude/wiki-structure-332d12` | 위키 구조·최신화 점검(이 파일을 만든 세션) | `research/llm-wiki/**`, `docs/ai/README.md` | [reports/2026-10-25-wiki-structure.md](status/reports/2026-10-25-wiki-structure.md) |
 | bugbash-pj1 (S4) | `claude/bugbash-pj1-44f413` | PJ1·솔루션 기기 실사용 버그 시험(코드 수정 금지) | PJ1·솔루션 기기 상태 | `reports/2026-10-25-bugbash-pj1.md` |
 
-병합 전 브랜치: `10/25-policy-sync-split`(D-238, 정책 동기화 해시 분리)는 키트 세션의 기준이며 main에 없다. 세션끼리 같은 파일을 고치지 않도록 소유 범위를 지킨다. 위키 생성물(`catalogs/threats.json`, `analysis/enterprise*`, `status/repository-snapshot.*`)은 코드 세션이 재생성한다.
+병합 전 브랜치: `10/25-policy-sync-split`(238번 결정, 정책 동기화 해시 분리)는 키트 세션의 기준이며 main에 없다. 세션끼리 같은 파일을 고치지 않도록 소유 범위를 지킨다. 위키 생성물(`catalogs/threats.json`, `analysis/enterprise*`, `status/repository-snapshot.*`)은 코드 세션이 재생성한다.
 
 ## 4. 정본 지도 — 같은 사실은 한 곳에만 쓴다
 
