@@ -164,6 +164,8 @@ class DeviceEnrollment(StrictModel):
     local_sid: str | None = Field(default=None, pattern=r"^S-1-5-21-\d+-\d+-\d+-\d+$")
     helper_command: str | None = Field(default=None, max_length=400,
                                        pattern=r'^"[A-Za-z]:\\[^"]+\\pythonw?\.exe" -I -S "[A-Za-z]:\\[^"]+\\managed-windows\.py" header$')
+    # simple: the employee's own account, no kernel confinement (D-239). Kits before it sent nothing and installed isolated.
+    mode: Literal["simple", "isolated"] = "isolated"
 
     @model_validator(mode="after")
     def per_platform(self):
@@ -185,7 +187,7 @@ async def device_enroll(request: DeviceEnrollment):
         device = await consume_enrollment(request.enrollment_token, request.device_key, request.hostname,
                                            request.local_username, request.local_uid, platform=request.platform,
                                            local_sid=request.local_sid, helper_command=request.helper_command,
-                                           machine_id=request.machine_id)
+                                           machine_id=request.machine_id, mode=request.mode)
     except PermissionError as exc:
         raise HTTPException(403, str(exc)) from exc
     return {"endpoint_id": device["endpoint_id"], "state": device["managed_state"],

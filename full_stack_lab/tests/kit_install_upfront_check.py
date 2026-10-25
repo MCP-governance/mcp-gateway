@@ -151,15 +151,20 @@ class Packages(unittest.TestCase):
             b.check_python()
 
     def test_step_times_are_collected_without_the_login_wait(self):
-        b = self.bootstrap
+        # The installer's screen (D-239) times each step; off a terminal it prints one line per step as before.
+        linux = extract(KIT / "managed-linux.py", {"Screen", "width", "clip"}, {"os": os, "sys": sys, "time": time})
         clock = iter([0, 5, 5, 7])
-        with patch.object(b.time, "monotonic", lambda: next(clock)), redirect_stdout(io.StringIO()):
-            b.timings.clear()
-            b.step("필수 구성요소 설치")
-            b.step("관리형 연결 설치: u")
-            b.close_step()
-        self.assertEqual(b.timings, [("필수 구성요소 설치", 5), ("관리형 연결 설치: u", 2)])
-        b.timings.clear()
+        with patch.object(time, "monotonic", lambda: next(clock)), redirect_stdout(io.StringIO()) as out:
+            screen = linux.Screen("내 PC 연결")
+            screen.step("필수 구성요소 설치")
+            screen.step("관리형 연결 설치: u")
+            screen.close_step()
+            screen.result([("모델 응답", "claude 정상 · 3.1초")], "새 터미널에서 claude를 실행하세요")
+        self.assertIsNone(screen.window)
+        self.assertEqual([(row[0], row[2], row[3]) for row in screen.rows],
+                         [("필수 구성요소 설치", 5, "✓"), ("관리형 연결 설치: u", 2, "✓")])
+        self.assertEqual(out.getvalue().splitlines(), ["[필수 구성요소 설치]", "[관리형 연결 설치: u]",
+                                                       "모델 응답: claude 정상 · 3.1초", "다음 할 일: 새 터미널에서 claude를 실행하세요"])
 
     def test_the_install_end_message_points_at_the_status_command(self):
         source = (KIT / "bootstrap.py").read_text(encoding="utf-8")
@@ -376,8 +381,8 @@ class SharedEngineHelpers(unittest.TestCase):
 
 class StatusLines(unittest.TestCase):
     def setUp(self):
-        self.linux = extract(KIT / "managed-linux.py", {"STATE_LABEL", "STATUS_STALE_SECONDS", "render_status"},
-                             {"__name__": "status_under_test", "time": time})
+        self.linux = extract(KIT / "managed-linux.py", {"STATE_LABEL", "MODE_LABEL", "next_step", "STATUS_STALE_SECONDS", "render_status"},
+                             {"__name__": "status_under_test", "time": time, "os": os})
 
     def summary(self, **fields):
         return {"user": "emp", "state": "active", "connected": True, "last_report": time.time() - 3, "servers": 2,

@@ -193,23 +193,25 @@ const locationRows = (value = {}) => [
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
 const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
+// Windows is the main target (D-239): selected first whatever browser opened the Console.
 function preferredKitPlatform() {
-  const os = navigator.userAgentData?.platform || navigator.platform || navigator.userAgent;
-  return /mac/i.test(os) ? "macos" : /win/i.test(os) ? "windows" : "linux";
+  return "windows";
 }
 // 설치 절차: 운영체제마다 실행 방법만 다르다. 명령 문자열 외에는 라벨만 둔다.
-function kitSteps(os) {
-  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code></li>`
+function kitSteps(os, kit = {}) {
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>unzip ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code><span class="sub">관리자 암호 1회</span></li>`
     : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
-    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회</span></li>`;
-  return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>관리자 활성화 뒤 사용</li></ol>
+    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회 · 지금 계정 그대로</span></li>`;
+  const ready = kit.auto_activate === false ? "관리자 활성화 뒤 사용" : "설치가 끝나면 바로 사용";
+  return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>${ready}</li></ol>
     ${os === "linux" ? kv([["제거", html`<code>sudo ~/mcp-managed-kit/install.sh --remove</code>`]]) : ""}`;
 }
 function kitView(kit, os) {
   const platforms = [...(kit.platforms || [])].sort((a, b) => Number(b === preferredKitPlatform()) - Number(a === preferredKitPlatform()));
   return html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}</div>
     <div class="row-actions" role="group">${platforms.map((name) => html`<button class="btn sm ${name === os ? "primary" : ""}" type="button" aria-pressed="${String(name === os)}" data-act="pc-kit-os" data-os="${name}">${PLATFORM_KIT[name] || "—"}</button>`)}</div>
-    ${platforms.includes(os) ? html`${kitSteps(os)}<div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
+    ${platforms.includes(os) ? html`${kitSteps(os, kit)}${os === "macos" ? "" : html`<label class="check"><input type="checkbox" name="kit-isolated"> 고급: 격리 계정<span class="sub">관리자 활성화</span></label>`}
+      <div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
 }
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
@@ -1342,6 +1344,7 @@ function osEventTarget(e) {
   return d.executable || d.operation || "—";
 }
 const MANAGED_STATE = { active: "활성", pending: "활성화 대기", quarantined: "격리" };
+const MANAGED_MODE = { simple: "간편 모드", isolated: "격리 계정" };
 const SIGNUP_STATUS = { pending: ["approval", "대기"], approved: ["allow", "승인"], rejected: ["block", "거부"] };
 const MANAGED_EVENT = {
   "kit-issued": ["outline", "설치 파일 발급"], enrolled: ["approval", "설치 보고"], activated: ["allow", "활성화"],
@@ -1358,6 +1361,7 @@ ROUTES.people = async (_, tab) => {
     api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
     gw("suspensions")]);
   peopleAccounts = accounts;
+  const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
   const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
   const managed = inv.agents.filter((a) => a.managed_state && a.managed_state !== "unmanaged");
@@ -1392,11 +1396,12 @@ ROUTES.people = async (_, tab) => {
             ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
               <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : NONE}</td>
               <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관찰만")}
-                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state}</span>` : ""}</td>
+                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state} · ${MANAGED_MODE[deviceState[a.endpoint_id]?.mode] || "—"}</span>` : ""}</td>
               <td class="small">${ago(a.last_seen_at)}</td>
               <td class="num nowrap">${a.status === "revoked" ? chip("outline", "등록 해제됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">등록 해제</button>`}
                 ${["pending", "quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">활성화</button>` : ""}</td></tr>`)}
-            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}</div>` },
+            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true,
+            tools: html`<label>새 PC 활성화<select data-act-change="endpoint-auto" aria-label="새 PC 활성화">${option("on", "자동", inv.settings?.auto_activate === false ? "off" : "on")}${option("off", "관리자 확인", inv.settings?.auto_activate === false ? "off" : "on")}</select></label>` })}</div>` },
         { key: "suspensions", label: "이용 중지", n: suspensions.filter((x) => !x.resumed_at).length,
           body: panel("이용 중지", html`<table class="data"><thead><tr><th>사용자</th><th>서버</th><th>사유</th><th>중지</th><th>해제 예정</th><th>상태</th><th>재개</th><th></th></tr></thead><tbody>
             ${suspensions.map((x) => html`<tr><td>${x.display_name || "—"}</td><td>${x.server_name || x.server_id}</td><td class="small">${x.reason}</td>
@@ -2677,7 +2682,8 @@ const ACTIONS = {
   },
   async "pc-kit-download"(el) {
     const os = el.dataset.os || "linux";
-    const query = os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "";
+    const isolated = el.closest("[data-kit]")?.querySelector('[name="kit-isolated"]')?.checked ? "&isolated=true" : "";
+    const query = (os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "") + isolated;
     const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
       { method: "POST", headers: { authorization: `Bearer ${token}` } });
     if (!response.ok) {
@@ -3125,6 +3131,12 @@ document.addEventListener("change", (event) => {
     feed.filters[filter.dataset.filter] = filter.value.trim();
     feed.page = 1;
     reload();
+    return;
+  }
+  if (event.target.matches('[data-act-change="endpoint-auto"]')) {
+    gw("endpoint/settings", { method: "PUT", body: { auto_activate: event.target.value === "on" } })
+      .then(() => toast(event.target.value === "on" ? "새 PC를 자동으로 활성화합니다." : "새 PC는 관리자가 활성화합니다."))
+      .catch((error) => { toast(error.message); reload(); });
     return;
   }
   if (event.target.matches('[data-act-change="tool-filter"]')) {

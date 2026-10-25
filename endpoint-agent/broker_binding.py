@@ -54,6 +54,9 @@ def authorize_peer(connection, config):
         if uid != config["uid"]:
             reason = "uid-mismatch"
             allowed = False
+        elif mode == "uid":
+            # Simple mode (D-239): no profile exists to bind to; the account's UID is the whole boundary.
+            allowed = True
         elif mode not in ("warn", "enforce"):
             reason = "invalid-binding-mode"
             allowed = False

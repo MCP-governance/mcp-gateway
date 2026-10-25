@@ -18,7 +18,8 @@ import sys
 LAB = Path(__file__).resolve().parents[1]
 NAMES = {"managed_policy", "managed_platform", "json_document", "installed_hash", "legacy_hash", "policy_installed",
          "control_matches", "held_servers", "policy_accepted", "managed_failure", "heartbeat", "activate_managed",
-         "managed_checks", "MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM"}
+         "managed_checks", "MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_mode", "SIMPLE_CHECKS",
+         "endpoint_settings"}
 OLD = "엔드포인트 정책이 최신 정책과 달라 연결을 중단했습니다."
 NEW = "새로 승인된 서버입니다. PC가 새 정책을 적용하면 사용할 수 있습니다."
 GONE = "사용할 수 없는 서버입니다."

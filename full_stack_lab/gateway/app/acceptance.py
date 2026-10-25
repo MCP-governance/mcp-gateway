@@ -750,6 +750,66 @@ async def pc_kit_downloads() -> str:
     return "내 PC 연결 키트 " + ", ".join(seen)
 
 
+# ── 10-25 기능(D-239): 간편 모드 새 PC 자동 활성화 ─────────────────────────────────────────────────
+# 실제 등록 경로(/oauth/device-enroll)·관리형 정책·heartbeat를 HTTP로 거친다. 장치는 합성 직원 한 명의 것이고 끝나면 폐기한다.
+# 그 직원은 관리형 장치가 필요한 계정이 되므로 다른 시험의 직원과 분리한다.
+
+async def endpoint_auto_activation() -> str:
+    import secrets
+    from . import endpoint_plane
+    issuer = os.getenv("IDP_INTERNAL_URL", os.getenv("IDP_ISSUER", "http://agent-service:8000")).rstrip("/")
+    principal = f"acceptance-{uuid4().hex[:12]}-device"
+    await db.execute(
+        """INSERT INTO principals(token,email,display_name,role,synthetic,department,password_hash,user_id)
+           SELECT %s,%s,%s,role,true,department,password_hash,%s FROM principals WHERE email=%s""",
+        (principal, principal + "@bob.local", principal, str(uuid4()), USERS["employee"]))
+    PRINCIPAL["device"] = principal
+    before = await endpoint_plane.endpoint_settings()
+    devices: list[str] = []
+
+    async def connect(client, mode: str) -> dict:
+        grant = await endpoint_plane.enrollment_token(principal)
+        key = secrets.token_urlsafe(32)
+        enrolled = await client.post(issuer + "/oauth/device-enroll", json={
+            "enrollment_token": grant["enrollment_token"], "device_key": key, "hostname": "acceptance-" + uuid4().hex[:8],
+            "local_username": "acceptance", "local_uid": 4242, "mode": mode})
+        expect(enrolled.status_code == 201, f"{mode} 등록: {enrolled.status_code} {enrolled.text[:160]}")
+        devices.append(enrolled.json()["endpoint_id"])
+        expect(enrolled.json()["state"] == "pending", f"{mode} 등록 직후 상태: {enrolled.json()['state']}")
+        headers = {"X-Endpoint-Key": key}
+        policy = await client.get(API + "/api/endpoint/managed-policy", headers=headers)
+        if policy.status_code != 200:
+            raise Skip(f"이 환경은 관리형 정책을 내려주지 않습니다: {policy.status_code} {policy.text[:120]}")
+        policy = policy.json()
+        checks = ({"protected_configs": True} if mode == "simple"
+                  else dict.fromkeys(endpoint_plane.MANAGED_CHECKS_BY_PLATFORM["linux"], True))
+        beat = await client.post(API + "/api/endpoint/heartbeat", headers=headers, json={
+            "policy_hash": policy["policy_hash"], "configuration_hashes": policy["configuration_hashes"], "checks": checks})
+        expect(beat.status_code == 200, f"{mode} heartbeat: {beat.status_code} {beat.text[:160]}")
+        token = await client.post(issuer + "/oauth/device-token", headers=headers)
+        return {**beat.json(), "token_status": token.status_code}
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            await endpoint_plane.set_endpoint_settings("acceptance", True)
+            simple = await connect(client, "simple")
+            expect(simple["state"] == "active" and simple["compliant"] and simple["token_status"] == 200,
+                   f"간편 모드 자동 활성화: {simple}")
+            event = await db.fetch_one(
+                "SELECT detail FROM endpoint_managed_events WHERE endpoint_id=%s AND kind='activated'", (devices[-1],))
+            expect(event and event["detail"]["actor"] == "auto", f"자동 활성화 원장: {event}")
+            isolated = await connect(client, "isolated")
+            expect(isolated["state"] == "pending" and isolated["token_status"] != 200, f"격리 모드는 관리자 확인: {isolated}")
+            await endpoint_plane.set_endpoint_settings("acceptance", False)
+            held = await connect(client, "simple")
+            expect(held["state"] == "pending" and held["token_status"] != 200, f"자동 활성화 끔: {held}")
+    finally:
+        await endpoint_plane.set_endpoint_settings(before.get("updated_by") or "acceptance", bool(before["auto_activate"]))
+        for endpoint_id in devices:
+            await endpoint_plane.revoke_device(endpoint_id, "acceptance")
+    return "간편 모드 새 PC 자동 활성화·토큰 발급, 격리 모드와 자동 활성화 끔은 관리자 확인 대기, 설정 원복·장치 폐기"
+
+
 # ── 10-23 기능: 원클릭 승인의 분류 낮추기(D-199), 서버 단위 동의(D-201), 승인 미리보기의 로컬 실행 값(D-206·D-207) ──
 # 승인 대상은 위 등록 시험과 같은 실제 fetch 서버(수용 스택의 TLS 경로)다. 신청·승인은 합성 계정이 하고, 끝나면 등록을 해제한다.
 # 원클릭 승인이 만드는 도구 심사는 외부 목적지가 비어 주소 인자를 모두 막는다. 그래서 fetch를 실제로 부르는 동의 시험은
@@ -1263,6 +1323,8 @@ async def _run() -> dict:
         ("console-employee-screens-load", console_employee_screens_load()),
         ("console-registry-export-downloads", console_downloads_work()),
         ("console-pc-kit-downloads", pc_kit_downloads()),
+        # 10-25 기능(D-239): 간편 모드 자동 활성화
+        ("endpoint-simple-mode-auto-activation", endpoint_auto_activation()),
     ]:
         await check(name, coro)
     counts = {s: sum(1 for r in RESULTS if r["status"] == s) for s in ("PASS", "FAIL", "SKIP")}

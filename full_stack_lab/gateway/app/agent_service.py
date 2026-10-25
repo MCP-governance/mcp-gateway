@@ -445,14 +445,17 @@ async def pc_kit() -> dict | None:
     rows = await db.fetch_all(
         "SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
-    return {"url": "/api/pc-kit", "servers": servers, "platforms": sorted(KIT_FILES)}
+    automatic = await db.fetch_one("SELECT auto_activate FROM endpoint_settings WHERE id=1")
+    # Windows first: the main target (D-239). The Console selects the first platform.
+    return {"url": "/api/pc-kit", "servers": servers, "platforms": ["windows", "macos", "linux"],
+            "auto_activate": bool(automatic["auto_activate"]) if automatic else True}
 
 
 @app.post("/api/pc-kit")
 async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = "linux",
                                delivery: Literal["zip", "command"] = "zip",
                                authorization: str | None = Header(default=None),
-                               packaging: Literal["zip", "oneclick"] = "zip"):
+                               packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False):
     from .endpoint_plane import enrollment_token
     download_prefix = "Bearer kit-download."
     if authorization and authorization.startswith(download_prefix):
@@ -511,6 +514,9 @@ async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = 
         raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    if isolated:
+        # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
+        bundle["isolated"] = True
     if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
         bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
         bundle['local_engine']=json.loads(os.getenv('LOCAL_ENGINE_SETTINGS') or '{}')

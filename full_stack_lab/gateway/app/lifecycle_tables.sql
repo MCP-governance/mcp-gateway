@@ -331,6 +331,15 @@ CREATE TABLE IF NOT EXISTS endpoint_scan_policy (
 );
 INSERT INTO endpoint_scan_policy(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
+-- 새 PC 자동 활성화(D-239). 간편 모드 PC가 설치 점검을 통과하면 게이트웨이가 활성화한다. 끄면 관리자 확인.
+CREATE TABLE IF NOT EXISTS endpoint_settings (
+  id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  auto_activate boolean NOT NULL DEFAULT true,
+  updated_by text,
+  updated_at timestamptz
+);
+INSERT INTO endpoint_settings(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS endpoint_listeners (
   id bigserial PRIMARY KEY,
   endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id) ON DELETE CASCADE,

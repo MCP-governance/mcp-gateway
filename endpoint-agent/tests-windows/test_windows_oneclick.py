@@ -88,6 +88,16 @@ function Start-Process {
             self.assertEqual(self.managed.managed_user('employee'), ('employee', employee, False))
             ps.assert_not_called()
 
+    def test_one_click_installs_the_signed_in_account_unless_the_kit_asks_for_isolation(self):
+        # D-239: the employee's own account by default; 「고급: 격리 계정」 puts "isolated": true in enrollment.json.
+        template = (ROOT / 'endpoint-agent/windows-oneclick.ps1.in').read_text(encoding='utf-8')
+        self.assertIn("isolated_account=$isolated", template)
+        self.assertNotIn("isolated_account=$true", template)
+        self.assertIn("ConvertFrom-Json).isolated -eq $true", template)
+        worker = (ROOT / 'endpoint-agent/windows-worker.ps1').read_text(encoding='utf-8-sig')
+        self.assertNotIn("Get-ScheduledTask -TaskName 'MCPGatewayManaged-*'", worker)  # a reinstall rolls back instead
+        self.assertIn("if ($isolated) { $managedArguments += '--isolated-account' }", worker)
+
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \
                 mock.patch.object(self.managed, 'powershell'):

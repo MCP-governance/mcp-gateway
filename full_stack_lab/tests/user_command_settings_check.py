@@ -261,6 +261,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
         self.device = {"endpoint_id": "managed-check", "owner_token": "owner", "managed_state": "active", "detail": {}}
         self.plane = selected(LAB / "gateway/app/endpoint_plane.py",
                               {"MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_platform", "managed_checks", "heartbeat",
+                               "managed_mode", "SIMPLE_CHECKS", "endpoint_settings",
                                "policy_installed", "installed_hash", "legacy_hash", "json_document"},
                               {"managed_policy": AsyncMock(return_value=self.policy), "Jsonb": lambda value: value, "hashlib": hashlib,
                                "datetime": datetime, "UTC": timezone.utc,
@@ -298,7 +299,10 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
             self.assertTrue((await self.beat(checks))[0]["compliant"])
             self.device["managed_state"] = "quarantined"
             await self.beat(checks)
-            self.assertIn("THEN managed_state ELSE 'quarantined'", self.connection.execute.call_args_list[0].args[0])
+            # A passing heartbeat never lifts a quarantine; only a new simple-mode PC is activated (D-239).
+            statement = self.connection.execute.call_args_list[0].args[0]
+            self.assertIn("WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'", statement)
+            self.assertIn("ELSE managed_state END", statement)
             self.device["managed_state"] = "active"
 
     async def test_findings_persisted_and_inconsistent_true_does_not_pass(self):

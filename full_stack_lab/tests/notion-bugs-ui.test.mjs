@@ -68,10 +68,20 @@ test("내 PC 연결: 선택한 운영체제의 절차만 보인다", () => {
   assert.ok(windows.includes(".cmd") && !windows.includes("sudo") && !windows.includes("mcp-connect-macos"));
 });
 
-test("내 PC 연결: 기본 선택은 브라우저가 알려 주는 운영체제", () => {
-  assert.equal(sandbox("MacIntel").preferred(), "macos");
-  assert.equal(sandbox("Win32").preferred(), "windows");
-  assert.equal(sandbox("Linux x86_64").preferred(), "linux");
+test("내 PC 연결: 기본 선택은 Windows(주 대상)", () => {
+  for (const platform of ["MacIntel", "Win32", "Linux x86_64"]) assert.equal(sandbox(platform).preferred(), "windows");
+  const out = sandbox("Linux x86_64").kit("windows");
+  assert.ok(out.indexOf('data-os="windows"') < out.indexOf('data-os="linux"'), "Windows 버튼이 맨 앞");
+});
+
+test("내 PC 연결: 자동 활성화면 바로 사용, 끄면 관리자 활성화, 격리 계정은 고급 선택", () => {
+  const context = sandbox("Win32");
+  context.kitWith = (kit, os) => String(vm.runInContext("kitView", context)({ platforms: ["windows", "macos", "linux"], servers: "git", ...kit }, os));
+  assert.ok(context.kitWith({ auto_activate: true }, "windows").includes("설치가 끝나면 바로 사용"));
+  assert.ok(context.kitWith({ auto_activate: false }, "windows").includes("관리자 활성화 뒤 사용"));
+  const windows = context.kitWith({}, "windows");
+  assert.ok(windows.includes("지금 계정 그대로") && windows.includes('name="kit-isolated"') && windows.includes("고급: 격리 계정"));
+  assert.ok(!context.kitWith({}, "macos").includes('name="kit-isolated"'));
 });
 
 test("내 PC 연결: 내려받는 파일 이름은 서버가 주는 값을 쓴다", () => {

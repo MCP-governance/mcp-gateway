@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Administrator-installed Windows enrollment, policy service and header broker.
 
-The Windows counterpart of managed-linux.py. An elevated installer enrolls one ordinary
-(non-administrator) account. A SYSTEM task holds the device key, writes the harnesses'
-machine-wide settings, keeps a per-account Windows Firewall rule that blocks every outbound
-destination except the Gateway host's Gateway and model-proxy ports, and hands the account a
-short-lived token over a named pipe whose DACL admits only that account's SID.
+The Windows counterpart of managed-linux.py. Simple mode (the default, D-239) enrolls the signed-in
+employee's own account as it is, administrator or not, with no logout. The isolated mode
+(「고급: 격리 계정」) enrolls one ordinary companion account and keeps a per-account Windows Firewall
+rule that blocks every outbound destination except the Gateway host's Gateway and model-proxy ports.
+In both, a SYSTEM task holds the device key, writes the harnesses' machine-wide settings and hands
+the account a short-lived token over a named pipe whose DACL admits only that account's SID.
 This is not remote attestation against a compromised administrator.
 """
 import argparse
@@ -243,7 +244,7 @@ def set_user_environment(config, values):
     try:
         with winreg.CreateKeyEx(winreg.HKEY_USERS, root + r"\Environment", 0,
                                 winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE) as key:
-            for name in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY"):
+            for name in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS", "CODEX_CA_CERTIFICATE"):
                 if values.get(name):
                     winreg.SetValueEx(key, name, 0, winreg.REG_SZ, values[name])
                 else:
@@ -385,6 +386,10 @@ def checks(config, policy, *, findings=None):
         # 사용자 파일 읽기 실패도 heartbeat의 실패 항목으로 보낸다.
         block = None
     hashes[CODEX_BLOCK] = hashlib.sha256((block or "").encode()).hexdigest()
+    if config.get("mode") == "simple":
+        # Nothing is confined in simple mode: the managed files, rendered and protected, are all there is (D-239).
+        return hashes, {"protected_configs": protected(targets + list({t.parent for t in targets})
+                                                       + [PROGRAMS, Path(sys.executable).parent])}
     rules = rule_state(config)
     baseline = json.loads(Path(config["firewall_baseline"]).read_text(encoding="utf-8"))
     return hashes, {
@@ -400,9 +405,11 @@ def checks(config, policy, *, findings=None):
 def host_report(config):
     accounts = powershell(HOST, {"sid": config["sid"]}) or []
     accounts = accounts if isinstance(accounts, list) else [accounts]
+    versions = harness_versions(config["profile"])
     return {"kernel": ("Windows " + platform.version())[:120], "wsl": False,
             "other_accounts": [{"name": a["name"][:64], "uid": int(a["sid"].rsplit("-", 1)[1]),
-                                "privileged_groups": ["Administrators"] if a["admin"] else []} for a in accounts[:64]]}
+                                "privileged_groups": ["Administrators"] if a["admin"] else []} for a in accounts[:64]],
+            **({"harnesses": versions} if versions else {})}
 
 
 # -- named pipe (header broker) ----------------------------------------------------
@@ -561,6 +568,70 @@ def place_harnesses(source_profile):
     return folder, placed
 
 
+def ours(text, gateway_url):
+    """A file this kit rendered: backing it up as the employee's own would put the managed copy back on removal."""
+    return (gateway_url + "/mcp/") in text or '"allowManagedHooksOnly": true' in text or "allow_managed_hooks_only = true" in text
+
+
+def harness_versions(profile):
+    """claude·codex versions read from their install folders, never by running them: this is the SYSTEM service,
+    and the employee's own executable must not run with its rights (D-239)."""
+    found = {}
+    version = re.compile(r"^\d+\.\d+[0-9A-Za-z.+_-]*$")
+    native = sorted((p.name for p in (Path(profile) / ".local/share/claude/versions").glob("*") if version.match(p.name)),
+                    key=lambda v: [int(x) if x.isdigit() else 0 for x in re.split(r"[.+_-]", v)], reverse=True)
+    if native:
+        found["claude"] = native[0][:40]
+    for name, package in (("claude", "@anthropic-ai/claude-code"), ("codex", "@openai/codex")):
+        manifest = Path(profile) / "AppData/Roaming/npm/node_modules" / package / "package.json"
+        if name not in found and manifest.is_file():
+            try:
+                value = str(json.loads(manifest.read_text(encoding="utf-8")).get("version", ""))
+            except (OSError, ValueError):
+                continue
+            if version.match(value):
+                found[name] = value[:40]
+    return found
+
+
+def broadcast_environment():
+    """Explorer re-reads the user environment, so a terminal opened after the install has the CA variables."""
+    try:
+        result = ctypes.c_ulong()
+        ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x001A, 0, "Environment", 0x0002, 5000, ctypes.byref(result))
+    except (AttributeError, OSError):
+        pass
+
+
+REMOVE_COMPANION = """
+$u = Get-LocalUser -Name $in.name -ErrorAction SilentlyContinue
+if ($u -and $u.FullName -eq 'MCP managed harness account') {
+  $sid = $u.SID.Value
+  Get-ScheduledTask -TaskName ('MCPGatewayTray-' + $sid) -ErrorAction SilentlyContinue | Unregister-ScheduledTask -Confirm:$false
+  Remove-LocalUser -SID $sid
+  $sid
+}
+"""
+
+
+def previous_installs(employee):
+    """This employee's earlier installs in either mode: the same account, or the companion of an isolated one."""
+    names = [employee, ("mcpgw-" + employee)[:20]]
+    return [name for name in names if (STATE / name.lower() / "config.json").is_file()]
+
+
+def retire_companion(employee):
+    """Switching to simple mode leaves no companion account, tray task or tray folder behind (D-239).
+    Its profile folder stays: what the employee kept there is theirs."""
+    sid = powershell(REMOVE_COMPANION, {"name": ("mcpgw-" + employee)[:20]})
+    if sid:
+        tray = PROGRAM_DATA / "MCPGatewayManagedTray" / str(sid)
+        for name in ("settings.json", "status.json", "status.tmp"):
+            (tray / name).unlink(missing_ok=True)
+        if tray.is_dir() and not any(tray.iterdir()):
+            tray.rmdir()
+
+
 def install(args):
     if not ctypes.windll.shell32.IsUserAnAdmin():
         raise ValueError("관리자 권한으로 실행해야 합니다")
@@ -575,12 +646,13 @@ def install(args):
         args.user, person, companion = managed_user(employee, isolated=True)
         person = prepare_profile(args.user, person)
     else:
-        args.user, person, companion = managed_user(employee)
+        # Simple mode (D-239): the signed-in employee's own account, administrator or not, sessions left running.
+        person, companion = account(employee), False
     if not person["profile"] or not (Path(person["profile"]) / "NTUSER.DAT").exists():
         if not companion:
             raise ValueError("해당 계정으로 한 번 로그인해 사용자 프로필을 만든 뒤 설치하세요")
         raise ValueError(f"{args.user} 계정으로 한 번 로그인해 프로필을 만든 뒤 이 파일을 다시 실행하세요")
-    if int(powershell(OWNED_PROCESSES, {"sid": person["sid"]}, timeout=180)):
+    if isolated and int(powershell(OWNED_PROCESSES, {"sid": person["sid"]}, timeout=180)):
         raise ValueError(f"{args.user} 계정을 로그아웃한 뒤 다시 실행하세요. 실행 중인 비관리 세션을 남기지 않습니다")
     python = Path(sys.executable)
     if not protected([python, python.parent]):
@@ -590,26 +662,32 @@ def install(args):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
+    # A reinstall, a repair and a switch of mode are one path: every earlier install of this employee goes first,
+    # so its backups restore the employee's own files before this install takes new ones (D-217·D-218).
+    for previous in previous_installs(employee):
+        rollback(argparse.Namespace(user=previous))
+    if not isolated:
+        retire_companion(employee)
     powershell(". $in.trust; New-EndpointProtectedDirectory $in.base; New-EndpointProtectedDirectory $in.tray $in.sid",
                {"trust": str(PROGRAMS / "windows-trust.ps1"), "base": str(PROGRAM_DATA / "MCPGatewayManagedTray"),
                 "tray": str(PROGRAM_DATA / "MCPGatewayManagedTray" / person["sid"]), "sid": person["sid"]})
-    harness_folder, harnesses = place_harnesses(source_person["profile"] if isolated else person["profile"])
+    if isolated:
+        harness_folder, harnesses = place_harnesses(source_person["profile"])
+    else:
+        harness_folder, harnesses = None, harness_versions(person["profile"])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
-    if config_path.exists():
-        # The same file is the repair and the reinstall path.
-        rollback(argparse.Namespace(user=args.user))
-        lock_down(folder, readers=False)
     helper = f'"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" header'
     bundle["device_key"] = secrets.token_urlsafe(32)
     enrolled = request(bundle, "/oauth/device-enroll", {
         "enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"], "hostname": socket.gethostname(),
-        "platform": "windows", "local_username": args.user, "local_sid": person["sid"], "helper_command": helper}, credential=False)
+        "platform": "windows", "local_username": args.user, "local_sid": person["sid"], "helper_command": helper,
+        "mode": "isolated" if isolated else "simple"}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
-                  firewall_baseline=str(folder / "firewall-baseline.json"))
+                  mode="isolated" if isolated else "simple", firewall_baseline=str(folder / "firewall-baseline.json"))
     write_file(config_path, json.dumps(config))
     policy = request(config, "/api/endpoint/managed-policy")
     if policy["tailscale_node_id"] != config["tailscale_node_id"]:
@@ -618,15 +696,22 @@ def install(args):
                   policy_hash=policy["policy_hash"])
     write_file(config_path, json.dumps(config))
     for name, target in FILES.items():
-        if target.exists():
+        if target.exists() and not ours(target.read_text(encoding="utf-8"), config["gateway_url"]):
             write_file(folder / (name + ".backup"), target.read_text(encoding="utf-8"))
     if codex_config(config).exists():
         write_file(folder / "config.toml.backup", codex_config(config).read_text(encoding="utf-8"))
     apply_policy(config, policy)
-    launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
-    set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
-    powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
-    write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
+    if isolated:
+        launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
+        set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
+        powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
+        write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
+    else:
+        # The employee's own harnesses trust the Gateway's CA through their user environment. No firewall rule,
+        # no PATH entry, no copied harness; Claude takes the model proxy from the managed settings (D-239).
+        launcher_files = {}
+        set_user_environment(config, ca_environment(config))
+        broadcast_environment()
     pythonw = python.with_name("pythonw.exe")
     powershell("""
 $a = New-ScheduledTaskAction -Execute $in.python -Argument $in.arguments
@@ -639,13 +724,27 @@ Start-ScheduledTask -TaskName $in.name
       "arguments": f'-B -I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
-                      "state": "pending-organization-activation", "harnesses": harnesses, "launcher_files": launcher_files,
+                      "mode": config["mode"], "state": "active" if enrolled.get("state") == "active"
+                      else "pending-organization-activation", "harnesses": harnesses if isolated else {},
+                      "versions": {} if isolated else harnesses, "launcher_files": launcher_files,
                       "task": TASK.format(user=args.user.lower())}, ensure_ascii=False))
-    print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
-    if companion:
-        print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
-    print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")
-    print("Claude 모델 로그인: claude auth login")
+    if isolated:
+        print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+        if companion:
+            print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
+        print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")
+        print("Claude 모델 로그인: claude auth login")
+
+
+def ca_environment(config):
+    """Simple mode: the CA file every account may read, named in the employee's environment for both harnesses."""
+    if not config.get("ca_certificate"):
+        return {}
+    folder = PROGRAMS / "launchers" / config["sid"]
+    lock_down(folder)
+    ca = folder / "root.crt"
+    write_file(ca, config["ca_certificate"])
+    return {"NODE_EXTRA_CA_CERTS": str(ca), "CODEX_CA_CERTIFICATE": str(ca)}
 
 
 def serve(args):
@@ -754,10 +853,13 @@ def serve(args):
                 inventory_status, os_observer = latest["inventory"], latest["os"]
             record({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health,
                     "config_inventory": inventory_status, "os_observer": os_observer})
-            management = {"active": "활성", "pending": "등록 대기", "quarantined": "격리됨", "revoked": "철회됨"}.get(report["state"], "확인 필요")
+            management = {"active": "활성", "pending": "활성화 대기", "quarantined": "격리됨", "revoked": "철회됨"}.get(report["state"], "확인 필요")
             # Connected means the authenticated heartbeat above succeeded. A partial process snapshot or a failed
             # inventory is a completeness result the Gateway already received; it is in service.log, not a lost link.
-            publish(status_path, True, os_observer.get("recent_blocks", []), management)
+            # The tray shows the approved servers, the state and the versions; no key, token or policy text.
+            publish(status_path, True, os_observer.get("recent_blocks", []), management,
+                    details={"state": report["state"], "servers": sorted(policy["servers"]), "mode": config.get("mode", "isolated"),
+                             "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"]})
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()
@@ -804,7 +906,44 @@ def rollback(args):
     for item in folder.iterdir():
         item.unlink()
     folder.rmdir()
+    if config.get("mode") == "simple":
+        broadcast_environment()
     print("해당 계정의 방화벽 규칙·관리형 설정·예약 작업을 제거했습니다")
+
+
+def probe(args):
+    """The tray's 연결 확인, as the signed-in employee (never elevated): ① a model answer from their own harness,
+    ② the tool count and ③ one approved server's initialize, with the header their harness gets (D-239)."""
+    import getpass
+    import io
+    import importlib.util
+    import contextlib
+    spec = importlib.util.spec_from_file_location("probe_observer", Path(__file__).with_name("agent.py"))
+    observer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(observer)
+    settings = json.loads(Path(args.settings).read_text(encoding="utf-8"))
+    status = json.loads(Path(settings["status_path"]).read_text(encoding="utf-8"))
+    servers = status.get("servers") or []
+    out = {"servers": len(servers)}
+    captured = io.StringIO()
+    with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(io.StringIO()):
+        header(argparse.Namespace())
+    authorization = json.loads(captured.getvalue().strip().splitlines()[-1])["Authorization"]
+    if authorization.startswith("Bearer endpoint-not-active"):
+        out["connection"] = {"initialized": [], "failed": {}, "tools": 0, "waiting": status.get("state") or "pending"}
+    else:
+        context = observer.tls_context(settings.get("ca_certificate") or "", settings.get("ca_sha256") or "")
+        out["connection"] = observer.connection_check(settings["gateway_url"], context, authorization, servers)
+    harness = next((shutil.which(name) for name in ("claude", "codex") if shutil.which(name)), None)
+    if harness and not args.skip_model:
+        name = Path(harness).stem.lower()
+        argv = ([harness, "-p", observer.MODEL_PROMPT] if name == "claude"
+                else [harness, "exec", "--skip-git-repo-check", observer.MODEL_PROMPT])
+        out["model"] = {"harness": name, **observer.model_check(argv, cwd=os.path.expanduser("~"))}
+    else:
+        out["model"] = {"harness": None, "ok": False, "seconds": 0, "detail": "하네스 없음" if not harness else "건너뜀"}
+    out["user"] = getpass.getuser()
+    print(json.dumps(out, ensure_ascii=False))
 
 
 def self_check():
@@ -828,13 +967,17 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     setup = commands.add_parser("install")
     setup.add_argument("--user", required=True)
-    setup.add_argument("--isolated-account", action="store_true")
+    setup.add_argument("--isolated-account", action="store_true", help="고급: 별도 표준 계정과 방화벽으로 격리")
     setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.set_defaults(run=install)
     service = commands.add_parser("serve")
     service.add_argument("--config", type=Path, required=True)
     service.set_defaults(run=serve)
     commands.add_parser("header").set_defaults(run=header)
+    check = commands.add_parser("probe")
+    check.add_argument("--settings", required=True)
+    check.add_argument("--skip-model", action="store_true")
+    check.set_defaults(run=probe)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
