@@ -568,7 +568,8 @@ def harness_login(account: str, harnesses: list[str], simple: bool = False) -> d
             # model answer measured at the end says which.
             signed[name] = True
             continue
-        if simple and not sys.stdin.isatty():
+        if not sys.stdin.isatty():
+            # A remote or scripted install has nobody to read the code: asking would hang it for 15 minutes (pj2 10-25).
             signed[name] = False
             continue
         step("Codex 장치 코드 로그인" if name == "codex" else f"{name} 모델 로그인")
@@ -656,6 +657,10 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool) -> 
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
     cells = [model_cell(managed, account, harnesses, simple), *connection]
     close_step()
+    if re.search(r"log ?in|/login|401|로그인", cells[0][1], re.I):
+        shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
+        return cells, ("모델 로그인: claude auth login" if simple
+                       else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c 'claude auth login'")
     healthy = all("실패" not in value for _, value in cells)
     return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mcpgw-status --check 로 다시 확인하세요")
 
