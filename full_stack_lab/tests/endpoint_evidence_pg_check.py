@@ -288,7 +288,13 @@ async def check_correlation():
     assert wide["window_seconds"] == 3600 and wide["bound"]
     for blocked in (stranger, unbound):
         none = await endpoint_plane.correlate(decision_id=blocked)
-        assert none["bound"] is False and none["records"] == [], none
+        assert none["bound"] is False, none
+        # the call always projects itself (D-145); what "bound" gates is endpoint-collected
+        # evidence from config/listener/os-event, which must stay out when device/owner don't match -
+        # otherwise ep-a's os-events ingested above would leak into another principal's lookup.
+        assert [record["kind"] for record in none["records"]] == ["decision"], none["records"]
+        assert none["records"][0]["id"] == blocked, none["records"]
+    ok("an unbound decision still carries its own projection, but no endpoint-collected record of another device or principal")
     assert await endpoint_plane.correlate(decision_id=10**9) is None
     event_id = await scalar("SELECT id FROM endpoint_os_events WHERE event_id='boot-fixture-corr:near-0001'")
     reverse = await endpoint_plane.correlate(kind="os-event", record_id=event_id)

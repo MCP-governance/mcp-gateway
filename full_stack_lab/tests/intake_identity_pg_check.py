@@ -101,6 +101,11 @@ async def no_masking(value, ignore=None):
     return value, []
 
 
+async def no_findings(text, ignore=None):
+    """The lab has no PII analyzer service: inbound inspection is a double that finds nothing."""
+    return []
+
+
 async def proxy(path, authorization, method="GET", body=None, timeout=15):
     """The Console's hop to the Gateway, in process: the Gateway functions are the real ones."""
     try:
@@ -595,7 +600,7 @@ async def amain() -> None:
     await setup()
     registered_upstream = [patch.object(upstream, "discover", Upstream.discover), patch.object(core, "_call_upstream", Upstream.call),
                            patch.object(agent_service, "current_identity", identity), patch.object(agent_service, "gateway_proxy", proxy),
-                           patch.object(privacy, "mask_payload", no_masking)]
+                           patch.object(privacy, "mask_payload", no_masking), patch.object(privacy, "analyze", no_findings)]
     for patcher in registered_upstream:
         patcher.start()
     main.app.dependency_overrides[main.admin_caller] = identity
