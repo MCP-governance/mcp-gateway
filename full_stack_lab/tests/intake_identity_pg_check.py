@@ -145,7 +145,9 @@ async def set_runtime(server_id: str, **changes) -> None:
 
 
 def scope_of(body: dict) -> dict:
-    return {key: body[key] for key in ("server_id", "endpoint", "catalog_hash", "tools", "data_class", "valid_days", "poisoning_ack", "tool_reviews", "parameter_constraints")}
+    # /register takes IntakeRegistration, which has no parameter_constraints: that field is
+    # fixed at contract review time and carried forward from the approved contract (D-49).
+    return {key: body[key] for key in ("server_id", "endpoint", "catalog_hash", "tools", "data_class", "valid_days", "poisoning_ack", "tool_reviews")}
 
 
 def review_body(server_id: str, catalog_hash: str, tools: dict, reviews: dict, allowed: list[str]) -> dict:

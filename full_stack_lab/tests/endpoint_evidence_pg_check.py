@@ -278,7 +278,11 @@ async def check_correlation():
     assert {"os-event", "listener"} <= kinds, kinds
     titles = {record["title"] for record in found["records"] if record["kind"] == "os-event"}
     assert titles == {"curl"}, titles
-    assert all(record["at"] and "source" in record and "origin" in record for record in found["records"])
+    # "origin" (automatic/manual/os_event) is a column on the three endpoint collector tables only;
+    # decision/dispatch-intent/server-egress records carry link_basis/link_strength instead (D-145).
+    endpoint_kinds = {"config", "listener", "os-event"}
+    assert all(record["at"] and "source" in record for record in found["records"])
+    assert all("origin" in record for record in found["records"] if record["kind"] in endpoint_kinds)
     assert len({(record["kind"], record["id"]) for record in found["records"]}) == len(found["records"])
     wide = await endpoint_plane.correlate(decision_id=far, window_seconds=99999)
     assert wide["window_seconds"] == 3600 and wide["bound"]
