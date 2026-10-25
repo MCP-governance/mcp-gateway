@@ -172,6 +172,8 @@ services:
       # matches what was read (D-142). console.sh generates the pepper once into .env.
       FLOW_MATCH_MODE: ${FLOW_MATCH_MODE:-coarse}
       FLOW_FINGERPRINT_PEPPER: ${FLOW_FINGERPRINT_PEPPER:-}
+      # Key for the credentials employees connect themselves (D-235); console.sh creates it once.
+      USER_CREDENTIAL_KEY: ${USER_CREDENTIAL_KEY:-}
     depends_on:
       db: {condition: service_healthy}
       opa: {condition: service_healthy}
@@ -260,6 +262,10 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
       # D-53: 처음부터 미승인 거부 대상. 이 값은 검토 기한(0이면 자동 기한 만료 없음).
       CONNECTOR_REVIEW_DAYS: ${CONNECTOR_REVIEW_DAYS:-14}
+      USER_CREDENTIAL_KEY: ${USER_CREDENTIAL_KEY:-}
+      # An OAuth App client id (no secret) enables GitHub device authorisation on the connections page; empty hides it.
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_SCOPES: ${GITHUB_OAUTH_SCOPES:-repo read:org read:user}
       OTEL_SERVICE_NAME: agent-service
     ports:
       - "127.0.0.1:${CONSOLE_PORT:-8000}:8000"

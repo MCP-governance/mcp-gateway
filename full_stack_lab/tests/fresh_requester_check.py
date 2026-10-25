@@ -89,6 +89,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
 
         self.upstream = NS(session=session, list_all_tools=AsyncMock(side_effect=list_tools), tool_view=lambda _: self.view,
             release_pool=AsyncMock(), content_items=lambda _: [], CONNECT_TIMEOUT=30,
+            credential_source=lambda *args: "none", missing_connection=AsyncMock(return_value=False),
             CredentialUnavailable=type("CredentialUnavailable", (Exception,), {}))
         self.disposal = NS(blocked=Mock(side_effect=lambda **kw: self.signed_block))
         self.dispatch = NS(record=AsyncMock(return_value=None))
@@ -122,7 +123,7 @@ class FreshRequesterChecks(unittest.IsolatedAsyncioTestCase):
         self.ns = {"__package__": "fresh_requester_unit", "asyncio": NS(to_thread=asyncio.to_thread, timeout=lambda _: nullcontext()),
             "json": json, "uuid": uuid, "time": time, "datetime": datetime, "UTC": UTC, "Any": object,
             "canonical_hash": digest, "db": self.db, "disposal": self.disposal, "dispatch": self.dispatch,
-            "tool_sunset": NS(check=AsyncMock(return_value={}), call_verdict=lambda state: None), "upstream": self.upstream, "endpoint_plane": self.endpoint, "registry": registry, "classify": classifier,
+            "tool_sunset": NS(check=AsyncMock(return_value={}), call_verdict=lambda state: None), "upstream": self.upstream, "user_credentials": NS(service_for=lambda spec: None), "endpoint_plane": self.endpoint, "registry": registry, "classify": classifier,
             "pac": self.pac, "Draft202012Validator": validator, "_ledger_cache": {}, "GATEWAY_ENVIRONMENT": "prod",
             "output_contract": NS(matches=lambda *args: True, for_protocol=lambda value, _: value),
             "poisoning": NS(findings=lambda _: []), "privacy": NS(analyze=AsyncMock(return_value=[]),

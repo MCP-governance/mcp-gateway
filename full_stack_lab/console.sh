@@ -85,6 +85,8 @@ ensure_env() {
   # Keys the salted hashes of what an important read released (D-142). Changing it makes the stored
   # hashes of the last ten minutes unreadable, which the Gateway treats as "not compared".
   grep -qE '^FLOW_FINGERPRINT_PEPPER=.+' .env || echo "FLOW_FINGERPRINT_PEPPER=fp-$(openssl rand -hex 24)" >> .env
+  # Encrypts the credentials employees connect themselves (D-235). Losing it makes them read as "not connected".
+  grep -qE '^USER_CREDENTIAL_KEY=.+' .env || echo "USER_CREDENTIAL_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> .env
   for ws in "${WORKSTATIONS[@]}"; do
     local up; up="$(echo "${ws#ws-}" | tr a-z A-Z)"
     grep -q "^LLM_KEY_WS_${up}=" .env || echo "LLM_KEY_WS_${up}=sk-${ws}-$(openssl rand -hex 12)" >> .env

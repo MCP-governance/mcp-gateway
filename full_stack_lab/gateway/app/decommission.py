@@ -27,6 +27,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import os
 import uuid
 from datetime import UTC, datetime
@@ -35,7 +36,7 @@ from typing import Any
 import httpx
 from psycopg.types.json import Jsonb
 
-from . import db, dispatch, disposal, registry, secret_scan, upstream
+from . import db, dispatch, disposal, registry, secret_scan, upstream, user_credentials
 
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
@@ -211,6 +212,7 @@ async def drill(server_id: str) -> dict:
         "best_attainable_grade": ceiling, "best_attainable_label": GRADE_LABEL[ceiling],
         "blockers": blockers, "active_users": [dict(r) for r in callers],
         "would_revoke": {"gateway_access": len(callers), "endpoint_configs": len(residue),
+                         "employee_connections": len(await user_credentials.holders(server["endpoint"])) if server.get("endpoint") else 0,
                          "server_held": len(creds) if disclosed else (1 if provider else 0)},
         "endpoint_residue": [dict(r) for r in residue],
         "note": "드릴은 아무것도 차단하지 않습니다. 종료를 시작하려면 케이스를 여세요.",
@@ -269,6 +271,11 @@ async def open_case(target: str, reason: str, opened_by: str, engagement_label: 
         if rel:
             await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE id=%s", (rel["id"],))
         raise
+    try:
+        await verify_connected(case_id, opened_by)
+    except Exception:
+        # Targets stay outstanding, which is what is true; "credentials" collection tries again.
+        logging.getLogger(__name__).exception("employee credential deletion could not be completed")
     await upstream.release_pool(server.get("endpoint"), None, "termination")
     from . import litellm_sync
     await litellm_sync.enqueue(server_id)
@@ -307,6 +314,14 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
             case_id, "endpoint-config", f"{row['hostname']} · {row['config_path']} 의 '{row['server_label']}' 항목",
             "endpoint", "endpoint-agent", actor, invalidate=False, subject_ref=row["fingerprint"],
             verification="endpoint-report", note="엔드포인트가 보고한 MCP 설정 잔존"))
+    # Credentials employees connected themselves (D-235): this organisation holds the encrypted copy, so it can
+    # enumerate them, delete them and look again - unlike what the provider holds.
+    for row in (await user_credentials.holders(server["endpoint"]) if server.get("endpoint") else []):
+        created.append(await add_target(
+            case_id, "server-held-credential",
+            f"{row['display_name'] or row['user_id'] or row['principal']}의 직접 연결 계정({row['account']}) 자격", "org",
+            "gateway-ledger", actor, invalidate=False, subject_ref=row["principal"], verification="credential-store",
+            note="직원이 연결해 조직이 암호화해 보관한 사본. 제공자 쪽 토큰 폐기는 계정 소유자가 한다"))
     if _is_provider(server):
         terms = server.get("exit_terms") or {}
         creds = server.get("server_held_credentials") or []
@@ -420,6 +435,32 @@ async def _probe_call(server_id: str) -> tuple[str, dict]:
     raise ValueError("차단 확인에 쓸 수 있는 읽기 도구가 없습니다.")
 
 
+async def verify_connected(case_id: str, actor: str) -> list[dict]:
+    """Delete the employee-connected credentials of this server's endpoint that the case lists, then look again.
+
+    The check reads the store after the deletion; only an absent row revokes the target, with that observation
+    as its time (C4), and the deletion itself is a ledger event per employee.
+    """
+    case = await _case(case_id)
+    server = await _server(case["server_id"])
+    found = []
+    for target in await db.fetch_all(
+            """SELECT * FROM revocation_targets WHERE case_id=%s AND kind='server-held-credential'
+                  AND verification='credential-store' AND status='OUTSTANDING' ORDER BY created_at""", (case_id,)):
+        principal = target["subject_ref"]
+        await user_credentials.remove(principal, server["endpoint"], "이용 관계 종료", actor)
+        left = await db.fetch_one("SELECT 1 FROM user_upstream_credentials WHERE principal=%s AND endpoint=%s",
+                                  (principal, server["endpoint"]))
+        evidence = await add_evidence(case_id, "credential-check", target["label"], "gateway credential store",
+                                      {"system": "gateway credential store", "present": bool(left)}, actor,
+                                      target_id=str(target["id"]))
+        found.append(evidence)
+        if not left:
+            await revoke_target(str(target["id"]), actor, "REVOKED", "조직이 보관한 연결 자격의 삭제를 확인",
+                                at=evidence["observed_at"])
+    return found
+
+
 async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
     """Collect state evidence the organisation can obtain on its own."""
     case = await _case(case_id)
@@ -472,6 +513,7 @@ async def collect(case_id: str, kinds: list[str], actor: str) -> dict:
                 await revoke_target(str(target["id"]), actor, "REVOKED", "엔드포인트 보고에서 항목이 사라짐",
                                     at=evidence["observed_at"])
     if "credentials" in kinds:
+        collected += await verify_connected(case_id, actor)
         for target in targets:
             if target["kind"] != "server-held-credential" or target["verification"] != "gitea-token":
                 continue

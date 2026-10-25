@@ -26,7 +26,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.validators import validator_for
 from referencing import Registry
 
-from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_suspend
+from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_credentials, user_suspend
 from .destination import DestinationBlocked
 from .outcomes import outcome_axes
 from . import flow_fingerprint, high_impact, output_contract, residency, selective, tool_sunset
@@ -1703,6 +1703,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
     # fails is the MCP server's time, not the gateway's.
     stage = "connect"
     try:
+        # Which kind of credential this call carried (never its value) is part of the ledger row.
+        dispatch_state.setdefault("client", {})["upstream_credential"] = upstream.credential_source(spec["endpoint"], principal)
         async with upstream.session(spec["endpoint"], principal=principal,
                                     protocol=registry.pinned_protocol(server_id), server_id=server_id,
                                     device_id=(pac_payload.get("transport_claims") or {}).get("device_id")) as client:
@@ -2327,6 +2329,17 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict(
                 "P-SUSPEND-001", "Block", "관리자가 이 사용자의 이 서버 이용을 중지했습니다. 계정은 그대로이며 재개되면 다시 사용할 수 있습니다."))
             return await _decision_payload(base_event, laps)
+        # A service that must see the employee's own account (GitHub) is not called with someone else's
+        # credential or none at all. A server already in termination keeps MCP-DECOMM-001 as its reason.
+        own_spec = registry.server(server_id) or {}
+        if user_credentials.service_for(own_spec) and (await db.fetch_one(
+                "SELECT 1 FROM mcp_servers WHERE id=%s AND COALESCE(lifecycle,'OPERATING')='OPERATING'", (server_id,))):
+            if await upstream.missing_connection(own_spec, user_token):
+                label = user_credentials.service_for(own_spec)["label"]
+                base_event.update(local_verdict(
+                    "MCP-CREDENTIAL-001", "Block",
+                    f"{label} 계정 연결이 없거나 만료되어 호출하지 않았습니다. MINT 콘솔 『내 연결』에서 {label} 계정을 연결하세요."))
+                return await _decision_payload(base_event, laps)
         laps.lap("identity")
 
         # Reserved before any check that can pass, so a burst cannot race past the

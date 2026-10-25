@@ -124,7 +124,7 @@ class SelectiveChecks(unittest.IsolatedAsyncioTestCase):
             "db": self.db, "canonical_hash": digest, "selective": selective, "Jsonb": lambda value: value,
             "registry": types.SimpleNamespace(server=lambda _: {"poisoning_review": {}, "endpoint": "http://unit.invalid"}, pinned_protocol=lambda _: "2025-11-25"),
             "poisoning": types.SimpleNamespace(findings=lambda tool: ["unsafe"] if tool["description"] == "unsafe" else []),
-            "upstream": types.SimpleNamespace(release_pool=AsyncMock()), "_discover": discover,
+            "upstream": types.SimpleNamespace(release_pool=AsyncMock(), credential_source=lambda *args: "none"), "_discover": discover,
             "ops_response": types.SimpleNamespace(contain_drift=contain, catalog_alerts=AsyncMock()),
             "disposal": types.SimpleNamespace(blocked=lambda **_: False), "transport_secure": lambda _: True,
             "egress_allowed": AsyncMock(return_value=True),
@@ -219,7 +219,7 @@ class SelectiveChecks(unittest.IsolatedAsyncioTestCase):
             "local_verdict": lambda policy, decision, reason: {"policy_id": policy, "decision": decision, "reason": reason},
             "dispatch": types.SimpleNamespace(record=AsyncMock(return_value=refused)),
             "upstream": types.SimpleNamespace(session=session, list_all_tools=AsyncMock(return_value=[types.SimpleNamespace(name=n) for n in self.db.observed]),
-                tool_view=lambda t: self.db.observed[t.name], release_pool=AsyncMock(), session_terminated=lambda _: False,
+                tool_view=lambda t: self.db.observed[t.name], release_pool=AsyncMock(), session_terminated=lambda _: False, credential_source=lambda *args: "none",
                 content_items=lambda _: [{"type": "text", "text": "unit response"}]),
         })
         async def policy(value):

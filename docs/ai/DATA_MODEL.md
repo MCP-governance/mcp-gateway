@@ -11,6 +11,7 @@ LiteLLM 선택 동기화(D-208)는 `litellm_sync_jobs`에 서버별 revision·fi
 
 D-120~D-123 추가: `runtime_image_scans`(이미지 검사 이력), `alert_self_tests`(합성 자체 시험), `ops_alerts`(경보·합성 표식), `ops_suspensions`(중지와 사람 복귀), `disposal_blocks`(외부 서명 목록에서 재구성한 차단 상태). 검사·경보·자체 시험 이력과 `approval_events`는 추가만 한다. `ops_suspensions`는 관리자가 복귀할 때 복귀 필드를 채우는 상태 기록이며 감사 판정을 수정하는 테이블이 아니다. 서명 목록 정본은 `/disposal` 볼륨이다. [운영 대응](OPS_RESPONSE.md).
 D-181 추가: `user_server_suspensions`(직원×서버 이용 중지 상태, 조합당 활성 행 1개). 재개는 복귀 필드를 채우는 상태 갱신이고, 누가 언제 무엇을 했는지는 같은 트랜잭션의 `approval_events`(`user-server-suspend`·`user-server-resume`)가 추가만으로 남긴다.
+D-235 추가: `user_upstream_credentials`(직원×endpoint 연결 자격, 조합당 1행). `ciphertext`는 AES-GCM(주체·endpoint를 연결 데이터로 묶음)이고 키는 기기 비밀 `USER_CREDENTIAL_KEY`다. `account`(GitHub 로그인 이름)·`expires_at`·`created_at`·`last_used_at`만 평문이며 값은 로그·원장·응답에 나가지 않는다. 연결·해제는 `approval_events`(`upstream-credential-connect`·`upstream-credential-disconnect`)가 값 없이 남긴다.
 D-200 추가: `local_jobs.run_seconds`는 요청의 원래 실행 제한(0초 초과·최대 20초, 기존 행 기본 20초)이다. 초기화의 준비 기한과 구분하며 `/start`가 `deadline`과 `lease_until`을 이 실행 제한으로 줄인다. 비밀 검사한 종료 진단은 `local_jobs.error`와 append-only `local_job_events.evidence.failure`에 같은 값으로 남긴다. 후자의 존재를 확인한 오류만 게이트웨이의 공개 로컬 실행 진단으로 전달한다.
 > 회사 데이터(`corp-db`)는 별도 서버다 → `full_stack_lab/corp/corpdb.sql`.
 

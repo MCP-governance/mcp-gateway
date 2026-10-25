@@ -17,9 +17,22 @@ OPA를 재기동해 파일이 아니라 **로드된** 정책이 일치하는지 
 설정한다. Compose의 `upstream_credentials` 볼륨은 Gateway 두 서비스에 read-only로 마운트된다.
 파일과 상위 디렉터리는 runtime 사용자만 읽도록 600/700, runtime UID 소유로 배치한다.
 내용은 `credentials` 배열이며 각 행은 `endpoint`, `allowed_principals`(관리대장 token ID 배열),
-`expires_at`(Unix **초**, 0은 비만료), `access_token`이다. 같은 endpoint를 중복하지 않는다.
+`expires_at`(Unix **초**, 0은 비만료), `access_token`이다. 같은 endpoint에 여러 행을 둘 수 있고 호출한 직원에게 묶인
+행(`allowed_principals`에 그 직원)을 고른다. 정확히 묶인 행이 없으면 `"*"` 행, 둘 다 겹치면 거부한다.
 자격을 command line·URL query·Git·audit에 쓰지 않는다. 파일 교체·검증은 운영자의 private provisioning
 절차로 한다. access token 만료 전에 native OAuth/공급자 절차로 갱신하여 재배치해야 한다.
+
+**운영자 공유 자격 vs 직원별 연결(D-235).** GitHub 원격 서버(`api.githubcopilot.com`)는 직원 본인의 계정으로 호출한다.
+직원이 콘솔 「내 연결」에서 개인 액세스 토큰(권장: fine-grained)을 붙여넣거나, 조직이 `GITHUB_OAUTH_CLIENT_ID`(OAuth App,
+client secret 불필요, 기본 비어 있으면 화면에서 숨김; 범위는 `GITHUB_OAUTH_SCOPES`)를 설정해 두면 인증 코드(device flow)로 연결한다.
+저장 전에 `GET https://api.github.com/user`로 확인하고, 값은 AES-GCM으로 암호화해 DB(`user_upstream_credentials`)에만 둔다.
+키 `USER_CREDENTIAL_KEY`는 `console.sh`가 `.env`에 한 번 만들고 gateway·gateway-sse·agent-service가 받는다 — 잃으면 저장된 연결은
+「연결 안 됨」으로 읽히고 직원이 다시 연결한다. 자격 선택 순서는 ① 그 직원의 연결 ② 위 자격 파일에서 그 직원에게 묶인 행
+③ 없음이며, 직원별 자격이 필요한 서버에서 ③이면 상위 서비스를 부르지 않고 `MCP-CREDENTIAL-001`로 차단해
+「MINT 콘솔 『내 연결』에서 GitHub 계정을 연결하세요」를 하네스에 보낸다. 운영자 공유 행을 직원 전체에 쓰게 하려면 `allowed_principals`에
+`"*"`를, 특정 사람만이면 그 직원을 넣고, 서버 등록에 `credential_scope = "shared"`를 두면 직원별 요구가 꺼진다.
+계정 삭제·중지·잠금과 이용 관계 종료는 연결을 지운다(원장 `upstream-credential-disconnect`). 호출 기록에는 값이 아니라
+`client.upstream_credential`(`employee`·`operator`·`none`)만 남는다.
 
 등록 metadata discovery는 control plane의 관리자 작업이며 principal 없는 별도 조회다. 실제 도구 dispatch는
 검증된 principal을 반드시 넘긴다. principal/resource/expiry/permission 오류는 전달 전 fail-closed다.

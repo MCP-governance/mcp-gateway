@@ -149,7 +149,7 @@ class CatalogContract(unittest.IsolatedAsyncioTestCase):
             "canonical_hash": digest, "output_contract": contract, "selective": selective,
             "Jsonb": lambda obj: SimpleNamespace(obj=obj), "_discover": AsyncMock(),
             "poisoning": SimpleNamespace(findings=lambda _: []),
-            "upstream": SimpleNamespace(release_pool=AsyncMock()),
+            "upstream": SimpleNamespace(release_pool=AsyncMock(), credential_source=lambda *args: "none"),
             "ops_response": SimpleNamespace(catalog_alerts=AsyncMock(), contain_drift=AsyncMock()),
             "review": SimpleNamespace(record_event=AsyncMock())})
         for old_schema, approved_hash in [(None, None), (schema, digest(schema))]:
