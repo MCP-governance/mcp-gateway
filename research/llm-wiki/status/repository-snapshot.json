@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-10-25T18:04:38+09:00",
-  "head": "29f10fb132559d504a5ed3425f7b6c5f1fe602cb",
+  "captured_at": "2026-10-25T19:07:45+09:00",
+  "head": "13ccfe3b401cfc7dfb80c4e6f119d74ea6cdd8b3",
   "branch": "10/25-kit-usability",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
@@ -49,7 +49,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "65a43ddae89925dad70ebd330e327f6c582e6ea86bffd8ba3ae63e01b71da4c4"
+      "sha256": "dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

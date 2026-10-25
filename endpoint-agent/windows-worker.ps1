@@ -79,6 +79,7 @@ $history = New-Object Collections.Generic.List[string]
 $stage = '준비'
 $installMutex = $null
 $ownsMutex = $false
+$stoppedTasks = @()
 
 function Set-EndpointResult([int]$Percent, [string]$Label, [string]$State = 'running', [string]$Detail = '') {
     $script:stage = $Label
@@ -205,6 +206,16 @@ try {
     # A managed reinstall, repair or switch of mode rolls the earlier install back inside managed-windows.py (D-239).
     if (-not $managed) { Stop-EndpointTask ("MCPGatewayEndpoint-" + $request.endpoint_id) }
     Set-EndpointResult 30 '실행 파일 준비'
+    if ($managed) {
+        # The runtime is replaced in place: a running service or helper keeps its files open, and the half-extracted
+        # runtime then had no python.exe (pj3 10-25). Stop them first; finally starts them again.
+        $stoppedTasks = @(Get-ScheduledTask -TaskName 'MCPGatewayManaged-*' -ErrorAction SilentlyContinue |
+            Where-Object { $_.State -eq 'Running' } | ForEach-Object { $_.TaskName })
+        foreach ($name in $stoppedTasks) { Stop-ScheduledTask -TaskName $name }
+        $runtime = (Join-Path $root 'python') + '\'
+        Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($runtime, [StringComparison]::OrdinalIgnoreCase) } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    }
     $python = Install-EndpointRuntime $PSScriptRoot $root
     $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
         'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
@@ -301,6 +312,9 @@ try {
     Set-EndpointResult 0 $stage 'failed' $reason
     exit 1
 } finally {
+    foreach ($name in $stoppedTasks) {
+        if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) { Start-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue }
+    }
     if ($ownsMutex) { $installMutex.ReleaseMutex() }
     if ($installMutex) { $installMutex.Dispose() }
     if ($administrator -and $request.private_directory) {

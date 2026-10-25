@@ -95,7 +95,10 @@ function Start-Process {
         self.assertNotIn("isolated_account=$true", template)
         self.assertIn("ConvertFrom-Json).isolated -eq $true", template)
         worker = (ROOT / 'endpoint-agent/windows-worker.ps1').read_text(encoding='utf-8-sig')
-        self.assertNotIn("Get-ScheduledTask -TaskName 'MCPGatewayManaged-*'", worker)  # a reinstall rolls back instead
+        self.assertNotIn("throw '기존 엔드포인트 제거 후 재설치 필요'", worker)  # a reinstall rolls back instead
+        # ...and the running service lets go of the runtime before it is replaced, then starts again (pj3 10-25).
+        self.assertLess(worker.index("foreach ($name in $stoppedTasks) { Stop-ScheduledTask"), worker.index("Install-EndpointRuntime $PSScriptRoot $root"))
+        self.assertIn("Start-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue", worker)
         self.assertIn("if ($isolated) { $managedArguments += '--isolated-account' }", worker)
         # A one-click approval can be updated by a newer one-click file; an IT approval (no marker) still needs IT.
         self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
@@ -131,6 +134,23 @@ function Start-Process {
         with mock.patch.object(self.managed.subprocess, 'run', side_effect=AssertionError('a harness was run')):
             self.assertEqual(self.managed.harness_versions(self.root / 'profile'), {'claude': expected})
         self.assertIsNone(self.managed.file_version(self.root / 'missing.exe'))
+
+    def test_simple_mode_puts_its_codex_block_back_after_the_codex_app_rewrites_the_file(self):
+        # pj3 10-25: the Codex app rewrote the employee's config.toml and the PC was quarantined for it.
+        profile = self.root / 'profile'
+        (profile / '.codex').mkdir(parents=True)
+        block = '\n[mcp_servers.learn]\nurl = "https://gw.example/mcp/learn/"\n'
+        path = profile / '.codex/config.toml'
+        path.write_text(self.managed.with_codex_block('model = "x"\n', block), encoding='utf-8')
+        config, policy = {'profile': str(profile)}, {'files': {self.managed.CODEX_BLOCK: block}}
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
+        path.write_text(path.read_text(encoding='utf-8').replace('learn/"', 'learn/" # edited') +
+                        '\n[plugins."pdf"]\nenabled = true\n', encoding='utf-8')
+        self.assertTrue(self.managed.restore_codex_block(config, policy))
+        text = path.read_text(encoding='utf-8')
+        self.assertEqual(self.managed.codex_block(text), block)
+        self.assertIn('[plugins."pdf"]', text)  # the app's own settings stay
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
 
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \

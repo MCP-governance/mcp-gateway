@@ -288,6 +288,11 @@ class StatusCommand(unittest.TestCase):
         self.assertIn("다시 시작하세요", fresh)
         old = self.linux.render_status(self.summary(names=["a", "b"], added={"servers": ["b"], "at": now - 7200}), now)
         self.assertNotIn("새로 반영된 서버", old)
+        # S4-11: a server revoked within the hour is no longer "newly reflected".
+        revoked = self.linux.render_status(self.summary(names=["a"], added={"servers": ["b"], "at": now - 30}), now)
+        self.assertNotIn("새로 반영된 서버", revoked)
+        partly = self.linux.render_status(self.summary(names=["a", "c"], added={"servers": ["b", "c"], "at": now - 30}), now)
+        self.assertIn("새로 반영된 서버: c (", partly)
         silent = self.linux.render_status(self.summary(updated=now - 600, added={"servers": ["b"], "at": now - 30}), now)
         self.assertNotIn("새로 반영된 서버", silent)       # a silent service says nothing about what it applied
         self.assertNotIn("서버 이름", self.linux.render_status(self.summary(), now))
