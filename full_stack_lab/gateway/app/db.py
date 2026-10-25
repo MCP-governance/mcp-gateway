@@ -42,13 +42,12 @@ _admin_pool: AsyncConnectionPool | None = None
 _admin_pool_lock = asyncio.Lock()
 
 
-def _set_timeouts(statement_timeout_ms: int, lock_timeout_ms: int = 0):
-    async def configure(connection: psycopg.AsyncConnection) -> None:
-        if statement_timeout_ms:
-            await connection.execute(f"SET statement_timeout = {statement_timeout_ms}")
-        if lock_timeout_ms:
-            await connection.execute(f"SET lock_timeout = {lock_timeout_ms}")
-    return configure
+def _connect_kwargs(statement_timeout_ms: int, lock_timeout_ms: int = 0) -> dict:
+    # Session settings go in the startup packet: a SET run from the pool's configure hook
+    # leaves the connection in a transaction, and the pool then discards it as broken.
+    options = " ".join(f"-c {name}={value}" for name, value in
+                       (("statement_timeout", statement_timeout_ms), ("lock_timeout", lock_timeout_ms)) if value)
+    return {"row_factory": dict_row, **({"options": options} if options else {})}
 
 
 async def pool() -> AsyncConnectionPool:
@@ -58,9 +57,8 @@ async def pool() -> AsyncConnectionPool:
             if _pool is None:
                 created = AsyncConnectionPool(
                     DATABASE_URL, min_size=1, max_size=POOL_MAX, timeout=POOL_TIMEOUT,
-                    max_waiting=POOL_MAX_WAITING, open=False, kwargs={"row_factory": dict_row},
-                    configure=_set_timeouts(STATEMENT_TIMEOUT_MS, LOCK_TIMEOUT_MS)
-                                if STATEMENT_TIMEOUT_MS or LOCK_TIMEOUT_MS else None,
+                    max_waiting=POOL_MAX_WAITING, open=False,
+                    kwargs=_connect_kwargs(STATEMENT_TIMEOUT_MS, LOCK_TIMEOUT_MS),
                 )
                 # wait=False so a not-yet-ready database surfaces at the first query
                 # (where wait_until_ready retries) instead of at import time.
@@ -76,8 +74,7 @@ async def admin_pool() -> AsyncConnectionPool:
             if _admin_pool is None:
                 created = AsyncConnectionPool(
                     DATABASE_URL, min_size=1, max_size=ADMIN_POOL_MAX, timeout=POOL_TIMEOUT,
-                    open=False, kwargs={"row_factory": dict_row},
-                    configure=_set_timeouts(ADMIN_STATEMENT_TIMEOUT_MS) if ADMIN_STATEMENT_TIMEOUT_MS else None,
+                    open=False, kwargs=_connect_kwargs(ADMIN_STATEMENT_TIMEOUT_MS),
                 )
                 await created.open(wait=False)
                 _admin_pool = created

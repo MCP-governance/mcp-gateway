@@ -193,8 +193,12 @@ class PoolDefaultsTest(unittest.TestCase):
             self.assertEqual(admin.kwargs["max_size"], db.ADMIN_POOL_MAX)
             self.assertLess(db.ADMIN_POOL_MAX, db.POOL_MAX)
             # Defaults are 0 (off) for the judging pool, 10000ms (on) for the admin pool.
-            self.assertIsNone(judging.kwargs["configure"])
-            self.assertIsNotNone(admin.kwargs["configure"])
+            # Set in the startup packet, never a configure hook (a SET there leaves the
+            # connection in a transaction and the pool discards it).
+            self.assertNotIn("configure", judging.kwargs)
+            self.assertNotIn("configure", admin.kwargs)
+            self.assertNotIn("options", judging.kwargs["kwargs"])
+            self.assertEqual(admin.kwargs["kwargs"]["options"], f"-c statement_timeout={db.ADMIN_STATEMENT_TIMEOUT_MS}")
         finally:
             db._pool, db._admin_pool = saved_pool, saved_admin
 
