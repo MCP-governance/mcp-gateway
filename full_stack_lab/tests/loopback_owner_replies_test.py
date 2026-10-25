@@ -93,7 +93,8 @@ class Installer(unittest.TestCase):
             enrollment.write_text('{"gateway_url":"https://gateway.example"}', encoding="utf-8")
             for companion in (True, False):
                 with self.subTest(companion=companion), \
-                     mock.patch.object(sys, "argv", ["bootstrap.py", "--skip-login", "--enrollment", str(enrollment)]), \
+                     mock.patch.object(sys, "argv", ["bootstrap.py", "--isolated", "--skip-login", "--enrollment", str(enrollment)]), \
+                     mock.patch.object(b, "install_check", return_value=([], "")), \
                      mock.patch.object(b, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)), \
                      mock.patch.object(b, "employee_account", return_value="owner"), \
                      mock.patch.object(b, "managed_account", return_value=("managed", companion)), \
@@ -106,7 +107,8 @@ class Installer(unittest.TestCase):
                      mock.patch.object(b, "install_managed", return_value={}) as install, redirect_stdout(io.StringIO()):
                     self.assertEqual(b.main(), 0)
                     install.assert_called_once()
-                    self.assertEqual(install.call_args.args[-1], 1000 if companion else None)
+                    # (account, harnesses, enrollment, owner UID, mode): the owner only for a separate managed account.
+                    self.assertEqual(install.call_args.args[3:], (1000 if companion else None, "isolated"))
                     if companion:
                         getpwnam.assert_called_once_with("owner")
                     else:

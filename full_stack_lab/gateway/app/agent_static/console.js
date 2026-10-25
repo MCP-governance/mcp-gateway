@@ -193,7 +193,7 @@ const locationRows = (value = {}) => [
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
 const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
-// Windows is the main target (D-239): selected first whatever browser opened the Console.
+// Windows is the main target: selected first whatever browser opened the Console.
 function preferredKitPlatform() {
   return "windows";
 }

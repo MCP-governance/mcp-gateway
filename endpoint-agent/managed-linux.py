@@ -363,6 +363,8 @@ def write_helper(user):
 def install(args):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
+    # A manual install without --mode (and every caller before D-239) is the isolated one.
+    args.mode = getattr(args, "mode", "isolated")
     simple = args.mode == "simple"
     bundle = json.loads(args.enrollment.read_text())
     verify_transport(bundle)

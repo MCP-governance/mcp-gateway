@@ -66,7 +66,7 @@ MANAGED = {"requirements": {"allowedWebSearchModes": ["disabled"], "featureRequi
 
 def linux_agent():
     names = {"origin", "parse_claude_servers", "parse_claude_plugins", "effective_web_search", "parse_codex",
-             "collect_inventory", "report_inventory", "CLAUDE_LINE", "PLUGIN_HEAD", "CODEX_FEATURES", "APP_ID"}
+             "collect_inventory", "report_inventory", "CLAUDE_LINE", "PLUGIN_HEAD", "CODEX_FEATURES", "APP_ID", "HARNESS_VERSIONS"}
     namespace = {"re": re, "json": __import__("json"), "urlsplit": __import__("urllib.parse").parse.urlsplit,
                  "subprocess": subprocess, "print": lambda *a, **k: None}
     return extract(KIT / "managed-linux.py", names, namespace)
@@ -132,7 +132,8 @@ class ManagedCollector(unittest.TestCase):
         """The Gateway marks every item of a reported harness absent; a harness that could not be read is left out."""
         agent = linux_agent()
         config = {"harnesses": ["claude", "codex"], "gateway_url": "https://gw.example:443"}
-        outputs = {("claude", "mcp"): MCP_LIST, ("claude", "plugin"): PLUGIN_LIST, ("codex", "features"): FEATURES}
+        outputs = {("claude", "mcp"): MCP_LIST, ("claude", "plugin"): PLUGIN_LIST, ("codex", "features"): FEATURES,
+                   ("claude", "--version"): "2.1.282 (Claude Code)", ("codex", "--version"): "codex-cli 0.157.0"}
 
         def run_text(config, tool, arguments, timeout=120):
             if tool == "codex" and arguments[0] == "mcp":
@@ -145,6 +146,8 @@ class ManagedCollector(unittest.TestCase):
         found = agent.collect_inventory(config)
         self.assertEqual(sorted(found), ["claude"])  # codex failed: not reported, so nothing of codex is marked absent
         self.assertEqual(len(found["claude"]), 3 + 3)
+        # The versions ride along to the heartbeat's host report (D-239), read as the account like the lists.
+        self.assertEqual(agent.collect_inventory.__globals__["HARNESS_VERSIONS"], {"claude": "2.1.282", "codex": "0.157.0"})
 
         def nothing(config, tool, arguments, timeout=120):
             raise ValueError("실패")
