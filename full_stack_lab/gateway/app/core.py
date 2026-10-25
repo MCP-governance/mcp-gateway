@@ -503,7 +503,7 @@ async def refresh_all_catalogs() -> dict:
         if (registry.server(server_id) or {}).get("deployment") == "local":
             # 로컬 실행 서버는 호출하는 직원 PC의 실행기가 승인 계약을 호출마다 대조한다(local-runner control contracts).
             # 관찰 PC 한 대가 정책 갱신 중이라 거절한 것을 서버 전체 ERROR로 내리면, ERROR는 로컬 실행 허가에서 빠져
-            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다(10-23 실측).
+            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다.
             results[server_id] = "LOCAL"
             continue
         try:
@@ -954,7 +954,7 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
                 normalized))
         else:
             # A remote registration keeps the scope its contract review recorded; only patterns derived from reviewed
-            # destinations follow them (a one-click registration with none matched no address at all, S4-02).
+            # destinations follow them (a one-click registration with none matched no address at all).
             spec["parameter_constraints"].update({name: review.repin_addresses(spec["parameter_constraints"][name], item["destinations"])
                                                   for name, item in normalized.items() if name in spec["parameter_constraints"]})
         doc["history"].append({"type": "tool-scope-reviewed", "server_id": server_id, "actor": actor,
@@ -2363,7 +2363,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         laps.lap("reserve")
 
         # A schema rarely bounds length, and the arguments go to the provider as they are:
-        # a 200 KB string reached an outside provider before it refused it (D-59, pj1).
+        # a 200 KB string reached an outside provider before it refused it (D-59).
         if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
             base_event.update(local_verdict(
                 "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))

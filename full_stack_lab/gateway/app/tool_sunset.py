@@ -94,7 +94,7 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
     try:
         reviewed_at = datetime.fromisoformat(str(reviewed_text).replace("Z", "+00:00"))
         # Read before taking the transaction's connection: a second pool connection per check deadlocked
-        # the pool when a harness listed ten servers at once (S4-01).
+        # the pool when a harness listed ten servers at once.
         setting = await retention.setting()
         async with db.transaction() as connection:
             key = target_id(server_id, tool_name)
@@ -135,7 +135,7 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
                                           reason="도구 이용 기한 만료", scope=scope, connection=connection)
                 return {"active": False, "available": True, "eligible": True, **result, "status": "재심사 필요"}
             # The deadline moves with every call by seconds; one extension a day per tool is the record worth keeping
-            # (an event per call grew the ledger by the call count, S4-10). The decision still uses the exact last use.
+            # (an event per call grew the ledger by the call count). The decision still uses the exact last use.
             if result["recent"] and last_use and (not event or event["kind"] != "tool-sunset-extension"
                                                    or str(event["scope"].get("deadline") or "")[:10]
                                                    != result["deadline"].astimezone(timezone.utc).date().isoformat()):

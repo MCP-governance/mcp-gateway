@@ -247,7 +247,7 @@ def control_generation(server_id: str) -> str:
     """What a job's own server may do: its registration (renewal aside), the reviewed catalog and PaC capabilities.
 
     The whole servers.json used to be hashed, so a registration or an automatic renewal of any other server stopped
-    every running local job on the PC (10-25 field test, S4-07)."""
+    every running local job on the PC."""
     from . import pac, registry
     reviewed = registry.CATALOG_PATH.read_bytes() if registry.CATALOG_PATH.exists() else b''
     spec = {key: value for key, value in (registry.server(server_id) or {}).items() if key not in RENEWAL_FIELDS}
@@ -325,7 +325,7 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
     while loop.time() < end:
         row = await db.fetch_one("SELECT * FROM local_jobs WHERE id=%s", (job,))
         if row['state'] in ('done','expired') and row.get('stop_requested') and (row.get('error') or row['state']=='expired'):
-            # 관리 조치로 멈춘 실행을 시간 초과로 보이게 하면 직원이 이유를 모른 채 재시도한다(10-23 PJ1 철회 실측).
+            # 관리 조치로 멈춘 실행을 시간 초과로 보이게 하면 직원이 이유를 모른 채 재시도한다.
             reason = await stop_reason(row)
             if reason:
                 await record_evidence(row, event)
@@ -364,7 +364,7 @@ def remember(row: dict, event: dict | None):
     event.setdefault('client', {}).setdefault('local_jobs', []).append(view)
     if row['method'] == 'tools/call':
         # The runner starts its container only after /start succeeds: a job refused before that never ran, so it
-        # holds no write reservation and its retry is not a duplicate (S4-07).
+        # holds no write reservation and its retry is not a duplicate.
         event['upstream_attempted'] = row.get('started_at') is not None
 
 
@@ -453,7 +453,7 @@ class LocalClient:
     # A call's own container initializes and checks the approved contract (description, input and output
     # schema hashes, protocol) on the device before it calls (local-runner execute_job). Answering a call's
     # initialize and tools/list from that approval here saves two container starts per call, which used to
-    # spend the call's time budget before the call itself ran (10-23 PJ1). Observation still asks the server.
+    # spend the call's time budget before the call itself ran. Observation still asks the server.
     async def start(self) -> None:
         if not self.discovery:
             from . import registry
@@ -604,14 +604,14 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
             raise NotStarted("이 엔드포인트의 요청이 아닙니다.")
         await lock_execution(connection,row)
         # Read the row again under the locks: a /control that arrived with /start would otherwise judge the
-        # pre-start row, fail its lease renewal against the started job and stop a healthy run (10-23 PJ1 read_graph).
+        # pre-start row, fail its lease renewal against the started job and stop a healthy run.
         row = await (await connection.execute('SELECT * FROM local_jobs WHERE id=%s AND device_id=%s',
                                               (job_id,device['endpoint_id']))).fetchone()
         allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                    generation=row['policy_generation'])
         # The job was made under the control still in force (current_job). Servers added or removed elsewhere keep
-        # the job; any control change stops it (D-238, 10-23 PJ1: one approval or one upstream in ERROR made every
-        # local job on the PC fail until the kit refreshed).
+        # the job; any control change stops it (D-238: one approval or one upstream in ERROR made every local job
+        # on the PC fail until the kit refreshed).
         if (not allowed or row['stop_requested'] or row['state']!='claimed' or row['deadline']<=datetime.now(UTC)
                 or row['lease_until']<=datetime.now(UTC) or not await current_job(connection,row,device)):
             raise NotStarted("정책·서명 세대·철회 상태가 바뀌었거나 실행 기한이 지났습니다.")

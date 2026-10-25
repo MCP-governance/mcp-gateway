@@ -94,6 +94,7 @@ run() {
   local db=t_$(echo "$test" | tr -c 'a-z0-9\n' '_' | cut -c1-40)_$$
   docker exec $P-pg psql -U mcp -d postgres -qc "CREATE DATABASE $db" || return 1
   docker cp $SRC/db/init.sql $P-pg:/tmp/init.sql && docker exec $P-pg psql -U mcp -d $db -q -f /tmp/init.sql >/dev/null || return 1
+  docker cp $SRC/db/seed-lab.sql $P-pg:/tmp/seed-lab.sql && docker exec $P-pg psql -U mcp -d $db -q -f /tmp/seed-lab.sql >/dev/null || return 1
   # The PostgreSQL, OPA, Presidio, Gitea and MCP legs are real; the code under test is this tree, mounted read-only.
   docker run --rm --network $NET --tmpfs /registry-runtime:uid=10001,gid=10001 --tmpfs /reports:uid=10001,gid=10001 \
     -v $SRC/gateway/app:/app/app:ro -v $SRC/tests:/tests:ro -v $SRC/registry:/registry:ro -v $SRC/opa:/policy:ro \

@@ -1,4 +1,4 @@
-"""Adapted from MCP-governance/Agent-Service miso@81177a4 (login/workspace/chat)."""
+"""Console login, workspace and chat routes, and the administrator operations behind them."""
 from __future__ import annotations
 
 import asyncio
@@ -345,8 +345,7 @@ async def login(request: Login, http_request: Request):
 
     이전 판은 모든 계정이 같은 환경변수 하나(`MOCK_SSO_PASSWORD`)를 비밀번호로
     썼다. 그러면 한 계정만 잠그거나 한 계정의 비밀번호만 바꾸는 일이 불가능하고,
-    "계정을 끈다"는 조치가 배포가 된다. 팀원 저장소 Agent-Service의 `miso` 브랜치가
-    쓰던 `crypt()` 검증 방식을 이 관리대장에 맞춰 가져왔다.
+    "계정을 끈다"는 조치가 배포가 된다. 계정마다 `crypt()` 해시로 검증한다.
     """
     caller = http_request.client.host if http_request.client else "unknown"
     row = await password_principal(request.email, request.password, caller)
@@ -2227,7 +2226,7 @@ class OneClickApproval(StrictModel):
     # 사용 대상(D-234): 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
     audience: Literal["all", "requester", "selected"] = "all"
     audience_users: list[str] = Field(default_factory=list, max_length=100)
-    # 주소 인자가 있는 도구의 허용 호스트. 제안값과 다를 때만 범위에 남는다(S4-02).
+    # 주소 인자가 있는 도구의 허용 호스트. 제안값과 다를 때만 범위에 남는다.
     destinations: dict[str, list[str]] = Field(default_factory=dict, max_length=300)
 
 

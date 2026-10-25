@@ -58,7 +58,7 @@ _NOT_DESTINATION = {"json-schema.org", "www.w3.org"}
 def suggested_destinations(row: dict, tool: dict) -> list[str]:
     """Hosts an address argument is meant for: a remote server's own host and hosts its contract names.
 
-    Only a suggestion on the approval screen; the person approving confirms or edits it (S4-02: with nothing
+    Only a suggestion on the approval screen; the person approving confirms or edits it (with nothing
     suggested, a documentation reader's URL argument was registered to match no address at all)."""
     hosts = [urlsplit(row.get("endpoint_url") or "").hostname] if row.get("intake_kind") == "remote-endpoint" else []
     text = json.dumps({"description": tool.get("description"), "input_schema": tool.get("input_schema")}, ensure_ascii=False)
@@ -119,7 +119,7 @@ LOCAL_RUN_PRESETS = {
                    "reason_text": "PC 폴더에 지식 그래프 영구 저장"},
     "src/sequentialthinking": {**_LOCAL, "image": "mcp/sequentialthinking", "reason_text": "PC 안에서 도는 단계별 사고 도구"},
 }
-# git·time 이미지는 인터프리터가 /root(0700) 아래 uv 설치에 있어 관리 계정(UID)으로 exec가 거부된다(10-23 PJ1 docker 29.8.1 실측).
+# git·time 이미지는 인터프리터가 /root(0700) 아래 uv 설치에 있어 관리 계정(UID)으로 exec가 거부된다(Docker 29.8.1).
 # 환경 변수·tmpfs로 풀 수 없고 루트 실행은 허용하지 않으므로 제안하지 않고 상태만 보인다.
 ROOT_ONLY_IMAGES = {"src/git", "src/time"}
 ROOT_ONLY_STATUS = "관리 계정으로 실행할 수 없는 이미지"

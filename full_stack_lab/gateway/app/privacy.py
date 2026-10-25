@@ -28,7 +28,7 @@ ANALYZER = os.getenv("PRESIDIO_ANALYZER_URL", "http://presidio-analyzer:3000")
 ANONYMIZER = os.getenv("PRESIDIO_ANONYMIZER_URL", "http://presidio-anonymizer:3000")
 # The analyzer serves requests in turn. Six concurrent documentation results queued
 # past an 8 s timeout on the appliance and a public result was withheld (fail-closed,
-# D-59 pj1). Queue here, where the wait is not the request's timeout, and give the
+# D-59). Queue here, where the wait is not the request's timeout, and give the
 # request itself room. Still fail-closed when Presidio is really down.
 TIMEOUT = float(os.getenv("PRESIDIO_TIMEOUT_SECONDS", "20"))
 _slots = asyncio.Semaphore(int(os.getenv("PRESIDIO_CONCURRENCY", "2")))
@@ -235,7 +235,7 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
     # Presidio's credential recognizer rather than inspect the value in isolation.
     # Only a match that crosses a synthetic "key=" prefix is a structured credential. One wholly inside a
     # text value (a document quoting client_secret=...) is masked with that string below, not withheld
-    # with the whole result (10-23 PJ1: five SDK documents withheld).
+    # with the whole result (five SDK documents were withheld).
     joined = "\n".join(f"{key}={child}" for key, child in assignments)
     prefixes, offset = [], 0
     for key, child in assignments:
@@ -254,7 +254,7 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
             document = _json_document(item)
             if document is not None:
                 # JSON carried as text is inspected as JSON: masking the text whole put an unquoted [REDACTED] in
-                # place of a number, and the broken JSON was then withheld for the wrong reason (S4-06). Numbers
+                # place of a number, and the broken JSON was then withheld for the wrong reason. Numbers
                 # and keys follow the structured rule above (D-214); strings are masked inside the structure.
                 masked, kinds = await mask_payload(document, ignore)
                 return (json.dumps(masked, ensure_ascii=False, indent=2 if "\n" in item else None) if kinds else item), kinds

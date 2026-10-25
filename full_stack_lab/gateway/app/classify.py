@@ -572,8 +572,8 @@ PATH_ARGS = ("path", "source", "destination", "file_path", "outputPath")
 def result_items(payload: dict) -> int:
     """Count arrays in each released representation, including JSON inside text.
 
-    Only records count. A document's lines are not records: a 1,200-line handbook was withheld as "more than
-    1000 items" (S4-05). Text stays bounded by the byte limit."""
+    Only records count. A document's lines are not records: a long handbook was withheld as "more than
+    1000 items". Text stays bounded by the byte limit."""
     def count(value: Any) -> int:
         if isinstance(value, list):
             return len(value) + sum(count(item) for item in value)

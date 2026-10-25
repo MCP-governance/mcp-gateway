@@ -2603,3 +2603,12 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
 - 배경: 연장 기록 조건이 「직전 연장 이벤트의 기한 ≠ 새 기한」이었는데 기한이 `마지막 사용 + 120일`이라 호출마다 초 단위로 바뀌어, 실행된 도구 호출마다 `approval_events`에 `tool-sunset-extension`이 1건씩 쌓였다(10-25 실사용 시험: 실행 91건에 이벤트 89건, 같은 도구를 5초에 세 번 불러도 3건). 호출 경로마다 advisory lock·INSERT·SIEM 큐가 더해졌다.
 - 결정: 직전 연장 이벤트의 기한 날짜(UTC)가 새 기한 날짜와 다를 때만 기록한다. 판정(만료·사용 가능)은 지금처럼 원장에서 계산한 정확한 마지막 사용 시각으로 하고, 이벤트는 감사 기록일 뿐이라 하루 단위 오차가 판정을 바꾸지 않는다.
 - 시험: `tool_sunset_check.py` `test_extension_is_recorded_once_a_day_not_per_call`(같은 날 두 번째 사용은 기록 없음, 다음 날은 기록). 수정 전 실패.
+
+## D-248 실습 합성 계정은 실습 시드로 분리하고, 제품 코드 주석에서 시험 PC·기기 주소·실측 메모를 뺀다 (2026-10-25)
+
+- 배경: `full_stack_lab/db/init.sql`(스키마)이 실명 합성 계정 7개를 넣었고 운영 묶음 `deploy/compose.yaml`이 그 파일을 싣기 때문에 고객 DB가 그 계정들로 시작했다. 릴리스 위생 점검(D-241)의 인계 표에서 게이트웨이 코드 주석의 시험 PC 이름(PJ1·pj2)·날짜 실측 메모·팀원 저장소 문구, 키트 사용 예의 기기 주소, 정책 원장 시험 ID의 PC 이름이 나왔다.
+- 결정:
+  1. 계정 INSERT를 `db/seed-lab.sql`로 옮기고 실습 compose(`full_stack_lab/compose.yaml`)만 `003-seed-lab.sql`로 싣는다. 격리 PostgreSQL 실습(`termination_dispatch_remote.sh`)도 같은 순서로 싣는다. 운영 묶음은 계정 없이 시작해 기존대로 콘솔 기본 계정(`root`)과 `mint.sh`의 초기 관리자 절차를 쓴다.
+  2. `gateway/app/**`·`field/pc/mcpgw_pc.py`·`opa/policy_ledger.json`의 주석·자체 점검 값·사용 예에서 시험 PC 이름, 날짜 실측 메모, 세션 번호, 팀원 저장소·브랜치 문구, 기기 주소를 뺐다. 주석의 이유는 남기고 근거 번호(D-번호)는 유지한다. 작업 번호(DEV-xx)는 이번 범위가 아니다.
+- 시험: `tests/seed_split_check.py` 3건(스키마에 계정 INSERT 없음, 실습 compose는 스키마 뒤 시드 적재, 운영 묶음은 스키마만 적재). 수정 전 2건 실패. 일회용 PostgreSQL에 `init.sql` → `seed-lab.sql` 적재해 계정 7개 확인.
+- 한계: 실습 데이터(사내 Git 시드 `corp/seed.py`·`console.sh` 로그인 예·시험 기대값)의 같은 이름은 실습 전용이라 바꾸지 않았다. `agent_tables.sql`의 옛 실습 계정 이전 UPDATE는 해당 행이 없으면 아무 일도 하지 않아 남겼다. 이미 만들어진 솔루션 기기의 DB에는 계정이 그대로 있다.

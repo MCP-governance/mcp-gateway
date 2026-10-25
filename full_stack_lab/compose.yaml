@@ -59,6 +59,7 @@ services:
       - db_data:/var/lib/postgresql
       - ./db/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
       - ./db/002-litellm.sql:/docker-entrypoint-initdb.d/002-litellm.sql:ro
+      - ./db/seed-lab.sql:/docker-entrypoint-initdb.d/003-seed-lab.sql:ro
     networks: [data]
 
   opa:
