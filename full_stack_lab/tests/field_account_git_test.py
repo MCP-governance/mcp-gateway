@@ -36,7 +36,7 @@ class FieldAccountGitTest(unittest.TestCase):
              patch.object(service.db, "execute", execute), \
              patch.object(service.db, "fetch_all", fetch_all), \
              patch.object(service.idp, "revoke_principal_tokens", revoke), \
-             patch.object(service.upstream, "release_pool", release), \
+             patch.object(service.upstream, "release_pool", release),              patch.object(service.user_credentials, "remove", AsyncMock(return_value=[])), \
              patch.object(mcp_sessions, "terminate", terminate), \
              patch.object(local_jobs, "quiesce", quiesce), \
              patch.dict(service.os.environ, {"MCP_FIELD_MODE": "0"}):

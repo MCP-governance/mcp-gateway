@@ -186,7 +186,8 @@ class Checks(unittest.IsolatedAsyncioTestCase):
         tool = {"name": "send", "enabled": True, "approved_description_hash": digest(view["description"]),
                 "approved_schema_hash": digest(view["input_schema"]), "approved_server_version": "pinned"}
         upstream = SimpleNamespace(session=session, list_all_tools=AsyncMock(return_value=[SimpleNamespace(name="send")]),
-            tool_view=lambda t: view, release_pool=AsyncMock(), content_items=lambda r: [], session_terminated=lambda e: False)
+            tool_view=lambda t: view, release_pool=AsyncMock(), content_items=lambda r: [], session_terminated=lambda e: False,
+            credential_source=lambda *args: "none")
         db = SimpleNamespace(fetch_all=AsyncMock(return_value=[tool]),
             fetch_one=AsyncMock(return_value={"status": "active"}))
         def classification(server, tool, base_action, action):
