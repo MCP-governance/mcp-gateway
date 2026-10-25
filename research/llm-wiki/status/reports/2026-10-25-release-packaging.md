@@ -39,12 +39,12 @@
 | --- | --- | --- |
 | `research/llm-wiki/sources/live/T10·T11·T12/rfc*.md·txt` | 30 | RFC 9700·8693·9396 본문 예시 토큰 |
 | `research/llm-wiki/web/content.js` | 22 | 위키 생성물(위 원문·검사기 설명 포함) |
-| `full_stack_lab/tests/*`(mcp_result_services·dest_pin·adversarial·solo_mode) | 8 | 검사기 시험용 가짜 키·JWT(`sk-test-SENTINEL-0001` 등) |
+| `full_stack_lab/tests/*`(mcp_result_services·dest_pin·adversarial·solo_mode) | 8 | 검사기 시험용 가짜 키·JWT |
 | `full_stack_lab/gateway/app/classify.py` | 2 | 자체 점검용 가짜 slack·JWT(`fake` 접미) |
 | `research/llm-wiki/sources/policy/T20/*` | 2 | 정책 원문 예시 |
-| `research/llm-wiki/analysis/**`, `sheet/tabs/36-integrations.csv` | 4 | 파일 해시값·커밋 해시·예시 `password=abc123def456` |
-| `full_stack_lab/siem/compose.yaml` | 1 | `curl -u admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD`(변수 참조) |
-| `.github/workflows/verify.yml`(9월 이력) | 1 | `ci-placeholder-secret-at-least-32-chars` |
+| `research/llm-wiki/analysis/**`, `sheet/tabs/36-integrations.csv` | 4 | 파일 해시값·커밋 해시·문서 속 예시 비밀번호 |
+| `full_stack_lab/siem/compose.yaml` | 1 | curl 인증 인자의 환경 변수 참조 |
+| `.github/workflows/verify.yml`(9월 이력) | 1 | CI 자리표시 값 |
 
 CI 정적 검사에 같은 판본 gitleaks의 작업 트리 스캔을 넣고, 위 가짜 경로만 `.gitleaks.toml`로 뺐다(로컬 일회성 컨테이너에서 「no leaks found」 확인).
 
