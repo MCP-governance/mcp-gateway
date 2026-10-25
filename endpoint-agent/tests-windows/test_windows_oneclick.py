@@ -132,6 +132,23 @@ function Start-Process {
             self.assertEqual(self.managed.harness_versions(self.root / 'profile'), {'claude': expected})
         self.assertIsNone(self.managed.file_version(self.root / 'missing.exe'))
 
+    def test_simple_mode_puts_its_codex_block_back_after_the_codex_app_rewrites_the_file(self):
+        # pj3 10-25: the Codex app rewrote the employee's config.toml and the PC was quarantined for it.
+        profile = self.root / 'profile'
+        (profile / '.codex').mkdir(parents=True)
+        block = '\n[mcp_servers.learn]\nurl = "https://gw.example/mcp/learn/"\n'
+        path = profile / '.codex/config.toml'
+        path.write_text(self.managed.with_codex_block('model = "x"\n', block), encoding='utf-8')
+        config, policy = {'profile': str(profile)}, {'files': {self.managed.CODEX_BLOCK: block}}
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
+        path.write_text(path.read_text(encoding='utf-8').replace('learn/"', 'learn/" # edited') +
+                        '\n[plugins."pdf"]\nenabled = true\n', encoding='utf-8')
+        self.assertTrue(self.managed.restore_codex_block(config, policy))
+        text = path.read_text(encoding='utf-8')
+        self.assertEqual(self.managed.codex_block(text), block)
+        self.assertIn('[plugins."pdf"]', text)  # the app's own settings stay
+        self.assertFalse(self.managed.restore_codex_block(config, policy))
+
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \
                 mock.patch.object(self.managed, 'powershell'):

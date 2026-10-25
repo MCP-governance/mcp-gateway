@@ -229,6 +229,22 @@ def apply_policy(config, policy):
     write_file(path, with_codex_block(current, files[CODEX_BLOCK]))
 
 
+def restore_codex_block(config, policy):
+    """Simple mode: the block lives in the employee's own config.toml, which their Codex app rewrites (plugins and the
+    like). That is the employee's file, not a control: put our block back before reporting instead of letting one
+    rewrite quarantine the PC (pj3 10-25). True when it was rewritten."""
+    path = codex_config(config)
+    try:
+        current = path.read_text(encoding="utf-8") if path.exists() else ""
+    except OSError:
+        return False  # unreadable: the heartbeat reports the mismatch
+    if codex_block(current) == policy["files"][CODEX_BLOCK]:
+        return False
+    # ponytail: a writer that drops the markers but keeps our tables leaves duplicates for Codex; seen only if Codex does.
+    write_file(path, with_codex_block(current, policy["files"][CODEX_BLOCK]))
+    return True
+
+
 def set_user_environment(config, values):
     """HTTPS_PROXY etc. for the account only, so other accounts' tools are untouched. The hive is
     loaded when the account is signed out (the installer requires that)."""
@@ -845,6 +861,8 @@ def serve(args):
                 config["policy_hash"] = policy["policy_hash"]
                 write_file(args.config, json.dumps(config))
             previous = policy["policy_hash"]
+            if config.get("mode") == "simple" and restore_codex_block(config, policy):
+                record({"codex_block": "restored"})
             findings = []
             hashes, health = checks(config, policy, findings=findings)
             beat = {"policy_hash": policy["policy_hash"], "configuration_hashes": hashes, "checks": health,
