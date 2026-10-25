@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from contextlib import contextmanager
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -13,6 +14,7 @@ DIRECTORY = Path(os.getenv("DISPOSAL_DIR", "/disposal"))
 # "ledger" is a retention seal over the audit chain (D-141); retention.py reads it.
 KINDS = {"token", "refresh", "server", "credential", "ledger"}
 LOG = logging.getLogger(__name__)
+_INDEX = {}
 
 
 class IntegrityError(RuntimeError):
@@ -67,13 +69,20 @@ def locked(directory):
                 fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def read(directory=None):
-    # shortcut: verify the whole journal per check; add a verified index after retention/load measurements.
-    directory = directory or DIRECTORY
+def _read_index(directory):
+    directory = directory.resolve()
     try:
         raw = (directory / "journal.jsonl").read_bytes()
-        head = verified(json.loads((directory / "head.json").read_bytes()))
-        if head != {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}:
+        head_raw = (directory / "head.json").read_bytes()
+        digest = hashlib.sha256(raw).hexdigest()
+        expected = {"sha256": digest, "bytes": len(raw)}
+        public_key = os.environ.get("DISPOSAL_PUBLIC_KEY")
+        cached = _INDEX.get(directory)
+        if (cached is not None and head_raw == cached["head"] and digest == cached["sha256"]
+                and public_key == cached["public_key"] and json.loads(head_raw)["payload"] == expected):
+            return cached
+        head = verified(json.loads(head_raw))
+        if head != expected:
             raise IntegrityError("폐기 목록 길이 또는 해시 불일치")
         records, previous = [], "0" * 64
         for sequence, line in enumerate(raw.splitlines()):
@@ -89,14 +98,34 @@ def read(directory=None):
             previous = hashlib.sha256(line).hexdigest()
         if not records:
             raise IntegrityError("폐기 목록이 비어 있음")
-        return records
+        index = {"head": head_raw, "sha256": digest, "public_key": public_key, "records": records,
+                 "tokens": frozenset(r["subject"] for r in records if r["kind"] == "token"),
+                 "refreshes": frozenset(r["subject"] for r in records if r["kind"] == "refresh"),
+                 "servers": frozenset(r["server_id"] or r["subject"] for r in records
+                                      if r["kind"] in {"server", "credential"})}
+        _INDEX[directory] = index
+        return index
     except IntegrityError:
+        _INDEX.pop(directory, None)
         raise
     except Exception as exc:
+        _INDEX.pop(directory, None)
         raise IntegrityError("폐기 목록 누락 또는 손상") from exc
 
 
+def read(directory=None):
+    # Callers may annotate records; never let those edits alter the verified snapshot.
+    directory = directory or DIRECTORY
+    try:
+        with locked(directory):
+            return deepcopy(_read_index(directory)["records"])
+    except OSError:
+        _INDEX.pop(directory.resolve(), None)
+        raise
+
+
 def _append(directory, records, item):
+    _INDEX.pop(directory.resolve(), None)
     path = directory / "journal.jsonl"
     raw = path.read_bytes() if records else b""
     payload = {**item, "sequence": len(records), "previous": hashlib.sha256(raw.splitlines()[-1]).hexdigest()
@@ -134,7 +163,7 @@ def remember(kind, subject, server_id="", detail=None, directory=None):
     if kind not in KINDS or not isinstance(subject, str) or not subject:
         raise ValueError("폐기 대상 식별자가 필요합니다.")
     with locked(directory):
-        records = read(directory)
+        records = _read_index(directory)["records"]
         if any((r["kind"], r["subject"], r["server_id"]) == (kind, subject, server_id) for r in records):
             return
         _append(directory, records, {"kind": kind, "subject": subject, "server_id": server_id, "detail": detail or {}})
@@ -143,12 +172,12 @@ def remember(kind, subject, server_id="", detail=None, directory=None):
 def blocked(jti=None, server_id=None, refresh=None, *, raise_errors=False):
     try:
         with locked(DIRECTORY):
-            records = read()
-        return any((jti is not None and r["kind"] == "token" and r["subject"] == str(jti))
-                   or (refresh is not None and r["kind"] == "refresh" and r["subject"] == refresh)
-                   or (server_id is not None and r["kind"] in {"server", "credential"}
-                       and (r["server_id"] or r["subject"]) == server_id) for r in records)
+            index = _read_index(DIRECTORY)
+            return ((jti is not None and str(jti) in index["tokens"])
+                    or (refresh is not None and refresh in index["refreshes"])
+                    or (server_id is not None and server_id in index["servers"]))
     except (IntegrityError, OSError):
+        _INDEX.pop(DIRECTORY.resolve(), None)
         if raise_errors:
             raise
         return True
@@ -160,8 +189,7 @@ def remember_token(jti, expires_at):
 
 async def capture_existing():
     from . import db
-    with locked(DIRECTORY):
-        records = read()
+    records = await asyncio.to_thread(read)
     known = {(r["kind"], r["subject"], r["server_id"]) for r in records}
     def save(kind, subject, server_id="", detail=None):
         identity = (kind, str(subject), server_id)
@@ -184,8 +212,7 @@ async def capture_existing():
 async def reconcile():
     from psycopg.types.json import Jsonb
     from . import db
-    with locked(DIRECTORY):
-        records = read()
+    records = await asyncio.to_thread(read)
     restored = []
     async with db.transaction() as connection:
         for record in records[1:]:

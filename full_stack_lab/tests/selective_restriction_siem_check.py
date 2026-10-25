@@ -121,7 +121,7 @@ class SelectiveChecks(unittest.IsolatedAsyncioTestCase):
             return {"tools": copy.deepcopy(list(self.db.observed.values())), "version": self.db.version,
                     "protocol_version": "2025-11-25"}
         self.ns = production_functions("core.py", {"refresh_catalog", "_contract"}, {
-            "db": self.db, "canonical_hash": digest, "selective": selective, "Jsonb": lambda value: value,
+            "asyncio": asyncio, "db": self.db, "canonical_hash": digest, "selective": selective, "Jsonb": lambda value: value,
             "registry": types.SimpleNamespace(server=lambda _: {"poisoning_review": {}, "endpoint": "http://unit.invalid"}, pinned_protocol=lambda _: "2025-11-25"),
             "poisoning": types.SimpleNamespace(findings=lambda tool: ["unsafe"] if tool["description"] == "unsafe" else []),
             "upstream": types.SimpleNamespace(release_pool=AsyncMock(), credential_source=lambda *args: "none"), "_discover": discover,

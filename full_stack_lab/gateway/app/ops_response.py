@@ -136,9 +136,7 @@ async def contain_repeated():
 
 async def resume(server_id, actor, note):
     from . import disposal
-    with disposal.locked(disposal.DIRECTORY):
-        tombstones = disposal.read()
-    if any(r["kind"] in {"server", "credential"} and (r["server_id"] or r["subject"]) == server_id for r in tombstones):
+    if await asyncio.to_thread(disposal.blocked, server_id=server_id, raise_errors=True):
         raise ValueError("폐기된 서버는 새 도입 승인이 필요합니다.")
     async with db.transaction() as connection:
         server = await (await connection.execute(
