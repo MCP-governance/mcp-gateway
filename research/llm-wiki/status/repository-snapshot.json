@@ -1,18 +1,16 @@
 {
-  "captured_at": "2026-10-25T17:52:43+09:00",
-  "head": "ba302e0e1c74747cbb395bbc75cefea70bbd07d0",
-  "branch": "10/25-gw-bugfix",
+  "captured_at": "2026-10-25T18:27:11+09:00",
+  "head": "2b308627452d932351285b6342e1bb90cca59f25",
+  "branch": "10/25-litellm-addon",
   "status": [
-    "M docs/ai/DECISIONS.md",
+    "M addons/litellm/README.md",
+    " M deploy/.env.example",
+    " M deploy/compose.yaml",
+    " M docs/ai/DECISIONS.md",
+    " M docs/ai/LITELLM_SYNC.md",
     " M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
-    " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/decisions-index.md",
-    " M research/llm-wiki/status/reports/README.md",
-    " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md",
-    "?? research/llm-wiki/status/reports/2026-10-25-gw-bugfix.md"
+    "?? research/llm-wiki/status/reports/2026-10-25-litellm-addon.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -52,11 +50,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "e10ec51cff659ed2f5ff9a6bee7b8cdfc4d795599a066e8c57e51132c2103763"
+      "sha256": "b03eb6ae28534e6aaccf7e4deb9c35d4da0099421235efe7610022919f3b27a6"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "462d8f5cdf52bf519abd07491b7ffaba4a6f5fc22320de0bfe09188ed17f691c"
+      "sha256": "65a43ddae89925dad70ebd330e327f6c582e6ea86bffd8ba3ae63e01b71da4c4"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

@@ -29,7 +29,8 @@ LiteLLM이 주장하는 사용자·팀은 기록만 한다. A의 `oauth_delegate
    ./mint.sh litellm enable --url https://<LiteLLM> --bindings 매핑.json --route mint < 관리-키-파일
    ./mint.sh litellm status
    ```
-   점검(매핑·키·명시적 키 접근 설정·워커)이 통과해야 적용된다. 키 회전은 `./mint.sh litellm rotate-key < 새-키-파일`(재기동 없음).
+   점검(매핑·키·워커, 팀 매핑을 쓰면 명시적 키 접근 설정)이 통과해야 적용된다. 팀 매핑을 쓰면서 LiteLLM이 그 설정을 API로 보여 주지 않으면
+   설정 파일에 `require_key_mcp_access_defined: true`를 둔 것을 확인하고 `.env`에 `MINT_LITELLM_KEY_ACCESS_CONFIRMED=1`을 넣는다. 키 회전은 `./mint.sh litellm rotate-key < 새-키-파일`(재기동 없음).
 4. **직원 계정** — PC 키트 없이 LiteLLM으로만 쓰는 직원은 `./mint.sh add-account <아이디> --role 직원 --ai-gateway`.
    직원은 MINT IdP(`/oauth/token`)로 자기 MCP 토큰을 받아 위 헤더로 보낸다. 승인 화면의 사용 대상에 들어 있어야 도구가 보인다.
 

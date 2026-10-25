@@ -2,7 +2,7 @@
 
 `split_decisions.py index`가 만든 생성 파일이다. 직접 고치지 않는다. 본문은 위치 칸의 파일에서 읽거나 `python research/llm-wiki/tools/split_decisions.py show D-번호`로 한 건만 출력한다.
 
-결정 233개 · 최대 번호 248 · 저장 형태: 단일 파일(docs/ai/DECISIONS.md)
+결정 235개 · 최대 번호 250 · 저장 형태: 단일 파일(docs/ai/DECISIONS.md)
 
 ## 번호 1~50
 
@@ -261,6 +261,8 @@
 | D-246 | 출력 건수 상한은 JSON 레코드에만 적용하고, JSON을 담은 텍스트는 JSON으로 검사한다 (2026-10-25, S4-05·S4-06) | 2026-10-25 | [DECISIONS.md:2592](../../../docs/ai/DECISIONS.md) |
 | D-247 | 도구 이용 기간 연장은 도구마다 하루에 한 번 기록한다 (2026-10-25, S4-10) | 2026-10-25 | [DECISIONS.md:2601](../../../docs/ai/DECISIONS.md) |
 | D-248 | 실습 합성 계정은 실습 시드로 분리하고, 제품 코드 주석에서 시험 PC·기기 주소·실측 메모를 뺀다 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2607](../../../docs/ai/DECISIONS.md) |
+| D-249 | LiteLLM 애드온: 경로 선택 하나, deploy 설치 연결, 완료 상태 재조회, 대상 단위 실패 격리, 1.105 고정 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2616](../../../docs/ai/DECISIONS.md) |
+| D-250 | 중앙 AI 게이트웨이 전용 직원은 관리형 PC 없이 자기 MCP 토큰을 받는다 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2629](../../../docs/ai/DECISIONS.md) |
 
 ## 비어 있는 번호
 

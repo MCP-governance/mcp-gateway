@@ -1,24 +1,22 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T17:52:43+09:00
+확인 시각: 2026-10-25T18:27:11+09:00
 
-HEAD: `ba302e0e1c74747cbb395bbc75cefea70bbd07d0` · 로컬 브랜치: `10/25-gw-bugfix`
+HEAD: `2b308627452d932351285b6342e1bb90cca59f25` · 로컬 브랜치: `10/25-litellm-addon`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
+M addons/litellm/README.md
+ M deploy/.env.example
+ M deploy/compose.yaml
+ M docs/ai/DECISIONS.md
+ M docs/ai/LITELLM_SYNC.md
  M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/analysis/threat-trace-review-1020/README.md
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/decisions-index.md
- M research/llm-wiki/status/reports/README.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
-?? research/llm-wiki/status/reports/2026-10-25-gw-bugfix.md
+?? research/llm-wiki/status/reports/2026-10-25-litellm-addon.md
 ```
 
 ## 주요 파일 바이트
@@ -33,6 +31,6 @@ M docs/ai/DECISIONS.md
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `e10ec51cff659ed2f5ff9a6bee7b8cdfc4d795599a066e8c57e51132c2103763` |
-| `endpoint-agent/managed-linux.py` | `462d8f5cdf52bf519abd07491b7ffaba4a6f5fc22320de0bfe09188ed17f691c` |
+| `endpoint-agent/bootstrap.py` | `b03eb6ae28534e6aaccf7e4deb9c35d4da0099421235efe7610022919f3b27a6` |
+| `endpoint-agent/managed-linux.py` | `65a43ddae89925dad70ebd330e327f6c582e6ea86bffd8ba3ae63e01b71da4c4` |
 | `endpoint-agent/enforce-linux.py` | `cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9` |
