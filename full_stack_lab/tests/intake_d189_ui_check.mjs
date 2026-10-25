@@ -6,6 +6,7 @@ import vm from "node:vm";
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
 const safeHTML = source.slice(source.indexOf("class Raw {"), source.indexOf("const short = "));
 const fields = source.slice(source.indexOf("const field = {"), source.indexOf("function scopeFields("));
+const audience = source.slice(source.indexOf("const AUDIENCE = "), source.indexOf("function validityChip("));
 const approval = source.slice(source.indexOf("const ASSURANCE_LABELS = "), source.indexOf("async function showIntakeApproval("));
 const context = vm.createContext({ URL });
 vm.runInContext(`${safeHTML}\n${fields}\n
@@ -15,6 +16,7 @@ vm.runInContext(`${safeHTML}\n${fields}\n
   const VALIDITY = {30:"30일",90:"90일"}; const RISK_CHOICES = {};
   const chip = (tone,label) => html\`<span>\${label}</span>\`;
   const kv = (pairs) => html\`<dl>\${pairs.map(([k,v])=>html\`<dt>\${k}</dt><dd>\${v}</dd>\`)}</dl>\`;
+  const NONE = "—"; ${audience}
   ${approval}
   globalThis.render = (out) => String(intakeApprovalFields(out));`, context);
 

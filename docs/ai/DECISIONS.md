@@ -2415,3 +2415,15 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   7. 운영자 공유 자격은 지정한 사람 전용(`allowed_principals=["user"]`)으로 되돌렸고 계약 확인(주체 없는 조회)은 이 행을 계속 쓴다.
 - 한계: 장치 인증으로 받은 OAuth App 토큰이 `api.githubcopilot.com/mcp`에서 받아들여지는지는 실제 OAuth App과 계정으로 확인하지 않았다(이 작업은 실제 토큰·앱 사용 금지). 조직이 GitHub에서 OAuth App을 등록하고 장치 흐름을 켜야(Enable Device Flow) client id를 넣을 수 있으며, 조직의 OAuth App 접근 제한이 있으면 조직 소유자가 승인해야 한다. 토큰 붙여넣기 방식은 GitHub의 토큰 형식·권한을 그대로 따른다. 연결 자격이 없는 상태의 계약 확인(`refresh_catalog`)은 운영자 행이 있어야 인증된다. 장치 흐름 상태가 프로세스 메모리라 agent-service를 여러 프로세스로 늘리면 폴링이 다른 프로세스에 가 만료로 읽힌다(고정 세션 또는 DB 보관 필요).
 - 시험: `tests/user_credential_check.py` 23건(암호화·평문 비노출·키 없음, 선택 순서·다중 행·거부, GitHub 확인 실패·만료 헤더, 장치 흐름 전이, 라우트·인증 의존성, 계정 삭제·중지 삭제, 종료 회수·증거, 차단 문구와 정책), 기존 `upstream_session_reuse_test`·`fresh_requester_check` 대역 갱신, `credential_binding_check`는 POSIX 권한 때문에 Windows에서는 돌지 않아 WSL/리눅스에서 확인.
+
+## D-237 사용 대상 변경은 서버 상세에서 하고, 「내 연결」·사용 대상을 수용 시험 항목으로 둔다 (2026-10-25, W7 정상 기능 점검)
+
+- 배경: D-234·D-235를 코드로 따라가 보니 (1) `POST /api/registry/servers/{id}/audience`를 부르는 화면이 없었다(승인 때 고른 사용 대상을 바꿀 길이 API뿐), (2) 승인 화면의 「지정 직원」 입력칸이 대상이 「전체 직원」이어도 보였다, (3) 만료된 연결이 「내 연결」에 「연결됨」으로 남았다, (4) CI 수용 시험의 메뉴 집합이 「내 연결」을 몰라 `console-*-screens-load`가 실패할 상태였다, (5) 두 명이 필요한 위험 등급에서 지정 직원 검증이 두 번째 관리자 클릭에서야 일어났다, (6) 원장 사건 종류 라벨에 `server-audience`가 없었다.
+- 결정:
+  1. 서버 상세(관리자)에 「사용 대상」 항목과 버튼을 둔다. 승인 화면과 같은 입력(`audienceFields`)을 쓰고, 지정 직원일 때만 아이디 입력칸이 보인다. 이미 전체 직원이 아니면 기본 선택은 「신청자만」이라 눌러서 의도치 않게 넓어지지 않는다. 정책 화면의 승인 봉투 표에도 `*`는 「전체 직원」으로 표시한다.
+  2. 승인 요청은 사용 대상이 「지정 직원」일 때만 아이디 목록을 보낸다. 지정 직원 검증(`resolve_audience`)은 위험 등급별 대기 기록보다 앞서 첫 클릭에서 한다.
+  3. 「내 연결」은 `expired`를 내려주고, 만료된 연결은 「만료」로 보이며 같은 입력으로 다시 연결한다(덮어쓰기).
+  4. 원장 사건 라벨 `server-audience` = 「사용 대상 변경」(`upstream-credential-connect/disconnect`는 D-235에서 이미 있음. `mcp-source-download`라는 사건은 코드에 없다).
+  5. 수용 시험(`acceptance.py`)에 `one-click-audience-everyone-then-narrowed`(기본 `*`, 지정 직원 없음·없는 아이디 422, 직원 403·없는 서버 404, 신청자만·지정 직원·전체 직원 복귀와 목록·호출 `MCP-REGISTRY-003`, 변경 사건 3건)와 `my-connections-and-missing-credential-block`(직원·관리자 목록 200, 일반 서버 연결·해제 404, GitHub 호스트 서버를 등록부에 올려 미연결 호출이 `MCP-CREDENTIAL-001`로 막히고 상위 호출이 없는지, 가짜 토큰 422·저장 없음)을 더했다. 메뉴 집합에 `connections`를 더했다. 실제 GitHub 토큰은 쓰지 않는다.
+- 한계: 새 수용 시험 항목은 대역(`acceptance_w7_check.py`)으로 요청·응답 모양만 확인했고 CI 스택에서는 아직 돌리지 않았다. `my-connections-and-missing-credential-block`은 서비스가 만든 등록이 아니라 등록부 파일에 직접 올린 임시 서버(`acceptance-github`)를 쓰고 끝나면 해제한다.
+- 시험: `tests/audience-connections-console.test.mjs` 8건(승인·서버 상세 사용 대상, 「내 연결」 연결 없음·연결됨·만료·불가·빈 상태, 연결·해제 뒤 갱신, 한국어), `audience_all_check.py` 변경 API 2건, `intake_one_click_check.py` 사용 대상 2건, `acceptance_w7_check.py` 항목 5건. 하네스 `intake_one_click_ui_check`·`intake_d189_ui_check`가 `AUDIENCE`를 몰라 실패하던 것을 고쳤고, 콘솔 JS 시험(`tests/*.test.mjs`와 두 하네스)을 `verify.yml`에 넣었다.

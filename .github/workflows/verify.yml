@@ -58,7 +58,7 @@ jobs:
           node --check gateway/app/agent_static/charts.mjs
           node --check gateway/app/agent_static/login.js
           node --check gateway/app/agent_static/signup.js
-          node --test tests/console-state.test.mjs tests/resource-values.test.mjs
+          node --test tests/*.test.mjs tests/intake_one_click_ui_check.mjs tests/intake_d189_ui_check.mjs
 
       - name: 검사기 자체 점검
         run: |

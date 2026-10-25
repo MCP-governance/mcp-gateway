@@ -1,4 +1,4 @@
-"""10-23 기능의 수용 시험 항목(acceptance.py)을 HTTP·DB 대역 위에서 돌려 항목 코드가 기대한 요청·응답 모양을 따르는지 본다.
+"""10-23·10-25 기능의 수용 시험 항목(acceptance.py)을 HTTP·DB 대역 위에서 돌려 항목 코드가 기대한 요청·응답 모양을 따르는지 본다.
 
 대역은 서비스가 하는 판정(거부 규칙·상태 전이)을 흉내 낼 뿐이므로 이 시험은 항목이 실제 서비스를 통과했다는 증거가 아니다.
 실제 실행은 GitHub CI의 일회용 스택에서 `./console.sh test`가 한다. 새 MCP를 만들거나 외부에 접속하지 않는다.
@@ -24,8 +24,12 @@ DIGEST = "a" * 64
 class World:
     """수용 스택 서비스의 규칙 중 이 항목들이 기대는 것만 가진 대역."""
 
-    def __init__(self, suggested="w", cosign=False, preset_ok=True):
+    def __init__(self, suggested="w", cosign=False, preset_ok=True, default_audience="*", credential_gate=True):
         self.suggested, self.cosign, self.preset_ok = suggested, cosign, preset_ok
+        self.default_audience, self.credential_gate = default_audience, credential_gate
+        self.audience: dict[str, list[str]] = {}  # 등록된 fetch 서버 → 허용 사용자
+        self.audience_log: dict[str, list[dict]] = {}
+        self.runtime_servers: dict[str, dict] = {}
         self.intakes, self.servers, self.consents, self.events, self.sql = {}, {}, [], {}, []
         self.last_decision = None
         self.contract: dict[str, dict] = {}
@@ -53,7 +57,16 @@ class World:
             return reply(409, detail="화면에서 승인한 범위와 다릅니다.")
         if method == "DELETE" and path.startswith("/api/registry/servers/"):
             self.deregistered.append(path.rsplit("/", 1)[1])
+            self.audience.pop(path.rsplit("/", 1)[1], None)
+            self.runtime_servers.pop(path.rsplit("/", 1)[1], None)
             return reply(200)
+        if (method, path) == ("GET", "/gw/registry"):
+            return reply(200, registrations={sid: {"allowed_principals": p} for sid, p in self.audience.items()})
+        change = re.fullmatch(r"/api/registry/servers/([^/]+)/audience", path)
+        if change:
+            return self.change_audience(change[1], who, body, reply)
+        if path.startswith("/api/my-connections"):
+            return self.connections(method, path, reply)
         step = re.fullmatch(r"/api/mcp-requests/([^/]+)/(approval-preview|approve-and-register|reject|review-contract|approve|register)", path)
         if step:
             return self.intake_step(step[1], step[2], who, body, reply)
@@ -63,6 +76,46 @@ class World:
         if decide:
             return self.consent_step(decide[1], decide[2], who, body, reply)
         return reply(404, detail=f"대역에 없는 경로 {method} {path}")
+
+    GITHUB = "acceptance-github"
+
+    @staticmethod
+    def resolve(audience, users, approving):
+        """서비스의 사용 대상 해석: 토큰 목록, 또는 거부 사유(문자열)."""
+        if audience == "all":
+            return ["*"]
+        if audience == "requester":
+            return ["emp-principal"]
+        if not users:
+            return "사용 대상 직원을 한 명 이상 지정하세요." if approving else "사용 대상 직원을 지정하세요."
+        missing = [u for u in users if u != "adm-uid"]
+        return "활성 계정이 아닌 사용자: " + ", ".join(missing) if missing else ["adm-principal"]
+
+    def change_audience(self, sid, who, body, reply):
+        if who not in {"t-adm", "t-adm2"}:
+            return reply(403, detail="관리자만 승인할 수 있습니다.")
+        if sid not in self.audience:
+            return reply(404, detail="도입 승인으로 Console에서 등록한 서버가 아닙니다.")
+        principals = self.resolve(body["audience"], body.get("users", []), False)
+        if isinstance(principals, str):
+            return reply(422, detail=principals)
+        self.audience[sid] = principals
+        self.audience_log.setdefault(sid, []).append(
+            {"kind": "server-audience", "outcome": "approved", "scope": {"audience": body["audience"], "principals": principals}})
+        return reply(200, server_id=sid, audience=body["audience"], principals=principals)
+
+    def connections(self, method, path, reply):
+        registered = self.GITHUB in self.runtime_servers
+        if method == "GET":
+            rows = [{"server_id": self.GITHUB, "name": "Acceptance GitHub", "service": "GitHub", "device": False,
+                     "token_url": "https://github.com/settings/personal-access-tokens/new", "connected": False,
+                     "expired": False, "account": None, "kind": None}] if registered else []
+            return reply(200, connections=rows, available=True)
+        if path.split("/")[3] != self.GITHUB or not registered:
+            return reply(404, detail="직원별 연결이 필요한 서버가 아닙니다.")
+        if method == "POST":
+            return reply(422, detail="GitHub이 이 토큰을 받아들이지 않았습니다. 토큰과 권한을 확인하세요.")
+        return reply(200, connected=False)
 
     def proposal(self, intake):
         row = self.intakes[intake]
@@ -109,10 +162,16 @@ class World:
         actions = {n: v for n, v in body.get("actions", {}).items() if v != proposal["tools"].get(n)}
         if not set(actions) <= set(body["tools"]) or any("rwx".index(v) > "rwx".index(proposal["tools"][n]) for n, v in actions.items()):
             return reply(422, detail="도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
+        wanted = body.get("audience")
+        principals = self.resolve(wanted, body.get("audience_users", []), True) if wanted else [self.default_audience]
+        if isinstance(principals, str):
+            return reply(422, detail=principals)
         if self.cosign and who == "t-adm":
             row["first"] = True
             return reply(200, pending=True)
         row["status"], row["actions"] = "APPROVED", actions
+        row["audience"], row["principals"] = wanted or "all", principals
+        self.audience[proposal["server_id"]] = principals
         self.servers[proposal["server_id"]] = {"fetch": actions.get("fetch", proposal["tools"]["fetch"])}
         return reply(200, status="READY")
 
@@ -133,8 +192,20 @@ class World:
         return reply(200, consents=[dict(by_id[i]) for i in ids])
 
     # ── 게이트웨이 호출·DB ──────────────────────────────────────────────────
+    def permitted(self, who, sid):
+        return "*" in self.audience[sid] or a.PRINCIPAL[who] in self.audience[sid]
+
     async def call(self, who, name, arguments, url):
         sid = url.rstrip("/").rsplit("/", 1)[1]
+        blocked = {"is_error": True, "text": "", "upstream_attempted": False, "decision": "Block", "decision_id": "d"}
+        if sid == self.GITHUB and self.credential_gate:
+            return {**blocked, "policy_id": "MCP-CREDENTIAL-001",
+                    "text": "[MCP Gateway · 차단] GitHub 계정 연결이 없거나 만료되어 호출하지 않았습니다. MINT 콘솔 『내 연결』에서 GitHub 계정을 연결하세요."}
+        if sid in self.audience:
+            if not self.permitted(who, sid):
+                return {**blocked, "policy_id": "MCP-REGISTRY-003"}
+            return {"decision": "Allow", "policy_id": "P-AUTHZ-ALLOW-001", "decision_id": "d", "is_error": False, "text": "ok",
+                    "upstream_attempted": True}
         mine = next((c for c in self.consents if c["server_id"] == sid), None)
         if mine is None or mine["status"] == "REVOKED":
             if mine is None:
@@ -151,7 +222,16 @@ class World:
                 "upstream_attempted": False}
 
     async def list_tools(self, who, url):
+        sid = url.rstrip("/").rsplit("/", 1)[1]
+        if sid in self.audience and not self.permitted(who, sid):
+            return []
         return [type("Tool", (), {"name": "fetch"})()]
+
+    def runtime(self):
+        return {"servers": self.runtime_servers, "usage_relationships": [], "contracts": {}, "history": []}
+
+    def save_runtime(self, doc):
+        self.runtime_servers = dict(doc["servers"])
 
     async def execute(self, sql, params=()):
         self.sql.append((sql, params))
@@ -162,6 +242,12 @@ class World:
     async def fetch_one(self, sql, params=()):
         if "AS intake" in sql:
             return {"intake": self.intakes[params[0]]["status"], "servers": int(params[1] in self.servers)}
+        if sql.startswith("SELECT count(*) AS servers FROM mcp_servers"):
+            return {"servers": int(params[0] in self.servers)}
+        if sql.startswith("SELECT user_id, token FROM principals"):
+            return {"user_id": "adm-uid", "token": params[0]}
+        if "FROM user_upstream_credentials" in sql:
+            return {"n": 0}
         if sql.startswith("SELECT status FROM mcp_intake_requests"):
             return {"status": self.intakes[params[0]]["status"]}
         if sql.startswith("SELECT action FROM mcp_tools"):
@@ -180,9 +266,12 @@ class World:
     async def events_for(self, kind, ident):
         if kind == "consent":
             return self.events.get(ident, [])
+        if kind == "server":
+            return self.audience_log.get(ident, [])
         row = self.intakes[ident]
         return [{"kind": "intake-one-click", "outcome": "approved",
-                 "scope": {"tools": ["fetch"], **({"actions": row["actions"]} if row.get("actions") else {})}}]
+                 "scope": {"tools": ["fetch"], "audience": row.get("audience"), "audience_principals": row.get("principals"),
+                           **({"actions": row["actions"]} if row.get("actions") else {})}}]
 
 
 class W7Checks(unittest.IsolatedAsyncioTestCase):
@@ -198,6 +287,9 @@ class W7Checks(unittest.IsolatedAsyncioTestCase):
                        patch.object(a.db, "fetch_all", new=world.fetch_all), patch.object(a.review, "events_for", new=world.events_for),
                        patch.object(a, "call", new=world.call), patch.object(a, "operating", new=AsyncMock()),
                        patch.object(a, "list_tools", new=world.list_tools),
+                       patch.object(a.registry, "runtime", new=world.runtime),
+                       patch.object(a.registry, "save_runtime", new=world.save_runtime),
+                       patch.object(a.registry, "sync", new=AsyncMock()),
                        patch.object(a, "TOKENS", dict(TOKENS)), patch.object(a, "PRINCIPAL", {"employee": "emp-principal", "admin": "adm-principal"}),
                        patch.object(a, "USERS", {"employee": "e@x", "admin": "a@x"}),
                        patch.dict(os.environ, ACCEPTANCE_FETCH_ENDPOINT="https://mcp-fetch-tls:8443/mcp")):
@@ -286,11 +378,50 @@ class W7Checks(unittest.IsolatedAsyncioTestCase):
             await a.approval_preview_local_run_values()
         self.assertEqual(sorted(world.rejected), sorted(world.intakes))  # 실패해도 정리한다
 
+    async def test_audience_item_follows_default_narrowing_and_events(self):
+        world = self.set_world(suggested="w")
+        detail = await a.one_click_audience()
+        self.assertIn("MCP-REGISTRY-003", detail)
+        (sid,) = world.deregistered
+        self.assertTrue(sid.startswith("fetch-"))
+        self.assertEqual([e["scope"]["audience"] for e in world.audience_log[sid]], ["requester", "selected", "all"])
+        self.assertEqual(world.audience, {})  # 항목이 끝나면 등록을 해제한다
+
+    async def test_audience_item_fails_when_approval_defaults_to_requester_only(self):
+        world = self.set_world(suggested="w", default_audience="emp-principal")
+        with self.assertRaises(AssertionError) as raised:
+            await a.one_click_audience()
+        self.assertIn("승인 원장의 사용 대상", str(raised.exception))
+        self.assertEqual(world.audience, {})  # 실패해도 정리 경로는 돈다
+
+    async def test_connections_item_blocks_unconnected_github_and_cleans_up(self):
+        world = self.set_world()
+        detail = await a.my_connections_and_missing_credential()
+        self.assertIn("MCP-CREDENTIAL-001", detail)
+        self.assertIn(world.GITHUB, world.deregistered)
+        self.assertEqual(world.runtime_servers, {})
+
+    async def test_connections_item_fails_when_an_unconnected_call_gets_through(self):
+        world = self.set_world()
+        world.credential_gate = False
+        with self.assertRaises(AssertionError) as raised:
+            await a.my_connections_and_missing_credential()
+        self.assertIn("미연결 호출", str(raised.exception))
+        self.assertIn(world.GITHUB, world.deregistered)
+
+    def test_connections_menu_and_screen_are_checked_for_both_roles(self):
+        self.assertIn("connections", a.ADMIN_MENUS)
+        self.assertIn("connections", a.EMPLOYEE_MENUS)
+        for screens in (a.ADMIN_SCREENS, a.EMPLOYEE_SCREENS):
+            self.assertIn(("/api/my-connections", ["connections", "available"]), screens)
+
     def test_items_are_registered_after_the_registration_check(self):
         source = Path(a.__file__).read_text(encoding="utf-8")
         order = [source.index(f'("{name}"') for name in (
             "console-registration-pins-and-expires", "one-click-approval-lowers-tool-class",
-            "server-level-consent-decisions", "approval-preview-local-run-values", "invited-employee-enrollment")]
+            "server-level-consent-decisions", "approval-preview-local-run-values",
+            "one-click-audience-everyone-then-narrowed", "my-connections-and-missing-credential-block",
+            "invited-employee-enrollment")]
         self.assertEqual(order, sorted(order))
 
 
