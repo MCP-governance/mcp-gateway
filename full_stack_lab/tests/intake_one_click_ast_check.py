@@ -35,9 +35,9 @@ class Jsonb:
 
 
 class HTTPException(Exception):
-    def __init__(self, status_code, detail):
-        super().__init__(detail)
-        self.status_code = status_code
+    def __init__(self, status_code, detail=None):
+        super().__init__(status_code, detail)
+        self.status_code, self.detail = status_code, detail
 
 
 async def unpatched(*args, **kwargs):
@@ -86,7 +86,7 @@ review.transition = unpatched
 _ap_spec = importlib.util.spec_from_file_location("intake_ast_artifact_provenance", LAB / "gateway/app/artifact_provenance.py")
 _artifact_provenance = importlib.util.module_from_spec(_ap_spec)
 _ap_spec.loader.exec_module(_artifact_provenance)
-service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview", "OneClickApproval", "IntakeRegistration", "resolve_audience",
+service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview", "OneClickApproval", "IntakeRegistration", "resolve_audience", "ALL_PRINCIPALS",
     "ProvenanceMismatch", "approval_row", "preview_intake_approval", "approve_and_register", "register_mcp_request",
     "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance", "discovery", "LOCAL_DISCOVER_SECONDS"],
     {"db": db, "review": review, "StrictModel": contract.StrictModel, "ResidencyFields": contract.ResidencyFields,
