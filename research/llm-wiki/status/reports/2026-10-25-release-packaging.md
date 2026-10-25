@@ -2,13 +2,13 @@
 
 - 작업자: Claude Code (Opus 5.5), 세션 `release-packaging`(지시서 S2)
 - 코드 기준: 시작 main `7687a9e`, 브랜치 `10/25-release-packaging`(로컬 `claude/release-packaging-154ea4`). 제품 코드(`gateway/app`·`endpoint-agent`) 변경 없음
-- 변경 파일: `VERSION`, `CHANGELOG.md`, `deploy/**`(compose·.env.example·install.sh·mint.sh·check.py·README·.gitignore), `.gitleaks.toml`, `.github/workflows/verify.yml`, `README.md`, `README.en.md`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `docs/ai/RUNBOOK.md`·`TROUBLESHOOTING.md`·`FIELD.md`·`DECISIONS.md`(D-239~D-241 추가만), `full_stack_lab/README.md`(한 줄), `research/llm-wiki/history/readme-2026-10-25.md`(신규), 이 보고서
+- 변경 파일: `VERSION`, `CHANGELOG.md`, `deploy/**`(compose·.env.example·install.sh·mint.sh·check.py·README·.gitignore), `.gitleaks.toml`, `.github/workflows/verify.yml`, `README.md`, `README.en.md`, `AGENTS.md`, `CLAUDE.md`, `.gitignore`, `docs/ai/RUNBOOK.md`·`TROUBLESHOOTING.md`·`FIELD.md`·`DECISIONS.md`(D-242~D-241 추가만), `full_stack_lab/README.md`(한 줄), `research/llm-wiki/history/readme-2026-10-25.md`(신규), 이 보고서
 - 시작 근거: 소유자 지시(10-25) 「릴리즈 버전 관리·기업 적용 패키징, 토큰·작업용 주석 제거, README·브랜치 정리」, 지시서 S2
 - 완료 조건: CI 통과(deploy 기동 단계 포함), CHANGELOG·VERSION·README 한/영, 위생 제거 표, 브랜치 삭제 로그·보존 태그, `check_wiki.py` 오류 0, 결정 기록
 
 ## 결과
 
-### 1. 판본 체계 (D-239)
+### 1. 판본 체계 (D-242)
 
 - `VERSION` = `0.9.0`, `CHANGELOG.md`(Keep a Changelog, 한국어). 0.9.0 항목은 D-131~D-237을 사용자 관점(추가·변경·수정·보안·업그레이드 주의)으로 묶었고 작업 번호·레인·D-번호는 넣지 않았다.
 - **태그 제안**: `v0.9.0`을 이 브랜치의 main 병합 커밋에 붙인다. 지금 main `7687a9e`에는 `VERSION`이 없어 태그와 판본 표시가 어긋난다. 0.9.0인 이유: 기능은 한 기기에서 실사용 중이지만 최종 검수 0건·macOS 실기기 미검증·고객 서버 설치는 CI에서만 실증·이전 판본 이행 경로 없음 → 1.0.0(안정 약속)은 이르다. S1(간편 모드 기본)은 기본 동작이 바뀌므로 0.10.0.
@@ -207,7 +207,7 @@ CI 정적 검사에 같은 판본 gitleaks의 작업 트리 스캔을 넣고, �
 ## 다음 작업
 
 - 리더: 이 브랜치 diff·CI 확인 → main 병합 → `v0.9.0` 태그 push → `.agents.local.md`를 메인 체크아웃에 복사 → 미병합 10개 원격 브랜치 삭제 승인 여부 결정.
-- S1·다음 세션: 판본 표시 코드(D-239 4항), 부록 A의 키트·게이트웨이 주석 정리, `db/init.sql` 스키마/랩 시드 분리.
+- S1·다음 세션: 판본 표시 코드(D-242 4항), 부록 A의 키트·게이트웨이 주석 정리, `db/init.sql` 스키마/랩 시드 분리.
 - S3: `history/readme-2026-10-25.md` 색인, `docs/ai/README.md:26` 설명 수정.
 - 소유자: 공개 저장소 이력 재작성 여부, 라이선스 선택.
 
