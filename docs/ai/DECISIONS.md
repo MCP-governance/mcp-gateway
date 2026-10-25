@@ -2563,3 +2563,9 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   2. 비밀: gitleaks v8.30.1로 전체 이력(원격 브랜치 포함 763 커밋)을 스캔해 70건 모두 시험용 가짜 값·RFC 예시·해시임을 확인했다(실제 자격 0건, 이력 재작성 불필요). CI 정적 검사가 작업 트리를 같은 판본으로 매번 스캔하고, 의도적 가짜 자격 경로만 `.gitleaks.toml`로 뺀다.
   3. `docs/ai/DECISIONS.md`·`research/llm-wiki`·날짜가 붙은 `docs/ai/*_2026-*.md`는 역사 기록이라 고치지 않는다. 제품 코드(`gateway/app`·`endpoint-agent`)의 주석·시험 값은 소유 세션이 처리하도록 파일:행 표로 넘긴다(보고서).
   4. 원격 브랜치: main에 완전히 병합되고 마지막 커밋이 10-24 이전인 브랜치는 삭제, 미병합은 `archive/<마지막 커밋 날짜>-<이름>` 태그로 보존한 뒤 삭제 후보로만 둔다. `main`·`feat/web-ui`·`10/25-*`·진행 중 세션 브랜치는 보호. 10-25에 81개 → 18개(삭제 63, 보존 태그 10).
+
+## D-243 도구 이용 상태 확인은 풀 연결 하나로 하고, 확인 실패는 원장에 남긴다 (2026-10-25, S4-01)
+
+- 배경: 하네스가 승인 서버 10개에 동시에 붙으면 tools/list 10건이 함께 `tool_sunset.check`를 불렀다. 각 확인이 트랜잭션 연결을 쥔 채 `_coverage`에서 `retention.setting()`으로 풀의 두 번째 연결을 요구해, 풀(최대 10·대기 10초)이 교착됐다. 10초 뒤 서버마다 이름순 첫 도구가 목록에서 빠졌고(도구가 하나인 서버는 서버째), 같은 순간 정책 받기·장치 등록·콘솔 화면 API가 `PoolTimeout`으로 500이었다(10-25 실사용 시험: 54분에 11번). 실패 기록 `record_event("tool-sunset-check", "failed")`는 `approval_events.outcome` CHECK에 없는 값이라 매번 INSERT가 실패하고 `except: pass`로 사라졌다(원장 0행).
+- 결정: 보존 기간 설정은 트랜잭션 전에 읽어 `_coverage`에 넘긴다(확인 하나 = 연결 하나). 확인 결과 기록은 `outcome="recorded"`로 남기고, 그 기록마저 실패하면 삼키지 않고 오류 로그를 남긴다. 확인을 못 하면 목록에서 빼고 호출은 `P-CONTROL-FAIL-CLOSED`로 막는 규칙(D-177)은 그대로다.
+- 시험: `tests/tool_sunset_pool_pg_check.py`(실제 PostgreSQL, 풀 대기 3초) — 동시 10건 모두 사용 가능, 보존 기간 부족과 내부 오류가 원장에 1건씩. 수정 전 3건 모두 실패(3.05초 뒤 2건 사용 불가, 기록 0). `tool_sunset_check.py`·`tool_sunset_paths_check.py` 기대값을 `recorded`로.

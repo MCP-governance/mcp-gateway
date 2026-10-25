@@ -126,7 +126,7 @@ class ToolSunsetCheck(unittest.TestCase):
             state = await tool_sunset.check("srv", "unknown", now)
             self.assertTrue(state["active"])
             self.assertEqual(state["status"], "자료 없음")
-            self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "failed"))
+            self.assertEqual(ports.review.record_event.await_args.args[:2], ("tool-sunset-check", "recorded"))
         asyncio.run(run())
 
     def test_aggregation_failure_does_not_deactivate(self):
