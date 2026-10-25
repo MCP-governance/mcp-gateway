@@ -1464,6 +1464,9 @@ class HostReport(StrictModel):
     kernel: str = Field(max_length=120)
     wsl: bool
     other_accounts: list[HostAccount] = Field(default_factory=list, max_length=64)
+    # The harness versions installed for the managed account: what a simple-mode Windows PC reports (D-239).
+    harnesses: dict[Literal["claude", "codex"], Annotated[str, Field(max_length=40, pattern=r"^[0-9A-Za-z.+_-]*$")]] = Field(
+        default_factory=dict)
 
 
 class NetworkQuality(StrictModel):
@@ -1538,6 +1541,10 @@ class ListenerReport(StrictModel):
             if any(item.source not in self.sources for item in self.findings):
                 raise ValueError("관측 범위 밖의 결과입니다.")
         return self
+
+
+class EndpointSettingsUpdate(StrictModel):
+    auto_activate: bool
 
 
 class ScanPolicyUpdate(StrictModel):
@@ -1750,6 +1757,16 @@ async def endpoint_scan_policy_update(request: ScanPolicyUpdate,
         raise HTTPException(422, str(exc)) from exc
 
 
+@app.get("/api/endpoint/settings")
+async def endpoint_settings_read(user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.endpoint_settings()
+
+
+@app.put("/api/endpoint/settings")
+async def endpoint_settings_update(request: EndpointSettingsUpdate, user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.set_endpoint_settings(user["principal"], request.auto_activate)
+
+
 @app.post("/api/endpoint/inventory")
 async def endpoint_report(request: EndpointReport,
                           device: dict = Depends(endpoint_device("inventory"))) -> dict:
@@ -1824,6 +1841,7 @@ async def endpoint_inventory(classification: str | None = None,
         "entries": entries["rows"],
         "listeners": listeners["rows"],
         "scan_policy": await endpoint_plane.scan_policy(),
+        "settings": await endpoint_plane.endpoint_settings(),
         "os_events": events["rows"],
         "managed_events": managed,
         "pages": {name: {key: page[key] for key in ("total", "limit", "next_cursor")}

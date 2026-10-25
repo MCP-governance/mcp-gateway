@@ -97,8 +97,10 @@ try {
     $enrollment = Join-Path $private 'enrollment.json'
     [IO.File]::WriteAllBytes($enrollment, $files['enrollment.json'])
     $requestPath = Join-Path $private 'request.json'
+    # The signed-in employee's own account (D-239); a kit downloaded with the advanced option asks for the companion.
+    $isolated = ([Text.Encoding]::UTF8.GetString($files['enrollment.json']) | ConvertFrom-Json).isolated -eq $true
     $request = @{ action='install'; mode='managed'; user=$Context.user; requester_sid=$Context.sid;
-        isolated_account=$true; enrollment=$enrollment }
+        isolated_account=$isolated; enrollment=$enrollment }
     [IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     $exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File "' + (Join-Path $paths.code 'windows-worker.ps1') +

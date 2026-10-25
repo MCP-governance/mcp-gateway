@@ -42,9 +42,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
-        "committed_sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
-        "normalized_sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
+        "sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
+        "committed_sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
+        "normalized_sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
         "worktree_modified": false
       }
     ],
@@ -182,9 +182,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
-        "committed_sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
-        "normalized_sha256": "efaa270071bd6284a6c469d8de7cfe7c4591bd12eaddbbdd2a39a17a1adf2344",
+        "sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
+        "committed_sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
+        "normalized_sha256": "719a6d16e2e3a3c9d888add93934703321e21b4e03351650bdc9dc09fc20519e",
         "worktree_modified": false
       },
       {
@@ -848,16 +848,16 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "b1b6bb94d27ddd221b3aa82faccde6a23850c93f4973e7211633714a1ec07c8c",
-        "committed_sha256": "b1b6bb94d27ddd221b3aa82faccde6a23850c93f4973e7211633714a1ec07c8c",
-        "normalized_sha256": "b1b6bb94d27ddd221b3aa82faccde6a23850c93f4973e7211633714a1ec07c8c",
+        "sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
+        "committed_sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
+        "normalized_sha256": "1a810fad6d5daa6e0a38736ae7b70087b34da38bd00a7d6df17987e78f5ab67b",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "abd00008c4e24438c8a1228f0441dabace9d088b58f9ad73acbda45b88b60c48",
-        "committed_sha256": "abd00008c4e24438c8a1228f0441dabace9d088b58f9ad73acbda45b88b60c48",
-        "normalized_sha256": "abd00008c4e24438c8a1228f0441dabace9d088b58f9ad73acbda45b88b60c48",
+        "sha256": "87ccd122b4071d75c84685102d5f7b7a021f66d7d1900c46687356130077bc7e",
+        "committed_sha256": "87ccd122b4071d75c84685102d5f7b7a021f66d7d1900c46687356130077bc7e",
+        "normalized_sha256": "87ccd122b4071d75c84685102d5f7b7a021f66d7d1900c46687356130077bc7e",
         "worktree_modified": false
       }
     ],
@@ -1221,9 +1221,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/idp.py",
-        "sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
-        "committed_sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
-        "normalized_sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
+        "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
+        "committed_sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
+        "normalized_sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
         "worktree_modified": false
       },
       {
@@ -3231,9 +3231,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/idp.py",
-        "sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
-        "committed_sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
-        "normalized_sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e",
+        "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
+        "committed_sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
+        "normalized_sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216",
         "worktree_modified": false
       },
       {

@@ -1,11 +1,14 @@
 {
-  "captured_at": "2026-10-25T15:46:43+09:00",
-  "head": "989a2d3602bd5730d017010e4e3b9492fadfbb54",
-  "branch": "10/25-policy-sync-split",
+  "captured_at": "2026-10-25T17:06:48+09:00",
+  "head": "532b2d9fbc88cc1d84167c7df932911e6ee9472a",
+  "branch": "10/25-kit-usability",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    "M  research/llm-wiki/analysis/integration-cases.json",
+    "M  research/llm-wiki/analysis/requirements.json",
+    "M  research/llm-wiki/catalogs/threats.json",
+    "A  research/llm-wiki/status/reports/2026-10-25-kit-usability.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -25,7 +28,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "87dc5aab4127d205882b8d06ce7a25afc50153a693fec100335bc76fa03a919e"
+      "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
@@ -45,11 +48,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "74fee5d708275b1136c9c36c639571b872350ce0f9a3d029af738f54f453792f"
+      "sha256": "e10ec51cff659ed2f5ff9a6bee7b8cdfc4d795599a066e8c57e51132c2103763"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "6619ea490e962d25862402bc928a2eb4e896fa869f592fde5c3441efaf52404e"
+      "sha256": "462d8f5cdf52bf519abd07491b7ffaba4a6f5fc22320de0bfe09188ed17f691c"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

@@ -705,13 +705,25 @@ MANAGED_CHECKS_BY_PLATFORM = {"linux": MANAGED_CHECKS,
                               "windows": {"firewall_enforcing", "protected_configs", "ordinary_account", "user_command_helpers"}}
 
 
+# Simple mode (D-239): the harness runs in the employee's own account with no kernel confinement, so the only
+# endpoint fact the Gateway can hold it to is that the managed settings it rendered are in place and root-owned.
+SIMPLE_CHECKS = {"protected_configs"}
+
+
 def managed_platform(device: dict) -> str:
     # Not the platform column: the observer's own enroll report rewrites it ("Windows 10", "Linux 6.8").
     detail = device.get("detail") or {}
     return "windows" if detail.get("local_sid") else "macos" if detail.get("managed_platform") == "macos" else "linux"
 
 
+def managed_mode(device: dict) -> str:
+    """simple (the employee's own account, D-239) or isolated. Kits before D-239 enrolled isolated installs only."""
+    return "simple" if (device.get("detail") or {}).get("mode") == "simple" else "isolated"
+
+
 def managed_checks(device: dict, reported: dict | None = None) -> set[str]:
+    if managed_mode(device) == "simple":
+        return SIMPLE_CHECKS
     required = MANAGED_CHECKS_BY_PLATFORM[managed_platform(device)]
     # Agents installed before D-148 do not scan user settings and cannot be updated remotely;
     # quarantining them all on deploy would cut off every enrolled PC. Once a device has reported
@@ -737,7 +749,14 @@ async def enrollment_token(owner: str) -> dict:
     return {"enrollment_token": raw, "expires_at": expires.isoformat()}
 
 
-def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None) -> bool:
+def companion_names(username: str) -> list[str]:
+    """The account itself and the companions an isolated install of it creates (Linux, Windows): a switch between
+    the modes (D-239) replaces the earlier device instead of leaving it as an active record nobody reports for."""
+    return [username, ("managed-" + username)[:31], ("mcpgw-" + username)[:20]]
+
+
+def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None,
+             username: str | None = None) -> bool:
     """An earlier device of this employee's account that this install replaces: same platform and managed account,
     and the same PC. The machine id decides when both sides report one; otherwise the host name does (installs
     before D-217 sent none, and macOS sends none). The platform column is not compared: the observer's enroll
@@ -745,16 +764,33 @@ def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, lo
     detail = old.get("detail") or {}
     if managed_platform(old) != platform:
         return False
-    if platform == "windows" and detail.get("local_sid") != local_sid:
+    # A Windows companion account has its own SID; that row is matched by the host name below.
+    if platform == "windows" and detail.get("local_sid") != local_sid and old.get("local_username", username) == username:
         return False
     if machine_id and detail.get("machine_id"):
         return machine_id == detail["machine_id"]
     return old["hostname"] == hostname
 
 
+async def endpoint_settings() -> dict:
+    row = await db.fetch_one("SELECT auto_activate, updated_by, updated_at FROM endpoint_settings WHERE id=1")
+    item = dict(row) if row else {"auto_activate": True, "updated_by": None, "updated_at": None}
+    if item.get("updated_at"):
+        item["updated_at"] = item["updated_at"].isoformat()
+    return item
+
+
+async def set_endpoint_settings(actor: str, auto_activate: bool) -> dict:
+    await db.execute("""INSERT INTO endpoint_settings(id,auto_activate,updated_by,updated_at) VALUES (1,%s,%s,now())
+                        ON CONFLICT (id) DO UPDATE SET auto_activate=EXCLUDED.auto_activate,
+                          updated_by=EXCLUDED.updated_by, updated_at=EXCLUDED.updated_at""", (auto_activate, actor))
+    return await endpoint_settings()
+
+
 async def consume_enrollment(raw: str, key: str, hostname: str, username: str, uid: int | None, *,
                              platform: str = "linux", local_sid: str | None = None,
-                             helper_command: str | None = None, machine_id: str | None = None) -> dict:
+                             helper_command: str | None = None, machine_id: str | None = None,
+                             mode: str = "isolated") -> dict:
     endpoint_id = "managed-" + str(uuid.uuid4())
     async with db.transaction() as connection:
         grant = await (await connection.execute(
@@ -769,10 +805,10 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
         # one, one the administrator stopped (revoked, or its local runs stopped) or an unactivated one starts
         # over as pending, so a reinstall never lifts a hold (D-217).
         earlier = [r for r in await (await connection.execute(
-            """SELECT endpoint_id,hostname,managed_state,activated_by,activated_at,detail FROM endpoint_agents
-                 WHERE owner_token=%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL
-                 ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], username))).fetchall()
-            if _same_pc(r, hostname, platform, machine_id, local_sid)]
+            """SELECT endpoint_id,hostname,managed_state,activated_by,activated_at,detail,local_username FROM endpoint_agents
+                 WHERE owner_token=%s AND local_username=ANY(%s) AND status='active' AND device_epoch IS NOT NULL
+                 ORDER BY issued_at DESC FOR UPDATE""", (grant["owner_token"], companion_names(username)))).fetchall()
+            if _same_pc(r, hostname, platform, machine_id, local_sid, username)]
         # Another employee's device on this PC and managed account was just removed by this install's
         # cleanup; its record would stay "active" forever (10-23 PJ1: user's device beside aaaa's).
         # It is retired, never inherited: an activation belongs to the person it was granted to.
@@ -780,17 +816,24 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
             """SELECT endpoint_id,hostname,detail FROM endpoint_agents
                  WHERE owner_token<>%s AND local_username=%s AND status='active' AND device_epoch IS NOT NULL""",
             (grant["owner_token"], username))).fetchall() if _same_pc(r, hostname, platform, machine_id, local_sid)]
-        inherited = None
-        if earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]:
+        inherited, held = None, None
+        if earlier:
             held = await (await connection.execute(
                 "SELECT 1 FROM local_run_stops WHERE device_id=%s", (earlier[0]["endpoint_id"],))).fetchone()
+        # An isolated install keeps the administrator's check: it does not inherit an automatic activation (D-239).
+        if (earlier and earlier[0]["managed_state"] == "active" and earlier[0]["activated_by"]
+                and not (mode == "isolated" and earlier[0]["activated_by"] == "auto")):
             inherited = None if held else earlier[0]
         detail = ({"local_sid": local_sid, "helper_command": helper_command} if platform == "windows"
                   else {"managed_platform": "macos"} if platform == "macos" else {})
+        detail["mode"] = mode
         if machine_id:
             detail["machine_id"] = machine_id
         if inherited:
             detail["inherited_from"] = inherited["endpoint_id"]
+        elif earlier and (held or earlier[0]["managed_state"] == "quarantined"):
+            # Automatic activation never lifts a hold (D-217): a reinstall of a stopped or quarantined PC waits for a person.
+            detail["held_from"] = earlier[0]["endpoint_id"]
         await connection.execute(
             """INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,
                  key_hash,key_prefix,scopes,status,issued_by,issued_at,managed_state,device_epoch,local_username,local_uid,
@@ -806,7 +849,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
         await connection.execute(
             "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'enrolled',%s)",
             (endpoint_id, grant["owner_token"], Jsonb({"platform": platform, "local_username": username,
-                                                       "local_uid": uid, "local_sid": local_sid})))
+                                                       "local_uid": uid, "local_sid": local_sid, "mode": mode})))
         if inherited:
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
@@ -981,14 +1024,21 @@ async def policy_accepted(device: dict, policy: dict | None = None) -> bool:
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,
                     quality: dict | None = None, user_command_settings: list | None = None) -> dict:
     policy = await managed_policy(device)
-    if user_command_settings:
+    simple = managed_mode(device) == "simple"
+    # In simple mode any process of the employee can reach the header helper anyway, so a personal command helper
+    # in the employee's settings is recorded (detail below), not a reason to cut the PC off (D-239).
+    if user_command_settings and not simple:
         checks = {**checks, "user_command_helpers": False}
     # Only control decides (D-238): a device that has not yet fetched a server change or the guidance of its
     # new activation state is behind, not tampered with.
     installed = policy_installed(policy, policy_hash, hashes)
     compliant = (installed
                  and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
-                 and not user_command_settings)
+                 and (simple or not user_command_settings))
+    # A new simple-mode PC whose install checks pass is activated by the Gateway itself when the organization
+    # allows it (D-239); isolated installs and reinstalls of a held PC still wait for an administrator.
+    automatic = (compliant and simple and device["managed_state"] == "pending"
+                 and not (device.get("detail") or {}).get("held_from") and (await endpoint_settings())["auto_activate"])
     # The host report is not a compliance input: another account on the device does not
     # quarantine the managed one; it is shown as a bypass path (integrations.device_state).
     # A heartbeat without the report drops the previous one: an old "no other account"
@@ -1009,11 +1059,20 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
                  configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,
-                 managed_state=CASE WHEN %s THEN managed_state ELSE 'quarantined' END
+                 managed_state=CASE WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
+                                    ELSE managed_state END,
+                 activated_by=CASE WHEN %s AND managed_state='pending' THEN 'auto' ELSE activated_by END,
+                 activated_at=CASE WHEN %s AND managed_state='pending' THEN now() ELSE activated_at END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
-            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, device["endpoint_id"]))).fetchone()
+            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, automatic, automatic, automatic,
+             device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
+        if automatic and row["managed_state"] == "active" and device["managed_state"] == "pending":
+            await connection.execute(
+                "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'activated',%s)",
+                (device["endpoint_id"], device["owner_token"], Jsonb({"actor": "auto", "note": "설치 점검 통과로 자동 활성화",
+                                                                      "policy_hash": policy_hash})))
         if quality:
             await connection.execute(
                 """INSERT INTO endpoint_network_samples(endpoint_id,measured_at,rtt_p50_ms,rtt_p95_ms,jitter_ms,failure_pct,probes)
@@ -1022,7 +1081,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  quality["jitter_ms"], quality["failure_pct"], quality["probes"]))
             await connection.execute("DELETE FROM endpoint_network_samples WHERE measured_at < now() - make_interval(days => %s)",
                                      (NETWORK_RETENTION_DAYS,))
-        if not compliant or row["managed_state"] != device["managed_state"]:
+        if not compliant or (row["managed_state"] != device["managed_state"] and not automatic):
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
                 (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,

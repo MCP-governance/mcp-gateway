@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""One elevation, one connected endpoint: everything between "run the file" and "type codex".
+"""One elevation, one connected endpoint: everything between "run the file" and "type claude".
 
-The employee runs install.sh (Linux) or install.cmd (Windows) from the kit, confirms the OS
-elevation prompt once, and this does the rest: required packages, the approved harness binaries,
-the managed account (created when the employee's own account is an administrator), the managed
-configuration, and the harness model sign-in. An existing install is rolled back first, so the
-same file is also the repair and the reinstall path.
-
-It never weakens the controls: AppArmor/nftables confinement, the device heartbeat and the
-Gateway's per-call decision are configured exactly as the manual path configured them, and the
-organization still activates the device in the Console before MCP authentication opens.
+The employee runs install.sh from the kit, confirms the sudo prompt once and answers nothing else.
+Simple mode (the default, D-239) leaves the employee's own account and harnesses as they are and adds
+the managed settings, the header helper and the reporting service; the Gateway activates the PC when
+its install checks pass (if the organization allows it) and still decides every call. --isolated (or a
+kit downloaded with 「고급: 격리 계정」) is the earlier install: required packages, the approved harness
+binaries, a separate managed account for an administrator, AppArmor/nftables confinement, and an
+administrator's activation. The install ends by measuring a model answer, the tool count and one
+approved server's initialize. An existing install is rolled back first, so the same file is also the
+repair, the reinstall and the switch between modes.
 """
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ import json
 import os
 import pwd
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -43,6 +44,9 @@ MIN_PYTHON = (3, 8)  # Ubuntu 20.04; Claude Code·Codex themselves need 20.04+
 # 도구 → 패키지. 설치 첫머리에 한 번 조회해 없는 것만 모아 패키지 관리자를 한 번 갱신하고 한 번에 설치한다.
 # openssl은 로컬 MCP 승인 서명 검증(local-runner)이, curl은 하네스·점검 도구가 쓴다.
 REQUIRED = {"gcc": "gcc", "nft": "nftables", "apparmor_parser": "apparmor-utils", "curl": "curl", "openssl": "openssl"}
+# Simple mode compiles and confines nothing; openssl (local MCP signatures) and curl are tried, never required.
+OPTIONAL = {"curl": "curl", "openssl": "openssl"}
+COMPANION_COMMENT = "MCP managed harness account"
 RENAMED = {"pacman": {"apparmor-utils": "apparmor"}}
 # 로컬 MCP 격리 실행용 컨테이너 엔진. 러너는 /usr/bin의 podman·docker만 쓴다. 키가 곧 지원하는 패키지 관리자다.
 ENGINES = {"apt-get": "docker.io", "dnf": "podman", "pacman": "docker"}
@@ -68,21 +72,34 @@ def out(*command: str) -> str:
     return done.stdout.strip()
 
 
-_open_step: list = []
-timings: list[tuple[str, int]] = []
+class _Lines:
+    """Until main() opens the screen (and in --self-check): one line per step."""
+    rows: list = []
+
+    def step(self, message):
+        print(f"[{message}]", flush=True)
+
+    def close_step(self, mark="✓"):
+        pass
+
+    def say(self, text):
+        print(text, flush=True)
+
+
+SCREEN = _Lines()
 
 
 def step(message: str) -> None:
-    """한 줄 안내. 단계가 끝나는 시각(다음 단계 시작·close_step)으로 소요 시간을 재, 마지막에 한 줄로 보인다."""
-    close_step()
-    print(f"[{message}]", flush=True)
-    _open_step[:] = [message, time.monotonic()]
+    """한 단계. 화면이 단계마다 소요 시간을 재고, 끝에 결과 세 칸과 다음 할 일을 보인다(D-239)."""
+    SCREEN.step(message)
 
 
 def close_step() -> None:
-    if _open_step:
-        timings.append((_open_step[0], round(time.monotonic() - _open_step[1])))
-        _open_step.clear()
+    SCREEN.close_step()
+
+
+def say(text: str) -> None:
+    SCREEN.say(text)
 
 
 def groups_of(name: str) -> set[str]:
@@ -127,12 +144,14 @@ def install_packages(manager: str, names: list[str], env: dict) -> bool:
                check=False, quiet=True, env=env).returncode == 0
 
 
-def ensure_packages() -> None:
+def ensure_packages(isolated: bool = True) -> None:
     """필수 구성요소와 컨테이너 엔진을 설치 한 번에 갖춘다. 없는 도구만 한 번에 조회·설치하고(패키지 관리자 갱신도 한 번),
-    엔진은 못 받아도 설치를 멈추지 않는다: 원격 MCP는 엔진 없이 쓰고, 로컬 MCP만 엔진 설치 뒤 쓸 수 있다."""
-    missing = [tool for tool in REQUIRED if not shutil.which(tool)]
+    엔진은 못 받아도 설치를 멈추지 않는다: 원격 MCP는 엔진 없이 쓰고, 로컬 MCP만 엔진 설치 뒤 쓸 수 있다.
+    간편 모드는 컴파일러·방화벽·AppArmor 도구가 필요 없고, curl·openssl도 없으면 시도만 한다(D-239)."""
+    wanted = REQUIRED if isolated else OPTIONAL
+    missing = [tool for tool in wanted if not shutil.which(tool)]
     if missing or not has_engine():
-        install_missing(missing)
+        install_missing(missing, required=isolated)
     start_engine()
     ensure_toml()
 
@@ -152,35 +171,39 @@ def ensure_toml() -> None:
         if run("apt-get", "install", "-y", "-qq", package, check=False, quiet=True, env=env,
                stderr=subprocess.DEVNULL).returncode == 0:
             return
-    print("Codex 설정(TOML)을 읽을 패키지를 설치하지 못했습니다: sudo apt-get install python3-tomli", flush=True)
+    say("Codex 설정(TOML)을 읽을 패키지를 설치하지 못했습니다: sudo apt-get install python3-tomli")
 
 
-def install_missing(missing: list[str]) -> None:
+def install_missing(missing: list[str], required: bool = True) -> None:
     manager = next((m for m in ENGINES if shutil.which(m)), None)
     if not manager:
-        if missing:
+        if missing and required:
             raise Failed("필수 구성요소를 설치할 패키지 관리자를 찾지 못했습니다: " + ", ".join(missing))
-        print("컨테이너 엔진이 없습니다. 로컬 MCP는 podman 또는 docker를 설치한 뒤 사용할 수 있습니다.", flush=True)
+        say("컨테이너 엔진이 없습니다. 로컬 MCP는 podman 또는 docker를 설치한 뒤 사용할 수 있습니다.")
         return
     step("필수 구성요소 설치" if missing else "컨테이너 엔진 설치")
     env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-    refreshed = manager != "apt-get" or run("apt-get", "update", "-qq", check=False, quiet=True, env=env).returncode == 0
+    refreshed = manager != "apt-get" or run("apt-get", "update", "-qq", check=False, quiet=True, env=env,
+                                            stderr=subprocess.DEVNULL).returncode == 0
+    names = REQUIRED if required else OPTIONAL
     if missing:
-        if not refreshed or not install_packages(manager, [REQUIRED[tool] for tool in missing], env):
-            raise Failed(f"필수 구성요소 설치가 실패했습니다({manager}). 사내 패키지 저장소를 확인하세요")
+        if not refreshed or not install_packages(manager, [names[tool] for tool in missing], env):
+            if required:
+                raise Failed(f"필수 구성요소 설치가 실패했습니다({manager}). 사내 패키지 저장소를 확인하세요")
+            say("curl·openssl을 설치하지 못했습니다. 원격 MCP는 그대로 쓸 수 있습니다.")
         still = [tool for tool in missing if not shutil.which(tool)]
-        if still:
+        if still and required:
             raise Failed("설치 후에도 없는 필수 구성요소: " + ", ".join(still))
     if not has_engine() and not (refreshed and install_packages(manager, [ENGINES[manager]], env)):
-        print(f"컨테이너 엔진을 설치하지 못했습니다. 로컬 MCP는 엔진 설치 뒤 사용할 수 있습니다: "
-              f"sudo {INSTALL_VERB[manager]} {ENGINES[manager]}", flush=True)
+        say(f"컨테이너 엔진을 설치하지 못했습니다. 로컬 MCP는 엔진 설치 뒤 사용할 수 있습니다: "
+            f"sudo {INSTALL_VERB[manager]} {ENGINES[manager]}")
 
 
 def start_engine() -> None:
     """docker는 데몬이 떠 있어야 하고 재부팅 뒤에도 켜져야 한다. podman은 데몬이 없다(러너는 podman을 먼저 쓴다)."""
     if Path("/usr/bin/docker").is_file() and not Path("/usr/bin/podman").is_file():
         if run("systemctl", "enable", "--now", "docker", check=False, quiet=True, stderr=subprocess.DEVNULL).returncode:
-            print("docker 서비스를 켜지 못했습니다. 로컬 MCP는 켠 뒤 사용할 수 있습니다: sudo systemctl enable --now docker", flush=True)
+            say("docker 서비스를 켜지 못했습니다. 로컬 MCP는 켠 뒤 사용할 수 있습니다: sudo systemctl enable --now docker")
 
 
 def search_roots(employee: str) -> list[Path]:
@@ -252,7 +275,7 @@ def place_harnesses(employee: str) -> dict[str, dict]:
                 placed[name] = {"path": str(APPROVED / name), "source": "already-approved"}
                 continue
             # PC에 있는 하네스만 관리한다. 없는 것은 나중에 설치하고 키트를 다시 실행하면 추가된다.
-            print(f"{name}이(가) 이 PC에 없어 건너뜁니다.", flush=True)
+            say(f"{name}이(가) 이 PC에 없어 건너뜁니다.")
             continue
         for item, origin in origins.items():
             target = APPROVED / item
@@ -432,7 +455,48 @@ def rollback(account: str) -> None:
     # is removed by the newest removal logic.
     step(f"기존 설치 제거: {account}")
     remove_shims(account)
-    run(sys.executable, "-B", str(HERE / "managed-linux.py"), "rollback", "--user", account, check=False)
+    run(sys.executable, "-B", str(HERE / "managed-linux.py"), "rollback", "--user", account, check=False,
+        quiet=True, stderr=subprocess.DEVNULL)
+
+
+def companion_of(employee: str) -> str:
+    return ("managed-" + employee)[:31]
+
+
+def remove_companion(employee: str) -> None:
+    """The separate account an isolated install created, once nothing of it is installed. Only one this kit
+    made (its comment says so); its home stays, with whatever the employee kept there (D-239)."""
+    name = companion_of(employee)
+    try:
+        entry = pwd.getpwnam(name)
+    except KeyError:
+        return
+    if entry.pw_gecos.split(",")[0] != COMPANION_COMMENT or installed(name):
+        return
+    close_sessions(name)
+    run("userdel", name, check=False, quiet=True, stderr=subprocess.DEVNULL)
+    say(f"격리 계정 {name}을 지웠습니다(홈 폴더 {entry.pw_dir}는 남김).")
+
+
+def as_employee(employee: str, command: str, timeout: int = 30) -> subprocess.CompletedProcess:
+    """A command in the employee's own login shell: their PATH, their home, their harness."""
+    return subprocess.run(["runuser", "-l", employee, "-c", command], capture_output=True, text=True,
+                          timeout=timeout, stdin=subprocess.DEVNULL)
+
+
+def find_clients(employee: str) -> dict[str, str]:
+    """Simple mode: where the employee's own terminal finds claude and codex. Nothing is copied or pinned."""
+    found = {}
+    for name in ("claude", "codex"):
+        try:
+            path = as_employee(employee, f"command -v {name}").stdout.strip().splitlines()
+        except (OSError, subprocess.SubprocessError):
+            path = []
+        if path and path[-1].startswith("/"):
+            found[name] = path[-1]
+    if not found:
+        say("이 PC에서 claude·codex를 찾지 못했습니다. 연결은 설치하고, 하네스를 설치하면 바로 관리됩니다.")
+    return found
 
 
 def close_sessions(account: str) -> None:
@@ -467,29 +531,31 @@ def failure_reason(output: str) -> str:
     return " / ".join(before + ([error] if error else [])) or (lines[-1].strip() if lines else "")
 
 
-def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None) -> dict:
+def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None,
+                    mode: str = "isolated") -> dict:
     step(f"관리형 연결 설치: {account}")
-    close_sessions(account)
+    if mode == "isolated":
+        close_sessions(account)  # simple mode leaves the employee's own sessions running
     clients = [part for name, item in placed.items() for part in ("--client", f"{name}={item['path']}")]
     done = subprocess.run([sys.executable, "-B", str(HERE / "managed-linux.py"), "install", "--user", account,
-                           *(["--owner-uid", str(owner_uid)] if owner_uid is not None else []),
+                           "--mode", mode, *(["--owner-uid", str(owner_uid)] if owner_uid is not None else []),
                            "--enrollment", str(enrollment), *clients], capture_output=True, text=True)
     if done.returncode:
         raise Failed(failure_reason(done.stderr or done.stdout) or "관리형 연결 설치가 실패했습니다")
     return json.loads(done.stdout.splitlines()[-1])
 
 
-# Each harness keeps its own sign-in in the managed account's home, so each is asked once.
+# Each harness keeps its own sign-in in the account's home, so each is asked once.
 LOGINS = {"codex": (".codex/auth.json", "codex login --device-auth"),
           "claude": (".claude/.credentials.json", "claude auth login")}
 
 
-def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
-    """The model sign-in, in the managed account, while the installer still has the console.
+def harness_login(account: str, harnesses: list[str], simple: bool = False) -> dict[str, bool]:
+    """The model sign-in, in the account the harness runs in, while the installer still has the console.
 
-    Interactive by design: the harness prints a one-time URL (and code) for the employee. Skipped
-    when a credential is already there, and never fatal — Ctrl+C skips one, and the harness asks
-    again on its first run.
+    Simple mode is the employee's own account: an existing sign-in is simply theirs, and with no terminal
+    (a remote or scripted install) nothing is asked. Interactive otherwise: the harness prints a one-time
+    URL (and code). Never fatal — Ctrl+C skips one, and the harness asks again on its first run.
     """
     home = Path(pwd.getpwnam(account).pw_dir)
     shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
@@ -498,25 +564,100 @@ def harness_login(account: str, harnesses: list[str]) -> dict[str, bool]:
         credential, command = LOGINS[name]
         if (home / credential).is_file():
             # The file only proves a sign-in once happened: a session the provider has since revoked
-            # (PJ1, 10-22) still reports "Logged in" and then fails every model call with 401.
-            print(f"기존 {name} 로그인을 그대로 씁니다. 모델 응답이 401·로그인 오류면 다시 로그인하세요: "
-                  f"sudo -u {account} {shell} -c '{command}'")
+            # (PJ1, 10-22) still reports "Logged in" and then fails every model call with 401. The
+            # model answer measured at the end says which.
             signed[name] = True
             continue
+        if simple and not sys.stdin.isatty():
+            signed[name] = False
+            continue
         step("Codex 장치 코드 로그인" if name == "codex" else f"{name} 모델 로그인")
+        pause_screen()
         try:
-            code = subprocess.run(["runuser", "-u", account, "--", str(shell), "-c", command], check=False).returncode
+            argv = (["runuser", "-l", account, "-c", command] if simple
+                    else ["runuser", "-u", account, "--", str(shell), "-c", command])
+            code = subprocess.run(argv, check=False).returncode
         except KeyboardInterrupt:
             code = 130
+        finally:
+            resume_screen()
         signed[name] = code == 0
         if code and name == "codex":
             # An organization that turns off device-code sign-in refuses here, and the employee is left
             # with a connected endpoint and no model. Both ways out, in one line each.
-            print(f"모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
-                  f"sudo -u {account} {shell} -c 'codex login --device-auth'")
+            say("모델 로그인은 나중에 해도 됩니다. ChatGPT 보안 설정에서 장치 코드 로그인을 켠 뒤 다시: "
+                + ("codex login --device-auth" if simple else f"sudo -u {account} {shell} -c 'codex login --device-auth'"))
         elif code:
-            print(f"{name} 로그인은 나중에 해도 됩니다. 처음 실행하면 로그인 화면이 나옵니다.")
+            say(f"{name} 로그인은 나중에 해도 됩니다. 처음 실행하면 로그인 화면이 나옵니다.")
     return signed
+
+
+def pause_screen() -> None:
+    getattr(SCREEN, "pause", lambda: None)()
+
+
+def resume_screen() -> None:
+    getattr(SCREEN, "resume", lambda: None)()
+
+
+def wait_active(managed, account: str, seconds: int = 60) -> dict:
+    """The service's own summary until the device is active (the Gateway activates a new simple-mode PC on its
+    first passing heartbeat, about 10 s after the install) or the wait ends."""
+    deadline = time.monotonic() + seconds
+    summary = {}
+    while time.monotonic() < deadline:
+        try:
+            summary = json.loads(managed.status_path(account, "json").read_text())
+        except (OSError, ValueError):
+            summary = {}
+        if summary.get("state") in ("active", "quarantined", "revoked"):
+            break
+        time.sleep(2)
+    return summary
+
+
+def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tuple[str, str]:
+    """① A real model answer from the harness the employee will type, as that account (D-239)."""
+    name = next((h for h in ("claude", "codex") if h in harnesses), None)
+    if not name:
+        return ("모델 응답", "— (하네스 없음)")
+    observer = managed.load_module("model_observer", HERE / "agent.py")
+    prompt = observer.MODEL_PROMPT
+    command = (f"claude -p {shlex.quote(prompt)}" if name == "claude"
+               else f"codex exec --skip-git-repo-check {shlex.quote(prompt)}")
+    if simple:
+        # Before /etc/environment is read again by a new login, pass the CA the harness needs explicitly.
+        config = json.loads((STATE / account / "config.json").read_text())
+        prefix = " ".join(f"{k}={shlex.quote(v)}" for k, v in managed.ca_environment(config).items())
+        argv = ["runuser", "-l", account, "-c", (prefix + " " if prefix else "") + command]
+    else:
+        argv = ["runuser", "-u", account, "--", str(Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account)
+                                                    / "login-shell"), "-c", command]
+    found = observer.model_check(argv)
+    return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
+            else f"{name} 실패 · {found['detail'] or '응답 없음'}")
+
+
+def install_check(managed, account: str, harnesses: list[str], simple: bool) -> tuple[list, str]:
+    """The three cells (model answer, tool count, one server's initialize) and the next thing to do."""
+    step("설치 확인")
+    summary = wait_active(managed, account)
+    state = summary.get("state")
+    if state != "active":
+        waiting = {"pending": "관리자 활성화 대기", "quarantined": "격리됨", "revoked": "등록 해제됨"}.get(state, "상태 확인 안 됨")
+        cells = [model_cell(managed, account, harnesses, simple), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
+        next_line = ("관리자 활성화 뒤 claude·codex를 실행하세요(활성화되면 자동으로 연결됩니다)" if state == "pending"
+                     else "mcpgw-status로 상태를 확인하세요")
+        close_step()
+        return cells, next_line
+    try:
+        connection = managed.connection_cells(managed.check_connection(summary), len(summary.get("names") or []))
+    except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
+        connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
+    cells = [model_cell(managed, account, harnesses, simple), *connection]
+    close_step()
+    healthy = all("실패" not in value for _, value in cells)
+    return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mcpgw-status --check 로 다시 확인하세요")
 
 
 def self_check() -> None:
@@ -596,11 +737,14 @@ def self_check() -> None:
 
 
 def main() -> int:
+    global SCREEN
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-check", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--user", help="설치 대상 직원 계정(기본: 설치를 실행한 계정)")
     parser.add_argument("--enrollment", type=Path, default=HERE / "enrollment.json")
     parser.add_argument("--remove", action="store_true", help="이 PC의 연결만 제거")
+    parser.add_argument("--isolated", action="store_true",
+                        help="고급: 별도 관리 계정·AppArmor·UID 방화벽으로 하네스를 격리(관리자 활성화)")
     parser.add_argument("--skip-login", action="store_true", help="하네스 모델 로그인을 건너뜀")
     args = parser.parse_args()
     if args.self_check:
@@ -612,70 +756,95 @@ def main() -> int:
     if os.geteuid() != 0:
         print("관리자 권한이 필요합니다. install.sh로 실행하세요.", file=sys.stderr)
         return 2
+    started = time.monotonic()
     try:
+        check_python()
+        spec = importlib.util.spec_from_file_location("managed_linux", HERE / "managed-linux.py")
+        managed = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(managed)
+        bundle = {}
         if not args.remove:
-            check_python()
             if not args.enrollment.is_file():
                 raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
-            spec = importlib.util.spec_from_file_location("managed_tls", HERE / "managed-linux.py")
-            managed_tls = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(managed_tls)
-            managed_tls.verify_transport(json.loads(args.enrollment.read_text()))
+            bundle = json.loads(args.enrollment.read_text())
+            managed.verify_transport(bundle)
         employee = employee_account(args.user)
-        account, companion = managed_account(employee)
         if args.remove:
-            rollback(account)
-            print(json.dumps({"removed": account}, ensure_ascii=False))
+            for account in (employee, companion_of(employee)):
+                if installed(account):
+                    rollback(account)
+            remove_shims(companion_of(employee))
+            remove_companion(employee)
+            print(json.dumps({"removed": employee}, ensure_ascii=False))
             return 0
-        ensure_packages()
-        step("승인 하네스 배치")
-        placed = place_harnesses(employee)
-        if installed(account):
-            rollback(account)
+        isolated = args.isolated or bundle.get("isolated") is True
+        SCREEN = managed.Screen("내 PC 연결 · " + ("격리 계정" if isolated else "간편 모드"))
         try:
-            result = install_managed(account, placed, args.enrollment,
-                                     pwd.getpwnam(employee).pw_uid if companion else None)
-            if companion:
-                step("직원 계정에서 바로 실행되게 연결")
-                result["launchers"] = write_shims(employee, account, tuple(placed))
-        except Failed:
-            # Half a connection is worse than none: the account keeps its own shell and firewall.
-            if installed(account) or (SHIM_DIR / "codex").is_file():
-                rollback(account)
+            return connect(managed, employee, isolated, args, started)
+        except BaseException:
+            SCREEN.close_step("✗")
             raise
-        close_step()  # 사람이 로그인하는 시간은 설치 소요에 넣지 않는다
-        if not args.skip_login:
-            result["model_signed_in"] = harness_login(account, list(placed))
-        result.update(employee=employee, managed_account=account,
-                      harnesses={name: item.get("digests", {}) for name, item in placed.items()})
-        print(json.dumps(result, ensure_ascii=False))
-        print("\n이전 연결의 활성화를 이어받았습니다. 바로 사용할 수 있습니다." if result.get("state") == "active"
-              else "\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
-        print("연결 상태 확인: mcpgw-status" + (f" (제한된 계정에서는 cat /usr/local/lib/mcpgw-managed/status-{account}.txt)"
-                                              if not companion else ""))
-        print("로컬 MCP 준비(폴더 만들기·이미지 받기)는 활성화 뒤 백그라운드로 진행됩니다. 진행과 직원 문서 폴더 위치: mcpgw-status",
-              flush=True)
-        # A terminal opened before the install has neither the launcher functions nor a fresh PATH.
-        names = " 또는 ".join(placed)
-        # With the employee's own launchers replaced (D-228) a terminal opened before the install works too.
-        print((f"평소 계정({employee})에서 {names}를 실행하세요." if result.get("home_launchers")
-               else f"새 터미널을 열어 평소 계정({employee})에서 {names}를 실행하세요.") if companion
-              else f"이 계정에서 {names}를 실행하세요.")
-        signed = result.get("model_signed_in") or {}
-        if "codex" in placed and not signed.get("codex"):
-            print("Codex 로그인: codex login --device-auth")
-        if "claude" in placed and not signed.get("claude"):
-            print("Claude 로그인: claude를 실행한 뒤 /login")
-        slow = [f"{label.split(':')[0]} {seconds}초" for label, seconds in timings if seconds]
-        if slow:
-            print(f"설치 소요(로그인 제외): {' · '.join(slow)} · 합계 {sum(seconds for _, seconds in timings)}초")
-        return 0
+        finally:
+            if SCREEN.window is not None:
+                SCREEN.finish(wait=0)  # the steps up to the failure stay in the scrollback
+            SCREEN.stop()
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)
         return 1
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         print(f"\n설치하지 못했습니다: {type(exc).__name__}: {str(exc)[:200]}", file=sys.stderr)
         return 1
+
+
+def connect(managed, employee: str, isolated: bool, args, started: float) -> int:
+    step("구성요소 확인")
+    ensure_packages(isolated)
+    # Whatever was installed before, in either mode, goes first: a reinstall, a repair and a switch of mode
+    # are the same path, and the old launcher must not be what `command -v` finds next.
+    for previous in (employee, companion_of(employee)):
+        if installed(previous):
+            rollback(previous)
+    if isolated:
+        account, companion = managed_account(employee)
+        step("승인 하네스 배치")
+        placed = place_harnesses(employee)
+    else:
+        remove_shims(companion_of(employee))
+        remove_companion(employee)
+        account, companion = employee, False
+        step("하네스 찾기")
+        placed = {name: {"path": path} for name, path in find_clients(employee).items()}
+    try:
+        result = install_managed(account, placed, args.enrollment,
+                                 pwd.getpwnam(employee).pw_uid if companion else None,
+                                 "isolated" if isolated else "simple")
+        if companion:
+            step("직원 계정에서 바로 실행되게 연결")
+            result["launchers"] = write_shims(employee, account, tuple(placed))
+    except Failed:
+        # Half a connection is worse than none: the account keeps its own shell and firewall.
+        if installed(account) or (SHIM_DIR / "codex").is_file():
+            rollback(account)
+        raise
+    close_step()  # 사람이 로그인하는 시간은 설치 소요에 넣지 않는다
+    installing = round(time.monotonic() - started)
+    if not args.skip_login:
+        result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
+    cells, next_line = install_check(managed, account, list(placed), simple=not isolated)
+    result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
+                  harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated
+                             else {name: item["path"] for name, item in placed.items()}),
+                  checks=dict(cells), install_seconds=installing, total_seconds=round(time.monotonic() - started))
+    if isolated and companion:
+        say(f"격리 계정 {account}에서 실행됩니다. 평소 계정({employee})에서 {' 또는 '.join(placed)}를 실행하세요.")
+    say("로컬 MCP 준비(폴더 만들기·이미지 받기)는 활성화 뒤 백그라운드로 진행됩니다.")
+    say("연결 상태: mcpgw-status (실시간 화면) · mcpgw-status --check (연결 확인)")
+    say(f"설치 소요(로그인 제외) {installing}초 · 확인까지 {result['total_seconds']}초")
+    SCREEN.result(cells, next_line)
+    SCREEN.finish()
+    SCREEN.stop()
+    print(json.dumps(result, ensure_ascii=False))
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Administrator-installed ordinary-user enrollment, policy service and header broker.
+"""Administrator-installed enrollment, policy service and header broker.
 
-The installer needs root, systemd, AppArmor, nft and native (ELF) Codex/Claude.
-Only the root service holds the device key. SO_PEERCRED and, in the enforcement
-stage, SO_PEERSEC bind the token socket to the enrolled UID and AppArmor identity.
+Two modes (D-239). simple (default): the employee's own account keeps running its own harnesses;
+the installer writes the managed settings, the header helper and this service, and nothing else.
+isolated: an ordinary account confined by AppArmor and a UID nftables table (needs AppArmor, nft
+and native ELF Codex/Claude). Only the root service holds the device key. SO_PEERCRED and, in the
+isolated enforcement stage, SO_PEERSEC bind the token socket to the enrolled UID and AppArmor identity.
 This is not remote attestation against compromised root.
 """
 import argparse
@@ -45,6 +47,12 @@ PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "a
 STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
+ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
+# Simple mode: the employee's own harnesses trust the Gateway's private CA through the session environment
+# (pam_env reads /etc/environment for every login, SSH included); no shell rc file is edited (D-239).
+ENVIRONMENT = Path("/etc/environment")
+CA_BEGIN, CA_END = "# >>> mcpgw managed ca >>>", "# <<< mcpgw managed ca <<<"
+HARNESS_VERSIONS = {}
 
 
 def load_module(name, path):
@@ -132,6 +140,11 @@ def checks(config, policy, *, findings=None):
     commands_ok, commands = load_module("command_settings", Path(__file__).with_name("agent.py")).user_command_settings(getattr(account, "pw_dir", ""))
     if findings is not None:
         findings.extend(commands)
+    if config.get("mode") == "simple":
+        # Nothing is confined: the managed files, as rendered and root-owned, are all there is to report.
+        hashes = {name: hashlib.sha256(target.read_bytes()).hexdigest() for name, target in FILES.items()}
+        return hashes, {"protected_configs": all(protected(p) and not p.is_symlink() and p.stat().st_mode & 0o777 == 0o644
+                                                 for p in FILES.values())}
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(account.pw_name, account.pw_gid)}
     profiles = set(Path("/sys/kernel/security/apparmor/profiles").read_text().splitlines())
     rule_file = Path("/usr/local/lib/mcpgw-enforcement") / name / "egress.nft"
@@ -178,7 +191,7 @@ def host_report(config):
                 continue
         accounts.append({"name": entry.pw_name[:64], "uid": entry.pw_uid, "privileged_groups": sorted(groups & PRIVILEGED)})
     return {"kernel": os.uname().release[:120], "wsl": "microsoft" in Path("/proc/version").read_text().lower(),
-            "other_accounts": accounts[:64]}
+            "other_accounts": accounts[:64], **({"harnesses": dict(HARNESS_VERSIONS)} if HARNESS_VERSIONS else {})}
 
 
 def forget_stale_sign_in(home: str) -> None:
@@ -307,44 +320,91 @@ def restore_home_launchers(config):
             os.close(folder)
 
 
+def ours(text, gateway_url):
+    """A file this kit rendered: backing it up as the employee's own would put the managed copy back on removal."""
+    return (gateway_url + "/mcp/") in text or '"allowManagedHooksOnly": true' in text or "allow_managed_hooks_only = true" in text
+
+
+def edit_environment(values):
+    """Our block in /etc/environment: the CA variables, or none. A value the organization already set wins."""
+    try:
+        text = ENVIRONMENT.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        text = ""
+    kept = re.sub(rf"\n?{re.escape(CA_BEGIN)}.*?{re.escape(CA_END)}\n", "\n", text, flags=re.S)
+    kept = kept if kept.strip() else ""
+    taken = {line.split("=", 1)[0].strip() for line in kept.splitlines() if "=" in line and not line.lstrip().startswith("#")}
+    values = {k: v for k, v in values.items() if k not in taken}
+    if values:
+        kept = (kept.rstrip("\n") + "\n" if kept.strip() else "") + CA_BEGIN + "\n" + "".join(
+            f'{k}="{v}"\n' for k, v in values.items()) + CA_END + "\n"
+    if kept != text:
+        private_write(ENVIRONMENT, kept)
+        ENVIRONMENT.chmod(0o644)
+
+
+def ca_environment(config):
+    path = PROGRAMS / f"ca-{config['uid']}.crt"
+    return {"NODE_EXTRA_CA_CERTS": str(path), "CODEX_CA_CERTIFICATE": str(path)} if config.get("ca_certificate") else {}
+
+
+def write_helper(user):
+    """Simple mode's header helper, at the path the Gateway renders for every Linux device. A script, not the
+    compiled wrapper of the isolated stage: there is no profile to attach and no compiler on the PC (D-239)."""
+    folder = ENFORCEMENT / ("mcpgw-" + user)
+    for node in (ENFORCEMENT, folder):
+        node.mkdir(mode=0o755, exist_ok=True)
+        node.chmod(0o755)
+    helper = folder / "header-helper"
+    private_write(helper, f"#!/bin/sh\nexec /usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py header --socket /run/mcpgw-{user}.sock\n")
+    helper.chmod(0o755)
+
+
 def install(args):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
+    # A manual install without --mode (and every caller before D-239) is the isolated one.
+    args.mode = getattr(args, "mode", "isolated")
+    simple = args.mode == "simple"
     bundle = json.loads(args.enrollment.read_text())
     verify_transport(bundle)
     person = pwd.getpwnam(args.user)
     if person.pw_uid < 1000 or not person.pw_dir.startswith("/home/"):
         raise ValueError("/home의 실제 일반 사용자만 지원합니다")
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(person.pw_name, person.pw_gid)}
-    if groups & PRIVILEGED:
-        raise ValueError("관리 권한이 있는 계정에는 일반 사용자 집행을 설치할 수 없습니다")
-    if subprocess.run(["pgrep", "-u", str(person.pw_uid)], capture_output=True).returncode == 0:
-        raise ValueError("해당 계정의 기존 비관리 세션을 종료한 뒤 설치하세요")
-    for dependency in ("gcc", "nft", "apparmor_parser", "systemctl"):
-        if not shutil.which(dependency):
-            raise ValueError("관리자가 먼저 설치할 필수 구성요소: " + dependency)
-    if not Path("/sys/module/apparmor/parameters/enabled").read_text().startswith("Y"):
-        raise ValueError("이 시스템에서 AppArmor 집행을 사용할 수 없습니다")
-    enforcer = load_module("enforcer", Path(__file__).with_name("enforce-linux.py"))
-    # Reject a mistaken owner before spending the one-time enrollment token.
-    enforcer.nft_rules(person.pw_uid, [], 443, owner_uid=args.owner_uid)
-    if args.owner_uid is not None:
-        pwd.getpwuid(args.owner_uid)
     binaries = {}
     selected_clients = dict(s.split("=", 1) for s in args.client)
-    for name in ("codex", "claude"):
-        candidate = selected_clients.get(name) or str(Path("/opt/mcpgw-approved") / name)
-        if name not in selected_clients and not Path(candidate).is_file():
-            continue  # 이 PC에 없는 하네스는 관리 대상에서 뺀다
-        binary = enforcer.trusted_binary(candidate)
-        if binary.read_bytes()[:4] != b"\x7fELF":
-            raise ValueError("공식 native ELF 배포판이 필요합니다: " + name)
-        binaries[name] = str(binary)
-    # Before the one-time enrollment token is spent, not halfway through the install.
-    if not binaries:
-        raise ValueError("관리할 하네스(codex·claude)가 없습니다")
-    if "codex" in binaries:
-        enforcer.companions("codex", Path(binaries["codex"]))
+    if simple:
+        # The employee's own harnesses, wherever their installer put them: nothing is copied or pinned.
+        binaries = {name: path for name, path in selected_clients.items() if name in ("codex", "claude")}
+    else:
+        if groups & PRIVILEGED:
+            raise ValueError("관리 권한이 있는 계정에는 일반 사용자 집행을 설치할 수 없습니다")
+        if subprocess.run(["pgrep", "-u", str(person.pw_uid)], capture_output=True).returncode == 0:
+            raise ValueError("해당 계정의 기존 비관리 세션을 종료한 뒤 설치하세요")
+        for dependency in ("gcc", "nft", "apparmor_parser", "systemctl"):
+            if not shutil.which(dependency):
+                raise ValueError("관리자가 먼저 설치할 필수 구성요소: " + dependency)
+        if not Path("/sys/module/apparmor/parameters/enabled").read_text().startswith("Y"):
+            raise ValueError("이 시스템에서 AppArmor 집행을 사용할 수 없습니다")
+        enforcer = load_module("enforcer", Path(__file__).with_name("enforce-linux.py"))
+        # Reject a mistaken owner before spending the one-time enrollment token.
+        enforcer.nft_rules(person.pw_uid, [], 443, owner_uid=args.owner_uid)
+        if args.owner_uid is not None:
+            pwd.getpwuid(args.owner_uid)
+        for name in ("codex", "claude"):
+            candidate = selected_clients.get(name) or str(Path("/opt/mcpgw-approved") / name)
+            if name not in selected_clients and not Path(candidate).is_file():
+                continue  # 이 PC에 없는 하네스는 관리 대상에서 뺀다
+            binary = enforcer.trusted_binary(candidate)
+            if binary.read_bytes()[:4] != b"\x7fELF":
+                raise ValueError("공식 native ELF 배포판이 필요합니다: " + name)
+            binaries[name] = str(binary)
+        # Before the one-time enrollment token is spent, not halfway through the install.
+        if not binaries:
+            raise ValueError("관리할 하네스(codex·claude)가 없습니다")
+        if "codex" in binaries:
+            enforcer.companions("codex", Path(binaries["codex"]))
     source = Path(__file__).parent
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
@@ -364,7 +424,7 @@ def install(args):
     machine = machine_id()
     enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
                            "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid,
-                           **({"machine_id": machine} if machine else {})}, credential=False)
+                           "mode": args.mode, **({"machine_id": machine} if machine else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     # manifest_pubkey: the approver's key for local MCP manifests, pinned here and never taken from policy.
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
@@ -372,9 +432,10 @@ def install(args):
     if config.get("ca_certificate"):
         private_write(ca_path, config["ca_certificate"])
         ca_path.chmod(0o644)
+    # Simple mode answers any process of the employee by UID (broker_binding "uid"): there is no profile to bind to.
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
-                  owner_uid=args.owner_uid,
-                  broker_binding=args.broker_binding, harnesses=sorted(binaries),
+                  owner_uid=None if simple else args.owner_uid, mode=args.mode,
+                  broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     policy = request(config, "/api/endpoint/managed-policy")
@@ -384,51 +445,77 @@ def install(args):
                   proxy_port=policy.get("proxy_port"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
-        if target.exists():
+        if target.exists() and not ours(target.read_text(), config["gateway_url"]):
             private_write(folder / (target.name + ".backup"), target.read_text())
     apply_policy(policy)
     forget_stale_sign_in(person.pw_dir)
-    subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
-                    *(["--owner-uid", str(args.owner_uid)] if args.owner_uid is not None else []),
-                    "--gateway-port", str(policy["gateway_port"]),
-                    *(["--ca", str(ca_path)] if config.get("ca_certificate") else []),
-                    *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
-                      if policy.get("proxy_port") else []),
-                    *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
-                    *[part for name, binary in binaries.items() for part in ("--client", name + "=" + binary)],
-                    "--broker-binding", args.broker_binding,
-                    "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True)
-    baseline = subprocess.check_output(["nft", "-j", "list", "table", "inet", f"mcpgw_uid_{person.pw_uid}"], text=True)
-    private_write(Path(config["nft_baseline"]), baseline)
+    if simple:
+        write_helper(args.user)
+        edit_environment(ca_environment(config))
+    else:
+        subprocess.run([sys.executable, str(PROGRAMS / "enforce-linux.py"), "--user", args.user,
+                        *(["--owner-uid", str(args.owner_uid)] if args.owner_uid is not None else []),
+                        "--gateway-port", str(policy["gateway_port"]),
+                        *(["--ca", str(ca_path)] if config.get("ca_certificate") else []),
+                        *(["--proxy-port", str(policy["proxy_port"]), "--proxy-env", json.dumps(policy["proxy_environment"])]
+                          if policy.get("proxy_port") else []),
+                        *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
+                        *[part for name, binary in binaries.items() for part in ("--client", name + "=" + binary)],
+                        "--broker-binding", args.broker_binding,
+                        "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True)
+        baseline = subprocess.check_output(["nft", "-j", "list", "table", "inet", f"mcpgw_uid_{person.pw_uid}"], text=True)
+        private_write(Path(config["nft_baseline"]), baseline)
     unit = f"mcpgw-managed-{args.user}.service"
     Path("/etc/systemd/system", unit).write_text(
         "[Unit]\nDescription=MCP Gateway managed endpoint\nAfter=network-online.target apparmor.service\n"
-        f"Requires=mcpgw-egress-{args.user}.service\n\n[Service]\nType=simple\n"
+        + ("" if simple else f"Requires=mcpgw-egress-{args.user}.service\n") + "\n[Service]\nType=simple\n"
         f"ExecStart=/usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py serve --config {config_path}\n"
         "Restart=always\nRestartSec=10\nUMask=0077\n\n[Install]\nWantedBy=multi-user.target\n")
     subprocess.run(["systemctl", "daemon-reload"], check=True)
-    subprocess.run(["systemctl", "enable", "--now", unit], check=True)
+    subprocess.run(["systemctl", "enable", "--now", unit], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
-        config["home_launchers"] = home_launchers(config)
+        config["home_launchers"] = [] if simple else home_launchers(config)
     except OSError:
         config["home_launchers"] = []  # a new terminal still gets the launcher function
     args.enrollment.unlink()
     write_status_shim()
     # "active": the Gateway continued the activation of the earlier device of this employee on this PC (D-217).
-    print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user,
+    print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
                       "state": "active" if enrolled.get("state") == "active" else "pending-organization-activation",
                       "service": unit, "status_command": str(STATUS_SHIM), "home_launchers": config["home_launchers"]}))
 
 
 STATE_LABEL = {"active": "활성", "pending": "활성화 대기", "quarantined": "중지 (점검에서 격리됨)",
                "revoked": "중지 (등록 해제됨)", "unknown": "확인 안 됨"}
+MODE_LABEL = {"simple": "간편 모드 (게이트웨이 판정)", "isolated": "격리 계정"}
 
 
 def status_path(user, suffix):
     return PROGRAMS / f"status-{user}.{suffix}"
 
 
-def render_status(summary, now):
+def next_step(summary, now, environment=None):
+    """One line: what the employee does next, from the state the service last wrote."""
+    environment = os.environ if environment is None else environment
+    if now - (summary.get("updated") or 0) > STATUS_STALE_SECONDS:
+        return f"서비스 다시 시작: sudo systemctl restart mcpgw-managed-{summary.get('user', '<계정>')}"
+    state = summary.get("state", "unknown")
+    if state == "pending":
+        return "관리자 활성화 대기 — 관리자가 활성화하면 자동으로 연결됩니다"
+    if state == "quarantined":
+        return "관리자에게 격리 해제를 요청하세요"
+    if state == "revoked":
+        return "콘솔 내 PC 연결에서 새 설치 파일을 받아 다시 설치하세요"
+    if not summary.get("connected"):
+        return "게이트웨이 연결을 확인하세요 (네트워크·VPN)"
+    # A terminal opened before the install lacks the CA variable: the harness cannot reach the Gateway from it.
+    ca = summary.get("ca")
+    if summary.get("mode") == "simple" and ca and environment.get("NODE_EXTRA_CA_CERTS") != ca:
+        return "새 터미널(또는 다시 로그인)에서 claude·codex를 실행하세요"
+    return "claude 또는 codex를 실행하세요"
+
+
+def render_status(summary, now, environment=None):
     """What the employee reads: the state, the Gateway, the last report, the kit and the approved servers.
     Only these fields leave the root-owned service; no key, token or policy text."""
     def clock(moment):
@@ -440,6 +527,7 @@ def render_status(summary, now):
     local = summary.get("local") or {}
     prepared = f"{local['ready']}/{local['total']}" if local.get("total") else "—"
     lines = [f"장치 상태: {STATE_LABEL.get(state, STATE_LABEL['unknown'])}",
+             "연결 방식: " + MODE_LABEL.get(summary.get("mode"), MODE_LABEL["isolated"]),
              f"게이트웨이: {'연결됨' if summary.get('connected') and not silent else '연결 안 됨'}",
              "마지막 보고: " + (f"{clock(last)} ({max(0, int(now - last))}초 전)" if last else "—"),
              "승인 서버: " + (f"{servers}개" if servers is not None else "—"),
@@ -453,16 +541,148 @@ def render_status(summary, now):
              "키트 판본: " + (summary.get("kit") or "—")[:12]]
     if silent:
         lines.append("관리형 서비스가 응답하지 않습니다 (마지막 갱신 " + (clock(updated) if updated else "—") + ")")
-    elif state == "pending":
-        lines.append("관리자가 활성화하면 자동으로 연결됩니다.")
+    lines.append("다음 할 일: " + next_step(summary, now, environment))  # always last: the live view lifts it out
     return "\n".join(lines) + "\n"
+
+
+def width(text):
+    import unicodedata
+    return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
+
+
+def clip(text, room):
+    out, used = "", 0
+    for character in text:
+        used += width(character)
+        if used > room:
+            break
+        out += character
+    return out
+
+
+class Screen:
+    """Full-screen progress for the installer and mcpgw-status (D-239): the steps with their seconds, three
+    result cells and the next thing to do. Not a terminal, no curses or no UTF-8 locale: one line per step,
+    as before, so logs and SSH sessions read the same."""
+
+    def __init__(self, title):
+        self.title, self.rows, self.cells, self.next, self.notes = title, [], [], "", []
+        self.curses = self.window = None
+        if os.environ.get("MCPGW_PLAIN") or not (sys.stdin.isatty() and sys.stdout.isatty()) \
+                or os.environ.get("TERM", "dumb") in ("", "dumb"):
+            return
+        try:
+            import curses
+            import locale
+            locale.setlocale(locale.LC_ALL, "")
+            if "utf" not in (locale.getpreferredencoding(False) or "").lower():
+                locale.setlocale(locale.LC_ALL, "C.UTF-8")
+            self.window = curses.initscr()
+            self.curses = curses
+            curses.noecho()
+            curses.cbreak()
+            try:
+                curses.curs_set(0)
+            except curses.error:
+                pass
+        except Exception:  # no terminfo, no curses build, no UTF-8 locale: plain lines
+            self.stop()
+
+    def stop(self):
+        if self.window is not None:
+            try:
+                self.curses.endwin()
+            except Exception:
+                pass
+        self.window = None
+
+    def draw(self, extra=()):
+        if self.window is None:
+            return
+        try:
+            self.window.erase()
+            height, room = self.window.getmaxyx()
+            room -= 2
+            lines = [(self.title, self.curses.A_BOLD), ("", 0)]
+            for label, started, seconds, mark in self.rows:
+                spent = f"{seconds}초" if seconds is not None else f"{int(time.monotonic() - started)}초"
+                lines.append((f"{mark} {clip(label, room - 10)}".ljust(max(0, room - 8 - (width(label) - len(label)))) + spent, 0))
+            for text in extra:
+                lines.append((text, 0))
+            if self.cells:
+                lines += [("", 0)] + [(f"{name:<6} {value}", self.curses.A_BOLD) for name, value in self.cells]
+            if self.next:
+                lines += [("", 0), ("다음 할 일: " + self.next, self.curses.A_REVERSE)]
+            lines += [("", 0)] + [(note, self.curses.A_DIM) for note in self.notes[-3:]]
+            for row, (text, attribute) in enumerate(lines[:height - 1]):
+                self.window.addstr(row, 1, clip(text, room), attribute)
+            self.window.refresh()
+        except self.curses.error:
+            pass
+
+    def step(self, label):
+        self.close_step()
+        self.rows.append([label, time.monotonic(), None, "…"])
+        if self.window is None:
+            print(f"[{label}]", flush=True)
+        self.draw()
+
+    def close_step(self, mark="✓"):
+        if self.rows and self.rows[-1][2] is None:
+            self.rows[-1][2] = round(time.monotonic() - self.rows[-1][1])
+            self.rows[-1][3] = mark
+        self.draw()
+
+    def say(self, text):
+        self.notes.append(text)
+        if self.window is None:
+            print(text, flush=True)
+        self.draw()
+
+    def result(self, cells, next_line):
+        self.cells, self.next = cells, next_line
+        if self.window is None:
+            for name, value in cells:
+                print(f"{name}: {value}", flush=True)
+            print("다음 할 일: " + next_line, flush=True)
+        self.draw()
+
+    def finish(self, wait=8):
+        """The last frame stays for `wait` seconds or a key, then the same summary goes to the scrollback."""
+        if self.window is None:
+            return
+        self.draw(extra=["", f"{wait}초 뒤 또는 아무 키나 누르면 닫힙니다"])
+        try:
+            self.window.timeout(wait * 1000)
+            self.window.getch()
+        except self.curses.error:
+            pass
+        self.stop()
+        for label, _, seconds, mark in self.rows:
+            print(f"{mark} {label} {seconds if seconds is not None else '—'}초")
+        for name, value in self.cells:
+            print(f"{name}: {value}")
+        if self.next:
+            print("다음 할 일: " + self.next)
+        for note in self.notes:
+            print(note)
+
+    def pause(self):
+        """For a program that needs the terminal itself (a model sign-in): leave full screen until resume()."""
+        if self.window is not None:
+            self.curses.endwin()
+
+    def resume(self):
+        if self.window is not None:
+            self.window.refresh()
+            self.draw()
 
 
 def publish_status(summary):
     """Root writes, anyone reads: the summary the status command prints, and the same text for an account whose
     profile cannot run Python (`cat` is allowed there)."""
     summary = {**summary, "updated": time.time()}
-    for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"]))):
+    for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"], {}))):
         path = status_path(summary["user"], suffix)
         private_write(path, text)
         path.chmod(0o644)
@@ -472,6 +692,45 @@ def write_status_shim():
     private_write(STATUS_SHIM, "#!/bin/sh\n# mcpgw managed status\n"
                   f'exec /usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py status "$@"\n')
     STATUS_SHIM.chmod(0o755)
+
+
+def account_header(summary):
+    """The Authorization the account's harness gets, from its own header helper run as that account."""
+    user = summary["user"]
+    helper = ENFORCEMENT / ("mcpgw-" + user) / "header-helper"
+    command = [str(helper)]
+    if os.geteuid() == 0:
+        account = pwd.getpwnam(user)
+        command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--", *command]
+    done = subprocess.run(command, capture_output=True, text=True, timeout=20, cwd="/", env={"PATH": "/usr/bin:/bin"})
+    value = json.loads(done.stdout.strip().splitlines()[-1])["Authorization"]
+    if value.startswith("Bearer endpoint-not-active"):
+        raise ValueError("활성화 전이라 토큰이 없습니다")
+    return value
+
+
+def check_connection(summary):
+    """tools/list and initialize over the Gateway with the account's own header (installer and mcpgw-status --check)."""
+    observer = load_module("check_observer", Path(__file__).with_name("agent.py"))
+    ca = summary.get("ca")
+    certificate = Path(ca).read_text() if ca else ""
+    fingerprint = hashlib.sha256(ssl_der(certificate)).hexdigest() if certificate else ""
+    return observer.connection_check(summary["gateway"], observer.tls_context(certificate, fingerprint),
+                                     account_header(summary), summary.get("names") or [])
+
+
+def ssl_der(certificate):
+    import ssl
+    return ssl.PEM_cert_to_DER_cert(certificate.strip())
+
+
+def connection_cells(found, servers):
+    """② tool count and ③ one approved server's initialize, as the two cells beside the model answer."""
+    failed = found.get("failed") or {}
+    tools = f"{found['tools']}개 (서버 {len(found['initialized'])}/{servers})" if found.get("initialized") else "—"
+    first = (f"{found['initialized'][0]} 연결 정상" if found.get("initialized")
+             else ("실패 · " + ", ".join(f"{k} {v}" for k, v in list(failed.items())[:2])) if failed else "승인 서버 없음")
+    return [("도구", tools), ("서버 연결", first)]
 
 
 def status(args):
@@ -490,6 +749,40 @@ def status(args):
             print("잠시 뒤 다시 확인하세요.")
             return
         raise ValueError("이 PC에는 관리형 연결의 상태가 없습니다. 설치되지 않았거나 서비스가 아직 시작되지 않았습니다") from None
+    cells = []
+    if args.check:
+        try:
+            cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
+            cells = [("연결 확인", f"실패 · {exc}")]
+    screen = Screen("내 PC 연결 상태")
+    if screen.window is None:
+        print(render_status(summary, time.time()), end="")
+        for name, value in cells:
+            print(f"{name}: {value}")
+        return
+    # Live view: the service rewrites the summary every 10-60 s; q leaves, c checks the connection again.
+    try:
+        while True:
+            try:
+                summary = json.loads(path.read_text())
+            except (OSError, ValueError):
+                pass
+            lines = render_status(summary, time.time()).splitlines()
+            screen.next = lines.pop()[len("다음 할 일: "):]
+            screen.cells = cells
+            screen.draw(extra=lines + ["", "q 닫기 · c 연결 확인"])
+            screen.window.timeout(2000)
+            key = screen.window.getch()
+            if key in (ord("q"), 27):
+                break
+            if key == ord("c"):
+                try:
+                    cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
+                except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
+                    cells = [("연결 확인", f"실패 · {exc}")]
+    finally:
+        screen.stop()
     print(render_status(summary, time.time()), end="")
 
 
@@ -497,7 +790,6 @@ def status(args):
 # from an unmanaged PC with an employee token; here it goes under the device credential, so nothing in
 # this service ever holds an employee token. --
 INVENTORY_EVERY = 6 * 3600
-ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
 # `claude mcp list`: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected". Read as mcpgw_pc.py reads it.
 CLAUDE_LINE = re.compile(r"^(?P<name>.+?): (?P<target>.*?)(?: \((?:HTTP|SSE)\))? - (?P<status>[✔✓√✘✗×!-] .*)$")
 PLUGIN_HEAD = re.compile(r"^\s*[❯>*-]\s+(?P<name>[\w.-]+@[\w.-]+)\s*$")
@@ -582,11 +874,17 @@ def run_as_managed(config, tool, arguments, stdin=None):
     """Start the managed account's own launcher as that account: the environment, proxy and profile are the ones
     the employee's harness gets. setpriv, not subprocess(user=): supported distributions include Python 3.8."""
     account = pwd.getpwnam(config["username"])
-    launcher = ENFORCEMENT / ("mcpgw-" + config["username"]) / tool
+    environment = {"PATH": "/usr/bin:/bin"}
+    if config.get("mode") == "simple":
+        # The employee's own harness, found the way their terminal finds it (the login shell's PATH, ~/.local/bin).
+        program = ["/bin/bash", "-lc", 'exec "$0" "$@"', tool]
+        environment.update(HOME=account.pw_dir, USER=account.pw_name, LOGNAME=account.pw_name, **ca_environment(config))
+    else:
+        program = [str(ENFORCEMENT / ("mcpgw-" + config["username"]) / tool)]
     command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--",
-               str(launcher), *arguments]
+               *program, *arguments]
     return subprocess.Popen(command, stdin=stdin or subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                            cwd=account.pw_dir, env={"PATH": "/usr/bin:/bin"}, text=True, encoding="utf-8", errors="replace")
+                            cwd=account.pw_dir, env=environment, text=True, encoding="utf-8", errors="replace")
 
 
 def run_text(config, tool, arguments, timeout=120):
@@ -633,6 +931,13 @@ def collect_inventory(config):
     """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
     marks every item of a reported harness absent, so a failed read must not look like an empty one."""
     found = {}
+    for tool in config.get("harnesses", ()):
+        try:
+            version = re.search(r"\d+\.\d+[0-9A-Za-z.+_-]*", run_text(config, tool, ["--version"], timeout=30))
+            if version:
+                HARNESS_VERSIONS[tool] = version.group(0)[:40]
+        except (ValueError, OSError, subprocess.TimeoutExpired):
+            pass  # the version is shown when known, never required
     if "claude" in config.get("harnesses", ()):
         try:
             items = parse_claude_servers(run_text(config, "claude", ["mcp", "list"]), config["gateway_url"])
@@ -717,8 +1022,8 @@ def serve(args):
         while True:
             observers = {}
             for name, extra in (("agent.py", ["--once"]), ("os-observer.py", ["--uid", str(config["uid"]), "--profile", "mcpgw-" + config["username"]])):
-                if sys.platform == "darwin" and name == "os-observer.py":
-                    continue  # 커널 이벤트 관측기는 Linux(AppArmor·audit) 전용이다.
+                if name == "os-observer.py" and (sys.platform == "darwin" or config.get("mode") == "simple"):
+                    continue  # 커널 이벤트 관측기는 격리 계정의 Linux(AppArmor·audit) 전용이다.
                 # Inventory and kernel-event reports are observations; one failing must not cut the
                 # enforced account off from the Gateway.
                 try:
@@ -761,8 +1066,10 @@ def serve(args):
             time.sleep(HOME_LAUNCHER_EVERY)
     if sys.platform.startswith("linux") and config.get("owner_uid") is not None:
         threading.Thread(target=keep_home_launchers, daemon=True).start()
+    # gateway and ca let the employee's own `mcpgw-status --check` reach the Gateway as their harness does.
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
-               "servers": None, "kit": kit}
+               "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
+               "ca": str(PROGRAMS / f"ca-{config['uid']}.crt") if config.get("ca_certificate") else None}
     known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
@@ -844,9 +1151,10 @@ def rollback(args):
     folder = STATE / args.user
     unit = f"mcpgw-managed-{args.user}.service"
     try:
-        restore_home_launchers(json.loads((folder / "config.json").read_text()))
+        config = json.loads((folder / "config.json").read_text())
+        restore_home_launchers(config)
     except (OSError, ValueError):
-        pass
+        config = {}
     if Path("/etc/systemd/system", unit).exists():
         subprocess.run(["systemctl", "disable", "--now", unit], check=False,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -857,6 +1165,8 @@ def rollback(args):
         # install left under /usr/local is the old code and stopped this removal (10-23 kuku VM, D-229).
         subprocess.run([sys.executable, str(Path(__file__).with_name("enforce-linux.py")), "--user", args.user, "--rollback"],
                        check=True)
+    elif (ENFORCEMENT / f"mcpgw-{args.user}" / "header-helper").exists():
+        shutil.rmtree(ENFORCEMENT / f"mcpgw-{args.user}", ignore_errors=True)  # simple mode: only the helper script
     for name, target in FILES.items():
         backup = folder / (target.name + ".backup")
         if backup.exists():
@@ -871,6 +1181,11 @@ def rollback(args):
         STATUS_SHIM.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
     (PROGRAMS / f"ca-{person.pw_uid}.crt").unlink(missing_ok=True)
+    # The CA lines serve every simple install on this PC; the last one removed takes them out.
+    remaining = [json.loads(path.read_text()) for path in STATE.glob("*/config.json")]
+    others = [c for c in remaining if c.get("mode") == "simple" and c.get("ca_certificate")]
+    if config.get("mode") == "simple" or not others:
+        edit_environment(ca_environment(others[0]) if others else {})
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
 
 
@@ -906,6 +1221,8 @@ def main():
     setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
     setup.add_argument("--client", action="append", default=[])
     setup.add_argument("--broker-binding", choices=("warn", "enforce"), default="warn")
+    setup.add_argument("--mode", choices=("simple", "isolated"), default="isolated",
+                       help="simple: 직원 계정 그대로(커널 격리 없음) · isolated: 관리 계정 격리")
     setup.set_defaults(run=install)
     service = commands.add_parser("serve")
     service.add_argument("--config", type=Path, required=True)
@@ -915,6 +1232,7 @@ def main():
     helper.set_defaults(run=header)
     show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
     show.add_argument("--user")
+    show.add_argument("--check", action="store_true", help="게이트웨이로 initialize·tools/list를 보내 연결을 확인")
     show.set_defaults(run=status)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)

@@ -253,6 +253,8 @@ Write-Output 'Per-request CA verification OK'
         with mock.patch.object(managed.ctypes, 'windll', admin, create=True), \
                 mock.patch.multiple(managed, PROGRAMS=programs, STATE=state, PROGRAM_DATA=self.root / 'data', FILES={}), \
                 mock.patch.object(managed, 'managed_user', return_value=('fixture', {'sid': 'S-1-5-21-1-2-3-1001', 'profile': str(profile)}, False)), \
+                mock.patch.object(managed, 'account', return_value={'sid': 'S-1-5-21-1-2-3-1001', 'profile': str(profile), 'admin': False}), \
+                mock.patch.object(managed, 'prepare_profile', side_effect=lambda name, person: person), \
                 mock.patch.object(managed, 'protected', return_value=True), \
                 mock.patch.object(managed, 'lock_down', side_effect=lambda p, **kw: p.mkdir(parents=True, exist_ok=True)), \
                 mock.patch.object(managed, 'powershell', return_value='0'), \
@@ -260,7 +262,8 @@ Write-Output 'Per-request CA verification OK'
                 mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
                 mock.patch.object(managed, 'rule_state', return_value={'rules': []}), \
                 mock.patch.object(managed, 'set_user_environment') as environment, mock.patch('sys.stdout', io.StringIO()):
-            managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
+            # The isolated account carries the CA in its launchers, never in the account environment.
+            managed.install(SimpleNamespace(user='fixture', enrollment=enrollment, isolated_account=True))
             config_path = state / 'fixture/config.json'
             saved = json.loads(config_path.read_text(encoding='utf-8'))
             self.assertEqual(saved['ca_certificate'], ca['ca_certificate'])
@@ -276,6 +279,59 @@ Write-Output 'Per-request CA verification OK'
             observer = json.loads(config_path.with_name('observer.json').read_text(encoding='utf-8'))
             self.assertEqual(observer['ENDPOINT_CA_CERTIFICATE'], ca['ca_certificate'])
             self.assertEqual(observer['ENDPOINT_CA_SHA256'], ca['ca_sha256'])
+
+    def test_simple_install_keeps_the_signed_in_admin_account_and_names_the_ca_in_its_environment(self):
+        managed = load('windows_simple_install_test', 'endpoint-agent/managed-windows.py')
+        ca = self.ca_fixture()
+        enrollment = self.root / 'enrollment.json'
+        enrollment.write_text(json.dumps({'gateway_url': 'https://gateway.example', 'tailscale_node_id': 'approved',
+                                          'enrollment_token': 'synthetic', **ca}), encoding='utf-8')
+        profile = self.root / 'profile'
+        (profile / '.local/share/claude/versions/2.1.9').mkdir(parents=True)
+        (profile / '.local/share/claude/versions/2.1.10').mkdir()
+        (profile / 'NTUSER.DAT').touch()
+        programs, state = self.root / 'programs', self.root / 'state'
+        policy = {'tailscale_node_id': 'approved', 'gateway_ips': ['100.83.175.111'], 'gateway_port': 443,
+                  'policy_hash': 'fixture-policy', 'proxy_environment': {'HTTPS_PROXY': 'http://proxy:3128'}}
+        sent = []
+
+        def request(config, path, body=None, **kwargs):
+            sent.append((path, body))
+            return {'endpoint_id': 'fixture', 'state': 'pending'} if path == '/oauth/device-enroll' else policy
+        admin = SimpleNamespace(shell32=SimpleNamespace(IsUserAnAdmin=lambda: True))
+        person = {'sid': 'S-1-5-21-1-2-3-1001', 'profile': str(profile), 'admin': True}  # a signed-in administrator
+        with mock.patch.object(managed.ctypes, 'windll', admin, create=True), \
+                mock.patch.multiple(managed, PROGRAMS=programs, STATE=state, PROGRAM_DATA=self.root / 'data', FILES={}), \
+                mock.patch.object(managed, 'account', return_value=person), \
+                mock.patch.object(managed, 'managed_user') as companion, \
+                mock.patch.object(managed, 'protected', return_value=True), \
+                mock.patch.object(managed, 'lock_down', side_effect=lambda p, **kw: p.mkdir(parents=True, exist_ok=True)), \
+                mock.patch.object(managed, 'powershell', return_value=None) as powershell, \
+                mock.patch.object(managed, 'place_harnesses') as place, \
+                mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
+                mock.patch.object(managed, 'set_user_environment') as environment, \
+                mock.patch.object(managed, 'broadcast_environment') as broadcast, mock.patch('sys.stdout', io.StringIO()) as out:
+            managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
+        companion.assert_not_called()
+        place.assert_not_called()
+        scripts = [call.args[0] for call in powershell.call_args_list]
+        self.assertNotIn(managed.OWNED_PROCESSES, scripts)  # the employee stays signed in
+        self.assertNotIn(managed.APPLY_RULES, scripts)  # no account firewall in simple mode
+        self.assertIn(managed.REMOVE_COMPANION, scripts)  # an earlier isolated companion is retired
+        enroll = dict(sent)['/oauth/device-enroll']
+        self.assertEqual((enroll['mode'], enroll['local_sid'], enroll['local_username']), ('simple', person['sid'], 'fixture'))
+        values = environment.call_args.args[1]
+        self.assertEqual(set(values), {'NODE_EXTRA_CA_CERTS', 'CODEX_CA_CERTIFICATE'})
+        self.assertEqual(Path(values['NODE_EXTRA_CA_CERTS']).read_text(encoding='utf-8'), ca['ca_certificate'])
+        broadcast.assert_called_once()
+        summary = json.loads(out.getvalue().splitlines()[0])
+        self.assertEqual((summary['mode'], summary['versions']), ('simple', {'claude': '2.1.10'}))
+        self.assertEqual(json.loads((state / 'fixture/config.json').read_text(encoding='utf-8'))['mode'], 'simple')
+        status = load('windows_status_render', 'endpoint-agent/windows_status.py')
+        text = status.render({'updated': 100, 'connected': True, 'management': '활성', 'mode': 'simple',
+                              'servers': ['learn', 'deepwiki'], 'harnesses': {'claude': '2.1.10'}}, now=110)
+        self.assertIn('승인 서버: 2개 · learn, deepwiki', text)
+        self.assertIn('간편 모드', text)
 
     def test_tray_snapshot_retries_windows_sharing_violation(self):
         status = load('windows_status_test', 'endpoint-agent/windows_status.py')

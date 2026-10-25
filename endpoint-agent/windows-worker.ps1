@@ -113,6 +113,7 @@ function Invoke-EndpointPython([string]$Python, [string[]]$Arguments) {
             # Only fixed reasons reach the UI/log; subprocess output can contain private data.
             if ($errorText -match '([A-Za-z0-9_][A-Za-z0-9._-]{0,31}) 계정') { $script:detailAccount = $Matches[1] }
             if ($errorText -match '한 번 로그인|프로필') { throw '대상 계정 첫 로그인 후 로그아웃 필요' }
+            if ($errorText -match '설치 키트와 정책|노드') { throw '설치 파일과 게이트웨이 불일치 · 콘솔에서 새 설치 파일 받기' }
             if ($errorText -match '로그아웃') { throw '대상 계정 로그아웃 필요' }
             if ($errorText -match '공식 Codex|Claude 설치|동반|릴리스') { throw '승인된 하네스 설치 확인 필요' }
             if ($errorText -match '401|403|409|410|enrollment') { throw '등록 자격 확인 필요 · 새 키트로 다시 시도' }
@@ -170,7 +171,7 @@ try {
         $profileRoot = [IO.Path]::GetFullPath($profile).TrimEnd('\') + '\'
         if (-not $trayWork.StartsWith($profileRoot, [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         Assert-EndpointTree $trayWork
-        foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log')) {
+        foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log', 'lang.txt', 'probe.json', 'probe.json.tmp', 'probe.err')) {
             $item = Join-Path $trayWork $name
             if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
         }
@@ -201,11 +202,8 @@ try {
         -not (Test-Path -LiteralPath (Join-Path $root '.endpoint-kit'))) { throw '다른 파일이 없는 설치 위치 필요' }
     New-Item -ItemType Directory -Path $root -Force | Out-Null
     Set-EndpointAcl $root $sid -Managed:$managed
-    if ($managed) {
-        if (Get-ScheduledTask -TaskName 'MCPGatewayManaged-*' -ErrorAction SilentlyContinue) {
-            throw '기존 엔드포인트 제거 후 재설치 필요'
-        }
-    } else { Stop-EndpointTask ("MCPGatewayEndpoint-" + $request.endpoint_id) }
+    # A managed reinstall, repair or switch of mode rolls the earlier install back inside managed-windows.py (D-239).
+    if (-not $managed) { Stop-EndpointTask ("MCPGatewayEndpoint-" + $request.endpoint_id) }
     Set-EndpointResult 30 '실행 파일 준비'
     $python = Install-EndpointRuntime $PSScriptRoot $root
     $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
@@ -227,10 +225,11 @@ try {
     Invoke-EndpointPython $python @((Join-Path $root 'runtime-check.py')) | Out-Null
     Set-EndpointResult 50 '실행 파일 점검'
     if ($managed) {
-        Set-EndpointResult 60 '관리 계정 준비 · 등록'
+        $isolated = $request.isolated_account -eq $true
+        Set-EndpointResult 60 $(if ($isolated) { '격리 계정 준비 · 등록' } else { '연결 등록' })
         $managedArguments = @((Join-Path $root 'managed-windows.py'), 'install', '--user', $request.user,
             '--enrollment', $request.enrollment)
-        if ($request.isolated_account -eq $true) { $managedArguments += '--isolated-account' }
+        if ($isolated) { $managedArguments += '--isolated-account' }
         $text = Invoke-EndpointPython $python $managedArguments
         $summary = ($text -split "`n" | Where-Object { $_.StartsWith('{') } | Select-Object -Last 1) | ConvertFrom-Json
         $user = $summary.managed_account
@@ -273,13 +272,18 @@ try {
     Set-EndpointResult 85 '로그온 시작 등록'
     $settings = @{ mode = $request.mode; directory = $root; gateway_url = $request.gateway_url; user = $user;
         ca_certificate = $request.ca_certificate; ca_sha256 = $request.ca_sha256;
-        sid = $person; status_path = $statusPath; endpoint_id = $request.endpoint_id }
+        sid = $person; status_path = $statusPath; endpoint_id = $request.endpoint_id;
+        connection = $(if ($managed -and -not $isolated) { 'simple' } elseif ($managed) { 'isolated' } else { 'observer' }) }
     [IO.File]::WriteAllText($script:settingsPath, ($settings | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($manifestPath, ($owned | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     Set-EndpointAcl $root $sid -Managed:$managed
     Register-EndpointTray $script:settingsPath $person $root
-    if ($person -eq $sid) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
-    Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed) {
+    # Simple mode: the employee is signed in now, so the tray starts in their session at once (also when UAC ran as
+    # another administrator). A companion account has no session until it signs in.
+    if ($person -eq $sid -or ($managed -and -not $isolated)) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
+    Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed -and -not $isolated) {
+        "지금 계정 그대로 사용`r`n연결 확인`t트레이 아이콘 > 연결 확인`r`n모델 로그인`t트레이 아이콘 > 모델 로그인"
+    } elseif ($managed) {
         "조직 활성화 대기`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
     } else { '트레이 실행' })
 } catch {
@@ -290,7 +294,8 @@ try {
         '설치 소유 정보 확인 실패', '엔드포인트 처리 시간 초과', '대상 계정 로그아웃 필요', '대상 계정 첫 로그인 후 로그아웃 필요',
         '승인된 하네스 설치 확인 필요', '등록 자격 확인 필요 · 새 키트로 다시 시도', '설치 폴더 또는 계정 권한 확인 필요',
         '엔드포인트 처리 실패 · 게이트웨이 연결 또는 등록 자격 확인 필요', '관리자 권한 필요', '대상 계정 이름 확인 필요',
-        '사용자 설치 위치 확인 필요', '다른 파일이 없는 설치 위치 필요', '기존 엔드포인트 제거 후 재설치 필요', '다른 설치 작업 진행 중')
+        '사용자 설치 위치 확인 필요', '다른 파일이 없는 설치 위치 필요', '기존 엔드포인트 제거 후 재설치 필요', '다른 설치 작업 진행 중',
+        '설치 파일과 게이트웨이 불일치 · 콘솔에서 새 설치 파일 받기')
     $reason = $_.Exception.Message
     if ($reason -notin $known) { $reason = '파일 접근 또는 예약 작업 권한 확인 필요' }
     Set-EndpointResult 0 $stage 'failed' $reason
