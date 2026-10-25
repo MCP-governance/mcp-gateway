@@ -8,7 +8,8 @@ POLICY_LEDGER_URL, REGISTRY_DIR (the repository's registry/) and a writable REGI
 
 What is real: the SQL, constraints and append-only triggers, the Console and Gateway routes, the policy
 decisions. What is a double (unit level, not real-environment evidence): the MCP server behind the
-endpoints (tools/list and the final dispatch are canned answers), the PII analyzer (finds nothing), the
+endpoints (tools/list and the final dispatch are canned answers), the PII analyzer and the in-image Gitleaks
+engine (both find nothing; the native engine is checked against the binary in the stack job), the
 internal Git archive check, and the intake worker's scan output, which is inserted as rows shaped like the worker's.
 """
 from __future__ import annotations
@@ -34,7 +35,7 @@ for candidate in (Path(__file__).resolve().parent.parent / "gateway", Path("/app
     if (candidate / "app").is_dir():
         sys.path.insert(0, str(candidate))
         break
-from app import activity, agent_service, audit, core, db, endpoint_plane, main, mcp_facade, privacy, registry, review, upstream
+from app import activity, agent_service, audit, core, db, endpoint_plane, main, mcp_facade, privacy, registry, review, secret_scan, upstream
 from app.agent_contract import AUDIENCE, ISSUER
 from intake_fixture import approval_body, impact_input
 from termination_lab_support import isolated_disposal, signing_keys
@@ -99,6 +100,11 @@ class Upstream:
 async def no_masking(value, ignore=None):
     """The lab has no PII analyzer service: output inspection is a double that finds nothing."""
     return value, []
+
+
+async def no_secrets(text):
+    """The host has no in-image Gitleaks library: secret inspection is a double that finds nothing."""
+    return []
 
 
 async def no_findings(text, ignore=None):
@@ -600,7 +606,8 @@ async def amain() -> None:
     await setup()
     registered_upstream = [patch.object(upstream, "discover", Upstream.discover), patch.object(core, "_call_upstream", Upstream.call),
                            patch.object(agent_service, "current_identity", identity), patch.object(agent_service, "gateway_proxy", proxy),
-                           patch.object(privacy, "mask_payload", no_masking), patch.object(privacy, "analyze", no_findings)]
+                           patch.object(privacy, "mask_payload", no_masking), patch.object(privacy, "analyze", no_findings),
+                           patch.object(secret_scan, "labels", no_secrets)]
     for patcher in registered_upstream:
         patcher.start()
     main.app.dependency_overrides[main.admin_caller] = identity
