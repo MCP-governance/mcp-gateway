@@ -39,7 +39,7 @@
 2. GB/T 45654—2025 6.7 b), [LIB-M32 분석](../../papers/LIB-M32.md#조항별-요구와-mint-연결): 단말 배포 모델의 안전 로그 수집·보존 및 네트워크 연결 시 업로드 또는 로컬 내보내기. 표준은 권장성이고, 이 조항은 단말 모델을 대상으로 해 OS 차단 관측 버퍼 전체의 적합성 근거로 확대하지 않는다. 원문 PDF는 저장소의 `local-sources/` 로컬 전용 자료여서 복제하지 않았다.
 3. [데이터 모델 §5](../../../../docs/ai/DATA_MODEL.md#5-엔드포인트-평면): OS 이벤트 원본 해시 7일 dedup, 관측 원장과 `decisions` 분리.
 4. [D-128/D-157 및 SIEM 중복 분석](../siem-dedup/README.md): SIEM UID는 게이트웨이 DB 원장 행 ID+chain hash 기반이라 아직 DB 행이 없는 엔드포인트 오프라인 이벤트에 직접 적용할 수 없다. 해당 UID 설계를 복제하지 않고 기존 endpoint OS 이벤트 원본 해시 UID와 DB 유일 키를 재사용한다.
-5. [D-159](../../../../docs/ai/DECISIONS.md#d-159-관리형-linux-토큰-헬퍼-캐시를-정상-heartbeat-주기-안에-유지한다-2026-10-20)·[D-172](../../../../docs/ai/DECISIONS.md#d-172-오래된-보고-장치는-영구-격리하지-않는다-2026-10-20): 토큰 캐시와 heartbeat 공백 처리, 180초 일시 격리. 오프라인 버퍼는 둘의 통제 의미를 변경하지 않는다.
+5. [D-159](../../../../docs/ai/decisions/D-151-200.md#d-159-관리형-linux-토큰-헬퍼-캐시를-정상-heartbeat-주기-안에-유지한다-2026-10-20)·[D-172](../../../../docs/ai/decisions/D-151-200.md#d-172-오래된-보고-장치는-영구-격리하지-않는다-2026-10-20): 토큰 캐시와 heartbeat 공백 처리, 180초 일시 격리. 오프라인 버퍼는 둘의 통제 의미를 변경하지 않는다.
 6. 기존 코드: `endpoint-agent/agent.py::seal_os_event`; `endpoint-agent/os-observer.py::event/main`; `endpoint-agent/os-observer-windows.py::parse_event/collect`; `full_stack_lab/gateway/app/endpoint_plane.py::ingest_os_events`; `full_stack_lab/gateway/app/main.py::EndpointOSEvent/endpoint_os_report`; `full_stack_lab/gateway/app/v2_tables.sql::endpoint_os_events`.
 
 ## 구현 선택과 한계

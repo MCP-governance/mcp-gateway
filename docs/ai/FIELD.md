@@ -99,7 +99,7 @@ root·SYSTEM 서비스만 장기 단말 키를 보유합니다. 하네스 헬퍼
 하네스는 `HTTPS_PROXY`로 프록시에 접속하고, 프록시(tinyproxy)는 `full_stack_lab/model-proxy/model-domains.txt`의
 모델 도메인만 허용합니다(TLS 터널은 443만, D-67). MCP 호출은 `NO_PROXY`로 게이트웨이에 직접 갑니다. 하네스의 모델 로그인(`codex login`·
 `claude` 로그인)은 관리 계정에서 직원이 한 번 합니다. 재설치·제거 절차와 실측 증거는 [Endpoint Agent](../../endpoint-agent/README.md),
-설계 결정은 [D-61](DECISIONS.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
+설계 결정은 [D-61](decisions/D-051-100.md#d-61-가입을-관리형-단말-연결의-시작점으로-2026-10-01)·D-67·D-68을 봅니다.
 
 `field/pc/mcpgw_pc.py`의 비관리 setup은 기존 랩·관측용으로 남습니다. field 일반 계정의 실행 인증을 발급하지 않습니다.
 

@@ -1,16 +1,18 @@
 {
-  "captured_at": "2026-10-25T18:27:11+09:00",
-  "head": "2b308627452d932351285b6342e1bb90cca59f25",
-  "branch": "10/25-litellm-addon",
+  "captured_at": "2026-10-25T19:42:35+09:00",
+  "head": "df8f36aba09e6228390496642ee6cd751970f602",
+  "branch": "10/25-integrate",
   "status": [
-    "M addons/litellm/README.md",
-    " M deploy/.env.example",
-    " M deploy/compose.yaml",
-    " M docs/ai/DECISIONS.md",
-    " M docs/ai/LITELLM_SYNC.md",
+    "M docs/ai/DECISIONS.md",
+    " M docs/ai/FIELD.md",
+    " M docs/ai/POLICY.md",
+    " M research/llm-wiki/analysis/auto-suspend/README.md",
+    " M research/llm-wiki/analysis/endpoint-offline-buffer/README.md",
     " M research/llm-wiki/analysis/integration-cases.json",
+    " M research/llm-wiki/analysis/poisoning-d158/README.md",
     " M research/llm-wiki/analysis/requirements.json",
-    "?? research/llm-wiki/status/reports/2026-10-25-litellm-addon.md"
+    " M research/llm-wiki/status/decisions-index.md",
+    "?? docs/ai/decisions/"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -54,7 +56,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "65a43ddae89925dad70ebd330e327f6c582e6ea86bffd8ba3ae63e01b71da4c4"
+      "sha256": "dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

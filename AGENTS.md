@@ -58,7 +58,7 @@ cd full_stack_lab
 ```
 
 ## 깨면 안 되는 불변식
-이 목록과 README의 원칙만 고정이다. 도구·제품·정책 체계·화면 구성 같은 나머지는 현재의 선택이며, 근거가 있으면 바꾸고 `docs/ai/DECISIONS.md`에 이유를 남긴다.
+이 목록과 README의 원칙만 고정이다. 도구·제품·정책 체계·화면 구성 같은 나머지는 현재의 선택이며, 근거가 있으면 바꾸고 `docs/ai/DECISIONS.md(본문은 `docs/ai/decisions/` 번호대 파일 맨 아래에 추가, 뒤에 `split_decisions.py index`)`에 이유를 남긴다.
 
 - **신원은 transport의 토큰에서만** 정한다. 인자·헤더에 적힌 신원은 기록만 하고 판정에 쓰지 않는다.
 - **직원 토큰을 upstream MCP 서버로 넘기지 않는다**(MCP 인가 명세, 토큰 전달 금지).
