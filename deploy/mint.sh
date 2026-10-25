@@ -16,7 +16,9 @@ usage() {
 ./mint.sh restore <백업 디렉터리>            백업에서 복구(현재 데이터를 덮어씀)
 ./mint.sh upgrade                            백업 뒤 현재 체크아웃 판본으로 빌드·기동
 ./mint.sh set-password <아이디>              비밀번호 변경(표준 입력 또는 프롬프트)
-./mint.sh add-account <아이디> --role 관리자|직원 [--department 부서]
+./mint.sh add-account <아이디> --role 관리자|직원 [--department 부서] [--ai-gateway]
+./mint.sh litellm enable --url <관리 origin> --bindings <매핑.json> [--ca <PEM>] [--route mint|direct] < 관리 키 파일
+./mint.sh litellm check | status | rotate-key < 새 키 파일 | disable
 ./mint.sh logs [서비스]                      로그
 ./mint.sh down                               정지(데이터 유지)
 ./mint.sh compose <인자…>                    같은 설정으로 docker compose 실행
@@ -170,13 +172,21 @@ export_ca() {
   echo "SHA-256    : $(cat ca/root.sha256)"
 }
 
+# 컨테이너(UID 10001)가 읽을 디렉터리. litellm/은 목록을 숨기고 통과만 허용한다(관리 키는 0400, 소유 10001).
+prepare_dirs() {
+  mkdir -p ca siem litellm
+  chmod 711 litellm
+  [[ -f litellm/bindings.json ]] || printf '{"users": [], "teams": [], "workers": []}\n' > litellm/bindings.json
+  chmod 644 litellm/bindings.json
+}
+
 up() {
   local with_siem=0 a
   for a in "$@"; do
     case "$a" in --with-siem) with_siem=1 ;; *) die "알 수 없는 옵션: $a" ;; esac
   done
   load_env
-  mkdir -p ca siem
+  prepare_dirs
   echo "[1/4] 이미지 빌드 ($MCP_BUILD_REVISION)"
   dc build -q
   echo "[2/4] 게이트웨이·콘솔·검사기"
@@ -208,6 +218,8 @@ install_stack() {
   [[ -z "$bind" ]] || env_set MINT_BIND "$bind"
   [[ -z "$name" ]] || env_set MINT_PUBLIC_NAME "$name"
   load_env
+  # compose가 없는 마운트 원본을 root 소유 디렉터리로 만들기 전에 준비한다.
+  prepare_dirs
   generate_secrets
   echo "[준비] 서명 키·폐기 목록"
   # 키를 만들기 전에는 compose가 빈 키 값을 거절하므로 이 두 명령에만 자리표시 값을 준다.
@@ -265,6 +277,8 @@ backup() {
   local v; for v in "${VOLUMES[@]}"; do volume_tar save "$v" "$dir"; done
   dc start corp-git gateway agent-service runtime-worker >/dev/null
   (umask 077; cp .env "$dir/env"; printf '%s\n' "$MCP_BUILD_REVISION" > "$dir/VERSION")
+  # LiteLLM 매핑·CA는 함께 둔다. 관리 키는 비밀 저장소가 정본이라 복구 뒤 rotate-key로 다시 넣는다.
+  local f; for f in bindings.json ca.pem; do [[ ! -f "litellm/$f" ]] || cp "litellm/$f" "$dir/litellm-$f"; done
   echo "완료. env 파일에 서명·암호화 키가 있습니다 — 백업 디렉터리를 서버 밖 안전한 곳에 보관하세요."
 }
 
@@ -283,6 +297,8 @@ restore() {
     (umask 077; cp "$dir/env" .env)
   fi
   load_env
+  prepare_dirs
+  local f; for f in bindings.json ca.pem; do [[ ! -f "$dir/litellm-$f" ]] || { cp "$dir/litellm-$f" "litellm/$f"; chmod 644 "litellm/$f"; }; done
   echo "복구: $dir (백업 판본 $(cat "$dir/VERSION" 2>/dev/null || echo '—'), 현재 체크아웃 $MCP_BUILD_REVISION)"
   dc build -q
   dc stop caddy model-proxy gateway agent-service intake-worker runtime-worker corp-git >/dev/null 2>&1 || true
@@ -316,31 +332,104 @@ set_password() {
 }
 
 add_account() {
-  local name="${1:?아이디를 지정하세요}" role="" department="운영"
+  local name="${1:?아이디를 지정하세요}" role="" department="운영" gateway=0
   shift
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --role) role="${2:-}"; shift 2 ;;
       --department) department="${2:-}"; shift 2 ;;
+      --ai-gateway) gateway=1; shift ;;
       *) die "알 수 없는 옵션: $1" ;;
     esac
   done
   case "$role" in 관리자|admin) role=admin ;; 직원|user) role=user ;; *) die "--role 관리자 또는 --role 직원을 지정하세요." ;; esac
+  [[ $gateway == 0 || $role == user ]] || die "--ai-gateway는 직원 계정에만 씁니다."
   [[ "$name" =~ ^[a-z][a-z0-9]*([._-][a-z0-9]+)*$ && ${#name} -ge 3 && ${#name} -le 32 ]] \
     || die "아이디는 영문 소문자로 시작하는 3~32자(숫자·. _ - 가능)여야 합니다."
   load_env
   # 관리자 토큰은 root와 같은 형식(아이디), 직원은 가입 승인과 같은 형식(emp-아이디)이다.
   read_password | dc exec -T agent-service python -c '
 import os, sys, psycopg
-name, role, department = sys.argv[1], sys.argv[2], sys.argv[3]
+name, role, department, gateway = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] == "1"
 token, db_role = (name, "admin") if role == "admin" else ("emp-" + name, "employee")
 with psycopg.connect(os.environ["DATABASE_URL"]) as db:
     if db.execute("SELECT 1 FROM principals WHERE lower(email)=lower(%s) OR user_id=%s OR token=%s", (name, name, token)).fetchone():
         sys.exit("이미 있는 아이디입니다")
-    db.execute("""INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash,managed_required)
-                  VALUES (%s,%s,%s,%s,%s,%s,crypt(%s, gen_salt(%s, 12)),%s)""",
-               (token, name, name, name, db_role, department, sys.stdin.read(), "bf", db_role != "admin"))
-print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었습니다: " + name)' "$name" "$role" "$department"
+    # AI 게이트웨이 전용 직원은 PC 키트 없이 자기 MCP 토큰을 받는다. 판정·원장은 다른 직원과 같다(D-250).
+    db.execute("""INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash,managed_required,ai_gateway_only)
+                  VALUES (%s,%s,%s,%s,%s,%s,crypt(%s, gen_salt(%s, 12)),%s,%s)""",
+               (token, name, name, name, db_role, department, sys.stdin.read(), "bf", db_role != "admin" and not gateway, gateway))
+print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었습니다: " + name)' "$name" "$role" "$department" "$gateway"
+}
+
+sync_check() {
+  dc run --rm --no-deps -T --entrypoint python gateway -m app.litellm_sync check
+}
+
+# 관리 키는 표준 입력으로만 받아 게이트웨이 이미지 안에서 파일로 쓴다(명령줄·.env·로그에 남지 않게).
+write_admin_key() {
+  local key; IFS= read -r key || true
+  [[ -n "$key" && "$key" != *[[:space:]]* ]] || die "관리 키를 표준 입력으로 주세요(한 줄)."
+  printf '%s' "$key" | docker run --rm -i --user 0 --entrypoint sh -v "$DEPLOY_DIR/litellm:/d" "mcpgw/gateway:$MINT_VERSION" \
+    -c 'umask 077; cat > /d/admin-key.new && chown 10001 /d/admin-key.new && chmod 0400 /d/admin-key.new && mv /d/admin-key.new /d/admin-key'
+}
+
+litellm() {
+  load_env
+  prepare_dirs
+  case "${1:-}" in
+    enable)
+      shift
+      local url="" bindings="" ca="" route=mint
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --url) url="${2:-}"; shift 2 ;;
+          --bindings) bindings="${2:-}"; shift 2 ;;
+          --ca) ca="${2:-}"; shift 2 ;;
+          --route) route="${2:-}"; shift 2 ;;
+          *) die "알 수 없는 옵션: $1" ;;
+        esac
+      done
+      [[ -n "$url" && -f "$bindings" ]] || die "--url과 --bindings 파일을 지정하세요."
+      [[ "$route" == mint || "$route" == direct ]] || die "--route는 mint 또는 direct입니다."
+      python3 -m json.tool "$bindings" >/dev/null || die "매핑 파일이 JSON이 아닙니다."
+      cp "$bindings" litellm/bindings.json && chmod 644 litellm/bindings.json
+      if [[ -n "$ca" ]]; then
+        openssl x509 -in "$ca" -noout || die "--ca가 PEM 인증서가 아닙니다."
+        cp "$ca" litellm/ca.pem && chmod 644 litellm/ca.pem
+        env_set MINT_LITELLM_SYNC_CA_FILE /run/mint-litellm/ca.pem
+      else
+        env_set MINT_LITELLM_SYNC_CA_FILE ""
+      fi
+      write_admin_key
+      env_set MINT_LITELLM_SYNC_URL "$url"
+      env_set MINT_LITELLM_SYNC_KEY_FILE /run/mint-litellm/admin-key
+      env_set MINT_LITELLM_ROUTE "$route"
+      echo "[점검] 매핑·관리 키·명시적 키 접근 설정·워커 연결"
+      sync_check || die "점검이 실패해 적용하지 않았습니다(.env는 바뀌었고 게이트웨이는 그대로입니다). 고친 뒤 다시 실행하세요."
+      dc up -d --force-recreate gateway agent-service
+      wait_ready
+      echo "켰습니다. 상태: ./mint.sh litellm status"
+      ;;
+    check) sync_check ;;
+    rotate-key)
+      # 키는 요청마다 다시 읽으므로 재기동하지 않는다. 새 키로 관리 API가 응답하는지 점검한다.
+      write_admin_key
+      sync_check
+      ;;
+    status)
+      sync_check || true
+      dc exec -T db psql -U mcp -d mcp_governance -At -F ' ' -c \
+        "SELECT server_id, status, attempts, to_char(updated_at, 'YYYY-MM-DD HH24:MI:SS') FROM litellm_sync_jobs ORDER BY server_id" </dev/null
+      ;;
+    disable)
+      env_set MINT_LITELLM_SYNC_URL ""
+      dc up -d --force-recreate gateway agent-service
+      wait_ready
+      echo "껐습니다. LiteLLM에 이미 반영된 서버·권한은 그대로 남습니다(LiteLLM 관리자가 정리)."
+      ;;
+    *) usage; exit 2 ;;
+  esac
 }
 
 case "${1:-help}" in
@@ -353,6 +442,7 @@ case "${1:-help}" in
   upgrade) upgrade ;;
   set-password) shift; set_password "$@" ;;
   add-account) shift; add_account "$@" ;;
+  litellm) shift; litellm "$@" ;;
   logs) shift; load_env; dc logs --tail=300 "$@" ;;
   down) load_env; dc --profile siem stop ;;
   compose) shift; load_env; dc "$@" ;;

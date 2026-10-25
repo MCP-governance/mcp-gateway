@@ -2,7 +2,7 @@
 
 This is an integration client, not an MCP server. A successful model response and
 tools/list are prerequisite evidence; they do not prove model-selected tool use.
-Run on the designated managed PJ1 account after provisioning; --validate-only
+Run on the designated managed test account after provisioning; --validate-only
 does not read credentials or open network connections.
 """
 from __future__ import annotations

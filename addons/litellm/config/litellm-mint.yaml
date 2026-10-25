@@ -1,0 +1,14 @@
+# A 경유(권장): MCP 서버는 MINT 동기화가 관리 API로 등록한다(주소 = MINT /mcp/<서버>/, auth_type oauth_delegate).
+# 이 파일에는 MCP 서버를 적지 않는다. 직원은 x-litellm-api-key와 x-mcp-<서버>-authorization(본인 MINT 토큰)을 보낸다.
+model_list: []
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
+  # 키에 MCP 권한이 명시되지 않으면 어떤 MCP도 쓸 수 없다. MINT는 이 값이 true인 것을 확인한 뒤에만 서버를 만든다.
+  require_key_mcp_access_defined: true
+  # 프롬프트·응답 본문은 지출 로그에 남기지 않는다. 남기려면 보존 기간·접근 통제를 먼저 정한다.
+  store_prompts_in_spend_logs: false
+
+litellm_settings:
+  telemetry: false

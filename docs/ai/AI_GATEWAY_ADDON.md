@@ -3,7 +3,9 @@
 기업이 LiteLLM·Kong·Portkey 같은 AI 게이트웨이로 MCP를 중앙 연결하면 직원 PC의 하네스는 MINT를 거치지 않는다.
 MINT는 이런 게이트웨이에 붙는 세 가지 방법을 제공한다. 코드와 설치는 [addons/litellm](../../addons/litellm/README.md).
 
-도입 승인·철회를 관리 API로 전파하는 선택 기능은 [LiteLLM 동기화](LITELLM_SYNC.md)(D-208)를 본다. 기본 꺼짐이며 호출 판정 API와 별도다.
+도입 승인·철회를 관리 API로 전파하는 선택 기능은 [LiteLLM 동기화](LITELLM_SYNC.md)(D-208·D-249)를 본다. 기본 꺼짐이며 호출 판정 API와 별도다. 동기화가 등록하는 주소와 인증은 `MINT_LITELLM_ROUTE` 하나가 정한다: `mint`이면 A(아래 표), `direct`이면 B. 운영 배포는 `./mint.sh litellm enable`로 켠다.
+
+키트 없이 중앙 AI 게이트웨이로만 MCP를 쓰는 직원은 `./mint.sh add-account <아이디> --role 직원 --ai-gateway`로 만든다(D-250). 이 직원은 관리형 PC 없이 자기 MINT 토큰을 받고, 판정·원장 귀속은 다른 직원과 같다.
 
 | 방식 | 구성 | MINT가 보장하는 것 | 필요한 것 |
 | --- | --- | --- | --- |
@@ -57,7 +59,7 @@ MINT는 이런 게이트웨이에 붙는 세 가지 방법을 제공한다. 코�
 ### 호출자가 지킬 규칙 (fail-closed)
 
 다음은 모두 **차단**이다: `allow`가 `true`가 아님, 200이 아닌 응답(401·403·422·5xx), 시간 초과·연결 실패, JSON이 아닌 응답,
-직원 토큰 없음. 사후 기록 실패는 이미 나간 호출을 되돌릴 수 없으므로 호출자 로그에만 남긴다.
+직원 토큰 없음. 사후 기록 실패와 `recorded:false` 응답은 이미 나간 호출을 되돌릴 수 없으므로 호출자 로그에 경고로 남긴다.
 
 ```bash
 curl -sS https://<게이트웨이>/api/addon/v1/mcp-decision -H "Authorization: Bearer $MINT_TOKEN" \
@@ -68,7 +70,7 @@ curl -sS https://<게이트웨이>/api/addon/v1/mcp-decision -H "Authorization: 
 
 | 게이트웨이 | 훅 | 상태 |
 | --- | --- | --- |
-| LiteLLM | 커스텀 가드레일 `pre_mcp_call` | 구현·1.105.0 확인 ([addons/litellm](../../addons/litellm/README.md)) |
+| LiteLLM | A: `oauth_delegate` 서버(동기화가 등록) · B: 커스텀 가드레일 `pre_mcp_call` | 1.105.0, CI `litellm` 작업에서 실제 MINT와 함께 검수 ([addons/litellm](../../addons/litellm/README.md)) |
 | Kong, Portkey, Envoy `ext_authz` 등 | 요청 본문(서버·도구·인자)을 읽을 수 있는 호출 직전 훅 | **계약만 제공, 미확인**. 응답 형식이 다른 훅(예: 허용 여부만 보는 훅)은 `allow`를 그 형식으로 바꾸는 얇은 어댑터가 필요하다 |
 
 붙이려면 ① 도구 호출 직전에 서버·도구·인자를 읽을 수 있고, ② 직원 MINT 토큰을 받을 수 있고(예: `Authorization`),

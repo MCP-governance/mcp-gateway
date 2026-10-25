@@ -1,11 +1,16 @@
 {
-  "captured_at": "2026-10-25T19:07:45+09:00",
-  "head": "13ccfe3b401cfc7dfb80c4e6f119d74ea6cdd8b3",
-  "branch": "10/25-kit-usability",
+  "captured_at": "2026-10-25T18:27:11+09:00",
+  "head": "2b308627452d932351285b6342e1bb90cca59f25",
+  "branch": "10/25-litellm-addon",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
+    "M addons/litellm/README.md",
+    " M deploy/.env.example",
+    " M deploy/compose.yaml",
+    " M docs/ai/DECISIONS.md",
+    " M docs/ai/LITELLM_SYNC.md",
+    " M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    "?? research/llm-wiki/status/reports/2026-10-25-litellm-addon.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -49,7 +54,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9"
+      "sha256": "65a43ddae89925dad70ebd330e327f6c582e6ea86bffd8ba3ae63e01b71da4c4"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

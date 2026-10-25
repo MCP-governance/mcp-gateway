@@ -40,9 +40,13 @@ def check() -> list[str]:
         if key in SECRETS and value:
             fail.append(f".env.example의 {key}에 값이 있음")
 
-    local = {".env", "initial-admin-password", "backups", "ca", "siem", "check.py"}
+    local = {".env", "initial-admin-password", "backups", "ca", "siem", "litellm", "check.py", "__pycache__"}
     targets = PRODUCT_DOCS + [str(p.relative_to(ROOT)) for p in (ROOT / "deploy").rglob("*")
                               if p.is_file() and not local & set(p.relative_to(ROOT / "deploy").parts)]
+    # The LiteLLM add-on ships to customers too (D-249); its lab-only secrets folder is local.
+    for folder in ("addons/litellm", "full_stack_lab/llm/standalone", "full_stack_lab/integrations/litellm"):
+        targets += [str(p.relative_to(ROOT)) for p in (ROOT / folder).rglob("*")
+                    if p.is_file() and "secrets" not in p.parts and "__pycache__" not in p.parts]
     for name in targets:
         path = ROOT / name
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):

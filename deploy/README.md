@@ -45,7 +45,21 @@ cd mcp-gateway/deploy
 | `./mint.sh upgrade` | 백업 뒤 현재 체크아웃 판본으로 재기동 |
 | `./mint.sh up [--with-siem]` | 기동·재기동 |
 | `./mint.sh logs [서비스]` · `down` | 로그 · 정지(데이터 유지) |
+| `./mint.sh litellm enable\|check\|status\|rotate-key\|disable` | LiteLLM 동기화 켜기·점검·상태·관리 키 회전·끄기 |
 | `./mint.sh compose <인자>` | 같은 설정으로 `docker compose` |
+
+### LiteLLM 연동(선택)
+
+중앙 AI 게이트웨이(LiteLLM 1.105)를 쓰는 기업은 MINT 승인·철회를 LiteLLM에 자동 반영한다.
+
+```bash
+./mint.sh add-account <아이디> --role 직원 --ai-gateway      # PC 키트 없이 LiteLLM으로만 쓰는 직원
+./mint.sh litellm enable --url https://<LiteLLM 관리 origin> --bindings 매핑.json --route mint < 관리-키-파일
+./mint.sh litellm status
+```
+
+`--route mint`(기본)는 LiteLLM의 MCP 서버가 MINT를 거치고, `direct`는 LiteLLM이 원래 서버로 보내며 가드레일이 MINT 판정을 받는다.
+LiteLLM 설정 견본과 매핑 형식은 [addons/litellm](../addons/litellm/README.md), 동작과 한계는 [LiteLLM 동기화](../docs/ai/LITELLM_SYNC.md)에 있습니다.
 
 백업·복구·업그레이드·롤백·사설 CA 절차와 그 이유는 [운영 런북 1부](../docs/ai/RUNBOOK.md#1부-운영-배포-deploy)에 있습니다.
 

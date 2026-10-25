@@ -289,6 +289,8 @@ ALTER TABLE principals ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'ac
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_by text;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS managed_required boolean NOT NULL DEFAULT false;
+-- 중앙 AI 게이트웨이(LiteLLM 등)로만 MCP를 쓰는 직원. 관리형 PC 요구를 기동 때 되살리지 않는다(D-250).
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS ai_gateway_only boolean NOT NULL DEFAULT false;
 ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_status_check;
 ALTER TABLE principals ADD CONSTRAINT principals_status_check
   CHECK (status IN ('active', 'disabled', 'locked', 'deleted'));
