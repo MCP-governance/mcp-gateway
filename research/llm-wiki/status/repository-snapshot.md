@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T20:16:01+09:00
+확인 시각: 2026-10-26T00:46:58+09:00
 
-HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
+HEAD: `db9e771d95afb5d90bded65d6564363660e3732a` · 로컬 브랜치: `10/25-stage0-sunset`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,13 +11,15 @@ HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/threats/control-map.md
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898` |
+| `full_stack_lab/gateway/app/core.py` | `9e36a57afd42169e03c16489c7af91f3149caa4a6461332b5a7b15bc1bc23bae` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
 | `full_stack_lab/gateway/app/idp.py` | `46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216` |
