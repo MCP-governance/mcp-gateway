@@ -25,8 +25,9 @@ from uuid import UUID, uuid4
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
@@ -399,7 +400,7 @@ async def password_principal(email: str, password: str, caller: str) -> dict:
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     field = os.getenv("MCP_FIELD_MODE") == "1"
-    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
+    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field and "admin" in user["roles"] else ""
     # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
             "managed_required": user["managed_required"],
@@ -2054,6 +2055,143 @@ async def admin_caller(user: dict = Depends(caller)) -> dict:
     if "admin" not in user["roles"]:
         raise HTTPException(403, "관리자만 승인할 수 있습니다.")
     return user
+
+
+MCP_SOURCE_MAX_BYTES = 128 << 20
+MCP_SOURCE_DOWNLOAD_SLOTS = asyncio.Semaphore(2)
+
+
+async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[dict]:
+    rows = await db.fetch_all(
+        """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.repository_url,
+                  r.endpoint_url, r.intake_kind, r.commit_sha, r.internal_repo_url,
+                  s.id AS server_id, s.status AS server_status, s.lifecycle, s.source_ref
+             FROM mcp_intake_requests r JOIN mcp_servers s ON s.id=r.registered_server_id
+            WHERE (%s::text IS NULL OR s.id=%s)
+              AND NOT EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL)
+            ORDER BY s.id""", (server_id, server_id))
+    approved = []
+    for row in rows:
+        spec = registry.server(row["server_id"])
+        if (not spec or row["intake_status"] != "APPROVED"
+                or row["server_status"] != "READY" or row["lifecycle"] != "OPERATING"
+                or str(spec.get("intake_id")) != str(row["intake_id"])
+                or registry.source_ref(spec) != row["source_ref"]):
+            continue
+        allowed = registry.allowed_principals(row["server_id"])
+        # D-234: one judgement for who may use a server ("*" = every active employee).
+        if "admin" not in user["roles"] and not registry.permits(allowed, user["principal"]):
+            continue
+        try:
+            until = datetime.fromisoformat(spec.get("valid_until") or "")
+            if until.tzinfo is None or until <= datetime.now(UTC):
+                continue
+        except (TypeError, ValueError):
+            continue
+        remote = row["intake_kind"] == "remote-endpoint"
+        commit = row["commit_sha"] or ""
+        if not remote and (not re.fullmatch(r"[0-9a-f]{40}", commit) or spec.get("version") != commit):
+            continue
+        approved.append({**row, "valid_until": until.isoformat(),
+                         "execution": "remote" if remote else "pc" if spec.get("local") else
+                                      "runtime" if spec.get("runtime") else "remote"})
+    return approved
+
+
+def approved_mcp_repo_path(row: dict) -> str:
+    # Only a repository published by this service may select the internal API path.
+    public = os.getenv("GITEA_PUBLIC_URL", "http://localhost:3000").rstrip("/")
+    prefix = f"{public}/{GITEA_ORG}/"
+    url = row.get("internal_repo_url") or ""
+    name = url.removeprefix(prefix) if url.startswith(prefix) else ""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", name):
+        raise HTTPException(409, "승인된 소스 저장소를 확인할 수 없습니다.")
+    return f"/api/v1/repos/{quote(GITEA_ORG, safe='')}/{quote(name, safe='')}"
+
+
+@app.get("/api/approved-mcp")
+async def list_approved_mcp(user: dict = Depends(caller)):
+    servers = []
+    for row in await approved_mcp_rows(user):
+        source_available = False
+        if row["intake_kind"] == "repository":
+            try:
+                approved_mcp_repo_path(row)
+                source_available = True
+            except HTTPException:
+                pass
+        servers.append({key: row[key] for key in ("server_id", "display_name", "commit_sha", "valid_until", "execution")}
+                       | {"source_url": row["endpoint_url"] if row["intake_kind"] == "remote-endpoint" else row["repository_url"],
+                          "connection_url": f"/mcp/{row['server_id']}/", "source_available": source_available})
+    return {"servers": servers}
+
+
+async def receive_mcp_source(spool, path: str) -> tuple[str, int]:
+    digest, total = hashlib.sha256(), 0
+    async with gitea_admin_client() as client:
+        async with client.stream("GET", path, headers={"Accept-Encoding": "identity"}, follow_redirects=False) as response:
+            if response.status_code != 200:
+                raise HTTPException(502, "승인된 소스를 받지 못했습니다.")
+            length = response.headers.get("content-length")
+            if length is not None:
+                if not length.isdecimal():
+                    raise HTTPException(502, "소스 크기를 확인할 수 없습니다.")
+                if int(length) > MCP_SOURCE_MAX_BYTES:
+                    raise HTTPException(413, "소스 크기 상한을 넘었습니다.")
+            if response.headers.get("content-encoding", "identity").lower() != "identity":
+                raise HTTPException(502, "소스 전송 형식을 확인할 수 없습니다.")
+            async for block in response.aiter_raw(chunk_size=64 << 10):
+                total += len(block)
+                if total > MCP_SOURCE_MAX_BYTES:
+                    raise HTTPException(413, "소스 크기 상한을 넘었습니다.")
+                digest.update(block)
+                await asyncio.to_thread(spool.write, block)
+            if total == 0 or (length is not None and int(length) != total):
+                raise HTTPException(502, "소스 전송이 완료되지 않았습니다.")
+    spool.seek(0)
+    return digest.hexdigest(), total
+
+
+@app.get("/api/approved-mcp/{server_id}/source")
+async def download_approved_mcp_source(server_id: str, commit: str, user: dict = Depends(caller)):
+    if not review.SERVER.fullmatch(server_id) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise HTTPException(409, "서버 식별자나 커밋을 확인할 수 없습니다.")
+    rows = await approved_mcp_rows(user, server_id)
+    if not rows:
+        raise HTTPException(403, "승인된 MCP만 받을 수 있습니다.")
+    row = rows[0]
+    if row["intake_kind"] != "repository" or commit != row["commit_sha"]:
+        raise HTTPException(409, "승인된 소스 커밋과 다릅니다.")
+    path = f"{approved_mcp_repo_path(row)}/archive/{commit}.zip"
+    spool = tempfile.SpooledTemporaryFile(max_size=4 << 20)
+    try:
+        async with MCP_SOURCE_DOWNLOAD_SLOTS:
+            digest, size = await asyncio.wait_for(receive_mcp_source(spool, path), timeout=120)
+        # Recheck after I/O: withdrawal, expiry or a replacement registration invalidates the buffered copy.
+        current = await approved_mcp_rows(user, server_id)
+        if not current or current[0] != row:
+            raise HTTPException(409, "소스를 받는 동안 승인이 변경되었습니다.")
+        await review.record_event("mcp-source-download", "recorded", "server", server_id, user["principal"],
+                                  scope={"intake_id": str(row["intake_id"]), "commit": commit,
+                                         "sha256": digest, "bytes": size})
+    except (httpx.HTTPError, asyncio.TimeoutError) as exc:
+        spool.close()
+        raise HTTPException(502, "승인된 소스에 연결하지 못했습니다.") from exc
+    except BaseException:
+        spool.close()
+        raise
+
+    async def chunks():
+        try:
+            while block := await asyncio.to_thread(spool.read, 64 << 10):
+                yield block
+        finally:
+            spool.close()
+
+    return StreamingResponse(chunks(), media_type="application/zip", background=BackgroundTask(spool.close),
+                             headers={"Content-Disposition": f'attachment; filename="{server_id}-{commit[:12]}.zip"',
+                                      "Content-Length": str(size), "X-Content-SHA256": digest,
+                                      "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
 
 class IntakeDiscovery(StrictModel):

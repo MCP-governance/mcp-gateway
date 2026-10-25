@@ -2415,3 +2415,13 @@ D-60 검증 완료: 클린 보드 전체 시험 exit 0(Rego 99·인수 23·보�
   7. 운영자 공유 자격은 지정한 사람 전용(`allowed_principals=["user"]`)으로 되돌렸고 계약 확인(주체 없는 조회)은 이 행을 계속 쓴다.
 - 한계: 장치 인증으로 받은 OAuth App 토큰이 `api.githubcopilot.com/mcp`에서 받아들여지는지는 실제 OAuth App과 계정으로 확인하지 않았다(이 작업은 실제 토큰·앱 사용 금지). 조직이 GitHub에서 OAuth App을 등록하고 장치 흐름을 켜야(Enable Device Flow) client id를 넣을 수 있으며, 조직의 OAuth App 접근 제한이 있으면 조직 소유자가 승인해야 한다. 토큰 붙여넣기 방식은 GitHub의 토큰 형식·권한을 그대로 따른다. 연결 자격이 없는 상태의 계약 확인(`refresh_catalog`)은 운영자 행이 있어야 인증된다. 장치 흐름 상태가 프로세스 메모리라 agent-service를 여러 프로세스로 늘리면 폴링이 다른 프로세스에 가 만료로 읽힌다(고정 세션 또는 DB 보관 필요).
 - 시험: `tests/user_credential_check.py` 23건(암호화·평문 비노출·키 없음, 선택 순서·다중 행·거부, GitHub 확인 실패·만료 헤더, 장치 흐름 전이, 라우트·인증 의존성, 계정 삭제·중지 삭제, 종료 회수·증거, 차단 문구와 정책), 기존 `upstream_session_reuse_test`·`fresh_requester_check` 대역 갱신, `credential_binding_check`는 POSIX 권한 때문에 Windows에서는 돌지 않아 WSL/리눅스에서 확인.
+
+## D-236 직원은 Gitea에 들어가지 않고 콘솔 「승인된 MCP」에서 승인된 소스를 받는다 (2026-10-25)
+
+- 배경: 승인된 MCP의 소스를 받으려면 직원이 사내 Gitea에 직접 들어가야 했다. Gitea는 관리자 도구이고, 직원에게 계정·권한을 따로 주는 일이 생겼다.
+- 결정:
+  1. 콘솔 도입 신청 → 「승인된 MCP」 탭(`GET /api/approved-mcp`)은 승인 완료·`READY`·`OPERATING`·기한 안·이용 중지 아님·등록이 같은 신청과 같은 소스 참조인 서버만 보인다. 사용 대상은 D-234의 `registry.permits(allowed, principal)` 한 판정이다(`"*"` 전체 직원 포함, 관리자는 전체).
+  2. 소스 받기(`GET /api/approved-mcp/{id}/source?commit=`)는 고정 커밋(40자리 16진)과 일치할 때만, 게이트웨이가 Gitea 관리자 자격으로 `archive/{commit}.zip`을 받아 직원에게 전달한다. 직원은 Gitea 주소·자격을 보지 못한다. 저장소 경로는 이 서비스가 게시한 주소만 받고, 리다이렉트·압축 전송·길이 불일치·128 MiB 초과는 거부하며 동시 2건·120초로 제한한다. 받는 동안 승인이 바뀌면 전달하지 않는다(재확인).
+  3. 원장 `mcp-source-download`(주체·서버·커밋·sha256·바이트, 값 없음)를 남기고 기록이 실패하면 전달하지 않는다. 원격 MCP는 소스 대신 연결 주소만 보인다.
+  4. `/api/me`의 `git_url`과 콘솔의 사내 저장소 링크(내비게이션·신청 목록·검색 결과)는 관리자에게만 보인다.
+- 시험: `tests/approved_mcp_download_check.py` 19건, `tests/approved-mcp-console.test.mjs`.

@@ -1,6 +1,16 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "승인된 MCP": "Approved MCP servers",
+  "승인된 MCP 없음": "No approved MCP servers",
+  "고정 커밋": "Pinned commit",
+  "승인 기한": "Approval expiry",
+  "실행 방식": "Execution mode",
+  "원격": "Remote",
+  "PC 격리": "PC isolation",
+  "솔루션 런타임": "Solution runtime",
+  "소스 받기": "Download source",
+  "소스 다운로드": "Source download",
   "로그인이 만료되었습니다.": "Your session has expired.",
   "요청이 거절되었습니다 ({n}).": "The request was rejected ({1}).",
   "허용": "Allow",
