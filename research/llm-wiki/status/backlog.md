@@ -12,6 +12,7 @@
 
 | ID | 작업 | 근거 | 완료 조건 | 상태 |
 | --- | --- | --- | --- | --- |
+| WIKI-09 | 리팩토링·최적화 제안서 검토와 0단계 착수 결정 | [제안서](../analysis/refactor-proposal-1025/README.md), [코드 감사](../analysis/refactor-proposal-1025/code-audit.md), [레퍼런스](../analysis/refactor-proposal-1025/references.md), [보고](reports/2026-10-25-refactor-proposal.md) | 소유자가 채택 범위(3평면 분리·단계 파이프라인·키트 없는 OAuth 연결·Go 키트·정책 엔진 인프로세스)를 정하고, 0단계 항목(부하 시험·CI 시험 연결·풀 중첩 린트·폐기 목록 색인·목록 스냅숏·관리 풀 분리)을 DEV-번호로 쪼개 D-번호 결정을 남긴다 | 제안서·감사·레퍼런스 작성 완료(10-25, 코드 변경 없음). 소유자 검토 대기 |
 | DEV-90 | 정책 동기화 모델 교체(P0-1): 통제 해시만으로 판정 | [보고](reports/2026-10-25-policy-sync-split.md), D-238 (D-198·D-212 대체) | 서버 승인·철회·원격 MCP 오류·활성화가 PC의 MCP를 끊거나 격리하지 않고, 통제 설정 변경은 차단·격리. 솔루션 기기 배포 뒤 PJ1에서 연속 승인·활성화 직후 호출 확인 | 브랜치 `10/25-policy-sync-split` 구현·오프라인 시험 통과. main 미병합, PostgreSQL·실기기 미실행 |
 | DEV-89 | Windows 단일 파일/UAC 설치 (W11) | [보고](reports/2026-10-23-windows-oneclick.md), D-197 | 독립 검토와 pj3에서 UAC 1회·직원 로그아웃 없는 등록·활성화 대기·관리 계정/모델 로그인 안내 확인 | main e30be96 병합·배포(10-23). Codex 검토 코드 결함 없음. pj3 실설치 장치(managed-13327735) 활성 — UAC 1회 원클릭 경로 실측은 남음 |
 | WIKI-01 | 개발 위키와 공유 보고 | [통합 검토](../analysis/review-2026-10-15/README.md), [Drive 대조](../analysis/drive-curation/README.md) | 출처·판본·요구·코드·실행 근거·Claude 인계 연결과 검사 | Drive 두 커밋 통합, 정책50 의미 매핑·MVP24 해설·검토10건·README/현황 보강. 정적 매핑이며 실기기 충족 아님. 수정 후 Claude 독립 리뷰는 미완료 |
