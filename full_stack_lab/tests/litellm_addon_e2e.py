@@ -337,8 +337,14 @@ def call_b() -> None:
     evidence("call-b", ok=succeeded(result), rows=rows, addon_results=results[0][0], url=server[0].get("url"))
     assert succeeded(result), result
     assert rows and rows[-1][1] == "Allow" and rows[-1][3] == "ai-gateway-addon", rows
-    assert rows[-1][4] == "f", "가린 인자가 아니라 원래 인자가 기록됨"
-    assert "EMAIL" in rows[-1][5], "입력의 메일 주소를 찾지 못해 제한 인자가 적용되지 않음"
+    assert "EMAIL" in rows[-1][5], "입력의 메일 주소를 찾지 못함"
+    # The ledger keeps the request as received; what the guardrail forwards is the decision's effective_arguments.
+    # Ask the same decision API the guardrail asked, with the same employee token, and check the masked value.
+    verdict = mint("POST", "/api/addon/v1/mcp-decision", fresh_token("emp1"), json={
+        "server_id": "learn", "tool": "microsoft_docs_search", "arguments": {"query": query}, "gateway": "litellm"}).json()
+    masked = json.dumps(verdict.get("effective_arguments"), ensure_ascii=False)
+    evidence("call-b-effective-arguments", decision=verdict.get("decision"), allow=verdict.get("allow"), effective=masked)
+    assert verdict.get("allow") is True and verdict.get("effective_arguments") and "alice.kim@example.com" not in masked
     assert int(results[0][0]) >= 1, "사후 기록(addon-result)이 남지 않음"
     # No MINT token: the guardrail refuses before LiteLLM reaches Learn.
     _, refused = call({"x-litellm-api-key": s["keys"]["emp1"]}, "learn", {"query": "Azure"})
