@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-25T20:11:16+09:00",
-  "head": "4edec3966e96b42435c76328d7027b3396ebbcf6",
+  "captured_at": "2026-10-25T20:16:01+09:00",
+  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
   "branch": "main",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    "M  research/llm-wiki/status/reports/2026-10-25-litellm-addon.md"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T20:11:16+09:00
+확인 시각: 2026-10-25T20:16:01+09:00
 
-HEAD: `4edec3966e96b42435c76328d7027b3396ebbcf6` · 로컬 브랜치: `main`
+HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,7 +11,6 @@ HEAD: `4edec3966e96b42435c76328d7027b3396ebbcf6` · 로컬 브랜치: `main`
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
-M  research/llm-wiki/status/reports/2026-10-25-litellm-addon.md
 ```
 
 ## 주요 파일 바이트
