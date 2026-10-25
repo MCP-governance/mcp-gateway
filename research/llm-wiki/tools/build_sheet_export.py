@@ -13,6 +13,7 @@ import json
 import posixpath
 import re
 import subprocess
+import sys
 import tempfile
 import unicodedata
 from collections import Counter, defaultdict
@@ -21,6 +22,9 @@ from pathlib import Path
 from urllib.parse import quote, unquote
 
 from openpyxl import load_workbook
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import decisions_layout  # noqa: E402
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -405,28 +409,30 @@ class Export:
         return self.add(slug, rows, [source], headers, links)
 
     def management(self):
-        decision_path = ROOT / "docs/ai/DECISIONS.md"
-        text = read(decision_path)
-        matches = list(re.finditer(r"^## (D-\d+)\s+(.+)$", text, re.M))
-        self.decimal_decisions = {int(m[1][2:]): m[1] for m in matches}
+        decision_paths = [ROOT / p for p in decisions_layout.repo_paths() if (ROOT / p).is_file()]
         decisions = []
-        seen_anchors = Counter()
-        for i, match in enumerate(matches):
-            body = text[match.end():matches[i + 1].start() if i + 1 < len(matches) else len(text)].strip()
-            heading = match[1] + " " + match[2]
-            a = anchor(heading)
-            seen_anchors[a] += 1
-            a += f"-{seen_anchors[a] - 1}" if seen_anchors[a] > 1 else ""
-            dates = re.findall(r"20\d{2}-\d{2}-\d{2}", match[2])
-            plain = re.sub(r"\*\*|`", "", body)
-            plain = re.sub(r"^[-*>]\s*", "", plain, flags=re.M)
-            sentences = re.split(r"(?<=[.!?。])(?:\s+|$)", plain)
-            summary = " ".join(sentences[:2]).replace("\n", " ")
-            decisions.append({"ID": match[1], "날짜": dates[-1] if dates else "", "제목": match[2],
-                              "요지": summary[:199] + "…" if len(summary) > 200 else summary,
-                              "백로그": joined(ids(body, "backlog")), "WBS": joined(ids(body, "wbs")),
-                              "커밋": "", "문서": url(repo_path(decision_path)) + "#" + quote(a, safe="-_")})
-        self.add("decisions", decisions, [decision_path], links={"백로그": "backlog", "WBS": "wbs", "커밋": "commits"})
+        self.decimal_decisions = {}
+        for decision_path in decision_paths:
+            text = read(decision_path)
+            matches = list(re.finditer(r"^## (D-\d+)\s+(.+)$", text, re.M))
+            self.decimal_decisions.update({int(m[1][2:]): m[1] for m in matches})
+            seen_anchors = Counter()
+            for i, match in enumerate(matches):
+                body = text[match.end():matches[i + 1].start() if i + 1 < len(matches) else len(text)].strip()
+                heading = match[1] + " " + match[2]
+                a = anchor(heading)
+                seen_anchors[a] += 1
+                a += f"-{seen_anchors[a] - 1}" if seen_anchors[a] > 1 else ""
+                dates = re.findall(r"20\d{2}-\d{2}-\d{2}", match[2])
+                plain = re.sub(r"\*\*|`", "", body)
+                plain = re.sub(r"^[-*>]\s*", "", plain, flags=re.M)
+                sentences = re.split(r"(?<=[.!?。])(?:\s+|$)", plain)
+                summary = " ".join(sentences[:2]).replace("\n", " ")
+                decisions.append({"ID": match[1], "날짜": dates[-1] if dates else "", "제목": match[2],
+                                  "요지": summary[:199] + "…" if len(summary) > 200 else summary,
+                                  "백로그": joined(ids(body, "backlog")), "WBS": joined(ids(body, "wbs")),
+                                  "커밋": "", "문서": url(repo_path(decision_path)) + "#" + quote(a, safe="-_")})
+        self.add("decisions", decisions, decision_paths, links={"백로그": "backlog", "WBS": "wbs", "커밋": "commits"})
 
         backlog_path = WIKI / "status/backlog.md"
         backlog = []
@@ -923,6 +929,7 @@ class Export:
                 # sources/local-sources originals are excluded only as Markdown copies.
                 paths.add(path)
         paths.update((ROOT / "docs/ai").glob("*.md"))
+        paths.update((ROOT / "docs/ai/decisions").glob("*.md"))
         records = {}
         for path in sorted(paths):
             rel = repo_path(path)
@@ -933,7 +940,7 @@ class Export:
             if "/originals/" in rel or path.suffix.lower() in {".xlsx", ".xlsm"}:
                 kind = "원본"
             elif rel.startswith("docs/ai/"):
-                kind = "결정" if path.name == "DECISIONS.md" else "설계 정본"
+                kind = "결정" if path.name == "DECISIONS.md" or path.parent.name == "decisions" else "설계 정본"
             else:
                 part = path.relative_to(WIKI).parts[0]
                 kind = {"status": "보고" if "/reports/" in rel else "현황", "analysis": "분석", "experiments": "실험",

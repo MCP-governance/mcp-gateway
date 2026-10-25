@@ -4,7 +4,7 @@
 
 ## 시작
 
-1. `README.md` → `status/current.md` → `status/backlog.md`를 읽습니다.
+1. [START_HERE](START_HERE.md) → `status/current.md` → 백로그의 「먼저 볼 것」 블록을 읽습니다. 내 작업 ID는 `tools/lookup.py`로 찾고, `docs/ai/DECISIONS.md`를 처음부터 읽지 않습니다(`tools/split_decisions.py show D-번호`).
 2. 솔루션 작업은 `../../docs/ai/ARCHITECTURE.md`, `SECURITY_BOUNDARIES.md`, `TESTING.md`와 해당 코드부터 확인합니다.
 3. 조사 전에 `catalogs/*.json`, 논문·솔루션 목록을 검색하여 이미 확보한 자료를 재사용합니다.
 
@@ -29,7 +29,7 @@
 - `templates/work-report.md` 형식으로 `status/reports/YYYY-MM-DD-작업명.md`를 작성합니다.
 - `status/current.md`의 결과·검증 범위·미완료·다음 작업을 갱신합니다. 작업 목록은 `status/backlog.md`에 하나만 유지합니다.
 - 정책·설계 변경은 저장소의 기존 `docs/ai/DECISIONS.md`와 정본 문서에도 반영합니다. 다른 작업자의 미커밋 파일은 덮어쓰지 않습니다.
-- `python research/llm-wiki/tools/capture_status.py`로 코드·워킹 트리 상태를 갱신하고, `build_wiki.py`로 Markdown 목록을 확인한 뒤 `check_wiki.py`로 출처·해시·링크·실험 상태를 검사합니다.
+- 코드·`docs/ai`를 바꿨으면 `python research/llm-wiki/tools/refresh_generated.py`로 위협 매핑·요구사항 코드 해시·저장소 스냅샷·보고서 색인·결정 색인을 한 번에 다시 만들고 `check_wiki.py`·`check_trace.py`·`check_enterprise_analysis.py`를 돌립니다(코드를 안 바꿨으면 `--skip-code-pointers`). `check_freshness.py`는 현황·백로그가 코드·결정보다 늦은지 경고합니다.
 - 작업 시작·담당 변경·중단·완료와 실제 공개 메시지·검증 결과는 `python research/collaboration-console/console.py emit`으로 로컬 기록기에 남깁니다. CLI는 [협업 콘솔 안내](../collaboration-console/README.md)를 따릅니다. 미실행 결과·모의 대화·내부 사고·자격증명은 기록하지 않습니다. `runtime/`은 로컬 전용이며 Git에 올리지 않습니다.
 - 검사가 실패하면 완료로 보고하지 않습니다. 시험하지 않은 실험은 `미실행`을 유지합니다.
 - 솔루션 스택 배포·PJ1 시험은 루트 규칙을 따릅니다. 협업 콘솔 기록만으로 배포·제품 기능 검증을 주장하지 않습니다.
