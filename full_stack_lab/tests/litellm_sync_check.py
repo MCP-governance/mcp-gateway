@@ -381,6 +381,8 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
 
         async def record(*args, **kwargs):
             self.assertEqual(transaction_depth, 1)
+            # approval_events.outcome CHECK (v2_tables.sql): the real ledger refused 'verified'/'failed' (CI, 1.105 run).
+            self.assertIn(args[1], {"recorded", "approved", "rejected", "refused", "held"})
             events.append({"outcome": args[1], **copy.deepcopy(kwargs["scope"])})
             return len(events)
 
@@ -436,7 +438,8 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(events[-1]["failure"], "queued-revision-changed")
             await sync.reconcile()
             self.assertEqual(jobs["approved"]["status"], "verified")
-        self.assertEqual([e["outcome"] for e in events], ["failed", "verified", "failed", "verified", "failed", "verified"])
+        self.assertEqual([e["state"] for e in events], ["failed", "verified", "failed", "verified", "failed", "verified"])
+        self.assertEqual({e["outcome"] for e in events}, {"recorded"})
         self.assertEqual([e["attempt"] for e in events], [1, 2, 3, 4, 5, 6])
         self.assertEqual(sum("pg_advisory_unlock" in call.args[0] for call in guard.execute.call_args_list), 7)
         guard.close.assert_not_awaited()

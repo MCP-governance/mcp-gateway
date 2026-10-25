@@ -561,8 +561,9 @@ async def _reconcile(url, config):
             superseded = current["revision"] != row["revision"]
             if superseded:
                 state, failure = "failed", "queued-revision-changed"
-            event_id = await review.record_event("litellm-sync", state, "server", server_id, "system",
-                scope={"evidence_class": "G5", "revision": row["revision"], "attempt": current["attempts"] + 1,
+            # The ledger's outcome vocabulary is fixed (approval_events CHECK); the sync state travels in scope.
+            event_id = await review.record_event("litellm-sync", "recorded", "server", server_id, "system",
+                scope={"evidence_class": "G5", "state": state, "revision": row["revision"], "attempt": current["attempts"] + 1,
                        "desired_sha256": digest, "observed_at": datetime.now(timezone.utc).isoformat(),
                        "desired": {k: (plan or {}).get(k) for k in ("remote_id", "active", "tools", "allowed_users")},
                        "observations": observations, "failure": failure,

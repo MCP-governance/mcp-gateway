@@ -21,11 +21,13 @@
 
 **실제 1.105에서 새로 찾은 결함과 정정(D-249 6항)**: 동기화는 서버를 만들기 전에 `require_key_mcp_access_defined=true`를 `/config/field/info`로 읽었는데, 1.105 이미지는 이 필드를 `/config/field/*`에서 400(`Invalid field`)으로 거절한다. 대역 시험(D-208)은 200을 돌려줘 가려져 있었고, 실제 배치에서는 **동기화가 한 번도 서버를 만들 수 없었다.** 1.105 소스상 이 값은 자기 MCP 목록이 없는 키의 팀 권한 상속만 정하므로, 팀 매핑이 없으면 점검을 건너뛰고(`team-ceiling: no-team-grants`), 팀 매핑이 있으면 API로 읽히거나 운영자 확인(`MINT_LITELLM_KEY_ACCESS_CONFIRMED=1`) 때만 진행한다. 단위 시험 `test_team_ceiling_on_litellm_1_105_where_the_switch_is_not_readable` 추가.
 
+**실제 MINT 원장에서 찾은 결함(같은 이유로 D-208 이후 동기화는 한 번도 완료되지 않았다)**: 동기화는 결과 사건을 `approval_events.outcome='verified'|'failed'`로 썼지만 원장 제약은 `recorded·approved·rejected·refused·held`만 받는다(`v2_tables.sql`). CI 3차 실행에서 LiteLLM 서버는 실제로 만들어졌지만 사건 기록이 매번 `CheckViolation`으로 실패해 작업이 `pending`에 머물렀다. 메모리 대역은 제약이 없어 가렸다. 결과는 `recorded`로 쓰고 상태는 `scope.state`에 담는다. 단위 시험의 원장 대역이 이제 같은 제약을 검사한다.
+
 ## 검증
 
 | 확인 종류 | 명령·환경·실행 시각 | 결과 | 원본 증거 |
 | --- | --- | --- | --- |
-| 단위(동기화) | `tests/litellm_sync_check.py`, 로컬 venv, 10-25 | 26/26 통과. 새 8건 중 7건(경로·격리·재조회)은 이전 코드에서 실패(4 실패·3 오류)함을 확인 | 이 세션 출력 |
+| 단위(동기화) | `tests/litellm_sync_check.py`, 로컬 venv, 10-25 | 26/26 통과(원장 outcome 제약 검사 포함). 새 8건 중 7건(경로·격리·재조회)은 이전 코드에서 실패(4 실패·3 오류)함을 확인 | 이 세션 출력 |
 | 단위(애드온) | `tests/ai_gateway_addon_check.py` | 13/13 통과. `recorded:false` 시험은 이전 가드레일에서 실패 | 이 세션 출력 |
 | 로컬 회귀 | `run_local_suite.py`(Windows venv) | 이 브랜치 실패 4(`acceptance_tls_check`·`output_credential_span_check`·`sbom_impact_check`·`threat_trace_mapping_check`) / 기준 4679160 실패 7(같은 4건 + `command_surfaces_check`·`dest_pin_credential_redaction_check`·`harness_detect_check`) → **새 실패 0**. `threat_trace_mapping_check`는 Windows 작업 트리 CRLF로 인한 해시 차이(손대지 않은 `review.py`에서도 남) | 이 세션 출력 |
 | pyflakes | CI 정적 검사 목록 + `addons/litellm/*.py`·`deploy/check.py`·새 시험 | 0건 | 이 세션 출력 |
