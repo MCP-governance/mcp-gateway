@@ -214,10 +214,9 @@ install() {
   AGENT_JWT_PRIVATE_KEY=x AGENT_JWT_PUBLIC_KEY=x DISPOSAL_PRIVATE_KEY=x DISPOSAL_PUBLIC_KEY=x dc build -q gateway
   generate_keys
   load_env
-  # 폐기 목록은 첫 설치에서 한 번만 시작한다(이미 있으면 그대로 둔다).
-  if ! docker volume inspect "$(project)_disposal_journal" >/dev/null 2>&1; then
-    dc run --rm --no-deps -T --entrypoint python gateway -m app.disposal init
-  fi
+  # 폐기 목록은 첫 설치에서 한 번만 시작한다. 볼륨은 위 키 생성 때 이미 생기므로 목록 파일로 판정한다.
+  dc run --rm --no-deps -T --entrypoint sh gateway -c \
+    'test -e /disposal/journal.jsonl || test -e /disposal/head.json || python -m app.disposal init'
   up
   echo
   echo "콘솔        : https://${MINT_BIND}/"
