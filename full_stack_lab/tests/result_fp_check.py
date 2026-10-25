@@ -24,10 +24,11 @@ class ResultFalsePositiveCheck(unittest.TestCase):
                 with self.assertRaises(core.ResultRejected):
                     core._guarded_result({"content": [{"type": "text", "text": text}]})
 
-    def test_plain_large_multiline_result_keeps_the_item_limit(self):
+    def test_plain_large_multiline_result_is_bounded_by_bytes_not_lines(self):
+        # S4-05 (D-246): a 1,200-line handbook was withheld as "more than 1000 items".
         text = "\n".join(f"record {i}" for i in range(1001))
-        with self.assertRaisesRegex(core.ResultRejected, "건 상한"):
-            core._guarded_result({"content": [{"type": "text", "text": text}]})
+        self.assertEqual(core._guarded_result({"content": [{"type": "text", "text": text}]}),
+                         {"content": [{"type": "text", "text": text}]})
 
 
 if __name__ == "__main__":

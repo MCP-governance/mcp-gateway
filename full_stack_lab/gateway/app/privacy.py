@@ -192,6 +192,17 @@ def _identifier_number(number: int | float) -> str | None:
     return None
 
 
+def _json_document(text: str) -> dict | list | None:
+    body = text.removeprefix("\ufeff").strip()
+    if not body or body[0] not in "[{":
+        return None
+    try:
+        value = json.loads(body)
+    except (ValueError, RecursionError):
+        return None
+    return value if isinstance(value, (dict, list)) else None
+
+
 async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[object, list[str]]:
     """Mask text leaves and preserve the MCP result's JSON shape."""
     keys, numbers, assignments, pending = set(), [], [], [value]
@@ -218,7 +229,7 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
                 found.add(f["entity_type"])
     if found:
         # 유형만 남긴다(값은 남기지 않는다). 다음 보류의 원인을 원장 오류로 바로 알 수 있게.
-        raise InspectionUnavailable("PII in result keys or numbers cannot be masked while preserving the JSON schema: "
+        raise InspectionUnavailable("결과의 키나 숫자 값에 개인정보 형태가 있어 JSON 구조를 바꾸지 않고는 가릴 수 없습니다: "
                                     + ", ".join(sorted(set(found))))
     # Low-entropy passwords can evade Gitleaks. Preserve assignment context for
     # Presidio's credential recognizer rather than inspect the value in isolation.
@@ -240,6 +251,13 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
 
     async def convert(item: object) -> tuple[object, list[str]]:
         if isinstance(item, str):
+            document = _json_document(item)
+            if document is not None:
+                # JSON carried as text is inspected as JSON: masking the text whole put an unquoted [REDACTED] in
+                # place of a number, and the broken JSON was then withheld for the wrong reason (S4-06). Numbers
+                # and keys follow the structured rule above (D-214); strings are masked inside the structure.
+                masked, kinds = await mask_payload(document, ignore)
+                return (json.dumps(masked, ensure_ascii=False, indent=2 if "\n" in item else None) if kinds else item), kinds
             return await mask_text(item, ignore)
         if isinstance(item, list):
             converted = [await convert(child) for child in item]

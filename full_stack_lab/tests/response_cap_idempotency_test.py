@@ -82,13 +82,15 @@ class ResponseCaps(unittest.TestCase):
         c = classifier()
         for payload in ({"structured": {"rows": [1, 2, 3, 4]}},
                         {"content": [{"type": "text", "text": '{"rows":[1,2,3,4]}'}]},
-                        {"content": [{"type": "text", "text": "a\nb\nc\nd"}]},
-                        {"content": [{"type": "text", "text": "[1,2]"}] * 2},
-                        # review: records inside one JSON string scalar must not count as one item
-                        {"content": [{"type": "text", "text": json.dumps("a\nb\nc\nd")}]},
-                        {"structured": {"dump": "a\nb\nc\nd"}}):
+                        {"content": [{"type": "text", "text": "[1,2]"}] * 2}):
             with self.subTest(payload=payload):
                 self.assertEqual(c.result_items(payload), 4)
+        # Lines of text are not records (S4-05, D-246): a document is bounded by the byte limit instead.
+        for payload, items in (({"content": [{"type": "text", "text": "a\nb\nc\nd"}]}, 1),
+                               ({"content": [{"type": "text", "text": json.dumps("a\nb\nc\nd")}]}, 1),
+                               ({"structured": {"dump": "a\nb\nc\nd"}}, 0)):
+            with self.subTest(payload=payload):
+                self.assertEqual(c.result_items(payload), items)
 
     def test_raw_count_boundary_and_no_truncation(self):
         g = guard()
