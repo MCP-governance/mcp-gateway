@@ -53,7 +53,6 @@ def main():
     stamped = {
         f"{WIKI}/status/current.md": r"^# .*?(20\d{2}-\d{2}-\d{2})",
         f"{WIKI}/status/backlog.md": r"^## 먼저 볼 것 \((20\d{2}-\d{2}-\d{2})\)",
-        f"{WIKI}/README.md": r"^## 지금 상태 \((20\d{2}-\d{2}-\d{2})\)",
         f"{WIKI}/START_HERE.md": r"기준일[: ]+(20\d{2}-\d{2}-\d{2})",
     }
     for path, pattern in stamped.items():
