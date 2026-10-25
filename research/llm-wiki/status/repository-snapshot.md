@@ -1,39 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T15:45:43+09:00
+확인 시각: 2026-10-25T15:46:43+09:00
 
-HEAD: `7687a9eb8706052c16772e2cdba371f62d3448f5` · 로컬 브랜치: `10/25-policy-sync-split`
+HEAD: `989a2d3602bd5730d017010e4e3b9492fadfbb54` · 로컬 브랜치: `10/25-policy-sync-split`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/ARCHITECTURE.md
- M docs/ai/DECISIONS.md
- M endpoint-agent/README.md
- M full_stack_lab/gateway/app/endpoint_plane.py
- M full_stack_lab/gateway/app/idp.py
- M full_stack_lab/gateway/app/lifecycle_tables.sql
- M full_stack_lab/gateway/app/local_jobs.py
- M full_stack_lab/gateway/app/local_run_tables.sql
- M full_stack_lab/gateway/app/main.py
- M full_stack_lab/tests/command_surfaces_check.py
- M full_stack_lab/tests/dest_pin_credential_redaction_check.py
- M full_stack_lab/tests/dev73_rework_check.py
- M full_stack_lab/tests/dev73_rework_pg_check.py
- M full_stack_lab/tests/endpoint_evidence_pg_check.py
- M full_stack_lab/tests/fresh_requester_check.py
- M full_stack_lab/tests/harness_detect_check.py
- M full_stack_lab/tests/local_jobs_pg_check.py
- M full_stack_lab/tests/local_runner_usability_check.py
- M full_stack_lab/tests/managed_policy_gap_check.py
- M full_stack_lab/tests/user_command_settings_check.py
- M research/llm-wiki/analysis/threat-trace-review-1020/README.md
+M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/current.md
-?? research/llm-wiki/status/reports/2026-10-25-policy-sync-split.md
 ```
 
 ## 주요 파일 바이트

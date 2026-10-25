@@ -1,7 +1,8 @@
 # 2026-10-25 정책 동기화 모델 교체 (P0-1, D-238)
 
 - 작업자: Claude Code (리더 세션이 시작한 하위 세션)
-- 코드 기준: main `7687a9e`에서 분기한 `10/25-policy-sync-split`. main 병합·push 하지 않음.
+- 코드 기준: main `7687a9e`에서 분기한 `10/25-policy-sync-split`, 구현 commit `989a2d3`, 위키 재생성은 다음 commit. main 병합·push 하지 않음.
+  커밋 공동 작성자는 실제 실행 모델(Claude Opus 5.5)로 적었다. `check_wiki.py`는 이 작업 트리에 없는 gitignore `local-sources/`를 다른 작업 트리에서 복사해 돌렸다(커밋 안 됨).
 - 시작 근거: 2026-10-25 코드 검토 결함 (a) 활성화와 heartbeat 경합, (b) `record_served`의 jsonb 순서·경합. D-198·D-212의 땜질 대체. 백로그 DEV-90.
 - 해결할 문제와 완료 조건: 통제 설정만 차단·격리하고 서버 목록·안내문·활성화는 장치를 끊지 않는다. 옛 키트가 새 게이트웨이에서 끊기지 않는다.
   기존 시험 새 실패 0, pyflakes 0, 위키 재생성·검사 오류 0.
