@@ -116,6 +116,23 @@ class ToolSunsetCheck(unittest.TestCase):
             self.assertEqual(ports.review.record_event.await_args.kwargs["scope"]["last_use"], last_use.isoformat())
         asyncio.run(run())
 
+    def test_extension_is_recorded_once_a_day_not_per_call(self):
+        # S4-10 (D-247): every call moved the deadline by seconds and appended one more ledger event.
+        async def run():
+            now = datetime(2026, 10, 21, 9, tzinfo=timezone.utc)
+            ports.registry.server = lambda _server: {"tool_reviews": {"used": {
+                "reviewed_at": (now - timedelta(days=100)).isoformat()}}}
+            first = tool_sunset.evaluate(now - timedelta(days=100), now - timedelta(minutes=5), now)["deadline"]
+            event = {"kind": "tool-sunset-extension", "outcome": "approved", "scope": {"deadline": first.isoformat()}}
+            ports.review.record_event.reset_mock()
+            ports.db.transaction = lambda: Transaction(Connection(now - timedelta(minutes=1), event))
+            await tool_sunset.check("srv", "used", now)
+            ports.review.record_event.assert_not_awaited()
+            ports.db.transaction = lambda: Transaction(Connection(now + timedelta(days=1), event))
+            await tool_sunset.check("srv", "used", now + timedelta(days=1, minutes=1))
+            self.assertEqual(ports.review.record_event.await_args.args[0], "tool-sunset-extension")
+        asyncio.run(run())
+
     def test_missing_retention_window_is_not_counted_as_unused(self):
         async def run():
             now = datetime(2026, 10, 21, tzinfo=timezone.utc)

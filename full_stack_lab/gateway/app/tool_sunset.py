@@ -134,8 +134,11 @@ async def check(server_id: str, tool_name: str, now: datetime | None = None) -> 
                 await review.record_event("tool-sunset", "held", TARGET, key, "automatic",
                                           reason="도구 이용 기한 만료", scope=scope, connection=connection)
                 return {"active": False, "available": True, "eligible": True, **result, "status": "재심사 필요"}
+            # The deadline moves with every call by seconds; one extension a day per tool is the record worth keeping
+            # (an event per call grew the ledger by the call count, S4-10). The decision still uses the exact last use.
             if result["recent"] and last_use and (not event or event["kind"] != "tool-sunset-extension"
-                                                   or event["scope"].get("deadline") != result["deadline"].isoformat()):
+                                                   or str(event["scope"].get("deadline") or "")[:10]
+                                                   != result["deadline"].astimezone(timezone.utc).date().isoformat()):
                 scope = {"server": server_id, "tool": tool_name, "last_use": last_use.isoformat(),
                          "observation_days": OBSERVATION_DAYS, "idle_days": IDLE_DAYS, "grace_days": GRACE_DAYS,
                          "window_start": cutoff.isoformat(), "deadline": result["deadline"].isoformat(),
