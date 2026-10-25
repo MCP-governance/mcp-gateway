@@ -48,9 +48,13 @@ x-gateway-env: &gateway-env
   AUTO_SUSPEND_WINDOW_SECONDS: ${AUTO_SUSPEND_WINDOW_SECONDS:-600}
   AUTO_SUSPEND_DURATION_SECONDS: ${AUTO_SUSPEND_DURATION_SECONDS:-900}
   TOOL_SUNSET_IDLE_DAYS: ${TOOL_SUNSET_IDLE_DAYS:-90}
+  # LiteLLM 동기화: ./mint.sh litellm enable이 litellm/ 아래 파일과 아래 값을 채운다. 관리 키는 파일로만 받는다.
   MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
+  MINT_LITELLM_SYNC_BINDINGS_FILE: /run/mint-litellm/bindings.json
   MINT_LITELLM_SYNC_KEY_FILE: ${MINT_LITELLM_SYNC_KEY_FILE:-}
-  MINT_LITELLM_ADMIN_KEY: ${MINT_LITELLM_ADMIN_KEY:-}
+  MINT_LITELLM_SYNC_CA_FILE: ${MINT_LITELLM_SYNC_CA_FILE:-}
+  MINT_LITELLM_ROUTE: ${MINT_LITELLM_ROUTE:-mint}
+  MINT_LITELLM_SYNC_RECHECK_SECONDS: ${MINT_LITELLM_SYNC_RECHECK_SECONDS:-300}
   GITEA_ADMIN_URL: http://corp-git:3000
   GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
   GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD:?}
@@ -136,6 +140,7 @@ services:
       - registry_runtime:/registry-runtime
       - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
+      - ./litellm:/run/mint-litellm:ro
     networks: [edge, policy, privacy, tools, data, ops]
     <<: *hardened
 
@@ -177,6 +182,8 @@ services:
       LOCAL_IMAGE_MIRRORS: ${LOCAL_IMAGE_MIRRORS:-docker.io/mcp,mcp}
       LOCAL_ENGINE_SETTINGS: ${LOCAL_ENGINE_SETTINGS:-}
       MINT_LITELLM_SYNC_URL: ${MINT_LITELLM_SYNC_URL:-}
+      MINT_LITELLM_SYNC_BINDINGS_FILE: /run/mint-litellm/bindings.json
+      MINT_LITELLM_ROUTE: ${MINT_LITELLM_ROUTE:-mint}
       LITELLM_URL: ""
       GITEA_ADMIN_URL: http://corp-git:3000
       GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
@@ -198,6 +205,8 @@ services:
       - ../full_stack_lab/runtime/recipes:/runtime-recipes:ro
       - ../endpoint-agent:/endpoint-kit:ro
       - ./ca:/field-ca:ro
+      # 동기화 상태 표시는 매핑만 읽는다. 관리 키는 게이트웨이만 받는다.
+      - ./litellm/bindings.json:/run/mint-litellm/bindings.json:ro
     networks: [edge, data]
     <<: *hardened
 

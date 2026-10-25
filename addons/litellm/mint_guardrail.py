@@ -99,9 +99,13 @@ class MintGuardrail(CustomGuardrail):
         result = getattr(response_obj, "mcp_tool_call_response", response_obj)
         digest, size = _digest(result)
         try:
-            await self._post("/api/addon/v1/mcp-result", token, {
+            answer = await self._post("/api/addon/v1/mcp-result", token, {
                 "decision_id": decision_id, "outcome": "executed", "is_error": bool(getattr(result, "isError", False)),
                 "result_sha256": digest, "result_bytes": size})
         except Exception as exc:
             log.warning("MINT 결과 기록 실패(decision %s): %s", decision_id, type(exc).__name__)
+            return None
+        # 200이어도 MINT가 기록을 거절할 수 있다(다른 직원의 판정 등). 조용히 사라지지 않게 남긴다.
+        if answer.get("recorded") is not True:
+            log.warning("MINT가 결과 기록을 거절(decision %s): %s", decision_id, str(answer.get("reason"))[:120])
         return None

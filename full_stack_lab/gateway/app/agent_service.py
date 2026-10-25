@@ -99,7 +99,8 @@ async def bootstrap_field_accounts() -> None:
         "UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])",
         (["ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"],),
     )
-    await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin'")
+    # AI 게이트웨이 전용 직원은 PC 키트가 없다. 그 경로의 통제는 게이트웨이 판정이 맡는다(D-250).
+    await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin' AND NOT ai_gateway_only")
 
 
 @asynccontextmanager

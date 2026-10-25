@@ -1,4 +1,5 @@
-# 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 게이트웨이 모드 + 게이트웨이 전용 MCP 집계).
+# 제품 스택과 따로 세우는 LiteLLM 프록시(LLM 게이트웨이 모드 + 게이트웨이 전용 MCP 집계). A 경유(MINT_LITELLM_ROUTE=mint) 전용 묶음이다:
+# 출구가 MINT뿐이라 B 직접 경로(LiteLLM이 원래 MCP 서버로 나감)는 이 구성에서 동작하지 않는다(D-249).
 # compose 프로젝트·망·볼륨을 공유하지 않는다.
 #
 # 망 구조(D-191): LiteLLM은 internal 망(model·data·inner)에만 붙어 밖으로 나가는 길이 없다.
@@ -9,7 +10,7 @@ name: mint-llm
 
 services:
   postgres:
-    image: postgres:18-alpine@${POSTGRES_DIGEST:?}
+    image: postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
     restart: unless-stopped
     environment:
       POSTGRES_DB: litellm
@@ -27,7 +28,7 @@ services:
       retries: 30
 
   ollama:
-    image: ollama/ollama:0.40.3@${OLLAMA_DIGEST:?}
+    image: ollama/ollama:0.40.3@sha256:adca95a12c2b386a8f9a995e7fa0600e187e3323b5e5522f5a6c3b1ec73eff99
     restart: unless-stopped
     environment:
       OLLAMA_HOST: 0.0.0.0:11434
@@ -48,7 +49,8 @@ services:
       retries: 30
 
   litellm:
-    image: ghcr.io/berriai/litellm-database:v1.105.0@${LITELLM_DIGEST:?}
+    # 지원 판본 고정(1.105.0). 판본을 올리면 CI의 LiteLLM 애드온 통합 검수를 먼저 통과시킨다.
+    image: ghcr.io/berriai/litellm-database:v1.105.0@sha256:f99e4cc55ce8a1c6888504ac6eff147868979d37363a7246cf804bbabdc27e88
     restart: unless-stopped
     entrypoint: ["/bin/sh", "/lab/entrypoint.sh"]
     environment:
@@ -74,10 +76,10 @@ services:
       retries: 60
 
   edge-proxy:
-    image: caddy:2.11.4-alpine@${CADDY_DIGEST:?}
+    image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
     restart: unless-stopped
     environment:
-      GATEWAY_ADDR: ${GATEWAY_ADDR:?제품 게이트웨이 주소(예 100.83.175.111:443)}
+      GATEWAY_ADDR: ${GATEWAY_ADDR:?MINT 게이트웨이 주소(<IP 또는 이름>:443)}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./secrets/gateway-ca.pem:/etc/caddy/gateway-ca.pem:ro

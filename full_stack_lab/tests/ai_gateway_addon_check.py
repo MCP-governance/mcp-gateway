@@ -233,6 +233,15 @@ class Guardrail(unittest.IsolatedAsyncioTestCase):
         guard._pending["call-2"] = ("tok-alice", 8)
         self.assertIsNone(await guard.async_post_mcp_tool_call_hook({"litellm_call_id": "call-2"}, result, None, None))
 
+    async def test_post_hook_reports_a_refused_record(self):
+        # 200 with recorded:false is not a recorded result; it must not disappear silently.
+        guard = self.make(self.reply({"recorded": False, "reason": "이 계정의 애드온 판정이 아닙니다."}))
+        guard._pending["call-3"] = ("tok-alice", 9)
+        result = SimpleNamespace(isError=False, model_dump_json=lambda: '{"content":[]}')
+        with self.assertLogs("mint_guardrail", "WARNING") as logged:
+            await guard.async_post_mcp_tool_call_hook({"litellm_call_id": "call-3"}, result, None, None)
+        self.assertIn("거절", logged.output[0])
+
 
 class Generator(unittest.TestCase):
     def test_only_serving_servers_and_litellm_safe_alias(self):

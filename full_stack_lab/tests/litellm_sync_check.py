@@ -193,11 +193,15 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any(o["kind"] == "server" and not o["matches"] for o in self.observations))
         self.assertIsNone(self.state.server)
 
-    async def test_success_response_with_permissions_mismatch_removes_partial_server(self):
+    async def test_permissions_mismatch_fails_the_subject_not_the_server(self):
+        # D-249: a key or team that does not read back denies only that subject; nobody gains a grant it lacks.
         self.state.keep_permissions = True
-        with self.assertRaisesRegex(sync.SyncError, "permissions-readback-mismatch"):
+        with self.assertRaisesRegex(sync.SyncError, "permissions-readback-mismatch") as caught:
             await self.run_plan()
-        self.assertIsNone(self.state.server)
+        self.assertFalse(caught.exception.server_level)
+        self.assertIsNotNone(self.state.server)
+        self.assertNotIn("mint_approved", self.state.keys[KEY]["object_permission"].get("mcp_tool_permissions", {}))
+        self.assertTrue(any(o["kind"] == "partial" for o in self.observations))
 
     async def test_delete_readback_mismatch_never_completes(self):
         await self.run_plan()
@@ -239,8 +243,50 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         self.state.teams["team"]["members_with_roles"].append({"user_id": "mallory"})
         with self.assertRaisesRegex(sync.SyncError, "key-owner-mismatch.*team-membership-mismatch"):
             await self.run_plan()
-        self.assertIsNone(self.state.server)
         self.assertFalse([r for r in self.state.requests if r[1] in {"/key/update", "/team/update"}])
+
+    async def test_one_wrong_key_does_not_stop_the_other_employee(self):
+        self.state.keys[OTHER_KEY] = {"user_id": "mallory", "object_permission": {}}
+        self.config["users"].append({"mint_user_id": "bob", "litellm_user_id": "lite-bob", "key_hashes": [OTHER_KEY]})
+        self.config["teams"] = []
+        self.plan["allowed_users"] = ["alice", "bob"]
+        with self.assertRaisesRegex(sync.SyncError, "^key-owner-mismatch$") as caught:
+            await self.run_plan()
+        self.assertFalse(caught.exception.server_level)
+        self.assertIsNotNone(self.state.server)
+        self.assertEqual(self.state.keys[KEY]["object_permission"]["mcp_tool_permissions"]["mint_approved"], ["read"])
+        self.assertEqual(self.state.keys[OTHER_KEY]["object_permission"], {})
+        partial = [o for o in self.observations if o["kind"] == "partial"]
+        self.assertEqual(len(partial[0]["failed_subjects_sha256"]), 1)
+
+    async def test_management_timeout_on_one_key_keeps_the_server(self):
+        self.state.fail = ("POST", "/team/update")
+        with self.assertRaisesRegex(sync.SyncError, "^http-503$"):
+            await self.run_plan()
+        self.assertIsNotNone(self.state.server)
+        self.assertEqual(self.state.keys[KEY]["object_permission"]["mcp_tool_permissions"]["mint_approved"], ["read"])
+
+    async def test_verified_state_is_reread_and_drift_is_reported(self):
+        await self.run_plan()
+        self.assertEqual(await sync.observe(self.api, self.plan, self.config), [])
+        before = len([r for r in self.state.requests if r[0] != "GET"])
+        self.state.server["allowed_tools"] = ["read", "unapproved"]
+        self.state.keys[KEY]["object_permission"]["mcp_tool_permissions"]["mint_approved"] = ["read", "write"]
+        self.state.teams["team"]["members_with_roles"].append({"user_id": "mallory"})
+        self.assertEqual(await sync.observe(self.api, self.plan, self.config),
+                         ["key-drift", "server-drift", "team-membership-mismatch"])
+        self.assertEqual(before, len([r for r in self.state.requests if r[0] != "GET"]))  # observing writes nothing
+        self.state.server = None
+        self.assertIn("server-drift", await sync.observe(self.api, self.plan, self.config))
+
+    async def test_route_a_registers_pass_through_auth_and_route_b_drops_it(self):
+        self.plan.update(endpoint="https://mint.test/mcp/approved/", auth="oauth_delegate")
+        await self.run_plan()
+        self.assertEqual(self.state.server["auth_type"], "oauth_delegate")
+        self.plan.update(endpoint="https://upstream.test/mcp", auth=None)
+        await self.run_plan()
+        self.assertEqual(self.state.server["auth_type"], "none")
+        self.assertEqual(self.state.server["url"], "https://upstream.test/mcp")
 
     async def test_unapproved_user_gets_explicit_empty_tools(self):
         self.plan["allowed_users"] = ["bob"]
@@ -431,8 +477,13 @@ class BoundaryTests(unittest.IsolatedAsyncioTestCase):
 
         database = SimpleNamespace(fetch_one=fetch_one, fetch_all=fetch_all)
         registry = SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": spec}})
-        with patch.object(package, "db", database, create=True), patch.object(package, "registry", registry, create=True):
+        with patch.object(package, "db", database, create=True), patch.object(package, "registry", registry, create=True), \
+             patch.dict(os.environ, {"MINT_LITELLM_ROUTE": "mint", "GATEWAY_PUBLIC_MCP_URL": "https://mint.test:443/mcp/"}):
+            routed = await sync.desired("approved")
+            self.assertEqual((routed["endpoint"], routed["auth"]), ("https://mint.test:443/mcp/approved/", "oauth_delegate"))
+            os.environ["MINT_LITELLM_ROUTE"] = "direct"
             plan = await sync.desired("approved")
+            self.assertEqual((plan["endpoint"], plan["auth"]), ("https://upstream.test/mcp", None))
             self.assertTrue(plan["active"])
             self.assertEqual(plan["tools"], ["read"])
             self.assertEqual(plan["allowed_users"], ["alice"])
@@ -456,13 +507,23 @@ class BoundaryTests(unittest.IsolatedAsyncioTestCase):
                                    if "mcp_servers" in q else {"scope": {"intake": "intake"}}),
                                    fetch_all=AsyncMock(side_effect=lambda q, p: [{"name": "read"}] if "mcp_tools" in q else [{"user_id": "alice"}]))
         with patch.object(package, "db", database, create=True), \
-             patch.object(package, "registry", SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": spec}}), create=True):
+             patch.object(package, "registry", SimpleNamespace(ALL_PRINCIPALS="*", runtime=lambda: {"servers": {"approved": spec}}), create=True), \
+             patch.dict(os.environ, {"MINT_LITELLM_ROUTE": "direct", "GATEWAY_PUBLIC_MCP_URL": "https://mint.test/mcp/"}):
             for endpoint in ("local-run://approved", "https://user:secret@upstream.test/mcp", "https://upstream.test/mcp?token=secret"):
                 spec["endpoint"] = endpoint
                 plan = await sync.desired("approved")
                 self.assertFalse(plan["active"])
                 self.assertTrue(plan["unsupported"])
                 self.assertNotIn("secret", json.dumps(plan))
+            # Route A: LiteLLM only ever sees MINT's address, so an upstream credential stays inside MINT.
+            os.environ["MINT_LITELLM_ROUTE"] = "mint"
+            spec["endpoint"] = "https://user:secret@upstream.test/mcp"
+            plan = await sync.desired("approved")
+            self.assertTrue(plan["active"])
+            self.assertEqual(plan["endpoint"], "https://mint.test/mcp/approved/")
+            self.assertNotIn("secret", json.dumps(plan))
+            spec["endpoint"] = "local-run://approved"
+            self.assertTrue((await sync.desired("approved"))["unsupported"])
 
     async def test_shutdown_waits_for_inflight_management_write(self):
         entered, release, finished = threading.Event(), threading.Event(), threading.Event()

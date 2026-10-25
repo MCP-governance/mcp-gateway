@@ -231,6 +231,121 @@ jobs:
         if: always()
         run: ./mint.sh compose --profile siem down -v --remove-orphans || true
 
+  # LiteLLM 애드온(D-191·D-208·D-249): 새 실행기에 deploy/ 묶음과 실제 LiteLLM 1.105를 올리고 공급자 운영 MCP(Microsoft Learn)로
+  # A 경유·B 직접의 정상 호출, 직원별 원장 귀속, 외부 변경 재조회, 매핑 오류 격리, 관리 키 회전, 철회·복구를 확인한다. 대역 없음.
+  litellm:
+    name: LiteLLM 애드온 통합 검수
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    needs: static
+    defaults:
+      run:
+        working-directory: deploy
+    env:
+      LITELLM_IMAGE: ghcr.io/berriai/litellm-database:v1.105.0@sha256:f99e4cc55ce8a1c6888504ac6eff147868979d37363a7246cf804bbabdc27e88
+      LITELLM_DB_IMAGE: postgres:18.6-alpine3.24@sha256:898c60cb390d1085bc97bdd6a1ae968757421df394b071848b52b1c09c89d6a5
+      E2E: ../full_stack_lab/tests/litellm_addon_e2e.py
+      MINT_ROOT_PASSWORD_FILE: ${{ github.workspace }}/deploy/initial-admin-password
+      E2E_STATE: /tmp/litellm-e2e.json
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: MINT 설치(deploy/)·AI 게이트웨이 직원 3명
+        run: |
+          python -m pip install --quiet mcp==2.2.0 httpx==0.28.1
+          bind="$(ip -4 route get 1.1.1.1 | awk '{for (i = 1; i < NF; i++) if ($i == "src") print $(i + 1)}')"
+          echo "MINT_BIND=$bind" >> "$GITHUB_ENV"
+          echo "MINT_CA=$PWD/ca/root.crt" >> "$GITHUB_ENV"
+          ./install.sh --bind "$bind"
+          # 외부 변경 탐지를 CI 시간 안에 보려고 재조회 간격만 줄인다(기본 300초).
+          sed -i 's/^MINT_LITELLM_SYNC_RECHECK_SECONDS=.*/MINT_LITELLM_SYNC_RECHECK_SECONDS=30/' .env
+          pw="$(openssl rand -hex 16)"; echo "::add-mask::$pw"; echo "EMP_PASSWORD=$pw" >> "$GITHUB_ENV"
+          for who in emp1 emp2 emp3; do printf '%s\n' "$pw" | ./mint.sh add-account "$who" --role 직원 --ai-gateway; done
+
+      - name: LiteLLM 1.105 기동(A 경유 설정)
+        run: |
+          master="sk-$(openssl rand -hex 24)"; salt="sk-$(openssl rand -hex 24)"; dbpw="$(openssl rand -hex 24)"
+          echo "::add-mask::$master"; echo "::add-mask::$salt"; echo "::add-mask::$dbpw"
+          echo "LITELLM_MASTER_KEY=$master" >> "$GITHUB_ENV"
+          # LiteLLM이 MINT(사설 CA)와 공급자(공인 CA)를 모두 검증하도록 묶음을 만든다.
+          cat /etc/ssl/certs/ca-certificates.crt ca/root.crt > /tmp/litellm-ca.pem
+          docker run -d --name litellm-db --network mint_edge -e POSTGRES_DB=litellm -e POSTGRES_USER=litellm \
+            -e POSTGRES_PASSWORD="$dbpw" "$LITELLM_DB_IMAGE"
+          cat > /tmp/start-litellm.sh <<EOF
+          set -e
+          docker rm -f litellm >/dev/null 2>&1 || true
+          docker run -d --name litellm --network mint_edge --network-alias litellm -p 127.0.0.1:4000:4000 \
+            -e DATABASE_URL=postgresql://litellm:$dbpw@litellm-db:5432/litellm -e LITELLM_MASTER_KEY=$master \
+            -e LITELLM_SALT_KEY=$salt -e STORE_MODEL_IN_DB=True -e LITELLM_TELEMETRY=False -e DISABLE_ADMIN_UI=True \
+            -e LITELLM_LOCAL_MODEL_COST_MAP=True -e SSL_CERT_FILE=/ca/bundle.pem -e REQUESTS_CA_BUNDLE=/ca/bundle.pem \
+            -e MINT_GATEWAY_URL=https://$MINT_BIND -e MINT_CA_FILE=/ca/mint.pem \
+            -v /tmp/litellm-ca.pem:/ca/bundle.pem:ro -v $PWD/ca/root.crt:/ca/mint.pem:ro \
+            -v $GITHUB_WORKSPACE/addons/litellm/config/\$1:/lab/litellm.yaml:ro             -v $GITHUB_WORKSPACE/addons/litellm/mint_guardrail.py:/lab/mint_guardrail.py:ro             "$LITELLM_IMAGE" --config /lab/litellm.yaml --port 4000
+          for i in \$(seq 1 90); do curl -fsS http://127.0.0.1:4000/health/liveliness >/dev/null 2>&1 && exit 0; sleep 3; done
+          docker logs --tail 100 litellm; exit 1
+          EOF
+          until docker exec litellm-db pg_isready -U litellm >/dev/null 2>&1; do sleep 1; done
+          bash /tmp/start-litellm.sh litellm-mint.yaml
+
+      - name: ① 동기화 켜기 — 매핑·관리 키 연결, 기동 전 점검
+        run: |
+          python3 "$E2E" prepare
+          ./mint.sh litellm enable --url http://litellm:4000 --bindings /tmp/bindings.json --route mint < /tmp/admin1.key
+          ./mint.sh litellm status
+
+      - name: ②③ 도입 승인 → LiteLLM 반영 → 직원 2명 A 경유 호출·원장 귀속
+        run: |
+          python3 "$E2E" register
+          python3 "$E2E" call-a
+
+      - name: ⑤ LiteLLM에서 바꾼 권한을 재조회로 찾아 되돌림
+        run: python3 "$E2E" drift
+
+      - name: ⑥ 매핑 하나가 틀려도 다른 직원은 계속 호출
+        run: |
+          python3 "$E2E" isolation-start
+          ./mint.sh litellm enable --url http://litellm:4000 --bindings /tmp/bindings.json --route mint < /tmp/admin1.key
+          python3 "$E2E" isolation-check
+          ./mint.sh litellm enable --url http://litellm:4000 --bindings /tmp/bindings.json --route mint < /tmp/admin1.key
+
+      - name: ① 관리 키 회전(재기동 없음)
+        run: |
+          ./mint.sh litellm rotate-key < /tmp/admin2.key
+          python3 "$E2E" rotate-check
+          ./mint.sh litellm check
+
+      - name: ④ 철회 → 거절·관계없는 서버 유지 → 재승인 복구
+        run: |
+          python3 "$E2E" revoke
+          python3 "$E2E" recover
+
+      - name: ① 재기동 뒤에도 유지
+        run: |
+          ./mint.sh up
+          python3 "$E2E" restart-check
+
+      - name: ② B 직접 경로 — 가드레일 판정·제한 인자·사후 기록
+        run: |
+          ./mint.sh litellm enable --url http://litellm:4000 --bindings /tmp/bindings.json --route direct < /tmp/admin2.key
+          bash /tmp/start-litellm.sh litellm-plugin.yaml
+          python3 "$E2E" call-b
+
+      - name: 실패 시 로그
+        if: failure()
+        run: |
+          ./mint.sh litellm status || true
+          ./mint.sh logs gateway agent-service | tail -200 || true
+          docker logs --tail 300 litellm || true
+
+      - name: 정리
+        if: always()
+        run: |
+          docker rm -f litellm litellm-db || true
+          ./mint.sh compose --profile siem down -v --remove-orphans || true
+
   verify:
     name: 완료 조건 전체 검증
     runs-on: ubuntu-latest
