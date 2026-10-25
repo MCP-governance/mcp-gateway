@@ -467,9 +467,9 @@ Write-Output 'Per-user ACL and bounded data snapshot OK'
         enrollment.write_text(json.dumps({'gateway_url': 'https://changed.example', 'tailscale_node_id': 'changed',
                                           'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64,
                                           'enrollment_token': 'synthetic-enrollment'}), encoding='utf-8')
+        # The one-click template's request: no gateway_url/tailscale_node_id of its own (pj3 10-25 failed on that).
         (work / 'request.json').write_text(json.dumps({'mode': 'managed', 'action': 'install', 'user': 'fixture',
-            'requester_sid': 'S-1-5-21-1-2-3-1001', 'gateway_url': 'https://changed.example',
-            'tailscale_node_id': 'changed', 'enrollment': str(enrollment)}), encoding='utf-8')
+            'requester_sid': 'S-1-5-21-1-2-3-1001', 'isolated_account': False, 'enrollment': str(enrollment)}), encoding='utf-8')
         script = r'''
 $ErrorActionPreference='Stop'
 . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-trust.ps1')

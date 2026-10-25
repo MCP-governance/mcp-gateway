@@ -67,7 +67,7 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
         self.plane = load(LAB / "gateway/app/endpoint_plane.py", NAMES,
                           {"__name__": PACKAGE + ".endpoint_plane", "__package__": PACKAGE, "os": os, "urlsplit": urlsplit,
                            "ipaddress": ipaddress, "hashlib": hashlib, "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,
-                           "db": db, "datetime": datetime, "UTC": timezone.utc, "Jsonb": lambda v: v})
+                           "db": db, "datetime": datetime, "UTC": timezone.utc, "Jsonb": lambda v: v, "re": __import__("re")})
         env = patch.dict(os.environ, {"IDP_ISSUER": "https://gateway.example", "ENDPOINT_GATEWAY_IPS": "100.64.0.2",
                                       "MODEL_PROXY_PORT": ""})
         env.start()
@@ -128,6 +128,26 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
         self.pc()
         self.device["detail"].pop("mode")  # a kit before D-239: isolated
         self.assertEqual(self.plane.managed_mode(self.device), "isolated")
+
+    async def test_simple_claude_gets_the_ca_from_the_managed_settings_in_field_mode(self):
+        # pj2 10-25: a terminal opened before the install has no CA variable; the managed settings carry it for Claude.
+        import json
+        def env(**detail):
+            return json.loads(policy["files"]["managed-settings.json"]).get("env", {})
+        with patch.dict(os.environ, {"MCP_FIELD_MODE": "1"}):
+            self.pc()
+            policy = await self.plane.managed_policy(self.device)
+            self.assertEqual(env(), {"NODE_EXTRA_CA_CERTS": "/usr/local/lib/mcpgw-managed/ca-1000.crt"})
+            self.pc(mode="isolated")
+            policy = await self.plane.managed_policy(self.device)
+            self.assertNotIn("env", json.loads(policy["files"]["managed-settings.json"]))  # its launchers carry the CA
+            sid = "S-1-5-21-1-2-3-1001"
+            self.pc(local_sid=sid, helper_command='"C:\\Program Files\\MCPGatewayManaged\\python\\python.exe" -I -S '
+                                                 '"C:\\Program Files\\MCPGatewayManaged\\managed-windows.py" header')
+            policy = await self.plane.managed_policy(self.device)
+            self.assertEqual(env(), {"NODE_EXTRA_CA_CERTS": f"C:\\Program Files\\MCPGatewayManaged\\launchers\\{sid}\\root.crt"})
+        self.pc()
+        self.assertNotIn("env", json.loads((await self.plane.managed_policy(self.device))["files"]["managed-settings.json"]))
 
 
 if __name__ == "__main__":

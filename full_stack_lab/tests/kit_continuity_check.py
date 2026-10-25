@@ -84,7 +84,7 @@ class Reinstall(unittest.IsolatedAsyncioTestCase):
         plane = extract(LAB / "gateway/app/endpoint_plane.py",
                         {"_same_pc", "consume_enrollment", "managed_platform", "_hash_key", "DEVICE_SCOPES", "companion_names"},
                         {"__name__": "continuity_under_test", "db": db, "uuid": uuid, "hashlib": hashlib, "os": os,
-                         "Jsonb": lambda value: value, "revoke_device": revoke})
+                         "Jsonb": lambda value: value, "revoke_device": revoke, "re": __import__("re")})
         await plane.consume_enrollment("t" * 43, "k" * 43, hostname, username, 1001, platform=platform,
                                        local_sid=sid, machine_id=machine, mode=mode)
         self.db, self.revoke, self.connection = db, revoke, connection
@@ -141,6 +141,11 @@ class Reinstall(unittest.IsolatedAsyncioTestCase):
                  "local_username": "emp"}
         new = await self.enroll([other], platform="windows", sid="S-1-5-21-1-2-3-1001", machine=None, mode="simple")
         self.assertEqual(new["state"], "pending")  # the same name with another SID is another account
+        # Simple -> isolated: the employee's own device is the earlier one of its companion (pj2 10-25 left it active).
+        simple = {**device("own", "pc-1", machine="a" * 64, activated_by="auto"), "local_username": "emp"}
+        switched = await self.enroll([simple], username="managed-emp", mode="isolated")
+        self.assertEqual(switched["state"], "pending")
+        self.revoke.assert_awaited_with("own", "reinstall")
         # Back to isolated from an automatically activated PC: the administrator checks it again.
         auto = await self.enroll([device("old", "pc-1", machine="a" * 64, activated_by="auto")], mode="isolated")
         self.assertEqual(auto["state"], "pending")

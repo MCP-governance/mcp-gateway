@@ -326,7 +326,9 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,
                      "db": SimpleNamespace(fetch_all=AsyncMock(return_value=[{"id": "git"}]), fetch_one=AsyncMock(return_value={}))}
-        policy_module = selected(path, {"managed_policy", "managed_platform", "json_document", "installed_hash"}, namespace)
+        namespace["re"] = __import__("re")
+        policy_module = selected(path, {"managed_policy", "managed_platform", "managed_mode", "json_document", "installed_hash"},
+                                 namespace)
         device = {**self.device, "device_epoch": "epoch", "local_username": "unit", "local_uid": 1000}
         with patch.dict(sys.modules, {package.__name__: package}), \
              patch.dict(os.environ, {"IDP_ISSUER": "https://gateway.example", "ENDPOINT_GATEWAY_IPS": "100.64.0.2"}):
