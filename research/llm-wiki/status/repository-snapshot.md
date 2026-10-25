@@ -1,22 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T18:27:11+09:00
+확인 시각: 2026-10-25T19:40:50+09:00
 
-HEAD: `2b308627452d932351285b6342e1bb90cca59f25` · 로컬 브랜치: `10/25-litellm-addon`
+HEAD: `3501083dd766e945be2e2009b7f83fb661dfd715` · 로컬 브랜치: `10/25-litellm-addon`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M addons/litellm/README.md
- M deploy/.env.example
- M deploy/compose.yaml
- M docs/ai/DECISIONS.md
- M docs/ai/LITELLM_SYNC.md
- M research/llm-wiki/analysis/integration-cases.json
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
-?? research/llm-wiki/status/reports/2026-10-25-litellm-addon.md
+ M research/llm-wiki/status/reports/2026-10-25-litellm-addon.md
 ```
 
 ## 주요 파일 바이트
