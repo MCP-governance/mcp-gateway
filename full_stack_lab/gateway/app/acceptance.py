@@ -29,6 +29,7 @@ import re
 import sys
 import zipfile
 from contextlib import asynccontextmanager, suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit, parse_qs
 from uuid import uuid4
@@ -38,7 +39,7 @@ import httpx2
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
-from . import db, review
+from . import db, registry, review
 from .core import _release_call, _reserve_call, approve_request, enforcement_mode, set_enforcement_mode, verify_audit_chain
 
 API = os.getenv("ACCEPTANCE_GATEWAY_URL", "http://127.0.0.1:8080").rstrip("/")
@@ -612,8 +613,8 @@ async def invitation_enrollment() -> str:
 # Gateway only through its own origin, so this goes through agent-service like the browser does.
 CONSOLE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000").rstrip("/")
 ADMIN_MENUS = {"overview", "activity", "audit", "approvals", "coverage", "servers", "people", "consent", "intake",
-               "sbom-impact", "termination", "policy"}
-EMPLOYEE_MENUS = {"activity", "consent", "intake"}
+               "sbom-impact", "termination", "policy", "connections"}
+EMPLOYEE_MENUS = {"activity", "consent", "intake", "connections"}
 ADMIN_SCREENS = [
     ("/auth/me", ["name", "role_label", "user_id", "pages"]),
     ("/gw/overview", ["today_since", "servers", "workstations", "top_policies", "pending_approvals", "intake_actions",
@@ -656,6 +657,7 @@ ADMIN_SCREENS = [
     ("/gw/enforcement", ["enforcement"]),
     ("/gw/policy/matrix", ["capabilities", "runtime_envelopes"]),
     ("/gw/policy/ledger", ["policies"]),
+    ("/api/my-connections", ["connections", "available"]),
 ]
 EMPLOYEE_SCREENS = [
     ("/auth/me", ["name", "role_label", "pages"]),
@@ -665,6 +667,7 @@ EMPLOYEE_SCREENS = [
     ("/api/consents", ["consents"]),
     ("/api/mcp-requests", ["requests"]),
     ("/api/mcp-catalog/search", ["requests", "registry"]),
+    ("/api/my-connections", ["connections", "available"]),
 ]
 
 
@@ -1076,6 +1079,149 @@ async def approval_preview_local_run_values() -> str:
             "보류된 제안의 승인 409 (PC 격리 실행 자체는 수용 스택에서 실행하지 않음)")
 
 
+async def one_click_audience() -> str:
+    """D-234: 원클릭 승인의 기본 사용 대상은 전체 직원('*')이고, 변경 API가 신청자만·지정 직원으로 좁히고 다시 넓힌다.
+    좁힌 뒤 목록과 호출은 그 결정을 따르고, 변경마다 감사 사건이 남는다. 지정 직원이 없거나 없는 아이디는 등록 전에 거부한다."""
+    async with httpx.AsyncClient(timeout=180) as client, _fetch_intake(client, "대상") as ctx:
+        sid, intake, admin = ctx["sid"], ctx["intake"], _bearer("admin")
+        url, change = f"{API}/mcp/{sid}/", f"{API}/api/registry/servers/{sid}/audience"
+        # 거부: 지정 직원이 비었거나 활성 계정이 아니면 등록하지 않는다.
+        for users, expected in (([], "한 명 이상"), (["acceptance-no-such-user"], "활성 계정이 아닌")):
+            refused = await _click(client, admin, ctx, audience="selected", audience_users=users, **_lowering(ctx))
+            expect(refused.status_code == 422 and expected in _detail(refused),
+                   f"지정 직원 {users}: {refused.status_code} {_detail(refused)[:120]}")
+        row = await db.fetch_one("SELECT count(*) AS servers FROM mcp_servers WHERE id=%s", (sid,))
+        expect(row["servers"] == 0, f"거부된 클릭 뒤 서버 행: {dict(row)}")
+        # 정상: 사용 대상을 보내지 않으면 전체 직원이다.
+        approved = await _approve(client, ctx, **_lowering(ctx))
+        expect(approved.status_code == 200 and approved.json().get("status") == "READY",
+               f"원클릭 승인·등록: {approved.status_code} {approved.text[:200]}")
+
+        async def allowed() -> list[str]:
+            state = await client.get(CONSOLE_URL + "/gw/registry", headers=admin)
+            expect(state.status_code == 200, f"등록부 조회: {state.status_code}")
+            return state.json()["registrations"].get(sid, {}).get("allowed_principals")
+
+        async def narrow(audience: str, users: list[str] | None = None) -> httpx.Response:
+            return await client.post(change, headers=admin, json={"audience": audience, "users": users or []})
+
+        done = [e for e in await review.events_for("intake", intake)
+                if e["kind"] == "intake-one-click" and e["outcome"] == "approved"]
+        expect(len(done) == 1 and done[0]["scope"].get("audience") == "all"
+               and done[0]["scope"].get("audience_principals") == ["*"],
+               f"승인 원장의 사용 대상: {[e['scope'].get('audience') for e in done]}")
+        expect(await allowed() == ["*"], f"기본 허용 사용자: {await allowed()}")
+        expect({t.name for t in await list_tools("employee", url)} == {"fetch"}, "전체 직원 승인 뒤 신청자의 도구 목록")
+        # 변경 API는 관리자만 부른다. 등록 서버가 아니면 404.
+        denied = await client.post(change, headers=_bearer("employee"), json={"audience": "all"})
+        expect(denied.status_code in {401, 403}, f"직원이 사용 대상을 바꿈: {denied.status_code}")
+        missing = await client.post(f"{API}/api/registry/servers/acceptance-no-such-server/audience",
+                                    headers=admin, json={"audience": "all"})
+        expect(missing.status_code == 404, f"없는 서버의 사용 대상 변경이 {missing.status_code}")
+        # 신청자만으로 좁히기: 신청자는 그대로, 다른 사람의 목록에서는 사라진다.
+        narrowed = await narrow("requester")
+        expect(narrowed.status_code == 200 and narrowed.json()["principals"] == [PRINCIPAL["employee"]],
+               f"신청자만: {narrowed.status_code} {narrowed.text[:160]}")
+        expect(await allowed() == [PRINCIPAL["employee"]], "신청자만 뒤 허용 사용자")
+        expect({t.name for t in await list_tools("employee", url)} == {"fetch"}, "신청자만 뒤 신청자의 도구 목록")
+        expect("fetch" not in {t.name for t in await list_tools("admin", url)}, "신청자만 뒤 다른 사람의 도구 목록")
+        # 지정 직원: 신청자가 빠지면 호출이 MCP-REGISTRY-003으로 막힌다.
+        other = await db.fetch_one("SELECT user_id, token FROM principals WHERE token=%s", (PRINCIPAL["admin"],))
+        picked = await narrow("selected", [other["user_id"]])
+        expect(picked.status_code == 200 and picked.json()["principals"] == [other["token"]],
+               f"지정 직원: {picked.status_code} {picked.text[:160]}")
+        out = await call("employee", "fetch", FETCH_ARGUMENTS, url)
+        expect(out.get("decision") == "Block" and out.get("policy_id") == "MCP-REGISTRY-003" and not out.get("upstream_attempted"),
+               f"대상에서 빠진 신청자의 호출: {out.get('decision')} {out.get('policy_id')}")
+        expect({t.name for t in await list_tools("employee", url)} == set(), "대상에서 빠진 신청자의 도구 목록")
+        bad = await narrow("selected", ["acceptance-no-such-user"])
+        expect(bad.status_code == 422 and "활성 계정이 아닌" in _detail(bad), f"없는 아이디 지정: {bad.status_code} {_detail(bad)[:120]}")
+        expect(await allowed() == [other["token"]], "거부된 변경이 허용 사용자를 바꿈")
+        # 다시 전체 직원으로 넓히면 호출이 대상 판정은 통과한다.
+        widened = await narrow("all")
+        expect(widened.status_code == 200 and await allowed() == ["*"], f"전체 직원으로 복귀: {widened.status_code}")
+        again = await call("employee", "fetch", FETCH_ARGUMENTS, url)
+        expect(again.get("policy_id") != "MCP-REGISTRY-003", f"전체 직원 뒤 호출: {again.get('decision')} {again.get('policy_id')}")
+        kinds = [(e["kind"], e["outcome"], (e["scope"] or {}).get("audience")) for e in await review.events_for("server", sid)
+                 if e["kind"] == "server-audience"]
+        expect(kinds == [("server-audience", "approved", a) for a in ("requester", "selected", "all")], f"사용 대상 변경 사건: {kinds}")
+    return ("승인 기본 '*'(원장 audience=all) · 지정 직원 없음·없는 아이디 422 · 직원 403·없는 서버 404 · 신청자만 · "
+            "지정 직원 → 호출 MCP-REGISTRY-003 · 전체 직원 복귀 · 변경 사건 3건")
+
+
+GITHUB_ENDPOINT = "https://api.githubcopilot.com/mcp/"
+
+
+@asynccontextmanager
+async def _github_registration():
+    """직원별 연결이 필요한 서버(api.githubcopilot.com)를 등록부에 올려 둔다. 실제 GitHub MCP를 부르지 않는다:
+    미연결 호출은 상위 서비스 앞에서 막히고, 토큰 연결은 가짜 토큰이라 GitHub가 거부한다. 나올 때 등록을 해제한다."""
+    sid, now = "acceptance-github", datetime.now(UTC)
+    doc = registry.runtime()
+    doc["servers"][sid] = {
+        "display_name": "Acceptance GitHub", "package": "acceptance-github", "version": "0", "source_url": GITHUB_ENDPOINT,
+        "supplier": "GitHub", "license": None, "endpoint": GITHUB_ENDPOINT, "deployment": "provider", "downstream": None,
+        "data_class": "public", "tools": {"get_me": "r"}, "exit_terms": {},
+        "valid_until": (now + timedelta(days=1)).isoformat(timespec="seconds"), "registered_by": PRINCIPAL["admin"],
+        "registered_at": now.isoformat(timespec="seconds"), "intake_id": str(uuid4()), "allowed_principals": ["*"],
+        "parameter_constraints": {"get_me": {"type": "object", "additionalProperties": False}},
+        "tool_reviews": {"get_me": {"purpose": "수용 시험용 GitHub 계정 조회", "asset": "github.com", "destinations": [],
+                                    "consent": False}}}
+    registry.save_runtime(doc)
+    await registry.sync()
+    try:
+        yield sid
+    finally:
+        with suppress(httpx.HTTPError):
+            async with httpx.AsyncClient(timeout=60) as client:
+                await client.delete(f"{API}/api/registry/servers/{sid}", headers=_bearer("admin"))
+
+
+async def my_connections_and_missing_credential() -> str:
+    """D-235: 「내 연결」은 직원·관리자 모두 부르고, 직원별 연결이 필요한 서버만 보여 준다. 연결이 없는 GitHub 호출은
+    상위 서비스를 부르기 전에 MCP-CREDENTIAL-001로 막고 「내 연결」을 안내한다. 실제 GitHub 토큰은 쓰지 않는다."""
+    employee = _bearer("employee")
+    async with httpx.AsyncClient(timeout=90) as client:
+        async def listing(who: str) -> dict:
+            response = await client.get(CONSOLE_URL + "/api/my-connections", headers=_bearer(who))
+            expect(response.status_code == 200, f"{who} 내 연결: {response.status_code} {response.text[:120]}")
+            return response.json()
+
+        before = await listing("employee")
+        expect(isinstance(before["available"], bool) and isinstance(before["connections"], list), f"내 연결 응답: {sorted(before)}")
+        expect(all(c["server_id"] != "fetch" for c in before["connections"]), "직원별 연결이 필요 없는 서버가 목록에 있음")
+        # 직원별 연결이 필요한 서버가 아니면 연결 요청은 404, 해제 요청도 404다.
+        plain = await client.post(CONSOLE_URL + "/api/my-connections/fetch/token", headers=employee,
+                                  json={"token": "ghp_" + "x" * 36})
+        expect(plain.status_code == 404 and "직원별 연결이 필요한 서버가 아닙니다" in _detail(plain),
+               f"fetch 서버 연결: {plain.status_code} {_detail(plain)[:120]}")
+        expect((await client.delete(CONSOLE_URL + "/api/my-connections/fetch", headers=employee)).status_code == 404,
+               "fetch 서버 연결 해제가 404가 아님")
+        async with _github_registration() as sid:
+            for who in ("employee", "admin"):
+                rows = [c for c in (await listing(who))["connections"] if c["server_id"] == sid]
+                expect(len(rows) == 1 and rows[0]["service"] == "GitHub" and rows[0]["connected"] is False
+                       and rows[0]["account"] is None and rows[0]["token_url"].startswith("https://github.com/"),
+                       f"{who}의 연결 없음 상태: {rows}")
+            # 미연결 호출: 상위 서비스 앞에서 막고, 사유가 「내 연결」을 안내한다. 직원·관리자 모두.
+            for who in ("employee", "admin"):
+                out = await call(who, "get_me", {}, f"{API}/mcp/{sid}/")
+                expect(out.get("decision") == "Block" and out.get("policy_id") == "MCP-CREDENTIAL-001"
+                       and not out.get("upstream_attempted") and "내 연결" in out.get("text", ""),
+                       f"{who}의 미연결 호출: {out.get('decision')} {out.get('policy_id')} {out.get('text', '')[:120]}")
+            # 가짜 토큰은 GitHub가 받지 않는다(또는 GitHub에 닿지 못한다): 한국어 거부이고 아무것도 저장되지 않는다.
+            fake = await client.post(CONSOLE_URL + f"/api/my-connections/{sid}/token", headers=employee,
+                                     json={"token": "ghp_" + "x" * 36})
+            expect(fake.status_code == 422 and "GitHub" in _detail(fake), f"가짜 토큰: {fake.status_code} {_detail(fake)[:120]}")
+            kept = await db.fetch_one("SELECT count(*) AS n FROM user_upstream_credentials WHERE endpoint=%s", (GITHUB_ENDPOINT,))
+            expect(kept["n"] == 0, f"거부된 토큰이 저장됨: {dict(kept)}")
+            freed = await client.delete(CONSOLE_URL + f"/api/my-connections/{sid}", headers=employee)
+            expect(freed.status_code == 200 and freed.json() == {"connected": False},
+                   f"연결 없는 해제: {freed.status_code} {freed.text[:80]}")
+    return ("직원·관리자 목록 200(연결이 필요 없는 서버 제외) · 일반 서버 연결·해제 404 · GitHub 서버 미연결 → 직원·관리자 호출 "
+            "MCP-CREDENTIAL-001(상위 호출 없음, 내 연결 안내) · 가짜 토큰 422·저장 없음 · 해제 200")
+
+
 async def _run() -> dict:
     await db.wait_until_ready()
     await sign_in()
@@ -1101,6 +1247,9 @@ async def _run() -> dict:
         ("one-click-approval-lowers-tool-class", one_click_lowers_tool_class()),
         ("server-level-consent-decisions", server_consent_flow()),
         ("approval-preview-local-run-values", approval_preview_local_run_values()),
+        # 10-25 기능(D-234 사용 대상, D-235 직원별 계정 연결)
+        ("one-click-audience-everyone-then-narrowed", one_click_audience()),
+        ("my-connections-and-missing-credential-block", my_connections_and_missing_credential()),
         ("invited-employee-enrollment", invitation_enrollment()),
         ("oversized-arguments-not-sent", oversized_arguments_not_sent()),
         # PDF integration (Presidio, MCP-DATA-EGRESS-001, P-CHAIN-001) - order matters:

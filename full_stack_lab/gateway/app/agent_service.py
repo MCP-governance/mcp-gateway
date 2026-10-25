@@ -2473,6 +2473,8 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
         # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
         if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
             raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
+        # 두 번째 관리자까지 가기 전에, 첫 클릭에서 사용 대상을 확인한다.
+        audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
         assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
         if set(assurance) - set(supplier_assurance.ASSURANCE_FIELDS):
             raise HTTPException(422, "공급자 정보 항목을 확인하세요.")
@@ -2553,7 +2555,6 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
         tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
         reviews = {name: proposal["tool_reviews"][name] for name in selected}
-        audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
         registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
             catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
             poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
@@ -2704,7 +2705,8 @@ async def my_connections(user: dict = Depends(caller)):
         rows.append({
             "server_id": server_id, "name": spec.get("display_name") or server_id, "service": service["label"],
             "token_url": service["token_url"], "device": bool(user_credentials.device_client_id()),
-            "connected": bool(mine), "account": mine and mine["account"], "kind": mine and mine["kind"],
+            "connected": bool(mine), "expired": bool(mine and mine["expires_at"] and mine["expires_at"] <= datetime.now(UTC)),
+            "account": mine and mine["account"], "kind": mine and mine["kind"],
             "connected_at": mine and mine["created_at"], "expires_at": mine and mine["expires_at"],
             "last_used_at": mine and mine["last_used_at"]})
     return {"connections": rows, "available": user_credentials.available()}

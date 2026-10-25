@@ -239,7 +239,7 @@ const REVIEW_KIND = {
   "litellm-sync": "외부 게이트웨이 동기화",
   "automatic-suspension": "자동 중지", "automatic-suspension-resume": "자동 중지 해제",
   "user-server-suspend": "이용 중지", "user-server-resume": "이용 재개", "account-restore": "계정 복구",
-  "upstream-credential-connect": "계정 연결", "upstream-credential-disconnect": "계정 연결 해제",
+  "server-audience": "사용 대상 변경", "upstream-credential-connect": "계정 연결", "upstream-credential-disconnect": "계정 연결 해제",
   "call-request": "중대 영향 요청", "call-explanation-view": "중대 영향 설명 열람", "call-approve": "중대 영향 승인",
   "call-reject": "중대 영향 거부", "call-revoke": "중대 영향 번복",
   "incident-created": "사고 기록 생성", "incident-supplement": "사고 범위 보완", "incident-report": "사고 보고 제출",
@@ -558,6 +558,15 @@ const decisionTable = (rows, id = "") => html`<table class="data call-table"><th
 // A registration is approved until a date; past it the calls are blocked.
 const VALIDITY = { 1: "1일", 30: "30일", 90: "90일", 180: "180일", 365: "1년" };
 const AUDIENCE = { all: "전체 직원", requester: "신청자만", selected: "지정 직원" };
+// 사용 대상 입력(승인 화면·서버 상세 공통): 지정 직원일 때만 아이디 입력칸이 보인다.
+const audienceFields = (cur) => html`<label>사용 대상<select name="audience" data-audience>${Object.entries(AUDIENCE).map(([v, l]) =>
+  html`<option value="${v}" ${v === cur ? raw("selected") : ""}>${l}</option>`)}</select></label>
+  <label data-audience-users ${cur === "selected" ? "" : raw("hidden")}>지정 직원<input name="audience_users" maxlength="2000" placeholder="아이디, 아이디" /></label>`;
+const audienceBody = (fd) => {
+  const audience = String(fd.get("audience") || "all");
+  return { audience, audience_users: audience === "selected" ? String(fd.get("audience_users") || "").split(",").map((v) => v.trim()).filter(Boolean) : [] };
+};
+const audienceText = (principals) => (principals || []).includes("*") ? AUDIENCE.all : (principals || []).join(", ") || NONE;
 function validityChip(registration) {
   if (!registration?.valid_until) return "";
   const days = Math.ceil((new Date(registration.valid_until).getTime() - Date.now()) / 86400000);
@@ -1133,6 +1142,7 @@ function showServer(id) {
       ${registration && !registration.intake_id ? chip("block", "도입 신청 없음 · 차단") : ""}
       ${registration && tools.some((t) => registration.tools?.[t.name] && !registration.tool_reviews?.[t.name]) ? html`<button class="btn sm primary" type="button" data-act="tool-scope" data-id="${s.id}">범위 심사</button>` : ""}
       ${registration?.intake_id && s.deployment === "provider" ? html`<button class="btn sm primary" type="button" data-act="residency-review" data-id="${s.id}">위치 심사</button>` : ""}
+      ${registration?.intake_id ? html`<button class="btn sm" type="button" data-act="server-audience" data-id="${s.id}">사용 대상</button>` : ""}
       ${registration ? html`<button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
     ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
@@ -1152,6 +1162,7 @@ function showServer(id) {
         : registration?.risk_review ? [["위험 등급", html`${chip(...RISK_TIER[registration.risk_review.tier])}<span class="sub">영향평가 입력 없음</span>`],
           ["재평가 기한", registration.risk_review.until.slice(0, 10)]] : []),
       ["사용 기한", registration ? `${when(registration.valid_until)} · ${DATA_CLASS[registration.data_class] || ""}` : ""],
+      ...(registration?.intake_id ? [["사용 대상", audienceText(registration.allowed_principals)]] : []),
       ["등록", registration ? `${registration.registered_by} · ${when(registration.registered_at)}` : ""],
       ["마지막 확인", s.last_seen_at ? `${when(s.last_seen_at)} · ${ago(s.last_seen_at)}` : ""]]) },
     { key: "tools", label: "도구", n: tools.length, body: html`<table class="data"><thead><tr><th>도구</th><th>행위</th><th>상태</th><th>마지막 사용</th><th>기한</th><th>이용 상태</th></tr></thead><tbody>
@@ -1516,7 +1527,7 @@ ROUTES.consent = async (_, tab) => {
 const CONNECTION_KIND = { token: "개인 액세스 토큰", device: "인증 코드" };
 ROUTES.connections = async () => {
   const { connections, available } = await api("/api/my-connections");
-  const card = (c) => panel(c.name, c.connected ? html`<table class="data"><tbody>
+  const card = (c) => panel(c.name, c.connected && !c.expired ? html`<table class="data"><tbody>
       <tr><th>계정</th><td><b>${c.account}</b></td></tr>
       <tr><th>방식</th><td>${CONNECTION_KIND[c.kind] || NONE}</td></tr>
       <tr><th>연결 시각</th><td>${when(c.connected_at)}</td></tr>
@@ -1529,7 +1540,7 @@ ROUTES.connections = async () => {
           ${c.device ? html`<button class="btn" type="button" data-act="connect-device" data-id="${c.server_id}">인증 코드로 연결</button>` : ""}
           <a class="btn" href="${c.token_url}" target="_blank" rel="noopener noreferrer">토큰 만들기 ↗</a></div></form>`
       : chip("block", "연결 불가"),
-    { sub: c.service, end: c.connected ? chip("allow", "연결됨") : chip("outline", "연결 안 됨") });
+    { sub: c.service, end: c.expired ? chip("alert", "만료") : c.connected ? chip("allow", "연결됨") : chip("outline", "연결 안 됨") });
   return page({ head: head("내 연결"), active: "list", tabs: [{ key: "list", label: "연결",
     body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
 };
@@ -1715,8 +1726,7 @@ function intakeApprovalFields(out) {
         constraints: p.parameter_constraints[t.name], scope: p.tool_reviews[t.name] }, null, 2)}</pre></details></span></label>`)}</fieldset>
   ${pending ? kv([["승인", `${pending.approvers.length} / ${p.risk.tier === "high" || p.risk.tier === "very_high" ? 2 : 1}`],
     ["사용 기한", `${scope.valid_days}일`], ["사용 대상", AUDIENCE[scope.audience || "all"] + (scope.audience_users?.length ? ` · ${scope.audience_users.join(", ")}` : "")]])
-    : html`${field.select("valid_days", "사용 기한", VALIDITY, "90")}${field.select("audience", "사용 대상", AUDIENCE, "all")}
-      ${field.text("audience_users", "지정 직원", 'maxlength="2000" placeholder="아이디, 아이디"', "")}`}
+    : html`${field.select("valid_days", "사용 기한", VALIDITY, "90")}${audienceFields("all")}`}
   ${count && !pending ? field.text("critical_reason", "치명적 발견 수용 사유", 'required minlength="10" maxlength="1000"') : ""}
   ${p.risk.tier === "very_high" ? field.text("risk_reason", "위험 수용 사유", 'required minlength="10" maxlength="1000"') : ""}
   <details ${p.jurisdiction_pack_enabled ? raw("open") : ""}><summary>${p.jurisdiction_pack_enabled ? "추가 정보" : "추가 정보(선택)"}</summary>
@@ -1790,8 +1800,7 @@ async function showIntakeApproval(id) {
   const result = await api(`/api/mcp-requests/${id}/approve-and-register`, { method: "POST", body: {
     proposal_sha256: out.proposal_sha256, tools: selected, valid_days: scope?.valid_days || Number(fd.get("valid_days")),
     critical_reason: String(fd.get("critical_reason") || "").trim(), risk_reason: String(fd.get("risk_reason") || "").trim(), supplier_assurance: assurance, residency: location, actions,
-    audience: scope ? scope.audience || "all" : String(fd.get("audience") || "all"),
-    audience_users: scope ? scope.audience_users || [] : String(fd.get("audience_users") || "").split(",").map((v) => v.trim()).filter(Boolean) } });
+    ...(scope ? { audience: scope.audience || "all", audience_users: scope.audience_users || [] } : audienceBody(fd)) } });
   toast(result.message); reload();
 }
 
@@ -1911,7 +1920,7 @@ async function showIntakeReport(id) {
       {key: "contract", label: "계약·범위", body: html`<div class="stack">
         ${panel("서비스", kv([["MCP 주소", html`<span class="mono">${r.endpoint_url}</span>`], ["사용 목적", r.purpose]]))}
         ${panel("계약 검토", review ? kv([["검토 내용", review.review_note], ["검토자", `${review.reviewed_by} · ${when(review.reviewed_at)}`],
-          ["허용 사용자", review.allowed_principals.includes("*") ? AUDIENCE.all : review.allowed_principals.join(", ")], ["사용 기한", when(review.valid_until)],
+          ["허용 사용자", audienceText(review.allowed_principals)], ["사용 기한", when(review.valid_until)],
           ["서버", `${review.advertised_name} ${review.version}`], ["계약 해시", html`<code>${review.registration.catalog_hash}</code>`],
           ["승인 도구", Object.keys(review.registration.tools || {}).join(", ")], ...locationRows(review.registration.residency)]) : empty("검토 전"))}
         ${panel("허용 인자 범위", review ? html`<pre>${JSON.stringify(review.parameter_constraints || {}, null, 2)}</pre>` : empty("검토 전"))}
@@ -2200,7 +2209,7 @@ ROUTES.policy = async (_, tab) => {
           matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료 시각</th></tr></thead><tbody>
           ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${(g.principals || []).join(", ")}</td><td>${(g.servers || []).join(", ")}</td>
             <td>${actions(g.actions)}<span class="sub">${(g.path_roots || []).join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
-          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${(g.principals || []).join(", ")}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools || {}).join(", ")}<span class="sub">도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
+          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${audienceText(g.principals)}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools || {}).join(", ")}<span class="sub">도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
           </tbody></table>` : empty("실행 권한 없음"), { flush: true }) },
         { key: "ledger", label: "정책 목록", n: ledger.policies.length, body: panel("정책 목록", html`<table class="data"><thead><tr><th class="n">번호</th><th>정책</th><th>결과</th></tr></thead><tbody>
             ${ledger.policies.map((p, i) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}"><td class="n">${i + 1}</td>
@@ -2804,6 +2813,15 @@ const ACTIONS = {
     await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}`, { method: "DELETE" });
     closeDrawer(); toast("등록을 해제했습니다."); reload();
   },
+  async "server-audience"(el) {
+    const s = registry?.servers.find((row) => row.id === el.dataset.id);
+    if (!s) return;
+    const fd = await ask({ title: `사용 대상 · ${s.display_name}`, fields: audienceFields((registry.registrations?.[el.dataset.id]?.allowed_principals || []).includes("*") ? "all" : "requester"), confirm: "변경" });
+    if (!fd) return;
+    await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/audience`, { method: "POST",
+      body: (({ audience, audience_users }) => ({ audience, users: audience_users }))(audienceBody(fd)) });
+    closeDrawer(); toast("사용 대상을 변경했습니다."); reload();
+  },
   async "intake-accept-risk"(el) {
     const fd = await ask({ title: `위험 수용 · ${el.dataset.name}`,
       fields: html`${field.select("days", "수용 기한", { 7: "7일", 14: "14일", 30: "30일" }, "7")}
@@ -3082,6 +3100,12 @@ document.addEventListener("toggle", (event) => {
   if (event.target.matches("details[open]")) charts.mountVisible(event.target);
 }, true);
 document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-audience]")) {
+    const users = event.target.form.querySelector("[data-audience-users]");
+    users.hidden = event.target.value !== "selected";
+    if (users.hidden) users.querySelector("input").value = "";
+    return;
+  }
   if (event.target.matches("[data-intake-kind]")) {
     for (const label of event.target.form.querySelectorAll("[data-intake-field]")) {
       label.hidden = label.dataset.intakeField !== event.target.value;

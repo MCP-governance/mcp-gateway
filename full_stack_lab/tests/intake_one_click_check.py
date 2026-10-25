@@ -202,6 +202,32 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.state["evidence"]["remote_contract"]["allowed_principals"], ["*"])  # D-234 default: all employees
         self.assertEqual(self.events[-1]["actor"], "admin-a")
 
+    async def test_audience_requester_and_selected_land_in_the_contract(self):
+        preview = await self.preview()
+        await service.approve_and_register(REQUEST_ID, self.approval(preview, audience="requester"), self.admin, "console-token")
+        self.assertEqual(self.state["evidence"]["remote_contract"]["allowed_principals"], ["employee"])
+        self.assertEqual(self.events[-1]["scope"]["audience"], "requester")
+        self.state = row()
+        preview = await self.preview()
+        people = AsyncMock(return_value=[{"token": "emp-kim", "user_id": "kim"}])
+        with patch.object(service.db, "fetch_all", people):
+            await service.approve_and_register(REQUEST_ID, self.approval(preview, audience="selected", audience_users=["kim", " "]),
+                                               self.admin, "console-token")
+        self.assertEqual(self.state["evidence"]["remote_contract"]["allowed_principals"], ["emp-kim"])
+        self.assertEqual(self.events[-1]["scope"]["audience_principals"], ["emp-kim"])
+
+    async def test_selected_audience_is_checked_before_a_first_approval_is_recorded(self):
+        self.state = row(grade="important")  # 두 명이 필요한 등급: 첫 클릭이 대기를 기록하기 전에 사용 대상을 거른다
+        preview = await self.preview()
+        for users, expected in (([], "한 명 이상"), (["ghost"], "활성 계정이 아닌")):
+            with patch.object(service.db, "fetch_all", AsyncMock(return_value=[])), self.assertRaises(service.HTTPException) as raised:
+                await service.approve_and_register(REQUEST_ID, self.approval(preview, audience="selected", audience_users=users),
+                                                   self.admin, "console-token")
+            self.assertEqual(raised.exception.status_code, 422)
+            self.assertIn(expected, raised.exception.detail)
+        self.assertNotIn("one_click_pending", self.state["evidence"])
+        self.assertEqual(self.registered, [])
+
     async def test_repository_one_approval_publishes_and_registers(self):
         self.state = row("repository")
         preview = await self.preview()
