@@ -157,6 +157,8 @@ class PolicySync(unittest.IsolatedAsyncioTestCase):
         self.usable = ["git"]  # docs revoked, or its upstream went to ERROR: git must keep working
         self.assertIsNone(await self.failure(installed["control_hash"], "git"))
         self.assertEqual(await self.failure(installed["control_hash"], "docs"), GONE)
+        # The header helper mints a new token in this window; refusing it dropped every server of the harness (S4-08).
+        self.assertIsNone(await self.failure(installed["control_hash"], mint=True))
         self.assertTrue((await self.beat(installed["policy_hash"], installed["configuration_hashes"]))["compliant"])
         self.assertEqual(self.device["managed_state"], "active")
 
