@@ -16,6 +16,9 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import decisions_layout  # noqa: E402  결정 기록이 단일 파일이든 번호대 파일이든 읽는다
+
 ROOT = Path(__file__).resolve().parents[3]
 WIKI = "research/llm-wiki"
 SEP = " · "
@@ -66,7 +69,8 @@ KEEP_PREFIX = (f"{WIKI}/sheet/seed/",)
 # 시점 보존 문서: 당시 ID를 그대로 적었으므로 정의 없는 참조·형식 위반으로 보지 않는다
 HISTORY = ("snapshot-before-", f"{WIKI}/status/history-", f"{WIKI}/status/reports/")
 # 절 제목이 곧 그 절의 소유 ID인 문서: 절 안의 다른 ID가 소유 ID의 관련 ID가 된다
-OWNED = {"docs/ai/DECISIONS.md": r"^## (D-\d+)\b", f"{WIKI}/threats/policies-50.md": r"^## (POL-\d{2})\b"}
+DECISION_PATHS = decisions_layout.repo_paths()
+OWNED = {**{p: r"^## (D-\d+)\b" for p in DECISION_PATHS}, f"{WIKI}/threats/policies-50.md": r"^## (POL-\d{2})\b"}
 
 
 def norm(fam, ident):
@@ -128,8 +132,9 @@ def collect_defs(read):
             if m:
                 yield m, n
 
-    for m, n in headings("docs/ai/DECISIONS.md", r"## (D-\d+)\s+(.+)$"):
-        add("D", m[1], m[2], "docs/ai/DECISIONS.md", n)
+    for decision_path in DECISION_PATHS:
+        for m, n in headings(decision_path, r"## (D-\d+)\s+(.+)$"):
+            add("D", m[1], m[2], decision_path, n)
     backlog = f"{WIKI}/status/backlog.md"
     for n, line in lines(backlog):
         m = re.match(r"\| ([A-Z]+)-(\d+) \| ([^|]*)\|", line)
@@ -228,7 +233,7 @@ def analyze(defs, texts):
         owner = None
         for n, line in enumerate(text.splitlines(), 1):
             if owner_rx and (m := owner_rx.match(line)):
-                owner = norm("D" if path.endswith("DECISIONS.md") else "POL", m[1])
+                owner = norm("D" if path in DECISION_PATHS else "POL", m[1])
             found = find_ids(line)
             for m in NEAR.finditer(line):
                 fams = [f for f, rx in STRICT.items() if rx.fullmatch(m[1])]

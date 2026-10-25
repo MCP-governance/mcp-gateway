@@ -2,13 +2,9 @@
 
 MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증거를 연결하는 Markdown·JSON 정본입니다. Claude Code와 Codex가 같은 자료를 읽고 갱신합니다. 제품 설계의 정본은 [docs/ai](../../docs/ai/README.md)입니다.
 
-## 지금 상태 (2026-10-23)
+## 처음 오셨다면
 
-- **수치**: WBS 57개 작업의 단계 가중 진척 63.3%, 최종 검수 완료 0개. 「구현 완료(검수 전)」는 검수 끝이 아니다.
-- **되는 것**(main 병합·기기 배포·실제 호출 기록 있음): 직원 PC 키트 Linux·Windows 설치→활성화, Linux에서 Claude 하네스로 승인 MCP 호출, 로컬 MCP 원클릭 승인, 회원가입, LiteLLM 애드온(판정 API 배포까지).
-- **안 되는 것·미확인**: macOS 키트 실설치, Windows·Codex 하네스 모델 호출, MINT↔LiteLLM 실제 연동 시험, 실제 PostgreSQL 경합 일부, 같은 사용자 프로세스의 로컬 수신 지점 접근(DEV-81 열림).
-- **진행 중**: Windows 직원 단독 원클릭(W11), LiteLLM 승인·철회 동기화(선택 애드온 미커밋 구현·로컬 대역21 통과, 실제 LiteLLM·PostgreSQL·PJ1 검증 전).
-- **어디서 확인하나**: 상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이고, 근거와 한계는 [현황](status/current.md)에 한 쪽으로 정리했다.
+[START_HERE](START_HERE.md)가 읽는 순서의 정본이다(규칙 → 현황 → 내 작업의 결정·보고서, 하려는 일별 경로, 진행 중인 세션, 정본 지도). 지금 상태는 [현황](status/current.md), 열린 일은 [백로그](status/backlog.md), 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이다. 수치와 「되는 것·안 되는 것」은 현황에만 쓴다.
 
 ## 주제별 입구
 
@@ -16,6 +12,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | --- | --- |
 | 지금 무엇이 되고 안 되는가 | [현황](status/current.md), [이력 목차](status/history/README.md) |
 | 해야 할 일·완료 조건 | [백로그](status/backlog.md), 시트 「백로그」 탭 |
+| 작업 ID·결정 번호로 근거 찾기 | `tools/lookup.py ID`, [보고서 색인](status/reports/README.md), [결정 색인](status/decisions-index.md) |
 | 시트 탭과 ID 연결 | [시트 안내](sheet/README.md), [ID 추적 규칙](trace/README.md) |
 | 구조와 코드 호출 경로 | [아키텍처 구조도](../../docs/ai/architecture/README.md), [호출 경로](analysis/README-code.md) |
 | 정책·위협·규제 근거 | [위협·정책](threats/README.md), [컴플라이언스 근거](analysis/compliance/README.md) |
@@ -24,13 +21,6 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 | 논문·명세·보안 문서 | [논문 목록](papers/README.md), [작업별 읽기 지도](papers/development-reading-guide.md) |
 | 에이전트 작업 규칙·보고 양식 | [AGENTS](AGENTS.md), [보고 양식](templates/work-report.md) |
 | 개발 협업 화면 | [협업 콘솔](../collaboration-console/README.md) |
-
-## 이어서 작업하려면
-
-1. 위 「지금 상태」와 [현황](status/current.md)을 읽는다(5분).
-2. [백로그](status/backlog.md)에서 작업 ID와 완료 조건을 고른다. 번호는 [`check_trace.py --next`](trace/README.md)로만 받는다.
-3. 근거·반례·시험 조건은 [검토 결과](analysis/review-2026-10-15/README.md)와 [Claude 다음 작업 안내](analysis/review-2026-10-15/claude-next-work.md)에서 읽는다.
-4. 작업이 끝나면 보고서를 쓰고, 상태·담당은 시트에 반영한다. 시트가 저장소보다 늦을 수 있으니 의심되면 시트 「요약」 탭의 행 수와 [내보내기 안내](sheet/README.md)를 대조한다.
 
 ## 전체 자료 지도 (상세)
 
@@ -55,7 +45,7 @@ MINT의 요구사항, 정책, 코드 분석, 공식 레퍼런스와 실행 증�
 
 ## 수치와 증거를 읽는 기준
 
-현재 WBS는 57개 작업이며 63.3%는 구현·회귀·배포·실제환경·검수 다섯 단계의 가중 평균입니다(정본은 시트 「WBS」 탭, 첫 점수 산정은 [2026-10-15 WBS](analysis/development-wbs/README.md)). 구현 완료 56개와 최종 검수 완료 0개는 다른 값입니다. 문서 통합이나 레퍼런스 수 증가로 점수를 올리지 않습니다.
+WBS 진척률은 구현·회귀·배포·실제환경·검수 다섯 단계의 가중 평균이며 값과 기준일은 [현황](status/current.md)과 시트에 있다(첫 점수 산정은 [2026-10-15 WBS](analysis/development-wbs/README.md)). 구현 완료와 최종 검수 완료는 다른 값이다. 문서 통합이나 레퍼런스 수 증가로 점수를 올리지 않습니다.
 
 Drive 판본의 정책 50개는 기존 50개와 이름·본문의 공백 제거 대조에서 모두 같습니다. 서로 다른 원본 바이트와 출처는 보존하고 신규 정책 50개로 합산하지 않습니다. POL50, 독스용 PAC50, 원본 PAC24, 런타임 PAC15, G01~G10 검수40은 번호로 대응시키지 않습니다.
 
@@ -63,13 +53,11 @@ Drive 판본의 정책 50개는 기존 50개와 이름·본문의 공백 제거 
 
 ## 갱신과 검사
 
-관련 Markdown·JSON을 고치고 현황·백로그·작업 보고를 함께 갱신합니다. 코드를 바꾼 경우 해당 구조/매핑의 해시와 행을 검토합니다. 과거 시험 원본의 hash를 현재 코드로 덮어써 통과 결과를 재사용하지 않습니다.
+관련 Markdown·JSON을 고치고 현황·백로그·작업 보고를 함께 갱신합니다. 과거 시험 원본의 hash를 현재 코드로 덮어써 통과 결과를 재사용하지 않습니다. 코드·`docs/ai`를 바꾼 뒤에는 생성물을 한 번에 다시 만들고 검사합니다. 개별 도구가 필요하면 `refresh_generated.py`의 목록을 봅니다.
 
 ```bash
-python -B -X utf8 research/llm-wiki/tools/capture_status.py
-python -B -X utf8 research/llm-wiki/tools/build_wiki.py
-python -B -X utf8 research/llm-wiki/tools/check_wiki.py
-python -B -X utf8 research/llm-wiki/tools/check_enterprise_analysis.py
+python -B -X utf8 research/llm-wiki/tools/refresh_generated.py   # 재생성 + check_wiki·check_trace·check_enterprise_analysis
+python -B -X utf8 research/llm-wiki/tools/check_freshness.py     # 현황·백로그·색인이 낡았는지(경고)
 python -B -X utf8 research/llm-wiki/tools/check_policy_id_mapping.py
 ```
 

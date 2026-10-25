@@ -1,0 +1,256 @@
+# 결정 색인
+
+`split_decisions.py index`가 만든 생성 파일이다. 직접 고치지 않는다. 본문은 위치 칸의 파일에서 읽거나 `python research/llm-wiki/tools/split_decisions.py show D-번호`로 한 건만 출력한다.
+
+결정 222개 · 최대 번호 237 · 저장 형태: 단일 파일(docs/ai/DECISIONS.md)
+
+## 번호 1~50
+
+| 번호 | 결정 | 날짜 | 위치 |
+| --- | --- | --- | --- |
+| D-01 | 웹에서 MCP를 호출하지 않는다 | — | [DECISIONS.md:6](../../../docs/ai/DECISIONS.md) |
+| D-02 | 실제 MCP 서버 10종, 버전 고정 | — | [DECISIONS.md:13](../../../docs/ai/DECISIONS.md) |
+| D-03 | stdio 서버는 mcp-proxy `--stateless`, 서버 venv의 SDK는 1.x로 고정 | — | [DECISIONS.md:21](../../../docs/ai/DECISIONS.md) |
+| D-04 | Gateway는 SDK 2.2.0 저수준 Server, 도구 이름은 `<server>__<tool>` | — | [DECISIONS.md:29](../../../docs/ai/DECISIONS.md) |
+| D-05 | 레지스트리는 데이터, 계약은 커밋된 잠금 파일 (TOFU 금지) | — | [DECISIONS.md:35](../../../docs/ai/DECISIONS.md) |
+| D-06 | 정책은 도구가 아니라 자원을 본다, 모르는 자원은 important | — | [DECISIONS.md:43](../../../docs/ai/DECISIONS.md) |
+| D-07 | LiteLLM → Ollama는 `openai/` 경로 | — | [DECISIONS.md:49](../../../docs/ai/DECISIONS.md) |
+| D-08 | 파생 모델 `bob-assistant` (qwen2.5:1.5b, num_thread 6) | — | [DECISIONS.md:54](../../../docs/ai/DECISIONS.md) |
+| D-09 | 작은 모델을 위한 도구 표현 | — | [DECISIONS.md:59](../../../docs/ai/DECISIONS.md) |
+| D-10 | IdP는 agent-service 안의 OAuth 2.0, Gateway는 RFC 9728 + 401 챌린지 | — | [DECISIONS.md:65](../../../docs/ai/DECISIONS.md) |
+| D-11 | 종료 판정의 분석 단위는 이용 관계, 차단이 먼저 | — | [DECISIONS.md:72](../../../docs/ai/DECISIONS.md) |
+| D-12 | 종료 확인 프로브는 "이용"이 아니다 | — | [DECISIONS.md:79](../../../docs/ai/DECISIONS.md) |
+| D-13 | MCP 서비스마다 hostname 고정 | — | [DECISIONS.md:85](../../../docs/ai/DECISIONS.md) |
+| D-14 | 호스트 포트는 설정값, 기본은 loopback | — | [DECISIONS.md:90](../../../docs/ai/DECISIONS.md) |
+| D-15 | Console은 빌드 없는 바닐라 ES 모듈 | — | [DECISIONS.md:95](../../../docs/ai/DECISIONS.md) |
+| D-16 | Gateway 읽기 API도 토큰 필요 | — | [DECISIONS.md:101](../../../docs/ai/DECISIONS.md) |
+| D-17 | 승인형 예외는 부여된 승인으로 충족된다 | — | [DECISIONS.md:108](../../../docs/ai/DECISIONS.md) |
+| D-18 | 실습 복원은 하위 자격을 되살리지 않는다 | — | [DECISIONS.md:113](../../../docs/ai/DECISIONS.md) |
+| D-19 | 관찰(monitor) 모드 | — | [DECISIONS.md:118](../../../docs/ai/DECISIONS.md) |
+| D-20 | ~~Presidio는 OPA와 같은 `policy` 망~~ — D-24로 대체 | — | [DECISIONS.md:125](../../../docs/ai/DECISIONS.md) |
+| D-21 | PDF 통합 필드는 감사 체인 v6 | — | [DECISIONS.md:134](../../../docs/ai/DECISIONS.md) |
+| D-22 | 열람→반출 연쇄는 검증된 주체 단위 | — | [DECISIONS.md:139](../../../docs/ai/DECISIONS.md) |
+| D-23 | Presidio 엔터티 허용 목록과 이메일 예외 | — | [DECISIONS.md:146](../../../docs/ai/DECISIONS.md) |
+| D-24 | 망마다 명시 서브넷, Presidio는 전용 `privacy` 망 (origin/main a14fe13 통합) | — | [DECISIONS.md:154](../../../docs/ai/DECISIONS.md) |
+| D-25 | 권한 허용은 배포 데이터 번들, 배포 정책의 식별은 네 파일 묶음 (origin/main a14fe13 통합) | — | [DECISIONS.md:165](../../../docs/ai/DECISIONS.md) |
+| D-26 | 원격 MCP의 종료 조건은 신청자가 아니라 플랫폼이 증거로 검증 (origin/main a14fe13 통합) | — | [DECISIONS.md:176](../../../docs/ai/DECISIONS.md) |
+| D-27 | 승인된 호출의 최종 상태는 실행 사실을 그대로 (docs/architecture/proposals 반영) | — | [DECISIONS.md:186](../../../docs/ai/DECISIONS.md) |
+| D-28 | 활동 로그 상태는 DOM 없는 모듈로 (정원재 0c1736d 통합) | — | [DECISIONS.md:193](../../../docs/ai/DECISIONS.md) |
+| D-29 | 단말 에이전트는 저장소 루트 `endpoint-agent/` 하나 (origin/main ae7ec85 통합) | — | [DECISIONS.md:202](../../../docs/ai/DECISIONS.md) |
+| D-30 | 직원 PC는 실제 하네스, 관리형 설정은 레지스트리에서, Gateway는 서버별 엔드포인트 (v3) | — | [DECISIONS.md:208](../../../docs/ai/DECISIONS.md) |
+| D-31 | LLM 게이트웨이가 하네스별 API를 번역, 스크립트 모드는 MCP Inspector CLI (v3) | — | [DECISIONS.md:224](../../../docs/ai/DECISIONS.md) |
+| D-32 | 메모리 예산: Presidio 소형 spaCy, 모델 하나, 기본 2B (v3) | — | [DECISIONS.md:239](../../../docs/ai/DECISIONS.md) |
+| D-33 | Console v3: 페이지 내 탭, 차트 우선, 설명 없는 화면 (v3) | — | [DECISIONS.md:249](../../../docs/ai/DECISIONS.md) |
+| D-34 | 하네스 안의 도구 승인은 IT의 사전 승인, 판정은 Gateway (v3) | — | [DECISIONS.md:263](../../../docs/ai/DECISIONS.md) |
+| D-35 | 협력사에게 숨긴 도구는 시나리오가 아니라 acceptance가 확인 (v3) | — | [DECISIONS.md:273](../../../docs/ai/DECISIONS.md) |
+| D-39 | 이용 관계의 허용 자원을 평상시 호출에도 적용 — `P-SCOPE-001` 경보 (v3.1) | — | [DECISIONS.md:281](../../../docs/ai/DECISIONS.md) |
+| D-40 | 연결 확인을 계약 재검증과 분리 — `POST /api/registry/{server}/check` (v3.1) | — | [DECISIONS.md:294](../../../docs/ai/DECISIONS.md) |
+| D-41 | 순수 계약 모듈 `contract.py` (v3.1) | — | [DECISIONS.md:302](../../../docs/ai/DECISIONS.md) |
+| D-42 | 실기기 배치는 오버레이 하나와 직원 PC 키트로 (v3.1) | — | [DECISIONS.md:309](../../../docs/ai/DECISIONS.md) |
+| D-43 | 사내망 TLS 앞단은 Caddy `tls internal` 하나만 게시 (v3.1) | — | [DECISIONS.md:330](../../../docs/ai/DECISIONS.md) |
+| D-44 | 실기기 기본은 하네스 벤더 로그인, 회사 LLM 게이트웨이는 열지 않음 (v3.1) | — | [DECISIONS.md:349](../../../docs/ai/DECISIONS.md) |
+| D-45 | 도입 신청 자동 검증·종료조건 조사·신청별 보고서 | — | [DECISIONS.md:359](../../../docs/ai/DECISIONS.md) |
+| D-46 | 실기기 간편 배치는 Tailscale IP에만 게시 | — | [DECISIONS.md:367](../../../docs/ai/DECISIONS.md) |
+| D-47 | A.I.G 코드 감사는 field 기본으로 초경량 로컬 모델 — `qwen3.5:0.8b` | — | [DECISIONS.md:373](../../../docs/ai/DECISIONS.md) |
+| D-48 | 내부 Gitea의 신원은 솔루션 계정 — Caddy `forward_auth` + Gitea 역방향 프록시 인증 | — | [DECISIONS.md:394](../../../docs/ai/DECISIONS.md) |
+| D-49 | 승인한 서버를 Console에서 Gateway에 등록 — 계약 고정과 사용 기한 | — | [DECISIONS.md:413](../../../docs/ai/DECISIONS.md) |
+| D-50 | 종료 조건은 플랫폼이 결론을 낸다 — 규칙 + TypeSafe Jev, A.I.G 모델은 OpenRouter 선택 | — | [DECISIONS.md:434](../../../docs/ai/DECISIONS.md) |
+
+## 번호 51~100
+
+| 번호 | 결정 | 날짜 | 위치 |
+| --- | --- | --- | --- |
+| D-51 | 하네스가 기본으로 붙이는 커넥터는 섀도가 아니라 승인 대상 — 키트 보고 · 관리자 결정 · 하네스 스스로 끄기 | — | [DECISIONS.md:462](../../../docs/ai/DECISIONS.md) |
+| D-52 | 도구 설명의 숨은 지시(tool poisoning)는 등록 때 한 번 더 본다 | — | [DECISIONS.md:494](../../../docs/ai/DECISIONS.md) |
+| D-53 | Gateway 통제 범위를 한정하고 native 정책·집행 증거를 분리 | — | [DECISIONS.md:507](../../../docs/ai/DECISIONS.md) |
+| D-54 | 우회 표기를 판정의 근거로 삼지 않는다 — 주소·SQL·지시문·상한 | — | [DECISIONS.md:514](../../../docs/ai/DECISIONS.md) |
+| D-55 | — 클린 배포와 독립 효과 검증, 원격 자격의 최소 경계 (2026-09-30) | 2026-09-30 | [DECISIONS.md:549](../../../docs/ai/DECISIONS.md) |
+| D-56 | 판정의 기준을 손으로 쓴 목록이 아니라 원천에서 가져온다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:572](../../../docs/ai/DECISIONS.md) |
+| D-57 | 원격 도입도 실제 신청과 독립 승인에 묶는다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:605](../../../docs/ai/DECISIONS.md) |
+| D-58 | 운영 UI는 판정과 실행을 구분하고 가입은 1회용 조직 초대로 줄인다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:621](../../../docs/ai/DECISIONS.md) |
+| D-59 | fa70b95 검수: 연결 거부는 호출이 아니고, 신청 없는 등록은 실행되지 않는다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:631](../../../docs/ai/DECISIONS.md) |
+| D-60 | 팀원 공격 수정 PAC15를 실행 인가로 통합 (2026-10-01) | 2026-10-01 | [DECISIONS.md:669](../../../docs/ai/DECISIONS.md) |
+| D-61 | 가입을 관리형 단말 연결의 시작점으로 (2026-10-01) | 2026-10-01 | [DECISIONS.md:690](../../../docs/ai/DECISIONS.md) |
+| D-62 | 강제한 주체와 관찰한 주체를 나누고, 응답 보류를 실행 여부와 같이 기록한다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:715](../../../docs/ai/DECISIONS.md) |
+| D-63 | 통제 상태를 증거와 짝으로 표시하고 호출의 다섯 단계를 나눈다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:750](../../../docs/ai/DECISIONS.md) |
+| D-64 | Console 전체를 목록 중심으로 재구성하고 상세는 native modal로 표시한다 (2026-10-01) | 2026-10-01 | [DECISIONS.md:778](../../../docs/ai/DECISIONS.md) |
+| D-65 | 조직 로그인과 Secret 검사를 오픈소스에 맡기고 감사 API를 화면에 연결한다 (2026-10-03) | 2026-10-03 | [DECISIONS.md:792](../../../docs/ai/DECISIONS.md) |
+| D-66 | Console을 판매 가능한 제품 화면으로 정리하고 쓰지 않는 기능을 걷어낸다 (2026-10-03) | 2026-10-03 | [DECISIONS.md:808](../../../docs/ai/DECISIONS.md) |
+| D-67 | 관리형 계정의 모델 API는 솔루션 기기의 승인 프록시로만 연다 (2026-10-03) | 2026-10-03 | [DECISIONS.md:821](../../../docs/ai/DECISIONS.md) |
+| D-68 | Windows 관리형 설치기 (2026-10-03) | 2026-10-03 | [DECISIONS.md:846](../../../docs/ai/DECISIONS.md) |
+| D-69 | 계약 차단은 클라이언트가 닿는 도구로 판정한다 (2026-10-04) | 2026-10-04 | [DECISIONS.md:860](../../../docs/ai/DECISIONS.md) |
+| D-70 | 승인 근거가 그대로면 사용 기한을 자동 연장한다 (2026-10-04) | 2026-10-04 | [DECISIONS.md:873](../../../docs/ai/DECISIONS.md) |
+| D-71 | 엔드포인트 연결은 설치 파일 하나와 권한 확인 한 번으로 끝낸다 (2026-10-04) | 2026-10-04 | [DECISIONS.md:883](../../../docs/ai/DECISIONS.md) |
+| D-72 | 관리자 계정의 터미널에서 친 명령도 관리 계정으로 간다 (2026-10-05) | 2026-10-05 | [DECISIONS.md:901](../../../docs/ai/DECISIONS.md) |
+| D-73 | 도구 계약의 숨김 기법과 정보 전달용 인자도 등록 때 본다 (2026-10-05) | 2026-10-05 | [DECISIONS.md:920](../../../docs/ai/DECISIONS.md) |
+| D-74 | 새 MCP 규격(2026-07-28)과는 코드 변경 없이 맞는다 — 두 세대를 시험으로 고정한다 (2026-10-05) | 2026-07-28 | [DECISIONS.md:942](../../../docs/ai/DECISIONS.md) |
+| D-75 | 도구 텍스트 검사는 길이에 선형이어야 한다 — 정규식 서비스 거부 3곳을 고쳤다 (2026-10-05) | 2026-10-05 | [DECISIONS.md:962](../../../docs/ai/DECISIONS.md) |
+| D-76 | 개발 협업 기록과 제품 자원 지표를 분리하고 재현된 경계 결함을 수정한다 (2026-10-13) | 2026-10-13 | [DECISIONS.md:978](../../../docs/ai/DECISIONS.md) |
+| D-77 | 로컬 앱의 MCP·bridge·OS 권한과 점검 증거를 분리한다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:988](../../../docs/ai/DECISIONS.md) |
+| D-78 | 상태 전이와 감사기록은 함께 commit하며 시험 DB 초기화는 제품 DB와 분리한다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:999](../../../docs/ai/DECISIONS.md) |
+| D-79 | 시험 대상 MCP를 에이전트가 승인하지 않는다 — 자가 승인 시험은 무효이며, 호출별 세션은 유지한다 (2026-10-14, 세션 부분은 D-115로 개정) | 2026-10-14 | [DECISIONS.md:1007](../../../docs/ai/DECISIONS.md) |
+| D-80 | 비인가 로컬 MCP는 겹친 계층이 막지만, 통제 밖 계정은 비가시이고 정상 사용 거부가 잡음이며 헬퍼 토큰이 Bash에 닿는다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:1015](../../../docs/ai/DECISIONS.md) |
+| D-81 | PJ1 Ghidra의 로컬 SDK·수동 관측·OS 자동 전송·Gateway 원장을 구분한다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:1024](../../../docs/ai/DECISIONS.md) |
+| D-82 | 로그 채널별 전달·수집 상태와 검수 WBS를 분리한다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:1032](../../../docs/ai/DECISIONS.md) |
+| D-83 | 완전성·관측 source·수집 상태는 별도 계약이며 Linux 주기 전달을 검증한다 (2026-10-14) | 2026-10-14 | [DECISIONS.md:1040](../../../docs/ai/DECISIONS.md) |
+| D-84 | 검사 엔진을 프로세스 안의 네이티브 코드로 옮기되 판정은 원래 엔진과 같아야 한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1051](../../../docs/ai/DECISIONS.md) |
+| D-85 | 엔드포인트 목록은 반환 창과 전체 건수를 분리하고 커서로 넘긴다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1059](../../../docs/ai/DECISIONS.md) |
+| D-86 | 저장 레코드는 에이전트 해시와 서버 재계산 해시, 변환 이름, 수집기를 함께 남긴다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1065](../../../docs/ai/DECISIONS.md) |
+| D-87 | 수집 출처를 라벨로 남기고 재전송을 줄이며 연관 기록은 합치지 않는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1071](../../../docs/ai/DECISIONS.md) |
+| D-88 | 엔드포인트→게이트웨이 망 품질은 설정된 Gateway 주소에 대한 프로브 요약이다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1077](../../../docs/ai/DECISIONS.md) |
+| D-89 | OS 거부는 프로세스 정보와 분류를 갖고, 통제 밖 계정은 그렇게 표시한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1083](../../../docs/ai/DECISIONS.md) |
+| D-90 | 도입 승인마다 출처·고정 버전·라이선스·배포 파일 해시를 남기고, 검사가 비었거나 낡았으면 보류한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1089](../../../docs/ai/DECISIONS.md) |
+| D-91 | Console 등록은 도구마다 사람이 승인한 범위가 있어야 하고, 없는 도구는 목록에서도 호출에서도 빠진다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1096](../../../docs/ai/DECISIONS.md) |
+| D-92 | 신청자는 자기 신청을 승인할 수 없고, 모든 승인은 되돌릴 수 없는 기록으로 남으며, 무효 행은 주석으로 표시한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1101](../../../docs/ai/DECISIONS.md) |
+| D-93 | 만료·철회·계약 변경은 모두 재승인이고, 하네스 설정은 사람이 볼 수 있는 서버만 담는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1107](../../../docs/ai/DECISIONS.md) |
+| D-94 | PAC-05 위임 실행은 "지원 안 함"을 명시하고, 위임을 주장하는 호출은 전용 정책으로 거부한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1113](../../../docs/ai/DECISIONS.md) |
+| D-95 | 도구 호출의 구간별 처리 시간을 판정과 함께 남기고 콘솔에 보인다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1117](../../../docs/ai/DECISIONS.md) |
+| D-96 | 보내기 직전의 전송 의도를 같은 DB에 먼저 적고, 답이 없는 호출은 자동 재시도하지 않는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1124](../../../docs/ai/DECISIONS.md) |
+| D-97 | 차단 시각은 DB가 정하고, 전송 경계가 그 시각을 넘는 호출을 막으며, 따뜻한 연결을 닫는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1130](../../../docs/ai/DECISIONS.md) |
+| D-98 | 제공자 측 폐기는 보호 자원이 이전 토큰을 거부하는지로 본다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1136](../../../docs/ai/DECISIONS.md) |
+| D-99 | 토큰 폐기의 범위와 자격 제거의 범위를 정한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1142](../../../docs/ai/DECISIONS.md) |
+| D-100 | 텍스트 검사 규칙은 공개 코퍼스로 재고, 정상 결과를 막는 오탐을 먼저 없앤다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1147](../../../docs/ai/DECISIONS.md) |
+
+## 번호 101~150
+
+| 번호 | 결정 | 날짜 | 위치 |
+| --- | --- | --- | --- |
+| D-101 | 결과·인자에서는 보이지 않는 문자를 가려 읽고, 인코딩은 풀어서 한 번 더 읽는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1157](../../../docs/ai/DECISIONS.md) |
+| D-102 | 한국어 식별자는 한국어로 쓰인 그대로 가려야 한다 — 단어 경계 대신 "라틴 문자·숫자가 아님" (2026-10-15) | 2026-10-15 | [DECISIONS.md:1164](../../../docs/ai/DECISIONS.md) |
+| D-103 | 협업 콘솔은 실행마다 요청·응답 모델과 실패 종류를 CLI 출력에서만 채운다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1171](../../../docs/ai/DECISIONS.md) |
+| D-104 | 관리 하네스의 bash는 헬퍼 권한이 없는 도구 프로필에서 실행한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1178](../../../docs/ai/DECISIONS.md) |
+| D-105 | 재설치 때 하네스의 "로그인 필요" 표시를 지운다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1184](../../../docs/ai/DECISIONS.md) |
+| D-106 | 관리자 Console 세션은 서버에서 유휴와 절대 만료를 함께 강제한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1189](../../../docs/ai/DECISIONS.md) |
+| D-107 | 직원 계정 런처는 관리 계정의 진입 래퍼를 절대 경로로 부른다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1196](../../../docs/ai/DECISIONS.md) |
+| D-108 | 소스 신청 등록의 사용 범위는 솔루션이 정한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1202](../../../docs/ai/DECISIONS.md) |
+| D-109 | 객체가 아닌 structuredContent는 빼고 text로 전달한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1209](../../../docs/ai/DECISIONS.md) |
+| D-110 | 업스트림 연결은 승인한 계약의 프로토콜 판으로 연다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1235](../../../docs/ai/DECISIONS.md) |
+| D-111 | 심사한 목적지가 없으면 주소 인자를 받지 않는다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1241](../../../docs/ai/DECISIONS.md) |
+| D-112 | 관리 하네스는 관리 설정의 훅만 실행한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1247](../../../docs/ai/DECISIONS.md) |
+| D-113 | 루프백 거부는 응답과 시도를 나눠 기록하고, Codex 로그인은 장치 코드로 안내한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1253](../../../docs/ai/DECISIONS.md) |
+| D-114 | 승인한 소스 MCP는 솔루션의 실행기가 빌드·실행한다 (2026-10-15) | 2026-10-15 | [DECISIONS.md:1258](../../../docs/ai/DECISIONS.md) |
+| D-115 | 구형 업스트림 MCP 세션은 주체·다운스트림 대화에 결속해 재사용한다 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1267](../../../docs/ai/DECISIONS.md) |
+| D-116 | 연결 직전 DNS 전체 응답 검사와 숫자 IP 접속 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1281](../../../docs/ai/DECISIONS.md) |
+| D-117 | 오류의 Secret 검사와 진단문 전체 가림 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1290](../../../docs/ai/DECISIONS.md) |
+| D-118 | Windows 키트는 포함 Python·설치 마법사·트레이로 제공한다 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1297](../../../docs/ai/DECISIONS.md) |
+| D-119 | 관리 계정 루프백은 소유자 시작 연결의 응답만 허용하고 Codex는 장치 코드로 로그인한다 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1339](../../../docs/ai/DECISIONS.md) |
+| D-120 | 운영 이미지 재검사와 기한 초과 격리 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1347](../../../docs/ai/DECISIONS.md) |
+| D-121 | 정책 해시별 합성 경보 자체 시험 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1353](../../../docs/ai/DECISIONS.md) |
+| D-122 | 탐지 후 서버 전체 자동 중지와 사람 승인 복귀 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1361](../../../docs/ai/DECISIONS.md) |
+| D-123 | 서명 폐기 목록으로 DB 복원 후 재차단 (2026-10-17) | 2026-10-17 | [DECISIONS.md:1369](../../../docs/ai/DECISIONS.md) |
+| D-124 | 현장 하네스 연결은 배치 사설 CA의 HTTPS만 사용한다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1375](../../../docs/ai/DECISIONS.md) |
+| D-125 | 단일 조회의 범위와 반환 건수·크기를 제한한다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1383](../../../docs/ai/DECISIONS.md) |
+| D-126 | 완료된 변경 호출의 지문으로 재전송을 차단한다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1391](../../../docs/ai/DECISIONS.md) |
+| D-127 | 계약 변경 영향은 도구별로 제한한다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1398](../../../docs/ai/DECISIONS.md) |
+| D-128 | SIEM은 감사 참조 큐에서 OCSF JSON을 전달한다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1406](../../../docs/ai/DECISIONS.md) |
+| D-129 | 브라우저 콘솔은 Tailscale IP의 HTTP 8000번, 하네스·키트는 HTTPS 443 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1414](../../../docs/ai/DECISIONS.md) |
+| D-130 | 협업 WBS는 게시 시트 값을 저장소 근거 위에 덮어쓴다 (2026-10-18) | 2026-10-18 | [DECISIONS.md:1421](../../../docs/ai/DECISIONS.md) |
+| D-131 | 도구별 허용 입력 항목과 입력 마스킹은 도구 심사에 붙인다 (2026-10-18, POL-31·G04.06) | 2026-10-18 | [DECISIONS.md:1428](../../../docs/ai/DECISIONS.md) |
+| D-132 | 외부 전송은 심사한 목적·목적지·등급 쌍에 결속한다 (2026-10-18, POL-26·G04.05) | 2026-10-18 | [DECISIONS.md:1436](../../../docs/ai/DECISIONS.md) |
+| D-133 | 서버 간 중요정보 전달은 받는 도구가 심사받은 경우만 허용한다 (2026-10-18, POL-33·G04.07) | 2026-10-18 | [DECISIONS.md:1444](../../../docs/ai/DECISIONS.md) |
+| D-134 | 데이터·기능 단위 사용자 동의는 콘솔에서 받는다 (2026-10-18, POL-08·G02.05) | 2026-10-18 | [DECISIONS.md:1452](../../../docs/ai/DECISIONS.md) |
+| D-135 | 통제 효과는 같은 정책 입력을 적용 전후 번들에 보내 6개 잠정 지표로 비교한다 (2026-10-18, G10.05) | 2026-10-18 | [DECISIONS.md:1460](../../../docs/ai/DECISIONS.md) |
+| D-136 | 호출 결과는 연결·정책 판정·도구 업무·독립 효과로 분리한다 (2026-10-20, DEV-48) | 2026-10-20 | [DECISIONS.md:1466](../../../docs/ai/DECISIONS.md) |
+| D-137 | 도입 서버 공급자 보증을 승인에 묶고 EOL은 승인 만료로 연결한다 (2026-10-20, DEV-68) | 2026-10-20 | [DECISIONS.md:1476](../../../docs/ai/DECISIONS.md) |
+| D-138 | 서버 처리·저장 위치와 조직 국외 이전 규칙 팩 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1484](../../../docs/ai/DECISIONS.md) |
+| D-139 | 중대 영향 호출은 설명 열람을 결속한 독립 개별 승인으로만 실행한다 (2026-10-20, DEV-70) | 2026-10-20 | [DECISIONS.md:1499](../../../docs/ai/DECISIONS.md) |
+| D-140 | 최종 intent에서 계정·동의·흐름 출처를 같은 잠금 아래 다시 확인한다 (2026-10-20, DEV-43) | 2026-10-20 | [DECISIONS.md:1592](../../../docs/ai/DECISIONS.md) |
+| D-141 | 원장 보존은 관할 하한을 강제하고, 만료 구간은 DB 밖 서명 봉인에서 사슬을 잇는다 — 행 삭제는 보류 (2026-10-20, DEV-67·POL-38·48·49) | 2026-10-20 | [DECISIONS.md:1512](../../../docs/ai/DECISIONS.md) |
+| D-142 | 서버 간 중요정보 전달의 내용 지문 대조 — 기본(coarse)은 기록만, 좁힌 판정(content)은 운영자가 고른다 (2026-10-20, DEV-59·POL-33) | 2026-10-20 | [DECISIONS.md:1569](../../../docs/ai/DECISIONS.md) |
+| D-143 | 도입 신청의 위험 등급은 신청자가 적은 입력의 표 산정으로, 승인 방식은 등급이 정하고, 기존 승인 서버는 30일 유예 뒤 재승인 대기로 한다 (2026-10-20, DEV-71) | 2026-10-20 | [DECISIONS.md:1520](../../../docs/ai/DECISIONS.md) |
+| D-144 | 사고 증빙은 동일 원장 스냅샷으로 만들고 관할 팩의 단계별 기한을 추적한다 (2026-10-20, DEV-66) | 2026-10-20 | [DECISIONS.md:1529](../../../docs/ai/DECISIONS.md) |
+| D-145 | MCP 요청·게이트웨이 판정·엔드포인트 이벤트 상관 조회 (2026-10-20, G06.01) | 2026-10-20 | [DECISIONS.md:1547](../../../docs/ai/DECISIONS.md) |
+| D-146 | MCP 세션을 서버·주체·엔드포인트 종료와 결속해 재접근을 막는다 (2026-10-20, G07.02) | 2026-10-20 | [DECISIONS.md:1554](../../../docs/ai/DECISIONS.md) |
+| D-147 | 하네스가 셸로 시작하는 명령 표면은 공식 관리 키로만 잠그고, 잠글 수 없는 것은 엔드포인트 경계와 한계로 남긴다 (2026-10-20, DEV-49·DEV-42) | 2026-10-20 | [DECISIONS.md:1562](../../../docs/ai/DECISIONS.md) |
+| D-148 | 관리 계정 홈의 명령 헬퍼를 엔드포인트 준수 항목으로 검사한다 (2026-10-20, DEV-42) | 2026-10-20 | [DECISIONS.md:1601](../../../docs/ai/DECISIONS.md) |
+| D-149 | 도구 출력 스키마를 승인 잠금하고 협상 판본에 따라 결과를 보존한다 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1613](../../../docs/ai/DECISIONS.md) |
+| D-150 | Linux 관리 하네스의 설정 인자 파싱을 수정하고 Windows 런처 변경을 철회한다 (2026-10-20, DEV-42) | 2026-10-20 | [DECISIONS.md:1650](../../../docs/ai/DECISIONS.md) |
+
+## 번호 151~200
+
+| 번호 | 결정 | 날짜 | 위치 |
+| --- | --- | --- | --- |
+| D-151 | Windows 관리 계정 환경의 CODEX_HOME·CLAUDE_CONFIG_DIR를 준수 실패로 보고한다 (2026-10-20, DEV-42) | 2026-10-20 | [DECISIONS.md:1668](../../../docs/ai/DECISIONS.md) |
+| D-152 | 승인 실행 시 요청자 토큰 현재 유효성 재검증(구현) + 요청자 재시도 모델(미구현·결정 필요) (2026-10-20, DEV-17) | 2026-10-20 | [DECISIONS.md:1701](../../../docs/ai/DECISIONS.md) |
+| D-153 | MCP 인입은 audience·mcp scope·수명·서명을 검증하고 철회 토큰을 거부한다 (2026-10-20, DEV-05) | 2026-10-20 | [DECISIONS.md:1684](../../../docs/ai/DECISIONS.md) |
+| D-154 | 갱신 토큰 회전의 서명 폐기 기록은 커밋 뒤에 남긴다 (2026-10-20, DEV-16·DEV-63) | 2026-10-20 | [DECISIONS.md:1694](../../../docs/ai/DECISIONS.md) |
+| D-155 | 실행기 출구 프록시 사건을 호출의 보조 근거로 연결한다 (2026-10-20, DEV-20) | 2026-10-20 | [DECISIONS.md:1730](../../../docs/ai/DECISIONS.md) |
+| D-156 | 발급자 비활성과 자원 서버 재접근을 분리하고 토큰 대상의 수락 증거를 빠뜨리지 않는다 (2026-10-20, DEV-08) | 2026-10-20 | [DECISIONS.md:1739](../../../docs/ai/DECISIONS.md) |
+| D-157 | SIEM 전송 UID를 원장 행과 사슬 해시에 묶고 전송 시도는 로그로 남긴다 (2026-10-20, DEV-61) | 2026-10-20 | [DECISIONS.md:1746](../../../docs/ai/DECISIONS.md) |
+| D-158 | 계약 오염 정규화 후보와 held-out 평가 규율 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1753](../../../docs/ai/DECISIONS.md) |
+| D-159 | 관리형 Linux 토큰 헬퍼 캐시를 정상 heartbeat 주기 안에 유지한다 (2026-10-20, Codex luna) | 2026-10-20 | [DECISIONS.md:1761](../../../docs/ai/DECISIONS.md) |
+| D-161 | 결과 코퍼스의 응답 상한 보류와 BOM 파싱을 구분한다 (2026-10-20, Codex luna) | 2026-10-20 | [DECISIONS.md:1783](../../../docs/ai/DECISIONS.md) |
+| D-170 | 일반 사내 보안 체계가 막는 우회 경로는 조직 통제 의존으로 관용 처리한다 (2026-10-20, 소유자 결정) | 2026-10-20 | [DECISIONS.md:1768](../../../docs/ai/DECISIONS.md) |
+| D-172 | 오래된 보고 장치는 영구 격리하지 않는다 (2026-10-20, 소유자 결정) | 2026-10-20 | [DECISIONS.md:1776](../../../docs/ai/DECISIONS.md) |
+| D-173 | 국외 처리 심사를 등록별 현재 위치와 규칙에 결속한다 (2026-10-21, RM-03) | 2026-10-21 | [DECISIONS.md:1979](../../../docs/ai/DECISIONS.md) |
+| D-175 | 승인된 로컬 MCP는 게이트웨이를 거쳐 장치의 root 실행기가 격리 컨테이너로 실행한다 (2026-10-20, 설계 초안) | 2026-10-20 | [DECISIONS.md:1821](../../../docs/ai/DECISIONS.md) |
+| D-176 | 반복된 보안 정책 위반은 직원·서버 조합을 설정 기간 자동 중지한다 (2026-10-21, DEV-74) | 2026-10-21 | [DECISIONS.md:1860](../../../docs/ai/DECISIONS.md) |
+| D-177 | 미사용 도구는 원장 근거와 유예를 확인해 되돌릴 수 있게 비활성한다 (2026-10-21, DEV-75) | 2026-10-21 | [DECISIONS.md:1871](../../../docs/ai/DECISIONS.md) |
+| D-178 | 저장된 SBOM 요약으로 영향 세대를 찾고 서버 중지는 기존 운영 경로를 쓴다 (2026-10-21, DEV-76) | 2026-10-21 | [DECISIONS.md:1928](../../../docs/ai/DECISIONS.md) |
+| D-179 | 출처 증명은 신뢰 키로 검증하고 미제공만 통과시킨다 (2026-10-21, DEV-77) | 2026-10-21 | [DECISIONS.md:1890](../../../docs/ai/DECISIONS.md) |
+| D-180 | 실행기 이전 승인 판본으로 되돌릴 때 세대·계약을 함께 전환한다 (2026-10-21, DEV-78) | 2026-10-21 | [DECISIONS.md:1902](../../../docs/ai/DECISIONS.md) |
+| D-181 | 직원별 MCP 서버 이용 중지·재개는 계정을 두고 그 조합만 막는다 (2026-10-21, DEV-79) | 2026-10-21 | [DECISIONS.md:1880](../../../docs/ai/DECISIONS.md) |
+| D-182 | 관리형 엔드포인트 OS 관측은 제한된 디스크 버퍼로 재전송한다 (2026-10-21) | 2026-10-21 | [DECISIONS.md:1852](../../../docs/ai/DECISIONS.md) |
+| D-183 | 관리형 Linux 헤더 브로커를 AppArmor 신원에 결속하며 정상군 확인 전에는 경고 단계를 유지한다 (2026-10-21, DEV-81 F1) | 2026-10-21 | [DECISIONS.md:1911](../../../docs/ai/DECISIONS.md) |
+| D-184 | 도입 신청은 계약·범위 제안값을 읽고 한 번 승인한다 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1790](../../../docs/ai/DECISIONS.md) |
+| D-185 | 공급자 보증은 선택 정보로 받고 입력한 EOL 상한은 유지한다 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1798](../../../docs/ai/DECISIONS.md) |
+| D-186 | 처리 위치는 기본 선택이고 관할 팩을 켠 배치만 누락을 차단한다 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1805](../../../docs/ai/DECISIONS.md) |
+| D-187 | 위험 입력은 자동 제안하고 높은 등급은 두 사람이 승인한다 (2026-10-20) | 2026-10-20 | [DECISIONS.md:1812](../../../docs/ai/DECISIONS.md) |
+| D-188 | 한 사람이 운영하는 현장에서도 독립 승인 규칙을 유지한다 (2026-10-21, 재검토) | 2026-10-21 | [DECISIONS.md:1829](../../../docs/ai/DECISIONS.md) |
+| D-189 | 위험 등급의 승인 방식: 높음은 관리자 2명, 매우 높음은 관리자 2명과 위험 수용 사유 (2026-10-21) | 2026-10-21 | [DECISIONS.md:1841](../../../docs/ai/DECISIONS.md) |
+| D-191 | 외부 AI 게이트웨이(LiteLLM 등)는 업스트림 방식을 주력으로, 호출 직전 판정 API를 애드온으로 둔다 (2026-10-22) | 2026-10-22 | [DECISIONS.md:1948](../../../docs/ai/DECISIONS.md) |
+| D-192 | 로컬 MCP(PC 격리 실행)를 원클릭 승인 안에서 쓸 수 있게 한다 (2026-10-22) | 2026-10-22 | [DECISIONS.md:1959](../../../docs/ai/DECISIONS.md) |
+| D-193 | DEV-73 반려 판단 반영 재작업 (2026-10-21, D-175 둘째 정의에서 재번호 10-22) | 2026-10-21 | [DECISIONS.md:1936](../../../docs/ai/DECISIONS.md) |
+| D-194 | ID는 정의 정본 하나를 두고, 번호는 `--next`로만 받으며, CI가 정의·참조를 검사한다 (2026-10-22, WIKI-04) | 2026-10-22 | [DECISIONS.md:1969](../../../docs/ai/DECISIONS.md) |
+| D-195 | CI TLS fetch 시험 경로의 목적지를 egress 허용 목록에 둔다 (2026-10-22) | 2026-10-22 | [DECISIONS.md:1920](../../../docs/ai/DECISIONS.md) |
+| D-196 | macOS 키트는 기존 정책·브로커를 재사용하고 계정·pf·launchd만 어댑터로 연결한다 (2026-10-22, W5-KIT-MACOS) | 2026-10-22 | [DECISIONS.md:1987](../../../docs/ai/DECISIONS.md) |
+| D-197 | Windows 키트의 UAC 승인과 보호 설치기 준비를 한 파일에 묶는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2100](../../../docs/ai/DECISIONS.md) |
+| D-198 | 서버 추가만 있는 정책 변경은 장치가 가진 서버를 막지 않는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2005](../../../docs/ai/DECISIONS.md) |
+| D-199 | 원클릭 승인에서 관리자가 도구 분류를 제안값 이하로 낮출 수 있다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2029](../../../docs/ai/DECISIONS.md) |
+| D-200 | 로컬 MCP 이미지 준비 임대를 갱신하고 종료 진단을 전달한다 (2026-10-23, W14-LOCAL-RUNNER) | 2026-10-23 | [DECISIONS.md:2044](../../../docs/ai/DECISIONS.md) |
+
+## 번호 201~250
+
+| 번호 | 결정 | 날짜 | 위치 |
+| --- | --- | --- | --- |
+| D-201 | 서버별 동의 요청·일괄 결정과 도구별 감사 기록을 함께 유지한다 (2026-10-23, W15-CONSENT-UX) | 2026-10-23 | [DECISIONS.md:2051](../../../docs/ai/DECISIONS.md) |
+| D-202 | 출력 자격 증명 보류는 구조화된 `키=값`에만 적용하고 문서 속 예시는 문자열 단위로 가린다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2059](../../../docs/ai/DECISIONS.md) |
+| D-203 | 로컬 MCP 호출은 컨테이너를 한 번만 띄운다 — 호출의 initialize·tools/list는 승인 계약으로 답한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2070](../../../docs/ai/DECISIONS.md) |
+| D-204 | 인자 이름 `to`만으로 메일 수신자로 보지 않는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2082](../../../docs/ai/DECISIONS.md) |
+| D-205 | 엔드포인트 관찰기는 승인된 로컬 MCP 컨테이너의 프로세스를 미등록 MCP로 보고하지 않는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2092](../../../docs/ai/DECISIONS.md) |
+| D-206 | 공식 MCP의 PC 격리 실행 기본값을 승인 화면이 미리 채운다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2109](../../../docs/ai/DECISIONS.md) |
+| D-207 | 루트 전용 공식 이미지(git·time)는 기본값에서 빼고 상태만 보인다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2126](../../../docs/ai/DECISIONS.md) |
+| D-208 | LiteLLM 승인·철회를 선택 애드온으로 전파하고 재조회한 관리 상태를 사건 원장에 남긴다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2141](../../../docs/ai/DECISIONS.md) |
+| D-209 | 10-23 기능(D-199·D-201·D-206·D-207)을 일회용 스택 수용 시험에 항목으로 추가한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2150](../../../docs/ai/DECISIONS.md) |
+| D-210 | 한 저장소의 여러 MCP는 서버 ID를 폴더 이름으로 만든다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2164](../../../docs/ai/DECISIONS.md) |
+| D-211 | 콘솔에 영어 화면과 언어 전환을 두고 글자 크기를 90%로 줄인다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2172](../../../docs/ai/DECISIONS.md) |
+| D-212 | 게이트웨이가 내려 준 정책을 기억해, 연속 승인 중 설치된 중간 정책을 변조로 보지 않는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2184](../../../docs/ai/DECISIONS.md) |
+| D-213 | 로컬 작업의 시작·확인 경합으로 정상 실행이 멈추지 않게, 읽기 실패는 예약을 붙잡지 않게 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2195](../../../docs/ai/DECISIONS.md) |
+| D-214 | 숫자 값의 카드번호 판정은 IIN 첫 자리(3~6)와 14자리 이상을 요구한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2205](../../../docs/ai/DECISIONS.md) |
+| D-215 | 관리 조치로 멈춘 로컬 실행은 시간 초과가 아니라 그 이유로 직원에게 알린다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2213](../../../docs/ai/DECISIONS.md) |
+| D-216 | 키트는 PC에 있는 하네스만 관리하고, 없는 하네스 때문에 설치를 멈추지 않는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2219](../../../docs/ai/DECISIONS.md) |
+| D-217 | 같은 직원·같은 PC의 재설치는 직전 활성 장치를 대체하고 활성화를 이어받는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2228](../../../docs/ai/DECISIONS.md) |
+| D-218 | 키트 원복은 부분 설치에서도 끝까지 간다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2246](../../../docs/ai/DECISIONS.md) |
+| D-219 | 관리형 Claude Code는 계정 동기화 플러그인과 웹 도구도 닫는다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2252](../../../docs/ai/DECISIONS.md) |
+| D-220 | 관리 단말은 자기 하네스의 커넥터·기능을 장치 자격으로 보고하고, 그 보고는 소유자의 관리 단말 상태로 판정한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2264](../../../docs/ai/DECISIONS.md) |
+| D-221 | 비활성 항목과 「마지막 보고에서 사라짐」을 나누고, 콘솔 하네스 커넥터 표에 통제 상태를 표시한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2274](../../../docs/ai/DECISIONS.md) |
+| D-222 | 후속(설계만): 관리자가 특정 벤더 커넥터를 허용하는 경로 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2282](../../../docs/ai/DECISIONS.md) |
+| D-223 | 로컬 MCP 러너는 첫 PC에 없는 승인 폴더를 관리 계정 홈 안에 만든다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2290](../../../docs/ai/DECISIONS.md) |
+| D-224 | 별도 관리 계정을 쓰는 직원은 자기 홈 폴더에 문서를 넣고, 로컬 MCP는 그 폴더를 읽기 전용으로 본다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2297](../../../docs/ai/DECISIONS.md) |
+| D-225 | 키트는 sudo 설치 한 번에 필수 구성요소와 컨테이너 엔진까지 갖춘다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2305](../../../docs/ai/DECISIONS.md) |
+| D-226 | 승인된 로컬 MCP의 폴더와 이미지를 첫 호출 전에 준비한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2319](../../../docs/ai/DECISIONS.md) |
+| D-227 | 설치·러너 중복 정리와 측정해 하지 않은 것 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2330](../../../docs/ai/DECISIONS.md) |
+| D-228 | 설치 전에 열린 터미널에서도 관리 하네스가 뜨도록 직원 홈 런처를 관리 런처로 바꾼다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2337](../../../docs/ai/DECISIONS.md) |
+| D-229 | 키트 원복은 PC에 남은 옛 집행 코드가 아니라 키트에 든 새 코드로 한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2345](../../../docs/ai/DECISIONS.md) |
+| D-230 | 삭제된 계정은 관리자가 복구하고, 재가입 안내와 PC 연결·도구 목록 화면을 바로잡는다 (2026-10-23, 노션 버그 리포트 3건) | 2026-10-23 | [DECISIONS.md:2369](../../../docs/ai/DECISIONS.md) |
+| D-231 | nftables 규칙은 Ubuntu 22.04(nftables 1.0.2)에서도 받는 문법으로 쓴다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2351](../../../docs/ai/DECISIONS.md) |
+| D-232 | Linux 키트는 Ubuntu 20.04~26.04에서 동작하고, 16.04·18.04는 첫 줄에서 이유를 말하고 멈춘다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2358](../../../docs/ai/DECISIONS.md) |
+| D-233 | 하네스가 승인된 MCP를 알아보도록 관리형 메모리에 서버·도구 이름을 렌더링하고, 공급자 오류는 차단처럼 보이지 않게 한다 (2026-10-23) | 2026-10-23 | [DECISIONS.md:2381](../../../docs/ai/DECISIONS.md) |
+| D-234 | 승인한 MCP의 기본 사용 대상은 전체 직원이고, 승인 화면에서 신청자만·지정 직원으로 좁힌다 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2393](../../../docs/ai/DECISIONS.md) |
+| D-235 | GitHub는 직원이 각자 계정을 연결해서 쓰고, 공유 토큰은 지정한 사람 전용으로 둔다 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2404](../../../docs/ai/DECISIONS.md) |
+| D-236 | 직원은 Gitea에 들어가지 않고 콘솔 「승인된 MCP」에서 승인된 소스를 받는다 (2026-10-25) | 2026-10-25 | [DECISIONS.md:2419](../../../docs/ai/DECISIONS.md) |
+| D-237 | 사용 대상 변경은 서버 상세에서 하고, 「내 연결」·사용 대상을 수용 시험 항목으로 둔다 (2026-10-25, W7 정상 기능 점검) | 2026-10-25 | [DECISIONS.md:2428](../../../docs/ai/DECISIONS.md) |
+
+## 비어 있는 번호
+
+36, 37, 38, 160, 162, 163, 164, 165, 166, 167, 168, 169, 171, 174, 190 — 예약했거나 쓰지 않은 번호다. 예약한 것은 [예약 번호](../trace/reserved.md) 표에 있다.
