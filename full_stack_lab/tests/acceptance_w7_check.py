@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -232,6 +233,7 @@ class World:
 
     def save_runtime(self, doc):
         self.runtime_servers = dict(doc["servers"])
+        self.saved = [dict(doc["servers"])]
 
     async def execute(self, sql, params=()):
         self.sql.append((sql, params))
@@ -400,6 +402,14 @@ class W7Checks(unittest.IsolatedAsyncioTestCase):
         self.assertIn("MCP-CREDENTIAL-001", detail)
         self.assertIn(world.GITHUB, world.deregistered)
         self.assertEqual(world.runtime_servers, {})
+
+    async def test_connections_item_registers_with_the_tool_use_state_a_normal_registration_makes(self):
+        """reviewed_at이 없으면 게이트웨이는 도구 이용 상태를 확인할 수 없다며 P-CONTROL-FAIL-CLOSED로 먼저 막는다(CI 40167507969)."""
+        world = self.set_world()
+        await a.my_connections_and_missing_credential()
+        review = world.saved[0][world.GITHUB]["tool_reviews"]["get_me"]
+        datetime.fromisoformat(review["reviewed_at"])
+        self.assertEqual((review["reviewed_by"], review["action"]), ("adm-principal", "r"))
 
     async def test_connections_item_fails_when_an_unconnected_call_gets_through(self):
         world = self.set_world()
