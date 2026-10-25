@@ -752,7 +752,8 @@ async def enrollment_token(owner: str) -> dict:
 def companion_names(username: str) -> list[str]:
     """The account itself and the companions an isolated install of it creates (Linux, Windows): a switch between
     the modes (D-239) replaces the earlier device instead of leaving it as an active record nobody reports for."""
-    return [username, ("managed-" + username)[:31], ("mcpgw-" + username)[:20]]
+    base = re.sub(r"^(managed|mcpgw)-", "", username)  # from the companion back to the employee, too (pj2 10-25)
+    return sorted({base, ("managed-" + base)[:31], ("mcpgw-" + base)[:20], username})
 
 
 def _same_pc(old: dict, hostname: str, platform: str, machine_id: str | None, local_sid: str | None,
@@ -902,6 +903,18 @@ async def managed_policy(device: dict) -> dict:
     if proxy_port:
         proxy_url = f"http://{parsed.hostname}:{proxy_port}"
         proxy = {"HTTPS_PROXY": proxy_url, "HTTP_PROXY": proxy_url, "NO_PROXY": ",".join(sorted({parsed.hostname, *addresses}))}
+    # Simple mode (D-239): the employee's own Claude takes the Gateway's private CA from the managed settings, so a terminal
+    # opened before the install connects too; the session variable alone left it at UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+    # (pj2 10-25). The path is where the kit writes the CA. Codex still needs the session variable.
+    # ponytail: field mode stands for "kits carry the private CA"; record the kit's CA at enrollment if that ever differs.
+    ca_env = {}
+    if managed_mode(device) == "simple" and os.getenv("MCP_FIELD_MODE") == "1":
+        if windows:
+            programs = re.search(r'"([A-Za-z]:\\[^"]+)\\managed-windows\.py"', helper or "")
+            if programs and detail.get("local_sid"):
+                ca_env = {"NODE_EXTRA_CA_CERTS": programs.group(1) + "\\launchers\\" + detail["local_sid"] + "\\root.crt"}
+        elif managed_platform(device) == "linux":
+            ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
         settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
@@ -921,8 +934,8 @@ async def managed_policy(device: dict) -> dict:
                     "allowManagedHooksOnly": True}
         if guidance:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
-        if proxy:
-            settings["env"] = proxy
+        if proxy or ca_env:
+            settings["env"] = {**proxy, **ca_env}
         codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
                                 'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
         files = {

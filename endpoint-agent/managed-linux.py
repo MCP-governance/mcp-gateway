@@ -511,7 +511,9 @@ def next_step(summary, now, environment=None):
     # A terminal opened before the install lacks the CA variable: the harness cannot reach the Gateway from it.
     ca = summary.get("ca")
     if summary.get("mode") == "simple" and ca and environment.get("NODE_EXTRA_CA_CERTS") != ca:
-        return "새 터미널(또는 다시 로그인)에서 claude·codex를 실행하세요"
+        # The managed settings carry the CA for Claude when the Gateway renders it; Codex reads only the session.
+        return ("claude는 지금 실행해도 됩니다 · codex는 새 터미널(또는 다시 로그인)에서 실행하세요" if summary.get("claude_ca")
+                else "새 터미널(또는 다시 로그인)에서 claude·codex를 실행하세요")
     return "claude 또는 codex를 실행하세요"
 
 
@@ -1123,7 +1125,8 @@ def serve(args):
             with lock:
                 cache["state"] = report["state"]
             summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]),
-                           names=sorted(policy["servers"]))
+                           names=sorted(policy["servers"]),
+                           claude_ca="NODE_EXTRA_CA_CERTS" in policy["files"]["managed-settings.json"])
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
