@@ -234,8 +234,10 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
         $request.enrollment = Join-Path $private 'enrollment.json'
         [IO.File]::WriteAllText($request.enrollment, ($bundle | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     }
-    $request.gateway_url = $Approval.gateway_url
-    $request.tailscale_node_id = $Approval.tailscale_node_id
+    # The one-click request carries neither field (pj3 10-25: assigning a missing property threw, every one-click
+    # install stopped here); the approved values replace whatever the caller sent.
+    $request | Add-Member -NotePropertyName gateway_url -NotePropertyValue $Approval.gateway_url -Force
+    $request | Add-Member -NotePropertyName tailscale_node_id -NotePropertyValue $Approval.tailscale_node_id -Force
     [IO.File]::WriteAllText((Join-Path $private 'request.json'), ($request | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     $results = Join-Path $paths.state 'results'
     New-EndpointProtectedDirectory $results

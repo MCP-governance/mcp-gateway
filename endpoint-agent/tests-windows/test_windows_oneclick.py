@@ -97,6 +97,9 @@ function Start-Process {
         worker = (ROOT / 'endpoint-agent/windows-worker.ps1').read_text(encoding='utf-8-sig')
         self.assertNotIn("Get-ScheduledTask -TaskName 'MCPGatewayManaged-*'", worker)  # a reinstall rolls back instead
         self.assertIn("if ($isolated) { $managedArguments += '--isolated-account' }", worker)
+        # A one-click approval can be updated by a newer one-click file; an IT approval (no marker) still needs IT.
+        self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
+        self.assertIn("if ($replace -and -not (Test-Path -LiteralPath $oneclickMark)) { throw 'IT must update the approved installer' }", template)
 
     def test_admin_companion_is_rejected(self):
         with mock.patch.object(self.managed, 'account', side_effect=[{'admin': False}, {'admin': True}]), \
