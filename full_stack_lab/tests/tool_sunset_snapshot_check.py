@@ -4,10 +4,8 @@ from __future__ import annotations
 import asyncio
 import ast
 import copy
-import importlib.util
 import logging
 import random
-import sys
 import types
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -18,7 +16,8 @@ from tool_sunset_check import load_module
 APP = Path(__file__).resolve().parents[1] / "gateway" / "app"
 NOW = datetime(2026, 10, 21, 9, tzinfo=timezone.utc)
 
-# The pre-refactor rule is kept independent of the new batch implementation.
+# Kept as source so it binds to each loaded module's names, independent of the new batch code.
+LEGACY = r'''
 async def legacy_check(server_id: str, tool_name: str, now: datetime | None = None) -> dict:
     """Record extensions or sunset atomically; uncertainty always leaves the tool usable."""
     now = now or datetime.now(timezone.utc)
@@ -109,6 +108,7 @@ async def legacy_coverage(connection, cutoff, setting):
         if row and int(row["entries"]) != int(row["retained"]):
             return False, "원장 봉인 자료를 확인할 수 없습니다."
     return True, ""
+'''
 
 
 class Cursor:
@@ -197,8 +197,9 @@ def review_at(at):
 
 def old_checker(module):
     namespace = dict(module.__dict__)
-    namespace["_coverage"] = types.FunctionType(legacy_coverage.__code__, namespace)
-    return types.FunctionType(legacy_check.__code__, namespace, argdefs=(None,))
+    exec(LEGACY, namespace)
+    namespace["_coverage"] = namespace["legacy_coverage"]
+    return namespace["legacy_check"]
 
 
 class SnapshotCheck(unittest.TestCase):
