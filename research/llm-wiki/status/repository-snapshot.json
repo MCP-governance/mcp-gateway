@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-25T20:16:01+09:00",
-  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
-  "branch": "main",
+  "captured_at": "2026-10-26T01:34:22+09:00",
+  "head": "05d091f90b573395e78454b93a39bf088eac151e",
+  "branch": "10/25-stage0-ci",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"

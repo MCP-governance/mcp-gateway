@@ -309,12 +309,15 @@ async def pool_closure():
     pool.clear()
     async with upstream._dispatch_client(endpoint, "p5", {}, 30):
         pass
+    stale = next(iter(pool.values())).client
     upstream._swept.update(at=0.0, id=0)
     await db.execute("INSERT INTO upstream_pool_events(endpoint, principal, reason) VALUES (%s,%s,'lab')", (endpoint, "p5"))
+    # 실제 session()이 HTTP 클라이언트를 빌리기 전에 수행하는 폐기 신호 처리를 거친다.
+    await upstream._sweep()
     async with upstream._dispatch_client("https://lab-c.example.test/mcp", "p9", {}, 30):
         pass
     CHECKS.ok("pool: a closure announced by another process is applied on the next use",
-              not any(k[0] == endpoint and k[1] == "p5" for k in pool))
+              stale.is_closed and not any(k[0] == endpoint and k[1] == "p5" for k in pool))
     pool.clear()
 
 
