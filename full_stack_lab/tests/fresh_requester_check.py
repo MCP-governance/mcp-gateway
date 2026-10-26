@@ -295,7 +295,8 @@ class DisposalFailureChecks(unittest.TestCase):
     def test_blocked_preserves_default_fail_closed_and_can_surface_failure(self):
         blocked = production("disposal.py", {"blocked"}, {
             "DIRECTORY": Path("unused"), "IntegrityError": type("IntegrityError", (RuntimeError,), {}),
-            "locked": lambda _: nullcontext(), "read": Mock(side_effect=OSError("unavailable"))}).blocked
+            "locked": lambda _: nullcontext(), "_INDEX": {},
+            "_read_index": Mock(side_effect=OSError("unavailable"))}).blocked
         self.assertTrue(blocked(jti="requester"))
         with self.assertRaisesRegex(OSError, "unavailable"):
             blocked(jti="requester", raise_errors=True)
