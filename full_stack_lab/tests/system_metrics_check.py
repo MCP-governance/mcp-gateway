@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "gateway"))
-from app import agent_contract, agent_service, oidc
+from app import agent_contract, agent_service, identity_sessions
 from app.system_metrics import SystemMetrics, cpu_counters, memory_usage
 
 
@@ -211,7 +211,7 @@ class MetricsAuthorizationTest(unittest.TestCase):
 
     def test_mcp_token_scope_cannot_read_admin_metrics(self):
         with patch.object(agent_contract, "authenticate", return_value=({"user_id": "root"}, {"sub": "root", "scope": "mcp", "jti": "00000000-0000-4000-8000-000000000001"})), \
-             patch.object(oidc, "validate_session", AsyncMock()), \
+             patch.object(identity_sessions, "validate_session", AsyncMock()), \
              patch("app.disposal.blocked", return_value=False), \
              patch.object(agent_service.system_metrics_sampler, "sample", self.sample), \
              patch.object(agent_contract.db, "fetch_one", AsyncMock()) as fetch:

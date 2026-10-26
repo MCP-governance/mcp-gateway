@@ -177,11 +177,11 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
     if row["status"] != "active":
         # The header lets the Console end a session whose account was just switched off, instead
         # of leaving the shell open with every panel failing.
-        from .oidc import end_session
+        from .identity_sessions import end_session
         await end_session(claims)
         raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."),
                             headers={"X-Account-Status": row["status"]})
-    from .oidc import validate_session
+    from .identity_sessions import validate_session
     await validate_session(claims)
     if require_mcp or "mcp" in token_scopes(claims):
         from .endpoint_plane import managed_failure

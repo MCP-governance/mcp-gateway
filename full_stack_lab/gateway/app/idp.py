@@ -346,7 +346,7 @@ async def introspection(token: str) -> dict:
         from .endpoint_plane import managed_failure
         if await managed_failure(row, claims):
             return {"active": False}
-    from .oidc import validate_session
+    from .identity_sessions import validate_session
     try:
         await validate_session(claims)
     except HTTPException:
