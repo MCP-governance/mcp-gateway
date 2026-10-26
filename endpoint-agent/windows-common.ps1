@@ -6,6 +6,28 @@ function Quote-EndpointArgument([string]$Value) {
     return '"' + $Value + '"'
 }
 
+function Protect-EndpointDiagnostic([string]$Text, [string[]]$Secrets = @()) {
+    foreach ($secret in $Secrets) {
+        if ($secret) { $Text = $Text.Replace($secret, '[redacted]') }
+    }
+    $Text = [regex]::Replace($Text, '(?im)^.*(?:authorization|bearer|password|passwd|secret|(?:device|enrollment|access|refresh)[_-]?(?:key|token)).*$', '[redacted]')
+    return $Text
+}
+
+function Repair-EndpointWorkDirectory([string]$Path, [string]$Sid) {
+    Assert-EndpointNoLinks $Path
+    [IO.Directory]::CreateDirectory($Path) | Out-Null
+    $acl = New-Object Security.AccessControl.DirectorySecurity
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($principal in @('S-1-5-18', 'S-1-5-32-544', $Sid)) {
+        $rights = if ($principal -eq $Sid) { 'Modify' } else { 'FullControl' }
+        $acl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
+            (New-Object Security.Principal.SecurityIdentifier($principal)), $rights, 'ContainerInherit,ObjectInherit', 'None', 'Allow')))
+    }
+    # Do not reset children: the installer's credential folders must keep their protected DACLs.
+    [IO.Directory]::SetAccessControl($Path, $acl)
+}
+
 function Set-EndpointAcl([string]$Path, [string]$Sid, [switch]$Managed) {
     $grants = @('*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F')
     if ($Managed) { $grants += '*S-1-5-32-545:(OI)(CI)RX' }
@@ -177,15 +199,19 @@ function Register-EndpointTray([string]$SettingsPath, [string]$Sid, [string]$Pro
     Register-ScheduledTask -TaskName "MCPGatewayTray-$Sid" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 }
 
-function Remove-EndpointFiles([string]$Root) {
+function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
     $resolved = [IO.Path]::GetFullPath($Root).TrimEnd('\')
     $machine = Join-Path $env:ProgramFiles 'MCPGatewayManaged'
     $local = [IO.Path]::GetFullPath($env:LOCALAPPDATA).TrimEnd('\') + '\'
     if ($resolved -ne $machine -and -not $resolved.StartsWith($local, [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
     Assert-EndpointTree $resolved
+    if (-not (Test-Path -LiteralPath $resolved)) { return }
     $manifestPath = Join-Path $resolved '.endpoint-kit'
-    if (-not (Test-Path -LiteralPath $manifestPath)) { throw '설치 소유 정보 확인 실패' }
-    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $manifest = if (Test-Path -LiteralPath $manifestPath) {
+        Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } elseif ($resolved -eq $machine -and $OwnedFiles.Count) {
+        @{ product = 'MCPGatewayEndpoint'; files = $OwnedFiles }
+    } else { throw '설치 소유 정보 확인 실패' }
     if ($manifest.product -ne 'MCPGatewayEndpoint') { throw '설치 소유 정보 확인 실패' }
     foreach ($name in @($manifest.files) + @('.endpoint-kit')) {
         $target = [IO.Path]::GetFullPath((Join-Path $resolved $name))
@@ -223,6 +249,7 @@ $script:EndpointText = @{
         restart_service = '이 PC의 연결 서비스가 멈춰 있습니다. 관리자 권한으로 다시 시작할까요?';
         no_harness = '{0}을(를) 찾지 못했습니다. 설치한 뒤 다시 누르세요.';
         next_reconnect = '게이트웨이에 연결되지 않았습니다 · [다시 연결]을 누르세요';
+        next_removed = '콘솔에서 새 설치 파일을 받아 실행하세요';
         next_pending = '관리자 활성화 대기 · 활성화되면 자동으로 연결됩니다';
         next_quarantined = '격리됨 · 관리자에게 해제를 요청하세요';
         next_revoked = '등록 해제됨 · [제거] 뒤 콘솔에서 새 설치 파일을 받으세요';
@@ -245,6 +272,7 @@ $script:EndpointText = @{
         restart_service = 'The connection service on this PC has stopped. Restart it as administrator?';
         no_harness = '{0} was not found. Install it, then press again.';
         next_reconnect = 'Not connected to the gateway · press [Reconnect]';
+        next_removed = 'Download a new installer from the console and run it';
         next_pending = 'Waiting for an administrator · connects by itself once activated';
         next_quarantined = 'Quarantined · ask an administrator to release it';
         next_revoked = 'Unregistered · [Remove], then download a new installer from the console';
@@ -269,7 +297,8 @@ function Get-EndpointNextAction([string]$Reason, [string]$Language = 'ko') {
     switch -Regex ($Reason) {
         '연결 시간 초과|이름 또는 포트|상태 조회|상태 응답|준비 상태' { if ($en) { return 'Check the network (VPN), then press [Retry]' } return '네트워크(VPN)를 확인하고 [다시 시도]를 누르세요' }
         '인증서' { if ($en) { return 'Ask IT about the gateway certificate' } return '조직 IT에 게이트웨이 인증서를 문의하세요' }
-        '등록 자격|새 설치 파일|불일치' { if ($en) { return 'Download a new installer from the console and run it' } return '콘솔 내 PC 연결에서 새 설치 파일을 받아 실행하세요' }
+        '이미 연결|등록 자격|새 설치 파일|불일치' { if ($en) { return 'Download a new installer from the console and run it' } return '콘솔에서 새 설치 파일을 받아 실행하세요' }
+        '직원 설정의 관리 구간' { if ($en) { return 'Ask IT to check the settings backup, then retry' } return '설정 백업을 조직 IT에 전달해 확인한 뒤 다시 실행하세요' }
         '권한 승인 취소|관리자 권한 필요' { if ($en) { return 'Press [Retry] and choose Yes on the administrator prompt' } return '[다시 시도]를 누르고 관리자 권한 확인에서 [예]를 누르세요' }
         '진행 중' { if ($en) { return 'Wait a moment, then press [Retry]' } return '잠시 뒤 [다시 시도]를 누르세요' }
         '로그아웃' { if ($en) { return 'Sign the isolated account out, then press [Retry]' } return '격리 계정을 로그아웃한 뒤 [다시 시도]를 누르세요' }

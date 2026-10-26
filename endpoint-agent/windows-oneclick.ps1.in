@@ -53,6 +53,7 @@ try {
     $required = @($manifest.files.PSObject.Properties.Name)
     # UAC approves this complete artifact. Load helpers from the same in-memory snapshot only after all hashes agree.
     . ([scriptblock]::Create([Text.Encoding]::UTF8.GetString($files['windows-trust.ps1']).TrimStart([char]0xFEFF)))
+    . ([scriptblock]::Create([Text.Encoding]::UTF8.GetString($files['windows-common.ps1']).TrimStart([char]0xFEFF)))
     $paths = Get-EndpointInstallerPaths
     foreach ($path in @($paths.code, $paths.state)) {
         Assert-EndpointNoLinks $path
@@ -96,7 +97,8 @@ try {
     $actualSid = (New-Object Security.Principal.NTAccount($Context.user)).Translate([Security.Principal.SecurityIdentifier]).Value
     if ($actualSid -ne $Context.sid) { throw 'Invalid employee account' }
     $workBase = Join-Path $profile 'AppData\Local\MCPGatewaySetup'
-    Assert-EndpointNoLinks $workBase
+    # Repair the old bootstrap's protected parent, without opening its private installation children.
+    Repair-EndpointWorkDirectory $workBase $Context.sid
     $private = Join-Path $workBase ([Guid]::NewGuid().ToString('N'))
     [IO.Directory]::CreateDirectory($private, (New-EndpointAccessDescriptor '' $true)) | Out-Null
     $enrollment = Join-Path $private 'enrollment.json'
@@ -113,9 +115,20 @@ try {
     $process = Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
     $resultPath = Join-Path $paths.state ('results\' + (Split-Path $private -Leaf) + '\result.json')
     $result = Get-Content -LiteralPath $resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $message = (@($result.steps) + @($result.detail) + @($result.account | Where-Object { $_ })) -join "`r`n"
+    $message = if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') {
+        $result.detail + "`r`n" + (Get-EndpointNextAction $result.detail)
+    } else { $result.detail }
     [void][Windows.Forms.MessageBox]::Show($message, 'MCP')
-    if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { throw 'Installation did not complete' }
+    if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { exit 1 }
+} catch {
+    $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ISk7LmYIO2MjOydvCDrmJDripQg7Iuk7ZaJIOq2jO2VnOydhCDtmZXsnbjtlaAg7IiYIOyXhuyKteuLiOuLpA=='))
+    $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7L2Y7IaU7JeQ7IScIOyDiCDshKTsuZgg7YyM7J287J2EIOuwm+yVhCDsi6TtlontlZjqs6AsIOuwmOuzteuQmOuptCDsobDsp4EgSVTsl5Ag66y47J2Y7ZWY7IS47JqU'))
+    if ($_.Exception.Message -eq 'Another installation is running') {
+        $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('64uk66W4IOyEpOy5mCDsnpHsl4XsnbQg7KeE7ZaJIOykkeyeheuLiOuLpA=='))
+        $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ZiE7J6sIOyEpOy5mOqwgCDrgZ3rgpwg65KkIOuLpOyLnCDsi6TtlontlZjshLjsmpQ='))
+    }
+    [void][Windows.Forms.MessageBox]::Show(($reason + "`r`n" + $next), 'MCP')
+    exit 1
 } finally {
     if ($private) {
         foreach ($name in @('request.json', 'enrollment.json')) {

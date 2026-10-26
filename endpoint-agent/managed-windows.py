@@ -204,29 +204,80 @@ def codex_config(config):
     return Path(config["profile"]) / ".codex" / "config.toml"
 
 
+def codex_parts(text):
+    lines = text.splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == BEGIN]
+    ends = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == END]
+    if not starts and not ends:
+        return text, None, ""
+    if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0]:
+        raise ValueError("직원 설정의 관리 구간 확인 필요")
+    start, end = starts[0], ends[0]
+    return "".join(lines[:start]), "".join(lines[start + 1:end]), "".join(lines[end + 1:])
+
+
 def codex_block(text):
-    match = re.search(re.escape(BEGIN) + r"\n(.*?)" + re.escape(END), text.replace("\r\n", "\n"), re.S)
-    return match.group(1) if match else None
+    block = codex_parts(text)[1]
+    return block.replace("\r\n", "\n") if block is not None else None
+
+
+def without_codex_block(text, owned=None):
+    before, block, after = codex_parts(text)
+    if block is None:
+        return text
+    if '"""' in block or "'''" in block:
+        raise ValueError("직원 설정의 관리 구간 확인 필요")
+    # Codex can move unrelated tables inside our markers. Only remove tables we actually rendered.
+    sections = re.split(r"(?m)(?=^\[)", block)
+    expected = set(re.findall(r"(?m)^\[[^\r\n]+\]", owned or ""))
+    kept = []
+    for section in sections:
+        heading = section.splitlines()[0] if section.startswith("[") else ""
+        if not heading:
+            if section.strip():
+                raise ValueError("직원 설정의 관리 구간 확인 필요")
+        elif heading in expected or (heading.startswith("[mcp_servers.") and
+                                     "http_headers_helper" in section and "managed-windows.py" in section):
+            continue
+        else:
+            kept.append(section)
+    return before + "".join(kept) + after
 
 
 def with_codex_block(text, block):
     # Last in the file: a root key after our tables would otherwise fall inside them.
-    rest = re.sub(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", "\n", text.replace("\r\n", "\n"), flags=re.S).rstrip("\n")
+    rest = without_codex_block(text, block).rstrip("\r\n")
     return (rest + "\n\n" if rest else "") + BEGIN + "\n" + block + END + "\n"
+
+
+def checked_codex_text(path):
+    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    try:
+        codex_parts(current)
+        without_codex_block(current)
+    except ValueError:
+        backup = path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup")
+        shutil.copyfile(path, backup)
+        raise
+    return current
 
 
 def apply_policy(config, policy):
     files = policy["files"]
     if set(files) != set(FILES) | {CODEX_BLOCK}:
         raise ValueError("지원하지 않는 관리형 파일 목록")
+    path = codex_config(config)
+    current = checked_codex_text(path)
+    updated = with_codex_block(current, files[CODEX_BLOCK])
     for directory in {target.parent for target in FILES.values()}:
         lock_down(directory)
     for name, target in FILES.items():
         write_file(target, files[name])
-    path = codex_config(config)
     path.parent.mkdir(parents=True, exist_ok=True)
-    current = path.read_text(encoding="utf-8") if path.exists() else ""
-    write_file(path, with_codex_block(current, files[CODEX_BLOCK]))
+    write_file(path, updated)
+    folder = STATE / config.get("username", "").lower()
+    if config.get("username") and folder.is_dir():
+        write_file(folder / CODEX_BLOCK, files[CODEX_BLOCK])
 
 
 def restore_codex_block(config, policy):
@@ -235,7 +286,7 @@ def restore_codex_block(config, policy):
     rewrite quarantine the PC (pj3 10-25). True when it was rewritten."""
     path = codex_config(config)
     try:
-        current = path.read_text(encoding="utf-8") if path.exists() else ""
+        current = checked_codex_text(path)
     except OSError:
         return False  # unreadable: the heartbeat reports the mismatch
     if codex_block(current) == policy["files"][CODEX_BLOCK]:
@@ -245,7 +296,7 @@ def restore_codex_block(config, policy):
     return True
 
 
-def set_user_environment(config, values):
+def set_user_environment(config, values, *, owned_only=False):
     """HTTPS_PROXY etc. for the account only, so other accounts' tools are untouched. The hive is
     loaded when the account is signed out (the installer requires that)."""
     import winreg
@@ -261,6 +312,13 @@ def set_user_environment(config, values):
         with winreg.CreateKeyEx(winreg.HKEY_USERS, root + r"\Environment", 0,
                                 winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE) as key:
             for name in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY", "NODE_EXTRA_CA_CERTS", "CODEX_CA_CERTIFICATE"):
+                if owned_only:
+                    try:
+                        value = str(winreg.QueryValueEx(key, name)[0])
+                    except FileNotFoundError:
+                        continue
+                    if not value.lower().startswith(str(PROGRAMS).lower() + os.sep):
+                        continue
                 if values.get(name):
                     winreg.SetValueEx(key, name, 0, winreg.REG_SZ, values[name])
                 else:
@@ -674,9 +732,10 @@ def retire_companion(employee):
             tray.rmdir()
 
 
-def install(args):
+def enroll(args):
     if not ctypes.windll.shell32.IsUserAnAdmin():
         raise ValueError("관리자 권한으로 실행해야 합니다")
+    args = argparse.Namespace(**vars(args))
     bundle = json.loads(args.enrollment.read_text(encoding="utf-8"))
     verify_transport(bundle)
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,31}", args.user):
@@ -696,18 +755,73 @@ def install(args):
         raise ValueError(f"{args.user} 계정으로 한 번 로그인해 프로필을 만든 뒤 이 파일을 다시 실행하세요")
     if isolated and int(powershell(OWNED_PROCESSES, {"sid": person["sid"]}, timeout=180)):
         raise ValueError(f"{args.user} 계정을 로그아웃한 뒤 다시 실행하세요. 실행 중인 비관리 세션을 남기지 않습니다")
-    python = Path(sys.executable)
-    if not protected([python, python.parent]):
+    checked_codex_text(Path(person["profile"]) / ".codex" / "config.toml")
+    python = PROGRAMS / "python" / "python.exe"
+    if not protected([Path(sys.executable), Path(sys.executable).parent]):
         raise ValueError("보호된 설치 경로의 실행 파일이 필요합니다. 설치 마법사에서 다시 시도하세요")
+    helper = f'"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" header'
+    bundle["device_key"] = secrets.token_urlsafe(32)
+    try:
+        enrolled = request(bundle, "/oauth/device-enroll", {
+            "enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"], "hostname": socket.gethostname(),
+            "platform": "windows", "local_username": args.user, "local_sid": person["sid"], "helper_command": helper,
+            "mode": "isolated" if isolated else "simple"}, credential=False)
+    except urllib.error.HTTPError as exc:
+        if exc.code in (401, 403, 409, 410):
+            raise ValueError("이미 연결되어 있습니다" if previous_installs(employee)
+                             else "등록 자격 확인 필요 · 새 키트로 다시 시도") from None
+        raise
+    config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
+    folder = STATE / args.user.lower()
+    config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
+                  mode="isolated" if isolated else "simple", firewall_baseline=str(folder / "firewall-baseline.json"))
+    policy = request(config, "/api/endpoint/managed-policy")
+    if policy["tailscale_node_id"] != config["tailscale_node_id"]:
+        raise ValueError("설치 키트와 정책의 Gateway 노드가 다릅니다")
+    if set(policy["files"]) != set(FILES) | {CODEX_BLOCK}:
+        raise ValueError("지원하지 않는 관리형 파일 목록")
+    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], proxy_port=policy.get("proxy_port"),
+                  policy_hash=policy["policy_hash"])
+    registration = {"employee": employee, "config": config, "policy": policy, "enrolled": enrolled,
+                    "companion": companion, "source_person": source_person}
+    if getattr(args, "registration", None):
+        write_file(args.registration, json.dumps(registration))
+    return registration
+
+
+def install(args):
+    if not ctypes.windll.shell32.IsUserAnAdmin():
+        raise ValueError("관리자 권한으로 실행해야 합니다")
+    receipt = getattr(args, "registration", None)
+    if receipt:
+        if not protected([receipt, receipt.parent]):
+            raise ValueError("보호된 등록 파일이 필요합니다")
+        registration = json.loads(receipt.read_text(encoding="utf-8"))
+    else:
+        registration = enroll(args)
+    employee = registration["employee"]
+    config, policy, enrolled = (registration[k] for k in ("config", "policy", "enrolled"))
+    isolated = getattr(args, "isolated_account", False)
+    if args.user != employee or config["mode"] != ("isolated" if isolated else "simple"):
+        raise ValueError("등록 계정 확인 실패")
+    args.user = config["username"]
+    person = account(args.user)
+    if person["sid"] != config["sid"] or person["profile"] != config["profile"]:
+        raise ValueError("등록 계정 확인 실패")
+    companion, source_person = registration["companion"], registration["source_person"]
+    python = PROGRAMS / "python" / "python.exe"
     lock_down(PROGRAMS)
     for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py"):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
-    # A reinstall, a repair and a switch of mode are one path: every earlier install of this employee goes first,
-    # so its backups restore the employee's own files before this install takes new ones (D-217·D-218).
+    # Only a completed enrollment and policy fetch may retire the employee's working installation.
     for previous in previous_installs(employee):
-        rollback(argparse.Namespace(user=previous))
+        if previous.lower() != args.user.lower():
+            rollback(argparse.Namespace(user=previous))
+        else:
+            powershell(STOP_SERVICE, {"name": TASK.format(user=args.user.lower()), "rules": []})
     if not isolated:
         retire_companion(employee)
     powershell(". $in.trust; New-EndpointProtectedDirectory $in.base; New-EndpointProtectedDirectory $in.tray $in.sid",
@@ -720,27 +834,11 @@ def install(args):
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
-    helper = f'"{python}" -I -S "{PROGRAMS / "managed-windows.py"}" header'
-    bundle["device_key"] = secrets.token_urlsafe(32)
-    enrolled = request(bundle, "/oauth/device-enroll", {
-        "enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"], "hostname": socket.gethostname(),
-        "platform": "windows", "local_username": args.user, "local_sid": person["sid"], "helper_command": helper,
-        "mode": "isolated" if isolated else "simple"}, credential=False)
-    config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
-    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
-    config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
-                  mode="isolated" if isolated else "simple", firewall_baseline=str(folder / "firewall-baseline.json"))
-    write_file(config_path, json.dumps(config))
-    policy = request(config, "/api/endpoint/managed-policy")
-    if policy["tailscale_node_id"] != config["tailscale_node_id"]:
-        raise ValueError("설치 키트와 정책의 Gateway 노드가 다릅니다")
-    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], proxy_port=policy.get("proxy_port"),
-                  policy_hash=policy["policy_hash"])
     write_file(config_path, json.dumps(config))
     for name, target in FILES.items():
-        if target.exists() and not ours(target.read_text(encoding="utf-8"), config["gateway_url"]):
+        if target.exists() and not (folder / (name + ".backup")).exists() and not ours(target.read_text(encoding="utf-8"), config["gateway_url"]):
             write_file(folder / (name + ".backup"), target.read_text(encoding="utf-8"))
-    if codex_config(config).exists():
+    if codex_config(config).exists() and not (folder / "config.toml.backup").exists():
         write_file(folder / "config.toml.backup", codex_config(config).read_text(encoding="utf-8"))
     apply_policy(config, policy)
     if isolated:
@@ -936,22 +1034,33 @@ def rollback(args):
     if not ctypes.windll.shell32.IsUserAnAdmin():
         raise ValueError("관리자 권한 PowerShell에서 실행하세요")
     folder = STATE / args.user.lower()
-    config = json.loads((folder / "config.json").read_text(encoding="utf-8"))
+    config_path = folder / "config.json"
+    config = json.loads(config_path.read_text(encoding="utf-8")) if config_path.exists() else {
+        **account(args.user), "username": args.user}
+    path = codex_config(config)
+    current = checked_codex_text(path)
+    owned = folder / CODEX_BLOCK
+    try:
+        current = without_codex_block(current, owned.read_text(encoding="utf-8") if owned.exists() else None)
+    except ValueError:
+        shutil.copyfile(path, path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup"))
+        raise
     powershell(STOP_SERVICE, {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
+    tray = PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"]
+    if tray.is_dir():
+        from windows_status import publish
+        publish(tray / "status.json", False, management="제거됨", details={"state": "removed"})
     for name, target in FILES.items():
         backup = folder / (name + ".backup")
         if backup.exists():
+            lock_down(target.parent)
             write_file(target, backup.read_text(encoding="utf-8"))
-        elif target.exists():
+        elif target.exists() and (config_path.exists() or "managed-windows.py" in target.read_text(encoding="utf-8") or
+                                  ours(target.read_text(encoding="utf-8"), config.get("gateway_url", "https://invalid.invalid"))):
             target.unlink()
-    path = codex_config(config)
     if path.exists():
-        backup = folder / "config.toml.backup"
-        current = re.sub(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", "\n",
-                         path.read_text(encoding="utf-8"), flags=re.S).lstrip("\n")
-        old_block = codex_block(backup.read_text(encoding="utf-8")) if backup.exists() else None
-        write_file(path, with_codex_block(current, old_block) if old_block is not None else current)
-    set_user_environment(config, {})
+        write_file(path, current)
+    set_user_environment(config, {}, owned_only=not config_path.exists())
     launcher_folder = PROGRAMS / "launchers" / config["sid"]
     for name in ("root.crt", "claude.cmd", "codex.cmd"):
         (launcher_folder / name).unlink(missing_ok=True)
@@ -959,11 +1068,16 @@ def rollback(args):
         launcher_folder.rmdir()
     if launcher_folder.parent.exists() and not any(launcher_folder.parent.iterdir()):
         launcher_folder.parent.rmdir()
-    for item in folder.iterdir():
-        item.unlink()
-    folder.rmdir()
-    if config.get("mode") == "simple":
-        broadcast_environment()
+    if folder.exists():
+        for item in folder.iterdir():
+            item.unlink()
+        folder.rmdir()
+    broadcast_environment()
+    powershell(STOP_SERVICE, {"name": "MCPGatewayTray-" + config["sid"], "rules": []})
+    for name in ("settings.json", "status.json", "status.tmp"):
+        (tray / name).unlink(missing_ok=True)
+    if tray.is_dir() and not any(tray.iterdir()):
+        tray.rmdir()
     print("해당 계정의 방화벽 규칙·관리형 설정·예약 작업을 제거했습니다")
 
 
@@ -1021,11 +1135,13 @@ def self_check():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    setup = commands.add_parser("install")
-    setup.add_argument("--user", required=True)
-    setup.add_argument("--isolated-account", action="store_true", help="고급: 별도 표준 계정과 방화벽으로 격리")
-    setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
-    setup.set_defaults(run=install)
+    for command, run in (("install", install), ("enroll", enroll)):
+        setup = commands.add_parser(command)
+        setup.add_argument("--user", required=True)
+        setup.add_argument("--isolated-account", action="store_true", help="고급: 별도 표준 계정과 방화벽으로 격리")
+        setup.add_argument("--enrollment", type=Path, default=Path(__file__).with_name("enrollment.json"))
+        setup.add_argument("--registration", type=Path)
+        setup.set_defaults(run=run)
     service = commands.add_parser("serve")
     service.add_argument("--config", type=Path, required=True)
     service.set_defaults(run=serve)
