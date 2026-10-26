@@ -217,7 +217,7 @@ try {
             ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     }
     $python = Install-EndpointRuntime $PSScriptRoot $root
-    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
+    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'kit_screen.py', 'install.py',
         'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
     foreach ($name in $codeFiles) {
         if ((Join-Path $PSScriptRoot $name) -ne (Join-Path $root $name)) {

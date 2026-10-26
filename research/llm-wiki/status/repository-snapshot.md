@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T15:48:49+09:00
+확인 시각: 2026-10-26T15:48:27+09:00
 
-HEAD: `798d2dcb054a94f03595f16aca5f4bff12b5dbdc` · 로컬 브랜치: `10/26-notion-bug-fixes`
+HEAD: `d2fee732d867ecc25e58eddd20ea64bec55eaa8e` · 로컬 브랜치: `10/26-kit-fullscreen`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -25,6 +25,6 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `ee1c51c484df1d0b358f43265a21cee30cc776ab75fe98fd08321aa7912ca647` |
-| `endpoint-agent/managed-linux.py` | `dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9` |
+| `endpoint-agent/bootstrap.py` | `efc806337b5023cbac3f8052a3bd4811ac27e15cba81f1e5a314e9eb05ff62c6` |
+| `endpoint-agent/managed-linux.py` | `f72d291cf0ac9fb76ad8614acb71c210853747912d3bf6bf64d461ae38f895bd` |
 | `endpoint-agent/enforce-linux.py` | `3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63` |
