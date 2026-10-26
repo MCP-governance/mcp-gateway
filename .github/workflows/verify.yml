@@ -65,6 +65,7 @@ jobs:
 
       - name: 검사기 자체 점검
         run: |
+          python3 tests/run_local_suite.py --inventory
           python3 tests/contracts_check.py
           python3 tests/schema_check.py
           python3 tests/experiments_check.py
@@ -177,6 +178,103 @@ jobs:
 
       - name: Rego 단위 테스트
         run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
+
+  local-suite:
+    name: 스택 없는 시험
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OTEL_SDK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: 기존 시험 의존성 설치
+        run: python -m pip install --quiet -r full_stack_lab/gateway/requirements.txt
+      - name: 스택 없는 전체 회귀
+        run: python full_stack_lab/tests/run_local_suite.py --out local-suite.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: local-suite
+          path: local-suite.json
+          if-no-files-found: error
+          retention-days: 14
+
+  pg-suite:
+    name: PostgreSQL 시험
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: mcp
+          POSTGRES_PASSWORD: ci-disposable
+          POSTGRES_DB: postgres
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mcp -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      gitea:
+        image: gitea/gitea:1.27.3-rootless
+        env:
+          GITEA__security__INSTALL_LOCK: "true"
+          GITEA__database__DB_TYPE: sqlite3
+          GITEA__server__ROOT_URL: http://127.0.0.1:3000/
+          GITEA__service__DISABLE_REGISTRATION: "true"
+        ports:
+          - 127.0.0.1:3000:3000
+    env:
+      DATABASE_URL: postgresql://mcp:ci-disposable@127.0.0.1:5432/postgres
+      OPA_URL: http://127.0.0.1:8181/v1/data/mcp/authz/decision
+      POLICY_LEDGER_URL: http://127.0.0.1:8181/v1/data/policy_ledger
+      GITEA_ADMIN_URL: http://127.0.0.1:3000
+      GITEA_ADMIN_USER: corpadmin
+      GITEA_ADMIN_PASSWORD: ci-disposable
+      OTEL_SDK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: 기존 시험 의존성 설치
+        run: python -m pip install --quiet -r full_stack_lab/gateway/requirements.txt
+      - name: 실제 정책 엔진·격리 공급자 준비
+        run: |
+          sudo ln -s "$PWD/full_stack_lab/opa" /policy
+          docker run -d --name pg-suite-opa -p 127.0.0.1:8181:8181 -v /policy:/policy:ro \
+            openpolicyagent/opa:1.20.2-static run --server --addr=0.0.0.0:8181 /policy
+          for i in $(seq 1 60); do
+            if curl -fsS "$GITEA_ADMIN_URL/api/healthz" >/dev/null && curl -fsS http://127.0.0.1:8181/health >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS "$GITEA_ADMIN_URL/api/healthz"
+          curl -fsS http://127.0.0.1:8181/health
+          docker exec "${{ job.services.gitea.id }}" gitea admin user create --admin --username "$GITEA_ADMIN_USER" \
+            --password "$GITEA_ADMIN_PASSWORD" --email corpadmin@lab.test --must-change-password=false
+          docker exec "${{ job.services.gitea.id }}" gitea admin user create --username mcp-bot \
+            --random-password --email mcp-bot@lab.test --must-change-password=false
+      - name: 파일별 전용 DB의 전체 PostgreSQL 회귀
+        run: python full_stack_lab/tests/run_local_suite.py --pg --out pg-suite.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pg-suite
+          path: pg-suite.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: 실패 로그
+        if: failure()
+        run: |
+          docker logs pg-suite-opa
+          docker logs "${{ job.services.postgres.id }}"
+          docker logs "${{ job.services.gitea.id }}"
+      - name: 정책 엔진 정리
+        if: always()
+        run: docker rm -f pg-suite-opa
 
   # 운영 배포 묶음(deploy/)을 빈 서버로 본 새 실행기에 README 절차 그대로 설치한다. 실습 스택과 같은 실행기를 쓰지 않는다.
   deploy:
@@ -385,6 +483,7 @@ jobs:
         run: |
           docker compose exec -T gateway python - < tests/secret_engine_parity_check.py
           docker compose exec -T gateway python - < tests/textscan_parity_check.py
+          docker compose exec -T gateway python - < tests/output_credential_span_check.py
 
       # 실기기 배치(README "실제 기기로 배치하기"): 같은 스택에 Caddy를 얹고, 러너를 직원 PC로 삼는다 —
       # loopback HTTP → 키트 setup(합성 계정 로그인) → 실제 Claude Code·Codex CLI가 헬퍼로 서버 10개에 붙는지.
