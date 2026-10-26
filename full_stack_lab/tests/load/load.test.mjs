@@ -1,6 +1,10 @@
 // Offline response fixtures only; this does not run or replace an MCP server.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Script, createContext } from 'node:vm';
 import test from 'node:test';
 
@@ -67,7 +71,7 @@ test('allow requires exact decision, policy and actual upstream success; reads d
   assert.equal(f.api.options.scenarios.allow.executor, 'constant-arrival-rate');
   assert.equal(f.api.options.scenarios.allow.rate, 50);
   assert.equal(f.api.options.scenarios.allow.duration, '1m');
-  assert.equal(f.api.options.thresholds.mcp_requests[0], 'count==3000');
+  assert.deepEqual([...f.api.options.thresholds.mcp_requests], ['count>=2999', 'count<=3001']);
   assert.equal(f.api.options.thresholds.dropped_iterations[0], 'count==0');
 });
 
@@ -90,6 +94,7 @@ test('malformed JSON counts as an error; summary contains only metrics', () => {
     mcp_duration: { values: { med: 3, 'p(95)': 8, 'p(99)': 10 } },
   } });
   assert.match(summary['/out/deny.md'], /3000 \| 1 \| 0 \| 3\.00 \| 8\.00 \| 10\.00/);
+  assert.deepEqual(JSON.parse(summary['/out/deny-counts.json']), { requests: 3000, errors: 1, dropped: 0 });
   assert.doesNotMatch(JSON.stringify(summary), /never-write-this-token|test-password|test-session/);
 });
 
@@ -97,4 +102,59 @@ test('OAuth setup failures expose no response or credential', () => {
   const f = fixture('allow');
   f.setReply({ status: 403, json: () => ({ detail: 'private-login-detail', access_token: 'private-token' }) });
   assert.throws(() => f.api.setup(), /^Error: Synthetic OAuth setup failed$/);
+});
+
+const python = process.platform === 'win32' ? 'python' : 'python3';
+
+test('CI capabilities change only the two capacity ceilings and preserve the reviewed source', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'mint-load-profile-'));
+  try {
+    const source = fileURLToPath(new URL('../../registry/capabilities.json', import.meta.url));
+    const original = readFileSync(source, 'utf8');
+    const target = join(directory, 'capabilities.json');
+    const result = spawnSync(python, [fileURLToPath(new URL('./prepare.py', import.meta.url)), source, target], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    const expected = JSON.parse(original);
+    expected.execution_profile.limits.max_calls = 10000;
+    expected.execution_profile.limits.max_concurrency = 500;
+    assert.deepEqual(JSON.parse(readFileSync(target, 'utf8')), expected);
+    assert.equal(expected.execution_profile.production_controls, true);
+    assert.equal(readFileSync(source, 'utf8'), original);
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
+});
+
+test('arrival counts tolerate ±1; actual ledger and policy counts must still match', () => {
+  for (const scenario of ['allow', 'deny']) {
+    const thresholds = fixture(scenario).api.options.thresholds;
+    assert.deepEqual([...thresholds.mcp_requests], ['count>=2999', 'count<=3001']);
+    assert.equal(thresholds.mcp_errors[0], 'count==0');
+    assert.equal(thresholds.dropped_iterations[0], 'count==0');
+  }
+  const runner = readFileSync(new URL('./run.sh', import.meta.url), 'utf8');
+  const inline = runner.split('if ! python3 - "$out" "$scenario" <<\'PY\'\n')[1].split('\nPY\n')[0];
+  const directory = mkdtempSync(join(tmpdir(), 'mint-load-evidence-'));
+  try {
+    for (const actual of [2999, 3000, 3001]) {
+      const evidence = { ledger_rows: actual, policies: [{ decision: 'Block', policy_id: 'MCP-REGISTRY-002', n: actual }],
+        verdicts: [{ n: actual }] };
+      writeFileSync(join(directory, 'deny-counts.json'), JSON.stringify({ requests: actual }));
+      writeFileSync(join(directory, 'deny-timings.json'), JSON.stringify(evidence));
+      let result = spawnSync(python, ['-c', inline, directory, 'deny'], { encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(readFileSync(join(directory, 'deny.md'), 'utf8'), new RegExp(`MCP-REGISTRY-002 \\| ${actual}`));
+      for (const invalid of [
+        { ...evidence, ledger_rows: actual - 1 },
+        { ...evidence, policies: [{ decision: 'Block', policy_id: 'MCP-REGISTRY-002', n: actual - 1 }] },
+        { ...evidence, verdicts: [{ n: actual - 1 }] },
+      ]) {
+        writeFileSync(join(directory, 'deny-timings.json'), JSON.stringify(invalid));
+        result = spawnSync(python, ['-c', inline, directory, 'deny'], { encoding: 'utf8' });
+        assert.notEqual(result.status, 0);
+      }
+    }
+  } finally {
+    rmSync(directory, { recursive: true });
+  }
 });

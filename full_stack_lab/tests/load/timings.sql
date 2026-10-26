@@ -4,6 +4,9 @@ WITH scoped AS (
   SELECT d.* FROM decisions d
   WHERE d.created_at >= :'started'::timestamptz AND d.created_at < :'ended'::timestamptz
     AND d.action <> 'connect' AND d.client->>'task_id' = 'load-' || :'scenario'
+), policies AS (
+  SELECT decision, policy_id, count(*) AS n
+  FROM scoped GROUP BY decision, policy_id
 ), stages AS (
   SELECT e.key AS stage, count(*) AS n,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY e.value::float8) AS p50_ms,
@@ -26,5 +29,6 @@ WITH scoped AS (
 )
 SELECT json_build_object('scenario', :'scenario', 'started', :'started', 'ended', :'ended',
   'ledger_rows', (SELECT count(*) FROM scoped),
+  'policies', coalesce((SELECT json_agg(policies ORDER BY decision, policy_id) FROM policies), '[]'::json),
   'stages', coalesce((SELECT json_agg(stages ORDER BY stage) FROM stages), '[]'::json),
   'verdicts', coalesce((SELECT json_agg(verdicts ORDER BY decision, upstream_executed) FROM verdicts), '[]'::json));

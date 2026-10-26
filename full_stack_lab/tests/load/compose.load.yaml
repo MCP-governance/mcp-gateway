@@ -5,3 +5,10 @@ services:
     environment:
       RATE_LIMIT_CALLS: "10000"
       CONCURRENCY_LIMIT: "500"
+    volumes:
+      - type: bind
+        source: ./reports/load-capabilities.json
+        target: /registry/capabilities.json
+        read_only: true
+        bind:
+          create_host_path: false

@@ -22,7 +22,7 @@ export const options = {
           preAllocatedVUs: 100, maxVUs: 500, gracefulStop: '35s' },
   },
   thresholds: {
-    mcp_requests: [`count==${CASE === 'list' ? 100 : 3000}`],
+    mcp_requests: CASE === 'list' ? ['count==100'] : ['count>=2999', 'count<=3001'],
     mcp_errors: ['count==0'],
     checks: ['rate==1'],
     dropped_iterations: ['count==0'],
@@ -136,6 +136,8 @@ export function handleSummary(data) {
   const ms = (name) => typeof stats[name] === 'number' ? stats[name].toFixed(2) : '—';
   const line = `| ${CASE} | ${count('mcp_requests')} | ${count('mcp_errors')} | ${count('dropped_iterations')} | ${ms('med')} | ${ms('p(95)')} | ${ms('p(99)')} |`;
   return {
+    [`/out/${CASE}-counts.json`]: JSON.stringify({ requests: count('mcp_requests'),
+      errors: count('mcp_errors'), dropped: count('dropped_iterations') }),
     [`/out/${CASE}.md`]: `| scenario | requests | errors | dropped | p50 ms | p95 ms | p99 ms |\n| --- | ---: | ---: | ---: | ---: | ---: | ---: |\n${line}\n`,
     stdout: `${line}\n`,
   };

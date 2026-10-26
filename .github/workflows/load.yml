@@ -48,6 +48,7 @@ jobs:
 
       - name: CI capacity overlay
         run: |
+          python3 tests/load/prepare.py registry/capabilities.json reports/load-capabilities.json
           echo "COMPOSE_FILE=$COMPOSE_FILE:tests/load/compose.load.yaml" >> "$GITHUB_ENV"
           COMPOSE_FILE="$COMPOSE_FILE:tests/load/compose.load.yaml" docker compose up -d --no-deps gateway
           for i in $(seq 1 60); do
