@@ -9,6 +9,7 @@
 | 2026-10-26 | [2026-10-26 리팩토링 0단계 — 측정·안전망 (DEV-91)](2026-10-26-refactor-stage0.md) | 구현·병합·배포를 분리하면 다음과 같다. | DEV-91 D-252 D-251 D-253 |
 | 2026-10-25 | [2026-10-25 위키 구조·최신화 점검 (WIKI-08)](2026-10-25-wiki-structure.md) | 읽기량은 줄었고, 낡음을 재는 도구가 생겼다. | WIKI-08 DEV-72 WIKI-04 AIG-02 D-237 D-230 D-238 |
 | 2026-10-25 | [2026-10-25 릴리스 판본·기업 적용 패키징·위생·브랜치 정리](2026-10-25-release-packaging.md) | VERSION = 0.9.0, CHANGELOG.md(Keep a Changelog, 한국어). | DEV-73 DEV-38 DEV-71 DEV-69 D-242 D-59 D-241 |
+| 2026-10-25 | [2026-10-25 리팩토링·최적화 제안서 — main v0.9.0 진단, 3평면 재설계, 설치 편의, 외부 레퍼런스 보강](2026-10-25-refactor-proposal.md) | 제안서 analysis/refactor-proposal-1025/README.md: 진단(규모·커밋 비율·실측 지연·구조 문제 10개) → 3평… | WIKI-09 D-243 |
 | 2026-10-25 | [2026-10-25 정책 동기화 모델 교체 (P0-1, D-238)](2026-10-25-policy-sync-split.md) | 판정 모델. | DEV-90 D-198 D-212 D-238 |
 | 2026-10-25 | [2026-10-25 LiteLLM 애드온 — 기업 적용·정상 기능(S5)](2026-10-25-litellm-addon.md) | 대역이 가렸던 실제 결함 다섯 가지(CI 반복으로 찾아 모두 정정) — ① 1.105는 require_key_mcp_access_defined를… | D-208 D-250 D-249 |
 | 2026-10-25 | [2026-10-25 엔드포인트 키트 편의·자동화 — 간편 모드 기본, 자동 활성화, Windows 같은 계정, TUI (D-239)](2026-10-25-kit-usability.md) | 코드: bootstrap.connect(모드 분기·이전 설치 원복·격리 계정 정리), managed-linux.install --mode sim… | D-238 D-216 D-217 |
