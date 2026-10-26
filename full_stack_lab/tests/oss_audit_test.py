@@ -1,5 +1,6 @@
 """Security-boundary checks; provider success is tested separately against Keycloak."""
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -78,6 +79,47 @@ class OidcTest(unittest.TestCase):
             sealed = oidc.seal(token)
             self.assertNotIn(token.encode(), sealed)
             self.assertEqual(oidc.unseal(sealed), token)
+
+    def test_client_wiring_has_one_owner_and_one_oauth_registry(self):
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        from app import agent_contract, oidc_client
+        self.assertIs(oidc.oauth, oidc_client.oauth)
+        for name in oidc.__all__:
+            self.assertIs(getattr(oidc, name), getattr(oidc_client, name), name)
+        self.assertEqual(agent_contract.CONSOLE_SCOPE, oidc_client.CONSOLE_SCOPE)
+        self.assertEqual(oidc.CONSOLE_SCOPE, "console")
+        env = {"AUTH_PROVIDER": "oidc", "OIDC_ISSUER": "https://idp.example/realms/x/", "OIDC_CLIENT_ID": "cid",
+               "OIDC_CLIENT_SECRET": "client-secret", "OIDC_REDIRECT_URI": "https://gw.example/auth/oidc/callback",
+               "OIDC_SESSION_SECRET": "session-secret-" * 3, "OIDC_PROVIDER_LABEL": "SSO"}
+        with patch.dict(os.environ, env), patch.dict(oidc.oauth._registry, clear=True),                 patch.dict(oidc.oauth._clients, clear=True):
+            # Settings are read per call, never frozen at import.
+            self.assertEqual(oidc.settings(), {"provider": "oidc", "issuer": "https://idp.example/realms/x",
+                                               "client_id": "cid", "redirect_uri": env["OIDC_REDIRECT_URI"], "label": "SSO"})
+            with patch.dict(os.environ, {"OIDC_CLIENT_ID": "other"}):
+                self.assertEqual(oidc.settings()["client_id"], "other")
+            first = oidc.client()
+            self.assertIs(oidc_client.client(), first)
+            self.assertIs(oidc.oauth.create_client("organization"), first)
+            self.assertEqual(list(oidc_client.oauth._registry), ["organization"])
+            self.assertIsInstance(first, oidc_client.PinnedOAuthApp)
+            self.assertIs(first.client_cls, oidc_client.PinnedOAuthClient)
+            self.assertEqual((first.client_id, first.client_secret), ("cid", "client-secret"))
+            self.assertEqual(first._server_metadata_url,
+                             "https://idp.example/realms/x/.well-known/openid-configuration")
+            self.assertEqual(first.client_kwargs, {"scope": "openid profile", "code_challenge_method": "S256",
+                                                   "timeout": 10, "trust_env": False})
+            key = hashlib.sha256(env["OIDC_SESSION_SECRET"].encode()).digest()
+            sealed = oidc.seal("token")
+            self.assertEqual(AESGCM(key).decrypt(sealed[:12], sealed[12:], b"mcpgw-oidc-session"), b"token")
+            self.assertEqual(oidc.unseal(oidc_client.seal("again")), "again")
+            with patch.dict(os.environ, {"OIDC_DISCOVERY_URL": "http://keycloak:8080/realms/x/.well-known/openid-configuration"}),                     patch.dict(oidc.oauth._registry, clear=True), patch.dict(oidc.oauth._clients, clear=True):
+                self.assertEqual(oidc.client()._server_metadata_url,
+                                 "http://keycloak:8080/realms/x/.well-known/openid-configuration")
+        with patch.dict(os.environ, {**env, "OIDC_CLIENT_SECRET": ""}), patch.dict(oidc.oauth._registry, clear=True),                 patch.dict(oidc.oauth._clients, clear=True):
+            with self.assertRaises(HTTPException) as unconfigured:
+                oidc.client()
+            self.assertEqual(unconfigured.exception.status_code, 503)
+            self.assertEqual(oidc.oauth._registry, {})
 
     def test_handoff_cannot_be_reused_or_empty(self):
         from starlette.requests import Request

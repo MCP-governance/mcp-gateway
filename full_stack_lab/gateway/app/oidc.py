@@ -10,25 +10,22 @@ from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 import httpx
-from authlib.integrations.httpx_client import AsyncOAuth2Client
-from authlib.integrations.starlette_client import OAuth
-from authlib.integrations.starlette_client.apps import StarletteOAuth2App
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import Field
 
 from . import db
-from .agent_contract import CONSOLE_SCOPE, StrictModel, authenticated_user, issue_token
-from .destination import pin_transport
+from .agent_contract import StrictModel, authenticated_user, issue_token
+from .oidc_client import (ADMIN_IDLE, ADMIN_MAX, CONSOLE_SCOPE, HANDOFF_COOKIE, REFRESH_EARLY_SECONDS,
+                          TOKEN_LOGOUT_GRACE, PinnedOAuthApp, PinnedOAuthClient, cipher, client, configured,
+                          http_transport, oauth, seal, settings, unseal)
+
+# The client wiring moved to oidc_client; these names stay importable from here.
+__all__ = ["ADMIN_IDLE", "ADMIN_MAX", "CONSOLE_SCOPE", "HANDOFF_COOKIE", "REFRESH_EARLY_SECONDS", "TOKEN_LOGOUT_GRACE",
+           "PinnedOAuthApp", "PinnedOAuthClient", "cipher", "client", "configured", "http_transport", "oauth",
+           "seal", "settings", "unseal"]
 
 router = APIRouter()
-oauth = OAuth()
-HANDOFF_COOKIE = "mcpgw_oidc_handoff"
-ADMIN_IDLE = timedelta(minutes=30)
-ADMIN_MAX = timedelta(hours=8)
-TOKEN_LOGOUT_GRACE = timedelta(minutes=2)
-REFRESH_EARLY_SECONDS = 60
 
 
 class RedactCallbackQuery(logging.Filter):
@@ -39,74 +36,9 @@ class RedactCallbackQuery(logging.Filter):
         return True
 
 
-def settings() -> dict:
-    return {"provider": os.getenv("AUTH_PROVIDER", "local"),
-            "issuer": os.getenv("OIDC_ISSUER", "").rstrip("/"),
-            "client_id": os.getenv("OIDC_CLIENT_ID", "mcp-console"),
-            "redirect_uri": os.getenv("OIDC_REDIRECT_URI", ""),
-            "label": os.getenv("OIDC_PROVIDER_LABEL", "조직 SSO")}
-
-
-def configured() -> bool:
-    return all(os.getenv(k) for k in ("OIDC_ISSUER", "OIDC_CLIENT_ID", "OIDC_CLIENT_SECRET",
-                                     "OIDC_REDIRECT_URI", "OIDC_SESSION_SECRET"))
-
-
 def local_login_allowed() -> None:
     if settings()["provider"] == "oidc":
         raise HTTPException(403, "조직 SSO 로그인을 사용하세요. 로컬 비밀번호 인증은 비활성화됐습니다.")
-
-
-def cipher() -> AESGCM:
-    return AESGCM(hashlib.sha256(os.environ["OIDC_SESSION_SECRET"].encode()).digest())
-
-
-def seal(value: str) -> bytes:
-    nonce = secrets.token_bytes(12)
-    return nonce + cipher().encrypt(nonce, value.encode(), b"mcpgw-oidc-session")
-
-
-def unseal(value: bytes) -> str:
-    return cipher().decrypt(value[:12], value[12:], b"mcpgw-oidc-session").decode()
-
-
-def http_transport():
-    internal = []
-    issuer = settings()["issuer"]
-    # Keycloak advertises its configured discovery origin for dynamic backchannel endpoints.
-    # Trust those configured origins only, never an arbitrary private host from metadata.
-    for value in (issuer, os.getenv("OIDC_DISCOVERY_URL", issuer + "/.well-known/openid-configuration")):
-        url = urlsplit(value)
-        host = url.hostname or ""
-        if (url.scheme in {"http", "https"} and not url.username and not url.password
-                and (host in {"localhost", "127.0.0.1", "::1"}
-                     or host.isascii() and host[:1].isalpha() and all(c.isalnum() or c == "-" for c in host))):
-            internal.append((host, url.port or (443 if url.scheme == "https" else 80)))
-    return pin_transport(httpx.AsyncHTTPTransport(trust_env=False), internal=internal)
-
-
-class PinnedOAuthClient(AsyncOAuth2Client):
-    def __init__(self, *args, **kwargs):
-        # Authlib creates and closes a client per metadata/token/JWKS request; never share its pool.
-        kwargs.update(transport=http_transport(), trust_env=False, follow_redirects=False)
-        super().__init__(*args, **kwargs)
-
-
-class PinnedOAuthApp(StarletteOAuth2App):
-    client_cls = PinnedOAuthClient
-
-
-def client():
-    if not configured():
-        raise HTTPException(503, "OIDC 설정이 완료되지 않았습니다.")
-    if oauth.create_client("organization") is None:
-        config = settings()
-        oauth.register("organization", client_cls=PinnedOAuthApp,
-                       client_id=config["client_id"], client_secret=os.environ["OIDC_CLIENT_SECRET"],
-                       server_metadata_url=os.getenv("OIDC_DISCOVERY_URL", config["issuer"]+"/.well-known/openid-configuration"),
-                       client_kwargs={"scope": "openid profile", "code_challenge_method": "S256", "timeout": 10,
-                                      "trust_env": False})
-    return oauth.create_client("organization")
 
 
 def install(app) -> None:
