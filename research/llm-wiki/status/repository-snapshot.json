@@ -1,11 +1,11 @@
 {
-  "captured_at": "2026-10-26T12:40:24+09:00",
-  "head": "42d06920aab61d2b979da9ea73e004acf94a2ed6",
-  "branch": "10/25-stage0-disposal",
+  "captured_at": "2026-10-26T13:15:57+09:00",
+  "head": "69c14bb349350e7fcd28d96d9b4ef2bf0b3b2d73",
+  "branch": "10/25-stage0-adminpool",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md"
+    " M research/llm-wiki/catalogs/threats.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -13,7 +13,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "3257e156b3df7e3214f0d35a0dd3550d9bc2d01a9e0cf4f1995c3739517f46be"
+      "sha256": "2b7878b5f230fde2f46a2cbe9e27bec4372004b3e317ea76d059eb988d579386"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
