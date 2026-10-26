@@ -16,13 +16,11 @@ servers + DB servers - and the reviewed file wins a name clash.
 """
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import os
 import sys
 import tomllib
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -291,25 +289,10 @@ def review_matches(approved: dict | None, tool: dict) -> bool:
 
 
 async def build_lock() -> dict:
-    """Discover every catalog server now and describe it as a lock document."""
-    from . import upstream
-    result: dict[str, Any] = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-                              "catalog": catalog_version(), "servers": {}}
-    for server_id, spec in sorted(servers().items()):
-        discovered = await upstream.discover(spec["endpoint"])
-        result["servers"][server_id] = {
-            "package": source_ref(spec),
-            "server_name": discovered["advertised_name"],
-            "server_version": discovered["version"],
-            "protocol_version": discovered["protocol_version"],
-            "tools": {tool["name"]: tool_hashes(tool) for tool in sorted(discovered["tools"], key=lambda t: t["name"])},
-        }
-    return result
+    from . import registry_lock
+    return await registry_lock.build_lock()
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["lock"]:
-        print(json.dumps(asyncio.run(build_lock()), ensure_ascii=False, indent=1, sort_keys=True))
-    else:
-        print("usage: python -m app.registry lock", file=sys.stderr)
-        sys.exit(2)
+    from . import registry_lock
+    registry_lock.main(sys.argv[1:])
