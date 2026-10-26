@@ -644,16 +644,17 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tup
         return ("모델 응답", "— (하네스 없음)")
     observer = managed.load_module("model_observer", HERE / "agent.py")
     prompt = observer.MODEL_PROMPT
-    command = (f"claude -p {shlex.quote(prompt)}" if name == "claude"
-               else f"codex exec --skip-git-repo-check {shlex.quote(prompt)}")
+    entry = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account)
+    program = shlex.quote(name if simple else str(entry / name))
+    command = (f"{program} -p {shlex.quote(prompt)}" if name == "claude"
+               else f"{program} exec --skip-git-repo-check {shlex.quote(prompt)}")
     if simple:
         # Before /etc/environment is read again by a new login, pass the CA the harness needs explicitly.
         config = json.loads((STATE / account / "config.json").read_text())
         prefix = " ".join(f"{k}={shlex.quote(v)}" for k, v in managed.ca_environment(config).items())
         argv = ["runuser", "-l", account, "-c", (prefix + " " if prefix else "") + command]
     else:
-        argv = ["runuser", "-u", account, "--", str(Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account)
-                                                    / "login-shell"), "-c", command]
+        argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
             else f"{name} 실패 · {found['detail'] or '응답 없음'}")

@@ -613,6 +613,9 @@ def account_header(summary):
     if os.geteuid() == 0:
         account = pwd.getpwnam(user)
         command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--", *command]
+    elif summary.get("mode") != "simple" and os.geteuid() != pwd.getpwnam(user).pw_uid:
+        # The existing sudo login-shell cannot execute the header helper under AppArmor.
+        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mcpgw-status --check)")
     done = subprocess.run(command, capture_output=True, text=True, timeout=20, cwd="/", env={"PATH": "/usr/bin:/bin"})
     value = json.loads(done.stdout.strip().splitlines()[-1])["Authorization"]
     if value.startswith("Bearer endpoint-not-active"):

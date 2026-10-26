@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -52,6 +53,69 @@ class Reinstall(unittest.TestCase):
         source = (KIT / "bootstrap.py").read_text(encoding="utf-8")
         # 만료 검사는 계정·설치를 건드리는 connect보다 앞에 있어야 한다.
         self.assertLess(source.index("if expired(bundle):"), source.index("return connect(managed"))
+
+    def test_isolated_employee_check_requires_admin_without_running_helper_as_employee(self):
+        c = self.core
+        summary = {"user": "managed-emp", "mode": "isolated", "state": "active"}
+        with patch.object(c.os, "geteuid", return_value=1000, create=True), \
+             patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+             patch.object(c.subprocess, "run", return_value=SimpleNamespace(
+                 stdout='{"Authorization":"Bearer endpoint-not-active"}', returncode=0)) as run, \
+             self.assertRaisesRegex(ValueError, "sudo mcpgw-status --check"):
+            c.account_header(summary)
+        run.assert_not_called()
+
+    def test_header_check_keeps_root_managed_account_and_simple_mode_paths(self):
+        c = self.core
+        helper = str(c.ENFORCEMENT / "mcpgw-emp/header-helper")
+        token = "Bearer synthetic-unit-token"
+        for uid, mode in ((0, "isolated"), (1001, "isolated"), (1001, "simple")):
+            with self.subTest(uid=uid, mode=mode), \
+                 patch.object(c.os, "geteuid", return_value=uid, create=True), \
+                 patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+                 patch.object(c.subprocess, "run", return_value=SimpleNamespace(
+                     stdout=json.dumps({"Authorization": token}), returncode=0)) as run:
+                self.assertEqual(c.account_header({"user": "emp", "mode": mode}), token)
+                expected = (["setpriv", "--reuid", "1001", "--regid", "1001", "--clear-groups", "--", helper]
+                            if uid == 0 else [helper])
+                self.assertEqual(run.call_args.args[0], expected)
+                self.assertEqual(run.call_args.kwargs["env"], {"PATH": "/usr/bin:/bin"})
+
+    def test_inactive_header_and_helper_failure_remain_failures(self):
+        c = self.core
+        with patch.object(c.os, "geteuid", return_value=1001, create=True), \
+             patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+             patch.object(c.subprocess, "run", return_value=SimpleNamespace(
+                 stdout='{"Authorization":"Bearer endpoint-not-active"}', returncode=0)), \
+             self.assertRaisesRegex(ValueError, "활성화 전"):
+            c.account_header({"user": "emp", "mode": "isolated"})
+        with patch.object(c.os, "geteuid", return_value=1001, create=True), \
+             patch.object(c.subprocess, "run", side_effect=subprocess.TimeoutExpired("helper", 20)), \
+             self.assertRaises(subprocess.TimeoutExpired):
+            c.account_header({"user": "emp", "mode": "simple"})
+
+    def test_model_check_uses_fixed_entry_in_isolated_mode_and_employee_path_in_simple_mode(self):
+        b, c = self.boot, self.core
+        account = self.root / "emp"
+        account.mkdir()
+        (account / "config.json").write_text('{"uid":1001}')
+        observer = SimpleNamespace(MODEL_PROMPT="reply 'OK' only", model_check=Mock())
+        for simple in (False, True):
+            for harness in ("claude", "codex"):
+                for ok in (True, False):
+                    with self.subTest(simple=simple, harness=harness, ok=ok):
+                        observer.model_check.return_value = {"ok": ok, "seconds": 1.2, "detail": "denied"}
+                        with patch.object(b, "STATE", self.root), patch.object(c, "load_module", return_value=observer):
+                            label, value = b.model_cell(c, "emp", [harness], simple)
+                        self.assertEqual(label, "모델 응답")
+                        self.assertIn("정상" if ok else "실패 · denied", value)
+                        argv = observer.model_check.call_args.args[0]
+                        entry = c.ENFORCEMENT / "mcpgw-emp"
+                        expected = harness if simple else str(entry / harness)
+                        arguments = "-p" if harness == "claude" else "exec --skip-git-repo-check"
+                        self.assertEqual(argv[-1], f"{shlex.quote(expected)} {arguments} {shlex.quote(observer.MODEL_PROMPT)}")
+                        self.assertEqual(argv[:-1], ["runuser", "-l", "emp", "-c"] if simple else
+                                         ["runuser", "-u", "emp", "--", str(entry / "login-shell"), "-c"])
 
     def test_linux_refused_enrollment_or_policy_never_removes_old_install(self):
         b = self.boot
