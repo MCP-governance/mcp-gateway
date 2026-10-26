@@ -158,6 +158,15 @@ function Remove-EndpointCompilerTemp([string]$Path) {
     }
 }
 
+# Every install attempt leaves a result folder; keep the newest ones for diagnosis and drop the rest. The approved
+# installer files live beside this folder, never in it.
+function Remove-EndpointOldResults([string]$Results, [int]$Keep = 10) {
+    $old = @(Get-ChildItem -LiteralPath $Results -Directory -Force | Where-Object {
+        $_.Name -match '^[a-f0-9]{32}$' -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) } |
+        Sort-Object LastWriteTimeUtc -Descending | Select-Object -Skip $Keep)
+    foreach ($item in $old) { Remove-Item -LiteralPath $item.FullName -Recurse -Force }
+}
+
 function Read-EndpointDataFile([string]$Path, [int]$Maximum) {
     $Path = [IO.Path]::GetFullPath($Path)
     Assert-EndpointNoLinks $Path
@@ -241,6 +250,8 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
     [IO.File]::WriteAllText((Join-Path $private 'request.json'), ($request | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     $results = Join-Path $paths.state 'results'
     New-EndpointProtectedDirectory $results
+    # Pruning is housekeeping: it must never block an install. The folder made below is the newest of the kept ones.
+    try { Remove-EndpointOldResults $results 9 } catch { }
     $result = Join-Path $results $id
     New-EndpointProtectedDirectory $result $request.requester_sid
     $request | Add-Member -NotePropertyName result_directory -NotePropertyValue $result -Force

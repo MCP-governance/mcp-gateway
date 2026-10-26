@@ -67,6 +67,15 @@ class Frame(unittest.TestCase):
         text = kit.frame({"connected": True, "updated": 1800000000}, now=1800000000)
         self.assertIn("관리 설정 적용  —", text)
 
+    def test_stopped_service_is_not_shown_as_waiting_for_activation(self):
+        probe = {"model": {"ok": True, "seconds": 1.0}, "connection": {"service": "stopped", "initialized": [], "tools": 0}}
+        cells = dict(kit.check_cells(probe))
+        self.assertEqual(cells["게이트웨이 MCP 목록"], "서비스 중지")
+        text = kit.frame(example(), cells=kit.check_cells(probe), columns=120, lines=40, now=1800000000, language="en")
+        self.assertIn("Service stopped", text)
+        self.assertNotIn("Waiting for activation", text.split("Gateway MCP list", 1)[1])
+        self.assertEqual(dict(kit.check_cells({"connection": {"waiting": "pending"}}))["게이트웨이 MCP 목록"], "활성화 대기")
+
     def test_probe_errors_and_credentials_never_leave_the_projection(self):
         cells = kit.check_cells({"model": {"ok": False, "detail": "Bearer private-token"},
                                  "connection": {"failed": {"learn": "authorization=abc"}}})

@@ -319,4 +319,9 @@ try { [void]$form.ShowDialog() } finally {
     foreach ($name in @('request.json', 'result.json', 'result.json.tmp')) {
         Remove-Item -LiteralPath (Join-Path $work $name) -Force -ErrorAction SilentlyContinue
     }
+    # A finished run leaves nothing of its own; a failed one keeps its log. The parent goes with the last wizard folder
+    # only after a removal, since the tray's folder and the next install use it.
+    if ($script:completed) { Remove-Item -LiteralPath (Join-Path $work 'setup.log') -Force -ErrorAction SilentlyContinue }
+    Remove-EndpointEmptyDirectory $work
+    if ($Remove -and $script:completed) { Remove-EndpointEmptyDirectory (Split-Path $work) }
 }

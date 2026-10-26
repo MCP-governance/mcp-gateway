@@ -206,9 +206,8 @@ try {
             $item = Join-Path $trayWork $name
             if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
         }
-        if ((Test-Path -LiteralPath $trayWork) -and -not (Get-ChildItem -LiteralPath $trayWork -Force)) {
-            Remove-Item -LiteralPath $trayWork
-        }
+        Remove-EndpointEmptyDirectory $trayWork
+        Remove-EndpointEmptyDirectory (Split-Path $trayWork)
         Set-EndpointResult 65 '설정 제거'
         if ($managed) {
             foreach ($name in @('settings.json', 'status.json', 'status.tmp')) {
@@ -238,7 +237,7 @@ try {
     Test-EndpointGateway $request.gateway_url $request.ca_certificate $request.ca_sha256
     if ($managed) {
         $isolated = $request.isolated_account -eq $true
-        Set-EndpointResult 15 '연결 등록'
+        Set-EndpointResult 15 '게이트웨이 등록'
         $registration = Join-Path $compilerTemp 'registration.json'
         $enrollArguments = @((Join-Path $stageRoot 'managed-windows.py'), 'enroll', '--user', $request.user,
             '--enrollment', $request.enrollment, '--registration', $registration)

@@ -21,7 +21,7 @@ TEXT_EN = {
     "연결 상태": "Connection", "연결됨": "Connected", "연결 끊김": "Disconnected",
     "관리 상태": "Management", "상태": "Status", "연결 방식": "Mode", "간편 모드": "Simple mode",
     "게이트웨이 판정": "Gateway decision", "격리 계정": "Isolated account",
-    "활성화 대기": "Waiting for activation", "활성": "Active", "격리됨": "Quarantined",
+    "활성화 대기": "Waiting for activation", "서비스 중지": "Service stopped", "활성": "Active", "격리됨": "Quarantined",
     "등록 해제됨": "Unregistered", "철회됨": "Revoked", "제거됨": "Removed", "확인 필요": "Needs attention",
     "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers",
     "하네스 판본": "Harness versions", "하네스 응답": "Harness response", "하네스": "Harnesses",
@@ -99,7 +99,9 @@ def check_cells(probe):
     if isinstance(model.get("seconds"), (int, float)):
         answer += f" · {model['seconds']:.1f}초"
     tools = "—"
-    if connection.get("waiting"):
+    if connection.get("service"):
+        tools = "서비스 중지"
+    elif connection.get("waiting"):
         tools = "활성화 대기"
     elif connection.get("initialized"):
         tools = f"완료 · 도구 {int(connection.get('tools') or 0)}개"

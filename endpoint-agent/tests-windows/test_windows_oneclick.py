@@ -285,6 +285,59 @@ for ($i=0; $i -lt $paths.Count; $i++) {
                 self.managed.install(SimpleNamespace(user='employee', enrollment=enrollment, isolated_account=True))
             request.assert_not_called()
 
+    def probe_connection(self, answer):
+        status = self.root / 'status.json'
+        status.write_text(json.dumps({'servers': ['learn'], 'state': 'pending'}), encoding='utf-8')
+        settings = self.root / 'settings.json'
+        settings.write_text(json.dumps({'status_path': str(status), 'gateway_url': 'https://gateway.invalid'}), encoding='utf-8')
+        output = io.StringIO()
+        with mock.patch.object(self.managed, 'read_broker', return_value=answer), mock.patch('sys.stdout', output):
+            self.managed.probe(SimpleNamespace(settings=str(settings), skip_model=True))
+        return json.loads(output.getvalue().strip().splitlines()[-1])['connection']
+
+    def test_probe_tells_an_unreachable_service_from_one_waiting_for_activation(self):
+        # pj3 실측: 서비스 작업이 없을 때 「연결 확인」이 「활성화 대기」로 보였다. 표시만 다르고 판정·헤더는 그대로다.
+        stopped = self.probe_connection(None)
+        self.assertEqual(stopped['service'], 'stopped')
+        self.assertNotIn('waiting', stopped)
+        waiting = self.probe_connection({'error': '엔드포인트 활성화·정책 연결이 필요합니다'})
+        self.assertEqual(waiting['waiting'], 'pending')
+        self.assertNotIn('service', waiting)
+        self.assertNotIn('service', self.probe_connection({'Authorization': 'Bearer endpoint-not-active', 'extra': 1}))
+        errors, output = io.StringIO(), io.StringIO()
+        with mock.patch.object(self.managed, 'read_broker', return_value=None), mock.patch('sys.stdout', output), mock.patch('sys.stderr', errors):
+            self.managed.header(SimpleNamespace())
+        self.assertEqual(json.loads(output.getvalue()), {'Authorization': 'Bearer endpoint-not-active'})
+        self.assertIn('관리형 연결 불가', errors.getvalue())
+
+    def test_removal_prunes_only_empty_folders_the_kit_created(self):
+        data, files = self.root / 'data', self.root / 'files'
+        layout = {'managed-mcp.json': files / 'ClaudeCode' / 'managed-mcp.json',
+                  'requirements.toml': data / 'OpenAI' / 'Codex' / 'requirements.toml'}
+        patches = dict(FILES=layout, PROGRAM_DATA=data, STATE=data / 'MCPGatewayManaged')
+        tray = data / 'MCPGatewayManagedTray'
+        for folder in (layout['managed-mcp.json'].parent, layout['requirements.toml'].parent, tray, patches['STATE']):
+            folder.mkdir(parents=True)
+        with mock.patch.multiple(self.managed, **patches):
+            self.managed.prune_empty_folders()
+            for folder in (layout['managed-mcp.json'].parent, data / 'OpenAI', tray, patches['STATE']):
+                self.assertFalse(folder.exists(), folder)
+            self.assertTrue(data.is_dir())
+            # Folders that still hold something (an organization's own file, another account's state) stay.
+            for folder in (layout['managed-mcp.json'].parent, layout['requirements.toml'].parent, tray / 'S-1', patches['STATE'] / 'other'):
+                folder.mkdir(parents=True)
+            (layout['managed-mcp.json'].parent / 'organization.json').write_text('{}')
+            (data / 'OpenAI' / 'Other').mkdir()
+            self.managed.prune_empty_folders()
+            self.assertTrue((layout['managed-mcp.json'].parent / 'organization.json').is_file())
+            self.assertTrue((data / 'OpenAI' / 'Other').is_dir() and tray.is_dir() and (patches['STATE'] / 'other').is_dir())
+            self.assertFalse(layout['requirements.toml'].parent.exists())
+            events = []
+            with mock.patch.object(self.managed, 'rollback', side_effect=lambda a: events.append('rollback')):
+                with mock.patch.object(self.managed, 'prune_empty_folders', side_effect=lambda: events.append('prune')):
+                    self.managed.uninstall(SimpleNamespace(user='employee'))
+            self.assertEqual(events, ['rollback', 'prune'])
+
     def test_download_keeps_zip_default_and_mints_no_enrollment_for_missing_template(self):
         tree = ast.parse((ROOT / 'full_stack_lab/gateway/app/agent_service.py').read_text(encoding='utf-8'))
         nodes = [n for n in tree.body if isinstance(n, ast.Assign) and any(

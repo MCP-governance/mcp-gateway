@@ -30,6 +30,8 @@ $script:healthResult = ''
 $script:probeJob = $null
 $script:probe = $null
 $script:window = $null
+$script:pipeGone = $null
+$script:serviceMissing = $false
 try { $script:probe = Get-Content -LiteralPath $probePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { }
 
 function T([string]$Key) { return (Get-EndpointText $Key $script:lang) }
@@ -66,6 +68,14 @@ function Update-EndpointTray {
             }
         }
     } catch { }
+    # The service owns a per-account pipe while it runs; a missing or stopped scheduled task leaves no pipe, long
+    # before the last report is 150 seconds old. A restart takes seconds, so only a pipe gone for a while counts.
+    if ($settings.mode -eq 'managed' -and $script:snapshot.state -ne 'removed' -and $script:label -ne 'preparing') {
+        if (Test-EndpointServicePipe $settings.user) {
+            if ($script:pipeGone) { $script:pipeGone = $null; $script:serviceMissing = $false; if ($script:probe.connection.service) { $script:probe = $null } }
+        } elseif (-not $script:pipeGone) { $script:pipeGone = [DateTime]::UtcNow }
+        if ($script:pipeGone -and ([DateTime]::UtcNow - $script:pipeGone).TotalSeconds -ge 10) { $script:label = 'service_stopped' }
+    }
     $icon.Icon = switch ($script:label) {
         'connected' { [Drawing.SystemIcons]::Information }
         'blocked' { [Drawing.SystemIcons]::Warning }
@@ -77,7 +87,7 @@ function Update-EndpointTray {
         $icon.ShowBalloonTip(5000, (T 'blocked'), $script:blocks[-1].at, [Windows.Forms.ToolTipIcon]::Warning)
     }
     # The first time the PC is active, check it once by itself: model answer, tools, one server (D-239).
-    if ($simple -and -not $script:probe -and -not $script:probeJob -and $script:label -ne 'disconnected' -and
+    if ($simple -and -not $script:probe -and -not $script:probeJob -and $script:label -notin @('disconnected', 'service_stopped') -and
         $script:snapshot.state -eq 'active') { Start-EndpointProbe }
 }
 
@@ -88,7 +98,8 @@ function Get-EndpointCells {
              elseif ($p.model.harness) { "$($p.model.harness) $(T 'failed') · $(Get-EndpointValue $p.model.detail $script:lang)" }
              else { Get-EndpointValue $p.model.detail $script:lang }
     $c = $p.connection
-    $tools = if (@($c.initialized).Count) { "$($c.tools) ($(T 'servers') $(@($c.initialized).Count)/$($p.servers))" }
+    $tools = if ($c.service) { T 'service_stopped' }
+             elseif (@($c.initialized).Count) { "$($c.tools) ($(T 'servers') $(@($c.initialized).Count)/$($p.servers))" }
              elseif ($c.waiting) { T 'waiting' } else { '—' }
     $first = if (@($c.initialized).Count) { "$(@($c.initialized)[0]) $(T 'ok')" }
              elseif ($c.failed -and @($c.failed.PSObject.Properties).Count) {
@@ -101,6 +112,8 @@ function Get-EndpointNext {
     $state = $script:snapshot.state
     if ($state -eq 'removed' -or -not (Test-Path -LiteralPath $SettingsPath)) { return T 'next_removed' }
     if ($script:label -eq 'preparing') { return T 'next_preparing' }
+    if ($script:serviceMissing -and $script:label -in @('disconnected', 'service_stopped')) { return T 'next_removed' }
+    if ($script:label -eq 'service_stopped') { return T 'next_service' }
     if ($script:label -eq 'disconnected') { return T 'next_reconnect' }
     if ($state -eq 'pending') { return T 'next_pending' }
     if ($state -eq 'quarantined') { return T 'next_quarantined' }
@@ -178,13 +191,18 @@ function Complete-EndpointReconnect {
     $script:healthJob = $null
     Update-EndpointTray
     # The Gateway answers but this PC's service stopped reporting: restarting the service needs an administrator.
-    if ($script:healthResult -eq (T 'gateway_ok') -and $script:label -eq 'disconnected' -and $settings.mode -eq 'managed' -and
+    if ($script:healthResult -eq (T 'gateway_ok') -and $script:label -in @('disconnected', 'service_stopped') -and $settings.mode -eq 'managed' -and
         $script:snapshot.state -ne 'removed' -and (Test-Path -LiteralPath $SettingsPath)) {
         if ([Windows.Forms.MessageBox]::Show((T 'restart_service'), (T 'product'), 'OKCancel') -eq 'OK') {
+            # A standard account cannot read the service task, so only the elevated command can tell it is gone (exit 3):
+            # then restarting is pointless and the next step is the reinstall.
             $task = 'MCPGatewayManaged-' + $settings.user.ToLowerInvariant()
+            $query = "if (Get-ScheduledTask -TaskName '$task' -ErrorAction SilentlyContinue) { Start-ScheduledTask -TaskName '$task' } else { exit 3 }"
             try {
-                Start-Process -FilePath $script:PowerShellExe -Verb RunAs -WindowStyle Hidden -ArgumentList (
-                    '-NoProfile -NonInteractive -Command Start-ScheduledTask -TaskName ' + (Quote-EndpointArgument $task))
+                $restart = Start-Process -FilePath $script:PowerShellExe -Verb RunAs -WindowStyle Hidden -PassThru -Wait -ArgumentList (
+                    '-NoProfile -NonInteractive -Command ' + (Quote-EndpointArgument $query))
+                if ($restart.ExitCode -eq 3) { $script:serviceMissing = $true }
+                $restart.Dispose()
             } catch { $script:healthResult = T 'uac_cancelled' }
         }
     }

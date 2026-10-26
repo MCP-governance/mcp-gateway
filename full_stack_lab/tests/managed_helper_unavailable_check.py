@@ -28,12 +28,13 @@ class ManagedHelperUnavailable(unittest.TestCase):
 
     def test_windows_helper_without_broker_prints_rejected_credential(self):
         source = (ROOT / "endpoint-agent/managed-windows.py").read_text(encoding="utf-8")
-        node = next(n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name == "header")
+        nodes = [n for n in ast.parse(source).body if isinstance(n, ast.FunctionDef) and n.name in {"read_broker", "header"}]
+        self.assertEqual(len(nodes), 2)
         namespace = {"os": SimpleNamespace(open=lambda *a: (_ for _ in ()).throw(OSError("busy")),
                                            O_RDONLY=0, O_BINARY=0),
                      "time": SimpleNamespace(sleep=lambda s: None), "json": json, "sys": sys,
                      "pipe_name": lambda user: "pipe"}
-        exec(compile(ast.Module(body=[node], type_ignores=[]), "managed-windows.py", "exec"), namespace)
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), "managed-windows.py", "exec"), namespace)
         with patch("builtins.print") as printed:
             namespace["header"](None)
         self.assertEqual(json.loads(printed.call_args_list[-1].args[0]), UNAVAILABLE)
