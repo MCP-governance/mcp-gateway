@@ -700,7 +700,7 @@ def install(args):
     if not protected([python, python.parent]):
         raise ValueError("보호된 설치 경로의 실행 파일이 필요합니다. 설치 마법사에서 다시 시도하세요")
     lock_down(PROGRAMS)
-    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py"):
+    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py", "kit_screen.py"):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
@@ -907,7 +907,8 @@ def serve(args):
             # The tray shows the approved servers, the state and the versions; no key, token or policy text.
             publish(status_path, True, os_observer.get("recent_blocks", []), management,
                     details={"state": report["state"], "servers": sorted(policy["servers"]), "mode": config.get("mode", "isolated"),
-                             "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"]})
+                             "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"],
+                             "protected_configs": health.get("protected_configs")})
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
             with lock:
                 cache.clear()

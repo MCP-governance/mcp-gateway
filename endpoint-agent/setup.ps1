@@ -256,6 +256,14 @@ $timer.Add_Tick({
             $title.Text = if ($Remove) { T 'done_remove' } else { T 'done_install' }
             $next.Enabled = $false
             $retry.Enabled = $false
+            if (-not $Remove -and $result.settings) {
+                try {
+                    $installed = Get-Content -LiteralPath $result.settings -Raw -Encoding UTF8 | ConvertFrom-Json
+                    $terminalArgs = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $installed.directory 'windows_status.py')) +
+                        ' ' + (Quote-EndpointArgument $installed.status_path) + ' --settings ' + (Quote-EndpointArgument $result.settings)
+                    Start-Process -FilePath (Join-Path $installed.directory 'python\python.exe') -ArgumentList $terminalArgs
+                } catch { $results.AppendText("`r`n터미널 화면: 트레이에서 열기") }
+            }
         }
     }
 })
