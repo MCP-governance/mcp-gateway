@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T15:52:45+09:00
+확인 시각: 2026-10-26T15:54:24+09:00
 
-HEAD: `17951d9a6b1f92c670702fbe5b37bcf2d19eaa1d` · 로컬 브랜치: `10/26-stage0-report`
+HEAD: `3b6d3dbedcde126ef8cc20820b83c2b6f262d487` · 로컬 브랜치: `10/26-stage0-report`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,6 +11,7 @@ HEAD: `17951d9a6b1f92c670702fbe5b37bcf2d19eaa1d` · 로컬 브랜치: `10/26-sta
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/status/reports/2026-10-26-refactor-stage0.md
 ```
 
 ## 주요 파일 바이트
