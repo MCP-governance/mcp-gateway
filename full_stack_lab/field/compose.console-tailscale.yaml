@@ -1,0 +1,10 @@
+# 이 오버레이는 tailscale 방식을 선택한 경우에만 사용한다.
+services:
+  caddy:
+    user: "0:0"
+    volumes:
+      - type: bind
+        source: /var/run/tailscale/tailscaled.sock
+        target: /var/run/tailscale/tailscaled.sock
+        read_only: true
+        bind: {create_host_path: false}

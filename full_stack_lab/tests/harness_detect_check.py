@@ -114,6 +114,15 @@ class Rendering(unittest.TestCase):
         self.assertNotIn("developer_instructions", files["codex-config.toml"])
         self.assertNotIn("managed_config.toml", files)
 
+    def test_shared_codex_files_do_not_change_sandbox_or_approval(self):
+        for platform in ("linux", "windows"):
+            files = render_policy(self.GUIDE, platform)
+            for name in ("requirements.toml", "managed_config.toml", "codex-config.toml"):
+                with self.subTest(platform=platform, file=name):
+                    config = tomllib.loads(files.get(name, ""))
+                    for key in ("sandbox_mode", "allowed_sandbox_modes", "approval_policy", "allowed_approval_policies"):
+                        self.assertNotIn(key, config)
+
 
 class Fake:
     def __init__(self, **kwargs):

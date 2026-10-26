@@ -175,10 +175,17 @@ class MacOSKitCheck(unittest.TestCase):
         node = next(n for n in tree.body if isinstance(n, ast.AsyncFunctionDef) and n.name == 'download_managed_kit')
         body = ast.get_source_segment(source, node)
         self.assertIn('consumed_at IS NULL AND expires_at>now()', body)
-        self.assertIn('platform != "macos" or delivery != "zip"', body)
+        self.assertIn('kit_download_hash(ticket, platform, delivery, packaging, isolated)', body)
+        self.assertIn('kit_download_hash(ticket, "macos", "zip", "zip", isolated)', body)
         self.assertIn('await current_identity(authorization)', body)
         self.assertNotEqual(hashlib.sha256(b'x' * 43).digest(), hashlib.sha256(b'kit-download:' + b'x' * 43).digest())
         self.assertIn('timedelta(minutes=5)', body)
+        digest = definitions(APP / 'agent_service.py', {'kit_download_hash'}, {'hashlib': hashlib})['kit_download_hash']
+        legacy = hashlib.sha256(b'kit-download:' + b'x' * 43).hexdigest()
+        self.assertEqual(digest('x' * 43, 'macos', 'zip', 'zip', False), legacy)
+        for scope in [('linux', 'zip', 'zip', False), ('macos', 'command', 'zip', False),
+                      ('macos', 'zip', 'oneclick', False), ('macos', 'zip', 'zip', True)]:
+            self.assertNotEqual(digest('x' * 43, *scope), legacy)
 
     def test_console_puts_windows_first(self):
         # D-239: Windows is the main target, selected first whatever browser opened the Console.
