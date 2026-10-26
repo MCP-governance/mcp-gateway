@@ -259,10 +259,21 @@ workday() {
 # Every harness on every PC connects to each managed MCP server through the Gateway
 # with the SSO token. No model is involved: `mcp list` only opens the MCP sessions.
 harness_check() {
-  local failed=0 ws
+  # Each PC is its own container (own HOME, token, codex process), so they run side by side;
+  # per-PC logs are printed in WORKSTATIONS order so lines never interleave.
+  local failed=0 ws dir pids=()
+  dir=$(mktemp -d)
   for ws in "${WORKSTATIONS[@]}"; do
-    docker compose exec -T "$ws" harness-check || failed=1
+    docker compose exec -T "$ws" harness-check >"$dir/$ws.log" 2>&1 &
+    pids+=($!)
   done
+  local i=0
+  for ws in "${WORKSTATIONS[@]}"; do
+    wait "${pids[$i]}" || failed=1
+    cat "$dir/$ws.log"
+    i=$((i + 1))
+  done
+  rm -rf "$dir"
   return $failed
 }
 
