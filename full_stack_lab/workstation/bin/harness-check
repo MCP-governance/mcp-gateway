@@ -9,9 +9,12 @@ Prints one line per harness; exit 1 if any managed server is not connected.
 """
 import json
 import os
+import queue
 import re
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
 
 WS = os.getenv("WORKSTATION_ID") or os.uname().nodename
@@ -38,26 +41,66 @@ def from_listing(output: str) -> set[str]:
     return ok
 
 
+def converse(command: list[str], lines: list[str], want_id: int, limit: float,
+             cwd: Path | None = None) -> tuple[dict | None, str]:
+    """Send JSON lines to a stdio server and return the reply with id want_id as soon as it
+    arrives. stdin stays open until then; a silent server is given up on after limit seconds,
+    an exit or a command that cannot start ends the wait at once (reply None = failure)."""
+    try:
+        proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                text=True, cwd=cwd)
+    except OSError as exc:
+        return None, f"error: {exc}"
+    replies: queue.Queue = queue.Queue()
+
+    def pump() -> None:
+        for line in proc.stdout:
+            replies.put(line)
+        replies.put(None)
+
+    threading.Thread(target=pump, daemon=True).start()
+    seen: list[str] = []
+    deadline = time.monotonic() + limit
+    try:
+        proc.stdin.write("\n".join(lines) + "\n")
+        proc.stdin.flush()
+        while (left := deadline - time.monotonic()) > 0:
+            try:
+                line = replies.get(timeout=left)
+            except queue.Empty:
+                break
+            if line is None:
+                break
+            seen.append(line)
+            try:
+                message = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(message, dict) and message.get("id") == want_id:
+                return message, "".join(seen)
+    except OSError as exc:  # server closed stdin before it was written
+        seen.append(f"error: {exc}")
+    finally:
+        proc.kill()
+        proc.wait()
+    return None, "".join(seen)
+
+
 def codex() -> tuple[set[str], str]:
     requests = [{"id": 1, "method": "initialize", "params": {"clientInfo": {"name": "harness-check", "version": "1"}}},
                 {"method": "initialized"},
                 {"id": 2, "method": "mcpServerStatus/list", "params": {"detail": "toolsAndAuthOnly"}}]
-    # app-server answers on stdout and exits when stdin closes; the sleep keeps stdin open
-    # until the status arrives.
-    script = "printf '%s\\n' " + " ".join(f"'{json.dumps(r)}'" for r in requests) + "; sleep 40"
-    out = run(["bash", "-c", f"({script}) | timeout 60 codex app-server 2>/dev/null"], timeout=90)
-    for line in out.splitlines():
-        try:
-            message = json.loads(line)
-        except ValueError:
-            continue
-        if message.get("id") == 2:
-            servers = message.get("result", {}).get("data", [])
-            # An authenticated MCP may legitimately expose zero tools to this
-            # subject. Its initialize evidence, not a permission count, proves
-            # connection; retain a real error as failure.
-            return {s["name"] for s in servers if s.get("serverInfo") and not s.get("toolsError")}, out
-    return set(), out
+    # app-server answers on stdout and exits when stdin closes, so stdin stays open until
+    # the status (id 2) arrives; 60s is the same ceiling as before.
+    message, out = converse(["codex", "app-server"], [json.dumps(r) for r in requests], 2, 60,
+                            cwd=Path.home() / "work")
+    if message is None:
+        return set(), out
+    servers = message.get("result", {}).get("data", [])
+    # An authenticated MCP may legitimately expose zero tools to this
+    # subject. Its initialize evidence, not a permission count, proves
+    # connection; retain a real error as failure.
+    return {s["name"] for s in servers if s.get("serverInfo") and not s.get("toolsError")}, out
 
 
 def main() -> int:

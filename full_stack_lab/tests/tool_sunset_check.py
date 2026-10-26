@@ -179,7 +179,7 @@ class ToolSunsetCheck(unittest.TestCase):
     def test_list_and_call_use_sunset_state_and_existing_policy(self):
         facade = (APP / "mcp_facade.py").read_text(encoding="utf-8")
         core = (APP / "core.py").read_text(encoding="utf-8")
-        self.assertIn('await tool_sunset.check(row["server_id"], row["name"])', facade)
+        self.assertIn('await tool_sunset.check_many(server_id, [row["name"] for row in server_rows])', facade)
         self.assertIn("tool_sunset.listable(sunset)", facade)
         self.assertIn("tool_sunset.call_verdict(sunset)", core)
         self.assertFalse(tool_sunset.listable({"active": False, "available": True}))

@@ -209,6 +209,11 @@ jobs:
       - name: Rego 단위 테스트
         run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
 
+      - name: 콘솔 TLS 세 방식·게시 경계 검사
+        run: |
+          bash -n field/console-tls.sh
+          python3 tests/console_https_check.py --docker
+
   local-suite:
     name: 스택 없는 시험
     needs: changes

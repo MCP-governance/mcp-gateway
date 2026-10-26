@@ -26,6 +26,8 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS annotations jsonb;
 
 -- Audit chain v5 columns.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS server_id text;
+CREATE INDEX IF NOT EXISTS decisions_tool_sunset_idx
+  ON decisions(server_id, tool_name, created_at DESC) WHERE upstream_executed;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS resource_id text;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS destinations jsonb;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS client jsonb;
