@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T14:07:04+09:00",
-  "head": "c872374b420129e0d3b734f6081f1af8d44afcf5",
-  "branch": "10/25-stage0-loadtest",
+  "captured_at": "2026-10-26T14:42:12+09:00",
+  "head": "bb94da63557292d71912d9177698ca404e9bffbb",
+  "branch": "10/26-ci-harness-check-parallel",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
