@@ -864,7 +864,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
     return await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (endpoint_id,))
 
 
-async def managed_policy(device: dict) -> dict:
+async def managed_policy(device: dict, *, connection=None) -> dict:
     from . import pac
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
@@ -876,13 +876,13 @@ async def managed_policy(device: dict) -> dict:
         raise ValueError("현장 관리형 연결에는 HTTPS가 필요합니다.")
     addresses = os.getenv("ENDPOINT_GATEWAY_IPS", parsed.hostname).split(",")
     addresses = [str(ipaddress.ip_address(a.strip())) for a in addresses]
-    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
+    rows = await db.fetch_all("SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id", connection=connection)
     # The minimal set (D-93): a harness is told about the servers whose tools this person may see
     # in tools/list, not about every operating server.
-    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],))
+    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],), connection=connection)
     usable = set(pac.servers_for(owner)) if owner else set()
     servers = [r["id"] for r in rows if r["id"] in usable]
-    version = await db.fetch_one("SELECT last_value FROM mcp_servers_version")
+    version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.
     guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
@@ -1030,8 +1030,8 @@ def held_servers(device: dict, policy: dict) -> list:
     return (device.get("detail") or {}).get("policy_servers") or []
 
 
-async def policy_accepted(device: dict, policy: dict | None = None) -> bool:
-    return policy_installed(policy or await managed_policy(device), device.get("policy_hash"), device.get("configuration_hashes"))
+async def policy_accepted(device: dict, policy: dict | None = None, *, connection=None) -> bool:
+    return policy_installed(policy or await managed_policy(device, connection=connection), device.get("policy_hash"), device.get("configuration_hashes"))
 
 
 async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, host: dict | None = None,

@@ -580,14 +580,14 @@ async def current_job(connection,row,device):
     revoked=await (await connection.execute('SELECT jti FROM agent_revoked_tokens WHERE jti=%s',(row['token_jti'],))).fetchone() if row['token_jti'] else None
     return (bool(policy) and row['policy_version']==policy['source_sha256'] and not revoked
             and row['control_sha256']==control_generation(row['server_id'])
-            and row['device_epoch']==device['device_epoch'] and await _same_control(row,device))
+            and row['device_epoch']==device['device_epoch'] and await _same_control(row,device,connection=connection))
 
 
-async def _same_control(row,device):
+async def _same_control(row,device,*,connection=None):
     """The job's control is still in force and the device holds it; server-list changes elsewhere keep the job (D-238)."""
     from . import endpoint_plane
-    policy=await endpoint_plane.managed_policy(device)
-    return endpoint_plane.control_matches(policy,row['device_policy']) and await endpoint_plane.policy_accepted(device,policy)
+    policy=await endpoint_plane.managed_policy(device,connection=connection)
+    return endpoint_plane.control_matches(policy,row['device_policy']) and await endpoint_plane.policy_accepted(device,policy,connection=connection)
 
 
 async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
@@ -645,7 +645,7 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
                 'control_sha256':row['control_sha256'],
                 'protocol_version':registry.pinned_protocol(row['server_id']) if allowed['observed'] else None,
                 'expires_at':allowed['expires_at'].isoformat(),'deadline':row['deadline'].isoformat(),
-                'contracts':{t['name']:{'description_sha256':t['approved_description_hash'],'schema_sha256':t['approved_schema_hash'],'output_schema_sha256':t['approved_output_schema_hash']} for t in await db.fetch_all('SELECT * FROM mcp_tools WHERE server_id=%s AND enabled',(row['server_id'],))} if allowed['observed'] else {}}
+                'contracts':{t['name']:{'description_sha256':t['approved_description_hash'],'schema_sha256':t['approved_schema_hash'],'output_schema_sha256':t['approved_output_schema_hash']} for t in await (await connection.execute('SELECT * FROM mcp_tools WHERE server_id=%s AND enabled',(row['server_id'],))).fetchall()} if allowed['observed'] else {}}
 
 
 async def complete(device: dict, job_id: str, result: dict | None, error: str | None, *, stopped: bool = False, isolation=None, diagnostics=None) -> bool:
@@ -748,12 +748,13 @@ async def prepare_token_revocation(connection, tokens):
         await connection.execute('SELECT pg_advisory_xact_lock(hashtext(%s))',('local:token:'+identity,))
     if not identities:
         return
+    # A committed stop must reach the device without locking the row complete() needs for its receipt.
     await db.execute("""UPDATE local_jobs SET stop_requested=true,
         state=CASE WHEN started_at IS NULL THEN 'expired' ELSE state END,
         finished_at=CASE WHEN started_at IS NULL THEN clock_timestamp() ELSE finished_at END
         WHERE token_jti=ANY(%s::uuid[]) AND state IN ('queued','claimed')""",(identities,))
     until=asyncio.get_running_loop().time()+RUN_SECONDS+5
-    while await db.fetch_one('SELECT id FROM local_jobs WHERE token_jti=ANY(%s::uuid[]) AND started_at IS NOT NULL AND stopped_at IS NULL LIMIT 1',(identities,)):
+    while await (await connection.execute('SELECT id FROM local_jobs WHERE token_jti=ANY(%s::uuid[]) AND started_at IS NOT NULL AND stopped_at IS NULL LIMIT 1',(identities,))).fetchone():
         if asyncio.get_running_loop().time()>=until:
             raise RuntimeError('로컬 실행 정지가 확인되지 않아 토큰 철회를 보류했습니다.')
         await asyncio.sleep(.1)

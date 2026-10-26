@@ -2259,7 +2259,7 @@ class OneClickApproval(StrictModel):
 ALL_PRINCIPALS = "*"  # registry.ALL_PRINCIPALS (D-234); this service does not load the registry
 
 
-async def resolve_audience(audience: str, users: list[str], requester: str) -> list[str]:
+async def resolve_audience(audience: str, users: list[str], requester: str, *, connection=None) -> list[str]:
     """The approval's audience in principal tokens; "*" is every active employee."""
     if audience == "all":
         return [ALL_PRINCIPALS]
@@ -2268,22 +2268,22 @@ async def resolve_audience(audience: str, users: list[str], requester: str) -> l
     wanted = sorted({u.strip() for u in users if u.strip()})
     if not wanted:
         raise HTTPException(422, "사용 대상 직원을 한 명 이상 지정하세요.")
-    rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE status='active' AND user_id=ANY(%s::text[])", (wanted,))
+    rows = await db.fetch_all("SELECT token, user_id FROM principals WHERE status='active' AND user_id=ANY(%s::text[])", (wanted,), connection=connection)
     missing = sorted(set(wanted) - {r["user_id"] for r in rows})
     if missing:
         raise HTTPException(422, f"활성 계정이 아닌 사용자: {', '.join(missing)}")
     return sorted(r["token"] for r in rows)
 
 
-async def approval_row(request_id: UUID, user: dict) -> dict:
+async def approval_row(request_id: UUID, user: dict, *, connection=None) -> dict:
     row = await db.fetch_one(
         """SELECT r.*, p.user_id AS submitter_user_id, p.display_name AS submitter_name FROM mcp_intake_requests r
-           LEFT JOIN principals p ON p.token=r.submitted_by WHERE r.id=%s""", (request_id,))
+           LEFT JOIN principals p ON p.token=r.submitted_by WHERE r.id=%s""", (request_id,), connection=connection)
     if not row or row["status"] not in {"HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"}:
         raise HTTPException(409, "검증이 끝난 신청만 검토할 수 있습니다. 검사 상태를 확인하세요.")
     try:
         await review.require_independent("intake-one-click", "intake", request_id, user["principal"], row["submitted_by"],
-                                         actor_user=user.get("user_id"), applicant_user=row.get("submitter_user_id"))
+                                         actor_user=user.get("user_id"), applicant_user=row.get("submitter_user_id"), connection=connection)
     except review.NotIndependent as exc:
         raise HTTPException(403, str(exc)) from exc
     return row
@@ -2487,166 +2487,168 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
 @app.post("/api/mcp-requests/{request_id}/approve-and-register")
 async def approve_and_register(request_id: UUID, request: OneClickApproval, user: dict = Depends(admin_caller),
                                 authorization: str | None = Header(default=None)):
-    # Serialize clicks across service processes. The status/evidence CAS also detects legacy-API edits.
-    async with INTAKE_APPROVAL_LOCK, db.transaction() as lock:
-        await lock.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (f"intake-one-click:{request_id}",))
-        row = await approval_row(request_id, user)
-        evidence = row.get("evidence") or {}
-        proposal = evidence.get("approval_proposal") or {}
-        if not proposal or intake_proposal.digest(proposal) != request.proposal_sha256:
-            raise HTTPException(409, "검토 화면이 바뀌었습니다. 다시 열어 확인하세요.")
-        pending = evidence.get("one_click_pending")
-        if datetime.fromisoformat(proposal["expires_at"]) <= datetime.now(UTC):
-            raise HTTPException(409, "검토 기한이 지났습니다. 다시 열어 확인하세요.")
-        if proposal["blockers"] or proposal["basis"] != intake_proposal.basis(row):
-            raise HTTPException(409, "검증을 통과하지 못했습니다. 검사 결과를 확인하세요.")
-        selected = sorted(set(request.tools))
-        if not selected or not set(selected) <= set(proposal["tools"]):
-            raise HTTPException(422, "신청 범위 안에서 도구를 하나 이상 선택하세요.")
-        actions = {name: action for name, action in request.actions.items() if action != proposal["tools"].get(name)}
-        # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
-        if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
-            raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
-        destinations = {name: sorted({str(h).strip().lower() for h in hosts if str(h).strip()})
-                        for name, hosts in request.destinations.items()}
-        destinations = {name: hosts for name, hosts in destinations.items()
-                        if hosts != (proposal["tool_reviews"].get(name) or {}).get("destinations")}
-        if not set(destinations) <= set(selected) or not set(destinations) <= set(proposal.get("address_tools") or []) or any(
-                len(hosts) > 10 or not all(review.DESTINATION.fullmatch(h) for h in hosts) for hosts in destinations.values()):
-            raise HTTPException(422, "허용 주소는 주소 인자가 있는 선택 도구에 호스트 이름 10개 이하로 적으세요.")
-        # 두 번째 관리자까지 가기 전에, 첫 클릭에서 사용 대상을 확인한다.
-        audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"])
-        assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
-        if set(assurance) - set(supplier_assurance.ASSURANCE_FIELDS):
-            raise HTTPException(422, "공급자 정보 항목을 확인하세요.")
-        errors = supplier_assurance.validate(assurance, required=False)
-        try:
-            location = residency.normalize(request.residency)
-            residency.require_location(location, proposal["data_class"], {"jurisdiction_pack_enabled": proposal["jurisdiction_pack_enabled"]})
-        except ValueError as exc:
-            errors.append(str(exc))
-        if errors:
-            raise HTTPException(422, " / ".join(errors))
-        scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
-                 **({"destinations": destinations} if destinations else {}),
-                 "valid_days": request.valid_days,
-                 **({"audience": request.audience, "audience_users": sorted(request.audience_users)}
-                    if request.audience != "all" else {}),
-                 "supplier_assurance": assurance, "residency": location,
-                 "valid_until": pending["scope"]["valid_until"] if pending else (
-                     datetime.now(UTC) + timedelta(days=request.valid_days)).isoformat()}
-        if pending and pending["scope"] != scope:
-            raise HTTPException(409, "1차 승인 범위와 다릅니다. 같은 범위를 확인하세요.")
-        state = await gateway_proxy("/api/registry", authorization)
-        if proposal["jurisdiction_pack_enabled"] != residency.enabled(state.get("organization") or {}):
-            raise HTTPException(409, "관할 규칙이 바뀌었습니다. 다시 열어 확인하세요.")
-        found = await gateway_proxy("/api/registry/discover", authorization, "POST",
-                                    discovery(proposal["endpoint"], proposal.get("local"), request_id),
-                                    timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
-        if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
-            raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
-        current = {**row, "provenance": proposal["provenance"]}
-        try:
-            keys = (artifact_provenance.trust_keys(os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
-                    if (proposal["provenance"].get("verification") or {}).get("attestation") else {})
-        except (OSError, ValueError, TypeError) as exc:
-            raise HTTPException(409, "출처 증명 신뢰 키를 확인할 수 없습니다.") from exc
-        proof = artifact_provenance.verify_source_attestation(
-            proposal["provenance"], str(((proposal["provenance"].get("artifact") or {}).get("sha256") or "")), keys)
-        if blocker := artifact_provenance.blocking_reason(proof):
-            raise HTTPException(409, f"출처 증명 재검증에서 보류했습니다: {blocker}")
-        gate = await review.intake_gate(current)
-        if (intake_proposal.scan_basis(gate) != proposal["scan_sha256"]
-                or any(b["code"] != "critical" for b in gate["blockers"])):
-            raise HTTPException(409, "검사 결과가 유효하지 않습니다. 다시 검사하세요.")
-        critical = (gate.get("critical") or {}).get("count", 0)
-        reason = request.critical_reason.strip() or (pending or {}).get("critical_reason", "")
-        if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
-            raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
-        assessed = proposal["risk"]
-        solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188: recorded per approval, never counted
-        approvers = []
-        if pending:
-            for actor in pending["approvers"]:
-                if not await review.same_person(actor, row["submitted_by"]) and not any(
-                        [await review.same_person(actor, seen) for seen in approvers]):
-                    approvers.append(actor)
-        if not any([await review.same_person(user["principal"], seen) for seen in approvers]):
-            approvers.append(user["principal"])
-        if assessed.get("tier") not in risk_tier.APPROVAL:
-            raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
-        # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
-        risk_reason = request.risk_reason.strip()
-        verdict, message = risk_tier.decide(assessed["tier"], len(approvers), risk_reason)
-        if verdict == "refuse":
-            raise HTTPException(422, message)
-        risk_reasons = ({**((pending or {}).get("risk_reasons") or {}), user["principal"]: risk_reason}
-                        if risk_tier.APPROVAL[assessed["tier"]]["reason"] == "required" else {})
-        if verdict == "cosign":
-            pending = {"scope": scope, "approvers": approvers, "critical_reason": reason, "risk_reasons": risk_reasons}
+    # Serialize approval writes across service processes. The status/evidence CAS also detects legacy-API edits.
+    async with INTAKE_APPROVAL_LOCK:
+        async with db.transaction() as lock:
+            await lock.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (f"intake-one-click:{request_id}",))
+            row = await approval_row(request_id, user, connection=lock)
+            evidence = row.get("evidence") or {}
+            proposal = evidence.get("approval_proposal") or {}
+            if not proposal or intake_proposal.digest(proposal) != request.proposal_sha256:
+                raise HTTPException(409, "검토 화면이 바뀌었습니다. 다시 열어 확인하세요.")
+            pending = evidence.get("one_click_pending")
+            if datetime.fromisoformat(proposal["expires_at"]) <= datetime.now(UTC):
+                raise HTTPException(409, "검토 기한이 지났습니다. 다시 열어 확인하세요.")
+            if proposal["blockers"] or proposal["basis"] != intake_proposal.basis(row):
+                raise HTTPException(409, "검증을 통과하지 못했습니다. 검사 결과를 확인하세요.")
+            selected = sorted(set(request.tools))
+            if not selected or not set(selected) <= set(proposal["tools"]):
+                raise HTTPException(422, "신청 범위 안에서 도구를 하나 이상 선택하세요.")
+            actions = {name: action for name, action in request.actions.items() if action != proposal["tools"].get(name)}
+            # 위험 등급은 제안 분류로 산정했다. 올리면 등급이 낮게 남으므로 낮추기만 받는다.
+            if not set(actions) <= set(selected) or any("rwx".index(a) > "rwx".index(proposal["tools"][n]) for n, a in actions.items()):
+                raise HTTPException(422, "도구 분류는 선택한 도구에서 제안값 이하로만 바꿀 수 있습니다.")
+            destinations = {name: sorted({str(h).strip().lower() for h in hosts if str(h).strip()})
+                            for name, hosts in request.destinations.items()}
+            destinations = {name: hosts for name, hosts in destinations.items()
+                            if hosts != (proposal["tool_reviews"].get(name) or {}).get("destinations")}
+            if not set(destinations) <= set(selected) or not set(destinations) <= set(proposal.get("address_tools") or []) or any(
+                    len(hosts) > 10 or not all(review.DESTINATION.fullmatch(h) for h in hosts) for hosts in destinations.values()):
+                raise HTTPException(422, "허용 주소는 주소 인자가 있는 선택 도구에 호스트 이름 10개 이하로 적으세요.")
+            # 두 번째 관리자까지 가기 전에, 첫 클릭에서 사용 대상을 확인한다.
+            audience = await resolve_audience(request.audience, request.audience_users, row["submitted_by"], connection=lock)
+            assurance = {**proposal["supplier_assurance"], **request.supplier_assurance}
+            if set(assurance) - set(supplier_assurance.ASSURANCE_FIELDS):
+                raise HTTPException(422, "공급자 정보 항목을 확인하세요.")
+            errors = supplier_assurance.validate(assurance, required=False)
+            try:
+                location = residency.normalize(request.residency)
+                residency.require_location(location, proposal["data_class"], {"jurisdiction_pack_enabled": proposal["jurisdiction_pack_enabled"]})
+            except ValueError as exc:
+                errors.append(str(exc))
+            if errors:
+                raise HTTPException(422, " / ".join(errors))
+            scope = {"proposal_sha256": request.proposal_sha256, "tools": selected, **({"actions": actions} if actions else {}),
+                     **({"destinations": destinations} if destinations else {}),
+                     "valid_days": request.valid_days,
+                     **({"audience": request.audience, "audience_users": sorted(request.audience_users)}
+                        if request.audience != "all" else {}),
+                     "supplier_assurance": assurance, "residency": location,
+                     "valid_until": pending["scope"]["valid_until"] if pending else (
+                         datetime.now(UTC) + timedelta(days=request.valid_days)).isoformat()}
+            if pending and pending["scope"] != scope:
+                raise HTTPException(409, "1차 승인 범위와 다릅니다. 같은 범위를 확인하세요.")
+            state = await gateway_proxy("/api/registry", authorization)
+            if proposal["jurisdiction_pack_enabled"] != residency.enabled(state.get("organization") or {}):
+                raise HTTPException(409, "관할 규칙이 바뀌었습니다. 다시 열어 확인하세요.")
+            found = await gateway_proxy("/api/registry/discover", authorization, "POST",
+                                        discovery(proposal["endpoint"], proposal.get("local"), request_id),
+                                        timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
+            if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
+                raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
+            current = {**row, "provenance": proposal["provenance"]}
+            try:
+                keys = (artifact_provenance.trust_keys(os.getenv("MCP_PROVENANCE_TRUST_KEYS_FILE", ""))
+                        if (proposal["provenance"].get("verification") or {}).get("attestation") else {})
+            except (OSError, ValueError, TypeError) as exc:
+                raise HTTPException(409, "출처 증명 신뢰 키를 확인할 수 없습니다.") from exc
+            proof = artifact_provenance.verify_source_attestation(
+                proposal["provenance"], str(((proposal["provenance"].get("artifact") or {}).get("sha256") or "")), keys)
+            if blocker := artifact_provenance.blocking_reason(proof):
+                raise HTTPException(409, f"출처 증명 재검증에서 보류했습니다: {blocker}")
+            gate = await review.intake_gate(current, connection=lock)
+            if (intake_proposal.scan_basis(gate) != proposal["scan_sha256"]
+                    or any(b["code"] != "critical" for b in gate["blockers"])):
+                raise HTTPException(409, "검사 결과가 유효하지 않습니다. 다시 검사하세요.")
+            critical = (gate.get("critical") or {}).get("count", 0)
+            reason = request.critical_reason.strip() or (pending or {}).get("critical_reason", "")
+            if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
+                raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
+            assessed = proposal["risk"]
+            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188: recorded per approval, never counted
+            approvers = []
+            if pending:
+                for actor in pending["approvers"]:
+                    if not await review.same_person(actor, row["submitted_by"], connection=lock) and not any(
+                            [await review.same_person(actor, seen, connection=lock) for seen in approvers]):
+                        approvers.append(actor)
+            if not any([await review.same_person(user["principal"], seen, connection=lock) for seen in approvers]):
+                approvers.append(user["principal"])
+            if assessed.get("tier") not in risk_tier.APPROVAL:
+                raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
+            # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
+            risk_reason = request.risk_reason.strip()
+            verdict, message = risk_tier.decide(assessed["tier"], len(approvers), risk_reason)
+            if verdict == "refuse":
+                raise HTTPException(422, message)
+            risk_reasons = ({**((pending or {}).get("risk_reasons") or {}), user["principal"]: risk_reason}
+                            if risk_tier.APPROVAL[assessed["tier"]]["reason"] == "required" else {})
+            if verdict == "cosign":
+                pending = {"scope": scope, "approvers": approvers, "critical_reason": reason, "risk_reasons": risk_reasons}
+                changed = await review.transition(
+                    "UPDATE mcp_intake_requests SET evidence=%s WHERE id=%s AND evidence=%s AND status=%s RETURNING id,status",
+                    (Jsonb({**evidence, "one_click_pending": pending}), request_id, Jsonb(evidence), row["status"]),
+                    kind="intake-one-click", outcome="recorded", target_kind="intake", target_id=request_id,
+                    actor=user["principal"], applicant=row["submitted_by"],
+                    scope={**pending, "solo_mode": solo_mode, "solo_operator": solo}, connection=lock)
+                if not changed:
+                    raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
+                return {"pending": True, "message": "다른 관리자의 승인을 기다리고 있습니다."}
+            if critical and not (gate.get("critical") or {}).get("covered"):
+                await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS), connection=lock)
+            tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
+            reviews = {name: {**proposal["tool_reviews"][name], **({"destinations": destinations[name]} if name in destinations else {})}
+                       for name in selected}
+            registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
+                catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
+                poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
+            risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
+                           "reasons": risk_reasons, "solo_mode": solo_mode, "solo_operator": solo}
+            updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
+                       "audience_principals": audience,
+                       "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
+                       "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
+                                             "risk_reasons": risk_reasons}}
+            record = dict(proposal["provenance"])
+            internal_url = row.get("internal_repo_url")
+            if row["intake_kind"] == "remote-endpoint":
+                contract = {"registration": registration.model_dump(), "allowed_principals": audience,
+                            "parameter_constraints": {n: review.repin_addresses(proposal["parameter_constraints"][n], destinations[n])
+                                                      if n in destinations else proposal["parameter_constraints"][n] for n in selected},
+                            "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
+                            "valid_until": scope["valid_until"],
+                            "advertised_name": found["server_name"], "version": found["version"],
+                            "protocol_version": found["protocol_version"], "tools": {t["name"]: t for t in found["tools"] if t["name"] in tools},
+                            "code_scan_performed": False}
+                updated.update(remote_contract=contract, remote_approval={"actor": user["principal"],
+                    "review_digest": core.canonical_hash(contract), "at": datetime.now(UTC).isoformat(), "code_scan_performed": False})
+            else:
+                try:
+                    internal_url, checked = await publish_internal_repo(current)
+                except ProvenanceMismatch as exc:
+                    raise HTTPException(409, "배포 파일 대조에 실패했습니다. 다시 검사하세요.") from exc
+                # The preview's evidence stays on the record; this click's re-verification outranks the preview's result.
+                record["verification"] = {**(record.get("verification") or {}), "provenance_status": proof["status"],
+                                          "provenance_reason": proof["reason"], "provenance_keyid": proof.get("keyid"),
+                                          **checked, "by": user["principal"], "at": datetime.now(UTC).isoformat()}
             changed = await review.transition(
-                "UPDATE mcp_intake_requests SET evidence=%s WHERE id=%s AND evidence=%s AND status=%s RETURNING id,status",
-                (Jsonb({**evidence, "one_click_pending": pending}), request_id, Jsonb(evidence), row["status"]),
-                kind="intake-one-click", outcome="recorded", target_kind="intake", target_id=request_id,
-                actor=user["principal"], applicant=row["submitted_by"],
-                scope={**pending, "solo_mode": solo_mode, "solo_operator": solo})
+                """UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s, provenance=%s, risk_input=%s,
+                          internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
+                     WHERE id=%s AND evidence=%s AND status IN ('HOLD','VALIDATED','REMOTE_REVIEWED','APPROVED') RETURNING id,status""",
+                (Jsonb(updated), Jsonb(record), Jsonb(proposal["risk_input"]), internal_url, user["principal"], request_id, Jsonb(evidence)),
+                kind="intake-one-click", outcome="approved", target_kind="intake", target_id=request_id,
+                actor=user["principal"], applicant=row["submitted_by"], reason=reason or None,
+                scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews,
+                       "audience": request.audience, "audience_principals": audience,
+                       "solo_mode": solo_mode, "solo_operator": solo,
+                       "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)}, connection=lock)
             if not changed:
                 raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
-            return {"pending": True, "message": "다른 관리자의 승인을 기다리고 있습니다."}
-        if critical and not (gate.get("critical") or {}).get("covered"):
-            await review.accept_risk(request_id, user["principal"], reason, min(request.valid_days, review.RISK_ACCEPTANCE_MAX_DAYS))
-        tools = {name: actions.get(name, proposal["tools"][name]) for name in selected}
-        reviews = {name: {**proposal["tool_reviews"][name], **({"destinations": destinations[name]} if name in destinations else {})}
-                   for name in selected}
-        registration = IntakeRegistration(server_id=proposal["server_id"], endpoint=proposal["endpoint"],
-            catalog_hash=found["catalog_hash"], tools=tools, data_class=proposal["data_class"], valid_days=request.valid_days,
-            poisoning_ack=True, tool_reviews=reviews, residency=location, local=proposal.get("local"))
-        risk_record = {**assessed, "approvers": approvers, "written_reason": len(risk_reason) >= risk_tier.MIN_REASON,
-                       "reasons": risk_reasons, "solo_mode": solo_mode, "solo_operator": solo}
-        updated = {**evidence, "supplier_assurance": assurance, "risk_assessment": risk_record, "one_click_scope": scope,
-                   "audience_principals": audience,
-                   "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance),
-                   "one_click_pending": {"scope": scope, "approvers": approvers, "critical_reason": reason,
-                                         "risk_reasons": risk_reasons}}
-        record = dict(proposal["provenance"])
-        internal_url = row.get("internal_repo_url")
-        if row["intake_kind"] == "remote-endpoint":
-            contract = {"registration": registration.model_dump(), "allowed_principals": audience,
-                        "parameter_constraints": {n: review.repin_addresses(proposal["parameter_constraints"][n], destinations[n])
-                                                  if n in destinations else proposal["parameter_constraints"][n] for n in selected},
-                        "reviewed_by": user["principal"], "reviewed_at": datetime.now(UTC).isoformat(),
-                        "valid_until": scope["valid_until"],
-                        "advertised_name": found["server_name"], "version": found["version"],
-                        "protocol_version": found["protocol_version"], "tools": {t["name"]: t for t in found["tools"] if t["name"] in tools},
-                        "code_scan_performed": False}
-            updated.update(remote_contract=contract, remote_approval={"actor": user["principal"],
-                "review_digest": core.canonical_hash(contract), "at": datetime.now(UTC).isoformat(), "code_scan_performed": False})
-        else:
-            try:
-                internal_url, checked = await publish_internal_repo(current)
-            except ProvenanceMismatch as exc:
-                raise HTTPException(409, "배포 파일 대조에 실패했습니다. 다시 검사하세요.") from exc
-            # The preview's evidence stays on the record; this click's re-verification outranks the preview's result.
-            record["verification"] = {**(record.get("verification") or {}), "provenance_status": proof["status"],
-                                      "provenance_reason": proof["reason"], "provenance_keyid": proof.get("keyid"),
-                                      **checked, "by": user["principal"], "at": datetime.now(UTC).isoformat()}
-        changed = await review.transition(
-            """UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s, provenance=%s, risk_input=%s,
-                      internal_repo_url=%s, reviewed_by=%s, reviewed_at=now(), updated_at=now()
-                 WHERE id=%s AND evidence=%s AND status IN ('HOLD','VALIDATED','REMOTE_REVIEWED','APPROVED') RETURNING id,status""",
-            (Jsonb(updated), Jsonb(record), Jsonb(proposal["risk_input"]), internal_url, user["principal"], request_id, Jsonb(evidence)),
-            kind="intake-one-click", outcome="approved", target_kind="intake", target_id=request_id,
-            actor=user["principal"], applicant=row["submitted_by"], reason=reason or None,
-            scope={**scope, "catalog_hash": found["catalog_hash"], "approvers": approvers, "tool_reviews": reviews,
-                   "audience": request.audience, "audience_principals": audience,
-                   "solo_mode": solo_mode, "solo_operator": solo,
-                   "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance)})
-        if not changed:
-            raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
-        if row["intake_kind"] == "remote-endpoint":
-            await review.record_event("contract-review", "recorded", "intake", request_id, user["principal"],
-                applicant=row["submitted_by"], scope={"catalog_hash": found["catalog_hash"], "tools": tools,
-                    "parameter_constraints": contract["parameter_constraints"], "allowed_principals": contract["allowed_principals"]})
+            if row["intake_kind"] == "remote-endpoint":
+                await review.record_event("contract-review", "recorded", "intake", request_id, user["principal"],
+                    applicant=row["submitted_by"], scope={"catalog_hash": found["catalog_hash"], "tools": tools,
+                        "parameter_constraints": contract["parameter_constraints"], "allowed_principals": contract["allowed_principals"]}, connection=lock)
+        # Registration reads the committed approval; a failed registration leaves it approved for retry.
         return await register_mcp_request(request_id, registration, authorization)
 
 
