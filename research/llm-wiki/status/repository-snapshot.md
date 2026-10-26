@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T16:13:16+09:00
+확인 시각: 2026-10-26T16:12:02+09:00
 
-HEAD: `9b7a57e3e31bb078f77fdfc164567676ec50ba98` · 로컬 브랜치: `10/26-harden-https`
+HEAD: `7d33349b011747101e8b132b42751f1aaf25a8b1` · 로컬 브랜치: `10/26-harden-codex`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -28,4 +28,4 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
 | `endpoint-agent/bootstrap.py` | `efc806337b5023cbac3f8052a3bd4811ac27e15cba81f1e5a314e9eb05ff62c6` |
 | `endpoint-agent/managed-linux.py` | `bbbd74d3cc62dfec5811726dbaa4f7feeea340cc6c93bfdcc66b3a27edb06660` |
-| `endpoint-agent/enforce-linux.py` | `3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63` |
+| `endpoint-agent/enforce-linux.py` | `98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966` |

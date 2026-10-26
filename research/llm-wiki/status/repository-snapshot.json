@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T16:13:16+09:00",
-  "head": "9b7a57e3e31bb078f77fdfc164567676ec50ba98",
-  "branch": "10/26-harden-https",
+  "captured_at": "2026-10-26T16:12:02+09:00",
+  "head": "7d33349b011747101e8b132b42751f1aaf25a8b1",
+  "branch": "10/26-harden-codex",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
@@ -53,7 +53,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
+      "sha256": "98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966"
     }
   ]
 }

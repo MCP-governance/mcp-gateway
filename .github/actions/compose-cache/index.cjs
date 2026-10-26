@@ -3,8 +3,9 @@ const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-function cachePlan(plans, root, write) {
+function cachePlan(plans, root, write, load = false) {
   const targets = {};
+  const tags = {};
   for (const plan of plans) {
     for (const targetName of plan.group.default.targets) {
       const target = plan.target[targetName];
@@ -18,17 +19,30 @@ function cachePlan(plans, root, write) {
       // Services sharing a Dockerfile share its layer cache, regardless of their tags.
       const labels = Object.fromEntries(Object.entries(target.labels || {})
         .filter(([label]) => !label.startsWith('com.docker.compose.')));
-      const cached = { ...target, labels, tags: [], output: ['type=cacheonly'],
+      const cached = { ...target, labels, tags: [], output: [load ? 'type=docker' : 'type=cacheonly'],
         'cache-from': [`type=gha,version=2,scope=mint-${key},timeout=2m`],
         'cache-to': write ? [`type=gha,version=2,scope=mint-${key},mode=max,timeout=2m`] : [] };
       if (targets[name] && JSON.stringify(targets[name]) !== JSON.stringify(cached)) {
         throw new Error(`Different build definitions share ${relative}`);
       }
       targets[name] = cached;
+      tags[name] = [...new Set([...(tags[name] || []), ...(target.tags || [])])];
     }
   }
   if (!Object.keys(targets).length) throw new Error('Compose has no build targets');
+  if (load) {
+    for (const [name, target] of Object.entries(targets)) {
+      if (!tags[name].length) throw new Error('Loaded images must have Compose tags');
+      target.tags = tags[name];
+    }
+  }
   return { group: { default: { targets: Object.keys(targets) } }, target: targets };
+}
+
+function loadedCompose(plan) {
+  // Build results are already loaded; clearing only build preserves every runtime setting.
+  return 'services:\n' + plan.group.default.targets.map((name) =>
+    `  ${JSON.stringify(name)}:\n    image: ${JSON.stringify(plan.target[name].tags[0])}\n    build: !reset null\n`).join('');
 }
 
 function run() {
@@ -66,17 +80,23 @@ function run() {
       'build', '--print', 'runtime-worker', 'model-proxy'], renderEnv, true)));
   }
   const write = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
-  const plan = cachePlan(plans, root, write);
+  const load = stack === 'full_stack_lab';
+  const plan = cachePlan(plans, root, write, load);
   const filename = path.join(process.env.RUNNER_TEMP, 'mint-cache.json');
   fs.writeFileSync(filename, JSON.stringify(plan));
-  console.log(`Priming ${Object.keys(plan.target).length} image caches; export=${write}`);
+  console.log(`${load ? 'Loading' : 'Priming'} ${Object.keys(plan.target).length} images; export=${write}`);
   // A JavaScript action receives the runtime cache credentials; an inline shell does not.
   docker(['buildx', 'bake', '--builder', builder, '-f', filename, '--allow', `fs.read=${root}`,
     '--progress', 'plain'], process.env);
+  if (load) {
+    const overlay = path.join(process.env.RUNNER_TEMP, 'mint-loaded.yaml');
+    fs.writeFileSync(overlay, loadedCompose(plans[0]));
+    fs.appendFileSync(process.env.GITHUB_ENV, `COMPOSE_FILE=compose.yaml:${overlay}\n`);
+  }
   fs.appendFileSync(process.env.GITHUB_ENV, `BUILDX_BUILDER=${builder}\nCOMPOSE_BAKE=true\n`);
 }
 
-module.exports = { cachePlan };
+module.exports = { cachePlan, loadedCompose };
 if (require.main === module) {
   try { run(); } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

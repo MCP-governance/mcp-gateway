@@ -105,7 +105,7 @@ class LinuxLauncherRendering(unittest.TestCase):
             folder = Path(raw)
             binary = folder / "release"
             namespace.update(folder=folder, binaries={"codex": binary, "claude": binary}, proxy_env={}, ca=None,
-                             person=SimpleNamespace(pw_dir="/home/managed-unit"))
+                             person=SimpleNamespace(pw_dir="/home/managed-unit", pw_uid=1234))
             for daemon in (False, True):
                 binary.write_bytes(b"ELF --no-daemon" if daemon else b"ELF older build")
                 for managed in (False, True):
@@ -123,7 +123,29 @@ class LinuxLauncherRendering(unittest.TestCase):
                             self.assertIn(f"args[i+{len(expected)}]=argv[i]", source)
                             self.assertIn("if (blocked(argc, argv))", source)
                             self.assertNotIn("approval_policy", source)
-                            self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", source)
+                            if key == "codex":
+                                self.assertIn('!strcmp(arg, "--dangerously-bypass-approvals-and-sandbox")', source)
+                                self.assertIn('!strcmp(arg, "--yolo")', source)
+                            self.assertEqual("static int managed_context(void)" in source, managed)
+                            if managed:
+                                self.assertIn("getuid() != 1234 || geteuid() != 1234", source)
+                                self.assertIn('fopen("/proc/self/attr/current", "r")', source)
+                                self.assertIn(json.dumps(f"{folder.name}-{key}-entry (enforce)"), source)
+                                self.assertLess(source.index("if (!managed_context())"), source.index("char **args"))
+                                self.assertIn("!ferror(attr) && feof(attr)", source)
+                                self.assertIn("!memcmp(current, expected, length)", source)
+
+    def test_managed_entry_profiles_allow_current_label_read(self):
+        tree = ast.parse(LINUX_SOURCE.read_text(encoding="utf-8"))
+        nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in {"profile", "bound_profile"}
+                 or isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "TOOLS" for t in n.targets)]
+        namespace = {"Path": Path, "BASE": Path("/fixed")}
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(LINUX_SOURCE), "exec"), namespace)
+        for binding in ("warn", "enforce"):
+            text = namespace["profile"]("mcpgw-unit", Path("/fixed/login-shell"), "/home/unit",
+                                        {"codex": Path("/fixed/codex")}, True, True, binding_mode=binding)
+            entry = text.split("profile mcpgw-unit-codex-entry {", 1)[1].split("\n}", 1)[0]
+            self.assertIn("/proc/*/attr/current r," if binding == "warn" else "/proc/** r,", entry)
 
 
 @unittest.skipUnless(platform.system() == "Linux" and shutil.which("gcc"), "Linux gcc가 필요합니다")
@@ -160,6 +182,43 @@ class LinuxLauncherPinCheck(unittest.TestCase):
                           ["exec", "--ignore-user-config", "-cX"]):
             with self.subTest(arguments=arguments):
                 self.assert_result("codex", arguments, blocked=True)
+
+    def test_approval_bypass_options_and_clusters_are_rejected(self):
+        for arguments in (["-a", "never"], ["-anever"], ["-a=never"], ["-hanever"], ["-ha=never"],
+                          ["-ha", "never"], ["--ask-for-approval", "never"], ["--ask-for-approval=never"],
+                          ["--dangerously-bypass-approvals-and-sandbox"], ["--yolo"],
+                          ["exec", "--yolo"], ["--search", "-anever"], ["--unknown", "--yolo"],
+                          ["--model", "--yolo"],
+                          ["-aon-request", "-anever"], ["--ask-for-approval=on-request", "--yolo"]):
+            with self.subTest(arguments=arguments):
+                self.assert_result("codex", arguments, blocked=True)
+
+    def test_normal_approval_values_and_option_like_data_are_forwarded(self):
+        for arguments in (["-a", "on-request"], ["-aon-request"], ["-a=on-request"],
+                          ["--ask-for-approval=on-request"], ["--ask-for-approval", "on-request"],
+                          ["-hanon-request"], ["--full-auto"], ["--color", "never"],
+                          ["--model=--yolo"], ["-m--yolo"],
+                          ["--", "-a", "never", "--yolo"], ["explain --yolo and -a never"],
+                          ["--", "--dangerously-bypass-approvals-and-sandbox"]):
+            with self.subTest(arguments=arguments):
+                self.assert_result("codex", arguments)
+
+    def test_wrong_uid_or_unconfined_context_is_denied_before_exec(self):
+        module = load_module(LINUX_SOURCE, "enforce_linux_context_check")
+        folder = self.launchers["codex"].parent
+        launcher = folder / "context"
+        for uid in (os.getuid() + 1, os.getuid()):
+            module.wrapper(launcher, Path(shutil.which("echo")), str(folder), "managed", managed_uid=uid)
+            result = subprocess.run([str(launcher), "must-not-exec"], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2, result)
+            self.assertEqual(result.stdout, "")
+            self.assertEqual(result.stderr, "Managed launcher context denied\n")
+        if os.geteuid() == 0:
+            folder.chmod(0o755)
+            result = subprocess.run([str(launcher)], user=65534, group=65534, extra_groups=[],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2, result)
+            self.assertEqual(result.stderr, "Managed launcher context denied\n")
 
     def test_short_value_options_consume_attached_and_separate_values(self):
         for option in "impsCao":
