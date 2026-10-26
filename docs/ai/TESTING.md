@@ -3,6 +3,17 @@
 > 한 번에: 일회용 랩에서 `cd full_stack_lab && TERMINATION_DISPOSABLE_LAB=1 ./console.sh test` (스택이 떠 있어야 한다. CI는 폐기 보관 초기화와 `up --no-llm` 후 실행).
 > 결과물은 `full_stack_lab/reports/`에 남는다. 실패 하나라도 있으면 종료 코드 1.
 
+CI의 `local-suite`는 Python 3.12와 기존 `gateway/requirements.txt`만 설치하고
+`python full_stack_lab/tests/run_local_suite.py --out local-suite.json`으로 스택 없는 시험을 실행한다.
+`pg-suite`는 같은 실행기의 `--pg --out pg-suite.json`으로 모든 `*_pg_check.py`를 순차 실행한다.
+시험마다 전용 PostgreSQL DB를 생성·삭제하며, 자체 스키마를 준비하는 엔드포인트 증거 시험에는 빈 DB를 준다.
+일부 PostgreSQL 시험에 필요한 실제 OPA·Gitea는 CI의 일회용 기존 이미지로 제공한다. 이미지 빌드는 없다.
+두 job은 `static`을 기다리지 않으며, 실패한 시험도 JSON에 기록하고 job을 실패시킨다. JSON은 artifact로 보존한다.
+
+`python full_stack_lab/tests/run_local_suite.py --inventory`는 CI·`console.sh`의 호출,
+실행기의 탐색 범위, 명시적 생략 표를 대조한다. 미분류 시험이 있으면 실패하고 `static`에서도 실행한다.
+지원 파일의 제외 규칙과 플랫폼별 생략 사유는 실행기 안에 있다. Windows 전용 제약은 Linux에서 생략하지 않는다.
+
 ## 1. 층별 구성
 
 D-125·126 오프라인 검사는 `python -B -X utf8 -m unittest discover -s full_stack_lab/tests -p response_cap_idempotency_test.py -v`다.
