@@ -1,10 +1,12 @@
 {
-  "captured_at": "2026-10-26T15:16:37+09:00",
-  "head": "fc9ac7f421ca71225695702943ea1c17484e4c52",
-  "branch": "10/26-managed-codex-sandbox-exec",
+  "captured_at": "2026-10-26T15:19:23+09:00",
+  "head": "14d845c72f892fc56c71eaa7f69b7237c7f69e80",
+  "branch": "10/26-console-https",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    "M docs/ai/DECISIONS.md",
+    " M research/llm-wiki/analysis/integration-cases.json",
+    " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/status/decisions-index.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
