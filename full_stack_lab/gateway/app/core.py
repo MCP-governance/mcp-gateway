@@ -16,6 +16,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import httpx
+import psycopg
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
@@ -507,7 +508,12 @@ async def refresh_all_catalogs() -> dict:
             results[server_id] = "LOCAL"
             continue
         try:
-            results[server_id] = (await refresh_catalog(server_id))["status"]
+            try:
+                results[server_id] = (await refresh_catalog(server_id))["status"]
+            except (psycopg.errors.DeadlockDetected, psycopg.errors.SerializationFailure):
+                # 기동 중 agent-service의 스키마 DDL과 교착하면 스냅숏 없이 ERROR로 남아 다음 갱신까지
+                # 이 서버의 도구가 목록에서 모두 빠졌다. 롤백된 일시 오류이므로 조회만 한 번 다시 한다.
+                results[server_id] = (await refresh_catalog(server_id))["status"]
         except Exception as exc:
             await db.execute(
                 "UPDATE mcp_servers SET status='ERROR', status_reason=%s WHERE id=%s AND status NOT IN ('DISABLED','BLOCKED_SUPPLY_CHAIN')",
