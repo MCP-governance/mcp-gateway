@@ -13,9 +13,7 @@ import secrets
 import ssl
 import tarfile
 import tempfile
-import time
 import zipfile
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -31,14 +29,17 @@ from starlette.background import BackgroundTask
 from pydantic import Field
 from psycopg.types.json import Jsonb
 
-from . import artifact_provenance, connections, consent, core, db, idp, oidc, provenance, registry, review, upstream, user_credentials
+from . import artifact_provenance, connections, consent, db, idp, oidc, provenance, registry, review, upstream, user_credentials
 from . import intake_proposal, local_jobs, residency, risk_tier, sbom_impact, supplier_assurance
 from .release import build_info
 from .system_metrics import SystemMetrics
 from .agent_contract import (ACCOUNT_STATUS_REASON, CONSOLE_SCOPE, StrictModel, ResidencyFields, ToolReview, authenticate,
                              authenticated_user, issue_token, private_key)
 from .connectors import router as connectors_router
+from .contract import canonical_hash
+from .destination import registration_endpoint
 from .integrations import router as integrations_router
+from .login_throttle import _login_attempts, login_allowed, record_failed_login
 from .idp import router as idp_router
 
 LOG = logging.getLogger(__name__)
@@ -47,27 +48,7 @@ INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
 system_metrics_sampler = SystemMetrics(GATEWAY_URL)
 
-LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
-LOGIN_ATTEMPT_WINDOW = int(os.getenv("LOGIN_ATTEMPT_WINDOW_SECONDS", "300"))
-# Per process, like `slots` above: a deployment with replicas rate-limits at ingress.
-# It still turns an unlimited password oracle into a bounded one.
-_login_attempts: dict[str, list[float]] = defaultdict(list)
 INTAKE_APPROVAL_LOCK = asyncio.Lock()
-
-
-def login_allowed(key: str) -> bool:
-    now = time.monotonic()
-    for attempted, stamps in list(_login_attempts.items()):
-        recent = [stamp for stamp in stamps if now - stamp < LOGIN_ATTEMPT_WINDOW]
-        if recent:
-            _login_attempts[attempted] = recent
-        else:
-            del _login_attempts[attempted]
-    return len(_login_attempts.get(key, ())) < LOGIN_ATTEMPT_LIMIT
-
-
-def record_failed_login(key: str) -> None:
-    _login_attempts[key].append(time.monotonic())
 
 
 async def bootstrap_passwords() -> None:
@@ -1279,7 +1260,7 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     try:
         repository_url = github_repository_url(request.repository_url) if request.repository_url else ""
         repository_path = github_repository_path(request.repository_url) if request.repository_url else ""
-        endpoint = core.registration_endpoint(request.endpoint_url) if request.intake_kind == "remote-endpoint" else None
+        endpoint = registration_endpoint(request.endpoint_url) if request.intake_kind == "remote-endpoint" else None
         if request.intake_kind == "repository" and not repository_url:
             raise ValueError("소스 도입에는 구현 저장소 주소가 필요합니다.")
         if request.intake_kind == "remote-endpoint" and request.requested_transport != "streamable-http":
@@ -1831,7 +1812,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
         evidence = {**remote["evidence"], "supplier_assurance": assurance, "risk_assessment": risk_record,
                     "supplier_assurance_unconfirmed": supplier_assurance.unconfirmed(assurance), "remote_approval": {
             "actor": user["principal"], "at": datetime.now(UTC).isoformat(),
-            "review_digest": core.canonical_hash(reviewed), "risk_acceptance": risk,
+            "review_digest": canonical_hash(reviewed), "risk_acceptance": risk,
             "code_scan_performed": False}}
         row = await review.transition("""UPDATE mcp_intake_requests SET status='APPROVED', evidence=%s,
                 reviewed_by=%s, reviewed_at=now(), updated_at=now()
@@ -2622,7 +2603,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                             "protocol_version": found["protocol_version"], "tools": {t["name"]: t for t in found["tools"] if t["name"] in tools},
                             "code_scan_performed": False}
                 updated.update(remote_contract=contract, remote_approval={"actor": user["principal"],
-                    "review_digest": core.canonical_hash(contract), "at": datetime.now(UTC).isoformat(), "code_scan_performed": False})
+                    "review_digest": canonical_hash(contract), "at": datetime.now(UTC).isoformat(), "code_scan_performed": False})
             else:
                 try:
                     internal_url, checked = await publish_internal_repo(current)

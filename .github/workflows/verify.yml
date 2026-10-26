@@ -75,6 +75,8 @@ jobs:
 
       - name: 중첩 풀 연결 검사
         run: python tests/nested_tx_check.py
+      - name: 모듈 경계 import 계약 검사
+        run: python tests/import_contract_check.py
 
       # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
       - uses: actions/setup-node@v7

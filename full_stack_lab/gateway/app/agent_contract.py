@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from . import db
+from . import db, oidc_client
 
 ISSUER = "mcp-governance-synthetic-agent"
 AUDIENCE = "mcp-governance-gateway"
@@ -137,13 +137,8 @@ ACCOUNT_STATUS_REASON = {
     "deleted": "삭제된 계정입니다. 관리자에게 복구를 요청하세요.",
 }
 
-# What a token was issued for. `mcp` tokens are what `bob-sso` keeps on the employee's
-# PC for the harnesses, so they sit at rest in a file a local process can read; `console`
-# tokens come from an interactive sign-in and last 30 minutes. They authenticate the same
-# person, which is why the administrative APIs ask for the second: otherwise anything that
-# could read the token file could also approve a high-risk call in that person's name.
-# Missing scope never grants an administrative capability; old sessions sign in again.
-CONSOLE_SCOPE = "console"
+# Defined in oidc_client, which the session code shares; re-exported for the administrative APIs.
+CONSOLE_SCOPE = oidc_client.CONSOLE_SCOPE
 
 
 def token_scopes(claims: dict) -> set[str]:
@@ -182,11 +177,11 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
     if row["status"] != "active":
         # The header lets the Console end a session whose account was just switched off, instead
         # of leaving the shell open with every panel failing.
-        from .oidc import end_session
+        from .identity_sessions import end_session
         await end_session(claims)
         raise HTTPException(403, ACCOUNT_STATUS_REASON.get(row["status"], "사용할 수 없는 계정입니다."),
                             headers={"X-Account-Status": row["status"]})
-    from .oidc import validate_session
+    from .identity_sessions import validate_session
     await validate_session(claims)
     if require_mcp or "mcp" in token_scopes(claims):
         from .endpoint_plane import managed_failure

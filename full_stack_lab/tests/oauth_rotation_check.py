@@ -220,9 +220,9 @@ class OAuthRotationTest(unittest.IsolatedAsyncioTestCase):
         self.assert_family_revoked()
 
     async def test_password_success_and_bad_password_semantics_are_preserved(self):
-        from app import agent_service
-        with patch.object(agent_service, "login_allowed", return_value=True), \
-             patch.object(agent_service, "record_failed_login") as failed:
+        from app import login_throttle
+        with patch.object(login_throttle, "login_allowed", return_value=True), \
+             patch.object(login_throttle, "record_failed_login") as failed:
             response = await idp.token(self.request, grant_type="password", client_id="fixture",
                                        username="alice", password="test-only", refresh_token=None)
             self.assertIsInstance(response, dict)
@@ -231,6 +231,32 @@ class OAuthRotationTest(unittest.IsolatedAsyncioTestCase):
                                        username="alice", password="bad-test-only", refresh_token=None)
             self.assertEqual(response.status_code, 400)
             failed.assert_called_once()
+
+    async def test_login_ceiling_is_one_state_across_console_and_oauth_entries(self):
+        from fastapi import HTTPException
+        from app import agent_service, login_throttle
+        self.assertIs(agent_service._login_attempts, login_throttle._login_attempts)
+        login_throttle._login_attempts.clear()
+        self.addCleanup(login_throttle._login_attempts.clear)
+        key, limit = "127.0.0.1|alice", login_throttle.LOGIN_ATTEMPT_LIMIT
+        self.db.principal["ok"] = False
+
+        async def password_grant():
+            return await idp.token(self.request, grant_type="password", client_id="fixture",
+                                   username="alice", password="bad-test-only", refresh_token=None)
+        for _ in range(limit // 2):
+            self.assertEqual((await password_grant()).status_code, 400)
+        for _ in range(limit - limit // 2):
+            agent_service.record_failed_login(key)
+        self.assertFalse(agent_service.login_allowed(key))
+        self.assertEqual((await password_grant()).status_code, 429)
+        with self.assertRaises(HTTPException) as blocked:
+            await agent_service.password_principal("alice", "bad-test-only", "127.0.0.1")
+        self.assertEqual(blocked.exception.status_code, 429)
+        login_throttle._login_attempts[key] = [stamp - login_throttle.LOGIN_ATTEMPT_WINDOW - 1
+                                               for stamp in login_throttle._login_attempts[key]]
+        self.assertTrue(agent_service.login_allowed(key))
+        self.assertEqual((await password_grant()).status_code, 400)
 
 
 if __name__ == "__main__":

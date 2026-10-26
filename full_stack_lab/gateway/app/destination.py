@@ -1,10 +1,13 @@
-"""Resolve at the TCP boundary; keep the HTTP origin and TLS name unchanged."""
+"""Resolve at the TCP boundary; keep the HTTP origin and TLS name unchanged.
+
+Also holds the endpoint URL rules that need no other app module, so the console can use them without core."""
 from __future__ import annotations
 
 import asyncio
 import ipaddress
 import socket
 import time
+from urllib.parse import urlsplit
 
 
 class DestinationBlocked(ValueError):
@@ -55,3 +58,39 @@ def pin_transport(transport, *, internal=(), target=None):
     pool = transport._pool
     pool._network_backend = PinnedBackend(pool._network_backend, internal, target)
     return transport
+
+
+def registration_endpoint(value: str) -> str:
+    endpoint = value.strip()
+    parts = urlsplit(endpoint)
+    if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username or parts.password or parts.fragment:
+        raise ValueError("http(s)://호스트/경로 형식의 MCP 엔드포인트여야 합니다. 자격 정보는 URL에 넣지 않습니다.")
+    if not transport_secure(endpoint):
+        raise ValueError("사내 서비스가 아니면 HTTPS 엔드포인트만 등록할 수 있습니다.")
+    return endpoint
+
+
+# CTL-24 / RSK-24. 원격 endpoint가 평문이면 요청·응답이 경로 위에서 읽히고 바뀐다.
+# 루프백과 컨테이너 내부 망은 이 판단에서 제외한다 - 거기까지 TLS를 요구하면
+# 아무도 지키지 않는 규칙이 하나 더 생긴다.
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _endpoint_host(endpoint: str | None) -> str:
+    value = (endpoint or "").strip()
+    if not value:
+        return ""
+    if not value.startswith(("http://", "https://")):
+        return ""
+    return (urlsplit(value).hostname or "").lower()
+
+
+def transport_secure(endpoint: str | None) -> bool:
+    value = (endpoint or "").strip().lower()
+    if not value.startswith(("http://", "https://")):
+        return True  # stdio 등 네트워크를 타지 않는 전송
+    if value.startswith("https://"):
+        return True
+    host = _endpoint_host(value)
+    # 도커 내부 서비스 이름과 루프백은 이 호스트 밖으로 나가지 않는다.
+    return host in LOCAL_HOSTS or "." not in host

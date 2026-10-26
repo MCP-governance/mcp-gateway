@@ -96,7 +96,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
     if grant_type == "password":
         if not username or not password:
             return _error("invalid_request", "username과 password가 필요합니다.")
-        from .agent_service import login_allowed, record_failed_login
+        from .login_throttle import login_allowed, record_failed_login
         caller = request.client.host if request.client else "unknown"
         key = f"{caller}|{username.strip().lower()}"
         if not login_allowed(key):
@@ -346,7 +346,7 @@ async def introspection(token: str) -> dict:
         from .endpoint_plane import managed_failure
         if await managed_failure(row, claims):
             return {"active": False}
-    from .oidc import validate_session
+    from .identity_sessions import validate_session
     try:
         await validate_session(claims)
     except HTTPException:

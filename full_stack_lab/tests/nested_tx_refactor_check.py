@@ -242,7 +242,7 @@ class ApprovalOrdering(unittest.IsolatedAsyncioTestCase):
             discovery=lambda *_: {},
             artifact_provenance=types.SimpleNamespace(verify_source_attestation=lambda *_: {}, blocking_reason=lambda _: None),
             risk_tier=types.SimpleNamespace(APPROVAL={'low': {'reason': 'optional'}}, decide=lambda *_: ('approve', ''), MIN_REASON=10),
-            IntakeRegistration=model, Jsonb=lambda v: v, core=types.SimpleNamespace(canonical_hash=lambda _: 'hash'),
+            IntakeRegistration=model, Jsonb=lambda v: v, canonical_hash=lambda _: 'hash',
             register_mcp_request=register, Depends=lambda _: None, admin_caller=None, Header=lambda **_: None)
         with self.assertRaisesRegex(OSError, 'gateway unavailable'):
             await module.approve_and_register('id', request, {'principal': 'admin'}, 'token')

@@ -16,7 +16,7 @@ ALLOW = {
     ('litellm_sync.py', 'reconcile'): '세션 잠금으로 외부 동기화 작성자를 직렬화한다. 내부 작업은 독립 커밋하며 설정 검사가 풀 최소 2개를 요구한다.',
     ('ops_response.py', 'tick'): '트랜잭션을 커밋한 세션 잠금 연결로 두 프로세스의 작업 전체를 배제한다. 내부 작업은 독립 커밋하며 finally에서 잠금을 풀거나 연결을 닫는다.',
     ('review.py', 'require_independent'): '본인 승인 거부 기록은 호출자의 롤백 뒤에도 감사 원장에 남아야 하므로 별도 연결로 append한다.',
-    ('oidc.py', '_refresh_upstream'): '외부 IdP 갱신과 회전 토큰 저장을 FOR UPDATE로 직렬화해야 같은 refresh token 재사용에 따른 계열 폐기를 막는다.',
+    ('identity_sessions.py', '_refresh_upstream'): '외부 IdP 갱신과 회전 토큰 저장을 FOR UPDATE로 직렬화해야 같은 refresh token 재사용에 따른 계열 폐기를 막는다.',
     ('siem.py', 'deliver_one'): '기존 스키마에는 소유자와 claimed_until이 없다. SKIP LOCKED를 ACK와 완료 커밋까지 유지해 최소 1회 전달과 동시 중복 배제를 보존한다.',
 }
 CONNECTIONS = {'connection', 'conn', 'lock', 'snapshot', 'guard'}
@@ -154,7 +154,7 @@ class Check:
                         params = self.supplied(node, self.functions[target], bound)
                         result += [(here,) + path for path in self.effects(target, params, active)]
                 # The two retained I/O exceptions must also become stale if the I/O leaves the lock.
-                if active and active[-1][0] == ('oidc', '_refresh_upstream') and ast.unparse(node.func) == 'http.post':
+                if active and active[-1][0] == ('identity_sessions', '_refresh_upstream') and ast.unparse(node.func) == 'http.post':
                     result.append(((module, node.lineno, 'external IdP HTTP'),))
                 if active and active[-1][0] == ('siem', 'deliver_one') and ast.unparse(node.func) == 'asyncio.to_thread' and node.args and isinstance(node.args[0], ast.Name) and node.args[0].id == 'send':
                     result.append(((module, node.lineno, 'external SIEM HTTP'),))
