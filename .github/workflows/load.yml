@@ -1,0 +1,83 @@
+name: MINT disposable stack load
+on:
+  schedule:
+    - cron: '23 18 * * *'
+  workflow_dispatch:
+  # A change to the load harness itself is measured on its PR, not first on the nightly run.
+  pull_request:
+    paths: ['full_stack_lab/tests/load/**', '.github/workflows/load.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: full_stack_lab
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Offline load checks
+        run: |
+          while IFS='=' read -r key value; do
+            if [[ "$key" == MOCK_SSO_PASSWORD ]]; then printf '::add-mask::%s\n' "$value"; fi
+          done < .env.example
+          bash -n tests/load/run.sh
+          node --input-type=module --check < tests/load/load.js
+          node --test tests/load/load.test.mjs
+
+      # Same startup commands as verify.yml's verify job, without console.sh test.
+      - name: ./console.sh up --no-llm
+        run: |
+          ./console.sh init-disposal
+          docker compose --progress plain build
+          ./console.sh prepare-acceptance-tls
+          export COMPOSE_FILE=compose.yaml:compose.acceptance.yaml
+          export ACCEPTANCE_TLS_UID="$(id -u)" ACCEPTANCE_TLS_GID="$(id -g)"
+          echo "COMPOSE_FILE=$COMPOSE_FILE" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_UID=$ACCEPTANCE_TLS_UID" >> "$GITHUB_ENV"
+          echo "ACCEPTANCE_TLS_GID=$ACCEPTANCE_TLS_GID" >> "$GITHUB_ENV"
+          ./console.sh up --no-llm
+
+      - name: CI capacity overlay
+        run: |
+          python3 tests/load/prepare.py registry/capabilities.json reports/load-capabilities.json
+          echo "COMPOSE_FILE=$COMPOSE_FILE:tests/load/compose.load.yaml" >> "$GITHUB_ENV"
+          COMPOSE_FILE="$COMPOSE_FILE:tests/load/compose.load.yaml" docker compose up -d --no-deps gateway
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/health >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+
+      - name: k6 scenarios and ledger timings
+        run: bash tests/load/run.sh
+
+      - name: Readable summary
+        if: always()
+        run: |
+          for f in reports/load/list.md reports/load/allow.md reports/load/deny.md; do
+            if [[ -f "$f" ]]; then cat "$f" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+
+      - name: Load evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: load-${{ github.run_id }}-${{ github.run_attempt }}
+          path: full_stack_lab/reports/load/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f mint-k6 2>/dev/null || true
+          docker compose --profile llm down -v --remove-orphans
