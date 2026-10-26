@@ -25,6 +25,23 @@ def load(name):
     return module
 
 
+def with_managed_stubs(**stubs):
+    """managed-linux.py를 실제로 불러온 뒤 네트워크·루트 단계만 대역으로 바꾸는 spec 로더."""
+    real_spec = importlib.util.spec_from_file_location
+
+    def spec(name, path):
+        found = real_spec(name, path)
+        original = found.loader.exec_module
+
+        def exec_module(module):
+            original(module)
+            for key, value in stubs.items():
+                setattr(module, key, value)
+        found.loader.exec_module = exec_module
+        return found
+    return spec
+
+
 class OwnerReplies(unittest.TestCase):
     def setUp(self):
         self.enforcer = load("enforce-linux")
@@ -76,19 +93,24 @@ class Installer(unittest.TestCase):
         self.bootstrap = load("bootstrap")
 
     def test_owner_uid_is_forwarded_without_ambient_sudo_identity(self):
-        done = SimpleNamespace(returncode=0, stdout='{"endpoint_id":"unit"}\n')
+        received = []
+
+        def install(arguments, prepared=None):
+            received.append(arguments)
+            print('{"endpoint_id":"unit"}')
         with mock.patch.object(self.bootstrap, "close_sessions"), \
-             mock.patch.object(self.bootstrap.subprocess, "run", return_value=done) as run, \
-             mock.patch.dict(os.environ, {"SUDO_UID": "1002"}), redirect_stdout(io.StringIO()):
+             mock.patch.object(self.bootstrap.importlib.util, "spec_from_file_location", with_managed_stubs(install=install)), \
+             mock.patch.dict(os.environ, {"SUDO_UID": "1002"}):
             self.bootstrap.install_managed("managed", {}, Path("enrollment.json"), 1000)
-            argv = run.call_args.args[0]
-            self.assertEqual(argv[argv.index("--owner-uid") + 1], "1000")
             self.bootstrap.install_managed("managed", {}, Path("enrollment.json"))
-            self.assertNotIn("--owner-uid", run.call_args.args[0])
+        self.assertEqual([a.owner_uid for a in received], [1000, None])
 
     def test_bootstrap_selects_employee_uid_only_for_a_separate_managed_account(self):
         b = self.bootstrap
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(b.importlib.util, "spec_from_file_location", with_managed_stubs(  # 등록·정책 수신은 설치 전에 한 번 일어난다(prepared). 이 시험은 계정 선택만 본다.
+                 enroll=lambda bundle, *args, **kwargs: ({"device_key": "unit-device"}, {}, {}),
+                 diagnostic=lambda *args, **kwargs: None)):
             enrollment = Path(folder) / "enrollment.json"
             enrollment.write_text('{"gateway_url":"https://gateway.example"}', encoding="utf-8")
             for companion in (True, False):
@@ -109,10 +131,8 @@ class Installer(unittest.TestCase):
                     install.assert_called_once()
                     # (account, harnesses, enrollment, owner UID, mode): the owner only for a separate managed account.
                     self.assertEqual(install.call_args.args[3:], (1000 if companion else None, "isolated"))
-                    if companion:
-                        getpwnam.assert_called_once_with("owner")
-                    else:
-                        getpwnam.assert_not_called()
+                    # 관리 계정은 등록 때 UID를 조회하고, 평소 계정은 별도 관리 계정일 때만 조회한다.
+                    self.assertEqual([c.args[0] for c in getpwnam.call_args_list], ["managed", "owner"] if companion else ["managed"])
 
     def test_device_code_command_on_success_failure_and_interrupt(self):
         with tempfile.TemporaryDirectory() as folder:

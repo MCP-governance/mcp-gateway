@@ -53,7 +53,8 @@ function Update-EndpointTray {
         $time = [DateTimeOffset]::FromUnixTimeSeconds([long]$script:snapshot.updated)
         $script:updated = $time.LocalDateTime.ToString('yyyy-MM-dd HH:mm:ss')
         $age = ([DateTimeOffset]::UtcNow - $time).TotalSeconds
-        if ($script:snapshot.state -eq 'removed') { $script:probe = $null }
+        if ($script:snapshot.state -eq 'removed' -or
+            ($script:snapshot.state -eq 'active' -and $script:probe.connection.waiting)) { $script:probe = $null }
         if ($script:snapshot.connected -and $age -ge 0 -and $age -le 150) {
             $script:label = 'connected'
             if ($script:blocks.Count -gt 0) {
@@ -84,7 +85,8 @@ function Get-EndpointCells {
     $p = $script:probe
     if (-not $p) { return @((T 'not_checked'), '—', '—') }
     $model = if ($p.model.ok) { "$($p.model.harness) $(T 'ok') · $($p.model.seconds)s" }
-             elseif ($p.model.harness) { "$($p.model.harness) $(T 'failed') · $($p.model.detail)" } else { $p.model.detail }
+             elseif ($p.model.harness) { "$($p.model.harness) $(T 'failed') · $(Get-EndpointValue $p.model.detail $script:lang)" }
+             else { Get-EndpointValue $p.model.detail $script:lang }
     $c = $p.connection
     $tools = if (@($c.initialized).Count) { "$($c.tools) ($(T 'servers') $(@($c.initialized).Count)/$($p.servers))" }
              elseif ($c.waiting) { T 'waiting' } else { '—' }
@@ -208,11 +210,13 @@ function Update-EndpointWindow {
     if ($snapshot.harnesses) { $versions = @($snapshot.harnesses.PSObject.Properties | ForEach-Object { "$($_.Name) $($_.Value)" }) }
     $cells = Get-EndpointCells
     $mode = if ($simple) { T 'mode_simple' } elseif ($settings.connection -eq 'isolated') { T 'mode_isolated' } else { '—' }
-    $rows = [ordered]@{ connection = T $script:label; management = $(if ($snapshot.management) { $snapshot.management } else { '—' });
+    $management = if ($snapshot.state -in @('active', 'pending', 'quarantined', 'revoked', 'removed', 'unknown')) { T $snapshot.state }
+                  elseif ($snapshot.management) { Get-EndpointValue $snapshot.management $script:lang } else { '—' }
+    $rows = [ordered]@{ connection = T $script:label; management = $management;
         way = $mode; servers = $(if ($servers.Count) { "$($servers.Count) · " + ($servers -join ', ') } else { '—' });
         harness = $(if ($versions.Count) { $versions -join ', ' } else { '—' }); reported = $script:updated;
         model = $(if ($script:probeJob) { T 'checking' } else { $cells[0] }); tools = $cells[1]; server = $cells[2];
-        gateway = $(if ($script:healthResult) { $script:healthResult } else { $settings.gateway_url }); next = Get-EndpointNext }
+        gateway = $(if ($script:healthResult) { Get-EndpointValue $script:healthResult $script:lang } else { $settings.gateway_url }); next = Get-EndpointNext }
     foreach ($key in $rows.Keys) {
         $form.Tag.captions[$key].Text = T $key
         $form.Tag.values[$key].Text = [string]$rows[$key]
@@ -290,11 +294,12 @@ function Start-EndpointRemove {
 
 $items = [ordered]@{}
 $items.status = $menu.Items.Add(''); $items.status.Add_Click({ Show-EndpointWindow })
-$terminal = $menu.Items.Add('터미널 화면')
+$items.terminal = $menu.Items.Add('')
+$terminal = $items.terminal
 $terminal.Add_Click({
     $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'windows_status.py')) +
         ' ' + (Quote-EndpointArgument $settings.status_path) + ' --settings ' + (Quote-EndpointArgument $SettingsPath) +
-        ' --probe ' + (Quote-EndpointArgument $probePath)
+        ' --probe ' + (Quote-EndpointArgument $probePath) + ' --language ' + $script:lang
     Start-Process -FilePath $python -ArgumentList $arguments
 })
 $items.check = $menu.Items.Add(''); $items.check.Add_Click({ Start-EndpointProbe -Show })

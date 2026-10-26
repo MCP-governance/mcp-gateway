@@ -42,6 +42,11 @@ function Read-EndpointOneclickArchive([string]$ArchiveBase64) {
     } finally { $archive.Dispose(); $memory.Dispose() }
 }
 
+function Show-EndpointResult([string]$Text) {
+    # The box can stay open for hours behind the status window the tray opens: callers free the install lock first.
+    $owner = New-Object Windows.Forms.Form -Property @{ TopMost = $true; ShowInTaskbar = $false }
+    try { [void][Windows.Forms.MessageBox]::Show($owner, $Text, 'MCP') } finally { $owner.Dispose() }
+}
 $mutex = New-Object Threading.Mutex($false, 'Global\MCPGatewayWindowsBootstrap')
 $owns = $false
 $private = $null
@@ -118,7 +123,8 @@ try {
     $message = if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') {
         $result.detail + "`r`n" + (Get-EndpointNextAction $result.detail)
     } else { $result.detail }
-    [void][Windows.Forms.MessageBox]::Show($message, 'MCP')
+    if ($owns) { $mutex.ReleaseMutex(); $owns = $false }
+    Show-EndpointResult $message
     if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { exit 1 }
 } catch {
     $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ISk7LmYIO2MjOydvCDrmJDripQg7Iuk7ZaJIOq2jO2VnOydhCDtmZXsnbjtlaAg7IiYIOyXhuyKteuLiOuLpA=='))
@@ -127,7 +133,8 @@ try {
         $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('64uk66W4IOyEpOy5mCDsnpHsl4XsnbQg7KeE7ZaJIOykkeyeheuLiOuLpA=='))
         $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ZiE7J6sIOyEpOy5mOqwgCDrgZ3rgpwg65KkIOuLpOyLnCDsi6TtlontlZjshLjsmpQ='))
     }
-    [void][Windows.Forms.MessageBox]::Show(($reason + "`r`n" + $next), 'MCP')
+    if ($owns) { $mutex.ReleaseMutex(); $owns = $false }
+    Show-EndpointResult ($reason + "`r`n" + $next)
     exit 1
 } finally {
     if ($private) {

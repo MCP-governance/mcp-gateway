@@ -360,7 +360,55 @@ def write_helper(user):
     helper.chmod(0o755)
 
 
-def install(args):
+def redact_diagnostic(text, credentials=()):
+    for value in credentials:
+        if value:
+            text = text.replace(str(value), "[비밀 숨김]")
+    return "\n".join(line for line in text.splitlines() if not re.search(
+        r"token|secret|credential|api[_-]?key|device[_ -]?key|bearer|authorization|password|passwd|비밀번호|장치.?키", line, re.I))
+
+
+def diagnostic(stage, error, credentials=()):
+    """Keep stderr across attempts, without command arguments or response bodies."""
+    detail = getattr(error, "stderr", "") or ""
+    if isinstance(detail, bytes):
+        detail = detail.decode("utf-8", "replace")
+    detail = redact_diagnostic(detail, credentials)
+    try:
+        STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if not protected(STATE):
+            raise ValueError("설치 로그 경로가 보호되지 않았습니다")
+        fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+    except (OSError, ValueError):
+        pass  # 기록 실패가 원래 오류를 가리면 안 된다(권한 없는 상태 폴더 등)
+
+
+def enroll(bundle, username, uid, mode="isolated", platform="linux"):
+    """Network preparation only; no installed file or OS task is changed."""
+    verify_transport(bundle)
+    bundle = dict(bundle, device_key=secrets.token_urlsafe(32))
+    machine = machine_id() if platform == "linux" else None
+    enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
+        "device_key": bundle["device_key"], "hostname": socket.gethostname(), "local_username": username,
+        "local_uid": uid, "mode": mode, "platform": platform, **({"machine_id": machine} if machine else {})}, credential=False)
+    config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
+    config["endpoint_id"] = enrolled["endpoint_id"]
+    policy = request(config, "/api/endpoint/managed-policy")
+    if (policy["tailscale_node_id"] != config["tailscale_node_id"]
+            or policy.get("gateway_url", config["gateway_url"]) != config["gateway_url"]):
+        raise ValueError("설치 키트와 정책의 게이트웨이가 다릅니다")
+    if set(policy["files"]) != set(FILES):
+        raise ValueError("지원하지 않는 관리형 파일 목록")
+    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], policy_hash=policy["policy_hash"],
+                  proxy_port=policy.get("proxy_port"))
+    return config, policy, enrolled
+
+
+def install(args, prepared=None):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
     # A manual install without --mode (and every caller before D-239) is the isolated one.
@@ -405,6 +453,9 @@ def install(args):
             raise ValueError("관리할 하네스(codex·claude)가 없습니다")
         if "codex" in binaries:
             enforcer.companions("codex", Path(binaries["codex"]))
+    config, policy, enrolled = prepared if prepared is not None else enroll(bundle, args.user, person.pw_uid, args.mode)
+    if (STATE / args.user).exists():
+        rollback(args)
     source = Path(__file__).parent
     PROGRAMS.mkdir(mode=0o755, parents=True, exist_ok=True)
     if not protected(PROGRAMS):
@@ -418,16 +469,6 @@ def install(args):
     if not protected(folder):
         raise ValueError("장치 비밀 경로가 root 관리 경로가 아닙니다")
     config_path = folder / "config.json"
-    if config_path.exists():
-        raise ValueError("이미 설치된 장치입니다. 기존 자격을 폐기하고 조직 관리자가 제거한 뒤 재설치하세요")
-    bundle["device_key"] = secrets.token_urlsafe(32)
-    machine = machine_id()
-    enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"], "device_key": bundle["device_key"],
-                           "hostname": socket.gethostname(), "local_username": args.user, "local_uid": person.pw_uid,
-                           "mode": args.mode, **({"machine_id": machine} if machine else {})}, credential=False)
-    config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
-    # manifest_pubkey: the approver's key for local MCP manifests, pinned here and never taken from policy.
-    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
     ca_path = PROGRAMS / f"ca-{person.pw_uid}.crt"
     if config.get("ca_certificate"):
         private_write(ca_path, config["ca_certificate"])
@@ -437,12 +478,6 @@ def install(args):
                   owner_uid=None if simple else args.owner_uid, mode=args.mode,
                   broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
-    private_write(config_path, json.dumps(config))
-    policy = request(config, "/api/endpoint/managed-policy")
-    if policy["tailscale_node_id"] != config["tailscale_node_id"]:
-        raise ValueError("설치 키트와 정책의 Gateway 노드가 다릅니다")
-    config.update(gateway_ips=policy["gateway_ips"], gateway_port=policy["gateway_port"], policy_hash=policy["policy_hash"],
-                  proxy_port=policy.get("proxy_port"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
         if target.exists() and not ours(target.read_text(), config["gateway_url"]):
@@ -462,7 +497,7 @@ def install(args):
                         *[part for ip in policy["gateway_ips"] for part in ("--gateway-ip", ip)],
                         *[part for name, binary in binaries.items() for part in ("--client", name + "=" + binary)],
                         "--broker-binding", args.broker_binding,
-                        "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True)
+                        "--managed-agent", str(PROGRAMS / "managed-linux.py")], check=True, capture_output=True, text=True)
         baseline = subprocess.check_output(["nft", "-j", "list", "table", "inet", f"mcpgw_uid_{person.pw_uid}"], text=True)
         private_write(Path(config["nft_baseline"]), baseline)
     unit = f"mcpgw-managed-{args.user}.service"
@@ -472,7 +507,7 @@ def install(args):
         f"ExecStart=/usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py serve --config {config_path}\n"
         "Restart=always\nRestartSec=10\nUMask=0077\n\n[Install]\nWantedBy=multi-user.target\n")
     subprocess.run(["systemctl", "daemon-reload"], check=True)
-    subprocess.run(["systemctl", "enable", "--now", unit], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["systemctl", "enable", "--now", unit], check=True, capture_output=True, text=True)
     try:
         config["home_launchers"] = [] if simple else home_launchers(config)
     except OSError:
@@ -578,6 +613,9 @@ def account_header(summary):
     if os.geteuid() == 0:
         account = pwd.getpwnam(user)
         command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--", *command]
+    elif summary.get("mode") != "simple" and os.geteuid() != pwd.getpwnam(user).pw_uid:
+        # The existing sudo login-shell cannot execute the header helper under AppArmor.
+        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mcpgw-status --check)")
     done = subprocess.run(command, capture_output=True, text=True, timeout=20, cwd="/", env={"PATH": "/usr/bin:/bin"})
     value = json.loads(done.stdout.strip().splitlines()[-1])["Authorization"]
     if value.startswith("Bearer endpoint-not-active"):
@@ -1034,16 +1072,20 @@ def rollback(args):
         restore_home_launchers(config)
     except (OSError, ValueError):
         config = {}
+    if not config and (folder / "home-launchers").is_dir() and any((folder / "home-launchers").iterdir()):
+        raise ValueError("직원 런처 백업의 소유 정보를 확인할 수 없어 보존합니다")
+    enforcement = ENFORCEMENT / f"mcpgw-{args.user}"
+    if not (enforcement / "state.json").exists() and person.pw_shell == str(enforcement / "login-shell"):
+        raise ValueError("로그인 셸의 원복 정보가 없어 집행 파일을 보존합니다")
     if Path("/etc/systemd/system", unit).exists():
-        subprocess.run(["systemctl", "disable", "--now", unit], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(["systemctl", "disable", "--now", unit], check=True, capture_output=True, text=True)
     Path("/etc/systemd/system", unit).unlink(missing_ok=True)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     if (Path("/usr/local/lib/mcpgw-enforcement") / f"mcpgw-{args.user}" / "state.json").exists():
         # The enforcer beside this file: run from a new kit, that is the kit's copy. The copy a failed earlier
         # install left under /usr/local is the old code and stopped this removal (10-23 kuku VM, D-229).
         subprocess.run([sys.executable, str(Path(__file__).with_name("enforce-linux.py")), "--user", args.user, "--rollback"],
-                       check=True)
+                       check=True, capture_output=True, text=True)
     elif (ENFORCEMENT / f"mcpgw-{args.user}" / "header-helper").exists():
         shutil.rmtree(ENFORCEMENT / f"mcpgw-{args.user}", ignore_errors=True)  # simple mode: only the helper script
     for name, target in FILES.items():
@@ -1052,7 +1094,8 @@ def rollback(args):
             private_write(target, backup.read_text())
             target.chmod(0o644)
         else:
-            target.unlink(missing_ok=True)
+            if config or (target.is_file() and ours(target.read_text(), "")):
+                target.unlink(missing_ok=True)
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
     for suffix in ("json", "txt"):
         status_path(args.user, suffix).unlink(missing_ok=True)
@@ -1119,9 +1162,11 @@ def main():
     args = parser.parse_args()
     try:
         args.run(args)
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+    except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         # Never echo requests, credentials, response bodies or header dictionaries.
-        parser.exit(1, "관리형 설치/연결 실패: " + str(exc) + "\n")
+        if args.command in {"install", "rollback"} and os.geteuid() == 0:
+            diagnostic(args.command, exc)
+        parser.exit(1, "관리형 설치/연결 실패: " + type(exc).__name__ + "\n")
 
 
 if __name__ == "__main__":

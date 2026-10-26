@@ -244,6 +244,8 @@ $script:EndpointText = @{
         connection = '연결 상태'; management = '관리 상태'; way = '연결 방식'; servers = '승인 서버'; harness = '하네스';
         reported = '최근 보고'; model = '모델 응답'; tools = '도구'; server = '서버 연결'; gateway = '게이트웨이'; next = '다음 할 일';
         mode_simple = '간편 모드 · 게이트웨이 판정'; mode_isolated = '격리 계정'; ok = '정상'; failed = '실패';
+        active = '활성'; pending = '활성화 대기'; quarantined = '격리됨'; revoked = '철회됨'; removed = '제거됨'; unknown = '확인 필요';
+        no_harness_probe = '하네스 없음'; skipped = '건너뜀'; terminal = '터미널 화면';
         waiting = '활성화 대기'; not_checked = '확인 전'; checking = '확인 중'; check_failed = '확인 응답 없음 · [연결 확인]을 다시 누르세요';
         gateway_ok = '게이트웨이 응답 정상'; uac_cancelled = '관리자 권한 확인이 취소됐습니다 · [다시 연결]을 다시 누르세요';
         restart_service = '이 PC의 연결 서비스가 멈춰 있습니다. 관리자 권한으로 다시 시작할까요?';
@@ -267,6 +269,8 @@ $script:EndpointText = @{
         connection = 'Connection'; management = 'Management'; way = 'Mode'; servers = 'Approved servers'; harness = 'Harnesses';
         reported = 'Last report'; model = 'Model answer'; tools = 'Tools'; server = 'Server'; gateway = 'Gateway'; next = 'Next step';
         mode_simple = 'Simple mode · decided by the gateway'; mode_isolated = 'Isolated account'; ok = 'OK'; failed = 'failed';
+        active = 'Active'; pending = 'Waiting for activation'; quarantined = 'Quarantined'; revoked = 'Revoked'; removed = 'Removed'; unknown = 'Needs attention';
+        no_harness_probe = 'No harness'; skipped = 'Skipped'; terminal = 'Terminal view';
         waiting = 'Waiting for activation'; not_checked = 'Not checked'; checking = 'Checking'; check_failed = 'No answer · press [Check connection] again';
         gateway_ok = 'Gateway answers'; uac_cancelled = 'Administrator approval was cancelled · press [Reconnect] again';
         restart_service = 'The connection service on this PC has stopped. Restart it as administrator?';
@@ -289,6 +293,15 @@ function Get-EndpointText([string]$Key, [string]$Language = 'ko') {
     $table = $script:EndpointText[$(if ($Language -eq 'en') { 'en' } else { 'ko' })]
     if ($table.ContainsKey($Key)) { return $table[$Key] }
     return $Key
+}
+
+function Get-EndpointValue([string]$Value, [string]$Language = 'ko') {
+    foreach ($key in $script:EndpointText.ko.Keys) {
+        if ($Value -eq $script:EndpointText.ko[$key] -or $Value -eq $script:EndpointText.en[$key]) {
+            return Get-EndpointText $key $Language
+        }
+    }
+    return $Value
 }
 
 # What failed is the worker's fixed reason; this is the one line of what to press next.

@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -36,6 +37,16 @@ def example():
 
 
 class Frame(unittest.TestCase):
+    def test_english_frame_translates_states_results_units_and_next_steps(self):
+        for state in kit.STATES:
+            text = kit.frame({**example(), 'state': state},
+                             cells=kit.check_cells({'model': {'ok': True, 'seconds': 2.1},
+                                                    'connection': {'waiting': True}}),
+                             columns=120, lines=40, now=1800000000, language='en')
+            self.assertIsNone(re.search('[가-힣]', text), text)
+            self.assertIn('Done · 2.1s', text)
+            self.assertIn('Waiting for activation', text)
+
     def test_same_frame_has_steps_three_cells_korean_badge_and_five_blocks(self):
         text = kit.frame(example(), [("연결 등록", 0, 4, "✓"), ("설치 확인", 0, 8, "✓")],
                          kit.check_cells({"model": {"ok": True, "seconds": 2.1},
@@ -188,6 +199,17 @@ class Terminal(unittest.TestCase):
                                   capture_output=True, text=True, encoding="utf-8", check=True)
         self.assertIn("연결 상태:", done.stdout)
         self.assertNotIn("\x1b", done.stdout)
+
+    def test_windows_english_redirect_keeps_server_ids_and_names_verbatim(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'status.json'
+            names = ['docs-mcp-cloudflare-c-681a2b17', '활성 문서']
+            path.write_text(json.dumps({**example(), 'servers': names, 'management': '활성'}), encoding='utf-8')
+            done = subprocess.run([sys.executable, '-X', 'utf8', '-B', '-I', '-S', str(KIT / 'windows_status.py'),
+                                   str(path), '--language', 'en'], capture_output=True, text=True, encoding='utf-8', check=True)
+        self.assertIn('Management: Active', done.stdout)
+        self.assertIn('Approved servers: 2 · ' + ', '.join(names), done.stdout)
+        self.assertNotIn('게이트웨이 판정', done.stdout)
 
 
 class LinuxObservation(unittest.TestCase):

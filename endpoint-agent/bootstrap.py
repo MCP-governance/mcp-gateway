@@ -8,15 +8,17 @@ its install checks pass (if the organization allows it) and still decides every 
 kit downloaded with 「고급: 격리 계정」) is the earlier install: required packages, the approved harness
 binaries, a separate managed account for an administrator, AppArmor/nftables confinement, and an
 administrator's activation. The install ends by measuring a model answer, the tool count and one
-approved server's initialize. An existing install is rolled back first, so the same file is also the
+approved server's initialize. An existing install is replaced after enrollment and policy retrieval, so the same file is also the
 repair, the reinstall and the switch between modes.
 """
 from __future__ import annotations
 
 import argparse
+import contextlib
 import grp
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import pwd
@@ -26,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -63,8 +66,17 @@ class Failed(Exception):
 
 
 def run(*command: str, check: bool = True, quiet: bool = False, **kwargs) -> subprocess.CompletedProcess:
-    return subprocess.run(command, check=check, text=True,
+    if kwargs.get("stderr") == subprocess.DEVNULL:
+        kwargs["stderr"] = subprocess.PIPE
+    done = subprocess.run(command, check=False, text=True,
                           stdout=subprocess.DEVNULL if quiet else None, **kwargs)
+    if done.returncode:
+        error = subprocess.CalledProcessError(done.returncode, command, stderr=done.stderr)
+        if DIAGNOSTIC:
+            DIAGNOSTIC(Path(command[0]).name, error)
+        if check:
+            raise error
+    return done
 
 
 def out(*command: str) -> str:
@@ -87,6 +99,7 @@ class _Lines:
 
 
 SCREEN = _Lines()
+DIAGNOSTIC = None
 
 
 def step(message: str) -> None:
@@ -447,16 +460,20 @@ def remove_shims(managed: str) -> None:
 # -- the managed installer ----------------------------------------------------------
 
 def installed(account: str) -> bool:
-    return (STATE / account / "config.json").is_file()
+    return ((STATE / account).exists()
+            or (Path("/etc/systemd/system") / f"mcpgw-managed-{account}.service").exists()
+            or (Path("/etc/systemd/system") / f"mcpgw-egress-{account}.service").exists())
 
 
 def rollback(account: str) -> None:
     # The kit's own installer, not the copy under /usr/local: a device installed by an older kit
     # is removed by the newest removal logic.
     step(f"기존 설치 제거: {account}")
+    done = subprocess.run([sys.executable, "-B", str(HERE / "managed-linux.py"), "rollback", "--user", account],
+                          capture_output=True, text=True)
+    if done.returncode:
+        raise subprocess.CalledProcessError(done.returncode, "managed rollback", stderr=done.stderr)
     remove_shims(account)
-    run(sys.executable, "-B", str(HERE / "managed-linux.py"), "rollback", "--user", account, check=False,
-        quiet=True, stderr=subprocess.DEVNULL)
 
 
 def companion_of(employee: str) -> str:
@@ -532,17 +549,20 @@ def failure_reason(output: str) -> str:
 
 
 def install_managed(account: str, placed: dict[str, dict], enrollment: Path, owner_uid: int | None = None,
-                    mode: str = "isolated") -> dict:
+                    mode: str = "isolated", *, prepared=None) -> dict:
     step(f"관리형 연결 설치: {account}")
     if mode == "isolated":
         close_sessions(account)  # simple mode leaves the employee's own sessions running
-    clients = [part for name, item in placed.items() for part in ("--client", f"{name}={item['path']}")]
-    done = subprocess.run([sys.executable, "-B", str(HERE / "managed-linux.py"), "install", "--user", account,
-                           "--mode", mode, *(["--owner-uid", str(owner_uid)] if owner_uid is not None else []),
-                           "--enrollment", str(enrollment), *clients], capture_output=True, text=True)
-    if done.returncode:
-        raise Failed(failure_reason(done.stderr or done.stdout) or "관리형 연결 설치가 실패했습니다")
-    return json.loads(done.stdout.splitlines()[-1])
+    spec = importlib.util.spec_from_file_location("managed_install", HERE / "managed-linux.py")
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    arguments = argparse.Namespace(user=account, mode=mode, owner_uid=owner_uid, enrollment=enrollment,
+                                   broker_binding="warn", client=[f"{name}={item['path']}" for name, item in placed.items()])
+    # The enrollment result stays in this root process, never argv, environment or a user-writable receipt.
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        core.install(arguments, prepared=prepared)
+    return json.loads(output.getvalue().splitlines()[-1])
 
 
 # Each harness keeps its own sign-in in the account's home, so each is asked once.
@@ -624,16 +644,17 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tup
         return ("모델 응답", "— (하네스 없음)")
     observer = managed.load_module("model_observer", HERE / "agent.py")
     prompt = observer.MODEL_PROMPT
-    command = (f"claude -p {shlex.quote(prompt)}" if name == "claude"
-               else f"codex exec --skip-git-repo-check {shlex.quote(prompt)}")
+    entry = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account)
+    program = shlex.quote(name if simple else str(entry / name))
+    command = (f"{program} -p {shlex.quote(prompt)}" if name == "claude"
+               else f"{program} exec --skip-git-repo-check {shlex.quote(prompt)}")
     if simple:
         # Before /etc/environment is read again by a new login, pass the CA the harness needs explicitly.
         config = json.loads((STATE / account / "config.json").read_text())
         prefix = " ".join(f"{k}={shlex.quote(v)}" for k, v in managed.ca_environment(config).items())
         argv = ["runuser", "-l", account, "-c", (prefix + " " if prefix else "") + command]
     else:
-        argv = ["runuser", "-u", account, "--", str(Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account)
-                                                    / "login-shell"), "-c", command]
+        argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
             else f"{name} 실패 · {found['detail'] or '응답 없음'}")
@@ -742,8 +763,16 @@ def self_check() -> None:
     print("bootstrap self-check OK")
 
 
+def expired(bundle: dict, now: float | None = None) -> bool:
+    """A one-time kit past its validity is refused by the Gateway (403) anyway; say so before touching anything."""
+    try:
+        return datetime.fromisoformat(bundle["expires_at"]).timestamp() < (time.time() if now is None else now)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def main() -> int:
-    global SCREEN
+    global SCREEN, DIAGNOSTIC
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-check", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--user", help="설치 대상 직원 계정(기본: 설치를 실행한 계정)")
@@ -768,12 +797,15 @@ def main() -> int:
         spec = importlib.util.spec_from_file_location("managed_linux", HERE / "managed-linux.py")
         managed = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(managed)
+        DIAGNOSTIC = managed.diagnostic
         bundle = {}
         if not args.remove:
             if not args.enrollment.is_file():
                 raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
             bundle = json.loads(args.enrollment.read_text())
             managed.verify_transport(bundle)
+            if expired(bundle):
+                raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
         employee = employee_account(args.user)
         if args.remove:
             for account in (employee, companion_of(employee)):
@@ -798,40 +830,53 @@ def main() -> int:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)
         return 1
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
-        print(f"\n설치하지 못했습니다: {type(exc).__name__}: {str(exc)[:200]}", file=sys.stderr)
+        if DIAGNOSTIC:
+            DIAGNOSTIC("bootstrap", exc)
+        print(f"\n설치하지 못했습니다: {type(exc).__name__}", file=sys.stderr)
         return 1
 
 
 def connect(managed, employee: str, isolated: bool, args, started: float) -> int:
     step("구성요소 확인")
     ensure_packages(isolated)
-    # Whatever was installed before, in either mode, goes first: a reinstall, a repair and a switch of mode
-    # are the same path, and the old launcher must not be what `command -v` finds next.
+    if isolated:
+        account, companion = managed_account(employee)
+    else:
+        account, companion = employee, False
+    bundle = json.loads(args.enrollment.read_text())
+    credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
+    try:
+        prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
+    except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
+        managed.diagnostic("enroll", exc, credentials)
+        raise Failed("연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.") from None
+    credentials.append(prepared[0]["device_key"])
+    managed.diagnostic("prepared", None)
     for previous in (employee, companion_of(employee)):
         if installed(previous):
             rollback(previous)
     if isolated:
-        account, companion = managed_account(employee)
         step("승인 하네스 배치")
         placed = place_harnesses(employee)
     else:
         remove_shims(companion_of(employee))
         remove_companion(employee)
-        account, companion = employee, False
         step("하네스 찾기")
         placed = {name: {"path": path} for name, path in find_clients(employee).items()}
     try:
         result = install_managed(account, placed, args.enrollment,
                                  pwd.getpwnam(employee).pw_uid if companion else None,
-                                 "isolated" if isolated else "simple")
+                                 "isolated" if isolated else "simple", prepared=prepared)
         if companion:
             step("직원 계정에서 바로 실행되게 연결")
             result["launchers"] = write_shims(employee, account, tuple(placed))
-    except Failed:
+    except (Failed, OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
+        managed.diagnostic("install", exc, credentials)
         # Half a connection is worse than none: the account keeps its own shell and firewall.
         if installed(account) or (SHIM_DIR / "codex").is_file():
             rollback(account)
         raise
+    managed.diagnostic("installed", None)
     close_step()  # 사람이 로그인하는 시간은 설치 소요에 넣지 않는다
     installing = round(time.monotonic() - started)
     if not args.skip_login:

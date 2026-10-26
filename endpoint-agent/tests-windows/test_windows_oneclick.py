@@ -46,6 +46,17 @@ class OneclickTests(unittest.TestCase):
         self.assertEqual(payload['bootstrap'], bootstrap)
 
     @unittest.skipUnless(os.name == 'nt', 'PowerShell parser requires Windows')
+    def test_result_box_frees_the_install_lock_and_stays_on_top(self):
+        # pj3 실측: 상자가 상태 창 뒤에 숨은 채 설치 잠금을 쥐고 있어 다음 설치가 「다른 설치 작업이 진행 중」으로 막혔다.
+        template = (ROOT / 'endpoint-agent/windows-oneclick.ps1.in').read_text(encoding='utf-8')
+        lines = template.splitlines()
+        calls = [i for i, line in enumerate(lines) if line.strip().startswith('Show-EndpointResult ')]
+        self.assertEqual(len(calls), 2)
+        for index in calls:
+            self.assertIn('$mutex.ReleaseMutex(); $owns = $false', lines[index - 1])
+        self.assertEqual(template.count('MessageBox]::Show('), 1)
+        self.assertIn('TopMost = $true', template)
+
     def test_real_loader_passes_only_artifact_identity_to_one_mocked_uac(self):
         # Execute the generated loader but replace Start-Process: no UAC or child installer is launched.
         artifact = self.builder.launcher(b'synthetic ZIP', 'throw "must not run"')

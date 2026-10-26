@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T17:01:07+09:00",
-  "head": "c3c7854ff39d05dcdd1ac75a23b02ac4bb47efbf",
-  "branch": "10/26-stage1-boundary-analysis",
+  "captured_at": "2026-10-26T17:55:16+09:00",
+  "head": "f61beb372c67fa82b9d56e02cccd8793c783f767",
+  "branch": "10/26-kit-stream",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -44,11 +44,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "df53ac9970dc71e38055825339be854ac9611fabadfac9dfc2db4e9a943f7b21"
+      "sha256": "719b2c74b543fde4d8e2690e45b2e09b0a33bd90f2d2bcc0a30457e12f986ecc"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "bbbd74d3cc62dfec5811726dbaa4f7feeea340cc6c93bfdcc66b3a27edb06660"
+      "sha256": "aadfbee08601a7ab74d4165e97c16e4b1dfa34613a1d374cd2d5fbf5cd5ad87c"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

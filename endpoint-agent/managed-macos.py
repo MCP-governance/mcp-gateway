@@ -14,7 +14,6 @@ import pwd
 import re
 import shlex
 import shutil
-import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -43,8 +42,11 @@ def load(name, path):
 def run(*command, check=True):
     # Never include tool output: commands may handle enrollment or device credentials.
     result = subprocess.run(command, capture_output=True, text=True, check=False)
-    if check and result.returncode:
-        raise ValueError('구성요소 실행 실패: ' + Path(command[0]).name)
+    if result.returncode:
+        error = subprocess.CalledProcessError(result.returncode, Path(command[0]).name, stderr=result.stderr)
+        core_module().diagnostic('command', error)
+        if check:
+            raise error
     return result
 
 
@@ -218,9 +220,14 @@ def rollback(account):
     core = core_module()
     folder = STATE / account
     journal_path = folder / 'installer.json'
-    if not journal_path.is_file():
+    if not folder.exists() and not (LAUNCHD / ('org.mcpgw.managed.' + account + '.plist')).exists():
         return
-    journal = json.loads(journal_path.read_text(encoding='utf-8'))
+    if journal_path.is_file():
+        journal = json.loads(journal_path.read_text(encoding='utf-8'))
+    else:
+        # Missing ownership journal never authorizes deleting an existing account or employee files.
+        journal = {'created': False, 'settings': {name: 0o644 for name in FILES
+                   if (folder / (name + '.backup')).exists()}}
     config_path = folder / 'config.json'
     config = json.loads(config_path.read_text(encoding='utf-8')) if config_path.exists() else {}
     boot = configure_bootstrap(account)
@@ -235,8 +242,8 @@ def rollback(account):
         elif stage == 'wrappers':
             helper = PROGRAMS / 'enforcement' / ('mcpgw-' + account)
             shutil.rmtree(helper, ignore_errors=True)
-        elif stage == 'pf' and config.get('pf_anchor'):
-            run('/sbin/pfctl', '-a', config['pf_anchor'], '-F', 'rules')
+        elif stage == 'pf':
+            run('/sbin/pfctl', '-a', config.get('pf_anchor') or anchor_name(account), '-F', 'rules')
             if config.get('pf_token') and config.get('pf_boot') == run('/usr/sbin/sysctl', '-n', 'kern.boottime').stdout.strip():
                 run('/sbin/pfctl', '-X', config['pf_token'])
         elif stage == 'settings':
@@ -259,7 +266,7 @@ def rollback(account):
                 if home.resolve().parent != Path('/Users').resolve():
                     raise ValueError('관리 계정 홈 경로를 확인하세요')
                 shutil.rmtree(home, ignore_errors=True)
-    shutil.rmtree(folder)
+    shutil.rmtree(folder, ignore_errors=True)
 
 
 def install(employee, enrollment):
@@ -267,27 +274,38 @@ def install(employee, enrollment):
     core = core_module()
     bundle = json.loads(enrollment.read_text(encoding='utf-8'))
     core.verify_transport(bundle)
-    rollback(account)
-    if any(STATE.glob('*/installer.json')):
+    if any(path.parent.name != account for path in STATE.glob('*/installer.json')):
         raise ValueError('이 PC에는 다른 직원의 관리형 연결이 있습니다')
-    try:
-        pwd.getpwnam(account)
-    except KeyError:
-        pass
-    else:
-        raise ValueError('동일 이름의 기존 계정을 먼저 확인하세요')
-    home = Path('/Users') / account
-    if home.exists() or home.is_symlink():
-        raise ValueError('동일 이름의 기존 홈 경로를 먼저 확인하세요')
-    boot = configure_bootstrap(account)
     folder = STATE / account
+    journal_path = folder / 'installer.json'
+    prior = json.loads(journal_path.read_text(encoding='utf-8')) if journal_path.exists() else {}
+    try:
+        existing = pwd.getpwnam(account)
+    except KeyError:
+        existing = None
+    else:
+        if not prior.get('created') or prior.get('employee') != employee:
+            raise ValueError('동일 이름의 기존 계정을 먼저 확인하세요')
+    home = Path('/Users') / account
+    if (home.exists() or home.is_symlink()) and not (existing and prior.get('home_created')):
+        raise ValueError('동일 이름의 기존 홈 경로를 먼저 확인하세요')
+    uid = existing.pw_uid if existing else max(500, *[p.pw_uid for p in pwd.getpwall() if 500 <= p.pw_uid < 60000]) + 1
+    credentials = [bundle.get('enrollment_token'), bundle.get('device_key')]
+    try:
+        config, policy, enrolled = core.enroll(bundle, account, uid, platform='macos')
+    except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
+        core.diagnostic('enroll', exc, credentials)
+        raise ValueError('연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.') from None
+    credentials.append(config['device_key'])
+    core.diagnostic('prepared', None)
+    rollback(account)
+    boot = configure_bootstrap(account)
     folder.mkdir(mode=0o700, parents=True)
     if not core.protected(folder):
         raise ValueError('설치 상태 경로가 보호되지 않았습니다')
     journal = {'created': False, 'employee': employee, 'settings': {}}
     save(core, folder / 'installer.json', journal)
     try:
-        uid = max(500, *[p.pw_uid for p in pwd.getpwall() if 500 <= p.pw_uid < 60000]) + 1
         record = '/Users/' + account
         run('/usr/bin/dscl', '.', '-create', record)
         journal['created'] = True
@@ -306,19 +324,10 @@ def install(employee, enrollment):
             core.private_write(PROGRAMS / name, (HERE / name).read_text(encoding='utf-8'))
             (PROGRAMS / name).chmod(0o755)
         boot.place_harnesses(employee)
-        bundle['device_key'] = core.secrets.token_urlsafe(32)
-        enrolled = core.request(bundle, '/oauth/device-enroll', {'enrollment_token': bundle['enrollment_token'],
-            'device_key': bundle['device_key'], 'hostname': socket.gethostname(),
-            'local_username': account, 'local_uid': uid, 'platform': 'macos'}, credential=False)
-        config = {key: bundle[key] for key in ('gateway_url', 'tailscale_node_id', 'device_key', 'ca_certificate', 'ca_sha256') if key in bundle}
         config.update(endpoint_id=enrolled['endpoint_id'], username=account, uid=uid, employee=employee,
                       socket='/var/run/mcpgw-' + account + '.sock', config_path=str(folder / 'config.json'),
                       pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'))
         save(core, folder / 'config.json', config)
-        enrollment.unlink()
-        policy = core.request(config, '/api/endpoint/managed-policy')
-        if policy['tailscale_node_id'] != config['tailscale_node_id'] or policy['gateway_url'] != config['gateway_url']:
-            raise ValueError('키트와 정책의 게이트웨이가 다릅니다')
         config.update({key: policy[key] for key in ('gateway_ips', 'gateway_port', 'policy_hash')})
         config.update(proxy_port=policy.get('proxy_port'), proxy_environment=policy.get('proxy_environment', {}))
         save(core, folder / 'config.json', config)
@@ -339,8 +348,11 @@ def install(employee, enrollment):
         plist.write_bytes(daemon_plist(account, folder / 'config.json', sys.executable))
         plist.chmod(0o644)
         run('/bin/launchctl', 'bootstrap', 'system', str(plist))
+        enrollment.unlink()
+        core.diagnostic('installed', None)
         return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': 'pending-organization-activation'}
-    except BaseException:
+    except BaseException as exc:
+        core.diagnostic('install', exc, credentials)
         rollback(account)
         raise
 

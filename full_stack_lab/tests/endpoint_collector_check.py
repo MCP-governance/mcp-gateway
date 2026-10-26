@@ -110,6 +110,22 @@ class Collector(unittest.TestCase):
         with patch.object(agent,'SCAN_ENABLED',True), patch.object(agent,'call',return_value={'enabled':False}):
             self.assertEqual(agent.report_listeners()['error_code'],'policy_disabled')
 
+    def test_once_exit_keeps_partial_telemetry_but_fails_delivery_and_authorization(self):
+        for state, expected in (('partial', 0), ('failed', 1), ('unauthorized', 1)):
+            statuses = []
+            output = io.StringIO()
+            with self.subTest(state=state), patch.object(agent, 'DEVICE_KEY', 'fixture'), \
+                 patch.object(agent, 'validate_gateway'), patch.object(agent, 'enroll'), \
+                 patch.object(agent, 'log'), patch.object(agent, 'endpoint_id', return_value='fixture'), \
+                 patch.object(agent, 'ONE_SHOT', True), patch.object(agent, 'CONFIG', {}), \
+                 patch.object(agent, 'report_configs', return_value={'state': 'success', 'accepted': 1}), \
+                 patch.object(agent, 'report_processes', return_value={'state': state, 'accepted': 0}), \
+                 patch.object(agent, 'report_listeners', return_value={'state': 'disabled'}), \
+                 patch.object(agent, 'report_status', side_effect=lambda *args: statuses.append(args)), redirect_stdout(output):
+                self.assertEqual(agent.main(), expected)
+            self.assertEqual(json.loads(output.getvalue())['observation']['process']['state'], state)
+            self.assertEqual(statuses[1], ('process', state, 0, 'incomplete_snapshot' if state == 'partial' else ''))
+
     def test_device_credential_redirects_are_refused(self):
         self.assertIsNone(agent.NoRedirect().redirect_request(None,302,'redirect',{},'https://other.invalid'))
 

@@ -920,9 +920,14 @@ def serve(args):
         while True:
             inventory_status = "success"
             try:  # configuration inventory is independent from OS event observation
-                subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
-                               check=True, timeout=40, capture_output=True)
-            except (OSError, subprocess.SubprocessError) as exc:
+                done = subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
+                                      check=True, timeout=40, capture_output=True, text=True, encoding="utf-8")
+                observation = json.loads(done.stdout.strip().splitlines()[-1])["observation"]
+                states = {observation[channel]["state"] for channel in ("inventory", "process", "network")}
+                if not states <= {"success", "partial", "disabled"}:
+                    raise ValueError("invalid collector output")
+                inventory_status = "partial" if "partial" in states else "success"
+            except (OSError, ValueError, KeyError, IndexError, TypeError, subprocess.SubprocessError) as exc:
                 inventory_status = type(exc).__name__
             os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
             try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.

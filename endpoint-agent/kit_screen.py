@@ -15,7 +15,36 @@ ENTER = "\x1b[?1049h\x1b[?25l"
 LEAVE = "\x1b[0m\x1b[?25h\x1b[?1049l"
 KEYS = "q 종료 · c 지금 점검 · r 새로고침"
 STATES = {"active": "활성", "pending": "활성화 대기", "quarantined": "격리됨",
-          "revoked": "등록 해제됨", "unknown": "확인 필요"}
+          "revoked": "등록 해제됨", "removed": "제거됨", "unknown": "확인 필요"}
+TEXT_EN = {
+    "MINT 엔드포인트": "MINT endpoint", "엔드포인트에서 차단": "Blocked at endpoint",
+    "연결 상태": "Connection", "연결됨": "Connected", "연결 끊김": "Disconnected",
+    "관리 상태": "Management", "상태": "Status", "연결 방식": "Mode", "간편 모드": "Simple mode",
+    "게이트웨이 판정": "Gateway decision", "격리 계정": "Isolated account",
+    "활성화 대기": "Waiting for activation", "활성": "Active", "격리됨": "Quarantined",
+    "등록 해제됨": "Unregistered", "철회됨": "Revoked", "제거됨": "Removed", "확인 필요": "Needs attention",
+    "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers",
+    "하네스 판본": "Harness versions", "하네스 응답": "Harness response", "하네스": "Harnesses",
+    "최근 보고": "Last report", "최근 엔드포인트 차단": "Recent endpoint blocks",
+    "게이트웨이 MCP 목록": "Gateway MCP list", "게이트웨이 응답 정상": "Gateway answers",
+    "설치 단계": "Installation steps", "설치 확인": "Installation checks", "설치 중": "Installing",
+    "설치 완료": "Installed", "설치 실패": "Installation failed", "차단 발생": "Blocked",
+    "관리 설정 적용": "Managed settings applied", "서버 연결": "Server connection", "서버": "Servers",
+    "일부 실패": "Some failed", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
+    "관리자 활성화 대기": "Waiting for an administrator", "관리자에게 격리 해제 요청": "Ask an administrator to release",
+    "새 키트로 다시 설치": "Reinstall with a new kit", "하네스 실행": "Run a harness",
+    "게이트웨이 연결 점검": "Check gateway connection", "다음 할 일": "Next step",
+    "종료": "Quit", "지금 점검": "Check now", "새로고침": "Refresh", "점검 설정 없음": "No check settings",
+}
+
+
+def translate(value, language="ko"):
+    if language != "en":
+        return value
+    text = re.sub("|".join(map(re.escape, sorted(TEXT_EN, key=len, reverse=True))),
+                  lambda match: TEXT_EN[match[0]], value)
+    text = re.sub(r"(\d+(?:\.\d+)?)초", r"\1s", text)
+    return re.sub(r"(\d+)개", r"\1", text)
 
 
 def clean(value):
@@ -81,7 +110,7 @@ def check_cells(probe):
     return [("하네스 응답", answer), ("게이트웨이 MCP 목록", tools)]
 
 
-def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=None, stale=180):
+def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=None, stale=180, language="ko"):
     now = time.time() if now is None else now
     connected = summary.get("connected") and 0 <= now - (summary.get("updated") or 0) <= stale
     badge = "연결됨" if connected else "연결 끊김"
@@ -120,16 +149,17 @@ def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=No
     servers = summary.get("servers")
     count = len(servers) if isinstance(servers, list) else servers
     body += ["승인 MCP 서버  " + (f"{count}개" if type(count) is int else "—")]
+    body = [translate(line, language) for line in body]
     versions = summary.get("harnesses") or {}
-    body.append("하네스 판본  " + (" · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
+    body.append(translate("하네스 판본  ", language) + (" · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
                                               if name in {"claude", "codex", "gemini", "opencode"}) or "—"))
-    body += ["최근 엔드포인트 차단"]
-    body += [f"  {clean(row.get('at', '—'))}  엔드포인트에서 차단" for row in blocks[-5:]] or ["  —"]
+    body += [translate("최근 엔드포인트 차단", language)]
+    body += [f"  {clean(row.get('at', '—'))}  " + translate("엔드포인트에서 차단", language) for row in blocks[-5:]] or ["  —"]
     if not next_line:
         next_line = {"pending": "관리자 활성화 대기", "quarantined": "관리자에게 격리 해제 요청",
                      "revoked": "새 키트로 다시 설치"}.get(summary.get("state"),
                          "하네스 실행" if connected else "게이트웨이 연결 점검")
-    footer = ["다음 할 일  " + clean(next_line), KEYS]
+    footer = [translate("다음 할 일  " + clean(next_line), language), translate(KEYS, language)]
     content = (body[:max(0, height - 2)] + footer[-height:]) if height else []
     return "\n".join(clip(line, max(0, columns - 1)) for line in content)
 
@@ -151,9 +181,10 @@ def enable_vt(stream):
 
 
 class Screen:
-    def __init__(self, title="MINT 엔드포인트", output=None, input=None):
+    def __init__(self, title="MINT 엔드포인트", output=None, input=None, language="ko"):
         self.output, self.input = output or sys.stdout, input or sys.stdin
         self.title, self.rows, self.cells, self.next, self.notes = title, [], [], "", []
+        self.language = language
         self.summary, self.window = {}, None
         self._restore_vt = self._terminal = None
         self._handlers = {}
@@ -214,7 +245,7 @@ class Screen:
 
     def text(self):
         size = shutil.get_terminal_size((80, 30))
-        return frame(self.summary, self.rows, self.cells, self.next, size.columns, size.lines)
+        return frame(self.summary, self.rows, self.cells, self.next, size.columns, size.lines, language=self.language)
 
     def draw(self, extra=()):
         if self.window is not None:
