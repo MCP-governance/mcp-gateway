@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-26T16:11:31+09:00",
-  "head": "0fd7ae097460e50b36bfdea75b4936e127fe1f19",
-  "branch": "10/26-notion-bug-fixes",
+  "captured_at": "2026-10-26T15:48:27+09:00",
+  "head": "d2fee732d867ecc25e58eddd20ea64bec55eaa8e",
+  "branch": "10/26-kit-fullscreen",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -45,11 +44,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "df53ac9970dc71e38055825339be854ac9611fabadfac9dfc2db4e9a943f7b21"
+      "sha256": "efc806337b5023cbac3f8052a3bd4811ac27e15cba81f1e5a314e9eb05ff62c6"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "bbbd74d3cc62dfec5811726dbaa4f7feeea340cc6c93bfdcc66b3a27edb06660"
+      "sha256": "f72d291cf0ac9fb76ad8614acb71c210853747912d3bf6bf64d461ae38f895bd"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
