@@ -43,6 +43,16 @@ class Reinstall(unittest.TestCase):
         self.policy = {"tailscale_node_id": "node", "gateway_ips": ["127.0.0.1"], "gateway_port": 443,
                        "policy_hash": "p", "files": dict.fromkeys(self.core.FILES, "managed")}
 
+    def test_expired_kit_is_refused_before_anything_changes(self):
+        bootstrap = load("bootstrap")
+        self.assertTrue(bootstrap.expired({"expires_at": "2026-10-23T11:23:33.649135+00:00"}, now=1792999999))
+        self.assertFalse(bootstrap.expired({"expires_at": "2026-10-23T11:23:33+00:00"}, now=1761200000))
+        self.assertFalse(bootstrap.expired({}))
+        self.assertFalse(bootstrap.expired({"expires_at": "not a date"}))
+        source = (KIT / "bootstrap.py").read_text(encoding="utf-8")
+        # 만료 검사는 계정·설치를 건드리는 connect보다 앞에 있어야 한다.
+        self.assertLess(source.index("if expired(bundle):"), source.index("return connect(managed"))
+
     def test_linux_refused_enrollment_or_policy_never_removes_old_install(self):
         b = self.boot
         for failure_at in (0, 1):

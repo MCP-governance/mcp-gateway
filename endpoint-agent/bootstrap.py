@@ -28,6 +28,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -761,6 +762,14 @@ def self_check() -> None:
     print("bootstrap self-check OK")
 
 
+def expired(bundle: dict, now: float | None = None) -> bool:
+    """A one-time kit past its validity is refused by the Gateway (403) anyway; say so before touching anything."""
+    try:
+        return datetime.fromisoformat(bundle["expires_at"]).timestamp() < (time.time() if now is None else now)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
 def main() -> int:
     global SCREEN, DIAGNOSTIC
     parser = argparse.ArgumentParser(description=__doc__)
@@ -794,6 +803,8 @@ def main() -> int:
                 raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
             bundle = json.loads(args.enrollment.read_text())
             managed.verify_transport(bundle)
+            if expired(bundle):
+                raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
         employee = employee_account(args.user)
         if args.remove:
             for account in (employee, companion_of(employee)):
