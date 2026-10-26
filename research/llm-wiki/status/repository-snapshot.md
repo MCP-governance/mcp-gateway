@@ -1,26 +1,45 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T12:40:57+09:00
+확인 시각: 2026-10-26T13:15:37+09:00
 
-HEAD: `b67b60c78fd3549edef60970d9382f19fb6b5707` · 로컬 브랜치: `10/25-stage0-sunset`
+HEAD: `8bd9422a9e75257d2577c808e423dbededc02c45` · 로컬 브랜치: `10/25-stage0-sunset`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
- M research/llm-wiki/analysis/requirements.json
+M  full_stack_lab/gateway/app/agent_contract.py
+M  full_stack_lab/gateway/app/core.py
+M  full_stack_lab/gateway/app/decommission.py
+M  full_stack_lab/gateway/app/disposal.py
+M  full_stack_lab/gateway/app/idp.py
+M  full_stack_lab/gateway/app/local_jobs.py
+M  full_stack_lab/gateway/app/ops_response.py
+M  full_stack_lab/gateway/app/retention.py
+UU full_stack_lab/gateway/app/tool_sunset.py
+M  full_stack_lab/tests/dev73_integration_check.py
+A  full_stack_lab/tests/disposal_index_check.py
+M  full_stack_lab/tests/fresh_requester_check.py
+M  full_stack_lab/tests/ops_response_check.py
+M  full_stack_lab/tests/resource_residual_check.py
+M  full_stack_lab/tests/selective_restriction_siem_check.py
+M  research/llm-wiki/analysis/integration-cases.json
+M  research/llm-wiki/analysis/requirements.json
+M  research/llm-wiki/analysis/threat-trace-review-1020/README.md
+MM research/llm-wiki/catalogs/threats.json
+M  research/llm-wiki/status/repository-snapshot.json
+M  research/llm-wiki/status/repository-snapshot.md
 ```
 
 ## 주요 파일 바이트
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `9e36a57afd42169e03c16489c7af91f3149caa4a6461332b5a7b15bc1bc23bae` |
+| `full_stack_lab/gateway/app/core.py` | `819842163b8531dc48b37b23094fdf7a10c14895867efc82ce52dc292c8caa8d` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
-| `full_stack_lab/gateway/app/idp.py` | `46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216` |
+| `full_stack_lab/gateway/app/idp.py` | `bdd8ae39b1937cdf796d6de2560c6df7dd55209e6b153ed4a0f7b3e0fdbf57b2` |
 | `full_stack_lab/gateway/app/privacy.py` | `592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |

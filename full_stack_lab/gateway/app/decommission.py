@@ -24,6 +24,7 @@ organisation's side are collected here without asking the provider.
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import json
@@ -854,7 +855,7 @@ async def reopen_case(case_id: str, actor: str, reason: str) -> dict:
 async def restore_server(server_id: str, actor: str) -> dict:
     """Lab only: put a retired server back into service so the demo can be repeated.
     In an organisation, bringing a terminated relationship back is a new intake."""
-    if disposal.blocked(server_id=server_id):
+    if await asyncio.to_thread(disposal.blocked, server_id=server_id):
         raise ValueError("폐기된 서버는 새 도입 승인이 필요합니다.")
     server = await _server(server_id)
     await db.execute(
