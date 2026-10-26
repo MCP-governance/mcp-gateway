@@ -2,7 +2,7 @@
 
 `split_decisions.py index`가 만든 생성 파일이다. 직접 고치지 않는다. 본문은 위치 칸의 파일에서 읽거나 `python research/llm-wiki/tools/split_decisions.py show D-번호`로 한 건만 출력한다.
 
-결정 239개 · 최대 번호 254 · 저장 형태: 번호대 분할(docs/ai/decisions/)
+결정 240개 · 최대 번호 255 · 저장 형태: 번호대 분할(docs/ai/decisions/)
 
 ## 번호 1~50
 
@@ -272,6 +272,7 @@
 | D-252 | 고정 독립 검토의 낡음은 PR 실패 대신 검토 갱신 대기로 남긴다 (2026-10-26) | 2026-10-26 | [D-251-300.md:13](../../../docs/ai/decisions/D-251-300.md) |
 | D-253 | 관리 계정의 Codex는 Codex 자체 샌드박스 대신 MINT AppArmor 경계로 실행한다 (2026-10-26) | 2026-10-26 | [D-251-300.md:20](../../../docs/ai/decisions/D-251-300.md) |
 | D-254 | 콘솔 인증서는 이름별로 선택하고 하네스 IP 신뢰 경로를 유지한다 (2026-10-26) | 2026-10-26 | [D-251-300.md:28](../../../docs/ai/decisions/D-251-300.md) |
+| D-255 | Tailscale 소켓은 인증서 전용 컨테이너만 쓰고 Caddy는 비root로 돈다 (2026-10-26) | 2026-10-26 | [D-251-300.md:36](../../../docs/ai/decisions/D-251-300.md) |
 
 ## 비어 있는 번호
 
