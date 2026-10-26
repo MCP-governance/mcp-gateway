@@ -1,11 +1,8 @@
 """Time out unused, human-scoped tools using the append-only decision ledger (DEV-75)."""
 from __future__ import annotations
 
-<<<<<<< HEAD
-import json
-=======
 import asyncio
->>>>>>> 2b7f933da90fb0916139f1130f07552995effd10
+import json
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -107,10 +104,6 @@ async def _last_check(connection, server_id: str, tool_name: str | list[str]) ->
 async def _coverage(connection, cutoff: datetime, setting: dict, seal=None, entries=None) -> tuple[bool, str]:
     if max(IDLE_DAYS + GRACE_DAYS, OBSERVATION_DAYS) > int(setting["days"]):
         return False, "미사용 판정 기간이 원장 보존 기간보다 깁니다."
-<<<<<<< HEAD
-=======
-    seal = await asyncio.to_thread(retention.current_seal)
->>>>>>> 2b7f933da90fb0916139f1130f07552995effd10
     if seal:
         version = ("sealed", json.dumps(seal, sort_keys=True, default=str))
         if version not in _coverage_versions:
@@ -247,7 +240,7 @@ async def check_many(server_id: str, tool_names: list[str], now: datetime | None
         try:
             # Reading settings while holding a pool connection previously deadlocked all ten readers.
             setting = await retention.setting()
-            seal = retention.current_seal()
+            seal = await asyncio.to_thread(retention.current_seal)
             async with db.transaction() as connection:
                 await _locks(connection, [target_id(server_id, name) for name in reviewed])
                 if seal:
