@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T14:07:04+09:00",
-  "head": "c872374b420129e0d3b734f6081f1af8d44afcf5",
-  "branch": "10/25-stage0-loadtest",
+  "captured_at": "2026-10-26T14:41:34+09:00",
+  "head": "52656dd65d6ed1b4fe8d21bdb48f9dd6245d4817",
+  "branch": "10/26-managed-codex-sandbox-exec",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -52,7 +52,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
+      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
     }
   ]
 }

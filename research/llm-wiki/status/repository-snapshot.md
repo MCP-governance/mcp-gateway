@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T14:07:04+09:00
+확인 시각: 2026-10-26T14:41:34+09:00
 
-HEAD: `c872374b420129e0d3b734f6081f1af8d44afcf5` · 로컬 브랜치: `10/25-stage0-loadtest`
+HEAD: `52656dd65d6ed1b4fe8d21bdb48f9dd6245d4817` · 로컬 브랜치: `10/26-managed-codex-sandbox-exec`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -27,4 +27,4 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
 | `endpoint-agent/bootstrap.py` | `b03eb6ae28534e6aaccf7e4deb9c35d4da0099421235efe7610022919f3b27a6` |
 | `endpoint-agent/managed-linux.py` | `dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9` |
-| `endpoint-agent/enforce-linux.py` | `cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9` |
+| `endpoint-agent/enforce-linux.py` | `3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63` |
