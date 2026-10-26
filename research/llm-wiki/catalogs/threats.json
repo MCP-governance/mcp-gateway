@@ -42,9 +42,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
-        "committed_sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
-        "normalized_sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
+        "sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
+        "committed_sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
+        "normalized_sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
         "worktree_modified": false
       }
     ],
@@ -183,9 +183,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
-        "committed_sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
-        "normalized_sha256": "bd3b95503c8f57de23c3b67eeb0b9538162013bf11dfd876ca9e5dc26ee8c41d",
+        "sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
+        "committed_sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
+        "normalized_sha256": "fe6bf54d926d53cc0aca45a00cd56e130a5ff3c42c71e42ecfaa78a10506fa68",
         "worktree_modified": false
       },
       {
