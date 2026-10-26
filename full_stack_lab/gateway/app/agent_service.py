@@ -159,7 +159,8 @@ async def browser_boundary(request: Request, call_next):
         return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Cache-Control"] = "no-store"
+    # 정적 자원은 비밀이 없다: 매번 재검증하되(ETag) 바뀌지 않았으면 304로 5MB를 다시 받지 않는다.
+    response.headers["Cache-Control"] = "no-cache" if request.url.path.startswith("/static/") else "no-store"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
     return response
 
@@ -410,10 +411,10 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py"),
-             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py"),
+             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
-                         "runtime-check.py", "windows_status.py", "install.py", "install-windows.ps1",
+                         "runtime-check.py", "windows_status.py", "kit_screen.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}

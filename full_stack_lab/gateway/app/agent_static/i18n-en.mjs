@@ -1300,6 +1300,8 @@ export const EN = {
   "사용이 중지된 계정입니다. 관리자에게 문의하세요.": "This account is disabled. Contact an administrator.",
   "잠긴 계정입니다. 관리자에게 문의하세요.": "This account is locked. Contact an administrator.",
   "삭제된 계정입니다. 관리자에게 복구를 요청하세요.": "This account has been deleted. Ask an administrator to restore it.",
+  "오래 사용하지 않아 로그아웃되었습니다.": "You were signed out because the session was idle.",
+  "로그인 유지 시간이 지나 로그아웃되었습니다.": "You were signed out because the sign-in time limit passed.",
   "확인 중…": "Checking…",
   "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.": "Too many sign-in attempts. Try again later.",
   "아이디와 비밀번호를 확인하세요.": "Check your username and password.",

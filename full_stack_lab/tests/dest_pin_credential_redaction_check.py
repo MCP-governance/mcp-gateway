@@ -374,6 +374,8 @@ class ManagedKitCredentials(unittest.IsolatedAsyncioTestCase):
                     writer = selected(ROOT / "endpoint-agent/managed-windows.py", ["apply_policy"],
                                       {"FILES": targets, "CODEX_BLOCK": "codex-config.toml", "lock_down": lambda p: None,
                                        "codex_config": lambda c: folder / "config.toml",
+                                       "checked_codex_text": lambda p: p.read_text(encoding="utf-8") if p.exists() else "",
+                                       "STATE": folder / "state",
                                        "with_codex_block": lambda current, block: current + block,
                                        "write_file": lambda p, text: p.write_text(text, encoding="utf-8")})
                     writer.apply_policy({}, policy)

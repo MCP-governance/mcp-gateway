@@ -509,6 +509,9 @@ jobs:
     defaults:
       run:
         working-directory: full_stack_lab
+    env:
+      # Preloaded Compose image tags must match console.sh's generated environment.
+      COMPOSE_PROJECT_NAME: mint-ci
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
@@ -521,9 +524,8 @@ jobs:
       - name: ./console.sh up --no-llm
         run: |
           ./console.sh init-disposal
-          # The cache preparation already logs dependency resolution in plain mode.
           ./console.sh prepare-acceptance-tls
-          export COMPOSE_FILE=compose.yaml:compose.acceptance.yaml
+          export COMPOSE_FILE=$COMPOSE_FILE:compose.acceptance.yaml
           export ACCEPTANCE_TLS_UID="$(id -u)" ACCEPTANCE_TLS_GID="$(id -g)"
           echo "COMPOSE_FILE=$COMPOSE_FILE" >> "$GITHUB_ENV"
           echo "ACCEPTANCE_TLS_UID=$ACCEPTANCE_TLS_UID" >> "$GITHUB_ENV"

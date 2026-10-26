@@ -80,6 +80,11 @@ $stage = '준비'
 $installMutex = $null
 $ownsMutex = $false
 $stoppedTasks = @()
+$diagnosticSecrets = @()
+if ($request.enrollment -and (Test-Path -LiteralPath $request.enrollment)) {
+    $bundle = Get-Content -LiteralPath $request.enrollment -Raw -Encoding UTF8 | ConvertFrom-Json
+    $diagnosticSecrets += $bundle.enrollment_token
+}
 
 function Set-EndpointResult([int]$Percent, [string]$Label, [string]$State = 'running', [string]$Detail = '') {
     $script:stage = $Label
@@ -88,7 +93,7 @@ function Set-EndpointResult([int]$Percent, [string]$Label, [string]$State = 'run
     if ($script:settingsPath) { $result.settings = $script:settingsPath }
     if ($script:detailAccount) { $result.account = $script:detailAccount }
     $text = $result | ConvertTo-Json -Depth 5
-    [IO.File]::WriteAllText($logPath, $text, [Text.UTF8Encoding]::new($false))
+    [IO.File]::AppendAllText($logPath, $text + "`r`n", [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($resultPath + '.tmp', $text, [Text.UTF8Encoding]::new($false))
     Move-Item -LiteralPath ($resultPath + '.tmp') -Destination $resultPath -Force
 }
@@ -107,18 +112,32 @@ function Invoke-EndpointPython([string]$Python, [string[]]$Arguments) {
     try {
         $stdout = $process.StandardOutput.ReadToEndAsync()
         $stderr = $process.StandardError.ReadToEndAsync()
-        if (-not $process.WaitForExit(180000)) { $process.Kill(); $process.WaitForExit(); throw '엔드포인트 처리 시간 초과' }
+        $timedOut = -not $process.WaitForExit(180000)
+        if ($timedOut) { $process.Kill(); $process.WaitForExit() }
         $output = $stdout.Result
         $errorText = $stderr.Result
+        if ($script:registration -and (Test-Path -LiteralPath $script:registration)) {
+            $receipt = Get-Content -LiteralPath $script:registration -Raw -Encoding UTF8 | ConvertFrom-Json
+            $script:diagnosticSecrets += $receipt.config.device_key
+        }
+        if ($errorText) {
+            [IO.File]::AppendAllText($logPath, (Protect-EndpointDiagnostic $errorText $script:diagnosticSecrets) + "`r`n", [Text.UTF8Encoding]::new($false))
+        }
+        if ($timedOut) { throw '엔드포인트 처리 시간 초과' }
         if ($process.ExitCode -ne 0) {
-            # Only fixed reasons reach the UI/log; subprocess output can contain private data.
+            # Raw diagnostic text stays out of the UI.
+            if ($errorText -match '이미 연결되어 있습니다') { throw '이미 연결되어 있습니다' }
+            if ($errorText -match '직원 설정의 관리 구간') { throw '직원 설정의 관리 구간 확인 필요' }
             if ($errorText -match '([A-Za-z0-9_][A-Za-z0-9._-]{0,31}) 계정') { $script:detailAccount = $Matches[1] }
             if ($errorText -match '한 번 로그인|프로필') { throw '대상 계정 첫 로그인 후 로그아웃 필요' }
             if ($errorText -match '설치 키트와 정책|노드') { throw '설치 파일과 게이트웨이 불일치 · 콘솔에서 새 설치 파일 받기' }
             if ($errorText -match '로그아웃') { throw '대상 계정 로그아웃 필요' }
             if ($errorText -match '공식 Codex|Claude 설치|동반|릴리스') { throw '승인된 하네스 설치 확인 필요' }
             if ($errorText -match '401|403|409|410|enrollment') { throw '등록 자격 확인 필요 · 새 키트로 다시 시도' }
-            if ($errorText -match 'ACL|보호된|권한') { throw '설치 폴더 또는 계정 권한 확인 필요' }
+            if ($errorText -match 'CERTIFICATE_VERIFY_FAILED|certificate verify') { throw '게이트웨이 인증서 확인 실패' }
+            if ($errorText -match 'timed out|timeout|시간 초과') { throw '게이트웨이 연결 시간 초과' }
+            if ($errorText -match 'urlopen error|URLError|WinError 100') { throw '게이트웨이 이름 또는 포트 연결 실패' }
+            if ($errorText -match 'ACL|보호된|권한|PermissionError|Access.*denied|액세스') { throw '설치 폴더 또는 계정 권한 확인 필요' }
             throw '엔드포인트 처리 실패 · 게이트웨이 연결 또는 등록 자격 확인 필요'
         }
         return $output
@@ -150,18 +169,29 @@ try {
     catch [Threading.AbandonedMutexException] { $ownsMutex = $true }
     if (-not $ownsMutex) { throw '다른 설치 작업 진행 중' }
     Assert-EndpointTree $root
+    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'kit_screen.py', 'install.py',
+        'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
+    if ($managed) {
+        # Registration and removal work even if the old runtime is missing; nothing installed is touched here.
+        $stageRoot = Join-Path $compilerTemp 'kit'
+        New-EndpointProtectedDirectory $stageRoot
+        $stagePython = Install-EndpointRuntime $PSScriptRoot $stageRoot
+        foreach ($name in $codeFiles) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $stageRoot $name) }
+        Assert-EndpointFileHashes $stageRoot $approval $codeFiles
+        Assert-EndpointInstalledRuntime $stageRoot
+        Invoke-EndpointPython $stagePython @((Join-Path $stageRoot 'runtime-check.py')) | Out-Null
+    }
     if ($request.action -eq 'remove') {
         Set-EndpointResult 20 '엔드포인트 종료'
         if ($managed) {
             $person = (New-Object Security.Principal.NTAccount($request.user)).Translate([Security.Principal.SecurityIdentifier]).Value
             $trayDirectory = Join-Path $env:ProgramData ("MCPGatewayManagedTray\" + $person)
             if ([IO.Path]::GetFullPath($request.settings) -ne (Join-Path $trayDirectory 'settings.json')) { throw '제거 설정 경로 거부' }
-            Assert-EndpointProtectedPath $request.settings
-            $settings = Get-Content -LiteralPath $request.settings -Raw -Encoding UTF8 | ConvertFrom-Json
-            Assert-EndpointFileHashes $root $approval @('managed-windows.py', 'agent.py', 'os-observer-windows.py', 'windows_status.py', 'windows-trust.ps1')
-            Assert-EndpointInstalledRuntime $root
-            $python = Join-Path $root 'python\python.exe'
-            Invoke-EndpointPython $python @((Join-Path $root 'managed-windows.py'), 'rollback', '--user', $request.user) | Out-Null
+            $settings = @{ sid = $person }
+            if (Test-Path -LiteralPath $request.settings) {
+                Assert-EndpointProtectedPath $request.settings
+            }
+            Invoke-EndpointPython $stagePython @((Join-Path $stageRoot 'managed-windows.py'), 'rollback', '--user', $request.user) | Out-Null
         } else {
             $settings = Get-Content -LiteralPath $request.settings -Raw -Encoding UTF8 | ConvertFrom-Json
             Stop-EndpointTask ("MCPGatewayEndpoint-" + $settings.endpoint_id)
@@ -172,7 +202,7 @@ try {
         $profileRoot = [IO.Path]::GetFullPath($profile).TrimEnd('\') + '\'
         if (-not $trayWork.StartsWith($profileRoot, [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         Assert-EndpointTree $trayWork
-        foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log', 'lang.txt', 'probe.json', 'probe.json.tmp', 'probe.err')) {
+        foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log', 'lang.txt', 'probe.json', 'probe.json.tmp', 'probe.err', 'show-status')) {
             $item = Join-Path $trayWork $name
             if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
         }
@@ -185,10 +215,16 @@ try {
                 $item = Join-Path $trayDirectory $name
                 if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
             }
-            if (-not (Get-ChildItem -LiteralPath $trayDirectory -Force)) { Remove-Item -LiteralPath $trayDirectory }
+            if ((Test-Path -LiteralPath $trayDirectory) -and -not (Get-ChildItem -LiteralPath $trayDirectory -Force)) { Remove-Item -LiteralPath $trayDirectory }
             $stateRoot = Join-Path $env:ProgramData 'MCPGatewayManaged'
             if (-not (Get-ChildItem -LiteralPath $stateRoot -Filter 'config.json' -Recurse -ErrorAction SilentlyContinue)) {
-                Remove-EndpointFiles $root
+                Add-Type -AssemblyName System.IO.Compression.FileSystem
+                $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'python.zip'))
+                try { $ownedFiles = $codeFiles + @($archive.Entries | ForEach-Object { 'python\' + $_.FullName }) }
+                finally { $archive.Dispose() }
+                $ownedFiles += @('config.json', 'status.json', 'status.tmp', 'tray-settings.json',
+                    'harness\codex.exe', 'harness\codex-code-mode-host.exe', 'harness\claude.exe')
+                Remove-EndpointFiles $root $ownedFiles
             }
         } else {
             Remove-Item -LiteralPath $request.settings -Force
@@ -197,16 +233,29 @@ try {
         Set-EndpointResult 100 '제거 완료' 'completed'
         exit 0
     }
-    Test-EndpointGateway $request.gateway_url $request.ca_certificate $request.ca_sha256
-    Set-EndpointResult 15 '설치 위치 확인'
     if ((Test-Path -LiteralPath $root) -and (Get-ChildItem -LiteralPath $root -Force) -and
         -not (Test-Path -LiteralPath (Join-Path $root '.endpoint-kit'))) { throw '다른 파일이 없는 설치 위치 필요' }
+    Test-EndpointGateway $request.gateway_url $request.ca_certificate $request.ca_sha256
+    if ($managed) {
+        $isolated = $request.isolated_account -eq $true
+        Set-EndpointResult 15 '연결 등록'
+        $registration = Join-Path $compilerTemp 'registration.json'
+        $enrollArguments = @((Join-Path $stageRoot 'managed-windows.py'), 'enroll', '--user', $request.user,
+            '--enrollment', $request.enrollment, '--registration', $registration)
+        if ($isolated) { $enrollArguments += '--isolated-account' }
+        Invoke-EndpointPython $stagePython $enrollArguments | Out-Null
+    }
+    Set-EndpointResult 15 '설치 위치 확인'
     New-Item -ItemType Directory -Path $root -Force | Out-Null
     Set-EndpointAcl $root $sid -Managed:$managed
-    # A managed reinstall, repair or switch of mode rolls the earlier install back inside managed-windows.py (D-239).
+    # The managed path has already enrolled without changing the previous installation.
     if (-not $managed) { Stop-EndpointTask ("MCPGatewayEndpoint-" + $request.endpoint_id) }
     Set-EndpointResult 30 '실행 파일 준비'
-    if ($managed) {
+    $reuseRuntime = $false
+    if ($managed -and (Test-Path -LiteralPath (Join-Path $root 'python'))) {
+        try { Assert-EndpointInstalledRuntime $root; $reuseRuntime = $true } catch { }
+    }
+    if ($managed -and -not $reuseRuntime) {
         # The runtime is replaced in place: a running service or helper keeps its files open, and the half-extracted
         # runtime then had no python.exe (pj3 10-25). Stop them first; finally starts them again.
         $stoppedTasks = @(Get-ScheduledTask -TaskName 'MCPGatewayManaged-*' -ErrorAction SilentlyContinue |
@@ -216,9 +265,7 @@ try {
         Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($runtime, [StringComparison]::OrdinalIgnoreCase) } |
             ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     }
-    $python = Install-EndpointRuntime $PSScriptRoot $root
-    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
-        'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
+    $python = if ($reuseRuntime) { Join-Path $root 'python\python.exe' } else { Install-EndpointRuntime $PSScriptRoot $root }
     foreach ($name in $codeFiles) {
         if ((Join-Path $PSScriptRoot $name) -ne (Join-Path $root $name)) {
             Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $root $name) -Force
@@ -239,7 +286,7 @@ try {
         $isolated = $request.isolated_account -eq $true
         Set-EndpointResult 60 $(if ($isolated) { '격리 계정 준비 · 등록' } else { '연결 등록' })
         $managedArguments = @((Join-Path $root 'managed-windows.py'), 'install', '--user', $request.user,
-            '--enrollment', $request.enrollment)
+            '--enrollment', $request.enrollment, '--registration', $registration)
         if ($isolated) { $managedArguments += '--isolated-account' }
         $text = Invoke-EndpointPython $python $managedArguments
         $summary = ($text -split "`n" | Where-Object { $_.StartsWith('{') } | Select-Object -Last 1) | ConvertFrom-Json
@@ -288,7 +335,20 @@ try {
     [IO.File]::WriteAllText($script:settingsPath, ($settings | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($manifestPath, ($owned | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     Set-EndpointAcl $root $sid -Managed:$managed
+    Stop-EndpointTask ("MCPGatewayTray-" + $person)
     Register-EndpointTray $script:settingsPath $person $root
+    $profile = (Get-ItemProperty -LiteralPath ('HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\' + $person)).ProfileImagePath
+    $trayWork = Join-Path $profile ('AppData\Local\MCPGatewaySetup\tray-' + $person)
+    Assert-EndpointTree $trayWork
+    New-Item -ItemType Directory -Path $trayWork -Force | Out-Null
+    # Repair both the legacy protected parent and the tray child, leaving private install folders protected.
+    $workBase = Split-Path $trayWork
+    if ($managed) { Repair-EndpointWorkDirectory $workBase $person }
+    Set-EndpointAcl $trayWork $person
+    foreach ($name in @('probe.json', 'probe.json.tmp', 'probe.err')) {
+        Remove-Item -LiteralPath (Join-Path $trayWork $name) -Force -ErrorAction SilentlyContinue
+    }
+    [IO.File]::WriteAllText((Join-Path $trayWork 'show-status'), '', [Text.Encoding]::ASCII)
     # Simple mode: the employee is signed in now, so the tray starts in their session at once (also when UAC ran as
     # another administrator). A companion account has no session until it signs in.
     if ($person -eq $sid -or ($managed -and -not $isolated)) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
@@ -306,7 +366,7 @@ try {
         '승인된 하네스 설치 확인 필요', '등록 자격 확인 필요 · 새 키트로 다시 시도', '설치 폴더 또는 계정 권한 확인 필요',
         '엔드포인트 처리 실패 · 게이트웨이 연결 또는 등록 자격 확인 필요', '관리자 권한 필요', '대상 계정 이름 확인 필요',
         '사용자 설치 위치 확인 필요', '다른 파일이 없는 설치 위치 필요', '기존 엔드포인트 제거 후 재설치 필요', '다른 설치 작업 진행 중',
-        '설치 파일과 게이트웨이 불일치 · 콘솔에서 새 설치 파일 받기')
+        '설치 파일과 게이트웨이 불일치 · 콘솔에서 새 설치 파일 받기', '이미 연결되어 있습니다', '직원 설정의 관리 구간 확인 필요')
     $reason = $_.Exception.Message
     if ($reason -notin $known) { $reason = '파일 접근 또는 예약 작업 권한 확인 필요' }
     Set-EndpointResult 0 $stage 'failed' $reason

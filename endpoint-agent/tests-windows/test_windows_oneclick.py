@@ -104,6 +104,7 @@ function Start-Process {
         self.assertIn("$oneclickMark = Join-Path $paths.state 'approved-by-oneclick'", template)
         self.assertIn("if ($replace -and -not (Test-Path -LiteralPath $oneclickMark)) { throw 'IT must update the approved installer' }", template)
 
+    @unittest.skipUnless(sys.version_info >= (3, 11), 'tomllib requires Python 3.11+; kit runtime is Python 3.13')
     def test_runtime_check_imports_only_what_the_embedded_python_has(self):
         # pj3 10-25: the D-232 fallbacks (tomli, toml) made every Windows install stop at 「실행 파일 준비」.
         check = load('runtime_check', 'endpoint-agent/runtime-check.py')
@@ -240,12 +241,12 @@ for ($i=0; $i -lt $paths.Count; $i++) {
         native = programs / 'harness'
         native.mkdir(parents=True)
         policy = {'tailscale_node_id': 'approved', 'gateway_ips': ['100.83.175.111'], 'gateway_port': 443,
-                  'policy_hash': 'synthetic-policy', 'proxy_environment': {}}
+                  'policy_hash': 'synthetic-policy', 'proxy_environment': {}, 'files': {'codex-config.toml': ''}}
         output = io.StringIO()
         with mock.patch.object(self.managed.ctypes, 'windll', SimpleNamespace(shell32=SimpleNamespace(IsUserAnAdmin=lambda: True)), create=True), \
                 mock.patch.multiple(self.managed, PROGRAMS=programs, STATE=state, PROGRAM_DATA=self.root / 'data', FILES={}), \
                 mock.patch.object(self.managed, 'verify_transport'), \
-                mock.patch.object(self.managed, 'account', return_value=employee), \
+                mock.patch.object(self.managed, 'account', side_effect=lambda name: employee if name == 'employee' else person), \
                 mock.patch.object(self.managed, 'managed_user', return_value=('mcpgw-employee', person, True)), \
                 mock.patch.object(self.managed, 'prepare_profile', return_value=person), \
                 mock.patch.object(self.managed, 'protected', return_value=True), \
@@ -283,7 +284,7 @@ for ($i=0; $i -lt $paths.Count; $i++) {
         class Failure(Exception):
             pass
         enrollment = mock.AsyncMock(return_value={'enrollment_token': 'synthetic-private-enrollment'})
-        namespace = dict(Path=Path, os=os, Literal=Literal, Header=lambda **kw: None, HTTPException=Failure,
+        namespace = dict(Path=Path, os=os, Literal=Literal, Request=SimpleNamespace, Header=lambda **kw: None, HTTPException=Failure,
                          current_identity=mock.AsyncMock(return_value={'user_id': 'synthetic', 'principal': 'synthetic'}),
                          field_ca=lambda: {'ca_certificate': 'synthetic-ca', 'ca_sha256': '0' * 64},
                          STATIC_DIR=self.root, io=io, zipfile=zipfile, hashlib=__import__('hashlib'),
@@ -303,17 +304,17 @@ for ($i=0; $i -lt $paths.Count; $i++) {
                     'oneclick_fixture.endpoint_plane': SimpleNamespace(enrollment_token=enrollment),
                     'oneclick_fixture.windows_oneclick': self.builder}):
             with self.assertRaises(Failure):
-                asyncio.run(namespace['download_managed_kit']('windows', authorization=None, packaging='oneclick'))
+                asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows', authorization=None, packaging='oneclick'))
             enrollment.assert_not_awaited()
             (source / 'windows-oneclick.ps1.in').write_text('param($Context,$ArchiveBase64)')
-            result = asyncio.run(namespace['download_managed_kit']('windows', authorization=None, packaging='oneclick'))
+            result = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows', authorization=None, packaging='oneclick'))
             self.assertEqual(result.media_type, 'application/octet-stream')
             self.assertIn('.cmd', result.headers['Content-Disposition'])
             self.assertEqual(result.headers['Cache-Control'], 'no-store')
             body = json.loads(base64.b64decode(result.content.decode().split(':MCPGW_PAYLOAD\r\n')[1]))
             with zipfile.ZipFile(io.BytesIO(base64.b64decode(body['archive']))) as archive:
                 self.assertEqual(json.loads(archive.read('enrollment.json'))['enrollment_token'], 'synthetic-private-enrollment')
-            result = asyncio.run(namespace['download_managed_kit']('windows', None))
+            result = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows'))
             self.assertEqual(result.media_type, 'application/zip')
 
 

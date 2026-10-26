@@ -140,6 +140,7 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
   /usr/** mr,
   /etc/** r,
   /lib{{,32,64}}/** mr,
+  /proc/*/attr/current r,
   {binary} px -> {name}-{key},
 }}
 profile {name}-{key} {{
@@ -258,7 +259,8 @@ profile {tool} {{
 
 def wrapper(path: Path, executable: Path, home: str, username: str, login: bool = False,
             fixed: list[str] | None = None, environment: dict[str, str] | None = None,
-            options: list[str] | None = None, guard: str | None = None) -> None:
+            options: list[str] | None = None, guard: str | None = None,
+            managed_uid: int | None = None) -> None:
     # Native wrapper avoids a shebang/interpreter attachment ambiguity and removes
     # runtime variables such as BUN_BE_BUN, LD_PRELOAD and alternate config roots.
     # `options` go in front of the caller's own arguments.
@@ -293,10 +295,13 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
     const char *arg = argv[i];
     if (!strcmp(arg, "--")) break;
     if (!strcmp(arg, "--config") || !strncmp(arg, "--config=", 9)) return 1;
+    if (!strcmp(arg, "--dangerously-bypass-approvals-and-sandbox") || !strcmp(arg, "--yolo")) return 1;
+    if (!strncmp(arg, "--ask-for-approval=", 19) && !strcmp(arg + 19, "never")) return 1;
     if (arg[0] != '-' || !arg[1]) continue;
     if (arg[1] == '-') {
       for (int j = 0; value_options[j]; j++) {
         if (!strcmp(arg, value_options[j])) {
+          if (!strcmp(arg, "--ask-for-approval") && i + 1 < argc && !strcmp(argv[i + 1], "never")) return 1;
           /* clap takes no hyphen-led value by default: "--model -c" is -c. */
           if (i + 1 < argc && argv[i + 1][0] != '-') i++;
           break;
@@ -306,6 +311,12 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
       for (const char *option = arg + 1; *option; option++) {
         if (*option == 'c') return 1;
         if (strchr("impsCao", *option)) {
+          if (*option == 'a') {
+            const char *value = option + 1;
+            if (*value == '=') value++;
+            else if (!*value && i + 1 < argc) value = argv[i + 1];
+            if (!strcmp(value, "never")) return 1;
+          }
           if (!option[1] && i + 1 < argc && argv[i + 1][0] != '-') i++;
           break;
         }
@@ -313,7 +324,7 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
     }
   }
 '''
-        error = "Codex 설정 재정의 인자(-c/--config)는 관리 실행에서 사용할 수 없습니다."
+        error = "Codex 설정 재정의·승인 우회 인자는 관리 실행에서 사용할 수 없습니다."
     elif guard == "claude":
         # Commander v14.0.2: option.js:231-233 exact match; command.js:1655-1659 terminator.
         guard_code = r'''
@@ -329,13 +340,36 @@ def wrapper(path: Path, executable: Path, home: str, username: str, login: bool 
     guard_function = f"static int blocked(int argc, char **argv) {{ {guard_code} return 0; }}" if guard else ""
     guard_check = (f'if (blocked(argc, argv)) {{ '
                    f'fputs({json.dumps(error + chr(10))}, stderr); return 2; }}' if guard else "")
+    context_function, context_check = "", ""
+    if managed_uid is not None:
+        # px attaches the launcher to -entry before it execs the harness's own profile.
+        label = f"{path.parent.name}-{path.name}-entry (enforce)"
+        context_function = f'''
+static int managed_context(void) {{
+  if (getuid() != {managed_uid} || geteuid() != {managed_uid}) return 0;
+  FILE *attr = fopen("/proc/self/attr/current", "r");
+  if (!attr) return 0;
+  const char expected[] = {json.dumps(label)};
+  char current[sizeof(expected) + 1];
+  size_t count = fread(current, 1, sizeof(current), attr);
+  int ok = !ferror(attr) && feof(attr);
+  fclose(attr);
+  size_t length = sizeof(expected) - 1;
+  return ok && (count == length || (count == length + 1 && current[length] == '\\n'))
+    && !memcmp(current, expected, length);
+}}
+'''
+        context_check = ('if (!managed_context()) { '
+                         'fputs("Managed launcher context denied\\n", stderr); return 2; }')
     source = f"""
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 {guard_function}
+{context_function}
 int main(int argc, char **argv) {{
+  {context_check}
   {arguments}
   {guard_check}
   if (clearenv()) return 125;
@@ -490,7 +524,8 @@ def main() -> None:
             environment["CODEX_CA_CERTIFICATE" if key == "codex" else "NODE_EXTRA_CA_CERTS"] = str(ca)
         wrapper(folder / key, binary, person.pw_dir, args.user, environment=environment,
                 options=fixed_options(key, binary, managed=bool(args.managed_agent)),
-                guard=key if key in {"codex", "claude"} else None)
+                guard=key if key in {"codex", "claude"} else None,
+                managed_uid=person.pw_uid if args.managed_agent else None)
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"

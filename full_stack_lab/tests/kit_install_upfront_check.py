@@ -152,7 +152,9 @@ class Packages(unittest.TestCase):
 
     def test_step_times_are_collected_without_the_login_wait(self):
         # The installer's screen (D-239) times each step; off a terminal it prints one line per step as before.
-        linux = extract(KIT / "managed-linux.py", {"Screen", "width", "clip"}, {"os": os, "sys": sys, "time": time})
+        spec = importlib.util.spec_from_file_location("kit_screen_test", KIT / "kit_screen.py")
+        linux = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(linux)
         clock = iter([0, 5, 5, 7])
         with patch.object(time, "monotonic", lambda: next(clock)), redirect_stdout(io.StringIO()) as out:
             screen = linux.Screen("내 PC 연결")

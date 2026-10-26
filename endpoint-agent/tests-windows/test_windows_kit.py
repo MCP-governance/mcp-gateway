@@ -91,7 +91,7 @@ class WindowsKitTests(unittest.TestCase):
         def response(content, **kwargs):
             response_headers.update(kwargs['headers'])
             return content
-        namespace = {'Path': Path, 'os': os, 'io': io, 'json': json, 'hashlib': hashlib, 'zipfile': zipfile, 'Literal': Literal,
+        namespace = {'Path': Path, 'os': os, 'io': io, 'json': json, 'hashlib': hashlib, 'zipfile': zipfile, 'Literal': Literal, 'Request': SimpleNamespace,
                      'Header': lambda **kwargs: None, 'HTTPException': Failure, 'current_identity': identity,
                      'urlsplit': __import__('urllib.parse', fromlist=['urlsplit']).urlsplit,
                      'Response': response, 'field_ca': lambda: ca, 'STATIC_DIR': static, '__package__': 'windows_kit_fixture'}
@@ -106,12 +106,12 @@ class WindowsKitTests(unittest.TestCase):
         with mock.patch.dict(os.environ, environment), mock.patch.dict(sys.modules, {
             'windows_kit_fixture': SimpleNamespace(), 'windows_kit_fixture.endpoint_plane': SimpleNamespace(enrollment_token=enrollment)}):
             with self.assertRaises(Failure) as failure:
-                asyncio.run(namespace['download_managed_kit']('windows', None))
+                asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows'))
             self.assertEqual(failure.exception.status_code, 503)
             enrollment.assert_not_awaited()
             (runtime / 'python.zip').write_bytes(b'synthetic archive content')
             (runtime / 'windows-python.json').write_text('{}', encoding='utf-8')
-            content = asyncio.run(namespace['download_managed_kit']('windows', None))
+            content = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows'))
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             self.assertEqual(set(archive.namelist()), set(namespace['KIT_FILES']['windows']) | {'enrollment.json', 'python.zip', 'windows-python.json', 'windows-kit-manifest.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py'})
             self.assertEqual(archive.read('python.zip'), b'synthetic archive content')
@@ -244,7 +244,7 @@ Write-Output 'Per-request CA verification OK'
         native = programs / 'harness'
         native.mkdir(parents=True)
         policy = {'tailscale_node_id': 'approved', 'gateway_ips': ['100.83.175.111'], 'gateway_port': 443,
-                  'policy_hash': 'fixture-policy', 'proxy_environment': {}}
+                  'policy_hash': 'fixture-policy', 'proxy_environment': {}, 'files': {'codex-config.toml': ''}}
         def request(config, path, *args, **kwargs):
             self.assertEqual(config['ca_certificate'], ca['ca_certificate'])
             self.assertEqual(config['ca_sha256'], ca['ca_sha256'])
@@ -292,7 +292,7 @@ Write-Output 'Per-request CA verification OK'
         (profile / 'NTUSER.DAT').touch()
         programs, state = self.root / 'programs', self.root / 'state'
         policy = {'tailscale_node_id': 'approved', 'gateway_ips': ['100.83.175.111'], 'gateway_port': 443,
-                  'policy_hash': 'fixture-policy', 'proxy_environment': {'HTTPS_PROXY': 'http://proxy:3128'}}
+                  'policy_hash': 'fixture-policy', 'proxy_environment': {'HTTPS_PROXY': 'http://proxy:3128'}, 'files': {'codex-config.toml': ''}}
         sent = []
 
         def request(config, path, body=None, **kwargs):
@@ -356,7 +356,7 @@ Write-Output 'Per-request CA verification OK'
         code.mkdir()
         policy.mkdir()
         names = ('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
-                 'runtime-check.py', 'windows_status.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
+                 'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
                  'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         for name in names:
             (code / name).write_bytes(('synthetic, never executed: ' + name).encode())
@@ -524,6 +524,7 @@ Write-Output 'Managed request data snapshot and approved destination OK'
         (folder / 'config.json').write_text(json.dumps({'profile': str(profile), 'sid': 'S-1-5-21-1-2-3-1001'}), encoding='utf-8')
         (folder / 'config.toml.backup').write_text('model = "before"\n', encoding='utf-8')
         current = managed.with_codex_block('model = "user-changed"\nkeep = true\n', '[mcp_servers.fixture]\nurl="synthetic"\n')
+        (folder / managed.CODEX_BLOCK).write_text('[mcp_servers.fixture]\nurl="synthetic"\n', encoding='utf-8')
         path = profile / '.codex/config.toml'
         path.write_text(current, encoding='utf-8')
         powershell = mock.Mock()
