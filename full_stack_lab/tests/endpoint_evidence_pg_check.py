@@ -250,7 +250,8 @@ async def decision(token, created, client):
     return await scalar(
         """INSERT INTO decisions(request_id,trace_id,created_at,user_token,role,tool_name,data_class,action,decision,policy_id,reason,server_id,client)
            VALUES (%s,%s,%s,%s,'employee','git_log','important','r','Allow','P-AUTHZ-ALLOW-001','fixture','git',%s) RETURNING id""",
-        (uuid.uuid4(), uuid.uuid4().hex, created, token, Jsonb(client)))
+        (uuid.uuid4(), client["traceparent"].split("-")[1] if client.get("traceparent") else uuid.uuid4().hex,
+         created, token, Jsonb(client)))
 
 
 async def check_correlation():
@@ -269,18 +270,31 @@ async def check_correlation():
     await endpoint_plane.ingest_listeners("ep-a", [{"source": "network", "address": "10.9.9.9", "port": 7777, "mcp_evidence": "confirmed"}],
                                           complete=False, origin="automatic")
     found = await endpoint_plane.correlate(decision_id=near)
-    assert found["bound"] and found["anchor"]["traceparent"] == traceparent and found["anchor"]["endpoint_id"] == "ep-a"
+    assert found["bound"] and found["anchor"]["trace_id"] == traceparent.split("-")[1] and found["anchor"]["endpoint_id"] == "ep-a"
+    projected = next(record for record in found["records"] if record["kind"] == "decision")
+    assert projected["request_id"] == found["anchor"]["request_id"] and projected["trace_id"] == found["anchor"]["trace_id"]
+    assert projected["decision"] == "Allow" and projected["policy_id"] == "P-AUTHZ-ALLOW-001"
     kinds = {record["kind"] for record in found["records"]}
     assert {"os-event", "listener"} <= kinds, kinds
     titles = {record["title"] for record in found["records"] if record["kind"] == "os-event"}
     assert titles == {"curl"}, titles
-    assert all(record["at"] and "source" in record and "origin" in record for record in found["records"])
+    # "origin" (automatic/manual/os_event) is a column on the three endpoint collector tables only;
+    # decision/dispatch-intent/server-egress records carry link_basis/link_strength instead (D-145).
+    endpoint_kinds = {"config", "listener", "os-event"}
+    assert all(record["at"] and "source" in record for record in found["records"])
+    assert all("origin" in record for record in found["records"] if record["kind"] in endpoint_kinds)
     assert len({(record["kind"], record["id"]) for record in found["records"]}) == len(found["records"])
     wide = await endpoint_plane.correlate(decision_id=far, window_seconds=99999)
     assert wide["window_seconds"] == 3600 and wide["bound"]
     for blocked in (stranger, unbound):
         none = await endpoint_plane.correlate(decision_id=blocked)
-        assert none["bound"] is False and none["records"] == [], none
+        assert none["bound"] is False, none
+        # the call always projects itself (D-145); what "bound" gates is endpoint-collected
+        # evidence from config/listener/os-event, which must stay out when device/owner don't match -
+        # otherwise ep-a's os-events ingested above would leak into another principal's lookup.
+        assert [record["kind"] for record in none["records"]] == ["decision"], none["records"]
+        assert none["records"][0]["id"] == blocked, none["records"]
+    ok("an unbound decision still carries its own projection, but no endpoint-collected record of another device or principal")
     assert await endpoint_plane.correlate(decision_id=10**9) is None
     event_id = await scalar("SELECT id FROM endpoint_os_events WHERE event_id='boot-fixture-corr:near-0001'")
     reverse = await endpoint_plane.correlate(kind="os-event", record_id=event_id)

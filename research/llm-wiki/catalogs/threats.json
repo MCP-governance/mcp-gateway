@@ -815,7 +815,8 @@
       "changed_review_files": [
         "full_stack_lab/gateway/app/core.py",
         "full_stack_lab/gateway/app/mcp_facade.py",
-        "full_stack_lab/gateway/app/registry.py"
+        "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/tests/auto_suspend_pg_check.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -2845,6 +2846,7 @@
       "changed_review_files": [
         "full_stack_lab/gateway/app/core.py",
         "full_stack_lab/gateway/app/registry.py",
+        "full_stack_lab/tests/auto_suspend_pg_check.py",
         "full_stack_lab/tests/output_contract_check.py"
       ]
     },
