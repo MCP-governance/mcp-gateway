@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T13:19:03+09:00
+확인 시각: 2026-10-26T13:45:47+09:00
 
-HEAD: `98effdce07ef792cd4f81035bc05fa6bd68cfad6` · 로컬 브랜치: `10/25-stage0-nested-tx`
+HEAD: `a17cfce9bdce25f1fc6564d2e0d172ab68271f63` · 로컬 브랜치: `10/25-stage0-adminpool`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -18,7 +18,7 @@ M research/llm-wiki/analysis/integration-cases.json
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `3257e156b3df7e3214f0d35a0dd3550d9bc2d01a9e0cf4f1995c3739517f46be` |
+| `full_stack_lab/gateway/app/core.py` | `2b7878b5f230fde2f46a2cbe9e27bec4372004b3e317ea76d059eb988d579386` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
 | `full_stack_lab/gateway/app/idp.py` | `bcc84f57b7b7f45cb87c37d92630b64e545b5486bdf0def50c031cd03cb46785` |
