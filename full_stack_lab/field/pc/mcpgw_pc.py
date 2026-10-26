@@ -372,12 +372,16 @@ def without_block(text: str) -> str:
         ambiguous()
     if block != expected.replace("\r\n", "\n").rstrip("\n"):
         ambiguous()
-    return "".join(lines[:starts[0]] + lines[ends[0] + 1:])
+    # with_block이 블록 앞에 둔 빈 줄 하나를 함께 지워 setup을 되풀이해도 줄 수가 늘지 않게 한다(멱등).
+    start = starts[0] - 1 if starts[0] and not lines[starts[0] - 1].strip() else starts[0]
+    return "".join(lines[:start] + lines[ends[0] + 1:])
 
 
 def with_block(text: str, block: str) -> str:
     # 블록은 항상 파일 끝에 둔다. TOML에서 앞에 두면 뒤따르는 사용자의 루트 키가 우리 테이블 안으로 들어간다.
     rest = without_block(text)
+    if rest and not rest.endswith("\n"):
+        rest += "\n"
     return rest + ("\n" if rest else "") + block
 
 

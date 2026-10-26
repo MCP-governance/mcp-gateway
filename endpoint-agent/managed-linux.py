@@ -374,13 +374,16 @@ def diagnostic(stage, error, credentials=()):
     if isinstance(detail, bytes):
         detail = detail.decode("utf-8", "replace")
     detail = redact_diagnostic(detail, credentials)
-    STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if not protected(STATE):
-        raise ValueError("설치 로그 경로가 보호되지 않았습니다")
-    fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
-    with os.fdopen(fd, "a", encoding="utf-8") as output:
-        os.fchmod(output.fileno(), 0o600)
-        output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+    try:
+        STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if not protected(STATE):
+            raise ValueError("설치 로그 경로가 보호되지 않았습니다")
+        fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+    except (OSError, ValueError):
+        pass  # 기록 실패가 원래 오류를 가리면 안 된다(권한 없는 상태 폴더 등)
 
 
 def enroll(bundle, username, uid, mode="isolated", platform="linux"):
