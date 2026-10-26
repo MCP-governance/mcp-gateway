@@ -35,9 +35,12 @@ async function configureLogin() {
   }
 }
 configureLogin();
-// The Console sends a session here when an admin switched the account off.
-error.textContent = { disabled: "사용이 중지된 계정입니다. 관리자에게 문의하세요.",
-  locked: "잠긴 계정입니다. 관리자에게 문의하세요.", deleted: "삭제된 계정입니다. 관리자에게 복구를 요청하세요." }[new URLSearchParams(location.search).get("account")] || "";
+// The Console sends a session here when an admin switched the account off or the session ended.
+const REASON = { account: { disabled: "사용이 중지된 계정입니다. 관리자에게 문의하세요.",
+  locked: "잠긴 계정입니다. 관리자에게 문의하세요.", deleted: "삭제된 계정입니다. 관리자에게 복구를 요청하세요." },
+session: { idle: "오래 사용하지 않아 로그아웃되었습니다.", maximum: "로그인 유지 시간이 지나 로그아웃되었습니다.",
+  authentication: "로그인이 만료되었습니다." } };
+error.textContent = Object.entries(REASON).map(([key, texts]) => Object.hasOwn(texts, params.get(key)) ? texts[params.get(key)] : "").find(Boolean) || "";
 
 document.querySelector("#gate-form").addEventListener("submit", async (event) => {
   event.preventDefault();

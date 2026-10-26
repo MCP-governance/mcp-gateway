@@ -1,6 +1,8 @@
 name: Research Markdown and collaboration console
 on:
   push:
+    # 작업 브랜치는 PR 실행이 검사한다. 코드 전용 PR은 위키 생성물을 병합 뒤 한 번에 재생성한다.
+    branches: [main]
     paths: ['research/llm-wiki/**', 'research/collaboration-console/**', 'docs/ai/**', 'full_stack_lab/opa/**', '.github/workflows/research-wiki.yml']
   pull_request:
     paths: ['research/llm-wiki/**', 'research/collaboration-console/**', 'docs/ai/**', 'full_stack_lab/opa/**', '.github/workflows/research-wiki.yml']

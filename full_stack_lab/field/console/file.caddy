@@ -1,6 +1,10 @@
 https://{$FIELD_CONSOLE_NAME}:8080 {
-	tls /run/console-tls/cert.pem /run/console-tls/key.pem {
+	tls /run/console-tls/current/cert.pem /run/console-tls/current/key.pem {
 		protocols tls1.2 tls1.3
 	}
 	import browser-console
+}
+
+http://:8081 {
+	redir https://{$FIELD_CONSOLE_NAME}{uri} 301
 }
