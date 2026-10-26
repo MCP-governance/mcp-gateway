@@ -6,7 +6,8 @@ name: full_stack_lab 검증
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -18,8 +19,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Keep the workflow present for required checks; event-level paths-ignore leaves them pending.
+  changes:
+    name: 변경 경로 판정
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.paths.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: PR 문서 전용 변경 판정
+        id: paths
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [[ "$EVENT_NAME" != pull_request ]]; then
+            echo 'code=true' >> "$GITHUB_OUTPUT"
+          elif git diff --no-renames --name-only -z "$BASE_SHA" HEAD > /tmp/ci-paths; then
+            python3 .github/ci/changes.py < /tmp/ci-paths >> "$GITHUB_OUTPUT"
+          else
+            echo 'code=true' >> "$GITHUB_OUTPUT"
+          fi
+
   static:
     name: 정적 검사
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -45,6 +73,9 @@ jobs:
             workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py \
             ../endpoint-agent/*.py field/pc/mcpgw_pc.py
 
+      - name: 중첩 풀 연결 검사
+        run: python tests/nested_tx_check.py
+
       # console.js is an ES module (it imports console-state.mjs); Node 22+ parses it with --check.
       - uses: actions/setup-node@v7
         with:
@@ -53,6 +84,8 @@ jobs:
 
       - name: Shell·JS 문법과 콘솔 상태 테스트
         run: |
+          node --test ../.github/ci/compose-cache.test.cjs
+          python3 ../.github/ci/changes_test.py
           bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
@@ -178,6 +211,8 @@ jobs:
 
   local-suite:
     name: 스택 없는 시험
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -201,6 +236,8 @@ jobs:
 
   pg-suite:
     name: PostgreSQL 시험
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
@@ -277,13 +314,20 @@ jobs:
   deploy:
     name: 운영 배포 설치 검증
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    needs: static
+    timeout-minutes: 30
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     defaults:
       run:
         working-directory: deploy
     steps:
       - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        id: buildx
+      - uses: ./.github/actions/compose-cache
+        with:
+          stack: deploy
+          builder: ${{ steps.buildx.outputs.name }}
 
       - name: ./install.sh --bind <실행기 IPv4>
         run: |
@@ -334,8 +378,9 @@ jobs:
   litellm:
     name: LiteLLM 애드온 통합 검수
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    needs: static
+    timeout-minutes: 30
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     defaults:
       run:
         working-directory: deploy
@@ -347,6 +392,12 @@ jobs:
       E2E_STATE: /tmp/litellm-e2e.json
     steps:
       - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        id: buildx
+      - uses: ./.github/actions/compose-cache
+        with:
+          stack: deploy
+          builder: ${{ steps.buildx.outputs.name }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -447,20 +498,25 @@ jobs:
   verify:
     name: 완료 조건 전체 검증
     runs-on: ubuntu-latest
-    timeout-minutes: 75
-    needs: static
+    timeout-minutes: 30
+    needs: changes
+    if: always() && !cancelled() && needs.changes.outputs.code != 'false'
     defaults:
       run:
         working-directory: full_stack_lab
     steps:
       - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        id: buildx
+      - uses: ./.github/actions/compose-cache
+        with:
+          stack: full_stack_lab
+          builder: ${{ steps.buildx.outputs.name }}
 
       - name: ./console.sh up --no-llm
         run: |
           ./console.sh init-disposal
-          # Keep dependency resolver errors in Actions; console.sh's quiet build
-          # otherwise reports only the failed Dockerfile instruction.
-          docker compose --progress plain build
+          # The cache preparation already logs dependency resolution in plain mode.
           ./console.sh prepare-acceptance-tls
           export COMPOSE_FILE=compose.yaml:compose.acceptance.yaml
           export ACCEPTANCE_TLS_UID="$(id -u)" ACCEPTANCE_TLS_GID="$(id -g)"
