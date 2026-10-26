@@ -28,9 +28,9 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "committed_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
+        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
         "worktree_modified": false
       },
       {
@@ -42,7 +42,7 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "ca603dc6194c0bd7287809fe9743c1588b5ed4410e0cd59bd8533a2fa8236ad1",
+        "sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "committed_sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "normalized_sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "worktree_modified": false
@@ -155,7 +155,8 @@
       "files_match_review": false,
       "changed_review_files": [
         "full_stack_lab/gateway/app/agent_service.py",
-        "full_stack_lab/gateway/app/review.py"
+        "full_stack_lab/gateway/app/review.py",
+        "full_stack_lab/runtime/worker.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -183,7 +184,7 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "ca603dc6194c0bd7287809fe9743c1588b5ed4410e0cd59bd8533a2fa8236ad1",
+        "sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "committed_sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "normalized_sha256": "da50e4ff3a595a4c1512c26639821ba1dbf5659e79351a0391a07ba4d5357aa7",
         "worktree_modified": false
@@ -482,9 +483,9 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "committed_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
+        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
         "worktree_modified": false
       }
     ],
@@ -542,7 +543,8 @@
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
       "changed_review_files": [
-        "full_stack_lab/gateway/app/pac.py"
+        "full_stack_lab/gateway/app/pac.py",
+        "full_stack_lab/runtime/worker.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -3043,9 +3045,9 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "committed_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea",
+        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
         "worktree_modified": false
       },
       {
@@ -3211,6 +3213,7 @@
         "full_stack_lab/gateway/app/core.py",
         "full_stack_lab/gateway/app/decommission.py",
         "full_stack_lab/gateway/app/local_jobs.py",
+        "full_stack_lab/runtime/worker.py",
         "full_stack_lab/tests/resource_residual_check.py",
         "full_stack_lab/tests/termination_flow.py"
       ]

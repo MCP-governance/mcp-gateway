@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T19:08:07+09:00",
-  "head": "bc0c3edf4eae47a8c1b0addf9cd5b351d09b2868",
-  "branch": "10/26-refactor-s1",
+  "captured_at": "2026-10-26T20:59:24+09:00",
+  "head": "e1cfef56eae133d116303a1a6c7939be921cc604",
+  "branch": "10/26-runtime-first-activation",
   "status": [
     "M docs/ai/DECISIONS.md",
     " M docs/ai/decisions/D-251-300.md",
