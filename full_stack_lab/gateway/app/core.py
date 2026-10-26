@@ -2171,6 +2171,8 @@ async def _record_decision(event: dict) -> int:
                 except Exception:
                     logging.getLogger(__name__).exception(
                         "automatic suspension failure not recorded; decision %s stays Block", row["id"])
+    if record["upstream_executed"] and record["client"].get("event_kind", "tools/call") == "tools/call":
+        tool_sunset.invalidate(record["server_id"], record["tool_name"])
     return int(row["id"])
 
 
