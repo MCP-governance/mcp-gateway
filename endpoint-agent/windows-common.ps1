@@ -199,6 +199,22 @@ function Register-EndpointTray([string]$SettingsPath, [string]$Sid, [string]$Pro
     Register-ScheduledTask -TaskName "MCPGatewayTray-$Sid" -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 }
 
+# The service answers on a per-account pipe the signed-in employee may open; listing the pipe names needs no rights
+# and no scheduled-task read access, which a standard account lacks. Unknown (listing failed) counts as running.
+function Test-EndpointServicePipe([string]$User) {
+    if (-not $User) { return $true }
+    try { return @([IO.Directory]::GetFiles('\\.\pipe\')) -contains ('\\.\pipe\mcpgw-' + $User.ToLowerInvariant()) } catch { return $true }
+}
+
+# Only a directory that is empty is ever removed; anything the kit did not create and still holds content stays.
+function Remove-EndpointEmptyDirectory([string]$Path) {
+    try {
+        $item = Get-Item -LiteralPath $Path -Force -ErrorAction Stop
+        if ($item.PSIsContainer -and -not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+            -not (Get-ChildItem -LiteralPath $Path -Force | Select-Object -First 1)) { Remove-Item -LiteralPath $Path -Force }
+    } catch { }
+}
+
 function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
     $resolved = [IO.Path]::GetFullPath($Root).TrimEnd('\')
     $machine = Join-Path $env:ProgramFiles 'MCPGatewayManaged'
@@ -238,7 +254,7 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
 # Screen text of the wizard and the tray, Korean first with an English switch (D-239). Labels only.
 $script:EndpointText = @{
     ko = @{ product = 'MCP 연결'; connected = '연결됨'; disconnected = '연결 끊김'; blocked = '엔드포인트에서 차단';
-        preparing = '연결 준비 중'; next_preparing = '잠시 기다리세요 · 서비스가 첫 보고를 보내는 중입니다';
+        preparing = '연결 준비 중'; service_stopped = '서비스 중지'; next_service = '연결 서비스가 중지됐습니다 · [다시 연결]을 누르세요'; next_preparing = '잠시 기다리세요 · 서비스가 첫 보고를 보내는 중입니다';
         status = '상태 창'; check = '연결 확인'; login = '모델 로그인'; reconnect = '다시 연결'; recent = '최근 차단';
         open_console = '콘솔 열기'; language = 'English'; remove = '제거'; close = '닫기';
         connection = '연결 상태'; management = '관리 상태'; way = '연결 방식'; servers = '승인 서버'; harness = '하네스';
@@ -263,7 +279,7 @@ $script:EndpointText = @{
         permission_isolated = '관리자 권한 · 격리 계정 로그아웃 필요'; title_install = '엔드포인트 설치'; title_remove = '엔드포인트 제거';
         done_install = '설치 완료'; done_remove = '제거 완료'; checking_gateway = '게이트웨이 연결 확인'; confirm = '설치 위치 · 관측 범위 확인' }
     en = @{ product = 'MCP connection'; connected = 'Connected'; disconnected = 'Disconnected'; blocked = 'Blocked on this PC';
-        preparing = 'Preparing'; next_preparing = 'Wait a moment · the service is sending its first report';
+        preparing = 'Preparing'; service_stopped = 'Service stopped'; next_service = 'The connection service is stopped · press [Reconnect]'; next_preparing = 'Wait a moment · the service is sending its first report';
         status = 'Status window'; check = 'Check connection'; login = 'Model sign-in'; reconnect = 'Reconnect'; recent = 'Recent blocks';
         open_console = 'Open console'; language = '한국어'; remove = 'Remove'; close = 'Close';
         connection = 'Connection'; management = 'Management'; way = 'Mode'; servers = 'Approved servers'; harness = 'Harnesses';
