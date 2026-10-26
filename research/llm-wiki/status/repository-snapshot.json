@@ -1,12 +1,10 @@
 {
-  "captured_at": "2026-10-26T17:12:18+09:00",
-  "head": "8328230fc8749b56ff3da48871692f2b0baac1ea",
+  "captured_at": "2026-10-26T17:55:16+09:00",
+  "head": "f61beb372c67fa82b9d56e02cccd8793c783f767",
   "branch": "10/26-kit-stream",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/decisions-index.md"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -46,11 +44,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "64664a4913cf96991239514784963fd9f2793009f15414cf9b2c70da273ff1fa"
+      "sha256": "719b2c74b543fde4d8e2690e45b2e09b0a33bd90f2d2bcc0a30457e12f986ecc"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "667c2dd02318ecedc442da91acb92a804b40b63428ead4f610e24add94b2aab2"
+      "sha256": "aadfbee08601a7ab74d4165e97c16e4b1dfa34613a1d374cd2d5fbf5cd5ad87c"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

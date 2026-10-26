@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T17:12:18+09:00
+확인 시각: 2026-10-26T17:55:16+09:00
 
-HEAD: `8328230fc8749b56ff3da48871692f2b0baac1ea` · 로컬 브랜치: `10/26-kit-stream`
+HEAD: `f61beb372c67fa82b9d56e02cccd8793c783f767` · 로컬 브랜치: `10/26-kit-stream`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,8 +11,6 @@ HEAD: `8328230fc8749b56ff3da48871692f2b0baac1ea` · 로컬 브랜치: `10/26-kit
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/decisions-index.md
 ```
 
 ## 주요 파일 바이트
@@ -27,6 +25,6 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `64664a4913cf96991239514784963fd9f2793009f15414cf9b2c70da273ff1fa` |
-| `endpoint-agent/managed-linux.py` | `667c2dd02318ecedc442da91acb92a804b40b63428ead4f610e24add94b2aab2` |
+| `endpoint-agent/bootstrap.py` | `719b2c74b543fde4d8e2690e45b2e09b0a33bd90f2d2bcc0a30457e12f986ecc` |
+| `endpoint-agent/managed-linux.py` | `aadfbee08601a7ab74d4165e97c16e4b1dfa34613a1d374cd2d5fbf5cd5ad87c` |
 | `endpoint-agent/enforce-linux.py` | `98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966` |
