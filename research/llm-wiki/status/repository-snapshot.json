@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-26T13:45:47+09:00",
-  "head": "a17cfce9bdce25f1fc6564d2e0d172ab68271f63",
-  "branch": "10/25-stage0-adminpool",
+  "captured_at": "2026-10-26T14:07:04+09:00",
+  "head": "c872374b420129e0d3b734f6081f1af8d44afcf5",
+  "branch": "10/25-stage0-loadtest",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
