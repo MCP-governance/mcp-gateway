@@ -13,7 +13,7 @@ import unittest
 import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from types import ModuleType, SimpleNamespace
+from types import ModuleType
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlencode, urlsplit
 
