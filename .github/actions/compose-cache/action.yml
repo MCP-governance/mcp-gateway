@@ -1,0 +1,12 @@
+name: Compose layer cache
+description: Warm the selected builder from image-scoped GitHub Actions caches
+inputs:
+  stack:
+    description: Compose directory (deploy or full_stack_lab)
+    required: true
+  builder:
+    description: Builder created by docker/setup-buildx-action
+    required: true
+runs:
+  using: node24
+  main: index.cjs
