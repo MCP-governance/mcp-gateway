@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-10-26T12:41:32+09:00",
-  "head": "fa76eb17363f40ce5bdcf33abbc36cc602e47790",
+  "captured_at": "2026-10-26T12:48:11+09:00",
+  "head": "b3c79535d753343f004526fd58823b56fbe0baa1",
   "branch": "10/25-stage0-adminpool",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
