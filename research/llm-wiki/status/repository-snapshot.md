@@ -1,35 +1,17 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T13:15:37+09:00
+확인 시각: 2026-10-26T13:17:31+09:00
 
-HEAD: `8bd9422a9e75257d2577c808e423dbededc02c45` · 로컬 브랜치: `10/25-stage0-sunset`
+HEAD: `6a56668b2cfb0dd9c7652a84cfc94a387d898e7e` · 로컬 브랜치: `10/25-stage0-sunset`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M  full_stack_lab/gateway/app/agent_contract.py
-M  full_stack_lab/gateway/app/core.py
-M  full_stack_lab/gateway/app/decommission.py
-M  full_stack_lab/gateway/app/disposal.py
-M  full_stack_lab/gateway/app/idp.py
-M  full_stack_lab/gateway/app/local_jobs.py
-M  full_stack_lab/gateway/app/ops_response.py
-M  full_stack_lab/gateway/app/retention.py
-UU full_stack_lab/gateway/app/tool_sunset.py
-M  full_stack_lab/tests/dev73_integration_check.py
-A  full_stack_lab/tests/disposal_index_check.py
-M  full_stack_lab/tests/fresh_requester_check.py
-M  full_stack_lab/tests/ops_response_check.py
-M  full_stack_lab/tests/resource_residual_check.py
-M  full_stack_lab/tests/selective_restriction_siem_check.py
-M  research/llm-wiki/analysis/integration-cases.json
-M  research/llm-wiki/analysis/requirements.json
-M  research/llm-wiki/analysis/threat-trace-review-1020/README.md
-MM research/llm-wiki/catalogs/threats.json
-M  research/llm-wiki/status/repository-snapshot.json
-M  research/llm-wiki/status/repository-snapshot.md
+M research/llm-wiki/analysis/integration-cases.json
+ M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/catalogs/threats.json
 ```
 
 ## 주요 파일 바이트
