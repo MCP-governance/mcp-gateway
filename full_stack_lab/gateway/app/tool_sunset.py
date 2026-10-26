@@ -1,6 +1,7 @@
 """Time out unused, human-scoped tools using the append-only decision ledger (DEV-75)."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from datetime import datetime, timedelta, timezone
@@ -69,7 +70,7 @@ async def _last_check(connection, server_id: str, tool_name: str) -> dict | None
 async def _coverage(connection, cutoff: datetime, setting: dict) -> tuple[bool, str]:
     if max(IDLE_DAYS + GRACE_DAYS, OBSERVATION_DAYS) > int(setting["days"]):
         return False, "미사용 판정 기간이 원장 보존 기간보다 깁니다."
-    seal = retention.current_seal()
+    seal = await asyncio.to_thread(retention.current_seal)
     if seal:
         sealed_at = datetime.fromisoformat(str(seal["last_created_at"]).replace("Z", "+00:00"))
         if sealed_at >= cutoff:
@@ -181,7 +182,7 @@ async def recently_used(server_id: str, tool_names: list[str], now: datetime) ->
         reason = ""
         if max(IDLE_DAYS + GRACE_DAYS, OBSERVATION_DAYS) > int((await retention.setting())["days"]):
             reason = "비활성 판정 기간이 원장 보존 기간보다 깁니다."
-        seal = retention.current_seal()
+        seal = await asyncio.to_thread(retention.current_seal)
         if seal and datetime.fromisoformat(str(seal["last_created_at"]).replace("Z", "+00:00")) >= cutoff:
             reason = "관측 창 일부가 폐기된 원장 구간과 겹칩니다."
         if not seal:

@@ -73,7 +73,7 @@ class Introspection(unittest.IsolatedAsyncioTestCase):
         self.jwt = SimpleNamespace(decode=Mock(return_value=self.claims), PyJWTError=ValueError)
         self.api = definitions("idp.py", {"introspection", "introspect"}, {
             "__name__": package.__name__ + ".idp", "__package__": package.__name__,
-            "datetime": datetime, "UTC": UTC, "db": self.db, "disposal": self.disposal,
+            "asyncio": asyncio, "datetime": datetime, "UTC": UTC, "db": self.db, "disposal": self.disposal,
             "os": os, "jwt": self.jwt, "ALGORITHM": "EdDSA", "AUDIENCE": "gateway", "ISSUER": "issuer",
             "public_key": lambda: "public", "_sha": lambda value: hashlib.sha256(value.encode()).hexdigest(),
             "Form": lambda *args, **kwargs: None, "Header": lambda *args, **kwargs: None,
