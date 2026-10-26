@@ -274,8 +274,8 @@ def place_harnesses(employee: str) -> dict[str, dict]:
             if name == "claude" and (APPROVED / "claude").is_file():
                 placed[name] = {"path": str(APPROVED / name), "source": "already-approved"}
                 continue
-            # PC에 있는 하네스만 관리한다. 없는 것은 나중에 설치하고 키트를 다시 실행하면 추가된다.
-            say(f"{name}이(가) 이 PC에 없어 건너뜁니다.")
+            # PC에 있는 하네스만 관리한다(D-216). 없는 것은 나중에 설치하고 키트를 다시 실행하면 추가된다.
+            # 알리지 않는다: 하나도 없으면 아래에서 멈추고, 끝 안내는 배치한 것만 적는다.
             continue
         for item, origin in origins.items():
             target = APPROVED / item

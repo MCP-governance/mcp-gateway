@@ -71,7 +71,7 @@ async function api(path, { method = "GET", body, signal } = {}) {
   const accountStatus = response.headers.get("x-account-status");
   if (response.status === 401 || accountStatus) {
     localStorage.removeItem(TOKEN_KEY);
-    location.replace(accountStatus ? `/login?account=${encodeURIComponent(accountStatus)}` : "/login");
+    location.replace(`/login?${accountStatus ? "account=" + encodeURIComponent(accountStatus) : "session=authentication"}`);
     throw new Error("로그인이 만료되었습니다.");
   }
   const data = await response.json().catch(() => ({}));

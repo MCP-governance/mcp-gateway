@@ -87,6 +87,19 @@ class Bootstrap(unittest.TestCase):
         calls["ensure_packages"].assert_called_once_with(True)
         self.assertEqual(result["mode"], "isolated")
 
+    def test_isolated_install_does_not_name_a_harness_the_pc_lacks(self):
+        b = self.b
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "codex"
+            source.mkdir()
+            for item in ("codex", "codex-code-mode-host"):
+                (source / item).write_bytes(b"ELF")
+            screen = mock.Mock()
+            with mock.patch.object(b, "APPROVED", Path(folder) / "approved"), mock.patch.object(b, "SCREEN", screen),                     mock.patch.object(b.os, "chown", create=True), mock.patch.object(b, "native", return_value=True),                     mock.patch.object(b, "native_claude", return_value=None),                     mock.patch.object(b, "release_directory", side_effect=lambda _, name: source if name == "codex" else None):
+                placed = b.place_harnesses("emp")
+        self.assertEqual(list(placed), ["codex"])
+        screen.say.assert_not_called()
+
     def test_simple_packages_are_tried_never_required(self):
         b = self.b
         with mock.patch.object(b.shutil, "which", side_effect=lambda tool: None if tool in ("openssl", "apt-get", "dnf", "pacman") else "/x"), \
