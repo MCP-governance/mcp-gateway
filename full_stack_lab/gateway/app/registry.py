@@ -7,7 +7,7 @@ Both are reviewed in git; the database is the runtime copy the policy path reads
 
 Run as a module to (re)generate the lock from the live servers:
 
-    python -m app.registry lock      # prints the lock JSON for every catalog server
+    python -m app.registry_lock lock      # prints the lock JSON for every catalog server
 
 Servers an admin registers from the Console (an approved intake request → Gateway, D-49)
 live beside the reviewed files in REGISTRY_RUNTIME_DIR/servers.json, in the same shape
@@ -16,13 +16,11 @@ servers + DB servers - and the reviewed file wins a name clash.
 """
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import os
 import sys
 import tomllib
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -290,26 +288,7 @@ def review_matches(approved: dict | None, tool: dict) -> bool:
     return approved == observed
 
 
-async def build_lock() -> dict:
-    """Discover every catalog server now and describe it as a lock document."""
-    from . import upstream
-    result: dict[str, Any] = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-                              "catalog": catalog_version(), "servers": {}}
-    for server_id, spec in sorted(servers().items()):
-        discovered = await upstream.discover(spec["endpoint"])
-        result["servers"][server_id] = {
-            "package": source_ref(spec),
-            "server_name": discovered["advertised_name"],
-            "server_version": discovered["version"],
-            "protocol_version": discovered["protocol_version"],
-            "tools": {tool["name"]: tool_hashes(tool) for tool in sorted(discovered["tools"], key=lambda t: t["name"])},
-        }
-    return result
-
-
 if __name__ == "__main__":
-    if sys.argv[1:] == ["lock"]:
-        print(json.dumps(asyncio.run(build_lock()), ensure_ascii=False, indent=1, sort_keys=True))
-    else:
-        print("usage: python -m app.registry lock", file=sys.stderr)
-        sys.exit(2)
+    # The lock command lives in registry_lock now. Exit non-zero rather than print nothing: callers redirect
+    # this output into the lock file, and an empty replacement would pass for an approved lock.
+    sys.exit("moved: python -m app.registry_lock lock")

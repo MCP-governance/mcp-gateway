@@ -2,7 +2,7 @@
 
 `split_decisions.py index`가 만든 생성 파일이다. 직접 고치지 않는다. 본문은 위치 칸의 파일에서 읽거나 `python research/llm-wiki/tools/split_decisions.py show D-번호`로 한 건만 출력한다.
 
-결정 242개 · 최대 번호 257 · 저장 형태: 번호대 분할(docs/ai/decisions/)
+결정 243개 · 최대 번호 258 · 저장 형태: 번호대 분할(docs/ai/decisions/)
 
 ## 번호 1~50
 
@@ -275,6 +275,7 @@
 | D-255 | Tailscale 소켓은 인증서 전용 컨테이너만 쓰고 Caddy는 비root로 돈다 (2026-10-26) | 2026-10-26 | [D-251-300.md:37](../../../docs/ai/decisions/D-251-300.md) |
 | D-256 | Windows 키트는 상태를 현재 언어로 표시하고 부분 관측은 실패 종료로 보지 않는다 (2026-10-26) | 2026-10-26 | [D-251-300.md:44](../../../docs/ai/decisions/D-251-300.md) |
 | D-257 | Unix 키트는 등록·정책 수신 뒤 기존 설치를 교체한다 (2026-10-26) | 2026-10-26 | [D-251-300.md:52](../../../docs/ai/decisions/D-251-300.md) |
+| D-258 | app 내부 import 경계는 표준 라이브러리 AST 검사로 고정하고 계약 잠금 명령은 registry_lock이 소유한다 (2026-10-26) | 2026-10-26 | [D-251-300.md:61](../../../docs/ai/decisions/D-251-300.md) |
 
 ## 비어 있는 번호
 

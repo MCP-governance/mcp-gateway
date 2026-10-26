@@ -54,10 +54,10 @@ class Introspection(unittest.IsolatedAsyncioTestCase):
         package = ModuleType("residual_test_gateway")
         endpoint = ModuleType(package.__name__ + ".endpoint_plane")
         endpoint.managed_failure = self.managed
-        oidc = ModuleType(package.__name__ + ".oidc")
-        oidc.validate_session = self.validate
+        identity_sessions = ModuleType(package.__name__ + ".identity_sessions")
+        identity_sessions.validate_session = self.validate
         self.modules = patch.dict(sys.modules, {package.__name__: package,
-                                               endpoint.__name__: endpoint, oidc.__name__: oidc})
+                                               endpoint.__name__: endpoint, identity_sessions.__name__: identity_sessions})
         self.modules.start()
         self.addCleanup(self.modules.stop)
         self.environment = patch.dict(os.environ, {"AUTH_PROVIDER": "local"})

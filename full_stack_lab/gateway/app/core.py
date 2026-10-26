@@ -28,7 +28,7 @@ from jsonschema.validators import validator_for
 from referencing import Registry
 
 from . import classify, connections, consent, db, dispatch, disposal, endpoint_plane, local_jobs, ops_response, pac, poisoning, privacy, registry, retention, risk_tier, secret_scan, supplier_assurance, upstream, user_credentials, user_suspend
-from .destination import DestinationBlocked
+from .destination import DestinationBlocked, _endpoint_host, registration_endpoint, transport_secure
 from .outcomes import outcome_axes
 from . import flow_fingerprint, high_impact, output_contract, residency, selective, tool_sunset
 from .contract import (  # re-exported: older callers import these from core
@@ -555,16 +555,6 @@ async def check_server(server_id: str) -> dict:
 # end date - the BeyondTrust shape "request → approve → use → expire → audit", where the
 # expiry is enforced by the existing P-APPROVAL-EXPIRY-001.
 REGISTER_LOCK = asyncio.Lock()
-
-
-def registration_endpoint(value: str) -> str:
-    endpoint = value.strip()
-    parts = urlsplit(endpoint)
-    if parts.scheme not in {"http", "https"} or not parts.hostname or parts.username or parts.password or parts.fragment:
-        raise ValueError("http(s)://호스트/경로 형식의 MCP 엔드포인트여야 합니다. 자격 정보는 URL에 넣지 않습니다.")
-    if not transport_secure(endpoint):
-        raise ValueError("사내 서비스가 아니면 HTTPS 엔드포인트만 등록할 수 있습니다.")
-    return endpoint
 
 
 def suggested_action(annotations: dict | None) -> str:
@@ -1301,33 +1291,6 @@ def untrusted_markers(arguments: dict) -> list[str]:
                 found.add(str(key))
                 break
     return sorted(found)
-
-
-# CTL-24 / RSK-24. 원격 endpoint가 평문이면 요청·응답이 경로 위에서 읽히고 바뀐다.
-# 루프백과 컨테이너 내부 망은 이 판단에서 제외한다 - 거기까지 TLS를 요구하면
-# 아무도 지키지 않는 규칙이 하나 더 생긴다.
-LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
-
-
-def _endpoint_host(endpoint: str | None) -> str:
-    from urllib.parse import urlsplit
-    value = (endpoint or "").strip()
-    if not value:
-        return ""
-    if not value.startswith(("http://", "https://")):
-        return ""
-    return (urlsplit(value).hostname or "").lower()
-
-
-def transport_secure(endpoint: str | None) -> bool:
-    value = (endpoint or "").strip().lower()
-    if not value.startswith(("http://", "https://")):
-        return True  # stdio 등 네트워크를 타지 않는 전송
-    if value.startswith("https://"):
-        return True
-    host = _endpoint_host(value)
-    # 도커 내부 서비스 이름과 루프백은 이 호스트 밖으로 나가지 않는다.
-    return host in LOCAL_HOSTS or "." not in host
 
 
 async def egress_allowed(endpoint: str | None) -> bool:

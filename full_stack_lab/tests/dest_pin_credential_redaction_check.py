@@ -72,7 +72,7 @@ class DestinationPin(unittest.IsolatedAsyncioTestCase):
             def __init__(self, *args, **kwargs):
                 self.kwargs = kwargs
 
-        module = selected(APP / "oidc.py", ["http_transport", "PinnedOAuthClient", "PinnedOAuthApp"],
+        module = selected(APP / "oidc_client.py", ["http_transport", "PinnedOAuthClient", "PinnedOAuthApp"],
                           {"settings": lambda: {"issuer": "https://issuer.example"}, "urlsplit": urlsplit,
                            "os": SimpleNamespace(getenv=lambda name, default: default),
                            "pin_transport": destination.pin_transport, "AsyncOAuth2Client": OAuthClient,
@@ -194,7 +194,7 @@ class DestinationPin(unittest.IsolatedAsyncioTestCase):
             transports.append((result, connector))
             return result
 
-        module = selected(APP / "oidc.py", ["http_transport"],
+        module = selected(APP / "oidc_client.py", ["http_transport"],
                           {"settings": lambda: {"issuer": "http://127.0.0.1:18090/realms/mcpgw"}, "os": os,
                            "urlsplit": urlsplit, "pin_transport": destination.pin_transport,
                            "httpx": SimpleNamespace(AsyncHTTPTransport=transport)})

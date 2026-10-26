@@ -95,18 +95,17 @@ service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview",
     {"db": db, "review": review, "StrictModel": contract.StrictModel, "ResidencyFields": contract.ResidencyFields,
      "ToolReview": contract.ToolReview, "Depends": lambda value: None, "Header": lambda **kwargs: None,
      "admin_caller": None, "INTAKE_APPROVAL_LOCK": asyncio.Lock(), "current_identity": unpatched, "gateway_proxy": unpatched,
-     "publish_internal_repo": unpatched, "core": types.SimpleNamespace(canonical_hash=canonical_hash),
+     "publish_internal_repo": unpatched, "canonical_hash": canonical_hash,
      # D-179: approve_and_register now routes provenance through this real module, so load it rather than stub it.
      "artifact_provenance": _artifact_provenance, "os": __import__("os"), "asyncio": asyncio})
 scope_core = load("app.intake_core_ast", "core.py", ["register_server"], {"db": db, "review": review, "uuid": uuid,
     "registry": types.SimpleNamespace(catalog=lambda: {}), "registration_endpoint": lambda endpoint: endpoint,
     "canonical_hash": canonical_hash})
-service.core = scope_core
 
 spec = importlib.util.spec_from_file_location("intake_one_click_cases", LAB / "tests/intake_one_click_check.py")
 cases = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(cases)
-cases.service, cases.review, cases.HTTPException = service, review, HTTPException
+cases.service, cases.core, cases.review, cases.HTTPException = service, scope_core, review, HTTPException
 cases.ApprovalFlowCheck.__unittest_skip__ = False
 
 if __name__ == "__main__":

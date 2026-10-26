@@ -217,7 +217,7 @@ trap - EXIT
 expect "원복 후 체인 정상" "$(verify | cut -d' ' -f1)" True
 
 echo "── MCP 계약이 잠금과 같다 ──"
-docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.now.$$ 2>/dev/null
+docker compose exec -T gateway python -m app.registry_lock lock > /tmp/contracts.now.$$ 2>/dev/null
 if python3 tests/contracts_check.py registry/contracts.lock.json /tmp/contracts.now.$$; then ok "계약 잠금 일치"; else bad "계약 잠금 일치" "위 변경 목록 참고"; fi
 # Keep what the servers advertise next to the other reports so a reviewer can read the diff and decide on `contracts --update`.
 mkdir -p reports && cp /tmp/contracts.now.$$ reports/contracts.now.json

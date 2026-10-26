@@ -172,7 +172,7 @@ ensure_contracts() {
 }
 
 contracts_update() {
-  docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.lock.$$ \
+  docker compose exec -T gateway python -m app.registry_lock lock > /tmp/contracts.lock.$$ \
     && mv /tmp/contracts.lock.$$ registry/contracts.lock.json
   docker compose restart gateway gateway-sse >/dev/null
   wait_ready
@@ -559,7 +559,7 @@ case "${1:-up}" in
   contracts)
     case "${2:-}" in
       --update) contracts_update; echo "registry/contracts.lock.json 갱신" ;;
-      --check|"") docker compose exec -T gateway python -m app.registry lock > /tmp/contracts.check.$$
+      --check|"") docker compose exec -T gateway python -m app.registry_lock lock > /tmp/contracts.check.$$
                   python3 tests/contracts_check.py registry/contracts.lock.json /tmp/contracts.check.$$ ;;
     esac
     ;;

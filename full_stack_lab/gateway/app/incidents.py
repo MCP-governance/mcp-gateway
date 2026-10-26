@@ -10,7 +10,7 @@ from uuid import UUID
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from . import audit, core, db, incident_pack, ops_response
+from . import alert_store, audit, core, db, incident_pack
 
 LOG = logging.getLogger(__name__)
 
@@ -268,7 +268,7 @@ async def check_deadlines() -> None:
                        AND target_kind='incident-stage' AND target_id=%s ORDER BY id""", (str(case["id"]),))
                 completed = {(row["jurisdiction"], row["stage"]) for row in report_facts(reports)}
                 for deadline in incident_pack.alertable(case_deadlines(case, now, reports), completed):
-                    await ops_response.emit_alert("incident-deadline", "incident",
+                    await alert_store.emit_alert("incident-deadline", "incident",
                         f"{case['id']}:{deadline['jurisdiction']}:{deadline['stage']}:{deadline['status']}",
                         {"incident_id": str(case["id"]), "jurisdiction": deadline["jurisdiction"],
                          "stage": deadline["stage"], "due_at": deadline["due_at"].isoformat(), "status": deadline["status"]})
