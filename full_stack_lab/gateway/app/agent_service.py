@@ -159,7 +159,8 @@ async def browser_boundary(request: Request, call_next):
         return JSONResponse({"detail": "다른 출처의 요청은 허용하지 않습니다."}, status_code=403)
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["Cache-Control"] = "no-store"
+    # 정적 자원은 비밀이 없다: 매번 재검증하되(ETag) 바뀌지 않았으면 304로 5MB를 다시 받지 않는다.
+    response.headers["Cache-Control"] = "no-cache" if request.url.path.startswith("/static/") else "no-store"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
     return response
 

@@ -41,6 +41,18 @@
 		}
 	}
 
+	# 정적 자원만 압축한다(글꼴 woff2는 이미 압축돼 있다). API 응답은 토큰을 담을 수 있어 압축하지 않는다.
+	handle /static/* {
+		encode zstd gzip {
+			match {
+				header Content-Type text/*
+				header Content-Type application/javascript*
+				header Content-Type image/svg+xml*
+			}
+		}
+		reverse_proxy agent-service:8000
+	}
+
 	# Console(웹) — 그 밖 전부.
 	handle {
 		reverse_proxy agent-service:8000
