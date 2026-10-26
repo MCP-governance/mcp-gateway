@@ -116,7 +116,7 @@ def skip_reason(path: Path, platform: str = sys.platform) -> str:
 
 def inventory() -> dict:
     callers = "\n".join(path.read_text(encoding="utf-8") for path in
-                        (REPO / ".github/workflows/verify.yml", TESTS.parent / "console.sh"))
+                        (*sorted((REPO / ".github/workflows").glob("*.yml")), TESTS.parent / "console.sh"))
     # lint의 tests/*.py는 실행 증거가 아니며 Node 시험 명령의 glob만 확장한다.
     patterns = [pattern for line in callers.splitlines() if "node --test" in line
                 for pattern in re.findall(r"tests/([\w*./-]+)", line)]
