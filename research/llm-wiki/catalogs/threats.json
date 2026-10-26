@@ -28,10 +28,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
         "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "worktree_modified": false
+        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/artifact_provenance.py",
@@ -483,10 +483,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
         "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "worktree_modified": false
+        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
+        "worktree_modified": true
       }
     ],
     "control_locations": [
@@ -3045,10 +3045,10 @@
       },
       {
         "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
+        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
         "committed_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "normalized_sha256": "29411dd4eaedfd5427b9bc44893f17d39d03c8afdc93a826747dc8c0ede57a4b",
-        "worktree_modified": false
+        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
+        "worktree_modified": true
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",

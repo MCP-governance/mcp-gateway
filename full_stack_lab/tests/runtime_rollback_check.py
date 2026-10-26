@@ -235,6 +235,29 @@ class FirstActivationTests(unittest.TestCase):
         self.assertEqual(scope["contract"]["sha256"], CONTRACT["sha256"])
         self.assertEqual(ledger.rollback_candidates(), [2])
 
+    def test_contract_snapshot_with_database_timestamps_serialises(self):
+        # 기기 실측: 등록 뒤 두 번째 활성화에서 approved_at(datetime)이 JSON 직렬화에 실패해 실행기가 반복 크래시했다.
+        approved = datetime.datetime(2026, 10, 26, 12, 25, 40, tzinfo=datetime.UTC)
+        rows = iter([{"registered_server_id": "srv"},
+                     [{"name": "convert", "approved_description_hash": "d", "approved_schema_hash": "s",
+                       "approved_output_schema_hash": "o", "approved_server_version": "1"}],
+                     {"actor": "root", "created_at": approved}])
+
+        class Rows:
+            def __init__(self, value):
+                self.value = value
+            def fetchone(self):
+                return self.value
+            def fetchall(self):
+                return self.value
+
+        class Connection:
+            def execute(self, *_):
+                return Rows(next(rows))
+
+        snapshot = worker.approved_contract(Connection(), "intake-1")
+        self.assertEqual(json.loads(json.dumps(snapshot))["approved_at"], approved.isoformat())
+
     def test_registration_and_contract_approval_stay_the_only_way_to_enable_calls(self):
         # The first run changes neither: registration still names the reviewed catalog hash, writes the
         # approved hashes from it, and leaves the server PENDING; calls pass only through CATALOG_OK.

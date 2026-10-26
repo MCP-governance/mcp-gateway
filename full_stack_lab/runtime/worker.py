@@ -230,7 +230,9 @@ def approved_contract(connection, intake_id) -> dict | None:
         """SELECT actor, created_at FROM approval_events WHERE target_kind='server' AND target_id=%s
              AND kind IN ('contract-reapprove','server-register') ORDER BY id DESC LIMIT 1""", (server_id,)).fetchone()
     return {"server_id": server_id, "tools": tools, "sha256": hashlib.sha256(encoded).hexdigest(),
-            "approved_by": (approval or {}).get("actor"), "approved_at": (approval or {}).get("created_at")}
+            "approved_by": (approval or {}).get("actor"),
+            # The snapshot goes into a JSON scope; psycopg returns timestamptz as datetime (a second activation crashed).
+            "approved_at": approved_at.isoformat() if hasattr(approved_at := (approval or {}).get("created_at"), "isoformat") else approved_at}
 
 
 def restore_contract(connection, snapshot: dict) -> bool:
