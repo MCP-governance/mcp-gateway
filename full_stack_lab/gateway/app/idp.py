@@ -127,7 +127,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
                 "SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s FOR UPDATE", (_sha(refresh_token),))).fetchone()
             if not stored or stored["client_id"] != client_id:
                 return _error("invalid_grant", "알 수 없는 refresh token입니다.")
-            if disposal.blocked(refresh=_sha(refresh_token)):
+            if await asyncio.to_thread(disposal.blocked, refresh=_sha(refresh_token)):
                 await _revoke_family(stored["family_id"], connection)
                 return _error("invalid_grant", "폐기된 갱신 토큰 또는 폐기 목록 확인 불가")
             if stored["revoked_at"] or stored["expires_at"] <= datetime.now(UTC):
@@ -319,7 +319,7 @@ async def introspection(token: str) -> dict:
     evidence collection, which records exactly this document."""
     now = datetime.now(UTC)
     if token.startswith("rt_"):
-        if disposal.blocked(refresh=_sha(token)):
+        if await asyncio.to_thread(disposal.blocked, refresh=_sha(token)):
             return {"active": False}
         stored = await db.fetch_one("SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s", (_sha(token),))
         if not stored or stored["revoked_at"] or stored["rotated_at"] or stored["expires_at"] <= now:
@@ -335,7 +335,7 @@ async def introspection(token: str) -> dict:
         claims = jwt.decode(token, public_key(), algorithms=[ALGORITHM], audience=AUDIENCE, issuer=ISSUER)
     except jwt.PyJWTError:
         return {"active": False}
-    if disposal.blocked(jti=claims["jti"]):
+    if await asyncio.to_thread(disposal.blocked, jti=claims["jti"]):
         return {"active": False}
     if await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         return {"active": False}
@@ -359,7 +359,7 @@ async def introspection(token: str) -> dict:
 async def introspect_jti(jti: str) -> dict:
     """Introspection by identifier, for evidence collection about tokens the
     organisation's own records enumerate (the token value itself is never stored)."""
-    if disposal.blocked(jti=jti):
+    if await asyncio.to_thread(disposal.blocked, jti=jti):
         return {"active": False, "jti": jti, "revoked": True}
     row = await db.fetch_one("SELECT * FROM oauth_issued_tokens WHERE jti=%s", (jti,))
     if not row:

@@ -9,7 +9,7 @@ import asyncio
 import sys
 import types
 import unittest
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -151,13 +151,10 @@ class RemoteServerKeepsItsBehavior(unittest.IsolatedAsyncioTestCase):
                 ops_db = Database()
                 runner = local_runner(servers, Database())
 
-                @contextmanager
-                def locked(_):
-                    yield
-
-                register(disposal=SimpleNamespace(locked=locked, DIRECTORY="", read=lambda: []))
+                register(disposal=SimpleNamespace(blocked=lambda **_: False))
                 ops = extract("ops_response.py", {"resume"}, {
-                    "db": ops_db, "local_jobs": runner, "review": SimpleNamespace(record_event=AsyncMock())})
+                    "asyncio": asyncio, "db": ops_db, "local_jobs": runner,
+                    "review": SimpleNamespace(record_event=AsyncMock())})
                 server_id = next(iter(servers))
 
                 async def run(query, params=None):

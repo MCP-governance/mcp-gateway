@@ -1,6 +1,7 @@
 """Shared Agent-Service/Gateway boundary. Model output never supplies identity."""
 from __future__ import annotations
 
+import asyncio
 import base64
 import os
 from datetime import UTC, datetime, timedelta
@@ -163,7 +164,7 @@ async def authenticated_user(authorization: str | None, require_scope: str | Non
     """
     user, claims = authenticate(authorization)
     from . import disposal
-    if disposal.blocked(jti=claims["jti"]):
+    if await asyncio.to_thread(disposal.blocked, jti=claims["jti"]):
         raise HTTPException(401, "폐기된 인증 또는 폐기 목록 확인 불가")
     if require_mcp and "mcp" not in token_scopes(claims):
         raise HTTPException(403, "MCP 호출에는 mcp scope가 필요합니다.")

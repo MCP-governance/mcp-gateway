@@ -574,7 +574,7 @@ async def admission_locks(connection,device,server):
 
 async def current_job(connection,row,device):
     from . import disposal
-    if disposal.blocked(jti=row.get('token_jti'),server_id=row['server_id'],raise_errors=True):
+    if await asyncio.to_thread(disposal.blocked, jti=row.get('token_jti'),server_id=row['server_id'],raise_errors=True):
         return False
     policy=await (await connection.execute("SELECT source_sha256 FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1")).fetchone()
     revoked=await (await connection.execute('SELECT jti FROM agent_revoked_tokens WHERE jti=%s',(row['token_jti'],))).fetchone() if row['token_jti'] else None
