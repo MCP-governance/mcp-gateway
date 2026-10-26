@@ -195,20 +195,28 @@ def event(connection, runtime: dict, kind: str, outcome: str = "recorded", reaso
           scope: dict | None = None) -> None:
     scope = {"runtime": str(runtime["id"]), "generation": runtime["generation"], **(scope or {})}
     if kind == "runtime-active":
-        scope["contract"] = (runtime.get("rollback_contract") if runtime.get("rollback_target_generation")
-                             else approved_contract(connection, runtime["intake_id"]))
+        if runtime.get("rollback_target_generation"):
+            scope["contract"] = runtime.get("rollback_contract")
+        elif contract := approved_contract(connection, runtime["intake_id"]):
+            scope["contract"] = contract
+        else:
+            # Registration needs this run's address to read the tools, so the first run has no contract yet.
+            # The key stays absent, not null: every rollback lookup reads `scope->'contract' IS NOT NULL`,
+            # and a JSON null would pass it.
+            scope["registration"] = "pending"
     connection.execute(
         """INSERT INTO approval_events(kind,outcome,target_kind,target_id,actor,reason,scope)
            VALUES (%s,%s,'intake',%s,%s,%s,%s)""",
         (kind, outcome, str(runtime["intake_id"]), WORKER_ID, reason, Jsonb(scope)))
 
 
-def approved_contract(connection, intake_id) -> dict:
+def approved_contract(connection, intake_id) -> dict | None:
+    """The contract approved at registration; None before the first registration, Refused once registered without one."""
     server = connection.execute("SELECT registered_server_id FROM mcp_intake_requests WHERE id=%s",
                                 (intake_id,)).fetchone()
     server_id = (server or {}).get("registered_server_id")
     if not server_id:
-        raise Refused("계약 승인을 확인할 등록 서버가 없습니다.")
+        return None
     rows = connection.execute(
         """SELECT name, approved_description_hash, approved_schema_hash, approved_output_schema_hash,
                   approved_server_version FROM mcp_tools WHERE server_id=%s ORDER BY name""", (server_id,)).fetchall()
@@ -703,7 +711,7 @@ def reconcile(connection, recipes: dict, context: dict) -> None:
                 approved = connection.execute(
                     """SELECT scope->'contract' AS contract FROM approval_events WHERE kind='runtime-active'
                          AND target_kind='intake' AND target_id=%s AND (scope->>'generation')=%s
-                       ORDER BY id DESC LIMIT 1""",
+                         AND scope->'contract' IS NOT NULL ORDER BY id DESC LIMIT 1""",
                     (str(runtime["intake_id"]), str(done["rollback_target_generation"]))).fetchone()
                 snapshot = done.get("rollback_contract") or {}
                 server = connection.execute(

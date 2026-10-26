@@ -171,5 +171,79 @@ class RollbackTests(unittest.TestCase):
         self.assertIn("approved_output_schema_hash=t.observed_output_schema_hash", dispatch)
 
 
+class FirstActivationConnection:
+    """Ledger plus intake/tool tables of one intake, enough to walk request, activate, register, approve."""
+
+    def __init__(self):
+        self.server_id = None
+        self.tools = {}
+        self.events = []
+
+    def register(self, tools=None):
+        self.server_id = "markitdown"
+        self.tools = dict(CONTRACT["tools"] if tools is None else tools)
+
+    def execute(self, query, params=()):
+        if "SELECT registered_server_id" in query:
+            return Cursor([{"registered_server_id": self.server_id}])
+        if "FROM mcp_tools" in query:
+            return Cursor([{"name": name, **contract} for name, contract in sorted(self.tools.items())])
+        if "FROM approval_events" in query and "SELECT actor" in query:
+            return Cursor([{"actor": "admin-1", "created_at": "2026-10-26T01:00:00Z"}])
+        if "INSERT INTO approval_events" in query:
+            self.events.append({"scope": params[-1].obj})
+        return Cursor()
+
+    def activate(self, generation):
+        worker.event(self, {"id": uuid.uuid4(), "intake_id": "intake-1", "generation": generation}, "runtime-active")
+        return self.events[-1]["scope"]
+
+    def rollback_candidates(self):
+        """The filter every rollback lookup applies: `scope->'contract' IS NOT NULL` (JSON null would pass it)."""
+        return [e["scope"]["generation"] for e in self.events if "contract" in e["scope"]]
+
+
+class FirstActivationTests(unittest.TestCase):
+    def test_first_activation_before_registration_is_recorded_without_a_contract(self):
+        ledger = FirstActivationConnection()
+        scope = ledger.activate(1)
+        self.assertNotIn("contract", scope)
+        self.assertEqual(scope["registration"], "pending")
+        self.assertEqual(scope["generation"], 1)
+
+    def test_a_generation_without_a_contract_is_never_a_rollback_candidate(self):
+        ledger = FirstActivationConnection()
+        ledger.activate(1)
+        self.assertEqual(ledger.rollback_candidates(), [])
+        for path in ("gateway/app/agent_service.py", "runtime/worker.py"):
+            source = (ROOT / path).read_text(encoding="utf-8")
+            self.assertGreaterEqual(source.count("scope->'contract' IS NOT NULL"), 2)
+
+    def test_registered_server_without_approved_tools_is_still_refused(self):
+        ledger = FirstActivationConnection()
+        ledger.register(tools={})
+        with self.assertRaises(worker.Refused):
+            ledger.activate(2)
+        self.assertEqual(ledger.events, [])
+
+    def test_activation_after_registration_records_the_approved_contract(self):
+        ledger = FirstActivationConnection()
+        ledger.activate(1)
+        ledger.register()
+        scope = ledger.activate(2)
+        self.assertNotIn("registration", scope)
+        self.assertEqual(scope["contract"]["sha256"], CONTRACT["sha256"])
+        self.assertEqual(ledger.rollback_candidates(), [2])
+
+    def test_registration_and_contract_approval_stay_the_only_way_to_enable_calls(self):
+        # The first run changes neither: registration still names the reviewed catalog hash, writes the
+        # approved hashes from it, and leaves the server PENDING; calls pass only through CATALOG_OK.
+        core = (ROOT / "gateway/app/core.py").read_text(encoding="utf-8")
+        self.assertIn('canonical_hash(found["tools"]) != request["catalog_hash"]', core)
+        self.assertIn("status='PENDING', status_reason='Console 등록, 계약 확인 전'", core)
+        dispatch = (ROOT / "gateway/app/dispatch.py").read_text(encoding="utf-8")
+        self.assertIn("t.approved_schema_hash=t.observed_schema_hash", dispatch)
+
+
 if __name__ == "__main__":
     unittest.main()
