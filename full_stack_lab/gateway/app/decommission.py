@@ -948,13 +948,15 @@ async def disclosure_request(case_id: str) -> dict:
             "markdown": body, "generated_at": _now().isoformat()}
 
 
-async def summary() -> dict:
-    rows = await db.fetch_all("SELECT status, grade, count(*) AS n FROM termination_cases GROUP BY status, grade")
-    overdue = await db.fetch_one(
+async def summary(fetch_all=db.fetch_all, fetch_one=db.fetch_one) -> dict:
+    # /api/overview passes the admin pool's fetch_all/fetch_one; every other caller
+    # keeps the judging pool's.
+    rows = await fetch_all("SELECT status, grade, count(*) AS n FROM termination_cases GROUP BY status, grade")
+    overdue = await fetch_one(
         "SELECT count(*) AS n FROM termination_cases WHERE status <> 'CLOSED' AND opened_at < now() - make_interval(days => %s)",
         (SLA_DAYS,))
-    residue = await db.fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='retired-residue'")
-    shadow = await db.fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='shadow'")
+    residue = await fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='retired-residue'")
+    shadow = await fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='shadow'")
     return {"open_cases": sum(int(r["n"]) for r in rows if r["status"] in {"OPEN", "REVOKING", "REOPENED"}),
             "awaiting_close": sum(int(r["n"]) for r in rows if r["status"] == "ASSESSED"),
             "unresolved_grades": sum(int(r["n"]) for r in rows if r["status"] != "CLOSED" and r["grade"] in {"T2", "T3"}),
