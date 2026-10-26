@@ -1,10 +1,11 @@
 {
-  "captured_at": "2026-10-26T15:23:42+09:00",
-  "head": "488e7502e86d5afc14d54cc9c9d014a004a9cd56",
-  "branch": "10/26-stage1-boundary-analysis",
+  "captured_at": "2026-10-26T15:24:57+09:00",
+  "head": "5ce589617374d4e16f1c6f598d2d81d48567c795",
+  "branch": "10/25-refactor-proposal-sync",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/status/backlog.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
