@@ -316,8 +316,11 @@ services:
     environment:
       FIELD_TLS_ADDRESSES: ${MINT_TLS_ADDRESSES:?}
       APPLIANCE_BIND: ${MINT_BIND}
+      FIELD_CONSOLE_TLS: ${FIELD_CONSOLE_TLS:-none}
+      FIELD_CONSOLE_NAME: ${FIELD_CONSOLE_NAME:-}
     volumes:
       - ../full_stack_lab/field/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../full_stack_lab/field/console:/etc/caddy/console:ro
       - caddy_data:/data
     networks:
       edge:

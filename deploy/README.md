@@ -27,6 +27,24 @@ cd mcp-gateway/deploy
 설치가 끝나면 `https://<사내 IPv4>/`에서 `root`로 로그인하고 `./mint.sh set-password root`로 비밀번호를 바꿉니다.
 브라우저에는 `ca/root.sha256` 지문을 대조한 뒤 `ca/root.crt`를 넣습니다.
 
+### 콘솔 인증서 방식
+
+기본 `FIELD_CONSOLE_TLS=none`은 기존 IP HTTPS와 사설 CA를 유지합니다. 브라우저가 신뢰하는 이름 기반
+HTTPS를 추가하려면 `.env.example`의 `FIELD_CONSOLE_*` 값을 채우고 `./mint.sh up`을 실행합니다.
+설치할 때도 `--console-tls tailscale|file --console-name <DNS 이름>`으로 고를 수 있습니다.
+`file`은 `--console-cert <인증서 절대 경로> --console-key <개인 키 절대 경로>`를 함께 지정합니다.
+
+- `tailscale`: 서버의 Tailscale HTTPS 활성화와 로컬 데몬 소켓이 필요합니다. Caddy에만 소켓을 읽기 전용으로
+  연결하며 root로 실행합니다. 읽기 전용 마운트도 데몬 API 권한을 제한하지 않습니다.
+- `file`: 이름과 일치하는 조직 발급 PEM 체인·키 파일을 각각 읽기 전용으로 연결합니다. 키 권한은 `0600` 또는
+  `0400`이어야 하며 저장소 밖에 보관합니다. 브라우저에는 해당 CA의 신뢰가 필요합니다. 갱신 뒤 `mint.sh up`으로 재시작합니다.
+
+설정하면 안내 주소는 `https://<FIELD_CONSOLE_NAME>/`이 됩니다. 게시 인터페이스·포트는 기존 `MINT_BIND`의
+443·모델 프록시만 사용하며 HTTP 8000은 새로 게시하지 않습니다. 하네스·키트는 기존 IP HTTPS·사설 CA를 사용합니다.
+`MINT_PUBLIC_NAME`과 콘솔 이름이 같으면 그 이름은 콘솔 전용으로 사용합니다.
+배포 묶음은 `full_stack_lab/field/Caddyfile`과 방식별 오버레이를 공유하며 별도 Caddyfile은 없습니다.
+직접 Compose를 실행할 때도 `./mint.sh compose …`를 사용해야 선택한 마운트가 포함됩니다.
+
 ## 직원 PC 연결
 
 직원이 콘솔에 로그인 → **내 PC 연결** → 자기 OS의 키트를 받아 실행합니다. 키트에는 루트 인증서와 지문이 들어 있어 따로 배포하지 않습니다.
