@@ -13,8 +13,7 @@ from pathlib import Path
 LEAVES = ('contract', 'db', 'connections', 'destination', 'textscan')
 # Higher layers may import lower ones; same-layer imports are free.
 LAYERS = (('main',), ('agent_service', 'core'), LEAVES)
-# An exception that no longer matches an edge is a failure, so a finished extraction must delete it.
-CONSOLE_CORE_EXCEPTIONS = {('agent_service', 'core')}
+# core's remaining direct dependencies are frozen; one that disappears is a failure so the list must shrink with it.
 CORE_FANOUT = frozenset((
     'classify connections consent contract db destination dispatch disposal endpoint_plane flow_fingerprint '
     'high_impact intake_proposal litellm_sync local_jobs mcp_sessions ops_response outcomes output_contract pac '
@@ -79,10 +78,9 @@ def check(edges):
         for module in layer:
             bad += [f'layers: {module} reaches {m}' for m in sorted(reachable(pairs, module) & above)]
     bad += [f'leaf-boundary: {s} -> {d}' for s, d in sorted(pairs) if s in LEAVES]
-    bad += [f'console-core: {s} -> {d}' for s, d in sorted(pairs - CONSOLE_CORE_EXCEPTIONS) if (s, d) == ('agent_service', 'core')]
+    bad += ['console-core: agent_service -> core'] * (('agent_service', 'core') in pairs)
     bad += [f'core-fanout: core -> {d}' for s, d in sorted(pairs) if s == 'core' and d not in CORE_FANOUT]
-    stale = [f'console-core: {s} -> {d}' for s, d in sorted(CONSOLE_CORE_EXCEPTIONS - pairs)]
-    stale += [f'core-fanout: core -> {d}' for d in sorted(CORE_FANOUT) if ('core', d) not in pairs]
+    stale = [f'core-fanout: core -> {d}' for d in sorted(CORE_FANOUT) if ('core', d) not in pairs]
     return bad, stale
 
 
@@ -104,7 +102,7 @@ def self_test(edges, modules):
         assert scan({'a': source, 'b': ''}) == expected, source
     # An empty or misrooted scan must not read as "no violations".
     assert len(modules) > 50 and len(edges) > 200, (len(modules), len(edges))
-    named = set(CORE_FANOUT) | {m for layer in LAYERS for m in layer} | {m for _, m in CONSOLE_CORE_EXCEPTIONS}
+    named = set(CORE_FANOUT) | {m for layer in LAYERS for m in layer}
     assert named <= modules, sorted(named - modules)
 
     def with_edge(src, dst):
@@ -114,12 +112,13 @@ def self_test(edges, modules):
         ('contract', 'core', 'layers: contract reaches core'),
         ('db', 'audit', 'leaf-boundary: db -> audit'),
         ('core', 'audit', 'core-fanout: core -> audit'),
+        ('agent_service', 'core', 'console-core: agent_service -> core'),
         ('core', 'main', 'layers: core reaches main'),
         ('destination', 'agent_service', 'layers: destination reaches agent_service'),
     ]
     for src, dst, message in expect:
         assert message in check(with_edge(src, dst))[0], (src, dst, message)
-    for pair in sorted(CONSOLE_CORE_EXCEPTIONS | {('core', d) for d in CORE_FANOUT}):
+    for pair in sorted(('core', d) for d in CORE_FANOUT):
         without = {k: v for k, v in edges.items() if k != pair}
         assert check(without)[1], pair
     print(f'PASS import_contract self-test ({len(cases) + len(expect) + 2} cases)')

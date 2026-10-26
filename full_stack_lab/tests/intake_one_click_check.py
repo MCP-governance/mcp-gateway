@@ -23,9 +23,9 @@ from supplier_metadata import collect
 
 try:
     from fastapi import HTTPException
-    from app import agent_service as service, review
+    from app import agent_service as service, core, review
 except (ModuleNotFoundError, ImportError) as exc:
-    HTTPException = service = review = None
+    HTTPException = service = core = review = None
     IMPORT_ERROR = str(exc)
 
 REQUEST_ID = UUID("8a34be6a-ff5b-4422-a397-aea587d1b15c")
@@ -271,13 +271,13 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
         class ReachedGate(Exception):
             pass
 
-        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(service.core.registry, "catalog", return_value={}):
+        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(core.registry, "catalog", return_value={}):
             with self.assertRaises(ReachedGate):
-                await service.core.register_server(body, "admin-a")
+                await core.register_server(body, "admin-a")
             for change in ({"tools": {"lookup": "x"}}, {"valid_days": 365}, {"data_class": "important"},
                            {"catalog_hash": "d" * 64}, {"tool_reviews": {"lookup": {"purpose": "다른 목적", "asset": "다른 자산"}}}):
                 with self.assertRaises(ValueError):
-                    await service.core.register_server({**body, **change}, "admin-a")
+                    await core.register_server({**body, **change}, "admin-a")
 
     async def test_admin_may_lower_tool_action_only_and_gateway_accepts_it(self):
         # 공개 MCP가 readOnlyHint를 달지 않으면 읽기 도구도 쓰기로 제안된다.
@@ -295,11 +295,11 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
         class ReachedGate(Exception):
             pass
 
-        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(service.core.registry, "catalog", return_value={}):
+        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(core.registry, "catalog", return_value={}):
             with self.assertRaises(ReachedGate):
-                await service.core.register_server(body, "admin-a")
+                await core.register_server(body, "admin-a")
             with self.assertRaises(ValueError):
-                await service.core.register_server({**body, "tools": {"lookup": "w"}}, "admin-a")
+                await core.register_server({**body, "tools": {"lookup": "w"}}, "admin-a")
 
     async def test_url_tool_suggested_hosts_reach_the_contract_and_the_approver_may_edit_them(self):
         self.catalog["tools"] = [URL_TOOL]
@@ -323,13 +323,13 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
         class ReachedGate(Exception):
             pass
 
-        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(service.core.registry, "catalog", return_value={}):
+        with patch.object(review, "intake_gate", AsyncMock(side_effect=ReachedGate)), patch.object(core.registry, "catalog", return_value={}):
             with self.assertRaises(ReachedGate):  # the gateway's scope guard accepts the edited destinations
-                await service.core.register_server(body, "admin-a")
+                await core.register_server(body, "admin-a")
             edited = copy.deepcopy(body)
             edited["tool_reviews"]["read_page"]["destinations"] = ["evil.example"]
             with self.assertRaises(ValueError):
-                await service.core.register_server(edited, "admin-a")
+                await core.register_server(edited, "admin-a")
 
     async def test_second_review_keeps_scope_but_contract_drift_discards_first_approval(self):
         self.state = row(grade="important")
