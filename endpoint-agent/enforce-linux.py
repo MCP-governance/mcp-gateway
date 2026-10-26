@@ -53,7 +53,7 @@ def companions(key: str, binary: Path) -> list[Path]:
     return []
 
 
-def fixed_options(key: str, binary: Path) -> list[str]:
+def fixed_options(key: str, binary: Path, *, managed: bool = False) -> list[str]:
     """Options the managed account's launcher always adds. Codex's interactive CLI starts a shared
     background server from its installed package layout and talks to it over a Unix socket; the
     approved copy is one executable and the profile allows no Unix IPC, so it runs its own server
@@ -61,7 +61,9 @@ def fixed_options(key: str, binary: Path) -> list[str]:
     if key != "codex":
         return []
     with open(binary, "rb") as source, mmap.mmap(source.fileno(), 0, access=mmap.ACCESS_READ) as image:
-        return ["--no-daemon"] if image.find(b"--no-daemon") != -1 else []
+        options = ["--no-daemon"] if image.find(b"--no-daemon") != -1 else []
+    # The managed account is confined by AppArmor; Codex's sandbox requires disallowed self-exec/userns.
+    return options + (["-c", 'sandbox_mode="danger-full-access"'] if managed else [])
 
 
 def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None = None,
@@ -382,6 +384,7 @@ def main() -> None:
         blocks = dict(re.findall(r"profile (\S+)[^{]*\{(.*?)\n\}", confined, re.S))
         for key in ("codex", "claude"):
             harness, tool = blocks[f"mcpgw-u-{key}"], blocks[f"mcpgw-u-{key}-tool"]
+            assert f"/opt/a/{key} mr," in harness and f"/opt/a/{key} mrix," not in harness
             # The helper is started with `sh -c`: dash stays in the harness profile with the helper.
             assert "header-helper px -> mcpgw-u-credential" in harness and "{dash,sh," in harness
             assert "/usr/bin/bash px -> mcpgw-u-" + key + "-tool," in harness and "{bash," not in harness
@@ -395,12 +398,16 @@ def main() -> None:
             old.write_bytes(b"\x7fELF no such flag")
             assert fixed_options("codex", fake) == ["--no-daemon"] and fixed_options("codex", old) == []
             assert fixed_options("claude", fake) == []
+            assert fixed_options("codex", fake, managed=True) == ["--no-daemon", "-c", 'sandbox_mode="danger-full-access"']
+            assert fixed_options("codex", old, managed=True) == ["-c", 'sandbox_mode="danger-full-access"']
+            assert fixed_options("claude", fake, managed=True) == []
             # The launcher puts the option ahead of whatever the employee typed, one argument each.
             if subprocess.run(["which", "gcc"], capture_output=True).returncode == 0:
                 built = Path(folder) / "launcher"
-                wrapper(built, Path("/bin/echo"), folder, "u", environment={}, options=["--no-daemon"])
+                wrapper(built, Path("/bin/echo"), folder, "u", environment={},
+                        options=fixed_options("codex", fake, managed=True), guard="codex")
                 done = subprocess.run([str(built), "exec", "say hi"], capture_output=True, text=True)
-                assert done.stdout == "--no-daemon exec say hi\n", done
+                assert done.stdout == '--no-daemon -c sandbox_mode="danger-full-access" exec say hi\n', done
         print("enforcement rule self-check OK")
         return
     if args.broker_binding == "enforce" and not args.managed_agent:
@@ -482,7 +489,8 @@ def main() -> None:
         if ca:
             environment["CODEX_CA_CERTIFICATE" if key == "codex" else "NODE_EXTRA_CA_CERTS"] = str(ca)
         wrapper(folder / key, binary, person.pw_dir, args.user, environment=environment,
-                options=fixed_options(key, binary), guard=key if key in {"codex", "claude"} else None)
+                options=fixed_options(key, binary, managed=bool(args.managed_agent)),
+                guard=key if key in {"codex", "claude"} else None)
     if args.helper_source:
         source = trusted_binary(args.helper_source)
         helper = folder / "mcpgw_pc.py"

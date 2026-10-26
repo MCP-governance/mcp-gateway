@@ -1213,7 +1213,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "registered": True,
         "enabled": bool(tool["enabled"] and server["status"] != "DISABLED"
                         and not server.get("automatic_stop_reason")
-                        and not disposal.blocked(server_id=server_id)),
+                        and not await asyncio.to_thread(disposal.blocked, server_id=server_id)),
         "schema_hash_match": bool(tool["approved_schema_hash"] and tool["approved_schema_hash"] == tool["observed_schema_hash"]
                                   and output_contract.observed_matches(tool)),
         "description_hash_match": bool(tool["approved_description_hash"] and tool["approved_description_hash"] == tool["observed_description_hash"]),
@@ -1237,13 +1237,15 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     }
 
 
-async def enforcement_mode() -> str:
+async def enforcement_mode(fetch_one=db.fetch_one) -> str:
     """'enforce' applies decisions; 'monitor' records what enforcement would have done.
 
     Stored in the database rather than the environment so an operator can turn
     enforcement on without a restart - and so the switch itself is auditable.
+    `fetch_one` defaults to the judging pool; /api/overview passes the admin pool's
+    instead so a Console read never competes with a policy decision for a connection.
     """
-    row = await db.fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
+    row = await fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
     value = row["value"] if row else DEFAULT_ENFORCEMENT
     return value if value in {"enforce", "monitor"} else "enforce"
 
@@ -1759,7 +1761,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     # Stored claims passed ingress once; approval does not undo a later logout or disposal.
                     try:
                         claims = pac_payload.get("transport_claims") or {}
-                        revoked = disposal.blocked(jti=claims.get("jti"), raise_errors=True) or bool(await db.fetch_one(
+                        revoked = await asyncio.to_thread(disposal.blocked, jti=claims.get("jti"), raise_errors=True) or bool(await db.fetch_one(
                             "SELECT jti FROM agent_revoked_tokens WHERE jti=%s", (claims.get("jti"),)))
                     except Exception:
                         problem, blocked_verdict = "Requester revocation check unavailable", local_verdict(
@@ -2169,6 +2171,8 @@ async def _record_decision(event: dict) -> int:
                 except Exception:
                     logging.getLogger(__name__).exception(
                         "automatic suspension failure not recorded; decision %s stays Block", row["id"])
+    if record["upstream_executed"] and record["client"].get("event_kind", "tools/call") == "tools/call":
+        tool_sunset.invalidate(record["server_id"], record["tool_name"])
     return int(row["id"])
 
 
@@ -2222,7 +2226,7 @@ async def verify_audit_chain(connection=None, seal: dict | None = None) -> dict:
     only thing that lets the walk start after GENESIS; a row it covers is resurrected.
     """
     if seal is None:
-        seal = retention.current_seal()
+        seal = await asyncio.to_thread(retention.current_seal)
     if connection is None:
         async with db.transaction() as snapshot:
             await snapshot.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")

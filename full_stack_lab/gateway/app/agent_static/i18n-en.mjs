@@ -1156,6 +1156,8 @@ export const EN = {
   "사용 가능한 서버 없음": "No servers available",
   "5분": "5 minutes",
   "설치 파일을 받지 못했습니다.": "Could not download the installer.",
+  "준비 중…": "Preparing…",
+  "다운로드를 시작했습니다. 브라우저 다운로드 목록을 확인하세요.": "Download started. Check your browser downloads.",
   "설치 파일을 받았습니다.": "Installer downloaded.",
   "엔드포인트 활성화 · {}": "Activate endpoint · {1}",
   "엔드포인트를 활성화했습니다.": "Endpoint activated.",

@@ -13,7 +13,7 @@ import sys
 import tempfile
 import types
 import unittest
-from contextlib import asynccontextmanager, nullcontext
+from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -230,8 +230,9 @@ class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
             self.assertIs(kwargs["connection"], connection)
         ops.db.transaction = transaction
         ops.review.record_event = AsyncMock(side_effect=record)
-        with patch.object(disposal, "locked", return_value=nullcontext()), patch.object(disposal, "read", return_value=[]):
+        with patch.object(disposal, "blocked", return_value=False) as blocked:
             result = await ops.resume("chosen", "admin", "원인 검토 완료")
+        blocked.assert_called_once_with(server_id="chosen", raise_errors=True)
         self.assertEqual(result["status"], "PENDING")
         ops.review.record_event.assert_awaited_once()
 
@@ -274,7 +275,7 @@ class TokenReuse(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(family, "family")
             self.assertIs(conn, connection)
         family_revoke = AsyncMock(side_effect=revoke)
-        namespace = {"__package__": "app", "db": types.SimpleNamespace(
+        namespace = {"__package__": "app", "asyncio": asyncio, "db": types.SimpleNamespace(
             fetch_one=AsyncMock(return_value=stored), transaction=transaction),
             "disposal": types.SimpleNamespace(blocked=Mock(return_value=True)),
             "_sha": lambda value: hashlib.sha256(value.encode()).hexdigest(),

@@ -130,6 +130,7 @@ class OutcomePersistence(unittest.IsolatedAsyncioTestCase):
 
         fingerprint = Mock(return_value="fingerprint")
         namespace = {"outcome_axes": outcomes.outcome_axes, "secret_scan": SimpleNamespace(redact_error=AsyncMock(return_value=None)),
+                     "tool_sunset": SimpleNamespace(invalidate=Mock()),
                      "db": SimpleNamespace(transaction=transaction), "datetime": datetime, "UTC": timezone.utc,
                      "hashlib": hashlib, "GENESIS": "0" * 64, "CHAIN_VERSION": 8, "GATEWAY_ENVIRONMENT": "test",
                      "_audit_fingerprint": fingerprint, "Jsonb": lambda v: v, "_audit_payload": lambda v: v,
@@ -138,6 +139,7 @@ class OutcomePersistence(unittest.IsolatedAsyncioTestCase):
         data = event(request_id="request", trace_id="trace", user_token="employee", role="staff",
                      tool_name="read", data_class="public", action="r", reason="allowed")
         self.assertEqual(await core._record_decision(data), 48)
+        namespace["tool_sunset"].invalidate.assert_called_once_with(data.get("server_id"), "read")
         sql, params = connection.execute.call_args_list[1].args
         self.assertEqual(sql.count("%s"), len(params))
         self.assertEqual(params[-1], outcomes.outcome_axes(data))

@@ -58,7 +58,7 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
             async def __aexit__(inner, *args):
                 return False
 
-        def fetch_one(sql, *args):
+        def fetch_one(sql, *args, connection=None):
             if "endpoint_settings" in sql:
                 return {"auto_activate": self.auto, "updated_by": None, "updated_at": None}
             return {"token": "o"} if "principals" in sql else {"last_value": 3}

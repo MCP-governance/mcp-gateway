@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-25T20:16:01+09:00",
-  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
-  "branch": "main",
+  "captured_at": "2026-10-26T15:20:05+09:00",
+  "head": "ef30b3be17ca6e9b66707ba25d7669b33b34353f",
+  "branch": "10/26-ci-harness-check-parallel",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -12,7 +12,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898"
+      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -24,7 +24,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216"
+      "sha256": "bcc84f57b7b7f45cb87c37d92630b64e545b5486bdf0def50c031cd03cb46785"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
@@ -52,7 +52,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
+      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
     }
   ]
 }

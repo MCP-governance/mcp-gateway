@@ -253,7 +253,12 @@ def drift() -> None:
     else:
         raise SystemExit("LiteLLM에서 바꾼 키 권한을 MINT가 4분 안에 되돌리지 못함")
     detected = round(time.monotonic() - started, 1)
-    drift_events = sql("SELECT count(*) FROM approval_events WHERE kind='litellm-sync' AND scope::text LIKE '%\"drift\"%'")
+    # The repair is visible in LiteLLM a moment before the reconcile that made it records its event.
+    for _ in range(15):
+        drift_events = sql("SELECT count(*) FROM approval_events WHERE kind='litellm-sync' AND scope::text LIKE '%\"drift\"%'")
+        if int(drift_events[0][0]) >= 1:
+            break
+        time.sleep(1)
     evidence("drift-repaired", seconds=detected, drift_events=drift_events[0][0])
     assert int(drift_events[0][0]) >= 1
 

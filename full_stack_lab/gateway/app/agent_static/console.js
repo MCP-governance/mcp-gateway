@@ -2686,20 +2686,42 @@ const ACTIONS = {
     el.closest("[data-kit]").innerHTML = String(kitView(viewer.kit, el.dataset.os));
   },
   async "pc-kit-download"(el) {
-    const os = el.dataset.os || "linux";
-    const isolated = el.closest("[data-kit]")?.querySelector('[name="kit-isolated"]')?.checked ? "&isolated=true" : "";
-    const query = (os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "") + isolated;
-    const response = await fetch(`/api/pc-kit?platform=${encodeURIComponent(os)}${query}`,
-      { method: "POST", headers: { authorization: `Bearer ${token}` } });
-    if (!response.ok) {
-      const r = await response.json().catch(() => ({}));
-      throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
+    const label = el.textContent;
+    el.disabled = true;
+    el.textContent = "준비 중…";
+    try {
+      const os = el.dataset.os || "linux";
+      const isolated = el.closest("[data-kit]")?.querySelector('[name="kit-isolated"]')?.checked ? "&isolated=true" : "";
+      const query = (os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "") + isolated;
+      const action = `/api/pc-kit?platform=${encodeURIComponent(os)}${query}`;
+      const response = await fetch(`${action}&issue_ticket=true`,
+        { method: "POST", headers: { authorization: `Bearer ${token}` } })
+        .catch(() => { throw new Error("설치 파일을 받지 못했습니다."); });
+      if (!response.ok) {
+        const r = await response.json().catch(() => ({}));
+        throw new Error(detailText(r.detail) || "설치 파일을 받지 못했습니다.");
+      }
+      const result = await response.json().catch(() => ({}));
+      if (!/^[A-Za-z0-9_-]{43}$/.test(result.ticket || "")) throw new Error("설치 파일을 받지 못했습니다.");
+      let frame = document.getElementById("pc-kit-download-frame");
+      if (!frame) {
+        frame = document.createElement("iframe");
+        frame.id = frame.name = "pc-kit-download-frame";
+        frame.hidden = true;
+        document.body.append(frame);
+      }
+      const form = document.createElement("form");
+      form.method = "POST"; form.action = action; form.target = frame.name;
+      form.enctype = "application/x-www-form-urlencoded"; form.hidden = true;
+      const input = document.createElement("input");
+      input.type = "hidden"; input.name = "ticket"; input.value = result.ticket;
+      form.append(input); document.body.append(form);
+      try { form.submit(); } finally { form.remove(); }
+      toast("다운로드를 시작했습니다. 브라우저 다운로드 목록을 확인하세요.");
+    } finally {
+      el.textContent = label;
+      el.disabled = false;
     }
-    const url = URL.createObjectURL(await response.blob());
-    const link = document.createElement("a"); link.href = url;
-    link.download = /filename="?([^";]+)"?/.exec(response.headers.get("content-disposition") || "")?.[1] || KIT_FILE[os];
-    link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
-    toast("설치 파일을 받았습니다.");
   },
   async "device-activate"(el) {
     const fd = await ask({ title: `엔드포인트 활성화 · ${el.dataset.id}`,

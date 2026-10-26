@@ -80,8 +80,7 @@ def current_seal(directory=None) -> dict | None:
     # first row (fail closed), and disposal.watch already alarms on the journal itself.
     directory = directory or disposal.DIRECTORY
     try:
-        with disposal.locked(directory):
-            return seal_of(disposal.read(directory))
+        return seal_of(disposal.read(directory))
     except (disposal.IntegrityError, OSError):
         return None
 

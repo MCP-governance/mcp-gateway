@@ -319,15 +319,18 @@ class StatusCommand(unittest.TestCase):
     @unittest.skipUnless(os.name == "posix", "Linux 계정 모듈 필요")
     def test_status_command_reads_the_published_summary(self):
         module = load_module("managed-linux")
-        with patch.object(module, "PROGRAMS", Path(self.folder.name)):
+        with patch.object(module, "PROGRAMS", Path(self.folder.name)), \
+             patch.object(module, "Screen", return_value=SimpleNamespace(window=None)), \
+             patch.object(module, "check_connection") as connection_check:
             module.publish_status(self.summary(state="pending"))
             with patch("builtins.print") as printed:
-                module.status(SimpleNamespace(user="emp"))
-                module.status(SimpleNamespace(user=None))  # an administrator's account finds the only summary
+                module.status(SimpleNamespace(user="emp", check=False))
+                module.status(SimpleNamespace(user=None, check=False))  # an administrator's account finds the only summary
             for call in printed.call_args_list:
                 self.assertIn("활성화 대기", call.args[0])
             with self.assertRaises(ValueError):
-                module.status(SimpleNamespace(user="nobody"))
+                module.status(SimpleNamespace(user="nobody", check=False))
+        connection_check.assert_not_called()
 
     def test_kit_version_is_the_same_on_the_pc_and_in_health(self):
         listed = extract(LAB / "gateway/app/release.py", {"KIT_PROGRAMS"}, {}).KIT_PROGRAMS

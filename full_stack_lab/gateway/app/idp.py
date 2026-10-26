@@ -16,6 +16,7 @@ only checks signatures would keep accepting it until `exp` - see experiments/e1.
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import os
 import re
@@ -126,7 +127,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
                 "SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s FOR UPDATE", (_sha(refresh_token),))).fetchone()
             if not stored or stored["client_id"] != client_id:
                 return _error("invalid_grant", "알 수 없는 refresh token입니다.")
-            if disposal.blocked(refresh=_sha(refresh_token)):
+            if await asyncio.to_thread(disposal.blocked, refresh=_sha(refresh_token)):
                 await _revoke_family(stored["family_id"], connection)
                 return _error("invalid_grant", "폐기된 갱신 토큰 또는 폐기 목록 확인 불가")
             if stored["revoked_at"] or stored["expires_at"] <= datetime.now(UTC):
@@ -145,7 +146,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
             issued = await _issue(row, client_id, stored["family_id"], connection)
         # After the commit (D-154): written first, a failed issuance left the list refusing a token the
         # rolled-back DB still honours, and its next use revoked the whole family as a reuse.
-        disposal.remember("refresh", _sha(refresh_token))
+        await asyncio.to_thread(disposal.remember, "refresh", _sha(refresh_token))
         return issued
     return _error("unsupported_grant_type", "password 또는 refresh_token만 지원합니다.")
 
@@ -234,9 +235,9 @@ async def _revoke_family(family_id, connection=None) -> None:
     from . import local_jobs
     await local_jobs.prepare_token_revocation(connection,tokens)
     for token in tokens:
-        disposal.remember_token(token["jti"], token["expires_at"])
+        await asyncio.to_thread(disposal.remember_token, token["jti"], token["expires_at"])
     for token in refreshes:
-        disposal.remember("refresh", token["token_sha256"])
+        await asyncio.to_thread(disposal.remember, "refresh", token["token_sha256"])
     await connection.execute("UPDATE oauth_refresh_tokens SET revoked_at=COALESCE(revoked_at, now()) WHERE family_id=%s", (family_id,))
     await connection.execute(
         """INSERT INTO agent_revoked_tokens(jti, expires_at)
@@ -254,9 +255,9 @@ async def revoke_principal_tokens(user_id: str) -> None:
         from . import local_jobs
         await local_jobs.prepare_token_revocation(connection,tokens)
         for token in tokens:
-            disposal.remember_token(token["jti"], token["expires_at"])
+            await asyncio.to_thread(disposal.remember_token, token["jti"], token["expires_at"])
         for token in refreshes:
-            disposal.remember("refresh", token["token_sha256"])
+            await asyncio.to_thread(disposal.remember, "refresh", token["token_sha256"])
         await connection.execute(
             """INSERT INTO agent_revoked_tokens(jti,expires_at)
                SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE user_id=%s AND expires_at>now()
@@ -278,9 +279,9 @@ async def revoke_device_tokens(device_id: str) -> None:
         from . import local_jobs
         await local_jobs.prepare_token_revocation(connection,tokens)
         for token in tokens:
-            disposal.remember_token(token["jti"], token["expires_at"])
+            await asyncio.to_thread(disposal.remember_token, token["jti"], token["expires_at"])
         for token in refreshes:
-            disposal.remember("refresh", token["token_sha256"])
+            await asyncio.to_thread(disposal.remember, "refresh", token["token_sha256"])
         await connection.execute(
             """INSERT INTO agent_revoked_tokens(jti,expires_at)
                SELECT jti::uuid,expires_at FROM oauth_issued_tokens WHERE device_id=%s AND expires_at>now()
@@ -305,7 +306,7 @@ async def revoke(token: str = Form(...), token_type_hint: str | None = Form(None
             from . import local_jobs
             async with db.transaction() as connection:
                 await local_jobs.prepare_token_revocation(connection,[claims])
-                disposal.remember_token(claims["jti"], datetime.fromtimestamp(claims["exp"], UTC))
+                await asyncio.to_thread(disposal.remember_token, claims["jti"], datetime.fromtimestamp(claims["exp"], UTC))
                 await connection.execute("INSERT INTO agent_revoked_tokens(jti, expires_at) VALUES (%s,%s) ON CONFLICT DO NOTHING",
                                          (claims["jti"], datetime.fromtimestamp(claims["exp"], UTC)))
         except jwt.PyJWTError:
@@ -318,7 +319,7 @@ async def introspection(token: str) -> dict:
     evidence collection, which records exactly this document."""
     now = datetime.now(UTC)
     if token.startswith("rt_"):
-        if disposal.blocked(refresh=_sha(token)):
+        if await asyncio.to_thread(disposal.blocked, refresh=_sha(token)):
             return {"active": False}
         stored = await db.fetch_one("SELECT * FROM oauth_refresh_tokens WHERE token_sha256=%s", (_sha(token),))
         if not stored or stored["revoked_at"] or stored["rotated_at"] or stored["expires_at"] <= now:
@@ -334,7 +335,7 @@ async def introspection(token: str) -> dict:
         claims = jwt.decode(token, public_key(), algorithms=[ALGORITHM], audience=AUDIENCE, issuer=ISSUER)
     except jwt.PyJWTError:
         return {"active": False}
-    if disposal.blocked(jti=claims["jti"]):
+    if await asyncio.to_thread(disposal.blocked, jti=claims["jti"]):
         return {"active": False}
     if await db.fetch_one("SELECT 1 FROM agent_revoked_tokens WHERE jti=%s", (claims["jti"],)):
         return {"active": False}
@@ -358,7 +359,7 @@ async def introspection(token: str) -> dict:
 async def introspect_jti(jti: str) -> dict:
     """Introspection by identifier, for evidence collection about tokens the
     organisation's own records enumerate (the token value itself is never stored)."""
-    if disposal.blocked(jti=jti):
+    if await asyncio.to_thread(disposal.blocked, jti=jti):
         return {"active": False, "jti": jti, "revoked": True}
     row = await db.fetch_one("SELECT * FROM oauth_issued_tokens WHERE jti=%s", (jti,))
     if not row:
