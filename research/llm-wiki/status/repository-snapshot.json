@@ -1,10 +1,11 @@
 {
-  "captured_at": "2026-10-26T13:45:47+09:00",
-  "head": "a17cfce9bdce25f1fc6564d2e0d172ab68271f63",
-  "branch": "10/25-stage0-adminpool",
+  "captured_at": "2026-10-26T14:30:00+09:00",
+  "head": "8b632e2e0b9110731ab5c08c241f59eed6aadbdf",
+  "branch": "10/26-managed-codex-sandbox-exec",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json"
   ],
   "scope": "local-code-only",
@@ -53,7 +54,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
+      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
     }
   ]
 }
