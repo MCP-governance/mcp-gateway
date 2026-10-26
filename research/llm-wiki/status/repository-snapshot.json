@@ -1,11 +1,13 @@
 {
-  "captured_at": "2026-10-26T16:47:15+09:00",
-  "head": "6387ef634d101f6e01b21432f00cde8c58f8edb3",
+  "captured_at": "2026-10-26T16:48:08+09:00",
+  "head": "ab2da011fe7ca64cda44385e5000b6c88f7bd422",
   "branch": "10/26-stage0-report",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
+    "M .github/workflows/research-wiki.yml",
+    " M AGENTS.md",
+    " M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/status/reports/2026-10-26-refactor-stage0.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

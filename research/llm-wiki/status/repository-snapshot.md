@@ -1,17 +1,19 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T16:47:15+09:00
+확인 시각: 2026-10-26T16:48:08+09:00
 
-HEAD: `6387ef634d101f6e01b21432f00cde8c58f8edb3` · 로컬 브랜치: `10/26-stage0-report`
+HEAD: `ab2da011fe7ca64cda44385e5000b6c88f7bd422` · 로컬 브랜치: `10/26-stage0-report`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M .github/workflows/research-wiki.yml
+ M AGENTS.md
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/status/reports/2026-10-26-refactor-stage0.md
 ```
 
 ## 주요 파일 바이트
