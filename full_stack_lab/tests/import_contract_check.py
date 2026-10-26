@@ -19,8 +19,8 @@ CORE_FANOUT = frozenset((
     'high_impact intake_proposal litellm_sync local_jobs mcp_sessions ops_response outcomes output_contract pac '
     'poisoning privacy registry residency retention review risk_tier secret_scan selective supplier_assurance '
     'tool_sunset upstream user_credentials user_suspend').split())
-# Direct return edges already cut (README appendix D cut-2/cut-3/cut-4/cut-5/cut-6); indirect paths stay allowed.
-CUT = (('idp', 'agent_service'), ('incidents', 'ops_response'), ('registry', 'upstream'),
+# Direct return edges already cut (README appendix D cut-1..cut-6); indirect paths stay allowed.
+CUT = (('agent_contract', 'oidc'), ('idp', 'agent_service'), ('incidents', 'ops_response'), ('registry', 'upstream'),
        ('endpoint_plane', 'idp'), ('endpoint_plane', 'local_jobs'))
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 
@@ -117,6 +117,7 @@ def self_test(edges, modules):
         ('db', 'audit', 'leaf-boundary: db -> audit'),
         ('core', 'audit', 'core-fanout: core -> audit'),
         ('agent_service', 'core', 'console-core: agent_service -> core'),
+        ('agent_contract', 'oidc', 'cut: agent_contract -> oidc'),
         ('idp', 'agent_service', 'cut: idp -> agent_service'),
         ('incidents', 'ops_response', 'cut: incidents -> ops_response'),
         ('registry', 'upstream', 'cut: registry -> upstream'),
