@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T15:48:27+09:00
+확인 시각: 2026-10-26T16:15:27+09:00
 
-HEAD: `d2fee732d867ecc25e58eddd20ea64bec55eaa8e` · 로컬 브랜치: `10/26-kit-fullscreen`
+HEAD: `265e85593f1cd06db2d24730477b581445896c56` · 로컬 브랜치: `10/26-windows-kit-reinstall-tray`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,6 +11,7 @@ HEAD: `d2fee732d867ecc25e58eddd20ea64bec55eaa8e` · 로컬 브랜치: `10/26-kit
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/catalogs/threats.json
 ```
 
 ## 주요 파일 바이트
@@ -26,5 +27,5 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
 | `endpoint-agent/bootstrap.py` | `efc806337b5023cbac3f8052a3bd4811ac27e15cba81f1e5a314e9eb05ff62c6` |
-| `endpoint-agent/managed-linux.py` | `f72d291cf0ac9fb76ad8614acb71c210853747912d3bf6bf64d461ae38f895bd` |
+| `endpoint-agent/managed-linux.py` | `bbbd74d3cc62dfec5811726dbaa4f7feeea340cc6c93bfdcc66b3a27edb06660` |
 | `endpoint-agent/enforce-linux.py` | `3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63` |
