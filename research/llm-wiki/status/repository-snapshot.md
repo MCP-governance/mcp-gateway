@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T12:39:49+09:00
+확인 시각: 2026-10-26T13:14:46+09:00
 
-HEAD: `db690936eeddb9a7a822defdfad52bcdbd0851cb` · 로컬 브랜치: `10/25-stage0-nested-tx`
+HEAD: `da44a2bee83caf53ec0bf7e8dc8e5e630a3b13de` · 로컬 브랜치: `10/25-stage0-nested-tx`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,7 +11,6 @@ HEAD: `db690936eeddb9a7a822defdfad52bcdbd0851cb` · 로컬 브랜치: `10/25-sta
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/status/decisions-index.md
 ```
 
 ## 주요 파일 바이트
