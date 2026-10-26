@@ -5,6 +5,7 @@ import argparse
 import getpass
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -51,6 +52,25 @@ def write_private_json(path: Path, document: dict) -> None:
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def verify_observer(agent: Path, config: Path, document: dict) -> int:
+    # The old service continues reading its own config until the candidate reports successfully.
+    with tempfile.TemporaryDirectory() as folder:
+        candidate = Path(folder) / "config.json"
+        write_private_json(candidate, document)
+        result = subprocess.run([sys.executable, str(agent), "--config", str(candidate), "--once"],
+                                capture_output=True, text=True)
+    text = (result.stdout + result.stderr).replace(document["ENDPOINT_DEVICE_KEY"], "[비밀 숨김]")
+    text = "\n".join(line for line in text.splitlines() if not re.search(
+        r"token|secret|credential|bearer|authorization|password|passwd|device[_ -]?key|비밀번호|장치.?키", line, re.I))
+    config.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    fd = os.open(config.with_name("install.log"), os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    with os.fdopen(fd, "a", encoding="utf-8") as log:
+        if os.name != "nt":
+            os.fchmod(log.fileno(), 0o600)
+        log.write(f"verify exit={result.returncode}\n{text}\n")
+    return result.returncode
 
 
 def main() -> int:
@@ -101,16 +121,8 @@ def main() -> int:
     if len(key) < 20:
         parser.error("장치 키가 비어 있거나 너무 짧습니다.")
     target = args.install_dir or install_dir()
-    target.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if os.name != "nt":
-        target.chmod(0o700)
-    agent = target / "agent.py"
-    if Path(__file__).with_name("agent.py").resolve() != agent.resolve():
-        shutil.copy2(Path(__file__).with_name("agent.py"), agent)
-    if os.name != "nt":
-        agent.chmod(0o700)
     config = (target if os.name == "nt" else config_dir()) / "config.json"
-    write_private_json(config, {
+    document = {
         "ENDPOINT_GATEWAY_URL": args.gateway_url,
         "ENDPOINT_CA_CERTIFICATE": certificate,
         "ENDPOINT_CA_SHA256": args.ca_sha256,
@@ -120,13 +132,22 @@ def main() -> int:
         "ENDPOINT_NETSCAN": "1",
         "ENDPOINT_REPORT_SECONDS": "60",
         "ENDPOINT_TAILSCALE_NODE_ID": args.tailscale_node_id or "",
-    })
-    print(f"에이전트: {agent}\n설정 파일: {config}")
+    }
     if not args.no_verify:
-        result = subprocess.run([sys.executable, str(agent), "--config", str(config), "--once"], check=False)
-        if result.returncode:
+        code = verify_observer(Path(__file__).with_name("agent.py"), config, document)
+        if code:
             print("1회 보고에 실패했습니다. Gateway 경로·장치 키·관측 경로를 확인하세요.", file=sys.stderr)
-            return result.returncode
+            return code
+    target.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if os.name != "nt":
+        target.chmod(0o700)
+    agent = target / "agent.py"
+    if Path(__file__).with_name("agent.py").resolve() != agent.resolve():
+        shutil.copy2(Path(__file__).with_name("agent.py"), agent)
+    if os.name != "nt":
+        agent.chmod(0o700)
+    write_private_json(config, document)
+    print(f"에이전트: {agent}\n설정 파일: {config}")
     print("설치 및 1회 보고가 완료됐습니다." if not args.no_verify else "설치 파일을 준비했습니다.")
     return 0
 

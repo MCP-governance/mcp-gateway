@@ -28,6 +28,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -343,9 +344,35 @@ def setup_claude(settings: dict, dry_run: bool) -> list[str]:
 # -- Codex CLI: config.toml 끝의 표식 블록만 관리 -------------------------------
 
 def without_block(text: str) -> str:
-    pattern = re.compile(r"\n?" + re.escape(BEGIN) + r".*?" + re.escape(END) + r"\n?", re.S)
-    kept = pattern.sub("\n", text).rstrip("\n")
-    return kept + "\n" if kept.strip() else ""
+    lines = text.splitlines(keepends=True)
+    starts = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == BEGIN]
+    ends = [i for i, line in enumerate(lines) if line.rstrip("\r\n") == END]
+    if not starts and not ends:
+        return text
+    def ambiguous():
+        path = codex_config()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, backup = tempfile.mkstemp(prefix=path.name + ".", suffix=".backup", dir=path.parent)
+        with os.fdopen(fd, "wb") as output:
+            output.write(path.read_bytes() if path.exists() else text.encode("utf-8"))
+        fail(f"Codex 관리 구간을 확인할 수 없어 설정을 보존했다. 백업: {backup}")
+    # shortcut: multiline TOML is deliberately refused; use a TOML-preserving editor before supporting it.
+    if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0] or '"""' in text or "'''" in text:
+        ambiguous()
+    block = "".join(lines[starts[0]:ends[0] + 1]).replace("\r\n", "\n").rstrip("\n")
+    owned = home() / "codex-block.txt"
+    if owned.exists():
+        expected = owned.read_text(encoding="utf-8")
+    elif (home() / "config.json").exists():
+        try:
+            expected = codex_block(load_settings())
+        except (OSError, ValueError, KeyError):
+            ambiguous()
+    else:
+        ambiguous()
+    if block != expected.replace("\r\n", "\n").rstrip("\n"):
+        ambiguous()
+    return "".join(lines[:starts[0]] + lines[ends[0] + 1:])
 
 
 def with_block(text: str, block: str) -> str:
@@ -405,20 +432,27 @@ def codex_conflicts(text: str, servers: list[str], table: str = "mcp_servers") -
 
 def setup_codex(settings: dict, dry_run: bool) -> bool:
     path = codex_config()
-    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    current = path.read_bytes().decode("utf-8") if path.exists() else ""
     if dry_run:
         print(f"  --- {path} 끝에 둘 블록 ---\n{codex_block(settings)}")
         return False
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(with_block(current, codex_block(settings)), encoding="utf-8")
+    block = codex_block(settings)
+    path.write_bytes(with_block(current, block).encode("utf-8"))
+    write_private(home() / "codex-block.txt", block)
     print(f"  Codex CLI: {path} ({', '.join(settings['servers'])})")
     return True
 
 
 def remove_codex_block() -> None:
     config = codex_config()
-    if config.exists() and BEGIN in config.read_text(encoding="utf-8"):
-        config.write_text(without_block(config.read_text(encoding="utf-8")), encoding="utf-8")
+    if config.exists():
+        current = config.read_bytes().decode("utf-8")
+        kept = without_block(current)
+        if kept == current:
+            return
+        config.write_bytes(kept.encode("utf-8"))
+        (home() / "codex-block.txt").unlink(missing_ok=True)
         print(f"블록 지움: {config}")
 
 
@@ -692,7 +726,7 @@ def apply_codex(settings: dict, apps: list[str], features: list[str] = ()) -> st
     """거부한 앱은 [apps.<id>], 기능은 [features]로 블록에 둔다. 직원이 같은 테이블을 이미 쓰면 TOML 중복이라 건너뛴다.
     웹 검색은 루트 키(web_search)라 파일 끝의 블록에 둘 수 없다 - 관리형 requirements.toml로만 끈다."""
     path = codex_config()
-    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    current = path.read_bytes().decode("utf-8") if path.exists() else ""
     wanted = [a for a in apps if APP_ID.match(a)]
     clash = codex_conflicts(without_block(current), wanted, "apps")
     settings["codex_apps_disabled"] = [a for a in wanted if a not in clash]
@@ -701,7 +735,9 @@ def apply_codex(settings: dict, apps: list[str], features: list[str] = ()) -> st
                                             re.search(r"^\s*\[features\]", without_block(current), re.M))
     settings["codex_features_disabled"] = [] if own_features else features
     if settings.get("codex"):
-        path.write_text(with_block(current, codex_block(settings)), encoding="utf-8")
+        block = codex_block(settings)
+        path.write_bytes(with_block(current, block).encode("utf-8"))
+        write_private(home() / "codex-block.txt", block)
     skipped = f", 직접 정의한 [apps.{clash[0]}]가 있어 건너뜀" if clash else ""
     skipped += ", 직접 정의한 [features]가 있어 기능은 건너뜀" if own_features else ""
     return f"Codex 앱 끔 {len(settings['codex_apps_disabled'])}건 · 기능 끔 {len(settings['codex_features_disabled'])}건{skipped}"

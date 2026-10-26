@@ -37,11 +37,15 @@ def load(name, path):
 class Bootstrap(unittest.TestCase):
     def setUp(self):
         self.b = load("bootstrap_simple", KIT / "bootstrap.py")
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.enrollment = Path(self.temp.name) / "enrollment.json"
+        self.enrollment.write_text('{}')
 
     def connect(self, isolated):
         b = self.b
         calls = {}
-        args = SimpleNamespace(enrollment=Path("enrollment.json"), skip_login=True)
+        args = SimpleNamespace(enrollment=self.enrollment, skip_login=True)
         names = ("ensure_packages", "installed", "rollback", "managed_account", "place_harnesses", "find_clients",
                  "remove_shims", "remove_companion", "install_managed", "write_shims", "install_check")
         doubles = {name: mock.Mock(name=name) for name in names}
@@ -57,7 +61,8 @@ class Bootstrap(unittest.TestCase):
         with mock.patch.multiple(b, **doubles), mock.patch.object(b, "SCREEN", screen), \
                 mock.patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda name: SimpleNamespace(pw_uid=1000))), \
                 redirect_stdout(io.StringIO()) as out:
-            code = b.connect(SimpleNamespace(), "emp", isolated, args, 0.0)
+            core = SimpleNamespace(enroll=mock.Mock(return_value=({"device_key": "synthetic"}, {}, {})), diagnostic=mock.Mock())
+            code = b.connect(core, "emp", isolated, args, 0.0)
         calls.update(doubles)
         return code, calls, json.loads(out.getvalue().strip().splitlines()[-1]), screen
 
