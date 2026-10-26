@@ -1,15 +1,17 @@
 {
-  "captured_at": "2026-10-26T20:59:24+09:00",
-  "head": "e1cfef56eae133d116303a1a6c7939be921cc604",
-  "branch": "10/26-runtime-first-activation",
+  "captured_at": "2026-10-26T21:36:28+09:00",
+  "head": "7d92d9dfde72570a3448b3d21131a8346fc4e9a7",
+  "branch": "10/26-runtime-contract-json",
   "status": [
-    "M docs/ai/DECISIONS.md",
-    " M docs/ai/decisions/D-251-300.md",
+    "M docs/ai/decisions/D-251-300.md",
+    " M full_stack_lab/runtime/worker.py",
+    " M full_stack_lab/tests/runtime_rollback_check.py",
     " M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/decisions-index.md"
+    " M research/llm-wiki/status/decisions-index.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

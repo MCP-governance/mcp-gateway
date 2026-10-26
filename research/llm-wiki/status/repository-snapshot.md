@@ -1,21 +1,23 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T20:59:24+09:00
+확인 시각: 2026-10-26T21:36:28+09:00
 
-HEAD: `e1cfef56eae133d116303a1a6c7939be921cc604` · 로컬 브랜치: `10/26-runtime-first-activation`
+HEAD: `7d92d9dfde72570a3448b3d21131a8346fc4e9a7` · 로컬 브랜치: `10/26-runtime-contract-json`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/DECISIONS.md
- M docs/ai/decisions/D-251-300.md
+M docs/ai/decisions/D-251-300.md
+ M full_stack_lab/runtime/worker.py
+ M full_stack_lab/tests/runtime_rollback_check.py
  M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/analysis/threat-trace-review-1020/README.md
  M research/llm-wiki/catalogs/threats.json
  M research/llm-wiki/status/decisions-index.md
+ M research/llm-wiki/status/repository-snapshot.json
+ M research/llm-wiki/status/repository-snapshot.md
 ```
 
 ## 주요 파일 바이트
