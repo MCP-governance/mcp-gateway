@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T14:36:18+09:00",
-  "head": "c55baf75c5c990f409bd5a6918a5dcc0670126f7",
-  "branch": "10/26-kit-native-download",
+  "captured_at": "2026-10-26T14:35:58+09:00",
+  "head": "2c0a42e92ccc5f57908cd4fbbe558ffd4a1ff349",
+  "branch": "10/25-stage0-sunset",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -12,7 +12,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "2b7878b5f230fde2f46a2cbe9e27bec4372004b3e317ea76d059eb988d579386"
+      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
