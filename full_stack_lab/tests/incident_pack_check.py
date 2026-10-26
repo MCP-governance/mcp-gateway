@@ -320,9 +320,9 @@ class IncidentRevisionAdapterCheck(unittest.IsolatedAsyncioTestCase):
         connection = AsyncMock()
         connection.execute.return_value.fetchone.return_value = {"acquired": True}
         @asynccontextmanager
-        async def transaction(): yield connection
+        async def session(): yield connection
         api = self.api
-        api.db.transaction = transaction
+        api.db.pool = AsyncMock(return_value=type("Pool", (), {"connection": staticmethod(session)})())
         namespace = dict(db=api.db, incidents=type("Timer", (), {"check_deadlines": AsyncMock(side_effect=RuntimeError())}),
                          LOG=logging.getLogger(__name__), observed_alerts=AsyncMock(),
                          contain_repeated=AsyncMock(), self_test=AsyncMock())

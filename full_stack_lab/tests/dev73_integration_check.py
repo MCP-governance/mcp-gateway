@@ -45,6 +45,8 @@ class Database:
     async def run(self, query, params=None):
         self.statements.append(" ".join(query.split()))
         result = {"status": "READY"} if "SELECT status FROM mcp_servers" in query else {"id": 1}
+        if "token_jti=ANY" in query and "stopped_at IS NULL" in query:
+            result = {"id": "job"} if self.running else None
         return SimpleNamespace(fetchone=AsyncMock(return_value=result))
 
     async def execute(self, query, params=None):
@@ -116,7 +118,12 @@ class RemoteServerKeepsItsBehavior(unittest.IsolatedAsyncioTestCase):
     async def test_token_revocation_without_local_jobs_finds_nothing_to_wait_for(self):
         db = Database(running=False)
         locks = []
-        connection = SimpleNamespace(execute=AsyncMock(side_effect=lambda q, p=None: locks.append(p[0])))
+        async def execute(query, params=None):
+            if 'pg_advisory_xact_lock' in query:
+                locks.append(params[0])
+                return None
+            return await db.run(query, params)
+        connection = SimpleNamespace(execute=AsyncMock(side_effect=execute))
         runner = local_runner(REMOTE, db)
         await runner.prepare_token_revocation(connection, [{"jti": "b"}, {"jti": "a"}, {"jti": "a"}])
         self.assertEqual(locks, ["local:token:a", "local:token:b"])  # one lock per token, in a fixed order

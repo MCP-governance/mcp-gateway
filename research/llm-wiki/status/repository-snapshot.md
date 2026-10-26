@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T13:44:17+09:00
+확인 시각: 2026-10-26T13:19:03+09:00
 
-HEAD: `97773eb88aed27b8d9f85b5880cc0f9bd33c46fd` · 로컬 브랜치: `10/25-stage0-loadtest`
+HEAD: `98effdce07ef792cd4f81035bc05fa6bd68cfad6` · 로컬 브랜치: `10/25-stage0-nested-tx`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,6 +11,7 @@ HEAD: `97773eb88aed27b8d9f85b5880cc0f9bd33c46fd` · 로컬 브랜치: `10/25-sta
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/catalogs/threats.json
 ```
 
 ## 주요 파일 바이트
@@ -20,7 +21,7 @@ M research/llm-wiki/analysis/integration-cases.json
 | `full_stack_lab/gateway/app/core.py` | `3257e156b3df7e3214f0d35a0dd3550d9bc2d01a9e0cf4f1995c3739517f46be` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
-| `full_stack_lab/gateway/app/idp.py` | `bdd8ae39b1937cdf796d6de2560c6df7dd55209e6b153ed4a0f7b3e0fdbf57b2` |
+| `full_stack_lab/gateway/app/idp.py` | `bcc84f57b7b7f45cb87c37d92630b64e545b5486bdf0def50c031cd03cb46785` |
 | `full_stack_lab/gateway/app/privacy.py` | `592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
