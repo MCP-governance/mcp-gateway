@@ -43,8 +43,11 @@ services:
     environment:
       FIELD_TLS_ADDRESSES: ${FIELD_TLS_ADDRESSES:?./console.sh field up을 사용하세요}
       APPLIANCE_BIND: ${APPLIANCE_BIND}
+      FIELD_CONSOLE_TLS: ${FIELD_CONSOLE_TLS:-none}
+      FIELD_CONSOLE_NAME: ${FIELD_CONSOLE_NAME:-}
     volumes:
       - ./field/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./field/console:/etc/caddy/console:ro
       - field_caddy_data:/data
     networks:
       edge:

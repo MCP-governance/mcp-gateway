@@ -9,6 +9,7 @@ cd "$DEPLOY_DIR"
 usage() {
   cat <<'EOF'
 ./mint.sh install [--bind IP] [--name DNS]   처음 설치(설정 생성 → 빌드 → 기동 → 첫 관리자 → 루트 인증서)
+  [--console-tls none|tailscale|file] [--console-name DNS] [--console-cert PEM] [--console-key PEM]
 ./mint.sh up [--with-siem]                   현재 판본으로 기동·재기동(업그레이드·롤백 뒤에도 이것)
 ./mint.sh status                             서비스 상태·판본·준비 여부
 ./mint.sh ca                                 루트 인증서와 SHA-256 지문 내보내기(ca/root.crt)
@@ -28,6 +29,7 @@ EOF
 die() { echo "mint: $*" >&2; exit 1; }
 
 env_value() { sed -n "s/^$1=//p" .env 2>/dev/null | tail -n1; }
+source "$REPO_DIR/full_stack_lab/field/console-tls.sh"
 
 env_set() {
   local key="$1" value="$2"
@@ -49,16 +51,20 @@ load_env() {
   MINT_BIND="$(env_value MINT_BIND)"
   [[ "$MINT_BIND" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || die ".env의 MINT_BIND에 이 서버의 사내 IPv4를 적으세요."
   [[ "$MINT_BIND" != 0.0.0.0 && "$MINT_BIND" != 127.* ]] || die "MINT_BIND는 모든 인터페이스나 loopback이 될 수 없습니다."
+  CONSOLE_URL="https://${MINT_BIND}"
+  console_tls_configure
   MINT_TLS_ADDRESSES="https://${MINT_BIND}:8080"
   local name; name="$(env_value MINT_PUBLIC_NAME)"
   if [[ -n "$name" ]]; then
     [[ "$name" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "MINT_PUBLIC_NAME은 호스트 이름이어야 합니다."
-    MINT_TLS_ADDRESSES+=", https://${name}:8080"
+    if [[ "$FIELD_CONSOLE_TLS" == none || "${name,,}" != "$FIELD_CONSOLE_NAME" ]]; then
+      MINT_TLS_ADDRESSES+=", https://${name}:8080"
+    fi
   fi
   export MINT_VERSION MCP_BUILD_REVISION MINT_TLS_ADDRESSES
 }
 
-dc() { docker compose --env-file .env -f compose.yaml "$@"; }
+dc() { docker compose --env-file .env -f compose.yaml "${CONSOLE_TLS_COMPOSE[@]}" "$@"; }
 
 project() { local p; p="$(env_value MINT_PROJECT)"; echo "${p:-mint}"; }
 
@@ -204,11 +210,15 @@ up() {
 }
 
 install_stack() {
-  local bind="" name=""
+  local bind="" name="" console_tls="" console_name="" console_cert="" console_key=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --bind) bind="${2:-}"; shift 2 ;;
       --name) name="${2:-}"; shift 2 ;;
+      --console-tls) console_tls="${2:?인증서 방식을 지정하세요}"; shift 2 ;;
+      --console-name) console_name="${2:?콘솔 DNS 이름을 지정하세요}"; shift 2 ;;
+      --console-cert) console_cert="${2:?인증서 절대 경로를 지정하세요}"; shift 2 ;;
+      --console-key) console_key="${2:?개인 키 절대 경로를 지정하세요}"; shift 2 ;;
       *) die "알 수 없는 옵션: $1" ;;
     esac
   done
@@ -217,6 +227,10 @@ install_stack() {
   chmod 600 .env
   [[ -z "$bind" ]] || env_set MINT_BIND "$bind"
   [[ -z "$name" ]] || env_set MINT_PUBLIC_NAME "$name"
+  [[ -z "$console_tls" ]] || env_set FIELD_CONSOLE_TLS "$console_tls"
+  [[ -z "$console_name" ]] || env_set FIELD_CONSOLE_NAME "$console_name"
+  [[ -z "$console_cert" ]] || env_set FIELD_CONSOLE_CERT_FILE "$console_cert"
+  [[ -z "$console_key" ]] || env_set FIELD_CONSOLE_KEY_FILE "$console_key"
   load_env
   # compose가 없는 마운트 원본을 root 소유 디렉터리로 만들기 전에 준비한다.
   prepare_dirs
@@ -231,7 +245,7 @@ install_stack() {
     'test -e /disposal/journal.jsonl || test -e /disposal/head.json || python -m app.disposal init'
   up
   echo
-  echo "콘솔        : https://${MINT_BIND}/"
+  echo "콘솔        : ${CONSOLE_URL}/"
   echo "관리자      : root  (초기 비밀번호: $DEPLOY_DIR/initial-admin-password — 로그인 뒤 ./mint.sh set-password root)"
   echo "직원 PC 키트: 콘솔 로그인 → 내 PC 연결"
   echo "백업        : ./mint.sh backup  (.env와 백업 디렉터리를 서버 밖 안전한 곳에 보관)"
@@ -239,6 +253,7 @@ install_stack() {
 
 status() {
   load_env
+  echo "콘솔: ${CONSOLE_URL}/"
   dc ps
   echo "판본: $MCP_BUILD_REVISION"
   console_get /api/readiness | python3 -c 'import json,sys

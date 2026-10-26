@@ -1,0 +1,6 @@
+https://{$FIELD_CONSOLE_NAME}:8080 {
+	tls /run/console-tls/cert.pem /run/console-tls/key.pem {
+		protocols tls1.2 tls1.3
+	}
+	import browser-console
+}

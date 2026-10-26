@@ -1,7 +1,10 @@
 """D-150 정정: Linux argv 가드와 Windows 기존 CA 런처 계약. 실제 MCP 시험 아님."""
+import ast
 import hashlib
 import importlib.util
 import io
+import json
+import mmap
 import os
 import platform
 import shutil
@@ -9,6 +12,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 
@@ -83,6 +87,45 @@ class WindowsLauncherRollbackCheck(unittest.TestCase):
         self.assertTrue(deleted.isdisjoint({"CODEX_HOME", "CLAUDE_CONFIG_DIR"}))
 
 
+class LinuxLauncherRendering(unittest.TestCase):
+    def test_only_managed_codex_gets_fixed_sandbox_override(self):
+        tree = ast.parse(LINUX_SOURCE.read_text(encoding="utf-8"))
+        nodes = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in {"fixed_options", "wrapper"}]
+        main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+        loop = next(n for n in main.body if isinstance(n, ast.For) and ast.unparse(n.iter) == "binaries.items()")
+        rendered = {}
+
+        def compile_wrapper(*args):
+            rendered[Path(args[-1]).name] = Path(args[-3]).read_text(encoding="utf-8")
+            Path(args[-1]).touch()  # Only capture generated C; no compiler or Linux policy is invoked.
+
+        namespace = {"Path": Path, "mmap": mmap, "json": json, "tempfile": tempfile, "run": compile_wrapper}
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(LINUX_SOURCE), "exec"), namespace)
+        with tempfile.TemporaryDirectory() as raw:
+            folder = Path(raw)
+            binary = folder / "release"
+            namespace.update(folder=folder, binaries={"codex": binary, "claude": binary}, proxy_env={}, ca=None,
+                             person=SimpleNamespace(pw_dir="/home/managed-unit"))
+            for daemon in (False, True):
+                binary.write_bytes(b"ELF --no-daemon" if daemon else b"ELF older build")
+                for managed in (False, True):
+                    namespace["args"] = SimpleNamespace(user="managed-unit", managed_agent="/managed.py" if managed else None)
+                    exec(compile(ast.Module(body=[loop], type_ignores=[]), str(LINUX_SOURCE), "exec"), namespace)
+                    for key in ("codex", "claude"):
+                        with self.subTest(daemon=daemon, managed=managed, harness=key):
+                            source = rendered[key]
+                            expected = (["--no-daemon"] if daemon else []) if key == "codex" else []
+                            if managed and key == "codex":
+                                expected += ["-c", 'sandbox_mode="danger-full-access"']
+                            for i, value in enumerate(expected, 1):
+                                self.assertIn(f"args[{i}] = {json.dumps(value)};", source)
+                            self.assertEqual('sandbox_mode=\\"danger-full-access\\"' in source, managed and key == "codex")
+                            self.assertIn(f"args[i+{len(expected)}]=argv[i]", source)
+                            self.assertIn("if (blocked(argc, argv))", source)
+                            self.assertNotIn("approval_policy", source)
+                            self.assertNotIn("--dangerously-bypass-approvals-and-sandbox", source)
+
+
 @unittest.skipUnless(platform.system() == "Linux" and shutil.which("gcc"), "Linux gcc가 필요합니다")
 class LinuxLauncherPinCheck(unittest.TestCase):
     def setUp(self):
@@ -90,10 +133,12 @@ class LinuxLauncherPinCheck(unittest.TestCase):
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
         self.launchers = {}
+        binary = Path(folder.name) / "release"
+        binary.write_bytes(b"ELF --no-daemon")
         for name in ("codex", "claude"):
             launcher = Path(folder.name) / name
             module.wrapper(launcher, Path(shutil.which("echo")), folder.name, "managed", guard=name,
-                           options=["--no-daemon"] if name == "codex" else [])
+                           options=module.fixed_options(name, binary, managed=True))
             self.launchers[name] = launcher
 
     def assert_result(self, name, arguments, blocked=False):
@@ -103,7 +148,7 @@ class LinuxLauncherPinCheck(unittest.TestCase):
             self.assertIn("관리 실행", result.stderr)
             self.assertEqual(result.stdout, "")
         else:
-            prefix = ["--no-daemon"] if name == "codex" else []
+            prefix = ["--no-daemon", "-c", 'sandbox_mode="danger-full-access"'] if name == "codex" else []
             self.assertEqual(result.stdout.strip(), " ".join([*prefix, *arguments]))
             self.assertEqual(result.stderr, "")
 

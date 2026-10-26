@@ -1,10 +1,12 @@
 {
-  "captured_at": "2026-10-26T14:42:12+09:00",
-  "head": "bb94da63557292d71912d9177698ca404e9bffbb",
-  "branch": "10/26-ci-harness-check-parallel",
+  "captured_at": "2026-10-26T15:19:23+09:00",
+  "head": "14d845c72f892fc56c71eaa7f69b7237c7f69e80",
+  "branch": "10/26-console-https",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    "M docs/ai/DECISIONS.md",
+    " M research/llm-wiki/analysis/integration-cases.json",
+    " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/status/decisions-index.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -12,7 +14,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "2b7878b5f230fde2f46a2cbe9e27bec4372004b3e317ea76d059eb988d579386"
+      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -52,7 +54,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
+      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
     }
   ]
 }

@@ -284,6 +284,7 @@ watch_decisions() {
 # ── field: 실기기 배치(솔루션 기기·관리자 PC·직원 PC) — 루트 README 참고 ──────────
 # compose.field.yaml은 ./console.sh up 이나 CI가 아니라 이 명령들에서만 얹힌다.
 FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml)
+source "$LAB_DIR/field/console-tls.sh"
 
 # SIEM 워커는 .env의 세 값과 siem-secrets/ 파일이 없으면 시작 즉시 죽고 재시작만 반복한다. 시작 전에 막는다.
 siem_require_config() {
@@ -373,15 +374,16 @@ field_up() {
     echo "[field 4/4] 컨테이너 직원 PC 4대는 끔(실제 PC가 대신함) — 같이 보려면 --with-lab-workstations"
   fi
   echo
-  echo "콘솔(브라우저)  : http://${APPLIANCE_BIND}:8000"
+  echo "콘솔(브라우저)  : $CONSOLE_URL"
   echo "하네스·키트     : https://${APPLIANCE_BIND}:443"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
-  echo "내부 저장소     : http://${APPLIANCE_BIND}:8000/git/"
+  echo "내부 저장소     : ${CONSOLE_URL}/git/"
   echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
 }
 
 field_status() {
   docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
+  echo "콘솔(브라우저): $CONSOLE_URL"
   field_browser_trust
   curl --cacert field/ca/root.crt -fsS "https://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
 }
@@ -389,7 +391,11 @@ field_status() {
 field_browser_trust() {
   echo "루트 인증서: $LAB_DIR/field/ca/root.crt (내보내기: ./console.sh field ca)"
   if [[ -f field/ca/root.crt ]]; then openssl x509 -in field/ca/root.crt -noout -fingerprint -sha256; fi
-  echo "운영자와 지문 대조 → 별도 Firefox 프로필의 인증서 → 인증 기관 → 가져오기(웹사이트 식별 신뢰). 시스템 저장소에는 추가하지 않습니다."
+  if [[ "$FIELD_CONSOLE_TLS" == none ]]; then
+    echo "운영자와 지문 대조 → 별도 Firefox 프로필의 인증서 → 인증 기관 → 가져오기(웹사이트 식별 신뢰). 시스템 저장소에는 추가하지 않습니다."
+  else
+    echo "콘솔: $CONSOLE_URL · 이 루트 인증서는 IP 기반 하네스·키트 연결용입니다."
+  fi
 }
 
 field_ca() {
@@ -501,13 +507,18 @@ field_dispatch() {
     }
   fi
   export APPLIANCE_BIND
+  CONSOLE_URL="http://${APPLIANCE_BIND}:8000"
+  console_tls_configure
+  FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml "${CONSOLE_TLS_COMPOSE[@]}")
   FIELD_TLS_ADDRESSES="https://${APPLIANCE_BIND}:8080"
   local public_name="${FIELD_PUBLIC_NAME:-$(env_value FIELD_PUBLIC_NAME)}"
   if [[ -n "$public_name" ]]; then
     [[ "$public_name" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || {
       echo "FIELD_PUBLIC_NAME은 호스트 이름이어야 합니다" >&2; exit 1;
     }
-    FIELD_TLS_ADDRESSES+=", https://${public_name}:8080"
+    if [[ "$FIELD_CONSOLE_TLS" == none || "${public_name,,}" != "$FIELD_CONSOLE_NAME" ]]; then
+      FIELD_TLS_ADDRESSES+=", https://${public_name}:8080"
+    fi
   fi
   export FIELD_TLS_ADDRESSES
   export MCP_FIELD_MODE=1

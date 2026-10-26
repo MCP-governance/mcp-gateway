@@ -85,8 +85,13 @@ test("내 PC 연결: 자동 활성화면 바로 사용, 끄면 관리자 활성�
 });
 
 test("내 PC 연결: 내려받는 파일 이름은 서버가 주는 값을 쓴다", () => {
-  assert.match(source, /content-disposition/);
-  assert.match(source, /link\.download = \/filename=.*content-disposition.*\|\| KIT_FILE\[os\]/);
+  const download = source.slice(source.indexOf('  async "pc-kit-download"(el) {'), source.indexOf('  async "device-activate"(el) {'));
+  assert.match(download, /form\.submit\(\)/);
+  assert.doesNotMatch(download, /\.blob\(|\.download\s*=/);
+  const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
+  for (const filename of ["mcp-managed-setup-windows.cmd", "mcp-connect-macos.command", "mcp-managed-kit-{platform}.zip"]) {
+    assert.ok(service.includes(`attachment; filename="${filename}"`), filename);
+  }
 });
 
 test("삭제된 사용자: 목록 탭과 복구 동작이 있다", () => {

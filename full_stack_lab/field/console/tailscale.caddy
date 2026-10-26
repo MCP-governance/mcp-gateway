@@ -1,0 +1,7 @@
+https://{$FIELD_CONSOLE_NAME}:8080 {
+	tls {
+		get_certificate tailscale
+		protocols tls1.2 tls1.3
+	}
+	import browser-console
+}
