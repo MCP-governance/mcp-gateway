@@ -420,7 +420,7 @@ async def health() -> dict:
 
 
 async def _compute_health() -> dict:
-    policy = await policy_info(OPA_URL)
+    policy = await policy_info(OPA_URL, cached=True)
     opa_ok, jaeger_ok, analyzer_ok, anonymizer_ok = await asyncio.gather(
         _probe(core._opa(), OPA_URL.rsplit("/v1/", 1)[0] + "/health?bundles=true"),
         _probe(connections.shared("jaeger", lambda: httpx.AsyncClient()), JAEGER_QUERY_URL) if JAEGER_QUERY_URL else _absent(),

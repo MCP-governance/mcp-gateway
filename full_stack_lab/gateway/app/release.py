@@ -103,22 +103,26 @@ async def _query_opa(opa_url: str, modules: tuple[str, ...], document_keys: tupl
     return result
 
 
-async def policy_info(opa_url: str) -> dict:
+async def policy_info(opa_url: str, *, cached: bool = False) -> dict:
+    # Only the unauthenticated health view may reuse answers. The policy self-test swaps OPA's
+    # policy and must see the change at once, and must not trust (mtime, size) to detect edits.
+    read = _cached if cached else (lambda path, loader: loader(path))
     root = Path('/policy')
     modules = ('policy.rego', 'pac15.rego', 'decision.rego')
-    expected = _canonical({name: _cached(root / name, lambda p: hashlib.sha256(p.read_bytes()).hexdigest())
+    expected = _canonical({name: read(root / name, lambda p: hashlib.sha256(p.read_bytes()).hexdigest())
                            for name in modules})
     documents: dict = {}
     for name in POLICY_DATA_FILES:
-        documents.update(_cached(root / name, lambda p: json.loads(p.read_text(encoding='utf-8'))))
+        documents.update(read(root / name, lambda p: json.loads(p.read_text(encoding='utf-8'))))
     result = {'expected_sha256': expected, 'loaded_sha256': None,
               'expected_data_sha256': _canonical(documents), 'loaded_data_sha256': None,
               'rules_match': False, 'data_match': False, 'matches': False}
     from . import registry
-    result['capabilities_sha256'] = _cached(registry.REGISTRY_DIR / 'capabilities.json',
+    result['capabilities_sha256'] = read(registry.REGISTRY_DIR / 'capabilities.json',
                                             lambda p: hashlib.sha256(p.read_bytes()).hexdigest())
     try:
-        loaded = await _opa_query_cache.get(opa_url, lambda: _query_opa(opa_url, modules, tuple(documents)))
+        query = lambda: _query_opa(opa_url, modules, tuple(documents))  # noqa: E731
+        loaded = await (_opa_query_cache.get(opa_url, query) if cached else query())
         result['loaded_sha256'] = loaded['loaded_sha256']
         result['rules_match'] = loaded['loaded_sha256'] == expected
         result['loaded_data_sha256'] = loaded['loaded_data_sha256']

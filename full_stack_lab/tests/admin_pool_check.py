@@ -130,6 +130,31 @@ class TTLCacheTest(unittest.TestCase):
         self.assertEqual(run(scenario()), "ok")
 
 
+class PolicyInfoCacheScopeTest(unittest.TestCase):
+    """Only /api/health reuses policy answers; the policy self-test must see every change."""
+
+    def test_uncached_calls_requery_and_rehash_but_health_reuses(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for name in ("policy.rego", "pac15.rego", "decision.rego", "capabilities.json"):
+                (root / name).write_text(name, encoding="utf-8")
+            for name in release.POLICY_DATA_FILES:
+                (root / name).write_text("{}", encoding="utf-8")
+            query = AsyncMock(return_value={"loaded_sha256": None, "loaded_data_sha256": None})
+            files = []
+            real_cached = release._cached
+            release._opa_query_cache = cache.TTLCache(5)
+            with patch.object(release, "Path", lambda value: root if value == "/policy" else Path(value)),                  patch.object(release, "_query_opa", query),                  patch.object(release, "_cached", lambda path, loader: files.append(path) or real_cached(path, loader)),                  patch("app.registry.REGISTRY_DIR", root):
+                run(release.policy_info("http://opa:8181/v1/data/x"))
+                run(release.policy_info("http://opa:8181/v1/data/x"))
+                self.assertEqual(query.await_count, 2)
+                self.assertEqual(files, [])
+                run(release.policy_info("http://opa:8181/v1/data/x", cached=True))
+                run(release.policy_info("http://opa:8181/v1/data/x", cached=True))
+                self.assertEqual(query.await_count, 3)
+                self.assertTrue(files)
+
+
 class FileHashCacheTest(unittest.TestCase):
     """release._cached() backs the policy-bundle hash in /api/health."""
 
