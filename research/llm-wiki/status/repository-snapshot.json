@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-26T16:12:54+09:00",
-  "head": "724d31dbbe58240098a7af3eb665222b0846dc03",
-  "branch": "10/26-console-font-subset",
+  "captured_at": "2026-10-26T15:48:27+09:00",
+  "head": "d2fee732d867ecc25e58eddd20ea64bec55eaa8e",
+  "branch": "10/26-kit-fullscreen",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -49,7 +48,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "bbbd74d3cc62dfec5811726dbaa4f7feeea340cc6c93bfdcc66b3a27edb06660"
+      "sha256": "f72d291cf0ac9fb76ad8614acb71c210853747912d3bf6bf64d461ae38f895bd"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

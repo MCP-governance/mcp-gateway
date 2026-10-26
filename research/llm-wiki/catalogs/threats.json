@@ -851,7 +851,7 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
+        "sha256": "52ad581ba3ead4de1c859511000062339f7f4396328785c0fd7bd2e3f7aacbc5",
         "committed_sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
         "normalized_sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
         "worktree_modified": false
