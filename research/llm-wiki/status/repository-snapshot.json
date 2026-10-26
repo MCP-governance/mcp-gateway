@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T13:19:03+09:00",
-  "head": "98effdce07ef792cd4f81035bc05fa6bd68cfad6",
-  "branch": "10/25-stage0-nested-tx",
+  "captured_at": "2026-10-26T13:46:12+09:00",
+  "head": "4f836f224ec1e08db8a95571cbddca5a2b4930d1",
+  "branch": "10/26-kit-native-download",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
