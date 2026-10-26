@@ -23,6 +23,8 @@ console_tls_file_safe() {
 
 # 기존 root 소유 CA를 보존하면서 비root 프로세스에 저장소 소유권을 넘긴다. 서비스·포트는 시작하지 않는다.
 console_caddy_prepare() {
+  # 일회성 컨테이너가 서비스의 고정 IP를 받으므로 실행 중인 Caddy와 겹치지 않게 먼저 내린다. 바로 다시 만든다.
+  "$@" rm -sf caddy >/dev/null
   "$@" run --rm --no-deps -T --user 0 --cap-add CHOWN --entrypoint sh caddy \
     -c 'chown -R "$1":0 /data /config' sh "$CONSOLE_CADDY_UID"
 }
