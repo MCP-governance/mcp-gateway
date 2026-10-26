@@ -1,10 +1,11 @@
 {
-  "captured_at": "2026-10-26T12:48:11+09:00",
-  "head": "b3c79535d753343f004526fd58823b56fbe0baa1",
-  "branch": "10/25-stage0-adminpool",
+  "captured_at": "2026-10-26T12:40:24+09:00",
+  "head": "42d06920aab61d2b979da9ea73e004acf94a2ed6",
+  "branch": "10/25-stage0-disposal",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -12,7 +13,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "8ba63f426277e2373c703893e4b1ea312f1401e85b9fdc34699e85b0f3ff7415"
+      "sha256": "3257e156b3df7e3214f0d35a0dd3550d9bc2d01a9e0cf4f1995c3739517f46be"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -24,7 +25,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",
-      "sha256": "46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216"
+      "sha256": "bdd8ae39b1937cdf796d6de2560c6df7dd55209e6b153ed4a0f7b3e0fdbf57b2"
     },
     {
       "path": "full_stack_lab/gateway/app/privacy.py",
