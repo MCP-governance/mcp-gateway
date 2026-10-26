@@ -120,6 +120,7 @@ class Installer(unittest.TestCase):
             for outcome in (SimpleNamespace(returncode=0), SimpleNamespace(returncode=1), KeyboardInterrupt()):
                 with self.subTest(outcome=type(outcome).__name__), \
                      mock.patch.object(self.bootstrap.pwd, "getpwnam", return_value=person, create=True), \
+                     mock.patch.object(self.bootstrap.sys.stdin, "isatty", return_value=True), \
                      mock.patch.object(self.bootstrap.subprocess, "run") as run, redirect_stdout(io.StringIO()):
                     if isinstance(outcome, BaseException):
                         run.side_effect = outcome
@@ -129,6 +130,14 @@ class Installer(unittest.TestCase):
                     self.assertEqual(run.call_count, 1)
                     self.assertEqual(run.call_args.args[0][-1], "codex login --device-auth")
                     self.assertEqual(signed["codex"], getattr(outcome, "returncode", 1) == 0)
+
+    def test_noninteractive_install_does_not_wait_for_device_code(self):
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.bootstrap.pwd, "getpwnam", return_value=SimpleNamespace(pw_dir=folder), create=True), \
+             mock.patch.object(self.bootstrap.sys.stdin, "isatty", return_value=False), \
+             mock.patch.object(self.bootstrap.subprocess, "run") as run:
+            self.assertEqual(self.bootstrap.harness_login("managed", ["codex"]), {"codex": False})
+        run.assert_not_called()
 
     def test_invalid_owner_fails_before_enrollment(self):
         managed = load("managed-linux")

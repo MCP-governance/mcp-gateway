@@ -34,7 +34,7 @@ from app import sbom_impact  # noqa: E402
 
 ops_tree = ast.parse((ROOT / "gateway" / "app" / "ops_response.py").read_text(encoding="utf-8"))
 ops_suspend = next(node for node in ops_tree.body if isinstance(node, ast.AsyncFunctionDef) and node.name == "suspend")
-ops_namespace = {"Jsonb": lambda value: value, "db": None}
+ops_namespace = {"__name__": "app.ops_response", "__package__": "app", "Jsonb": lambda value: value, "db": None}
 exec(compile(ast.Module(body=[ops_suspend], type_ignores=[]), "ops_response.py", "exec"), ops_namespace)
 server_suspend = ops_namespace["suspend"]
 
@@ -161,8 +161,12 @@ class SbomImpactCheck(unittest.TestCase):
 
         server_suspend.__globals__["db"] = types.SimpleNamespace(
             transaction=transaction, fetch_one=AsyncMock(return_value={"status": "READY", "suspended": False}))
-        created = asyncio.run(server_suspend("server-a", "supply-chain", "취약 판본",
-                                             {"package": "alpha", "requested_by": "admin"}, batch="batch-1"))
+        sync = types.ModuleType("app.litellm_sync")
+        sync.enqueue = AsyncMock()
+        with patch.dict(sys.modules, {"app.litellm_sync": sync}), patch("app.litellm_sync", sync, create=True):
+            created = asyncio.run(server_suspend("server-a", "supply-chain", "취약 판본",
+                                                 {"package": "alpha", "requested_by": "admin"}, batch="batch-1"))
+        sync.enqueue.assert_awaited_once_with("server-a", connection)
         ledger = next(args for statement, args in connection.statements if "INSERT INTO approval_events" in statement)
         self.assertTrue(created)
         self.assertEqual(ledger[2]["source"], "supply-chain")
