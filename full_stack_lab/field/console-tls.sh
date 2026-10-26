@@ -25,7 +25,7 @@ console_tls_file_safe() {
 console_caddy_prepare() {
   # 일회성 컨테이너가 서비스의 고정 IP를 받으므로 실행 중인 Caddy와 겹치지 않게 먼저 내린다. 바로 다시 만든다.
   "$@" rm -sf caddy >/dev/null
-  "$@" run --rm --no-deps -T --user 0 --cap-add CHOWN --entrypoint sh caddy \
+  "$@" run --rm --no-deps -T --user 0 --cap-add CHOWN --cap-add DAC_READ_SEARCH --entrypoint sh caddy \
     -c 'chown -R "$1":0 /data /config' sh "$CONSOLE_CADDY_UID"
 }
 

@@ -286,6 +286,27 @@ ln -s first /out/current
             self.docker("rm", "-f", name, check=False)
             self.docker("volume", "rm", volume, check=False)
 
+    def test_storage_preparation_reruns_over_nonroot_private_directories(self):
+        # 두 번째 배포부터 저장소는 이미 비root 소유 0700이다. 준비 컨테이너의 능력만으로 다시 넘길 수 있어야 한다.
+        prepare = re.search(r"console_caddy_prepare\(\) \{.*?\n\}", (FIELD / "console-tls.sh").read_text(), re.S).group()
+        caps = [arg for flag in re.findall(r"--cap-add (\S+)", prepare) for arg in ("--cap-add", flag)]
+        self.assertIn("CHOWN", caps)
+        image = re.search(r"image: (caddy:\S+)", (LAB / "compose.field.yaml").read_text()).group(1)
+        volume = "mint-h50-data-" + uuid.uuid4().hex
+        self.docker("volume", "create", volume)
+        try:
+            self.docker("run", "--rm", "--network", "none", "-v", f"{volume}:/data", "--entrypoint", "sh", image, "-c",
+                        "mkdir -p /data/caddy/pki/x && echo k > /data/caddy/pki/x/key && chmod 600 /data/caddy/pki/x/key"
+                        " && chmod 700 /data/caddy /data/caddy/pki /data/caddy/pki/x && chown -R 10001:0 /data")
+            self.docker("run", "--rm", "--network", "none", "--user", "0", "--cap-drop", "ALL", *caps,
+                        "--security-opt", "no-new-privileges:true", "-v", f"{volume}:/data", "--entrypoint", "sh", image,
+                        "-c", 'chown -R "$1":0 /data', "sh", "10002")
+            result = self.docker("run", "--rm", "--network", "none", "--user", "10002:0", "--cap-drop", "ALL",
+                                 "-v", f"{volume}:/data", "--entrypoint", "cat", image, "/data/caddy/pki/x/key")
+            self.assertEqual(result.stdout.strip(), "k")
+        finally:
+            self.docker("volume", "rm", volume, check=False)
+
     def test_three_caddy_modes_and_six_compose_renders(self):
         image = re.search(r"image: (caddy:\S+)", (LAB / "compose.field.yaml").read_text()).group(1)
         openssl = shutil.which("openssl") or "C:/Program Files/Git/mingw64/bin/openssl.exe"
