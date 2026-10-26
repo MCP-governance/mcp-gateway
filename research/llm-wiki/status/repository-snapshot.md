@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T16:12:02+09:00
+확인 시각: 2026-10-26T16:34:41+09:00
 
-HEAD: `7d33349b011747101e8b132b42751f1aaf25a8b1` · 로컬 브랜치: `10/26-harden-codex`
+HEAD: `e2a72dad3f85bfc3b14fdb82f14068ea7f7d6055` · 로컬 브랜치: `10/26-harden-https`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,7 +11,7 @@ HEAD: `7d33349b011747101e8b132b42751f1aaf25a8b1` · 로컬 브랜치: `10/26-har
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/status/decisions-index.md
 ```
 
 ## 주요 파일 바이트
