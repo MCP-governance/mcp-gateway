@@ -844,14 +844,14 @@
     "code_candidates": [
       {
         "path": "endpoint-agent/enforce-linux.py",
-        "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63",
-        "committed_sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63",
-        "normalized_sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63",
+        "sha256": "98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966",
+        "committed_sha256": "98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966",
+        "normalized_sha256": "98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966",
         "worktree_modified": false
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "52ad581ba3ead4de1c859511000062339f7f4396328785c0fd7bd2e3f7aacbc5",
+        "sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
         "committed_sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
         "normalized_sha256": "ef2313ac4836436ad581115f673fd6c71b56ad4b61f3377f36aa784498a3d231",
         "worktree_modified": false
