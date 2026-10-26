@@ -1,10 +1,35 @@
 # 이 오버레이는 tailscale 방식을 선택한 경우에만 사용한다.
 services:
   caddy:
-    user: "0:0"
+    depends_on:
+      console-cert: {condition: service_healthy}
+    command: ["sh", "/etc/caddy/console-watch.sh"]
     volumes:
+      - console_cert:/run/console-tls:ro
+      - ${CONSOLE_TLS_DIR:?}/console-watch.sh:/etc/caddy/console-watch.sh:ro
+  console-cert:
+    image: tailscale/tailscale:v1.102.4
+    restart: unless-stopped
+    network_mode: none
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      FIELD_CONSOLE_NAME: ${FIELD_CONSOLE_NAME:?}
+    entrypoint: ["sh", "/console-cert.sh"]
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+    volumes:
+      - console_cert:/out
+      - ${CONSOLE_TLS_DIR:?}/console-cert.sh:/console-cert.sh:ro
       - type: bind
         source: /var/run/tailscale/tailscaled.sock
         target: /var/run/tailscale/tailscaled.sock
         read_only: true
         bind: {create_host_path: false}
+volumes:
+  console_cert:

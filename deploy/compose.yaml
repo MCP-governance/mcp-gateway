@@ -307,6 +307,7 @@ services:
 
   caddy:
     image: caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+    user: "${CONSOLE_CADDY_UID:-10001}:0"
     restart: unless-stopped
     depends_on:
       gateway: {condition: service_started}
@@ -326,6 +327,9 @@ services:
       edge:
         # corp-git이 신원 헤더를 믿는 유일한 주소.
         ipv4_address: ${MINT_NET_PREFIX:-10.246}.1.250
+    # 이미지의 caddy 바이너리는 파일 능력을 달고 있어 경계 집합에 이 능력이 없으면 실행되지 않는다.
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
 
   # 관리형 엔드포인트의 모델 API 경로. model-domains.txt의 도메인만 허용한다.

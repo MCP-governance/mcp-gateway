@@ -362,6 +362,7 @@ field_up() {
   echo "[field 3/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
   docker compose "${FIELD_COMPOSE[@]}" build -q model-proxy
   # The Caddyfile is a mounted file and the admin API is off: recreate so a routing change takes effect.
+  console_caddy_prepare docker compose "${FIELD_COMPOSE[@]}"
   docker compose "${FIELD_COMPOSE[@]}" up -d --force-recreate caddy
   docker compose "${FIELD_COMPOSE[@]}" up -d model-proxy
   field_ca
@@ -492,7 +493,7 @@ print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었�
 # 설치 권한은 OS 관리자에게 있고, 가입자용 grant는 Console 인증 뒤 생성한다.
 field_pc_command() {
   field_browser_trust
-  echo "https://${APPLIANCE_BIND}:443/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
+  echo "${CONSOLE_URL}/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
   echo "unzip mcp-managed-kit.zip -d mcp-managed-kit"
   echo "cd mcp-managed-kit"
   echo "조직 IT가 승인된 설치기를 확인한 뒤: sudo python3 managed-linux.py install --user 일반사용자계정"
@@ -501,8 +502,7 @@ field_pc_command() {
 
 field_dispatch() {
   if [[ "${APPLIANCE_BIND:-}" != "127.0.0.1" ]]; then
-    APPLIANCE_BIND="$(tailscale ip -4 2>/dev/null)"
-    [[ "$APPLIANCE_BIND" =~ ^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\. ]] || {
+    APPLIANCE_BIND="$(local_tailscale_ip)" || {
       echo "Tailscale IPv4 주소를 찾지 못했습니다. 이 기기에서 tailscale status를 확인하세요." >&2; exit 1;
     }
   fi

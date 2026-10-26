@@ -91,8 +91,7 @@
 	}
 }
 
-# 브라우저 콘솔 전용 HTTP(사용자 결정 10-18, D-129). 사설 CA를 브라우저에 설치하지 않아도 경고 없이 열리고,
-# 전송은 Tailscale 터널이 암호화한다. 하네스·키트가 쓰는 경로는 HTTPS(D-124)에만 있다.
+# 이름 기반 HTTPS와 none 방식 HTTP가 공유한다. 하네스·키트는 IP 기반 HTTPS에서만 받는다.
 (browser-console) {
 	# handle 블록은 서로 배타적이고 먼저 맞는 것이 처리한다. respond만 두면 콘솔의 handle이 먼저 받는다.
 	@harness path /mcp/* /oauth/* /api/endpoint/* /api/addon/* /.well-known/*
@@ -108,10 +107,6 @@
 		output stdout
 		format console
 	}
-}
-
-http://:8081 {
-	import browser-console
 }
 
 import console/{$FIELD_CONSOLE_TLS:none}.caddy

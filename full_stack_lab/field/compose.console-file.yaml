@@ -3,11 +3,11 @@ services:
     volumes:
       - type: bind
         source: ${FIELD_CONSOLE_CERT_FILE:?콘솔 인증서 파일을 지정하세요}
-        target: /run/console-tls/cert.pem
+        target: /run/console-tls/current/cert.pem
         read_only: true
         bind: {create_host_path: false}
       - type: bind
         source: ${FIELD_CONSOLE_KEY_FILE:?콘솔 개인 키 파일을 지정하세요}
-        target: /run/console-tls/key.pem
+        target: /run/console-tls/current/key.pem
         read_only: true
         bind: {create_host_path: false}
