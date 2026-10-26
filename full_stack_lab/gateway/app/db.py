@@ -93,12 +93,16 @@ async def close() -> None:
 
 
 @asynccontextmanager
-async def transaction():
+async def transaction(*, connection=None):
     """A connection whose statements commit or roll back together.
 
     The per-statement helpers each run in their own transaction, which is fine for
     reads and single writes but not for the read-then-write of an audit chain append.
     """
+    if connection is not None:
+        async with connection.transaction():
+            yield connection
+        return
     async with (await pool()).connection() as connection:
         async with connection.transaction():
             yield connection
@@ -110,19 +114,28 @@ async def _run(connection, query: str, params: Iterable | None = None):
     return await connection.execute(query, params)
 
 
-async def fetch_all(query: str, params: Iterable | None = None) -> list[dict]:
+async def fetch_all(query: str, params: Iterable | None = None, *, connection=None) -> list[dict]:
+    if connection is not None:
+        cursor = await _run(connection, query, params)
+        return list(await cursor.fetchall())
     async with (await pool()).connection() as connection:
         cursor = await _run(connection, query, params)
         return list(await cursor.fetchall())
 
 
-async def fetch_one(query: str, params: Iterable | None = None) -> dict | None:
+async def fetch_one(query: str, params: Iterable | None = None, *, connection=None) -> dict | None:
+    if connection is not None:
+        cursor = await _run(connection, query, params)
+        return await cursor.fetchone()
     async with (await pool()).connection() as connection:
         cursor = await _run(connection, query, params)
         return await cursor.fetchone()
 
 
-async def execute(query: str, params: Iterable | None = None) -> int:
+async def execute(query: str, params: Iterable | None = None, *, connection=None) -> int:
+    if connection is not None:
+        cursor = await _run(connection, query, params)
+        return cursor.rowcount
     async with (await pool()).connection() as connection:
         cursor = await _run(connection, query, params)
         return cursor.rowcount

@@ -165,7 +165,7 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
             connection.execute = AsyncMock()
             yield connection
 
-        async def fetch_one(sql, params=()):
+        async def fetch_one(sql, params=(), *, connection=None):
             if sql.startswith("UPDATE mcp_intake_requests SET evidence"):
                 self.assertEqual(params[2].obj, self.state["evidence"])
                 self.state["evidence"] = copy.deepcopy(params[0].obj)
@@ -195,12 +195,12 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
             self.registered.append(copy.deepcopy(body))
             return {"valid_until": (NOW + timedelta(days=90)).isoformat(), "server_id": body["server_id"]}
 
-        async def reports(current):
+        async def reports(current, *, connection=None):
             return [{"id": i, "scanner": name, "scanner_version": "1", "status": "DONE", "critical_count": self.critical if i == 1 else 0,
                      "high_count": 0, "summary": {}, "imported_at": NOW, "vuln_db_updated_at": NOW}
                     for i, name in enumerate(review.SCANNERS)]
 
-        async def same_person(a, b):
+        async def same_person(a, b, *, connection=None):
             return a == b or {a, b} == {"admin-a", "admin-alias"}
 
         patches = [patch.object(service.db, "transaction", transaction), patch.object(service.db, "fetch_one", AsyncMock(side_effect=fetch_one)),
@@ -399,7 +399,7 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
 
     async def test_repository_without_active_runtime_is_not_registered(self):
         self.state = row("repository")
-        service.db.fetch_one.side_effect = AsyncMock(side_effect=lambda sql, params=(): None if "SELECT endpoint FROM" in sql else copy.deepcopy(self.state))
+        service.db.fetch_one.side_effect = AsyncMock(side_effect=lambda sql, params=(), connection=None: None if "SELECT endpoint FROM" in sql else copy.deepcopy(self.state))
         preview = await self.preview()
         self.assertIn("execution-missing", {b["code"] for b in preview["proposal"]["blockers"]})
         with self.assertRaises(HTTPException):

@@ -148,10 +148,10 @@ class FakeLedger:
             return None
         raise AssertionError("대역이 모르는 문장: " + s[:120])
 
-    async def fetch_one(self, sql, params=()):
+    async def fetch_one(self, sql, params=(), *, connection=None):
         return self.run(sql, params)
 
-    async def fetch_all(self, sql, params=()):
+    async def fetch_all(self, sql, params=(), *, connection=None):
         s = " ".join(sql.split())
         if s.startswith("SELECT token, user_id FROM principals"):
             return [{"token": t, "user_id": self.tokens[t]} for t in params[0] if t in self.tokens]
@@ -165,14 +165,14 @@ class FakeLedger:
         self.run(sql, params or ())
 
     @asynccontextmanager
-    async def transaction(self):
+    async def transaction(self, *, connection=None):
         ledger = self
 
         class Connection:
             async def execute(self, sql, params=None):
                 return Cursor(ledger.run(sql, params or ()))
 
-        yield Connection()
+        yield connection if connection is not None else Connection()
 
 
 def repository_row(tier):
@@ -217,7 +217,7 @@ class Lab(unittest.IsolatedAsyncioTestCase):
             self.published.append(pending["id"])
             return "https://internal.test/docs", {"match": True, "sha256": "c" * 64}
 
-        async def reports(current):
+        async def reports(current, *, connection=None):
             return [{"id": i, "scanner": name, "scanner_version": "1", "status": "DONE", "critical_count": 0,
                      "high_count": 0, "summary": {}, "imported_at": base.NOW, "vuln_db_updated_at": base.NOW}
                     for i, name in enumerate(review.SCANNERS)]
