@@ -532,12 +532,12 @@ def serve_pipe(config, cache, lock):
         handle = waiting
 
 
-def header(args):
-    import getpass
+def read_broker(username):
+    """The service's one answer on its pipe, or None when the pipe cannot be reached (service stopped or restarting)."""
     for _ in range(20):
         try:
             # os.open, not open(): the buffered file object's setup fails on a pipe with EINVAL.
-            descriptor = os.open(pipe_name(getpass.getuser()), os.O_RDONLY | os.O_BINARY)
+            descriptor = os.open(pipe_name(username), os.O_RDONLY | os.O_BINARY)
         except OSError:  # busy, or the service is restarting
             time.sleep(0.1)
             continue
@@ -551,12 +551,15 @@ def header(args):
         finally:
             os.close(descriptor)
         try:
-            response = json.loads(data)
-            break
+            return json.loads(data)
         except ValueError:
             continue
-    else:
-        response = None
+    return None
+
+
+def header(args):
+    import getpass
+    response = read_broker(getpass.getuser())
     if not isinstance(response, dict) or set(response) != {"Authorization"}:
         # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
         # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
@@ -1087,13 +1090,27 @@ def rollback(args):
     print("해당 계정의 방화벽 규칙·관리형 설정·예약 작업을 제거했습니다")
 
 
+def prune_empty_folders():
+    """After a removal, the folders the kit created that are now empty go too; any folder with content stays.
+    Not part of rollback(): an install replacing an earlier account's install calls it and recreates these at once."""
+    codex = FILES["requirements.toml"].parent
+    for folder in (FILES["managed-mcp.json"].parent, codex, codex.parent, PROGRAM_DATA / "MCPGatewayManagedTray", STATE):
+        try:
+            folder.rmdir()
+        except OSError:  # missing, not empty, or in use
+            pass
+
+
+def uninstall(args):
+    rollback(args)
+    prune_empty_folders()
+
+
 def probe(args):
     """The tray's 연결 확인, as the signed-in employee (never elevated): ① a model answer from their own harness,
     ② the tool count and ③ one approved server's initialize, with the header their harness gets (D-239)."""
     import getpass
-    import io
     import importlib.util
-    import contextlib
     spec = importlib.util.spec_from_file_location("probe_observer", Path(__file__).with_name("agent.py"))
     observer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(observer)
@@ -1101,11 +1118,12 @@ def probe(args):
     status = json.loads(Path(settings["status_path"]).read_text(encoding="utf-8"))
     servers = status.get("servers") or []
     out = {"servers": len(servers)}
-    captured = io.StringIO()
-    with contextlib.redirect_stdout(captured), contextlib.redirect_stderr(io.StringIO()):
-        header(argparse.Namespace())
-    authorization = json.loads(captured.getvalue().strip().splitlines()[-1])["Authorization"]
-    if authorization.startswith("Bearer endpoint-not-active"):
+    answer = read_broker(getpass.getuser())
+    authorization = answer["Authorization"] if isinstance(answer, dict) and set(answer) == {"Authorization"} else None
+    if answer is None:
+        # The pipe is unreachable: the service is not running, which is not the same as waiting for activation (display only).
+        out["connection"] = {"initialized": [], "failed": {}, "tools": 0, "service": "stopped"}
+    elif not isinstance(authorization, str) or authorization.startswith("Bearer endpoint-not-active"):
         out["connection"] = {"initialized": [], "failed": {}, "tools": 0, "waiting": status.get("state") or "pending"}
     else:
         context = observer.tls_context(settings.get("ca_certificate") or "", settings.get("ca_sha256") or "")
@@ -1158,7 +1176,7 @@ def main():
     check.set_defaults(run=probe)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
-    remove.set_defaults(run=rollback)
+    remove.set_defaults(run=uninstall)
     commands.add_parser("self-check").set_defaults(run=lambda _: self_check())
     for stream in (sys.stdout, sys.stderr):
         if stream is not None and hasattr(stream, "reconfigure"):

@@ -1,6 +1,7 @@
 """Temporary ACLs and extracted PowerShell functions; never install tasks or touch the real profile."""
 import base64
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -228,6 +229,152 @@ if (-not $branch) { throw 'missing removal preamble' }
 if ($targetUser -ne $identity.Name.Split('\')[-1] -or $mode -ne 'managed') { throw 'missing settings picked wrong account' }
 if ($directory -ne 'installation') { throw 'wrong removal directory' }
 """)
+
+    def test_stopped_service_pipe_is_noticed_without_waiting_for_the_report_to_age(self):
+        # pj3 실측: 서비스 작업이 없는데 마지막 보고 뒤 150초 동안 「연결됨」이 유지됐다.
+        self.run_ps(r"""
+Add-Type -AssemblyName System.Drawing
+Import-TestFunction 'tray.ps1' 'Update-EndpointTray'
+Import-TestFunction 'tray.ps1' 'Get-EndpointNext'
+function T($key) { Get-EndpointText $key }
+function Start-EndpointProbe { throw 'probe ran while the service is stopped' }
+$user='Kit-Test-'+[Guid]::NewGuid().ToString('N')
+if (-not (Test-EndpointServicePipe '')) { throw 'unknown account counted as stopped' }
+if (Test-EndpointServicePipe $user) { throw 'missing pipe reported as running' }
+$SettingsPath=Join-Path $work 'settings.json'
+$settings=@{mode='managed';user=$user;status_path=(Join-Path $work 'status.json')}
+$icon=[pscustomobject]@{Icon=$null;Text=''}
+$simple=$false
+$script:pipeGone=$null; $script:serviceMissing=$false; $script:probe=$null
+[IO.File]::WriteAllText($SettingsPath,'{}')
+function Publish($age,$state) {
+    [IO.File]::WriteAllText($settings.status_path,(@{updated=([DateTimeOffset]::UtcNow.ToUnixTimeSeconds()-$age);connected=$true;state=$state} | ConvertTo-Json))
+}
+# Before the first report the service may simply not have started: not a stopped service.
+$script:pipeGone=[DateTime]::UtcNow.AddSeconds(-60)
+Update-EndpointTray
+if ($script:label -ne 'preparing') { throw 'first start shown as stopped' }
+$script:pipeGone=$null
+Publish 5 'active'
+Update-EndpointTray
+if ($script:label -ne 'connected' -or -not $script:pipeGone) { throw 'a restart gap must not flip the label at once' }
+$script:pipeGone=[DateTime]::UtcNow.AddSeconds(-11)
+Update-EndpointTray
+if ($script:label -ne 'service_stopped') { throw 'stopped service still connected' }
+if ($icon.Text -notmatch (Get-EndpointText 'service_stopped')) { throw 'tooltip lacks the stopped label' }
+if ((Get-EndpointNext) -ne (Get-EndpointText 'next_service')) { throw 'stopped service offered the wrong step' }
+$script:serviceMissing=$true
+if ((Get-EndpointNext) -ne (Get-EndpointText 'next_removed')) { throw 'missing task did not point to the reinstall' }
+Publish 1000 'active'
+Update-EndpointTray
+if ($script:label -ne 'service_stopped') { throw 'stale report hid the stopped service' }
+foreach ($state in @('pending','quarantined','revoked')) {
+    Publish 5 $state; Update-EndpointTray
+    if ($script:label -ne 'service_stopped') { throw "state $state hid the stopped service" }
+}
+Publish 5 'removed'; Update-EndpointTray
+if ($script:label -eq 'service_stopped') { throw 'removed state reported as stopped service' }
+Publish 5 'active'
+$pipe=New-Object IO.Pipes.NamedPipeServerStream('mcpgw-'+$user.ToLowerInvariant())
+try {
+    if (-not (Test-EndpointServicePipe $user)) { throw 'live pipe not seen' }
+    $script:probe=[pscustomobject]@{connection=[pscustomobject]@{service='stopped'}}
+    Update-EndpointTray
+    if ($script:label -ne 'connected' -or $script:pipeGone -or $script:serviceMissing) { throw 'recovery not noticed' }
+    if ($script:probe) { throw 'stopped-service check result kept after recovery' }
+} finally { $pipe.Dispose() }
+""")
+
+    def test_stopped_service_has_its_own_check_cell_in_both_languages(self):
+        self.run_ps(r"""
+Import-TestFunction 'tray.ps1' 'Get-EndpointCells'
+function T($key) { Get-EndpointText $key $script:lang }
+$script:probe='{"servers":2,"model":{"harness":null,"ok":false,"detail":"하네스 없음"},"connection":{"initialized":[],"failed":{},"tools":0,"service":"stopped"}}' | ConvertFrom-Json
+foreach ($lang in @('ko','en')) {
+    $script:lang=$lang
+    $cells=Get-EndpointCells
+    if ($cells[1] -ne (Get-EndpointText 'service_stopped' $lang)) { throw "stopped cell missing in $lang" }
+}
+if ((Get-EndpointText 'service_stopped' 'ko') -eq (Get-EndpointText 'waiting' 'ko') -or
+    (Get-EndpointText 'service_stopped' 'en') -eq (Get-EndpointText 'waiting' 'en')) { throw 'stopped looks like waiting' }
+if ((Get-EndpointValue (Get-EndpointText 'service_stopped' 'ko') 'en') -ne (Get-EndpointText 'service_stopped' 'en')) { throw 'cached value not translated' }
+""")
+
+    def test_reconnect_asks_the_elevated_side_whether_the_service_task_exists(self):
+        tray = (ROOT / "endpoint-agent/tray.ps1").read_text(encoding="utf-8-sig")
+        reconnect = tray[tray.index("function Complete-EndpointReconnect"):tray.index("function New-EndpointButton")]
+        # Only the elevated command can read the task of another principal, so it reports "missing" by exit code 3.
+        self.assertIn("Get-ScheduledTask -TaskName '$task'", reconnect)
+        self.assertIn("else { exit 3 }", reconnect)
+        self.assertIn("-PassThru -Wait", reconnect)
+        self.assertIn("$restart.ExitCode -eq 3) { $script:serviceMissing = $true }", reconnect)
+        self.assertIn("-in @('disconnected', 'service_stopped')", reconnect)
+        self.assertEqual(reconnect.count("RunAs"), 1)
+
+    def test_progress_steps_never_repeat_a_label(self):
+        # pj3 실측: 단계 목록에 「연결 등록」이 15%와 60%에 두 번 나왔다.
+        worker = (ROOT / "endpoint-agent/windows-worker.ps1").read_text(encoding="utf-8-sig")
+        labels = []
+        for line in worker.splitlines():
+            if "Set-EndpointResult" in line and "function Set-EndpointResult" not in line:
+                labels += [item for item in re.findall(r"'([^']+)'", line) if item not in ("failed", "completed", "running")]
+        self.assertGreater(len(labels), 10)
+        self.assertEqual(sorted(set(label for label in labels if labels.count(label) > 1)), [])
+
+    def test_empty_folders_are_removed_and_anything_with_content_is_kept(self):
+        self.run_ps(r"""
+Remove-EndpointEmptyDirectory (Join-Path $work 'missing')
+$empty=Join-Path $work 'empty'; $full=Join-Path $work 'full'; $nested=Join-Path $work 'nested'
+New-Item -ItemType Directory -Path $empty,$full,(Join-Path $nested 'inner') | Out-Null
+[IO.File]::WriteAllText((Join-Path $full 'employee.txt'),'keep')
+foreach ($path in @($empty,$full,$nested)) { Remove-EndpointEmptyDirectory $path }
+if (Test-Path -LiteralPath $empty) { throw 'empty folder left behind' }
+if (-not (Test-Path -LiteralPath (Join-Path $full 'employee.txt'))) { throw 'folder with a file removed' }
+if (-not (Test-Path -LiteralPath (Join-Path $nested 'inner'))) { throw 'folder with a subfolder removed' }
+Remove-EndpointEmptyDirectory (Join-Path $nested 'inner')
+Remove-EndpointEmptyDirectory $nested
+if (Test-Path -LiteralPath $nested) { throw 'emptied parent left behind' }
+Remove-EndpointEmptyDirectory (Join-Path $full 'employee.txt')
+if (-not (Test-Path -LiteralPath (Join-Path $full 'employee.txt'))) { throw 'a file was treated as a folder' }
+""")
+
+    def test_results_keep_only_the_newest_attempts_and_never_the_approval(self):
+        self.run_ps(r"""
+$results=Join-Path $work 'results'
+New-Item -ItemType Directory -Path $results | Out-Null
+$names=@()
+foreach ($i in 0..12) {
+    $name=[Guid]::NewGuid().ToString('N'); $names += $name
+    $folder=Join-Path $results $name
+    New-Item -ItemType Directory -Path $folder | Out-Null
+    [IO.File]::WriteAllText((Join-Path $folder 'result.json'),'{}')
+    (Get-Item -LiteralPath $folder).LastWriteTimeUtc=[DateTime]::UtcNow.AddHours(-$i)
+}
+$other=Join-Path $results 'not-an-attempt'
+New-Item -ItemType Directory -Path $other | Out-Null
+(Get-Item -LiteralPath $other).LastWriteTimeUtc=[DateTime]::UtcNow.AddDays(-30)
+[IO.File]::WriteAllText((Join-Path $work 'approved-windows-kit.json'),'{}')
+Remove-EndpointOldResults $results 9
+$left=@(Get-ChildItem -LiteralPath $results -Directory | Where-Object { $_.Name -match '^[a-f0-9]{32}$' } | ForEach-Object Name)
+if ($left.Count -ne 9) { throw "kept $($left.Count)" }
+foreach ($name in $names[0..8]) { if ($name -notin $left) { throw 'a newer attempt was removed' } }
+foreach ($name in $names[9..12]) { if ($name -in $left) { throw 'an older attempt was kept' } }
+if (-not (Test-Path -LiteralPath $other)) { throw 'unrelated folder removed' }
+if (-not (Test-Path -LiteralPath (Join-Path $work 'approved-windows-kit.json'))) { throw 'approval removed' }
+""")
+        trust = (ROOT / "endpoint-agent/windows-trust.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("try { Remove-EndpointOldResults $results 9 } catch { }", trust)
+        self.assertLess(trust.index("New-EndpointProtectedDirectory $results"), trust.index("Remove-EndpointOldResults $results 9"))
+        self.assertLess(trust.index("Remove-EndpointOldResults $results 9"), trust.index("New-EndpointProtectedDirectory $result $request.requester_sid"))
+
+    def test_wizard_and_removal_leave_no_empty_folder_of_their_own(self):
+        setup = (ROOT / "endpoint-agent/setup.ps1").read_text(encoding="utf-8-sig")
+        finish = setup[setup.rindex("try { [void]$form.ShowDialog() } finally"):]
+        self.assertIn("Remove-EndpointEmptyDirectory $work", finish)
+        self.assertIn("if ($script:completed) { Remove-Item -LiteralPath (Join-Path $work 'setup.log')", finish)
+        self.assertIn("if ($Remove -and $script:completed) { Remove-EndpointEmptyDirectory (Split-Path $work) }", finish)
+        worker = (ROOT / "endpoint-agent/windows-worker.ps1").read_text(encoding="utf-8-sig")
+        self.assertIn("Remove-EndpointEmptyDirectory (Split-Path $trayWork)", worker)
 
 
 if __name__ == "__main__":
