@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-26T16:00:19+09:00",
-  "head": "2bc5d703095a7c576dea22ae491d9dba5d76c952",
-  "branch": "10/26-catalog-refresh-retry",
+  "captured_at": "2026-10-26T15:48:27+09:00",
+  "head": "d2fee732d867ecc25e58eddd20ea64bec55eaa8e",
+  "branch": "10/26-kit-fullscreen",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -13,7 +12,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "3601e34dc8f57094506f74e90100da58b66387e79343f793d2a20bcf8a2c95a6"
+      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -45,11 +44,11 @@
     },
     {
       "path": "endpoint-agent/bootstrap.py",
-      "sha256": "b03eb6ae28534e6aaccf7e4deb9c35d4da0099421235efe7610022919f3b27a6"
+      "sha256": "efc806337b5023cbac3f8052a3bd4811ac27e15cba81f1e5a314e9eb05ff62c6"
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "dd73858b6da3b37e7ca87fc3c0b20148729b0a62152b71c4d8d530c448f325d9"
+      "sha256": "f72d291cf0ac9fb76ad8614acb71c210853747912d3bf6bf64d461ae38f895bd"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
