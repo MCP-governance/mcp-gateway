@@ -43,7 +43,7 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py")
+                 "offline_buffer.py", "local-runner.py", "kit_screen.py")
 STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
@@ -549,137 +549,9 @@ def render_status(summary, now, environment=None):
     return "\n".join(lines) + "\n"
 
 
-def width(text):
-    import unicodedata
-    return sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
-
-
-def clip(text, room):
-    out, used = "", 0
-    for character in text:
-        used += width(character)
-        if used > room:
-            break
-        out += character
-    return out
-
-
-class Screen:
-    """Full-screen progress for the installer and mcpgw-status (D-239): the steps with their seconds, three
-    result cells and the next thing to do. Not a terminal, no curses or no UTF-8 locale: one line per step,
-    as before, so logs and SSH sessions read the same."""
-
-    def __init__(self, title):
-        self.title, self.rows, self.cells, self.next, self.notes = title, [], [], "", []
-        self.curses = self.window = None
-        if os.environ.get("MCPGW_PLAIN") or not (sys.stdin.isatty() and sys.stdout.isatty()) \
-                or os.environ.get("TERM", "dumb") in ("", "dumb"):
-            return
-        try:
-            import curses
-            import locale
-            locale.setlocale(locale.LC_ALL, "")
-            if "utf" not in (locale.getpreferredencoding(False) or "").lower():
-                locale.setlocale(locale.LC_ALL, "C.UTF-8")
-            self.window = curses.initscr()
-            self.curses = curses
-            curses.noecho()
-            curses.cbreak()
-            try:
-                curses.curs_set(0)
-            except curses.error:
-                pass
-        except Exception:  # no terminfo, no curses build, no UTF-8 locale: plain lines
-            self.stop()
-
-    def stop(self):
-        if self.window is not None:
-            try:
-                self.curses.endwin()
-            except Exception:
-                pass
-        self.window = None
-
-    def draw(self, extra=()):
-        if self.window is None:
-            return
-        try:
-            self.window.erase()
-            height, room = self.window.getmaxyx()
-            room -= 2
-            lines = [(self.title, self.curses.A_BOLD), ("", 0)]
-            for label, started, seconds, mark in self.rows:
-                spent = f"{seconds}초" if seconds is not None else f"{int(time.monotonic() - started)}초"
-                lines.append((f"{mark} {clip(label, room - 10)}".ljust(max(0, room - 8 - (width(label) - len(label)))) + spent, 0))
-            for text in extra:
-                lines.append((text, 0))
-            if self.cells:
-                lines += [("", 0)] + [(f"{name:<6} {value}", self.curses.A_BOLD) for name, value in self.cells]
-            if self.next:
-                lines += [("", 0), ("다음 할 일: " + self.next, self.curses.A_REVERSE)]
-            lines += [("", 0)] + [(note, self.curses.A_DIM) for note in self.notes[-3:]]
-            for row, (text, attribute) in enumerate(lines[:height - 1]):
-                self.window.addstr(row, 1, clip(text, room), attribute)
-            self.window.refresh()
-        except self.curses.error:
-            pass
-
-    def step(self, label):
-        self.close_step()
-        self.rows.append([label, time.monotonic(), None, "…"])
-        if self.window is None:
-            print(f"[{label}]", flush=True)
-        self.draw()
-
-    def close_step(self, mark="✓"):
-        if self.rows and self.rows[-1][2] is None:
-            self.rows[-1][2] = round(time.monotonic() - self.rows[-1][1])
-            self.rows[-1][3] = mark
-        self.draw()
-
-    def say(self, text):
-        self.notes.append(text)
-        if self.window is None:
-            print(text, flush=True)
-        self.draw()
-
-    def result(self, cells, next_line):
-        self.cells, self.next = cells, next_line
-        if self.window is None:
-            for name, value in cells:
-                print(f"{name}: {value}", flush=True)
-            print("다음 할 일: " + next_line, flush=True)
-        self.draw()
-
-    def finish(self, wait=8):
-        """The last frame stays for `wait` seconds or a key, then the same summary goes to the scrollback."""
-        if self.window is None:
-            return
-        self.draw(extra=["", f"{wait}초 뒤 또는 아무 키나 누르면 닫힙니다"])
-        try:
-            self.window.timeout(wait * 1000)
-            self.window.getch()
-        except self.curses.error:
-            pass
-        self.stop()
-        for label, _, seconds, mark in self.rows:
-            print(f"{mark} {label} {seconds if seconds is not None else '—'}초")
-        for name, value in self.cells:
-            print(f"{name}: {value}")
-        if self.next:
-            print("다음 할 일: " + self.next)
-        for note in self.notes:
-            print(note)
-
-    def pause(self):
-        """For a program that needs the terminal itself (a model sign-in): leave full screen until resume()."""
-        if self.window is not None:
-            self.curses.endwin()
-
-    def resume(self):
-        if self.window is not None:
-            self.window.refresh()
-            self.draw()
+# Installed commands run with Python isolated mode.
+kit_screen = load_module("kit_screen", Path(__file__).with_name("kit_screen.py"))
+Screen = kit_screen.Screen
 
 
 def publish_status(summary):
@@ -759,35 +631,24 @@ def status(args):
             cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
         except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
             cells = [("연결 확인", f"실패 · {exc}")]
-    screen = Screen("내 PC 연결 상태")
+    screen = Screen()
     if screen.window is None:
         print(render_status(summary, time.time()), end="")
         for name, value in cells:
             print(f"{name}: {value}")
         return
-    # Live view: the service rewrites the summary every 10-60 s; q leaves, c checks the connection again.
-    try:
-        while True:
-            try:
-                summary = json.loads(path.read_text())
-            except (OSError, ValueError):
-                pass
-            lines = render_status(summary, time.time()).splitlines()
-            screen.next = lines.pop()[len("다음 할 일: "):]
-            screen.cells = cells
-            screen.draw(extra=lines + ["", "q 닫기 · c 연결 확인"])
-            screen.window.timeout(2000)
-            key = screen.window.getch()
-            if key in (ord("q"), 27):
-                break
-            if key == ord("c"):
-                try:
-                    cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
-                except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
-                    cells = [("연결 확인", f"실패 · {exc}")]
-    finally:
-        screen.stop()
-    print(render_status(summary, time.time()), end="")
+    screen.cells = cells
+
+    def read():
+        current = json.loads(path.read_text())
+        screen.next = next_step(current, time.time())
+        return current
+
+    def check(current):
+        return connection_cells(check_connection(current), len(current.get("names") or []))
+
+    kit_screen.live(read, check, screen)
+    print(screen.text())
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
@@ -1019,6 +880,8 @@ def serve(args):
         for target in (local.run, local.prepare):
             threading.Thread(target=target, daemon=True, args=(config, request, log)).start()
 
+    recent_blocks = []
+
     def observe():
         # Beside the heartbeat, not inside it: a round that spends up to 80 seconds here is 80 seconds
         # in which an activation by the organization goes unnoticed and the employee's harness gets
@@ -1035,6 +898,12 @@ def serve(args):
                                             timeout=40, capture_output=True, text=True)
                     output = json.loads(result.stdout.splitlines()[-1])
                     observers[name] = output.get("observation", {"state": "failed"})
+                    if name == "os-observer.py":
+                        with lock:
+                            rows = {row["id"]: row for row in recent_blocks}
+                            rows.update({row["id"]: {"id": row["id"], "at": row["at"]}
+                                         for row in output.get("recent_blocks", [])})
+                            recent_blocks[:] = sorted(rows.values(), key=lambda row: row["at"])[-5:]
                 except (OSError, ValueError, IndexError, subprocess.SubprocessError) as exc:
                     observers[name] = {"state": "failed", "error_code": type(exc).__name__}
             print(json.dumps({"endpoint_id": config["endpoint_id"], "observers": observers}), flush=True)
@@ -1129,7 +998,8 @@ def serve(args):
             with lock:
                 cache["state"] = report["state"]
             summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]),
-                           names=sorted(policy["servers"]),
+                           names=sorted(policy["servers"]), harnesses=dict(HARNESS_VERSIONS),
+                           protected_configs=health.get("protected_configs"),
                            claude_ca="NODE_EXTRA_CA_CERTS" in policy["files"]["managed-settings.json"])
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
@@ -1141,6 +1011,8 @@ def serve(args):
                               "status": getattr(exc, "code", None), "reason": str(exc)[:200]}), flush=True)
         if local:
             summary["local"] = dict(local.preparation)
+        with lock:
+            summary["blocks"] = list(recent_blocks)
         try:
             publish_status(summary)
         except OSError:
