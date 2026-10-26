@@ -28,7 +28,7 @@ FILES = {'managed-mcp.json': Path('/Library/Application Support/ClaudeCode/manag
          'managed-settings.json': Path('/Library/Application Support/ClaudeCode/managed-settings.json'),
          'requirements.toml': Path('/etc/codex/requirements.toml'),
          'managed_config.toml': Path('/etc/codex/managed_config.toml')}
-SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py')
+SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py', 'kit_screen.py')
 ROLLBACK_ORDER = ('launchd', 'shims', 'wrappers', 'pf', 'settings', 'programs', 'account')
 
 

@@ -141,6 +141,7 @@ def main() -> None:
     command = ["journalctl", "-k", "-o", "json", "--no-pager"]
     command += ["--after-cursor", buffer_cursor.read_text().strip()] if buffer_cursor.exists() else ["--since", "-1 hour"]
     state, count, error = "success", 0, ""
+    recent_blocks = []
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=20)
         batch = []
@@ -151,6 +152,8 @@ def main() -> None:
             found = event(record, args.uid, args.profile, line)
             if found:
                 batch.append(found)
+                recent_blocks.append({"id": found["event_id"], "at": found["observed_at"]})
+                recent_blocks = recent_blocks[-5:]
             if len(batch) == 100:
                 buffer.enqueue(batch)
                 batch.clear()
@@ -187,7 +190,8 @@ def main() -> None:
             buffer.clear_dropped()
     except (OSError, ValueError, subprocess.SubprocessError):
         state, error = "failed", "delivery_failed"
-    print(json.dumps({"observation": {"os": {"state": state, "accepted_count": min(count, 500), "error_code": error}}}), flush=True)
+    print(json.dumps({"observation": {"os": {"state": state, "accepted_count": min(count, 500), "error_code": error}},
+                      "recent_blocks": recent_blocks}), flush=True)
     if state == "failed":
         raise SystemExit(1)
 
