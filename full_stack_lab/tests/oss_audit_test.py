@@ -7,8 +7,10 @@ import os
 import secrets
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from fastapi import HTTPException
@@ -16,6 +18,101 @@ from fastapi.testclient import TestClient
 
 from app import audit, main, oidc, secret_scan
 from intake_worker import gitleaks_counts
+
+NOW = datetime(2026, 10, 26, 12, tzinfo=UTC)
+REFRESH_ENV = {"OIDC_ISSUER": "https://idp.example", "OIDC_CLIENT_ID": "cid", "OIDC_CLIENT_SECRET": "client-secret",
+               "OIDC_SESSION_SECRET": "session-secret-" * 3}
+
+
+@patch.dict(os.environ, REFRESH_ENV)
+def refresh_cases(module):
+    """Run module._refresh_upstream over every branch with a fake ledger and IdP; return {case: (result, log)}."""
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW
+
+    def row(**over):
+        base = {"upstream_token": module.seal("old-access"), "upstream_refresh_token": module.seal("old-refresh"),
+                "upstream_expires_at": NOW - timedelta(seconds=5), "expires_at": NOW + timedelta(hours=1),
+                "last_activity_at": NOW - timedelta(minutes=1), "user_id": "u", "status": "active"}
+        return {**base, **over}
+
+    def reply(status=200, **body):
+        def raise_for_status():
+            if status >= 400:
+                raise RuntimeError("status")
+        return lambda: SimpleNamespace(status_code=status, json=lambda: body, raise_for_status=raise_for_status)
+
+    def down():
+        raise ConnectionError("down")
+
+    def refused():
+        raise AssertionError("no IdP call expected")
+
+    def plain(value):
+        return module.unseal(bytes(value)) if isinstance(value, bytes) else value
+
+    def casefile(found, post, metadata=True):
+        log = []
+
+        class Cursor:
+            async def fetchone(self):
+                return found
+
+        class Conn:
+            async def execute(self, sql, params=()):
+                log.append(("sql", " ".join(sql.split()), tuple(plain(v) for v in params)))
+                return Cursor()
+
+        @asynccontextmanager
+        async def transaction():
+            yield Conn()
+
+        class Http:
+            def __init__(self, **kwargs):
+                log.append(("client", kwargs))
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *exc):
+                return False
+
+            async def post(self, url, auth, data):
+                log.append(("post", url, auth, data))
+                return post()
+
+        loaded = (AsyncMock(return_value={"token_endpoint": "https://idp.example/token"}) if metadata
+                  else AsyncMock(side_effect=RuntimeError("metadata")))
+        with patch.object(module.db, "transaction", transaction), patch.object(module.httpx, "AsyncClient", Http), \
+                patch.object(module, "datetime", Clock), patch.object(module, "http_transport", lambda: "pinned"), \
+                patch.object(module, "client", lambda: SimpleNamespace(load_server_metadata=loaded)):
+            try:
+                result = asyncio.run(module._refresh_upstream({"jti": "j", "identity_binding": "b"}))
+                if result:
+                    result = {**result, "upstream_token": plain(result["upstream_token"])}
+            except HTTPException as exc:
+                result = ("HTTP", exc.status_code, exc.detail)
+        return result, log
+
+    ok = {"access_token": "new-access", "expires_in": 3600}
+    return {
+        "fresh": casefile(row(upstream_expires_at=NOW + timedelta(seconds=120)), refused),
+        "rotated": casefile(row(), reply(**ok, refresh_token="new-refresh")),
+        "kept refresh": casefile(row(), reply(**ok)),
+        "invalid_grant": casefile(row(), reply(400, error="invalid_grant")),
+        "other 400": casefile(row(), reply(400, error="invalid_request")),
+        "no access token": casefile(row(), reply(expires_in=3600)),
+        "no lifetime": casefile(row(), reply(access_token="x", expires_in=0)),
+        "idp down": casefile(row(), down),
+        "metadata down": casefile(row(), refused, metadata=False),
+        "no refresh token": casefile(row(upstream_refresh_token=None), refused),
+        "missing": casefile(None, refused),
+        "suspended": casefile(row(status="suspended"), refused),
+        "session over": casefile(row(expires_at=NOW), refused),
+        "idle": casefile(row(last_activity_at=NOW - timedelta(minutes=30)), refused),
+    }
 
 
 class AuditTest(unittest.TestCase):
@@ -120,6 +217,39 @@ class OidcTest(unittest.TestCase):
                 oidc.client()
             self.assertEqual(unconfigured.exception.status_code, 503)
             self.assertEqual(oidc.oauth._registry, {})
+
+    def test_upstream_refresh_branches_hold_the_row_lock_and_keep_their_outcomes(self):
+        from app import identity_sessions
+        self.assertIs(oidc._refresh_upstream, identity_sessions._refresh_upstream)
+        post = ("post", "https://idp.example/token", ("cid", "client-secret"),
+                {"grant_type": "refresh_token", "refresh_token": "old-refresh"})
+        unavailable = ("HTTP", 503, "인증 제공자에서 세션을 갱신하지 못해 접근을 보류했습니다.")
+        expire = ("sql", "UPDATE console_sessions SET expires_at=now() WHERE jti=%s", ("j",))
+        renew = "UPDATE oidc_sessions SET upstream_token=%s,upstream_refresh_token=%s,upstream_expires_at=%s WHERE jti=%s"
+        renewed = {"upstream_token": "new-access", "issuer": "https://idp.example"}
+        later = NOW + timedelta(hours=1)
+        expected = {
+            "fresh": ({"upstream_token": "old-access", "issuer": "https://idp.example"}, []),
+            "rotated": (renewed, [post, ("sql", renew, ("new-access", "new-refresh", later, "j"))]),
+            "kept refresh": (renewed, [post, ("sql", renew, ("new-access", "old-refresh", later, "j"))]),
+            "invalid_grant": (None, [post, expire, ("sql", "UPDATE oidc_sessions SET upstream_refresh_token=NULL WHERE jti=%s", ("j",))]),
+            "other 400": (unavailable, [post]), "no access token": (unavailable, [post]),
+            "no lifetime": (unavailable, [post]), "idp down": (unavailable, [post]),
+            "metadata down": (unavailable, []), "no refresh token": (None, [expire]),
+            "missing": (None, []), "suspended": (None, []), "session over": (None, []), "idle": (None, []),
+        }
+        cases = refresh_cases(identity_sessions)
+        self.assertEqual(cases.keys(), expected.keys())
+        for name, (result, log) in cases.items():
+            with self.subTest(name):
+                if name != "metadata down":
+                    lock, *rest = log
+                    self.assertTrue(lock[1].endswith("WHERE s.jti=%s AND s.binding_id=%s FOR UPDATE OF s"), lock[1])
+                    self.assertEqual(lock[2], ("j", "b"))
+                    self.assertTrue(all(entry[1] == {"follow_redirects": False, "timeout": 10, "transport": "pinned",
+                                                     "trust_env": False} for entry in rest if entry[0] == "client"))
+                    log = [entry for entry in rest if entry[0] != "client"]
+                self.assertEqual((result, log), expected[name])
 
     def test_handoff_cannot_be_reused_or_empty(self):
         from starlette.requests import Request
