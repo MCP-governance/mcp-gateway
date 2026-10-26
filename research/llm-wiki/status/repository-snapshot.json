@@ -1,11 +1,12 @@
 {
-  "captured_at": "2026-10-26T15:24:57+09:00",
-  "head": "5ce589617374d4e16f1c6f598d2d81d48567c795",
-  "branch": "10/25-refactor-proposal-sync",
+  "captured_at": "2026-10-26T15:49:08+09:00",
+  "head": "5f4d3162ac18466390014e0d73b47a464beb3b6e",
+  "branch": "10/26-harden-codex",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/status/backlog.md"
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/decisions-index.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -53,7 +54,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
+      "sha256": "98c8cdd71f25e7079ccc73014c21c4bdc2811edee87c654f99dee8a21c60d966"
     }
   ]
 }
