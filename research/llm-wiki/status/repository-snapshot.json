@@ -1,11 +1,11 @@
 {
-  "captured_at": "2026-10-26T15:24:57+09:00",
-  "head": "5ce589617374d4e16f1c6f598d2d81d48567c795",
-  "branch": "10/25-refactor-proposal-sync",
+  "captured_at": "2026-10-26T16:00:19+09:00",
+  "head": "2bc5d703095a7c576dea22ae491d9dba5d76c952",
+  "branch": "10/26-catalog-refresh-retry",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/status/backlog.md"
+    " M research/llm-wiki/catalogs/threats.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
@@ -13,7 +13,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
+      "sha256": "3601e34dc8f57094506f74e90100da58b66387e79343f793d2a20bcf8a2c95a6"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
