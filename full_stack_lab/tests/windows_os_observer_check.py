@@ -5,13 +5,16 @@ These tests do not inspect the host's Windows Event Logs or prove a real-device 
 from __future__ import annotations
 
 import importlib.util
+import ast
 import base64
 import json
 import os
 import subprocess
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +41,34 @@ def app_event(event_id: int = 8004, sid: str = SID, record_id: int = 31, path: s
 
 
 class WindowsOSEventTests(unittest.TestCase):
+    def test_service_records_partial_snapshot_without_called_process_error(self):
+        source = ast.parse((ROOT / 'endpoint-agent/managed-windows.py').read_text(encoding='utf-8'))
+        observe = next(node for node in ast.walk(source) if isinstance(node, ast.FunctionDef) and node.name == 'observe')
+        class StopRound(Exception):
+            pass
+        cases = []
+        for state in ('success', 'partial'):
+            observation = {'inventory': {'state': 'success'}, 'process': {'state': state}, 'network': {'state': 'disabled'}}
+            cases.append((SimpleNamespace(stdout=json.dumps({'observation': observation})), state))
+        cases += [(SimpleNamespace(stdout='not json'), 'JSONDecodeError'),
+                  (SimpleNamespace(stdout='{"observation":{}}'), 'KeyError'),
+                  (subprocess.CalledProcessError(1, 'collector'), 'CalledProcessError'),
+                  (subprocess.TimeoutExpired('collector', 40), 'TimeoutExpired')]
+        for output, expected in cases:
+            latest = {}
+            run = mock.Mock(side_effect=[output,
+                                        SimpleNamespace(stdout='{"channel":"os","state":"disabled"}')])
+            namespace = {'json': json, 'sys': SimpleNamespace(executable='python'), 'PROGRAMS': ROOT,
+                         'observer_config': ROOT / 'unused-fixture.json', 'subprocess': SimpleNamespace(
+                             run=run, SubprocessError=subprocess.SubprocessError), 'latest': latest,
+                         'lock': threading.Lock(), 'time': SimpleNamespace(sleep=mock.Mock(side_effect=StopRound))}
+            exec(compile(ast.Module(body=[observe], type_ignores=[]), '<service-observe>', 'exec'), namespace)
+            with self.assertRaises(StopRound):
+                namespace['observe']()
+            self.assertEqual(latest['inventory'], expected)
+            self.assertEqual(latest['os']['state'], 'disabled')
+            self.assertTrue(run.call_args_list[0].kwargs['check'])
+
     def test_exact_managed_sid_yields_safe_event_contract(self):
         row, issue = observer.parse_event(app_event(), observer.CHANNELS[1][0], "applocker", SID)
         self.assertIsNone(issue)

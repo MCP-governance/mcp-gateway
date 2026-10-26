@@ -139,6 +139,62 @@ if (Test-Path -LiteralPath (Join-Path $machine 'agent.py')) { throw 'kit file le
 if (-not (Test-Path -LiteralPath (Join-Path $machine 'employee.txt'))) { throw 'employee file removed' }
 """)
 
+    def test_activation_rechecks_cached_waiting_once_and_keeps_new_result(self):
+        self.run_ps(r"""
+Add-Type -AssemblyName System.Drawing
+Import-TestFunction 'tray.ps1' 'Update-EndpointTray'
+function T($key) { Get-EndpointText $key }
+$script:starts=0
+function Start-EndpointProbe { $script:starts++; $script:probeJob=@{running=$true} }
+$SettingsPath=Join-Path $work 'settings.json'
+$settings=@{status_path=(Join-Path $work 'status.json')}
+$icon=[pscustomobject]@{Icon=$null;Text=''}
+$simple=$true
+[IO.File]::WriteAllText($SettingsPath,'{}')
+$script:probe=@{connection=@{waiting='pending'}}
+foreach ($state in @('pending','active','active')) {
+    [IO.File]::WriteAllText($settings.status_path,(@{updated=[DateTimeOffset]::UtcNow.ToUnixTimeSeconds();connected=$true;state=$state} | ConvertTo-Json))
+    Update-EndpointTray
+    if ($state -eq 'pending' -and ($script:starts -ne 0 -or -not $script:probe)) { throw 'pending started a check' }
+}
+if ($script:starts -ne 1 -or $script:probe) { throw 'cached waiting was retained or check duplicated' }
+$script:probeJob=$null
+$script:probe=@{connection=@{initialized=@('learn');tools=40}}
+Update-EndpointTray
+if ($script:starts -ne 1 -or $script:probe.connection.tools -ne 40) { throw 'fresh result was discarded' }
+""")
+
+    def test_language_switch_translates_existing_values_without_mutating_snapshot(self):
+        self.run_ps(r"""
+Import-TestFunction 'tray.ps1' 'Get-EndpointCells'
+Import-TestFunction 'tray.ps1' 'Update-EndpointWindow'
+function T($key) { Get-EndpointText $key $script:lang }
+function Get-EndpointNext { T 'next_ready' }
+$keys=@('connection','management','way','servers','harness','reported','model','tools','server','gateway','next')
+$captions=@{};$values=@{}
+foreach ($key in $keys) { $captions[$key]=[pscustomobject]@{Text=''}; $values[$key]=[pscustomobject]@{Text=''} }
+$script:window=[pscustomobject]@{IsDisposed=$false;Text='';Tag=@{captions=$captions;values=$values;buttons=@()}}
+$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');harnesses=@{claude='2.1.302'}}
+$script:healthResult=Get-EndpointText 'gateway_ok' 'ko'
+$script:probe=@{model=@{detail='하네스 없음'};connection=@{initialized=@();waiting='pending'}}
+$script:label='connected'; $simple=$true; $script:updated='—'
+foreach ($lang in @('en','ko','en')) {
+    $script:lang=$lang
+    Update-EndpointWindow
+    if ($values.management.Text -ne (Get-EndpointText 'active' $lang)) { throw 'management language stale' }
+    if ($values.gateway.Text -ne (Get-EndpointText 'gateway_ok' $lang)) { throw 'cached gateway language stale' }
+    if ($values.model.Text -ne (Get-EndpointText 'no_harness_probe' $lang)) { throw 'model language stale' }
+    if ($values.tools.Text -ne (Get-EndpointText 'waiting' $lang)) { throw 'tools language stale' }
+    if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'server id guessed' }
+}
+if ($script:snapshot.management -ne '활성') { throw 'display translation mutated status' }
+foreach ($state in @('active','pending','quarantined','revoked','removed','unknown')) {
+    $script:snapshot.state=$state
+    Update-EndpointWindow
+    if ($values.management.Text -match '[가-힣]' -or $values.management.Text -ceq $state) { throw 'untranslated state' }
+}
+""")
+
     def test_registration_precedes_installed_mutations_and_one_failure_dialog(self):
         worker = (ROOT / "endpoint-agent/windows-worker.ps1").read_text(encoding="utf-8-sig")
         enroll = worker.index("Invoke-EndpointPython $stagePython $enrollArguments")
@@ -150,6 +206,9 @@ if (-not (Test-Path -LiteralPath (Join-Path $machine 'employee.txt'))) { throw '
         self.assertIn("if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { exit 1 }", template)
         self.assertNotIn("throw 'Installation did not complete'", template)
         self.assertIn("Join-Path $trayWork 'show-status'", worker)
+        cleanup = worker.index("foreach ($name in @('probe.json', 'probe.json.tmp', 'probe.err'))")
+        self.assertLess(cleanup, worker.index("Join-Path $trayWork 'show-status'"))
+        self.assertLess(cleanup, worker.index('Start-ScheduledTask -TaskName "MCPGatewayTray-$person"'))
 
     def test_remove_wizard_can_resolve_user_without_settings_json(self):
         self.run_ps(r"""

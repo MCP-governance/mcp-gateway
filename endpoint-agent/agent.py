@@ -1171,7 +1171,7 @@ def main() -> int:
                 enrolled = True
                 log("등록 완료")
             results = once()
-            failed = any(value["state"] in {"failed", "partial", "unauthorized"} for value in results.values())
+            failed = any(value["state"] in {"failed", "unauthorized"} for value in results.values())
             # The tray shows the link, not snapshot completeness (partial is reported to the Gateway already).
             linked = not any(value["state"] in {"failed", "unauthorized"} for value in results.values())
         except urllib.error.HTTPError as exc:

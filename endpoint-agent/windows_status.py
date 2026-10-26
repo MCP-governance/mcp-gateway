@@ -1,8 +1,13 @@
 """Credential-free local tray snapshot; never a source of authorization decisions."""
+import importlib.util
 import json
 import os
 import time
 from pathlib import Path
+
+spec = importlib.util.spec_from_file_location("kit_screen", Path(__file__).with_name("kit_screen.py"))
+screen_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(screen_module)
 
 # What the tray may show beside the connection (D-239): names and versions only, never a key or token.
 DETAILS = {"state", "servers", "mode", "harnesses", "gateway", "protected_configs"}
@@ -46,48 +51,46 @@ def publish(path, connected, blocks=(), management="", details=None):
         temporary.unlink(missing_ok=True)
 
 
-def render(document, now=None):
+def render(document, now=None, language="ko"):
     """The same status as the tray, as text for a console (python windows_status.py <status.json>)."""
     now = time.time() if now is None else now
     age = now - float(document.get("updated") or 0)
     connected = bool(document.get("connected")) and 0 <= age <= 150
     servers = document.get("servers") or []
     versions = document.get("harnesses") or {}
+    t = lambda value: screen_module.translate(value, language)
     return "\n".join([
-        "연결 상태: " + ("연결됨" if connected else "연결 끊김"),
-        "관리 상태: " + (document.get("management") or "—"),
-        "연결 방식: " + {"simple": "간편 모드 (게이트웨이 판정)", "isolated": "격리 계정"}.get(document.get("mode"), "—"),
-        "승인 서버: " + (f"{len(servers)}개 · " + ", ".join(servers) if servers else "—"),
-        "하네스: " + (", ".join(f"{k} {v}" for k, v in sorted(versions.items())) or "—"),
-        "최근 보고: " + (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(document["updated"])) if document.get("updated") else "—"),
+        t("연결 상태: ") + t("연결됨" if connected else "연결 끊김"),
+        t("관리 상태: ") + t(screen_module.STATES.get(document.get("state"), document.get("management") or "—")),
+        t("연결 방식: ") + t({"simple": "간편 모드 (게이트웨이 판정)", "isolated": "격리 계정"}.get(document.get("mode"), "—")),
+        t("승인 서버: ") + (t(f"{len(servers)}개 · ") + ", ".join(servers) if servers else "—"),
+        t("하네스: ") + (", ".join(f"{k} {v}" for k, v in sorted(versions.items())) or "—"),
+        t("최근 보고: ") + (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(document["updated"])) if document.get("updated") else "—"),
     ]) + "\n"
 
 
 def main():
     import argparse
-    import importlib.util
     import subprocess
     import sys
     parser = argparse.ArgumentParser()
     parser.add_argument("status", type=Path)
     parser.add_argument("--settings", type=Path)
     parser.add_argument("--probe", type=Path)
+    parser.add_argument("--language", choices=("ko", "en"), default="ko")
     args = parser.parse_args()
     for stream in (sys.stdout,):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        print(render(json.loads(args.status.read_text(encoding="utf-8"))), end="")
+        print(render(json.loads(args.status.read_text(encoding="utf-8")), language=args.language), end="")
         return
-    spec = importlib.util.spec_from_file_location("kit_screen", Path(__file__).with_name("kit_screen.py"))
-    screen_module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(screen_module)
     if args.settings is None:
         for name in ("settings.json", "tray-settings.json"):
             if args.status.with_name(name).is_file():
                 args.settings = args.status.with_name(name)
                 break
-    screen = screen_module.Screen()
+    screen = screen_module.Screen(language=args.language)
     probe_time = None
 
     def read():
