@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T14:41:34+09:00",
-  "head": "52656dd65d6ed1b4fe8d21bdb48f9dd6245d4817",
-  "branch": "10/26-managed-codex-sandbox-exec",
+  "captured_at": "2026-10-26T15:15:08+09:00",
+  "head": "d333339823f8b2ccea3641ae4233610a66a25149",
+  "branch": "10/26-kit-native-download",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -12,7 +12,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "2b7878b5f230fde2f46a2cbe9e27bec4372004b3e317ea76d059eb988d579386"
+      "sha256": "645f933dc48497f61d2929466d9bb36b8b066300379bd2527d0419e4a02b184d"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -52,7 +52,7 @@
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
-      "sha256": "3520a493275b7a667b93279006fb1c542b2de498af6409ab88548cb16d8a5f63"
+      "sha256": "cbf0ea7d4d07df235f7bbc50b5b775bd61569968d7ba06a645bd8527d22b59c9"
     }
   ]
 }

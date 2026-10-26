@@ -136,13 +136,21 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
               AND (%s::text IS NULL OR t.server_id = %s)
             ORDER BY t.server_id, t.name""", (server, server))
     person = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (principal,))
-    tools = []
+    grouped = {}
     for row in rows:
         if not registry.permits(registry.allowed_principals(row["server_id"]), principal):
             continue
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
             continue  # a tool nobody scoped is neither listed here nor callable (D-91)
-        sunset = await tool_sunset.check(row["server_id"], row["name"])
+        grouped.setdefault(row["server_id"], []).append(row)
+    states = {}
+    for server_id, server_rows in grouped.items():
+        states[server_id] = await tool_sunset.check_many(server_id, [row["name"] for row in server_rows])
+    tools = []
+    for row in rows:
+        if row["name"] not in states.get(row["server_id"], {}):
+            continue
+        sunset = states[row["server_id"]][row["name"]]
         try:
             listable = tool_sunset.listable(sunset)
         except RuntimeError as exc:
