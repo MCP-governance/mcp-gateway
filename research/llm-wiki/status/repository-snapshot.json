@@ -1,11 +1,11 @@
 {
-  "captured_at": "2026-10-26T12:40:24+09:00",
-  "head": "42d06920aab61d2b979da9ea73e004acf94a2ed6",
-  "branch": "10/25-stage0-disposal",
+  "captured_at": "2026-10-26T13:32:17+09:00",
+  "head": "815096b5a6ae7b8306c5f7367a2df23dde273349",
+  "branch": "10/26-kit-native-download",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md"
+    " M research/llm-wiki/catalogs/threats.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
