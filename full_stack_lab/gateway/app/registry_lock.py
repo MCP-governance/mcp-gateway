@@ -31,5 +31,9 @@ def main(argv: list[str]) -> None:
     if argv == ["lock"]:
         print(json.dumps(asyncio.run(build_lock()), ensure_ascii=False, indent=1, sort_keys=True))
     else:
-        print("usage: python -m app.registry lock", file=sys.stderr)
+        print("usage: python -m app.registry_lock lock", file=sys.stderr)
         sys.exit(2)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

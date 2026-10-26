@@ -7,7 +7,7 @@ Both are reviewed in git; the database is the runtime copy the policy path reads
 
 Run as a module to (re)generate the lock from the live servers:
 
-    python -m app.registry lock      # prints the lock JSON for every catalog server
+    python -m app.registry_lock lock      # prints the lock JSON for every catalog server
 
 Servers an admin registers from the Console (an approved intake request → Gateway, D-49)
 live beside the reviewed files in REGISTRY_RUNTIME_DIR/servers.json, in the same shape
@@ -288,11 +288,7 @@ def review_matches(approved: dict | None, tool: dict) -> bool:
     return approved == observed
 
 
-async def build_lock() -> dict:
-    from . import registry_lock
-    return await registry_lock.build_lock()
-
-
 if __name__ == "__main__":
-    from . import registry_lock
-    registry_lock.main(sys.argv[1:])
+    # The lock command lives in registry_lock now. Exit non-zero rather than print nothing: callers redirect
+    # this output into the lock file, and an empty replacement would pass for an approved lock.
+    sys.exit("moved: python -m app.registry_lock lock")
