@@ -52,7 +52,7 @@ class IncidentTimerCheck(unittest.IsolatedAsyncioTestCase):
                 "jurisdictions": ["KR-NETWORK"]}
         with patch.object(incidents.db, "execute", new_callable=AsyncMock) as execute, \
              patch.object(incidents.db, "fetch_all", new_callable=AsyncMock) as fetch_all, \
-             patch.object(incidents.ops_response, "emit_alert", new_callable=AsyncMock) as emit:
+             patch.object(incidents.alert_store, "emit_alert", new_callable=AsyncMock) as emit:
             fetch_all.side_effect = [[case], []]
             await incidents.check_deadlines()
         execute.assert_awaited_once()
@@ -217,7 +217,7 @@ def isolated_incidents():
     namespace["audit"] = SimpleNamespace(**{key: namespace[key] for key in ("PROJECTION", "predicates", "with_outcome")})
     namespace["db"] = SimpleNamespace(fetch_one=AsyncMock(), fetch_all=AsyncMock(), execute=AsyncMock())
     namespace["core"] = SimpleNamespace(verify_audit_chain=AsyncMock(return_value={"intact": True}))
-    namespace["ops_response"] = SimpleNamespace(emit_alert=AsyncMock())
+    namespace["alert_store"] = SimpleNamespace(emit_alert=AsyncMock())
     path = Path(__file__).resolve().parents[1]/"gateway"/"app"/"incidents.py"
     tree = ast.parse(path.read_text(encoding="utf-8"))
     tree.body = [node for node in tree.body if not isinstance(node, (ast.Import, ast.ImportFrom))]
@@ -273,10 +273,10 @@ class IncidentRevisionAdapterCheck(unittest.IsolatedAsyncioTestCase):
         api = self.api
         case = {**self.case, "detected_at": datetime.now(timezone.utc)-timedelta(days=2)}
         api.db.fetch_all.side_effect = [[case, {**case, "id": "second"}], [], []]
-        api.ops_response.emit_alert.side_effect = [RuntimeError("delivery failed"), None]
+        api.alert_store.emit_alert.side_effect = [RuntimeError("delivery failed"), None]
         with self.assertLogs(level="ERROR"):
             with self.assertRaises(RuntimeError): await api.check_deadlines()
-        self.assertEqual(api.ops_response.emit_alert.await_count, 2)
+        self.assertEqual(api.alert_store.emit_alert.await_count, 2)
         api.db.execute.assert_awaited_once()
         self.assertIn("SET last_failed_at=", api.db.execute.await_args.args[0])
         self.assertNotIn("SET checked_at=", api.db.execute.await_args.args[0])
@@ -288,7 +288,7 @@ class IncidentRevisionAdapterCheck(unittest.IsolatedAsyncioTestCase):
         api.db.fetch_all.side_effect = [[case], []]
         async def emit(*args): sequence.append("alert")
         async def execute(*args): sequence.append("success")
-        api.ops_response.emit_alert.side_effect = emit
+        api.alert_store.emit_alert.side_effect = emit
         api.db.execute.side_effect = execute
         await api.check_deadlines()
         self.assertEqual(sequence, ["alert", "success"])

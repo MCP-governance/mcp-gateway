@@ -11,6 +11,7 @@ import httpx
 from psycopg.types.json import Jsonb
 
 from . import db, local_jobs, release, review
+from .alert_store import emit_alert
 from .contract import POLICY_RESULT, canonical_hash
 from .selective import restricted_tools
 
@@ -32,12 +33,6 @@ def alert_kind(policy_id):
     if policy_id.startswith(("P-ANOMALY-", "P-VOLUME-")):
         return "call-burst"
     return None
-
-
-async def emit_alert(kind, origin, origin_id, evidence, synthetic=False):
-    return await db.fetch_one(
-        """INSERT INTO ops_alerts(kind,origin,origin_id,evidence,synthetic) VALUES (%s,%s,%s,%s,%s)
-           ON CONFLICT DO NOTHING RETURNING id,synthetic""", (kind, origin, str(origin_id), Jsonb(evidence), synthetic))
 
 
 async def catalog_alerts(server_id, findings, snapshot_id, synthetic=False):
