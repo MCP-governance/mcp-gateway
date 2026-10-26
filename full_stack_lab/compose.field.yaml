@@ -32,13 +32,14 @@ services:
 
   caddy:
     image: caddy:2.11.4-alpine
+    user: "${CONSOLE_CADDY_UID:-10001}:0"
     restart: unless-stopped
     depends_on:
       gateway: {condition: service_started}
       agent-service: {condition: service_started}
     ports:
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:443:8080"
-      # 브라우저 콘솔만(D-129). 하네스·키트 경로는 이 포트에서 421로 거절한다.
+      # 인증서 방식이 none일 때만 콘솔을 제공하며, HTTPS를 켜면 이름 기반 주소로 리디렉트한다.
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:8000:8081"
     environment:
       FIELD_TLS_ADDRESSES: ${FIELD_TLS_ADDRESSES:?./console.sh field up을 사용하세요}
@@ -53,6 +54,9 @@ services:
       edge:
         # corp-git의 REVERSE_PROXY_TRUSTED_PROXIES와 같은 값. 다른 컨테이너는 Gitea에 신원 헤더를 실을 수 없다.
         ipv4_address: ${MCP_NET_PREFIX:-10.245}.1.250
+    # 이미지의 caddy 바이너리는 파일 능력을 달고 있어 경계 집합에 이 능력이 없으면 실행되지 않는다.
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
 
   # 관리형 엔드포인트 계정의 모델 API 경로(D-67). 엔드포인트 방화벽은 이 호스트의 게이트웨이·프록시 포트만 열어 두고,

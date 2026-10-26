@@ -53,6 +53,9 @@ load_env() {
   [[ "$MINT_BIND" != 0.0.0.0 && "$MINT_BIND" != 127.* ]] || die "MINT_BIND는 모든 인터페이스나 loopback이 될 수 없습니다."
   CONSOLE_URL="https://${MINT_BIND}"
   console_tls_configure
+  if [[ "$FIELD_CONSOLE_TLS" == tailscale ]]; then
+    [[ "$MINT_BIND" == "$(local_tailscale_ip)" ]] || die "tailscale 방식의 MINT_BIND는 이 기기의 실제 Tailscale IPv4여야 합니다."
+  fi
   MINT_TLS_ADDRESSES="https://${MINT_BIND}:8080"
   local name; name="$(env_value MINT_PUBLIC_NAME)"
   if [[ -n "$name" ]]; then
@@ -202,6 +205,7 @@ up() {
   wait_ready
   first_admin
   echo "[3/4] HTTPS 앞단·모델 프록시 ($MINT_BIND)"
+  console_caddy_prepare dc
   dc up -d --force-recreate caddy
   dc up -d model-proxy
   if [[ $with_siem == 1 ]]; then dc --profile siem up -d siem-worker; fi

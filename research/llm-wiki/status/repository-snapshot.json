@@ -1,11 +1,11 @@
 {
-  "captured_at": "2026-10-26T16:12:02+09:00",
-  "head": "7d33349b011747101e8b132b42751f1aaf25a8b1",
-  "branch": "10/26-harden-codex",
+  "captured_at": "2026-10-26T16:34:41+09:00",
+  "head": "e2a72dad3f85bfc3b14fdb82f14068ea7f7d6055",
+  "branch": "10/26-harden-https",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/catalogs/threats.json"
+    " M research/llm-wiki/status/decisions-index.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
