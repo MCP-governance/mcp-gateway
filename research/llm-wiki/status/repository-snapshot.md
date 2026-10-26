@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T12:40:24+09:00
+확인 시각: 2026-10-26T13:22:57+09:00
 
-HEAD: `42d06920aab61d2b979da9ea73e004acf94a2ed6` · 로컬 브랜치: `10/25-stage0-disposal`
+HEAD: `b9cde73234b876f0118cd317360aa07018ffa621` · 로컬 브랜치: `10/25-stage0-loadtest`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,7 +11,6 @@ HEAD: `42d06920aab61d2b979da9ea73e004acf94a2ed6` · 로컬 브랜치: `10/25-sta
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/analysis/threat-trace-review-1020/README.md
 ```
 
 ## 주요 파일 바이트
