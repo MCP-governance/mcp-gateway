@@ -1,7 +1,7 @@
 {
-  "captured_at": "2026-10-26T01:34:22+09:00",
-  "head": "05d091f90b573395e78454b93a39bf088eac151e",
-  "branch": "10/25-stage0-ci",
+  "captured_at": "2026-10-26T12:41:32+09:00",
+  "head": "fa76eb17363f40ce5bdcf33abbc36cc602e47790",
+  "branch": "10/25-stage0-adminpool",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json"
@@ -12,7 +12,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898"
+      "sha256": "8ba63f426277e2373c703893e4b1ea312f1401e85b9fdc34699e85b0f3ff7415"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",

@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T01:34:22+09:00
+확인 시각: 2026-10-26T12:41:32+09:00
 
-HEAD: `05d091f90b573395e78454b93a39bf088eac151e` · 로컬 브랜치: `10/25-stage0-ci`
+HEAD: `fa76eb17363f40ce5bdcf33abbc36cc602e47790` · 로컬 브랜치: `10/25-stage0-adminpool`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -17,7 +17,7 @@ M research/llm-wiki/analysis/integration-cases.json
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `5ef8588174155edaf0e54bbe35fb441ac7cda0959dba709cd2f4ac7b831c8898` |
+| `full_stack_lab/gateway/app/core.py` | `8ba63f426277e2373c703893e4b1ea312f1401e85b9fdc34699e85b0f3ff7415` |
 | `full_stack_lab/gateway/app/pac.py` | `852d93b3c0b42bda45acb3331173d704bf19d27338fb058b395b2e8c87d125bc` |
 | `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
 | `full_stack_lab/gateway/app/idp.py` | `46062b27dd41648715c8b7d9225b526a3e1175bb6f892cc08bd46dbaf0b9a216` |
