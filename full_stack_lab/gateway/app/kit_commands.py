@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 MACOS_COMMAND = '/bin/bash "$HOME/Downloads/mcp-connect-macos.command"'
 
 
-def macos_bootstrap(public, ticket, certificate):
+def macos_bootstrap(public, ticket, certificate, isolated=False):
     parsed = urlsplit(public)
     if (parsed.scheme != 'https' or not parsed.hostname or parsed.path not in ('', '/')
             or parsed.username or parsed.password or parsed.query or parsed.fragment
@@ -28,7 +28,7 @@ cat > "$work/root.crt" <<'MCPGW_CA'
 {certificate.rstrip()}
 MCPGW_CA
 cat > "$work/request.conf" <<'MCPGW_REQUEST'
-url = "{public.rstrip('/')}/api/pc-kit?platform=macos"
+url = "{public.rstrip('/')}/api/pc-kit?platform=macos{'&isolated=true' if isolated else ''}"
 request = "POST"
 header = "Authorization: Bearer kit-download.{ticket}"
 MCPGW_REQUEST

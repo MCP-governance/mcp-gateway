@@ -97,6 +97,10 @@ CREATE TABLE IF NOT EXISTS decisions (
   error text
 );
 
+ALTER TABLE decisions ADD COLUMN IF NOT EXISTS server_id text;
+CREATE INDEX IF NOT EXISTS decisions_tool_sunset_idx
+  ON decisions(server_id, tool_name, created_at DESC) WHERE upstream_executed;
+
 CREATE TABLE IF NOT EXISTS approvals (
   id uuid PRIMARY KEY,
   request_fingerprint text NOT NULL,
