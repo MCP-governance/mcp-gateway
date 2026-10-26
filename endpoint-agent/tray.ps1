@@ -35,14 +35,25 @@ try { $script:probe = Get-Content -LiteralPath $probePath -Raw -Encoding UTF8 | 
 function T([string]$Key) { return (Get-EndpointText $Key $script:lang) }
 
 function Update-EndpointTray {
+    $script:snapshot = $null
+    $script:blocks = @()
+    $script:updated = '—'
     # Right after the install the service has not written its first snapshot yet: not a lost connection (b225285).
     $script:label = if (Test-Path -LiteralPath $settings.status_path) { 'disconnected' } else { 'preparing' }
+    if (-not (Test-Path -LiteralPath $SettingsPath)) {
+        $script:label = 'disconnected'
+        $script:probe = $null
+        $icon.Icon = [Drawing.SystemIcons]::Error
+        $icon.Text = (T 'product') + ' · ' + (T 'disconnected')
+        return
+    }
     try {
         $script:snapshot = Get-Content -LiteralPath $settings.status_path -Raw -Encoding UTF8 | ConvertFrom-Json
         $script:blocks = @($script:snapshot.blocks)
         $time = [DateTimeOffset]::FromUnixTimeSeconds([long]$script:snapshot.updated)
         $script:updated = $time.LocalDateTime.ToString('yyyy-MM-dd HH:mm:ss')
         $age = ([DateTimeOffset]::UtcNow - $time).TotalSeconds
+        if ($script:snapshot.state -eq 'removed') { $script:probe = $null }
         if ($script:snapshot.connected -and $age -ge 0 -and $age -le 150) {
             $script:label = 'connected'
             if ($script:blocks.Count -gt 0) {
@@ -86,6 +97,7 @@ function Get-EndpointCells {
 
 function Get-EndpointNext {
     $state = $script:snapshot.state
+    if ($state -eq 'removed' -or -not (Test-Path -LiteralPath $SettingsPath)) { return T 'next_removed' }
     if ($script:label -eq 'preparing') { return T 'next_preparing' }
     if ($script:label -eq 'disconnected') { return T 'next_reconnect' }
     if ($state -eq 'pending') { return T 'next_pending' }
@@ -136,6 +148,11 @@ function Start-EndpointLogin([string]$Harness) {
 }
 
 function Start-EndpointReconnect {
+    if ($script:snapshot.state -eq 'removed' -or -not (Test-Path -LiteralPath $SettingsPath)) {
+        $script:healthResult = T 'next_removed'
+        Update-EndpointWindow
+        return
+    }
     if ($script:healthJob) { return }
     $requestPath = Join-Path $work 'request.json'
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
@@ -159,7 +176,8 @@ function Complete-EndpointReconnect {
     $script:healthJob = $null
     Update-EndpointTray
     # The Gateway answers but this PC's service stopped reporting: restarting the service needs an administrator.
-    if ($script:healthResult -eq (T 'gateway_ok') -and $script:label -eq 'disconnected' -and $settings.mode -eq 'managed') {
+    if ($script:healthResult -eq (T 'gateway_ok') -and $script:label -eq 'disconnected' -and $settings.mode -eq 'managed' -and
+        $script:snapshot.state -ne 'removed' -and (Test-Path -LiteralPath $SettingsPath)) {
         if ([Windows.Forms.MessageBox]::Show((T 'restart_service'), (T 'product'), 'OKCancel') -eq 'OK') {
             $task = 'MCPGatewayManaged-' + $settings.user.ToLowerInvariant()
             try {
@@ -307,6 +325,11 @@ $timer.Add_Tick({
     if ($script:healthJob -and $script:healthJob.HasExited) { Complete-EndpointReconnect }
     if ($script:probeJob -and $script:probeJob.HasExited) { Complete-EndpointProbe }
     Update-EndpointWindow
+    if (Test-Path -LiteralPath (Join-Path $work 'show-status')) {
+        Remove-Item -LiteralPath (Join-Path $work 'show-status') -Force
+        $script:probe = $null
+        Show-EndpointWindow
+    }
 })
 try {
     Update-EndpointTray

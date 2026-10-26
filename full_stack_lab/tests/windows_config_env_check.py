@@ -77,7 +77,8 @@ class EnvironmentCheck(unittest.TestCase):
 
     def run_checks(self, registry):
         findings = []
-        with patch.dict(sys.modules, {"winreg": registry}), patch.object(sys, "argv", ["check"]):
+        with patch.dict(sys.modules, {"winreg": registry}), patch.object(sys, "argv", ["check"]), \
+                patch("platform.system", return_value="Windows"):
             _, checks = self.windows.checks(self.config, {}, findings=findings)
         self.assertNotIn(MARK, json.dumps(findings))
         return checks["user_command_helpers"], findings

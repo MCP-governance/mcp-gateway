@@ -18,11 +18,26 @@ $mode = if ($Observer) { 'observer' } else { 'managed' }
 $directory = if ($Observer) { Join-Path $env:LOCALAPPDATA 'MCPGatewayEndpoint' } else { Join-Path $env:ProgramFiles 'MCPGatewayManaged' }
 $targetUser = $env:USERNAME
 if ($Remove) {
-    $installed = Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $installed = if ($SettingsPath -and (Test-Path -LiteralPath $SettingsPath)) {
+        Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    } else {
+        if ($SettingsPath) {
+            $targetSid = Split-Path (Split-Path $SettingsPath) -Leaf
+            $expected = Join-Path $env:ProgramData ('MCPGatewayManagedTray\' + $targetSid + '\settings.json')
+            if ($targetSid -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$' -or [IO.Path]::GetFullPath($SettingsPath) -ne $expected) {
+                throw '제거 설정 경로 확인 필요'
+            }
+            $targetUser = (New-Object Security.Principal.SecurityIdentifier($targetSid)).Translate([Security.Principal.NTAccount]).Value.Split('\')[-1]
+        }
+        @{ mode = 'managed'; directory = $directory; user = $targetUser; gateway_url = '' }
+    }
     $mode = $installed.mode
     $directory = $installed.directory
     $GatewayUrl = $installed.gateway_url
     $targetUser = $installed.user
+    if (-not $SettingsPath) {
+        $SettingsPath = Join-Path $env:ProgramData ('MCPGatewayManagedTray\' + $identity.User.Value + '\settings.json')
+    }
 } elseif (-not $Observer) {
     try {
         $bundle = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'enrollment.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -30,7 +45,16 @@ if ($Remove) {
     } catch { $GatewayUrl = '' }
 }
 $work = Join-Path $env:LOCALAPPDATA ('MCPGatewaySetup\' + [Guid]::NewGuid().ToString('N'))
-New-Item -ItemType Directory -Path $work -Force | Out-Null
+try { New-Item -ItemType Directory -Path $work -Force | Out-Null } catch [UnauthorizedAccessException] {
+    # The legacy bootstrap could deny even the removal wizard its request folder. Use only the approved wizard for UAC.
+    if (-not $Remove -or ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { throw }
+    $null = Get-EndpointApprovedKit
+    $approvedSetup = Join-Path (Get-EndpointInstallerPaths).code 'setup.ps1'
+    $arguments = '-NoProfile -STA -WindowStyle Hidden -File ' + (Quote-EndpointArgument $approvedSetup) +
+        ' -Remove -SettingsPath ' + (Quote-EndpointArgument $SettingsPath)
+    Start-Process -FilePath $script:PowerShellExe -ArgumentList $arguments -Verb RunAs -WindowStyle Hidden | Out-Null
+    return
+}
 Set-EndpointAcl $work $identity.User.Value
 $script:step = 0
 $script:job = $null
