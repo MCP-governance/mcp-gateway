@@ -17,6 +17,14 @@ x-gateway-build: &gateway-build
 
 x-gateway-env: &gateway-env
   DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?}@db:5432/mcp_governance
+  # 판정 풀(tools/call). 관리 풀은 /api/overview·/api/latency·/api/health만 쓴다(D-0-6).
+  DB_POOL_MAX: ${DB_POOL_MAX:-10}
+  DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-10}
+  DB_POOL_MAX_WAITING: ${DB_POOL_MAX_WAITING:-0}
+  DB_STATEMENT_TIMEOUT_MS: ${DB_STATEMENT_TIMEOUT_MS:-0}
+  DB_LOCK_TIMEOUT_MS: ${DB_LOCK_TIMEOUT_MS:-0}
+  DB_ADMIN_POOL_MAX: ${DB_ADMIN_POOL_MAX:-3}
+  DB_ADMIN_STATEMENT_TIMEOUT_MS: ${DB_ADMIN_STATEMENT_TIMEOUT_MS:-10000}
   OPA_URL: http://opa:8181/v1/data/mcp/authz/decision
   MCP_FIELD_MODE: "1"
   REGISTRY_DIR: /registry-field

@@ -1237,13 +1237,15 @@ async def _contract(server_id: str, tool_name: str) -> dict:
     }
 
 
-async def enforcement_mode() -> str:
+async def enforcement_mode(fetch_one=db.fetch_one) -> str:
     """'enforce' applies decisions; 'monitor' records what enforcement would have done.
 
     Stored in the database rather than the environment so an operator can turn
     enforcement on without a restart - and so the switch itself is auditable.
+    `fetch_one` defaults to the judging pool; /api/overview passes the admin pool's
+    instead so a Console read never competes with a policy decision for a connection.
     """
-    row = await db.fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
+    row = await fetch_one("SELECT value FROM gateway_settings WHERE key='enforcement'")
     value = row["value"] if row else DEFAULT_ENFORCEMENT
     return value if value in {"enforce", "monitor"} else "enforce"
 
