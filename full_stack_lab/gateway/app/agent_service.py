@@ -13,9 +13,7 @@ import secrets
 import ssl
 import tarfile
 import tempfile
-import time
 import zipfile
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -41,6 +39,7 @@ from .connectors import router as connectors_router
 from .contract import canonical_hash
 from .destination import registration_endpoint
 from .integrations import router as integrations_router
+from .login_throttle import _login_attempts, login_allowed, record_failed_login
 from .idp import router as idp_router
 
 LOG = logging.getLogger(__name__)
@@ -49,27 +48,7 @@ INTAKE_REPORT_DIR = Path(os.getenv("INTAKE_REPORT_DIR", "/intake-reports"))
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://gateway:8080")
 system_metrics_sampler = SystemMetrics(GATEWAY_URL)
 
-LOGIN_ATTEMPT_LIMIT = int(os.getenv("LOGIN_ATTEMPT_LIMIT", "10"))
-LOGIN_ATTEMPT_WINDOW = int(os.getenv("LOGIN_ATTEMPT_WINDOW_SECONDS", "300"))
-# Per process, like `slots` above: a deployment with replicas rate-limits at ingress.
-# It still turns an unlimited password oracle into a bounded one.
-_login_attempts: dict[str, list[float]] = defaultdict(list)
 INTAKE_APPROVAL_LOCK = asyncio.Lock()
-
-
-def login_allowed(key: str) -> bool:
-    now = time.monotonic()
-    for attempted, stamps in list(_login_attempts.items()):
-        recent = [stamp for stamp in stamps if now - stamp < LOGIN_ATTEMPT_WINDOW]
-        if recent:
-            _login_attempts[attempted] = recent
-        else:
-            del _login_attempts[attempted]
-    return len(_login_attempts.get(key, ())) < LOGIN_ATTEMPT_LIMIT
-
-
-def record_failed_login(key: str) -> None:
-    _login_attempts[key].append(time.monotonic())
 
 
 async def bootstrap_passwords() -> None:
