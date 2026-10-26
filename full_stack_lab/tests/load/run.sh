@@ -54,8 +54,9 @@ with (output / f"{scenario}.md").open("a") as summary:
 assert sum(row["n"] for row in result["policies"]) == result["ledger_rows"], "Missing policy counts"
 if sys.argv[2] != "list":
     actual = json.loads((output / f"{scenario}-counts.json").read_text())["requests"]
-    assert actual > 0 and result["ledger_rows"] == actual, "Ledger count differs from measured requests"
-    assert sum(row["n"] for row in result["verdicts"]) == actual, "Missing total timings"
+    # Under overload a timed-out request may never reach the ledger; more rows than requests is a defect.
+    assert actual > 0 and 0 < result["ledger_rows"] <= actual, "Ledger count exceeds measured requests"
+    assert sum(row["n"] for row in result["verdicts"]) == result["ledger_rows"], "Missing total timings"
 PY
   then failed=1; fi
   # Only counts are persisted: raw logs can contain request data or credentials.

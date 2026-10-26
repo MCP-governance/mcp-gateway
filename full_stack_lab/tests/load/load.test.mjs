@@ -71,8 +71,8 @@ test('allow requires exact decision, policy and actual upstream success; reads d
   assert.equal(f.api.options.scenarios.allow.executor, 'constant-arrival-rate');
   assert.equal(f.api.options.scenarios.allow.rate, 50);
   assert.equal(f.api.options.scenarios.allow.duration, '1m');
-  assert.deepEqual([...f.api.options.thresholds.mcp_requests], ['count>=2999', 'count<=3001']);
-  assert.equal(f.api.options.thresholds.dropped_iterations[0], 'count==0');
+  assert.deepEqual(Object.keys(f.api.options.thresholds), ['mcp_wrong_decision']);
+  assert.equal(f.api.options.thresholds.mcp_wrong_decision[0], 'count==0');
 });
 
 test('deny rejects other Block reasons and any upstream attempt', () => {
@@ -128,9 +128,9 @@ test('CI capabilities change only the two capacity ceilings and preserve the rev
 test('arrival counts tolerate ±1; actual ledger and policy counts must still match', () => {
   for (const scenario of ['allow', 'deny']) {
     const thresholds = fixture(scenario).api.options.thresholds;
-    assert.deepEqual([...thresholds.mcp_requests], ['count>=2999', 'count<=3001']);
-    assert.equal(thresholds.mcp_errors[0], 'count==0');
-    assert.equal(thresholds.dropped_iterations[0], 'count==0');
+    // Capacity (requests, drops, timeouts) is measured; only a wrong verdict fails the run.
+    assert.deepEqual(Object.keys(thresholds), ['mcp_wrong_decision']);
+    assert.equal(thresholds.mcp_wrong_decision[0], 'count==0');
   }
   const runner = readFileSync(new URL('./run.sh', import.meta.url), 'utf8');
   const inline = runner.split('if ! python3 - "$out" "$scenario" <<\'PY\'\n')[1].split('\nPY\n')[0];

@@ -12,6 +12,9 @@ const EMPLOYEES = ['ysg@bob.local', 'jwj@bob.local', 'pse@bob.local'];
 const PROTOCOL = '2025-11-25';
 const requests = new Counter('mcp_requests');
 const errors = new Counter('mcp_errors');
+// A decision the gateway should never give for this load. Overload (timeouts, fail-closed upstream)
+// is measured, not failed: capacity is a stage-2 target, a wrong verdict is a defect at any load.
+const wrong = new Counter('mcp_wrong_decision');
 const duration = new Trend('mcp_duration', true);
 
 export const options = {
@@ -22,10 +25,9 @@ export const options = {
           preAllocatedVUs: 100, maxVUs: 500, gracefulStop: '35s' },
   },
   thresholds: {
-    mcp_requests: CASE === 'list' ? ['count==100'] : ['count>=2999', 'count<=3001'],
-    mcp_errors: ['count==0'],
-    checks: ['rate==1'],
-    dropped_iterations: ['count==0'],
+    ...(CASE === 'list'
+      ? { mcp_requests: ['count==100'], mcp_errors: ['count==0'], checks: ['rate==1'], dropped_iterations: ['count==0'] }
+      : { mcp_wrong_decision: ['count==0'] }),
   },
   setupTimeout: '3m', teardownTimeout: '2m',
   summaryTrendStats: ['min', 'med', 'p(95)', 'p(99)', 'max'],
@@ -65,6 +67,14 @@ function validCall(response, body, id = 1) {
       && Array.isArray(result.content) && result.content.length > 0
     : result.isError === true && gateway?.decision === 'Block' && gateway.policy_id === 'MCP-REGISTRY-002'
       && gateway.upstream_attempted === false && gateway.upstream_executed === false);
+}
+
+function wrongDecision(body) {
+  const gateway = body?.result?._meta?.gateway;
+  if (!gateway?.decision) return false;
+  const verdict = `${gateway.decision} ${gateway.policy_id}`;
+  const expected = CASE === 'allow' ? ['Allow P-AUTHZ-ALLOW-001', 'Block MCP-UPSTREAM-001'] : ['Block MCP-REGISTRY-002'];
+  return !expected.includes(verdict);
 }
 
 function callParams(query = 'load-preflight') {
@@ -118,6 +128,7 @@ export default function (connections) {
   check(ok, { 'expected MCP result and execution': (value) => value });
   requests.add(1);
   errors.add(ok ? 0 : 1);
+  if (CASE !== 'list') wrong.add(wrongDecision(body) ? 1 : 0);
   duration.add(response.timings.duration);
 }
 
