@@ -1,16 +1,18 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T15:16:37+09:00
+확인 시각: 2026-10-26T15:19:23+09:00
 
-HEAD: `fc9ac7f421ca71225695702943ea1c17484e4c52` · 로컬 브랜치: `10/26-managed-codex-sandbox-exec`
+HEAD: `14d845c72f892fc56c71eaa7f69b7237c7f69e80` · 로컬 브랜치: `10/26-console-https`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M docs/ai/DECISIONS.md
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/status/decisions-index.md
 ```
 
 ## 주요 파일 바이트
