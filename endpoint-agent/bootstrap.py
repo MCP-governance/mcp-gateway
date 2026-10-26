@@ -643,6 +643,7 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool) -> 
     """The three cells (model answer, tool count, one server's initialize) and the next thing to do."""
     step("설치 확인")
     summary = wait_active(managed, account)
+    SCREEN.summary = summary
     state = summary.get("state")
     if state != "active":
         waiting = {"pending": "관리자 활성화 대기", "quarantined": "격리됨", "revoked": "등록 해제됨"}.get(state, "상태 확인 안 됨")
