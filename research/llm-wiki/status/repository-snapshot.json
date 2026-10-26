@@ -1,11 +1,10 @@
 {
-  "captured_at": "2026-10-26T15:24:57+09:00",
-  "head": "5ce589617374d4e16f1c6f598d2d81d48567c795",
-  "branch": "10/25-refactor-proposal-sync",
+  "captured_at": "2026-10-26T15:58:46+09:00",
+  "head": "032196d41cf5a9365b7c1a9e29ca938887db5556",
+  "branch": "10/26-console-font-subset",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/status/backlog.md"
+    " M research/llm-wiki/analysis/requirements.json"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,
