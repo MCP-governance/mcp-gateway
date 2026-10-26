@@ -169,7 +169,7 @@ try {
     catch [Threading.AbandonedMutexException] { $ownsMutex = $true }
     if (-not $ownsMutex) { throw '다른 설치 작업 진행 중' }
     Assert-EndpointTree $root
-    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'install.py',
+    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'kit_screen.py', 'install.py',
         'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
     if ($managed) {
         # Registration and removal work even if the old runtime is missing; nothing installed is touched here.

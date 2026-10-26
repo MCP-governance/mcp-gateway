@@ -290,6 +290,13 @@ function Start-EndpointRemove {
 
 $items = [ordered]@{}
 $items.status = $menu.Items.Add(''); $items.status.Add_Click({ Show-EndpointWindow })
+$terminal = $menu.Items.Add('터미널 화면')
+$terminal.Add_Click({
+    $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'windows_status.py')) +
+        ' ' + (Quote-EndpointArgument $settings.status_path) + ' --settings ' + (Quote-EndpointArgument $SettingsPath) +
+        ' --probe ' + (Quote-EndpointArgument $probePath)
+    Start-Process -FilePath $python -ArgumentList $arguments
+})
 $items.check = $menu.Items.Add(''); $items.check.Add_Click({ Start-EndpointProbe -Show })
 $items.login = New-Object Windows.Forms.ToolStripMenuItem
 [void]$menu.Items.Add($items.login)
