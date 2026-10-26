@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T14:12:33+09:00
+확인 시각: 2026-10-26T14:07:04+09:00
 
-HEAD: `07ec3fe4a8d4a78207160c51f99280220b783a64` · 로컬 브랜치: `10/26-kit-native-download`
+HEAD: `c872374b420129e0d3b734f6081f1af8d44afcf5` · 로컬 브랜치: `10/25-stage0-loadtest`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,7 +11,6 @@ HEAD: `07ec3fe4a8d4a78207160c51f99280220b783a64` · 로컬 브랜치: `10/26-kit
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
 ```
 
 ## 주요 파일 바이트
