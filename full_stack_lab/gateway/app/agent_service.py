@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
@@ -160,7 +160,7 @@ async def browser_boundary(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Cache-Control"] = "no-store"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"
     return response
 
 
@@ -451,15 +451,33 @@ async def pc_kit() -> dict | None:
             "auto_activate": bool(automatic["auto_activate"]) if automatic else True}
 
 
+def kit_download_hash(ticket: str, platform: str, delivery: str, packaging: str, isolated: bool) -> str:
+    # Keep already-issued macOS ZIP tickets valid only for their original scope.
+    scope = "" if (platform, delivery, packaging, isolated) == ("macos", "zip", "zip", False) else f"{platform}:{delivery}:{packaging}:{int(isolated)}:"
+    return hashlib.sha256(f"kit-download:{scope}{ticket}".encode()).hexdigest()
+
+
 @app.post("/api/pc-kit")
-async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = "linux",
+async def download_managed_kit(request: Request, platform: Literal["linux", "windows", "macos"] = "linux",
                                delivery: Literal["zip", "command"] = "zip",
                                authorization: str | None = Header(default=None),
-                               packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False):
+                               packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False,
+                               issue_ticket: bool = False):
     from .endpoint_plane import enrollment_token
     download_prefix = "Bearer kit-download."
+    if not authorization and request.headers.get("content-type", "").split(";", 1)[0].strip().lower() == "application/x-www-form-urlencoded":
+        body = bytearray()
+        async for chunk in request.stream():
+            if len(body) + len(chunk) > 1024:
+                raise HTTPException(401, "다운로드 자격이 올바르지 않습니다.")
+            body.extend(chunk)
+        fields = parse_qs(body.decode("ascii", errors="replace"))
+        tickets = fields.get("ticket", [])
+        if len(tickets) != 1:
+            raise HTTPException(401, "다운로드 자격이 필요합니다.")
+        authorization = download_prefix + tickets[0]
     if authorization and authorization.startswith(download_prefix):
-        if platform != "macos" or delivery != "zip":
+        if issue_ticket:
             raise HTTPException(403, "다운로드 범위가 다릅니다.")
         ticket = authorization[len(download_prefix):]
         if not re.fullmatch(r"[A-Za-z0-9_-]{43}", ticket):
@@ -468,7 +486,7 @@ async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = 
             """UPDATE endpoint_enrollment_tokens SET consumed_at=now()
                WHERE token_hash=%s AND consumed_at IS NULL AND expires_at>now()
                  AND EXISTS (SELECT 1 FROM principals p WHERE p.token=owner_token AND p.status='active')
-               RETURNING owner_token""", (hashlib.sha256(("kit-download:" + ticket).encode()).hexdigest(),))
+               RETURNING owner_token""", (kit_download_hash(ticket, platform, delivery, packaging, isolated),))
         if not grant:
             raise HTTPException(401, "다운로드 자격이 만료·사용됐습니다.")
         owner = await db.fetch_one("SELECT user_id,token FROM principals WHERE token=%s AND status='active'", (grant["owner_token"],))
@@ -495,23 +513,30 @@ async def download_managed_kit(platform: Literal["linux", "windows", "macos"] = 
         raise HTTPException(503, "Gateway Tailscale 노드 ID를 운영자가 먼저 고정해야 합니다.")
     import json
     ca = field_ca()
+    if delivery == "command" and platform != "macos":
+        raise HTTPException(400, "지원하지 않는 설치 방식입니다.")
+    if packaging == "oneclick" and (not ca or urlsplit(public).scheme != "https"):
+        raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
+    if issue_ticket:
+        ticket = secrets.token_urlsafe(32)
+        await db.execute(
+            "INSERT INTO endpoint_enrollment_tokens(token_hash,owner_token,expires_at) VALUES (%s,%s,%s)",
+            (kit_download_hash(ticket, platform, delivery, packaging, isolated), user["principal"],
+             datetime.now(UTC) + timedelta(minutes=5)))
+        return JSONResponse({"ticket": ticket}, headers={"Cache-Control": "no-store"})
     if delivery == "command":
-        if platform != "macos":
-            raise HTTPException(400, "지원하지 않는 설치 방식입니다.")
         from .kit_commands import macos_bootstrap
         ticket = secrets.token_urlsafe(32)
         try:
-            script = macos_bootstrap(public, ticket, ca.get("ca_certificate", ""))
+            script = macos_bootstrap(public, ticket, ca.get("ca_certificate", ""), isolated=isolated)
         except ValueError as exc:
             raise HTTPException(503, str(exc)) from None
         await db.execute(
             "INSERT INTO endpoint_enrollment_tokens(token_hash,owner_token,expires_at) VALUES (%s,%s,%s)",
-            (hashlib.sha256(("kit-download:" + ticket).encode()).hexdigest(), user["principal"],
+            (kit_download_hash(ticket, "macos", "zip", "zip", isolated), user["principal"],
              datetime.now(UTC) + timedelta(minutes=5)))
         return Response(script, media_type="application/octet-stream",
                         headers={"Content-Disposition": 'attachment; filename="mcp-connect-macos.command"', "Cache-Control": "no-store"})
-    if packaging == "oneclick" and (not ca or urlsplit(public).scheme != "https"):
-        raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
               "owner": user["user_id"], **await enrollment_token(user["principal"])}
     if isolated:

@@ -132,15 +132,15 @@ class ToolSunsetListIsolationCheck(unittest.TestCase):
         async def fetch_one(*_args):
             return {"role": "user"}
 
-        async def status(_server, name):
-            return {"active": True, "available": name != "a"}
+        async def status(_server, names):
+            return {name: {"active": True, "available": name != "a"} for name in names}
 
         namespace = {
             "types": types.SimpleNamespace(Tool=Tool),
             "db": types.SimpleNamespace(fetch_all=fetch_all, fetch_one=fetch_one),
             "registry": types.SimpleNamespace(permits=lambda allowed, token: allowed is None or "*" in allowed or token in allowed, ALL_PRINCIPALS="*", allowed_principals=lambda _server: None,
                                               reviewed_tools=lambda _server: {"a", "b"}),
-            "tool_sunset": types.SimpleNamespace(check=status, listable=tool_sunset.listable),
+            "tool_sunset": types.SimpleNamespace(check_many=status, listable=tool_sunset.listable),
             "pac": types.SimpleNamespace(visible=lambda *_args: True),
             "output_contract": types.SimpleNamespace(JSON_PROTOCOLS=set(), OBJECT_PROTOCOLS=set()),
             "SEPARATOR": "__", "logger": logging.getLogger("test.mcp_facade"),
@@ -181,7 +181,7 @@ class ToolSunsetIntegrationCheck(unittest.TestCase):
              patch.object(mcp_facade.registry, "allowed_principals", return_value=None), \
              patch.object(mcp_facade.registry, "reviewed_tools", return_value={"old", "ok"}), \
              patch.object(mcp_facade.pac, "visible", return_value=True), \
-             patch.object(mcp_facade.tool_sunset, "check", AsyncMock(side_effect=lambda _s, t: states[t])):
+             patch.object(mcp_facade.tool_sunset, "check_many", AsyncMock(side_effect=lambda _s, names: {t: states[t] for t in names})):
             result = asyncio.run(mcp_facade._approved_tools("user", principal="employee"))
         self.assertEqual([item.name for item in result], ["srv__ok"])
 
@@ -192,16 +192,16 @@ class ToolSunsetIntegrationCheck(unittest.TestCase):
             for name in ("a", "b")
         ]
 
-        async def state(_server, name):
-            return ({"active": True, "available": False} if name == "a" else
-                    {"active": True, "available": True})
+        async def state(_server, names):
+            return {name: {"active": True, "available": False} if name == "a" else
+                    {"active": True, "available": True} for name in names}
 
         with patch.object(mcp_facade.db, "fetch_all", AsyncMock(return_value=rows)), \
              patch.object(mcp_facade.db, "fetch_one", AsyncMock(return_value={"role": "user"})), \
              patch.object(mcp_facade.registry, "allowed_principals", return_value=None), \
              patch.object(mcp_facade.registry, "reviewed_tools", return_value={"a", "b"}), \
              patch.object(mcp_facade.pac, "visible", return_value=True), \
-             patch.object(mcp_facade.tool_sunset, "check", AsyncMock(side_effect=state)), \
+             patch.object(mcp_facade.tool_sunset, "check_many", AsyncMock(side_effect=state)), \
              self.assertLogs("app.mcp_facade", level="ERROR") as logs:
             result = asyncio.run(mcp_facade._approved_tools("user", principal="employee"))
 

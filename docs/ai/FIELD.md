@@ -27,7 +27,7 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 ./console.sh field set-password user
 ```
 
-관리자 PC에서 `https://<Tailscale IP>/login`에 로그인합니다. 직원도 같은 URL에
+관리자 PC에서 `field up`에 표시된 콘솔 주소의 `/login`에 로그인합니다. 직원도 같은 URL에
 자기 계정으로 로그인해 **도입 신청 → 새 신청**에서 MCP 이름이나 GitHub 주소를 먼저 검색합니다. 기존 신청의 신청자·상태를 보고, 승인된 항목은 내부 저장소를 바로 열어 클론할 수 있습니다. 새 신청은 저장소·연결 방식·목적을 제출합니다.
 접수 즉시 검증 대기열에 저장되고 관리자 목록은 열어 둔 상태에서도 5초마다 데이터만 갱신됩니다(차트는 다시 만들지 않습니다).
 활동 로그의 MCP 도구 사용 기록은 도입 신청을 대신하지 않습니다.
@@ -148,13 +148,39 @@ Claude Code는 claude.ai 계정에 연결한 커넥터(`claude.ai Notion` 등)�
 
 ### 현장 TLS와 루트 배포(D-124)
 
-Caddy는 **Tailscale IP의 443에 HTTPS만** 게시합니다. `tls internal`의 루트·개인 키는 배치의
+Caddy는 **Tailscale IP의 443에 HTTPS**를 게시합니다. `tls internal`의 루트·개인 키는 배치의
 `field_caddy_data` 볼륨에 유지됩니다. TLS 1.2·1.3과 ECDHE/ECDSA AEAD 암호군을 사용하며,
-HTTP 리디렉션과 시스템 신뢰 저장소 자동 등록은 끕니다. 평문 요청은 프록시하지 않습니다.
+자동 HTTP 리디렉션과 시스템 신뢰 저장소 자동 등록은 끕니다. 하네스용 평문 요청은 프록시하지 않습니다.
 클라이언트도 원격 HTTP URL을 거부하므로 인증 토큰을 보내기 전에 멈춥니다.
 기본 loopback 실습의 내부 HTTP는 현장 게시와 별개입니다.
 
 브라우저 콘솔은 같은 Tailscale IP의 `http://…:8000`으로도 엽니다(D-129). 이 포트는 콘솔·내부 Git만 제공하고 하네스·키트·장치 보고 경로는 421로 거절합니다.
+
+#### 콘솔 인증서 방식
+
+`full_stack_lab/.env` 또는 실행 환경에서 다음 값을 지정한 뒤 `./console.sh field up`을 실행합니다.
+실행 환경이 `.env`보다 우선합니다. 기본값은 기존 동작을 유지하는 `none`입니다.
+
+| 변수 | 값 |
+| --- | --- |
+| `FIELD_CONSOLE_TLS` | `none` · `tailscale` · `file` |
+| `FIELD_CONSOLE_NAME` | 콘솔 DNS 이름(포트·경로 제외), `tailscale`은 이 기기의 `.ts.net` 이름 |
+| `FIELD_CONSOLE_CERT_FILE` | `file`의 PEM 인증서 체인 파일 절대 경로 |
+| `FIELD_CONSOLE_KEY_FILE` | `file`의 PEM 개인 키 파일 절대 경로, 권한 `0600` 또는 `0400` |
+
+`tailscale`은 Tailscale HTTPS가 활성화된 Linux 기기에서 실행합니다. Caddy의 내장
+`get_certificate tailscale`이 로컬 데몬에서 인증서를 받습니다. 이 방식은 Caddy의 root 실행을 명시하며,
+`/var/run/tailscale/tailscaled.sock` 하나의 읽기 전용 마운트는 이 방식에만 추가합니다. 소켓 마운트의 읽기 전용 속성은
+데몬 API 호출 권한을 제한하지 않으므로 이 컨테이너는 신뢰할 수 있는 관리자 경계에 둡니다.
+새 모듈·이미지·인증서 발급 스크립트는 필요하지 않습니다.
+
+`file`은 조직에서 발급한 이름 일치 인증서 체인과 개인 키 파일 두 개만 Caddy에 읽기 전용으로 마운트합니다.
+브라우저는 발급 CA를 신뢰해야 합니다. 인증서 갱신 후 `field up`으로 다시 읽힙니다. 키 파일은 저장소 밖에 보관합니다.
+
+두 방식 모두 `https://<FIELD_CONSOLE_NAME>/`으로 콘솔·다운로드를 제공합니다. 호스트의 게시 주소는 계속
+자동 검색한 Tailscale IP 하나이며, 기존 `:8000` 콘솔도 유지합니다. 하네스 경로는 이름 기반 콘솔에서 421로
+거절하며, 키트의 주소·`IDP_ISSUER`·MCP 경로는 기존 IP 기반 `:443`과 사설 CA를 그대로 사용합니다.
+`FIELD_PUBLIC_NAME`이 콘솔 이름과 같으면 그 이름은 콘솔 사이트에만 배정됩니다. 하네스는 IP 주소를 사용합니다.
 
 ```bash
 cd full_stack_lab
@@ -169,7 +195,7 @@ curl --cacert field/ca/root.crt https://<기기 IP>/api/health
 키트 발행자의 진위를 입증하지 않습니다. Console이 발급하는 ZIP에는 `root.crt`, `root.sha256`,
 동일한 `ca_certificate`·`ca_sha256`을 담은 `enrollment.json`, 직원 PC 도구가 들어갑니다.
 Linux 설치기는 지문 불일치·다중 인증서를 등록 요청과 설치 변경 전에 거부합니다.
-처음 브라우저에 표시되는 사설 루트 경고는 키트 설치 전에 별도로 처리합니다.
+IP 주소로 HTTPS 콘솔을 여는 경우 사설 루트 경고는 키트 설치 전에 별도로 처리합니다.
 `field status`·`field pc-command`에 표시된 지문을 운영자와 대조한 뒤, 별도 Firefox 프로필의
 **설정 → 개인 정보 및 보안 → 인증서 보기 → 인증 기관 → 가져오기**에서 `root.crt`를 선택하고 웹사이트 식별 신뢰를 지정합니다.
 이 프로필에만 적용하며 Windows 인증서 관리자나 시스템 전체 저장소에는 추가하지 않습니다.
