@@ -55,7 +55,7 @@ class PolicySync(unittest.IsolatedAsyncioTestCase):
             async def __aexit__(inner, *args):
                 return False
 
-        def fetch_one(sql, *args):
+        def fetch_one(sql, *args, connection=None):
             return ({"token": "o"} if "principals" in sql else {"last_value": 7} if "mcp_servers_version" in sql
                     else self.device)
         self.device = {"endpoint_id": "d", "owner_token": "o", "managed_state": "active", "status": "active",
