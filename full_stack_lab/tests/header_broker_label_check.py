@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import re
 import socket
 import socketserver
 import struct
@@ -186,6 +187,46 @@ class BoundProfiles(unittest.TestCase):
             {"codex": [PurePosixPath("/opt/approved/codex-code-mode-host")]}, "enforce")
         self.blocks = {part.split(" {", 1)[0].split(" ", 1)[0]: part.split(" {", 1)[1]
                        for part in self.text.split("profile ")[1:]}
+
+    def test_fixed_harness_binary_rules_remain_mr_in_both_modes(self):
+        tools = "cat,ls,head,tail,grep,sed,cut,sort,uniq,wc,printf,env,find,stat,id,whoami,uname,date,timeout,sleep,true,false,tr,locale,locale-check,getconf"
+        shells = "/usr/{bin,sbin}/{bash,dash,sh," + tools + "}"
+        helper = "/usr/local/lib/mcpgw-enforcement/mcpgw-unit/header-helper"
+        companion = "/opt/approved/codex-code-mode-host"
+        for mode in ("warn", "enforce"):
+            text = ENFORCER.profile("mcpgw-unit", PurePosixPath("/fixed/login-shell"), "/home/unit",
+                {key: PurePosixPath("/opt/approved/" + key) for key in ("codex", "claude")}, True, True,
+                {"codex": [PurePosixPath(companion)]}, mode)
+            blocks = dict(re.findall(r"profile (\S+)[^{]*\{(.*?)\n\}", text, re.S))
+            prefix = "mcpgw-unit-" + ("bound-" if mode == "enforce" else "")
+            denied = [f"deny {helper} x,"] if mode == "enforce" else []
+            expected = {"mcpgw-unit": [shells + " ix,", *denied,
+                *[f"/usr/local/lib/mcpgw-enforcement/mcpgw-unit/{key} px -> mcpgw-unit-{key}-entry,"
+                  for key in ("codex", "claude")]],
+                prefix + "credential": ["/usr/bin/python3{,.[0-9]*} ix," if mode == "enforce"
+                                        else f"{Path('/usr/bin/python3').resolve()} ix,"]}
+            for key in ("codex", "claude"):
+                harness, tool = prefix + key, prefix + key + "-tool"
+                expected[f"mcpgw-unit-{key}-entry"] = [
+                    *denied, f"/opt/approved/{key} px -> {harness},"]
+                self.assertIn(f"/opt/approved/{key} mr,", blocks[harness])
+                self.assertNotIn(f"/opt/approved/{key} mrix,", blocks[harness])
+                expected[harness] = [f"{helper} px -> {prefix}credential,"]
+                expected[tool] = [shells + " ix,", *denied]
+                if mode == "enforce":
+                    expected[harness].append(f"{shells} px -> {tool},")
+                else:
+                    expected[harness] += ["/usr/{bin,sbin}/{dash,sh," + tools + "} ix,",
+                                          f"/usr/bin/bash px -> {tool},"]
+                if key == "codex":
+                    expected[harness].append(companion + (f" mrpx -> {tool}," if mode == "enforce" else " mrix,"))
+                    expected[tool].append(companion + " mrix,")
+            self.assertEqual(set(blocks), set(expected))
+            for name, rules in expected.items():
+                with self.subTest(mode=mode, profile=name):
+                    actual = [line.strip() for line in blocks[name].splitlines()
+                              if re.search(r"\s[A-Za-z]*x[A-Za-z]*(?:,| ->)", line)]
+                    self.assertCountEqual(actual, rules)
 
     def test_every_shell_and_companion_leaves_harness(self):
         for key in ("codex", "claude"):
