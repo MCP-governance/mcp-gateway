@@ -44,3 +44,11 @@
 - pj3를 :8000으로 시험하려면 담당자가 GUI 설치·UAC를 수행하고, 이후 상태와 실제 하네스 호출을 확인한다. 현재 :443 키트는 그대로다.
 - Linux 키트 재설치·제거는 사람의 별도 시험 범위다.
 
+
+## 후속(10-27 22:00 KST, 메인) — memory 쓰기 실패 원인
+
+- 원인: terra가 `/api/mcp-requests/{id}/local-run`을 직접 불러 **마운트·환경 변수 없는 실행 사양**(`mounts: []`, `env: {}`)으로 등록했다. 공식 `src/memory`의 내장 프리셋(`mcp-memory` 쓰기 폴더 + `MEMORY_FILE_PATH=/workspace/mcp-memory/memory.json`)이 빠져, 읽기 전용 루트에서 쓰기가 실패했다. 승인 미리보기는 프리셋을 `local_run_preset`으로 제안하고 콘솔 승인 화면은 그것을 채운다 — **제품 결함이 아니라 시험 설정 문제**.
+- 재시험(프리셋 적용, `memory-4784db93`): 동의 전 121 `P-CONSENT-001` → 동의 → 122 `create_entities`·123 `search_nodes`(저장한 엔티티 반환)·124 `delete_entities` 모두 `Allow`·`P-AUTHZ-ALLOW-001`·실행. PJ1 `~/mcp-memory/memory.json` 생성.
+- 같은 인자 재조회 125는 `P-RATE-003`(memory 도구가 모두 쓰기로 분류돼 중복 실행 방지, 의도).
+- 남는 개선 여지: 쓰기 실패 때 원장에 남는 문구가 「컨테이너 종료 · 코드 0 · 시작 배너」뿐이라 원인(읽기 전용 경로)이 드러나지 않는다.
+- 서버 `memory-4784db93`은 등록해 두었다(실제 MCP 등록 유지 원칙).
