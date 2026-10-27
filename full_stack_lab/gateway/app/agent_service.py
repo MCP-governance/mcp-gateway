@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
-from urllib.parse import parse_qs, quote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
@@ -382,7 +382,8 @@ async def password_principal(email: str, password: str, caller: str) -> dict:
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     field = os.getenv("MCP_FIELD_MODE") == "1"
-    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field and "admin" in user["roles"] else ""
+    # 직원도 사내 저장소를 읽을 수 있다. 다운로드는 /auth/gitea가 막는다(D-262 정정).
+    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
     # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
             "managed_required": user["managed_required"],
@@ -712,12 +713,33 @@ async def gitea_forward_auth(request: Request):
             target = uri if uri.startswith("/git/") and "//" not in uri else "/git/"
             return RedirectResponse("/login?next=" + quote(target, safe="/"), status_code=302)
         return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="MCP Gateway Git"'})
-    if "admin" not in user["roles"]:
-        # 직원이 Gitea에서 직접 받으면 승인 커밋·기한 확인과 다운로드 기록을 건너뛴다. 소스는 Console의 승인된 MCP에서만 받는다.
+    if "admin" not in user["roles"] and not gitea_browse_only(request, from_cookie=basic[:6].lower() != "basic "):
+        # 직원이 Gitea에서 직접 받으면 승인 커밋·기한 확인과 다운로드 기록을 건너뛴다. 직원은 브라우저로 읽기만 하고,
+        # 소스는 Console 「승인된 MCP」나 엔드포인트 키트로만 받는다.
         if "text/html" in request.headers.get("accept", ""):
-            return RedirectResponse("/#/intake?t=approved", status_code=302)
+            return RedirectResponse("/workspace#/intake?t=approved", status_code=302)
         return Response(status_code=403)
     return Response(status_code=200, headers={"X-WEBAUTH-USER": await ensure_gitea_user(user)})
+
+
+# Gitea가 파일·보관본·저장소를 내려 주는 경로. 화면(코드 보기·이슈 목록)은 열고 이것만 막는다.
+# ponytail: 경로 거부 목록이다. Gitea 판올림으로 새 다운로드 경로가 생기면 여기에 더한다(tests/approved_mcp_download_check.py).
+GITEA_DOWNLOAD = re.compile(
+    r"^/(?:api|attachments|-)(?:/|$)"
+    r"|/(?:archive|raw|media|attachments|releases/download|info/refs|info/lfs|objects|git-upload-pack|git-receive-pack"
+    r"|actions/runs|wiki/raw|-/packages)(?:/|$)"
+    r"|\.git(?:/|$)|\.(?:patch|diff|zip|tar\.gz|bundle)$", re.I)
+
+
+def gitea_browse_only(request: Request, *, from_cookie: bool) -> bool:
+    """직원에게 허용하는 Gitea 요청: 로그인한 브라우저의 조회(GET·HEAD)이면서 다운로드 경로가 아닌 것."""
+    if not from_cookie or request.headers.get("x-forwarded-method", "GET").upper() not in {"GET", "HEAD"}:
+        return False
+    path = urlsplit(request.headers.get("x-forwarded-uri", "")).path
+    if not path.startswith("/git/"):
+        return False
+    path = unquote(path[len("/git"):])
+    return ".." not in path.split("/") and not GITEA_DOWNLOAD.search(path)
 
 
 class AccountStatus(StrictModel):

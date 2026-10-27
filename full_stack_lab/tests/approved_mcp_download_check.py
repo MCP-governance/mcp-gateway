@@ -337,11 +337,14 @@ class DownloadTests(unittest.IsolatedAsyncioTestCase):
 
 
 class GiteaDirectAccessTests(unittest.IsolatedAsyncioTestCase):
-    """직원은 내부 Gitea를 직접 열 수 없다. 소스는 위의 승인 다운로드로만 받는다."""
+    """직원은 사내 Gitea를 브라우저로 읽기만 한다. 다운로드·클론·쓰기는 위의 승인 다운로드로만."""
 
     async def asyncSetUp(self):
-        node = copy.deepcopy(next(n for n in TREE.body if isinstance(n, ast.AsyncFunctionDef) and n.name == "gitea_forward_auth"))
-        node.decorator_list = []
+        names = {"gitea_forward_auth", "gitea_browse_only"}
+        nodes = [copy.deepcopy(n) for n in TREE.body if isinstance(n, ast.AsyncFunctionDef | ast.FunctionDef) and n.name in names]
+        pattern = next(n for n in TREE.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "GITEA_DOWNLOAD")
+        for node in nodes:
+            node.decorator_list = []
         self.synced = []
 
         class Response:
@@ -355,32 +358,59 @@ class GiteaDirectAccessTests(unittest.IsolatedAsyncioTestCase):
         async def authenticated_user(authorization):
             return {"email": "alice", "name": "Alice", "roles": [authorization.split()[-1]], "principal": "alice"}
 
+        async def password_principal(name, password, caller):
+            return {"email": name, "display_name": name, "role": password}
+
         async def ensure_gitea_user(user):
             self.synced.append(user["email"])
             return user["email"]
 
-        self.scope = dict(GIT_COOKIE="mcpgw_git", HTTPException=HTTPException, Response=Response,
-                          RedirectResponse=RedirectResponse, authenticated_user=authenticated_user,
-                          ensure_gitea_user=ensure_gitea_user, quote=quote)
-        exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), str(SOURCE), "exec"), self.scope)
+        from urllib.parse import unquote, urlsplit
+        import base64, binascii
+        self.scope = dict(GIT_COOKIE="mcpgw_git", HTTPException=HTTPException, Response=Response, re=re,
+                          RedirectResponse=RedirectResponse, authenticated_user=authenticated_user, Request=object,
+                          password_principal=password_principal, ensure_gitea_user=ensure_gitea_user, quote=quote,
+                          unquote=unquote, urlsplit=urlsplit, base64=base64, binascii=binascii)
+        module = ast.Module(body=[copy.deepcopy(pattern), *nodes], type_ignores=[])
+        exec(compile(ast.fix_missing_locations(module), str(SOURCE), "exec"), self.scope)
 
-    def request(self, role, accept):
-        return types.SimpleNamespace(cookies={"mcpgw_git": role}, client=None,
-                                     headers={"accept": accept, "x-forwarded-uri": "/git/mcp/notes/archive/x.zip"})
+    def request(self, role, uri, accept="text/html", method="GET", basic=False):
+        headers = {"accept": accept, "x-forwarded-uri": uri, "x-forwarded-method": method}
+        if basic:
+            import base64
+            headers["authorization"] = "Basic " + base64.b64encode(f"alice:{role}".encode()).decode()
+        return types.SimpleNamespace(cookies={} if basic else {"mcpgw_git": role}, client=None, headers=headers)
 
-    async def test_employee_browser_goes_to_approved_mcp(self):
-        response = await self.scope["gitea_forward_auth"](self.request("employee", "text/html"))
-        self.assertEqual((response.status_code, response.headers["location"]), (302, "/#/intake?t=approved"))
-        self.assertNotIn("X-WEBAUTH-USER", response.headers)
+    async def call(self, *args, **kwargs):
+        return await self.scope["gitea_forward_auth"](self.request(*args, **kwargs))
 
-    async def test_employee_git_client_is_forbidden(self):
-        response = await self.scope["gitea_forward_auth"](self.request("employee", "*/*"))
-        self.assertEqual(response.status_code, 403)
+    async def test_employee_browser_reads_repository_pages(self):
+        for uri in ("/git/mcp", "/git/mcp/notes", "/git/mcp/notes/src/branch/main/server.py", "/git/mcp/notes/issues"):
+            response = await self.call("employee", uri)
+            self.assertEqual((response.status_code, response.headers.get("X-WEBAUTH-USER")), (200, "alice"), uri)
+
+    async def test_employee_download_paths_go_to_approved_mcp(self):
+        for uri in ("/git/mcp/notes/archive/main.zip", "/git/mcp/notes/raw/branch/main/server.py",
+                    "/git/mcp/notes/media/branch/main/a.png", "/git/mcp/notes/%72aw/branch/main/x",
+                    "/git/mcp/notes/commit/" + COMMIT + ".patch", "/git/mcp/notes/releases/download/v1/a.tgz",
+                    "/git/api/v1/repos/mcp/notes/archive/main.zip", "/git/mcp/notes.git/info/refs",
+                    "/git/mcp/notes/info/refs?service=git-upload-pack", "/git/attachments/abc"):
+            response = await self.call("employee", uri)
+            self.assertEqual((response.status_code, response.headers.get("location")), (302, "/workspace#/intake?t=approved"), uri)
+            self.assertNotIn("X-WEBAUTH-USER", response.headers)
+
+    async def test_employee_git_client_write_and_basic_are_forbidden(self):
+        self.assertEqual((await self.call("employee", "/git/mcp/notes/info/refs", accept="*/*")).status_code, 403)
+        self.assertEqual((await self.call("employee", "/git/mcp/notes/issues/new", method="POST")).status_code, 302)
+        self.assertEqual((await self.call("employee", "/git/mcp/notes", accept="*/*", basic=True)).status_code, 403)
         self.assertEqual(self.synced, [])
 
-    async def test_admin_still_reaches_gitea(self):
-        response = await self.scope["gitea_forward_auth"](self.request("admin", "text/html"))
-        self.assertEqual((response.status_code, response.headers["X-WEBAUTH-USER"]), (200, "alice"))
+    async def test_admin_still_reaches_everything(self):
+        for uri in ("/git/mcp/notes/archive/main.zip", "/git/mcp/notes.git/info/refs"):
+            response = await self.call("admin", uri)
+            self.assertEqual((response.status_code, response.headers["X-WEBAUTH-USER"]), (200, "alice"))
+        response = await self.call("admin", "/git/mcp/notes.git/info/refs", accept="*/*", basic=True)
+        self.assertEqual(response.headers["X-WEBAUTH-USER"], "alice")
 
 
 if __name__ == "__main__":

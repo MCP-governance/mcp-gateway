@@ -439,7 +439,7 @@ function renderNav(active) {
     groups.get(p.group).push(p);
   }
   const shortcuts = [
-    viewer.admin && viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" data-i18n-ctx="nav" target="_blank" rel="noopener" aria-label="사내 저장소 (새 탭)" title="사내 저장소">${icon("git")}<span>사내 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
+    viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" data-i18n-ctx="nav" target="_blank" rel="noopener" aria-label="사내 저장소 (새 탭)" title="사내 저장소">${icon("git")}<span>사내 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
     viewer.kit && html`<a href="#" data-i18n-ctx="nav" data-act="pc-kit" aria-label="PC 연결 설정" title="PC 연결 설정">${icon("plug")}<span>PC 연결 설정</span></a>`,
   ].filter(Boolean);
   $("#nav").innerHTML = String(html`${[...groups].map(([group, pages]) => html`<div class="group" data-i18n-ctx="group">${group}</div>${pages.map((p) => html`
