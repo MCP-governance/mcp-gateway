@@ -227,7 +227,7 @@ GRADES_UP_TO = {"public": ["public"], "nonimportant": ["public", "nonimportant"]
 GRADE_LABELS = {"public": "공개", "nonimportant": "내부", "important": "중요"}
 
 
-def transfer_gap(pac_input: dict) -> str:
+def transfer_gap(pac_input: dict, runtime: bool = True) -> str:
     """Why PAC-12 refused an external transfer, without naming the approved destinations (see argument_gap)."""
     facts, request = pac_input.get("facts") or {}, pac_input.get("request") or {}
     transfer = facts.get("transfer") or {}
@@ -241,6 +241,9 @@ def transfer_gap(pac_input: dict) -> str:
     if not pairs:
         return "이 목적지로의 외부 전송이 도구 범위 심사에서 승인되지 않았습니다"
     if not transfer.get("verified"):
+        # D-132: only a server the solution runtime runs has an egress proxy that proves the final hop.
+        if not runtime:
+            return "외부 제공자 서버는 최종 접속 목적지를 게이트웨이가 확인할 수 없어 주소 인자로 외부 전송하지 않습니다"
         return "서버의 외부 접속 허용 목록이 이 도구의 승인 목적지보다 넓어 최종 목적지를 확인할 수 없습니다"
     if grade == "important":
         return "「중요」 등급 데이터는 외부로 보낼 수 없습니다"
