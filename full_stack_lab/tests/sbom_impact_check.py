@@ -68,7 +68,10 @@ class SbomImpactCheck(unittest.TestCase):
                            and any(isinstance(target, ast.Name) and target.id == "PAGES_BY_ROLE" for target in node.targets))
         admin = next(value for key, value in zip(admin_pages.keys, admin_pages.values)
                      if isinstance(key, ast.Constant) and key.value == "admin")
-        self.assertIn("sbom-impact", [item.value for item in admin.elts])
+        self.assertIn("intake", [item.value for item in admin.elts])
+        self.assertNotIn("sbom-impact", [item.value for item in admin.elts])
+        console = (ROOT / "gateway" / "app" / "agent_static" / "console.js").read_text(encoding="utf-8")
+        self.assertIn('viewer.admin ? [{ key: "impact", label: "공급망 영향"', console)
         routes = {decorator.args[0].value: node for node in service.body
                   if isinstance(node, ast.AsyncFunctionDef) for decorator in node.decorator_list
                   if isinstance(decorator, ast.Call) and decorator.args and isinstance(decorator.args[0], ast.Constant)
