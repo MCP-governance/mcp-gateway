@@ -36,7 +36,8 @@ def launcher(archive: bytes, bootstrap: str) -> bytes:
         f"$seed=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{encoded_seed}')).Replace('@CTX@',$ctx);"
         "$encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($seed));"
         "$exe=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\\WindowsPowerShell\\v1.0\\powershell.exe';"
-        "try {$p=Start-Process -FilePath $exe -ArgumentList ('-NoProfile -STA -NonInteractive -WindowStyle Hidden -EncodedCommand '+$encoded) -Verb RunAs -WindowStyle Hidden -PassThru -Wait; exit $p.ExitCode} catch {exit 1}"
+        # No wait: the console that opened the .cmd (Windows Terminal on Windows 11) closes once UAC is approved.
+        "try {Start-Process -FilePath $exe -ArgumentList ('-NoProfile -STA -NonInteractive -WindowStyle Hidden -EncodedCommand '+$encoded) -Verb RunAs -WindowStyle Hidden | Out-Null; exit 0} catch {exit 1}"
     )
     return ("@echo off\r\nsetlocal\r\nset \"MCPGW_SETUP_FILE=%~f0\"\r\n"
             '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -Command "'

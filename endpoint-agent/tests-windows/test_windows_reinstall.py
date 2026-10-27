@@ -40,6 +40,32 @@ function Import-TestFunction($file, $name) {
                               env=dict(os.environ, WINKIT_ROOT=str(ROOT), WINKIT_TEMP=str(self.root), WINKIT_PYTHON=sys.executable))
         self.assertEqual(done.returncode, 0, done.stderr.decode(errors="replace"))
 
+    def test_launcher_hosts_tray_in_its_own_process_and_shortcut_is_ours_only(self):
+        self.run_ps(r"""
+Set-Content -LiteralPath (Join-Path $work 'tray.ps1') -Encoding UTF8 -Value @'
+param([string]$SettingsPath, [switch]$Show)
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'ran.txt'), "$SettingsPath|$Show|$([Threading.Thread]::CurrentThread.ApartmentState)|$([Diagnostics.Process]::GetCurrentProcess().ProcessName)")
+'@
+$files = Install-EndpointLauncher $work
+if (($files -join ',') -ne 'MCPGateway.exe,MCPGateway.ico') { throw "launcher not built: $files" }
+$exe = Join-Path $work 'MCPGateway.exe'
+Start-Process -FilePath $exe -ArgumentList '-SettingsPath "C:\dir with space\s.json" -Show' -Wait
+$ran = Get-Content -LiteralPath (Join-Path $work 'ran.txt') -Raw
+if ($ran -ne 'C:\dir with space\s.json|True|STA|MCPGateway') { throw "hosted run: $ran" }
+Add-Type -AssemblyName System.Drawing
+if ((Set-EndpointAppIdentity).Width -ne 32) { throw 'icon' }
+$profile = Join-Path $work 'profile'
+New-Item -ItemType Directory -Path $profile | Out-Null
+$shell = New-Object -ComObject WScript.Shell
+foreach ($case in @(@('ours.lnk', $exe, $false), @('other.lnk', $env:ComSpec, $true))) {
+    $path = Join-Path $profile $case[0]
+    $link = $shell.CreateShortcut($path); $link.TargetPath = $case[1]; $link.Save()
+    [IO.File]::WriteAllText((Join-Path $work 'shortcut.txt'), $path)
+    Remove-EndpointDesktopShortcut $work $profile $work
+    if ((Test-Path -LiteralPath $path) -ne $case[2] -or (Test-Path -LiteralPath (Join-Path $work 'shortcut.txt'))) { throw "shortcut $($case[0])" }
+}
+""")
+
     def test_fresh_and_legacy_parent_allow_employee_without_opening_private_children(self):
         self.run_ps(r"""
 $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value

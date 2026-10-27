@@ -1,13 +1,17 @@
-﻿param([Parameter(Mandatory = $true)][string]$SettingsPath)
+﻿param([Parameter(Mandatory = $true)][string]$SettingsPath, [switch]$Show)
 . (Join-Path $PSScriptRoot 'windows-common.ps1')
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $settings = Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$work = Join-Path $env:LOCALAPPDATA ('MCPGatewaySetup\tray-' + $settings.sid)
 $created = $false
 $mutex = New-Object Threading.Mutex($true, ('Local\MCPGatewayTray-' + $settings.sid), [ref]$created)
-if (-not $created) { $mutex.Dispose(); exit 0 }
-$work = Join-Path $env:LOCALAPPDATA ('MCPGatewaySetup\tray-' + $settings.sid)
+if (-not $created) {
+    # The running tray opens its window on its next tick.
+    if ($Show) { [IO.File]::WriteAllText((Join-Path $work 'show-status'), '', [Text.Encoding]::ASCII) }
+    $mutex.Dispose(); exit 0
+}
 New-Item -ItemType Directory -Path $work -Force | Out-Null
 Set-EndpointAcl $work ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value)
 $script:lang = 'ko'
@@ -35,6 +39,8 @@ $script:serviceMissing = $false
 try { $script:probe = Get-Content -LiteralPath $probePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { }
 
 function T([string]$Key) { return (Get-EndpointText $Key $script:lang) }
+$appIcon = Set-EndpointAppIdentity
+try { Add-EndpointDesktopShortcut $work $settings.directory $SettingsPath (T 'product') } catch { }
 
 function Update-EndpointTray {
     $script:snapshot = $null
@@ -252,6 +258,7 @@ function Show-EndpointWindow {
     $form.AutoSizeMode = 'GrowAndShrink'
     $form.StartPosition = 'CenterScreen'
     $form.MaximizeBox = $false
+    $form.Icon = $appIcon
     $form.MinimumSize = New-Object Drawing.Size(560, 0)
     $layout = New-Object Windows.Forms.TableLayoutPanel
     $layout.AutoSize = $true
@@ -357,6 +364,7 @@ $timer.Add_Tick({
 try {
     Update-EndpointTray
     $timer.Start()
+    if ($Show) { Show-EndpointWindow }
     [Windows.Forms.Application]::Run()
 } finally {
     $timer.Dispose()
