@@ -14,6 +14,11 @@
 
 - 팀 시트 POL-001~090을 `policy/`의 Rego PaC로 옮겼다(D-261). 65개 정책에 판정, 25개는 솔루션·제외(사유는 `policy/TRACE.md`). 시험 505건(독립 반례 144 포함) 통과, CI에 추적 검사. 게이트웨이 판정 경로에는 아직 연결하지 않았다. [분석](../analysis/pac-policy90-1027/README.md)·[보고](reports/2026-10-27-pac-policy90.md)
 
+## 10-27 콘솔 메뉴 통합
+
+- `10/27-console-ia`, 시작 `5add6ed`: 관리자 13개 메뉴를 9개로 통합하고 직원·협력사 4개 메뉴, 역할별 탭, 옛 주소·필터, 배지·갱신 훅을 유지했다(D-265, DEV-93). Node 88건과 필수 제품 정적 검사 통과. 추가 이벤트 라벨 검사는 시작 커밋의 `local-source-download` 라벨 누락으로 실패, pyflakes 미설치. 위키 검사는 기존 원본 누락·매핑 해시 불일치로 실패했고 ID 추적은 오류 0이다. 실기기·브라우저·배포 미검증이며 생성물은 재생성하지 않았다. [작업 보고](reports/2026-10-27-console-ia.md)
+- 커밋은 Git 관리 디렉터리의 `index.lock` 생성 권한 거부로 미완료다. HEAD는 `5add6ed`이며 변경 파일은 워크트리에 보존했다.
+
 ## 10-27 승인 소스의 Linux PC 빌드
 
 - `10/27-kit-source-linux`, 기준 `7d49a873`: 장치 자격 소스 API·서명 source 매니페스트·고정 레시피 대조·Linux 빌드/이미지 ID 격리 실행·상태 목록/다시 준비를 구현했다(D-263, DEV-73). 로컬 정적/대역 시험까지이며 실제 Linux·Gitea·DB 경합·하네스는 미실행이다. Git 관리 디렉터리가 쓰기 거부되어 미커밋 상태다. [원자 요구사항](../analysis/kit-source-1027/README.md)·[검증과 한계](reports/2026-10-27-kit-source-linux.md)
