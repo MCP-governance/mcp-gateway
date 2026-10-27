@@ -152,9 +152,10 @@ field_up() { printf '%s\\n' "$FIELD_TLS_ADDRESSES" "$CONSOLE_URL" "${FIELD_COMPO
         field = (LAB / "compose.field.yaml").read_text(encoding="utf-8")
         deploy = (ROOT / "deploy/compose.yaml").read_text(encoding="utf-8")
         for text, bind in ((field, "APPLIANCE_BIND"), (deploy, "MINT_BIND")):
+            port = "443" if bind == "MINT_BIND" else "${FIELD_HTTPS_PORT:-443}"
             self.assertIn("IDP_ISSUER: https://${" + bind + ":?}:443" if bind == "MINT_BIND"
-                          else "IDP_ISSUER: https://${APPLIANCE_BIND}:443", text)
-            self.assertIn("GATEWAY_PUBLIC_MCP_URL: https://${" + bind + "}:443/mcp/", text)
+                          else "IDP_ISSUER: https://${APPLIANCE_BIND}:" + port, text)
+            self.assertIn("GATEWAY_PUBLIC_MCP_URL: https://${" + bind + "}:" + port + "/mcp/", text)
             self.assertNotIn("tailscaled.sock", text)
         caddy = (FIELD / "Caddyfile").read_text(encoding="utf-8")
         self.assertIn("default_sni {$APPLIANCE_BIND}", caddy)
@@ -162,7 +163,7 @@ field_up() { printf '%s\\n' "$FIELD_TLS_ADDRESSES" "$CONSOLE_URL" "${FIELD_COMPO
         self.assertNotIn("http://:8081", caddy)
         none = (FIELD / "console/none.caddy").read_text(encoding="utf-8")
         self.assertIn("http://:8081", none)
-        self.assertIn("redir https://{$APPLIANCE_BIND}{uri} 301", none)
+        self.assertIn("redir https://{$APPLIANCE_BIND}:{$FIELD_HTTPS_PORT}{uri} 301", none)
         self.assertNotIn("import browser-console", none)
         self.assertIn("@harness path /mcp/* /oauth/* /api/endpoint/* /api/addon/* /.well-known/*", caddy)
         self.assertEqual((FIELD / "console/tailscale.caddy").read_text().strip(), "import file.caddy")

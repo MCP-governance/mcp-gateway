@@ -376,7 +376,7 @@ field_up() {
   fi
   echo
   echo "콘솔(브라우저)  : $CONSOLE_URL"
-  echo "하네스·키트     : https://${APPLIANCE_BIND}:443"
+  echo "하네스·키트     : https://${APPLIANCE_BIND}:${FIELD_HTTPS_PORT}"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
   echo "내부 저장소     : ${CONSOLE_URL}/git/"
   echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
@@ -386,7 +386,7 @@ field_status() {
   docker compose "${FIELD_COMPOSE[@]}" ps caddy gateway agent-service
   echo "콘솔(브라우저): $CONSOLE_URL"
   field_browser_trust
-  curl --cacert field/ca/root.crt -fsS "https://${APPLIANCE_BIND}:443/api/health" | python3 -m json.tool
+  curl --cacert field/ca/root.crt -fsS "https://${APPLIANCE_BIND}:${FIELD_HTTPS_PORT}/api/health" | python3 -m json.tool
 }
 
 field_browser_trust() {
@@ -506,8 +506,10 @@ field_dispatch() {
       echo "Tailscale IPv4 주소를 찾지 못했습니다. 이 기기에서 tailscale status를 확인하세요." >&2; exit 1;
     }
   fi
-  export APPLIANCE_BIND
-  CONSOLE_URL="https://${APPLIANCE_BIND}"
+  # 한 기기에 배치를 둘 띄울 때(시험) 두 번째 배치의 게시 포트를 바꾼다. 기본은 443·8000.
+  FIELD_HTTPS_PORT="${FIELD_HTTPS_PORT:-$(env_value FIELD_HTTPS_PORT)}"; FIELD_HTTPS_PORT="${FIELD_HTTPS_PORT:-443}"
+  export APPLIANCE_BIND FIELD_HTTPS_PORT
+  CONSOLE_URL="https://${APPLIANCE_BIND}$([[ $FIELD_HTTPS_PORT == 443 ]] || echo ":$FIELD_HTTPS_PORT")"
   console_tls_configure
   FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml "${CONSOLE_TLS_COMPOSE[@]}")
   FIELD_TLS_ADDRESSES="https://${APPLIANCE_BIND}:8080"
