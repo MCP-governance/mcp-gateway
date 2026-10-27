@@ -2260,12 +2260,12 @@ const field = {
     html`<option value="${v}" ${v === cur ? raw("selected") : ""}>${Array.isArray(l) ? l[1] : l}</option>`)}</select></label>`,
 };
 
-function scopeFields(names) {
+function scopeFields(names, dataClass = "public") {
   return html`<fieldset><legend>도구 범위</legend>
     ${field.text("scope_purpose", "목적", 'required minlength="4" maxlength="200"')}
     ${field.text("scope_asset", "자산", 'required minlength="2" maxlength="200"')}
     ${field.text("scope_destinations", "외부 목적지 (쉼표 구분)", 'maxlength="300"')}
-    <div class="grid c2">${field.select("scope_grade", "외부 전송 등급", { public: DATA_CLASS.public, nonimportant: DATA_CLASS.nonimportant }, "public")}
+    <div class="grid c2">${field.select("scope_grade", "외부 전송 등급", { public: DATA_CLASS.public, nonimportant: DATA_CLASS.nonimportant }, dataClass === "nonimportant" ? "nonimportant" : "public")}
       ${field.text("scope_accepts", "중요정보를 받을 서버 (쉼표 구분)", 'maxlength="300"')}</div>
     <label class="check"><input type="checkbox" name="scope_mask" /> 입력 민감정보 가림</label>
     <label class="check"><input type="checkbox" name="scope_consent" /> 사용자 동의</label>
@@ -2890,7 +2890,7 @@ const ACTIONS = {
     const registration = registry?.registrations?.[el.dataset.id];
     if (!s || !registration) return;
     const pending = Object.keys(registration.tools || {}).filter((name) => !registration.tool_reviews?.[name]);
-    const fd = await ask({ title: `도구 범위 심사 · ${s.display_name}`, fields: scopeFields(pending), confirm: "기록" });
+    const fd = await ask({ title: `도구 범위 심사 · ${s.display_name}`, fields: scopeFields(pending, registration.data_class), confirm: "기록" });
     if (!fd) return;
     const r = await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/tool-reviews`, { method: "POST", body: { reviews: collectScopes(fd, pending) } });
     closeDrawer(); toast(`도구 ${r.reviewed.length}개의 범위를 기록했습니다.`); reload();
