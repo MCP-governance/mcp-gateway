@@ -49,6 +49,9 @@ class FakeHost:
         return "/usr/bin/" + name if name in self.tools else None
 
     def run(self, *command, check=True, quiet=False, **kwargs):
+        # Package/engine scenarios assume the TOML parser is already available on pre-3.11 interpreters too.
+        if command == ("/usr/bin/python3", "-I", "-c", self.bootstrap.TOML_CHECK):
+            return SimpleNamespace(returncode=0)
         self.commands.append(list(command))
         installing = command[0] in ("apt-get", "dnf", "pacman") and "install" in command or command[:2] == ("pacman", "-S")
         if command[:2] == ("apt-get", "update") and "update" in self.fail:
@@ -209,7 +212,8 @@ class PrepareLoop(unittest.TestCase):
         self.mounts.assert_called_once()
         self.assertEqual(self.engine.call_args.kwargs, {"seconds": runner.PREFETCH_SECONDS})
         self.assertGreater(runner.PREFETCH_SECONDS, runner.PREPARE_SECONDS)
-        self.assertEqual(runner.preparation, {"ready": 1, "total": 1, "note": "", "documents": ["/home/emp/mcp-docs"]})
+        self.assertEqual(runner.preparation, {"ready": 1, "total": 1, "note": "", "documents": ["/home/emp/mcp-docs"],
+                                             "servers": [{"server": "local-files", "status": "준비됨", "reason": ""}]})
         self.assertEqual(self.logged, [{"local_runner": "prepared", "server": "local-files"}])
 
     def test_a_prepared_server_is_not_opened_again_and_a_withdrawn_one_is_forgotten(self):

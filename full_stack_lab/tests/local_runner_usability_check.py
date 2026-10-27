@@ -43,6 +43,17 @@ class ExchangeBudget(unittest.IsolatedAsyncioTestCase):
             self.assertAlmostEqual(budget,expected,delta=1)
             self.assertEqual(query.count('%s'),len(params))
 
+    async def test_source_registration_gets_build_budget_but_ordinary_calls_do_not(self):
+        self.env['SOURCE_PREPARE_SECONDS']=runner.PREFETCH_SECONDS
+        self.local['manifest']['source']={'recipe':'reviewed'}
+        for registering,method,expected in ((True,'initialize',1802.5),(True,'tools/call',2.5),(False,'initialize',2.5)):
+            self.env['registering']=SimpleNamespace(get=lambda:registering)
+            self.statements.clear();before=datetime.now(timezone.utc)
+            await self.functions.exchange('device',self.local,method,{},2.5)
+            _,params=next((q,p) for q,p in self.statements if 'INSERT INTO local_jobs' in q)
+            self.assertAlmostEqual((params[9]-before).total_seconds(),expected,delta=1)
+            self.assertEqual(params[-2],2.5)
+
     async def test_legacy_errors_remain_opaque_and_inspected_failure_gets_typed_exception(self):
         self.row={'state':'done','error':'legacy raw value'}
         for failure in (None,{'failure':'관리 계정으로 실행할 수 없습니다 · 종료 코드 126'}):
@@ -366,7 +377,7 @@ class ExecutionSequence(unittest.TestCase):
             def start(self):pass
         request=lambda *a,**kw:{'deadline':(now+timedelta(seconds=20)).isoformat()}
         with patch.object(runner,'signed',return_value=True),patch.object(runner,'check_control'), \
-             patch.object(runner,'engine_configuration',return_value=(['docker'],'host')), \
+             patch.object(runner,'engine_configuration',return_value=(['docker'],'host',body['image'])), \
              patch.object(runner,'PinnedMounts',return_value=pinned),patch.object(runner.threading,'Thread',NoThread), \
              patch.object(runner.Session,'mapping',side_effect=ValueError('process exited')), \
              patch.object(runner.subprocess,'run',side_effect=command),patch.object(runner.subprocess,'Popen',return_value=process) as start:
@@ -390,7 +401,7 @@ class ExecutionSequence(unittest.TestCase):
             events.append(path.rsplit('/',1)[-1])
             return {'deadline':(now+timedelta(seconds=20)).isoformat()}
         def prepare(config,manifest,check):
-            check();events.append('pull');check();return ['docker'],'host'
+            check();events.append('pull');check();return ['docker'],'host',manifest['image']
         session=SimpleNamespace(__init__=Mock(),mapping=Mock(return_value={}),
                                 request=Mock(return_value={'protocolVersion':runner.PROTOCOL}),
                                 stop=Mock(return_value=True),_send=Mock())

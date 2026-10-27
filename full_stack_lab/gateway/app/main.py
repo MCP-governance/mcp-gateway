@@ -1706,6 +1706,13 @@ async def endpoint_local_manifests(device: dict = Depends(endpoint_device("enfor
         raise HTTPException(409, str(exc)) from exc
 
 
+@app.get("/api/endpoint/local-sources/{server_id}")
+async def endpoint_local_source(server_id: str, manifest: str,
+                                device: dict = Depends(endpoint_device("enforcement"))):
+    from . import local_sources
+    return await local_sources.download(device, server_id, manifest)
+
+
 @app.get("/api/endpoint/local-jobs/{job_id}/control")
 async def endpoint_local_control(job_id: UUID, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:

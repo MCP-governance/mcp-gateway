@@ -1756,7 +1756,8 @@ async function askLocalRun(id, request, preset = {}, status = "") {
   const cur = request.evidence?.local_run || preset;
   const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
     ${status ? chip("alert", status) : ""}
-    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"',
+    ${field.select("build_from_source", "실행 방식", { image: "승인 이미지", source: "소스에서 빌드" }, cur.source ? "source" : "image")}
+    ${field.text("image", "이미지", 'maxlength="300"',
       cur.image || (request.repository_path && !status ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
     ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
@@ -1775,7 +1776,9 @@ async function askLocalRun(id, request, preset = {}, status = "") {
     return at < 0 ? [v, ""] : [v.slice(0, at).trim(), v.slice(at + 1).trim()];
   }));
   const result = await api(`/api/mcp-requests/${id}/local-run`, { method: "POST", body: {
-    image: String(fd.get("image")).trim(), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
+    build_from_source: fd.get("build_from_source") === "source",
+    image: fd.get("build_from_source") === "source" ? "" : String(fd.get("image")).trim(),
+    command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
     mounts, env, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
   toast(result.message);
   return true;

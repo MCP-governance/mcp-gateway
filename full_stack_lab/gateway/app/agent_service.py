@@ -1379,19 +1379,9 @@ RUNTIME_RECIPES = Path(os.getenv("RUNTIME_RECIPES", "/runtime-recipes"))
 def runtime_recipe(repository_url: str | None) -> dict | None:
     """The fixed recipe the runtime worker builds this repository with, and its digest (as the worker
     computes it). Recipes are files reviewed in this repository; a request cannot supply one."""
-    import tomllib
-    if not repository_url or not RUNTIME_RECIPES.is_dir():
-        return None
-    for path in sorted(RUNTIME_RECIPES.glob("*.toml")):
-        try:
-            recipe = tomllib.loads(path.read_text(encoding="utf-8"))["recipe"]
-            if recipe.get("repository") != repository_url:
-                continue
-            dockerfile = path.with_name(recipe["dockerfile"])
-            return {"id": recipe["id"], "sha256": hashlib.sha256(path.read_bytes() + b"\0" + dockerfile.read_bytes()).hexdigest()}
-        except (OSError, KeyError, ValueError):
-            continue
-    return None
+    from . import local_sources
+    recipe = local_sources.recipe_for(repository_url, RUNTIME_RECIPES)
+    return {k: recipe[k] for k in ("id", "sha256")} if recipe else None
 
 
 @app.post("/api/mcp-requests/{request_id}/runtime")
@@ -2307,7 +2297,8 @@ async def collect_proposal_provenance(row: dict, record: dict) -> tuple[dict, st
 
 
 class LocalRunSpec(StrictModel):
-    image: str = Field(min_length=3, max_length=300)
+    image: str = Field(default="", max_length=300)
+    build_from_source: bool = False
     command: list[str] = Field(default_factory=list, max_length=32)
     mounts: list[dict[str, str]] = Field(default_factory=list, max_length=8)
     env: dict[str, str] = Field(default_factory=dict, max_length=32)
@@ -2352,6 +2343,8 @@ async def signed_local_run(spec: dict, server_id: str) -> dict:
                 "env": spec["env"], "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]},
                 "approval": {"generation": (previous["signature_generation"] + 1) if previous else 1,
                              "expires_at": (datetime.now(UTC) + timedelta(days=365)).isoformat()}}
+    if "source" in spec:
+        manifest["source"] = spec["source"]
     errors = local_jobs.manifest_errors(manifest, server_id)
     if errors:
         raise HTTPException(422, " / ".join(errors))
@@ -2366,29 +2359,60 @@ def discovery(endpoint: str, local: dict | None, request_id) -> dict:
 LOCAL_DISCOVER_SECONDS = 240  # 직원 PC가 이미지를 처음 받아 도구 목록을 돌려주는 시간
 
 
+def local_discover_timeout(local):
+    if not local:
+        return 45
+    if 'source' in local.get('manifest', {}):
+        return local_jobs.SOURCE_PREPARE_SECONDS + 60
+    return LOCAL_DISCOVER_SECONDS
+
+
 @app.post("/api/mcp-requests/{request_id}/local-run")
 async def set_local_run(request_id: UUID, request: LocalRunSpec, user: dict = Depends(admin_caller)):
     """저장소형 stdio 서버를 신청자 PC의 격리 컨테이너로 실행하도록 지정한다(DEV-73). 서명은 승인 화면에서."""
     row = await approval_row(request_id, user)
     if row["intake_kind"] != "repository":
         raise HTTPException(409, "저장소 신청만 PC 격리 실행으로 지정할 수 있습니다.")
-    spec = {**request.model_dump(), "image": await pinned_image(request.image)}
+    spec = request.model_dump()
+    if request.build_from_source:
+        from . import local_sources
+        if request.image:
+            raise HTTPException(422, "이미지와 소스 중 하나만 지정하세요.")
+        try:
+            spec["source"] = local_sources.source_for(row)
+            spec["command"] = local_sources.recipe_for(row["repository_url"])["stdio_args"]
+        except (OSError, KeyError, ValueError) as exc:
+            raise HTTPException(422, "검증한 소스와 고정 레시피를 확인할 수 없습니다.") from exc
+    else:
+        if not request.image.strip():
+            raise HTTPException(422, "이미지를 지정하세요.")
+        spec["image"] = await pinned_image(request.image)
     errors = local_jobs.manifest_errors({"server_id": "x", "image": spec["image"], "command": spec["command"],
                                          "mounts": spec["mounts"], "env": spec["env"],
+                                         **({"source": spec["source"]} if "source" in spec else {}),
                                          "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]}}, "x")
     mirrors = [m.strip() for m in os.getenv("LOCAL_IMAGE_MIRRORS", "").split(",") if m.strip()]
-    if not local_jobs.mirror_image(spec["image"], mirrors):
+    if "source" not in spec and not local_jobs.mirror_image(spec["image"], mirrors):
         errors.append("허용한 이미지 저장소가 아닙니다: " + (", ".join(mirrors) or "—"))
     if errors:
         raise HTTPException(422, " / ".join(errors))
     evidence = row.get("evidence") or {}
+    internal_url = row.get("internal_repo_url")
+    if "source" in spec:
+        # Observation needs the verified archive before contract approval; publishing a copy approves no tool.
+        try:
+            internal_url, _ = await publish_internal_repo(row)
+        except ProvenanceMismatch as exc:
+            raise HTTPException(409, "검증한 소스와 내부 사본이 다릅니다.") from exc
     changed = await db.fetch_one(
-        "UPDATE mcp_intake_requests SET evidence=%s, updated_at=now() WHERE id=%s AND evidence=%s RETURNING id",
+        """UPDATE mcp_intake_requests SET evidence=%s, internal_repo_url=%s, updated_at=now()
+           WHERE id=%s AND evidence=%s AND commit_sha IS NOT DISTINCT FROM %s
+           AND provenance IS NOT DISTINCT FROM %s RETURNING id""",
         (Jsonb({**{k: v for k, v in evidence.items() if k != "approval_proposal"}, "local_run": spec}),
-         request_id, Jsonb(evidence)))
+         internal_url, request_id, Jsonb(evidence), row.get("commit_sha"), Jsonb(row.get("provenance"))))
     if not changed:
         raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
-    return {"local_run": spec, "message": f"PC 격리 실행 · {spec['image'].split('@')[0]}"}
+    return {"local_run": spec, "message": "PC 격리 실행 · " + ("소스에서 빌드" if "source" in spec else spec['image'].split('@')[0])}
 
 
 @app.post("/api/mcp-requests/{request_id}/approval-preview")
@@ -2402,7 +2426,7 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
         gate = await review.intake_gate({**row, "provenance": proposal["provenance"]})
         found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                     discovery(proposal["endpoint"], proposal.get("local"), request_id),
-                                    timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
+                                    timeout=local_discover_timeout(proposal.get("local")))
         state = await gateway_proxy("/api/registry", authorization)
         if (proposal["basis"] == intake_proposal.basis(row) and proposal["scan_sha256"] == intake_proposal.scan_basis(gate)
                 and proposal["expires_at"] > datetime.now(UTC).isoformat()
@@ -2425,7 +2449,7 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
     blockers = []
     if endpoint:
         found = await gateway_proxy("/api/registry/discover", authorization, "POST", discovery(endpoint, local, request_id),
-                                    timeout=LOCAL_DISCOVER_SECONDS if local else 45)
+                                    timeout=local_discover_timeout(local))
     else:
         blockers.append({"code": "execution-missing", "message": "실행 계약이 없습니다. 관리 실행을 확인하세요."})
     record = intake_proposal.source_record(row, found) if found else row.get("provenance") or {}
@@ -2530,7 +2554,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 raise HTTPException(409, "관할 규칙이 바뀌었습니다. 다시 열어 확인하세요.")
             found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                         discovery(proposal["endpoint"], proposal.get("local"), request_id),
-                                        timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
+                                        timeout=local_discover_timeout(proposal.get("local")))
             if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
                 raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
             current = {**row, "provenance": proposal["provenance"]}
