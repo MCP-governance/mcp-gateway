@@ -1,10 +1,16 @@
 {
-  "captured_at": "2026-10-25T20:16:01+09:00",
-  "head": "7ad411ffaa837108d243ac3fcfc42083e6442d26",
-  "branch": "main",
+  "captured_at": "2026-10-27T20:49:01+09:00",
+  "head": "cdef0bbf38dd4775747ac5094bbfd8f3477bbf07",
+  "branch": "10/27-retest-manuals",
   "status": [
-    "M research/llm-wiki/analysis/integration-cases.json",
-    " M research/llm-wiki/analysis/requirements.json"
+    "M docs/ai/README.md",
+    " M research/llm-wiki/analysis/integration-cases.json",
+    " M research/llm-wiki/analysis/requirements.json",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/threats/control-map.md",
+    "?? docs/ai/MANUAL_TEST_LINUX.md",
+    "?? docs/ai/MANUAL_TEST_WINDOWS.md",
+    "?? research/llm-wiki/status/reports/2026-10-27-retest-pj1.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

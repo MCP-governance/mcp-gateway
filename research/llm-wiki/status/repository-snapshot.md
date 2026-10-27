@@ -1,16 +1,22 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-25T20:16:01+09:00
+확인 시각: 2026-10-27T20:49:01+09:00
 
-HEAD: `7ad411ffaa837108d243ac3fcfc42083e6442d26` · 로컬 브랜치: `main`
+HEAD: `cdef0bbf38dd4775747ac5094bbfd8f3477bbf07` · 로컬 브랜치: `10/27-retest-manuals`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M docs/ai/README.md
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/threats/control-map.md
+?? docs/ai/MANUAL_TEST_LINUX.md
+?? docs/ai/MANUAL_TEST_WINDOWS.md
+?? research/llm-wiki/status/reports/2026-10-27-retest-pj1.md
 ```
 
 ## 주요 파일 바이트
