@@ -7,7 +7,6 @@ dockerfile = "markitdown-mcp.Dockerfile"
 port = 3001
 path = "/mcp"
 args = ["--http", "--host", "0.0.0.0", "--port", "3001"]
-stdio_args = []
 user = "65534:65534"
 memory = "1g"
 pids = 256

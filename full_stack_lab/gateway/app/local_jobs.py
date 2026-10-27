@@ -38,7 +38,6 @@ RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 102
 CLAIM_SECONDS = 5
 RUN_SECONDS = 20
 PREPARE_SECONDS = 180
-SOURCE_PREPARE_SECONDS = 1800
 QUEUE_LIMIT = 8
 ACTIVE_LIMIT = 1
 RATE_LIMIT = 30
@@ -96,16 +95,11 @@ async def failure_message(error, diagnostics=None):
 def manifest_errors(manifest: dict, server_id: str) -> list[str]:
     """The same rules the device runner applies again before it starts anything (C10 §8)."""
     errors = []
-    if set(manifest) - {"approval", "source"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
-        return ["매니페스트 항목은 server_id·image·source·command·mounts·env·reason만 허용합니다."]
+    if set(manifest) - {"approval"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
+        return ["매니페스트 항목은 server_id·image·command·mounts·env·reason만 허용합니다."]
     if manifest["server_id"] != server_id:
         errors.append("매니페스트의 서버 id가 등록 id와 다릅니다.")
-    if "source" in manifest:
-        from .local_sources import source_errors
-        errors += source_errors(manifest["source"])
-        if manifest["image"] != "":
-            errors.append("이미지와 소스 중 하나만 지정해야 합니다.")
-    elif not isinstance(manifest["image"], str) or not IMAGE.fullmatch(manifest["image"]):
+    if not isinstance(manifest["image"], str) or not IMAGE.fullmatch(manifest["image"]):
         errors.append("이미지는 sha256 digest로 고정해야 합니다.")
     command = manifest["command"]
     if not isinstance(command, list) or len(command) > 32 or not all(
@@ -215,15 +209,10 @@ async def approve_manifest(local: dict, intake_id: str, *, observed: bool = Fals
     """The review pins the observer and signed generation; a withdrawn generation cannot be revived."""
     generation, expires = approval_window(local["manifest"])
     mirrors = [m.strip() for m in os.getenv("LOCAL_IMAGE_MIRRORS", "").split(',') if m.strip()]
-    if "source" not in local["manifest"] and not mirror_image(local["manifest"]["image"], mirrors):
+    if not mirror_image(local["manifest"]["image"], mirrors):
         raise ValueError("사전 반입한 내부 미러 digest 이미지만 허용합니다.")
     async with db.transaction() as connection:
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ('local-approval:' + local['manifest']['server_id'],))
-        if "source" in local["manifest"]:
-            from . import local_sources
-            row = await (await connection.execute("SELECT * FROM mcp_intake_requests WHERE id=%s FOR SHARE", (intake_id,))).fetchone()
-            if not row or local["manifest"]["source"] != local_sources.source_for(row):
-                raise ValueError("검증한 소스와 고정 레시피가 매니페스트와 다릅니다.")
         old = await (await connection.execute("SELECT * FROM local_approvals WHERE server_id=%s FOR UPDATE",
                                              (local['manifest']['server_id'],))).fetchone()
         if old and (generation < old['signature_generation'] or
@@ -291,14 +280,11 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
     approval_window(local['manifest'])
     job = str(uuid.uuid4())
     run_timeout = min(timeout, RUN_SECONDS)
-    # Registration reserves the full source-build budget; ordinary
+    # Registration's HTTP proxy already reserves 240 seconds for the first image. Ordinary
     # calls/checks keep their caller's total timeout (and therefore their reservation bound).
     prepare_timeout=0
     if method=='initialize':
-        if registering.get():
-            prepare_timeout=SOURCE_PREPARE_SECONDS if 'source' in local['manifest'] else PREPARE_SECONDS
-        else:
-            prepare_timeout=min(PREPARE_SECONDS,max(0,timeout-run_timeout))
+        prepare_timeout=PREPARE_SECONDS if registering.get() else min(PREPARE_SECONDS,max(0,timeout-run_timeout))
     timeout = run_timeout + prepare_timeout
     server = local['manifest']['server_id']
     event = evidence_context.get()

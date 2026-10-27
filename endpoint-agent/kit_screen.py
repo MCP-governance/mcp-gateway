@@ -151,12 +151,6 @@ def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=No
     servers = summary.get("servers")
     count = len(servers) if isinstance(servers, list) else servers
     body += ["승인 MCP 서버  " + (f"{count}개" if type(count) is int else "—")]
-    local=(summary.get('local') or {}).get('servers')
-    if isinstance(local,list):
-        body.append('승인된 MCP')
-        body.append('  서버  상태  이유')
-        body += [f"  {clean(row.get('server','—'))}  {clean(row.get('status','—'))}  {clean(row.get('reason') or '—')}"
-                 for row in local] or ['  —']
     body = [translate(line, language) for line in body]
     versions = summary.get("harnesses") or {}
     body.append(translate("하네스 판본  ", language) + (" · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
@@ -167,8 +161,7 @@ def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=No
         next_line = {"pending": "관리자 활성화 대기", "quarantined": "관리자에게 격리 해제 요청",
                      "revoked": "새 키트로 다시 설치"}.get(summary.get("state"),
                          "하네스 실행" if connected else "게이트웨이 연결 점검")
-    keys=KEYS+(' · p 지금 다시 준비' if summary.get('prepare_socket') else '')
-    footer = [translate("다음 할 일  " + clean(next_line), language), translate(keys, language)]
+    footer = [translate("다음 할 일  " + clean(next_line), language), translate(KEYS, language)]
     content = (body[:max(0, height - 2)] + footer[-height:]) if height else []
     return "\n".join(clip(line, max(0, columns - 1)) for line in content)
 
@@ -318,7 +311,7 @@ class Screen:
         print(self.text(), file=self.output, flush=True)
 
 
-def live(read, check=None, screen=None, prepare=None):
+def live(read, check=None, screen=None):
     """Read snapshots afresh; an interrupted read never keeps a stale success on screen."""
     screen = screen or Screen()
     results = queue.Queue()
@@ -352,13 +345,6 @@ def live(read, check=None, screen=None, prepare=None):
             key = screen.read_key(2)
             if key in ("q", "\x1b"):
                 break
-            if key=='p' and prepare and screen.summary.get('prepare_socket'):
-                try:
-                    prepare(screen.summary)
-                    screen.next='MCP 준비 요청됨'
-                except (OSError,ValueError,KeyError):
-                    screen.next='MCP 준비 요청 실패'
-                screen.draw()
             if key == "c" and check and not checking:
                 checking = True
                 screen.cells = [("하네스 응답", "진행 중"), ("게이트웨이 MCP 목록", "진행 중")]

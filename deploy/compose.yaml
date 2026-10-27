@@ -150,7 +150,6 @@ services:
       - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
       - ./litellm:/run/mint-litellm:ro
-      - ../full_stack_lab/runtime/recipes:/runtime-recipes:ro
     networks: [edge, policy, privacy, tools, data, ops]
     <<: *hardened
 

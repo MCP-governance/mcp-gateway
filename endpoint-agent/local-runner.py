@@ -1,6 +1,6 @@
 """Device executor for gateway-issued local MCP jobs; the gateway is trusted.
 
-Only approved mirror digests or verified source builds run. No container survives a job, including an
+Only pre-imported internal-mirror digests run. No container survives a job, including an
 ambiguous result. A stop receipt means the local engine confirmed the container is gone.
 """
 import base64
@@ -10,7 +10,6 @@ import os
 import queue
 import re
 import stat
-import tarfile
 from contextlib import ExitStack
 import subprocess
 import tempfile
@@ -21,9 +20,6 @@ from datetime import datetime
 from pathlib import Path
 
 IMAGE = re.compile(r"^[a-z0-9][a-z0-9._/:-]{0,200}@sha256:[0-9a-f]{64}$")
-IMAGE_ID = re.compile(r'^sha256:[0-9a-f]{64}$')
-SOURCE_LIMIT = 512 * 1048576
-BUILD_LOCK = threading.Lock()
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
 ENV_DENIED = re.compile(r"^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|BASH_ENV$|ENV$|PATH$|HOME$)")
 PROTOCOL = "2025-06-18"
@@ -154,7 +150,7 @@ class PinnedMounts:
 def container_command(engine, manifest, account, *, mount_options=None, namespace='host', name=None, host_paths=None):
     if account.pw_uid<=0 or account.pw_gid<=0:
         raise ValueError('관리 계정은 root로 실행할 수 없습니다')
-    if not (IMAGE_ID if 'source' in manifest else IMAGE).fullmatch(manifest['image']):
+    if not IMAGE.fullmatch(manifest['image']):
         raise ValueError('digest로 고정하지 않은 이미지')
     env=manifest['env']
     if not isinstance(env,dict) or len(env)>32 or not all(ENV_NAME.fullmatch(k) and not ENV_DENIED.match(k)
@@ -215,7 +211,7 @@ def detect_engine(setting):
     raise ValueError('컨테이너 엔진이 없습니다')
 
 
-def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS, *, request=None):
+def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS):
     setting=config.get('local_engine') or {}
     if not setting.get('engine'):
         setting=config['local_engine']=detect_engine(setting)
@@ -226,18 +222,15 @@ def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS, 
         raise ValueError('엔진과 사용자 매핑 설정이 다릅니다')
     if namespace=='host' and setting.get('accepted_risk')!='탈출 시 호스트 root':
         raise ValueError('탈출 시 호스트 root 범위가 승인되지 않았습니다')
-    if 'source' not in manifest and not image_allowed(manifest['image'],setting.get('mirrors',[])):
+    if not image_allowed(manifest['image'],setting.get('mirrors',[])):
         raise ValueError('내부 미러 이미지가 아닙니다')
     argv=engine_argv(engine)
     version=client_version(argv)
     if not setting.get('version') or version!=setting['version']:
         raise ValueError('측정 대상으로 지정한 엔진 판본과 다릅니다')
-    image_ref = source_image(config,manifest,argv,request,check,PREFETCH_SECONDS) if 'source' in manifest else manifest['image']
-    inspect=argv+['image','inspect','--format','{{json .Config.Volumes}}',image_ref]
+    inspect=argv+['image','inspect','--format','{{json .Config.Volumes}}',manifest['image']]
     image=subprocess.run(inspect,capture_output=True,timeout=5,env=ENGINE_ENV)
     if image.returncode:
-        if 'source' in manifest:
-            raise ValueError('빌드 이미지가 없습니다')
         # 허용 저장소의 digest 고정 이미지만 여기까지 온다. 받은 내용이 digest와 다르면 엔진이 거부한다.
         # Control polling renews the unstarted claim; a cancelled preparation never starts a container.
         pull=subprocess.Popen(argv+['pull',manifest['image']],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=ENGINE_ENV)
@@ -258,159 +251,7 @@ def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS, 
         image=subprocess.run(inspect,capture_output=True,timeout=5,check=True,env=ENGINE_ENV)
     if len(image.stdout)>16384 or json.loads(image.stdout or b'null'):
         raise ValueError('이미지의 추가 볼륨은 허용하지 않습니다')
-    return argv,namespace,image_ref
-
-
-def source_errors(source):
-    if not isinstance(source, dict) or set(source) != {'commit', 'sha256', 'recipe', 'recipe_sha256', 'dockerfile'}:
-        return ['승인 소스 항목이 올바르지 않습니다.']
-    for name, pattern in [('commit', r'[0-9a-f]{40}'), ('sha256', r'[0-9a-f]{64}'),
-                          ('recipe_sha256', r'[0-9a-f]{64}'), ('recipe', r'[a-z0-9][a-z0-9._-]{0,63}')]:
-        if not isinstance(source[name], str) or not re.fullmatch(pattern, source[name]):
-            return ['승인 소스 식별자가 올바르지 않습니다.']
-    text = source['dockerfile']
-    if not isinstance(text, str) or not 0 < len(text) <= 16384 or '\0' in text:
-        return ['레시피 본문이 허용 범위를 벗어났습니다.']
-    # A different escape/frontend changes how FROM/ADD are parsed; recipes use the default parser only.
-    if re.search(r'^\s*#\s*(?:escape|syntax)\s*=', text, re.I | re.M):
-        return ['레시피의 외부 구문 해석기는 허용하지 않습니다.']
-    lines = re.sub(r'\\\r?\n', ' ', text).splitlines()
-    bases = [line.strip() for line in lines if re.match(r'^\s*FROM\s', line, re.I)]
-    pinned = r'FROM\s+(?:--platform=\S+\s+)?[a-z0-9][a-z0-9._/:-]*@sha256:[0-9a-f]{64}(?:\s+AS\s+[a-z0-9_.-]+)?\s*'
-    if not bases or any(not re.fullmatch(pinned, line, re.I) for line in bases):
-        return ['모든 기본 이미지를 sha256 digest로 고정해야 합니다.']
-    if any(re.match(r'^\s*ADD\s', line, re.I) and re.search(r'://|git@|\$', line) for line in lines):
-        return ['레시피의 원격 ADD는 허용하지 않습니다.']
-    return []
-
-
-def archive_digest(source, limit=SOURCE_LIMIT):
-    """Same file/relative-path digest as gateway/app/provenance.py, including symlink targets."""
-    entries,total=[],0
-    with tarfile.open(fileobj=source,mode='r|*') as archive:
-        for index,member in enumerate(archive):
-            if index>=10000:
-                raise ValueError('소스 파일 수 상한을 넘었습니다')
-            parts=Path(member.name).parts[1:]
-            if not (member.isfile() or member.issym()):
-                continue
-            if not parts or '..' in parts or member.name.startswith('/'):
-                raise ValueError('보관본에 허용되지 않는 경로가 있습니다.')
-            digest=hashlib.sha256()
-            if member.issym():
-                data=member.linkname.encode()
-                digest.update(data)
-                total+=len(data)
-            else:
-                reader=archive.extractfile(member)
-                for block in iter(lambda:reader.read(1<<20),b''):
-                    digest.update(block)
-                    total+=len(block)
-                    if total>limit:
-                        raise ValueError('보관본이 크기 상한을 넘었습니다.')
-            if total>limit:
-                raise ValueError('보관본이 크기 상한을 넘었습니다.')
-            entries.append(('/'.join(parts),digest.hexdigest()))
-    body=''.join(f'{digest}  {path}\n' for path,digest in sorted(entries))
-    return {'sha256':hashlib.sha256(body.encode()).hexdigest(),'files':len(entries),'bytes':total}
-
-
-def unpack_source(spool, destination):
-    if not hasattr(tarfile,'data_filter'):
-        raise ValueError('안전한 소스 압축 해제를 지원하는 Python 보안 업데이트가 필요합니다')
-    with tarfile.open(fileobj=spool,mode='r:*') as archive:
-        members=archive.getmembers()
-        roots=set()
-        names=set()
-        for member in members:
-            parts=Path(member.name).parts
-            if (not parts or member.name.startswith('/') or '..' in parts or '\\' in member.name
-                    or not (member.isdir() or member.isfile() or member.issym()) or member.name in names):
-                raise ValueError('소스 보관본 경로를 확인할 수 없습니다')
-            roots.add(parts[0]);names.add(member.name)
-        if len(roots)!=1:
-            raise ValueError('소스 최상위 폴더는 하나여야 합니다')
-        archive.extractall(destination,filter='data')
-    root=Path(destination)/roots.pop()
-    if root.is_symlink() or not root.is_dir():
-        raise ValueError('소스 최상위 폴더가 아닙니다')
-    return root
-
-
-def preparation_state(server,status,reason=''):
-    rows=[row for row in preparation.get('servers',[]) if row['server']!=server]
-    preparation['servers']=sorted(rows+[{'server':server,'status':status,'reason':reason}],key=lambda row:row['server'])
-    preparation['note']=status if status in ('소스 받는 중','빌드 중','빌드 실패') else reason
-
-
-def source_image(config,manifest,argv,request,check=None,seconds=PREFETCH_SECONDS):
-    errors=source_errors(manifest['source'])
-    if errors or manifest['image']!='' or not re.fullmatch(r'[a-z0-9][a-z0-9_.-]{0,63}',manifest['server_id']):
-        raise ValueError('승인 소스 매니페스트가 아닙니다')
-    digest=hashlib.sha256(canonical(manifest)).hexdigest()
-    tag=f"mcpgw-src/{manifest['server_id']}:{digest[:12]}"
-    server=manifest['server_id']
-    end=time.monotonic()+seconds
-    def current():
-        if check:
-            check()
-        if time.monotonic()>=end:
-            raise TimeoutError('소스 빌드 기한이 지났습니다')
-    def built():
-        result=subprocess.run(argv+['image','inspect',tag],capture_output=True,timeout=5,env=ENGINE_ENV)
-        if result.returncode:
-            return None
-        if len(result.stdout)>65536:
-            raise ValueError('빌드 이미지 검사 상한을 넘었습니다')
-        image=json.loads(result.stdout)[0]
-        if ((image.get('Config',{}).get('Labels') or {}).get('mcpgw.manifest')!=digest
-                or not IMAGE_ID.fullmatch(image.get('Id',''))):
-            raise ValueError('승인 매니페스트의 빌드 이미지가 아닙니다')
-        return image['Id']
-    while not BUILD_LOCK.acquire(timeout=.2):
-        current()
-    try:
-        current()
-        if image:=built():
-            return image
-        if request is None:
-            raise ValueError('장치 소스 다운로드 경로가 없습니다')
-        preparation_state(server,'소스 받는 중')
-        with tempfile.TemporaryDirectory(prefix='mcpgw-source-') as folder, tempfile.SpooledTemporaryFile(max_size=4<<20) as spool:
-            headers=request(config,f'/api/endpoint/local-sources/{server}?manifest={digest}',download=spool,deadline=end)
-            current()
-            spool.seek(0)
-            if headers.get('X-Content-SHA256')!=manifest['source']['sha256'] or archive_digest(spool)['sha256']!=manifest['source']['sha256']:
-                raise ValueError('승인 소스 다이제스트가 다릅니다')
-            spool.seek(0)
-            context=unpack_source(spool,Path(folder)/'source')
-            dockerfile=Path(folder)/'recipe.Dockerfile'
-            dockerfile.write_text(manifest['source']['dockerfile'],encoding='utf-8')
-            current()
-            preparation_state(server,'빌드 중')
-            process=subprocess.Popen(argv+['build','--tag',tag,'--label','mcpgw.manifest='+digest,
-                                          '--file',str(dockerfile),str(context)],
-                                     stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=ENGINE_ENV)
-            try:
-                while process.poll() is None:
-                    current()
-                    time.sleep(.2)
-                if process.returncode:
-                    raise ValueError('빌드 실패')
-            finally:
-                if process.poll() is None:
-                    process.kill();process.wait(timeout=3)
-            current()
-            image=built()
-            if image is None:
-                raise ValueError('빌드 이미지를 확인하지 못했습니다')
-            preparation_state(server,'준비됨')
-            return image
-    except Exception as exc:
-        preparation_state(server,'빌드 실패',prepare_reason(exc))
-        raise
-    finally:
-        BUILD_LOCK.release()
+    return argv,namespace
 
 
 def masked_stderr(raw, secrets=()):
@@ -676,14 +517,14 @@ def execute_job(config, job, request, account):
     answer={'error':'로컬 실행 결과를 확인하지 못했습니다'}
     isolation=None
     try:
-        engine,namespace,image_ref=engine_configuration(config,manifest,check,**({'request':request} if 'source' in manifest else {}))
+        engine,namespace=engine_configuration(config,manifest,check)
         check()
         started=request(config,path+'/start',{})
         check_control(job,started)
         deadline=min(iso(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
         session=Session.__new__(Session)
-        session.__init__(engine,{**manifest,'image':image_ref},account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
+        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
         isolation=session.mapping(namespace)
         isolation['engine_version']=config['local_engine']['version']
         isolation['engine']=config['local_engine']['engine']
@@ -772,14 +613,13 @@ def recover(config, request):
 
 # 승인된 로컬 서버의 폴더·이미지를 첫 호출 전에 준비한 결과. 서비스가 읽어 `mcpgw-status`에 싣는다.
 # ready·total이 None이면 아직 게이트웨이에서 목록을 받지 못한 것이다(활성화 대기 등).
-preparation={'ready':None,'total':None,'note':'','documents':[],'servers':[]}
-prepare_requested=threading.Event()
+preparation={'ready':None,'total':None,'note':'','documents':[]}
 
 
 def prepare_reason(exc):
     # 러너 자신의 ValueError 문장은 데이터를 담지 않는다. 그 밖의 예외는 종류만 말한다.
     if isinstance(exc,TimeoutError):
-        return '준비 기한이 지났습니다'
+        return '이미지 수신 기한이 지났습니다'
     if type(exc) is ValueError:
         return str(exc)[:60]
     if isinstance(exc,(KeyError,TypeError,AttributeError)):
@@ -807,7 +647,7 @@ def prepare_once(config, request, log, account, done, folders, failed):
     except Exception as exc:
         # 활성화 전 장치(401·403·409)와 이 경로를 모르는 이전 게이트웨이(404·405)는 오류가 아니라 기다림이다.
         status=getattr(exc,'code',None)
-        preparation.update(ready=None,total=None,note='',documents=[],servers=[])
+        preparation.update(ready=None,total=None,note='',documents=[])
         if status not in (401,403,404,405,409):
             log({'local_runner':'prepare_error','error':type(exc).__name__})
         return PREPARE_WAITING if status in (401,403,409) else PREPARE_EVERY
@@ -817,7 +657,6 @@ def prepare_once(config, request, log, account, done, folders, failed):
         for key in set(memory)-current:
             del memory[key]
     done.intersection_update(current)
-    preparation['servers']=[row for row in preparation['servers'] if any(row['server']==key[0] for key in current)]
     preparation.update(ready=len(done),total=len(entries),note='',documents=sorted({d for key in folders for d in folders[key]}))
     for entry in entries:
         key=(entry['server_id'],entry['manifest_sha256'])
@@ -833,18 +672,16 @@ def prepare_once(config, request, log, account, done, folders, failed):
                 raise ValueError('승인 기한이 지났습니다')
             folders[key]=ensure_mounts(manifest,account,documents)
             preparation.update(note='이미지 받는 중: '+name,documents=sorted({d for k in folders for d in folders[k]}))
-            engine_configuration(config,manifest,seconds=PREFETCH_SECONDS,**({'request':request} if 'source' in manifest else {}))
+            engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
             done.add(key)
             failed.pop(key,None)
             preparation.update(ready=len(done),note='')
-            preparation_state(name,'준비됨')
             log({'local_runner':'prepared','server':name})
         except Exception as exc:
             reason=prepare_reason(exc)
             if failed.get(key,(0,''))[1]!=reason:
                 log({'local_runner':'prepare_failed','server':name,'reason':reason})
             failed[key]=(time.monotonic()+PREPARE_RETRY,reason)
-            preparation_state(name,'빌드 실패' if 'source' in entry['manifest'] else '준비 실패',reason)
     preparation['note']=next((reason for key,(_,reason) in failed.items() if key in current),'')
     return PREPARE_EVERY
 
@@ -855,10 +692,7 @@ def prepare(config, request, log):
     account=pwd.getpwnam(config['username'])
     done,folders,failed=set(),{},{}
     while True:
-        pause=prepare_once(config,request,log,account,done,folders,failed)
-        if prepare_requested.wait(pause):
-            prepare_requested.clear()
-            done.clear();failed.clear()
+        time.sleep(prepare_once(config,request,log,account,done,folders,failed))
 
 
 def run(config, request, log):

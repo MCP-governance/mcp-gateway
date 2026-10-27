@@ -98,7 +98,6 @@ services:
       - ${FIELD_DISPOSAL_VOLUME:-field_disposal_journal}:/disposal
       # 키트 판본(/api/health의 pc_kit_sha256)은 배포하는 키트 파일에서 읽는다.
       - ../endpoint-agent:/endpoint-kit:ro
-      - ./runtime/recipes:/runtime-recipes:ro
 
   gateway-sse:
     environment:

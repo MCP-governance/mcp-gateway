@@ -198,7 +198,6 @@ services:
       - registry_runtime:/registry-runtime
       - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
-      - ./runtime/recipes:/runtime-recipes:ro
     networks: [edge, office, policy, privacy, tools, data, telemetry, ops]
     <<: *hardened
 

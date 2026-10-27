@@ -22,7 +22,6 @@ import shutil
 import socket
 import socketserver
 import stat
-import struct
 import subprocess
 import sys
 import threading
@@ -97,7 +96,7 @@ def private_write(path, content):
         temporary.unlink(missing_ok=True)
 
 
-def request(config, path, body=None, *, credential=True, download=None, deadline=None):
+def request(config, path, body=None, *, credential=True):
     context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
@@ -110,26 +109,6 @@ def request(config, path, body=None, *, credential=True, download=None, deadline
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=context))
     with opener.open(req, timeout=15) as response:
-        if download is not None:
-            total=0
-            length=response.headers.get('Content-Length')
-            if length is not None and (not length.isdecimal() or int(length)>512*1048576):
-                raise ValueError('소스 크기 상한을 넘었습니다')
-            if response.headers.get('Content-Encoding','identity').lower()!='identity':
-                raise ValueError('소스 전송 형식이 올바르지 않습니다')
-            while True:
-                if deadline is not None and time.monotonic()>=deadline:
-                    raise TimeoutError('소스 수신 기한이 지났습니다')
-                block=response.read(64<<10)
-                if not block:
-                    break
-                total+=len(block)
-                if total>512*1048576:
-                    raise ValueError('소스 크기 상한을 넘었습니다')
-                download.write(block)
-            if not total or (length is not None and int(length)!=total):
-                raise ValueError('소스 전송이 완료되지 않았습니다')
-            return {'X-Content-SHA256':response.headers.get('X-Content-SHA256','')}
         return json.loads(response.read(131072))
 
 
@@ -599,10 +578,6 @@ def render_status(summary, now, environment=None):
              "로컬 MCP 준비: " + prepared + (f" ({local['note']})" if local.get("note") and local.get("total") else ""),
              "직원 문서 폴더: " + (", ".join(local["documents"]) if local.get("documents") else "—"),
              "키트 판본: " + (summary.get("kit") or "—")[:12]]
-    if isinstance(local.get('servers'),list):
-        lines.append('승인된 MCP · 서버 · 상태 · 이유')
-        lines.extend(f"{kit_screen.clean(row.get('server','—'))} · {kit_screen.clean(row.get('status','—'))} · "
-                     f"{kit_screen.clean(row.get('reason') or '—')}" for row in local['servers'])
     if silent:
         lines.append("관리형 서비스가 응답하지 않습니다 (마지막 갱신 " + (clock(updated) if updated else "—") + ")")
     lines.append("다음 할 일: " + next_step(summary, now, environment))  # always last: the live view lifts it out
@@ -710,26 +685,8 @@ def status(args):
     def check(current):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
-    kit_screen.live(read, check, screen, prepare=request_preparation)
+    kit_screen.live(read, check, screen)
     print(screen.text())
-
-
-def request_preparation(summary):
-    with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
-        connection.settimeout(3)
-        connection.connect(summary['prepare_socket'])
-        connection.sendall(b'prepare\n')
-        if json.loads(connection.recv(1024))!={'accepted':True}:
-            raise ValueError('MCP 준비 요청이 거절되었습니다')
-
-
-def accept_preparation(connection,config,local):
-    # Preparation cannot return a bearer or alter approval; only the enrolled UID or root may request it.
-    _,uid,_=struct.unpack('3i',connection.getsockopt(socket.SOL_SOCKET,socket.SO_PEERCRED,struct.calcsize('3i')))
-    accepted=uid in (0,config['uid']) and local is not None
-    if accepted:
-        local.prepare_requested.set()
-    return {'accepted':accepted}
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
@@ -928,18 +885,8 @@ def serve(args):
         binding.configure_runtime(sys.modules[__name__])
         binding.start_runtime(config, sys.modules[__name__])
     cache, lock = {}, threading.Lock()
-    local = None
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
-            self.request.settimeout(.1)
-            try:
-                command=self.request.recv(16)
-            except socket.timeout:
-                command=b''
-            if command:
-                answer=accept_preparation(self.request,config,local) if command==b'prepare\n' else {'accepted':False}
-                self.request.sendall(json.dumps(answer).encode())
-                return
             permitted = binding.authorize_peer(self.request, config)
             with lock:
                 if not permitted or time.monotonic() >= cache.get("until", 0):
@@ -963,6 +910,7 @@ def serve(args):
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
+    local = None
     if runner.exists():
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
         local = load_module("local_runner", runner)
@@ -1033,8 +981,6 @@ def serve(args):
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
                "ca": str(PROGRAMS / f"ca-{config['uid']}.crt") if config.get("ca_certificate") else None}
-    if local:
-        summary['prepare_socket']=str(sock)
     known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
         # Until the organization activates the device the loop runs fast, so the first token follows
