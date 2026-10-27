@@ -37,6 +37,8 @@ FAMILIES = [
     ("G", "WBS 작업", r"G\d{2}\.\d{2}", 2, True),
     ("F", "기능", r"F-\d{2}", 2, False),
     ("POL", "정책", r"POL-\d{2}", 2, True),
+    # 팀 시트 「MCP 보안 관리 정책」(10-27, 90개)은 세 자리 번호다. 50개 정책표(POL-NN)와 별도 체계다.
+    ("SP", "팀 정책(90개)", r"POL-\d{3}", 3, True),
     ("E", "시험", r"E\d{2}", 2, False),
     ("CMP", "구성요소", r"CMP-\d{2}", 2, True),
     ("OSS", "OSS 재사용", r"OSS-\d{2}", 2, True),
@@ -56,7 +58,7 @@ TOKEN = {k: re.compile(r"(?<![A-Za-z0-9_.-])(?:" + p + r")(?![A-Za-z0-9_]|-\d|\.
 # 접두어는 같은데 자릿수·형식이 다른 토큰(DEV-1, POL-100 …)을 형식 위반으로 잡는다
 NEAR = re.compile(r"(?<![A-Za-z0-9_.-])((?:DEV|WIKI|AIG|RM|OPS|POL|CMP|OSS|DEP|DOC|TH)-\d+|D-0\d{2,}|D-00?)(?![A-Za-z0-9_]|\.\d)")
 TAIL = re.compile(r"((?:[·~]\d+)+)")
-RANGE_KEYS = {"D", "DEV", "WIKI", "AIG", "RM", "OPS", "POL"}
+RANGE_KEYS = {"D", "DEV", "WIKI", "AIG", "RM", "OPS", "POL", "SP"}
 
 SCAN_EXT = {".md", ".py", ".rego", ".json", ".yaml", ".yml", ".sh", ".ps1", ".mjs", ".js", ".sql", ".toml", ".psv", ".csv", ".html", ".txt", ".drawio"}
 SKIP_PREFIX = (f"{WIKI}/sources/", f"{WIKI}/threats/extracted/", f"{WIKI}/sheet/")  # 원문 사본·추출본·시트 생성물
@@ -142,6 +144,14 @@ def collect_defs(read):
             add(m[1], f"{m[1]}-{m[2]}", re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", m[3]), backlog, n)
     for m, n in headings(f"{WIKI}/threats/policies-50.md", r"## (POL-\d{2})\s+(.+)$"):
         add("POL", m[1], m[2], f"{WIKI}/threats/policies-50.md", n)
+    sheet90 = "policy/source/sheet.json"  # 시트에서 뽑은 정본(policy/tools/build_catalog.py extract)
+    text = read(sheet90)
+    if text:
+        titles = {k: v.get("target", "") for k, v in json.loads(text)["policies"].items()}
+        for n, line in lines(sheet90):
+            m = re.match(r'  "(POL-\d{3})": \{', line)
+            if m:
+                add("SP", m[1], titles.get(m[1], ""), sheet90, n)
     mapping = f"{WIKI}/analysis/drive-curation/policy-id-mapping.json"
     text = read(mapping)
     if text:  # 원본 PAC01~PAC{count}는 독스용 정책표 전체이고, 번호 대응 JSON의 systems가 개수를 고정한다
@@ -373,11 +383,12 @@ def self_test():
     files = {
         "docs/ai/DECISIONS.md": "# 결정\n## D-7 하나 (2026-10-01)\n본문 DEV-02\n## D-8 둘\n## D-8 둘 again\n## D-10 셋\n",
         f"{WIKI}/status/backlog.md": "| ID | 작업 |\n| --- | --- |\n| DEV-01 | 첫째 |\n| DEV-02 | 둘째 |\n| AIG-01 | 셋째 |\n",
-        "code.py": "# D-07 와 D-999, DEV-1, DEV-66·67, D-9~10, DEV-01\nx = 'ND-12 D-8x'\n",
+        "code.py": "# D-07 와 D-999, DEV-1, DEV-66·67, D-9~10, DEV-01\nx = 'ND-12 D-8x'\n# POL-001·002 POL-0001\n",
+        "policy/source/sheet.json": '{"policies": {\n  "POL-001": {"target": "a"},\n  "POL-002": {"target": "b"}\n}}\n',
         f"{WIKI}/status/reports/old.md": "옛 보고 D-998\n",
     }
     defs = collect_defs(files.get)
-    assert [(f, i) for f, i, *_ in defs] == [("D", "D-07"), ("D", "D-08"), ("D", "D-08"), ("D", "D-10"), ("DEV", "DEV-01"), ("DEV", "DEV-02"), ("AIG", "AIG-01")]
+    assert [(f, i) for f, i, *_ in defs] == [("D", "D-07"), ("D", "D-08"), ("D", "D-08"), ("D", "D-10"), ("DEV", "DEV-01"), ("DEV", "DEV-02"), ("AIG", "AIG-01"), ("SP", "POL-001"), ("SP", "POL-002")]
     info, errors, warnings = analyze(defs, files)
     text = "\n".join(errors)
     assert "중복 정의 D-08" in text, text
@@ -385,6 +396,9 @@ def self_test():
     assert "정의 없는 참조 DEV-66" in text and "DEV-67" in text, text  # 묶음 표기 풀이
     assert "정의 없는 참조 D-09" in text and "정의 없는 참조 D-12" not in text, text  # ND-12는 다른 토큰, D-9~10은 둘 다
     assert "형식 위반 참조 DEV-1 " in text, text
+    assert "POL-001" not in text and "POL-002" not in text, text  # 세 자리 팀 정책은 정의된 별도 체계
+    assert "형식 위반 참조 POL-0001" in text, text
+    assert info["POL-002"]["refs"], "POL-001·002 묶음 표기가 POL-002 참조로 풀려야 한다"
     assert "D-8x" not in text
     assert info["D-07"]["refs"], "D-7 정의에 D-07 참조가 붙어야 한다"
     assert "DEV-02" in info["D-07"]["rel"], "절 안 ID는 소유 결정의 관련 ID"
