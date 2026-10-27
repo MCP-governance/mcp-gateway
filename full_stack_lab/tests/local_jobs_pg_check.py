@@ -218,6 +218,30 @@ async def scenarios(a, b, stale, silent) -> int:
     finally:
         registry.server = original
 
+    # A harness calls local tools in parallel, and an approval observes the contract on the applicant's PC while
+    # the employee works. A call that arrives while another job runs waits in the queue; the device still takes
+    # one job at a time (S4-12: the second and third call were refused with P-RATE-003 instead).
+    await db.execute("UPDATE local_jobs SET state='expired', stopped_at=COALESCE(stopped_at, now()), finished_at=now()")
+    first = asyncio.create_task(local_jobs.exchange(DEVICE_A, LOCAL, "tools/call", {"name": "x", "arguments": {"n": 0}}, 8))
+    running = await local_jobs.claim(a, 3)
+    later = [asyncio.create_task(local_jobs.exchange(DEVICE_A, LOCAL, "tools/call", {"name": "x", "arguments": {"n": n}}, 8))
+             for n in (1, 2)]
+    await asyncio.sleep(0.5)
+    busy = await local_jobs.claim(a, 0)
+    served, overlap = [running["id"]] if running else [], busy is not None
+    done = {"content": [{"type": "text", "text": "ok"}], "isError": False}
+    await local_jobs.complete(a, running["id"], done, None, stopped=True)
+    while not all(j.done() for j in later):
+        taken = await local_jobs.claim(a, 0.5)
+        if taken:
+            overlap = overlap or await local_jobs.claim(a, 0) is not None
+            served.append(taken["id"])
+            await local_jobs.complete(a, taken["id"], done, None, stopped=True)
+    outcomes = await asyncio.gather(first, *later, return_exceptions=True)
+    CHECKS.ok("a call arriving while another job runs waits its turn instead of being refused",
+              all(o == done for o in outcomes) and len(set(served)) == 3 and not overlap,
+              outcomes=[o if isinstance(o, dict) else f"{type(o).__name__}: {o}" for o in outcomes], served=len(served))
+
     return CHECKS.finish()
 
 

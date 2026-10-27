@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-26T21:36:28+09:00
+확인 시각: 2026-10-27T21:23:29+09:00
 
-HEAD: `7d92d9dfde72570a3448b3d21131a8346fc4e9a7` · 로컬 브랜치: `10/26-runtime-contract-json`
+HEAD: `7df769c2fdce92c6a9ed22e511aae8991e814acc` · 로컬 브랜치: `10/27-local-queue`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -10,14 +10,13 @@ HEAD: `7d92d9dfde72570a3448b3d21131a8346fc4e9a7` · 로컬 브랜치: `10/26-run
 
 ```text
 M docs/ai/decisions/D-251-300.md
- M full_stack_lab/runtime/worker.py
- M full_stack_lab/tests/runtime_rollback_check.py
+ M full_stack_lab/gateway/app/local_jobs.py
+ M full_stack_lab/tests/dev73_rework_check.py
+ M full_stack_lab/tests/local_jobs_pg_check.py
  M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/decisions-index.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
+ M research/llm-wiki/threats/control-map.md
 ```
 
 ## 주요 파일 바이트
