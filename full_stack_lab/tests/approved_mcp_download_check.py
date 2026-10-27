@@ -336,5 +336,52 @@ class DownloadTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(self.files[-1].closed)
 
 
+class GiteaDirectAccessTests(unittest.IsolatedAsyncioTestCase):
+    """직원은 내부 Gitea를 직접 열 수 없다. 소스는 위의 승인 다운로드로만 받는다."""
+
+    async def asyncSetUp(self):
+        node = copy.deepcopy(next(n for n in TREE.body if isinstance(n, ast.AsyncFunctionDef) and n.name == "gitea_forward_auth"))
+        node.decorator_list = []
+        self.synced = []
+
+        class Response:
+            def __init__(self, status_code=200, headers=None):
+                self.status_code, self.headers = status_code, headers or {}
+
+        class RedirectResponse(Response):
+            def __init__(self, url, status_code):
+                super().__init__(status_code, {"location": url})
+
+        async def authenticated_user(authorization):
+            return {"email": "alice", "name": "Alice", "roles": [authorization.split()[-1]], "principal": "alice"}
+
+        async def ensure_gitea_user(user):
+            self.synced.append(user["email"])
+            return user["email"]
+
+        self.scope = dict(GIT_COOKIE="mcpgw_git", HTTPException=HTTPException, Response=Response,
+                          RedirectResponse=RedirectResponse, authenticated_user=authenticated_user,
+                          ensure_gitea_user=ensure_gitea_user, quote=quote)
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])), str(SOURCE), "exec"), self.scope)
+
+    def request(self, role, accept):
+        return types.SimpleNamespace(cookies={"mcpgw_git": role}, client=None,
+                                     headers={"accept": accept, "x-forwarded-uri": "/git/mcp/notes/archive/x.zip"})
+
+    async def test_employee_browser_goes_to_approved_mcp(self):
+        response = await self.scope["gitea_forward_auth"](self.request("employee", "text/html"))
+        self.assertEqual((response.status_code, response.headers["location"]), (302, "/#/intake?t=approved"))
+        self.assertNotIn("X-WEBAUTH-USER", response.headers)
+
+    async def test_employee_git_client_is_forbidden(self):
+        response = await self.scope["gitea_forward_auth"](self.request("employee", "*/*"))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(self.synced, [])
+
+    async def test_admin_still_reaches_gitea(self):
+        response = await self.scope["gitea_forward_auth"](self.request("admin", "text/html"))
+        self.assertEqual((response.status_code, response.headers["X-WEBAUTH-USER"]), (200, "alice"))
+
+
 if __name__ == "__main__":
     unittest.main()

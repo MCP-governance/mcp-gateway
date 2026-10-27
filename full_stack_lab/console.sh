@@ -507,7 +507,7 @@ field_dispatch() {
     }
   fi
   export APPLIANCE_BIND
-  CONSOLE_URL="http://${APPLIANCE_BIND}:8000"
+  CONSOLE_URL="https://${APPLIANCE_BIND}"
   console_tls_configure
   FIELD_COMPOSE=(-f compose.yaml -f compose.field.yaml "${CONSOLE_TLS_COMPOSE[@]}")
   FIELD_TLS_ADDRESSES="https://${APPLIANCE_BIND}:8080"

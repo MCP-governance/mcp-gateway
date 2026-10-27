@@ -145,7 +145,7 @@ field_up() { printf '%s\\n' "$FIELD_TLS_ADDRESSES" "$CONSOLE_URL" "${FIELD_COMPO
                     self.assertIn("compose.console-file.yaml", result.stdout)
                 else:
                     self.assertEqual(result.stdout.splitlines()[:2],
-                                     ["https://100.64.0.1:8080, https://CONSOLE.EXAMPLE:8080", "http://100.64.0.1:8000"])
+                                     ["https://100.64.0.1:8080, https://CONSOLE.EXAMPLE:8080", "https://100.64.0.1"])
                     self.assertEqual(result.stdout.splitlines()[2], "-f compose.yaml -f compose.field.yaml")
 
     def test_public_urls_and_kit_issuer_remain_ip_based(self):
@@ -160,7 +160,10 @@ field_up() { printf '%s\\n' "$FIELD_TLS_ADDRESSES" "$CONSOLE_URL" "${FIELD_COMPO
         self.assertIn("default_sni {$APPLIANCE_BIND}", caddy)
         self.assertIn("tls internal", caddy)
         self.assertNotIn("http://:8081", caddy)
-        self.assertIn("http://:8081", (FIELD / "console/none.caddy").read_text())
+        none = (FIELD / "console/none.caddy").read_text(encoding="utf-8")
+        self.assertIn("http://:8081", none)
+        self.assertIn("redir https://{$APPLIANCE_BIND}{uri} 301", none)
+        self.assertNotIn("import browser-console", none)
         self.assertIn("@harness path /mcp/* /oauth/* /api/endpoint/* /api/addon/* /.well-known/*", caddy)
         self.assertEqual((FIELD / "console/tailscale.caddy").read_text().strip(), "import file.caddy")
         site = (FIELD / "console/file.caddy").read_text()

@@ -712,6 +712,11 @@ async def gitea_forward_auth(request: Request):
             target = uri if uri.startswith("/git/") and "//" not in uri else "/git/"
             return RedirectResponse("/login?next=" + quote(target, safe="/"), status_code=302)
         return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="MCP Gateway Git"'})
+    if "admin" not in user["roles"]:
+        # 직원이 Gitea에서 직접 받으면 승인 커밋·기한 확인과 다운로드 기록을 건너뛴다. 소스는 Console의 승인된 MCP에서만 받는다.
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse("/#/intake?t=approved", status_code=302)
+        return Response(status_code=403)
     return Response(status_code=200, headers={"X-WEBAUTH-USER": await ensure_gitea_user(user)})
 
 

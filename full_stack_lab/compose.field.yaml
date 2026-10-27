@@ -39,7 +39,7 @@ services:
       agent-service: {condition: service_started}
     ports:
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:443:8080"
-      # 인증서 방식이 none일 때만 콘솔을 제공하며, HTTPS를 켜면 이름 기반 주소로 리디렉트한다.
+      # 평문 진입점은 콘솔을 제공하지 않는다. 인증서 방식이 none이면 IP 기반 HTTPS로, 켜면 이름 기반 주소로 리디렉트한다.
       - "${APPLIANCE_BIND:?./console.sh field up을 사용하세요}:8000:8081"
     environment:
       FIELD_TLS_ADDRESSES: ${FIELD_TLS_ADDRESSES:?./console.sh field up을 사용하세요}

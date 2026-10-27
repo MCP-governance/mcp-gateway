@@ -37,7 +37,7 @@
 | `GET /auth/provider` · `GET /auth/oidc/login|callback` · `POST /auth/oidc/session` | 공개 | D-65 선택형 OIDC Code/PKCE 로그인. Authlib 검증, 명시 binding, 60초 1회 handoff. SSO 모드는 로컬 비밀번호·refresh·기존 비장치 토큰을 거부 |
 | `GET /auth/me` · `POST /auth/logout` | 사용자 | 역할·볼 수 있는 화면(field: 내부 Git 주소·`kit` 키트 주소와 setup 한 줄) / 즉시 폐기(쿠키도 지움) |
 | `POST /auth/signup` | 공개 | 가입 신청. 아이디는 Gitea 이름 규칙(영문·숫자 사이의 기호 하나). 시도 제한 있음 |
-| `GET /auth/gitea` | 쿠키 또는 Basic | Caddy `forward_auth` 전용(D-48). 통과 200 + `X-WEBAUTH-USER`, 브라우저 미로그인 302 `/login?next=/git/…`, 그 밖 401 Basic |
+| `GET /auth/gitea` | 쿠키 또는 Basic | Caddy `forward_auth` 전용(D-48). 관리자 통과 200 + `X-WEBAUTH-USER`, 브라우저 미로그인 302 `/login?next=/git/…`, 직원 브라우저 302 `/#/intake?t=approved`·그 밖 403(D-262), 미인증 401 Basic |
 
 ## 4. Console 전용 (agent-service)
 
