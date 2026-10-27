@@ -298,13 +298,15 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
         await cleanup(connection)
         if not await authorized(connection, device, server, local['manifest_sha256'], method):
             raise NotStarted("로컬 실행 승인 또는 정책이 변경됐습니다.")
+        # A job that arrives while another runs waits in the queue; claim() hands a device one job at a time
+        # (ACTIVE_LIMIT). Refusing it here turned a harness's parallel tool calls, and an approval observing the
+        # contract while the employee worked, into P-RATE-003.
         for column, value in [('user_token', device['owner_token']), ('device_id',device_id), ('server_id', server)]:
             counts = await (await connection.execute(
                 f"""SELECT count(*) FILTER(WHERE state='queued') AS queued,
-                     count(*) FILTER(WHERE state='claimed' OR (started_at IS NOT NULL AND stopped_at IS NULL)) AS active,
                      count(*) FILTER(WHERE created_at>clock_timestamp()-interval '60 seconds') AS rate
                      FROM local_jobs WHERE {column}=%s""", (value,))).fetchone()
-            if counts['queued'] >= QUEUE_LIMIT or counts['active'] >= ACTIVE_LIMIT or counts['rate'] >= RATE_LIMIT:
+            if counts['queued'] >= QUEUE_LIMIT or counts['rate'] >= RATE_LIMIT:
                 raise NotStarted("로컬 실행 대기열 또는 생성률 상한입니다.", 'P-RATE-003')
         if (await (await connection.execute('SELECT count(*) AS n FROM local_jobs')).fetchone())['n'] >= ROW_LIMIT:
             raise NotStarted("로컬 실행 저장 상한입니다.", 'P-RATE-003')
