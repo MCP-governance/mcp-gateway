@@ -211,6 +211,14 @@ jobs:
       - name: Rego 단위 테스트
         run: docker run --rm --entrypoint /opa -v "$PWD/opa:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy -v
 
+      # 팀 정책 시트의 PaC(policy/). 카탈로그가 시트와 같고, Rego 판정 대상 정책마다 규칙·통과·차단 시험이 있어야 한다.
+      - name: 정책 PaC 시험·추적
+        run: |
+          docker run --rm --entrypoint /opa -v "$PWD/../policy/pac:/policy:ro" openpolicyagent/opa:1.20.2-static check --strict /policy
+          docker run --rm --entrypoint /opa -v "$PWD/../policy/pac:/policy:ro" openpolicyagent/opa:1.20.2-static test /policy
+          python3 ../policy/tools/build_catalog.py build --check
+          python3 ../policy/tools/trace.py --check
+
       - name: 콘솔 TLS 세 방식·게시 경계 검사
         run: |
           bash -n field/console-tls.sh
