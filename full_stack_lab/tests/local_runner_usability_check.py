@@ -288,6 +288,15 @@ class GatewayControl(unittest.IsolatedAsyncioTestCase):
         self.assertIn('관리 계정으로 실행할 수 없습니다',message)
         self.assertIn('종료 코드 126',message);self.assertIn('[비밀 숨김]',message);self.assertNotIn('synthetic',message)
 
+    async def test_gateway_names_the_mcp_error_before_stderr(self):
+        self.package.secret_scan=SimpleNamespace(ERROR_REDACTED='[REDACTED]',redact_error=AsyncMock(side_effect=lambda v:v))
+        with patch.dict(sys.modules,{PACKAGE:self.package}):
+            message=await self.functions.failure_message('raw',{'kind':'exited','exit_code':0,
+                'stderr_tail':'Knowledge Graph MCP Server running on stdio',
+                'mcp_error':"-32603 EROFS: read-only file system, open '/app/dist/memory.json'"})
+        self.assertIn("종료 코드 0 · MCP 오류: -32603 EROFS: read-only file system",message)
+        self.assertLess(message.index('MCP 오류'),message.index('표준 오류'))
+
     async def test_gateway_reason_is_allowlisted_and_diagnostic_is_bounded(self):
         self.package.secret_scan=SimpleNamespace(ERROR_REDACTED='[REDACTED]',redact_error=AsyncMock(side_effect=lambda v:v))
         with patch.dict(sys.modules,{PACKAGE:self.package}):
@@ -409,6 +418,48 @@ class ExecutionSequence(unittest.TestCase):
         self.assertLess(events.index('control'),events.index('pull'));self.assertLess(events.index('pull'),events.index('start'))
         self.assertTrue(answer['stopped']);self.assertIn('result',answer)
         self.assertLessEqual(session.request.call_args.args[2],20)
+
+
+class McpErrorReason(unittest.TestCase):
+    """10-27 PJ1 memory: the MCP answered EROFS as a JSON-RPC error on stdout while stderr held only the start
+    banner; the ledger said 「컨테이너 종료 · 코드 0」 and the cause was lost."""
+    EROFS={'code':-32603,'message':"EROFS: read-only file system, open '/app/dist/memory.json'"}
+
+    def test_session_request_keeps_the_mcp_error(self):
+        import queue
+        session=runner.Session.__new__(runner.Session)
+        session.next_id=0;session.failure=None;session.stopped=threading.Event();session.lines=queue.Queue()
+        session._send=lambda message:None;session.stop=lambda:True
+        session.lines.put(json.dumps({'jsonrpc':'2.0','id':1,'error':self.EROFS}))
+        with self.assertRaises(runner.McpError) as raised:
+            session.request('tools/call',{'name':'create_entities','arguments':{}},5)
+        self.assertEqual(raised.exception.detail,"-32603 EROFS: read-only file system, open '/app/dist/memory.json'")
+
+    def test_job_failure_reports_mcp_error_masked_beside_container_state(self):
+        import hashlib
+        now=datetime.now(timezone.utc)
+        body=manifest()
+        job={'id':'unit','account_uid':2001,'manifest':body,'manifest_sha256':hashlib.sha256(runner.canonical(body)).hexdigest(),
+             'signature':'signature','server_id':body['server_id'],'lease_until':(now+timedelta(seconds=5)).isoformat(),
+             'deadline':(now+timedelta(seconds=200)).isoformat(),'method':'initialize','params':{}}
+        request=lambda *a,**kw:{'deadline':(now+timedelta(seconds=20)).isoformat()}
+        error={'code':-32603,'message':'EROFS: read-only file system\napi_key=synthetic-value'}
+        session=SimpleNamespace(__init__=Mock(),mapping=Mock(return_value={}),request=Mock(side_effect=runner.McpError(error)),
+                                stop=Mock(return_value=True),_send=Mock(),stderr_lock=threading.Lock(),
+                                diagnostic=Mock(return_value={'kind':'exited','exit_code':0,
+                                                              'stderr_tail':'Knowledge Graph MCP Server running on stdio'}))
+        class NoThread:
+            def __init__(self,*a,**kw):pass
+            def start(self):pass
+        class SessionDouble:
+            def __new__(cls,*a,**kw):return session
+        with patch.object(runner,'signed',return_value=True),patch.object(runner,'check_control'),              patch.object(runner,'engine_configuration',return_value=(['docker'],'host')),patch.object(runner,'Session',SessionDouble),              patch.object(runner.threading,'Thread',NoThread):
+            answer=runner.execute_job({'uid':2001,'local_engine':{'version':'29.8.1','engine':'docker'}},job,request,
+                                      SimpleNamespace(pw_uid=2001))
+        diagnostics=answer['diagnostics']
+        self.assertEqual((diagnostics['kind'],diagnostics['exit_code']),('exited',0))
+        self.assertIn('-32603 EROFS: read-only file system',diagnostics['mcp_error'])
+        self.assertNotIn('synthetic-value',diagnostics['mcp_error'])
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

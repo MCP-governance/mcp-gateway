@@ -1659,6 +1659,8 @@ class LocalJobDiagnostics(BaseModel):
     kind: Literal['permission','exited','timeout','failed']
     exit_code: int | None = Field(default=None, ge=0, le=255)
     stderr_tail: str = Field(default='', max_length=500)
+    # The MCP's own JSON-RPC error message; older runners leave it out and older gateways ignore it.
+    mcp_error: str = Field(default='', max_length=500)
 
 
 class LocalJobResult(BaseModel):

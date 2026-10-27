@@ -254,6 +254,16 @@ def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS):
     return argv,namespace
 
 
+class McpError(RuntimeError):
+    """The MCP answered the request with a JSON-RPC error. Its message is the only record of why (10-27: memory's
+    EROFS on a read-only root came back on stdout while stderr held just the start banner)."""
+    def __init__(self, error):
+        super().__init__('로컬 MCP가 오류를 반환했습니다')
+        error=error if isinstance(error,dict) else {}
+        code,text=error.get('code'),error.get('message')
+        self.detail=(f'{code} ' if type(code) is int else '')+(text if isinstance(text,str) else '')
+
+
 def masked_stderr(raw, secrets=()):
     if len(raw)>=STDERR_BYTES:
         # A rolling buffer can begin inside a credential; discard that incomplete line entirely.
@@ -408,7 +418,7 @@ class Session:
                 message=json.loads(line)
                 if message.get('id')==ident and 'method' not in message:
                     if 'error' in message:
-                        raise RuntimeError('로컬 MCP가 오류를 반환했습니다')
+                        raise McpError(message['error'])
                     return message['result']
                 if 'method' in message and 'id' in message:
                     self._send({'jsonrpc':'2.0','id':message['id'],'error':{'code':-32601,'message':'not supported'}})
@@ -516,6 +526,7 @@ def execute_job(config, job, request, account):
     threading.Thread(target=watch,daemon=True).start()
     answer={'error':'로컬 실행 결과를 확인하지 못했습니다'}
     isolation=None
+    mcp_error=''
     try:
         engine,namespace=engine_configuration(config,manifest,check)
         check()
@@ -557,6 +568,7 @@ def execute_job(config, job, request, account):
     except Exception as exc:
         reason='timeout' if isinstance(exc,TimeoutError) else 'failed'
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
+        mcp_error=exc.detail if isinstance(exc,McpError) else ''
         # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
         # The runner's own ValueError messages carry no data; other exceptions keep their type only.
         detail=str(exc)[:200] if type(exc) is ValueError else ''
@@ -580,6 +592,9 @@ def execute_job(config, job, request, account):
                 diagnostic=session.diagnostic(secrets)
                 if answer['diagnostics']['kind']=='timeout' and diagnostic['kind']!='permission':
                     diagnostic['kind']='timeout'
+                if mcp_error:
+                    # The same masking as stderr: the MCP's message can echo arguments or file contents.
+                    diagnostic['mcp_error']=masked_stderr(mcp_error.encode(),secrets)
                 answer['diagnostics']=diagnostic
         elif engine is None:
             answer['stopped']=True  # 엔진 준비 실패 전에는 컨테이너 생성 자체를 시도하지 않았다.

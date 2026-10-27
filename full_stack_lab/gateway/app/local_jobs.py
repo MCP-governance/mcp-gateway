@@ -78,17 +78,19 @@ async def failure_message(error, diagnostics=None):
     code=diagnostics.get('exit_code')
     if type(code) is int and 0<=code<=255:
         message+=f' · 종료 코드 {code}'
-    tail=diagnostics.get('stderr_tail')
-    if isinstance(tail,str) and tail:
-        tail=''.join(c for c in tail if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
+    async def inspected(text):
+        text=''.join(c for c in text if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
         # Diagnostics also reach MCP callers; keep the existing output inspection boundary.
         try:
-            tail='[오류 본문 숨김]' if poisoning.result_findings(tail) else await secret_scan.redact_error(tail)
+            text='[오류 본문 숨김]' if poisoning.result_findings(text) else await secret_scan.redact_error(text)
         except Exception:
-            tail='[오류 본문 숨김]'
-        if tail==secret_scan.ERROR_REDACTED:
-            tail='[비밀 숨김]'
-        message+=' · 표준 오류: '+tail
+            text='[오류 본문 숨김]'
+        return '[비밀 숨김]' if text==secret_scan.ERROR_REDACTED else text
+    # The MCP's own error first: it names the cause, while stderr is often only a start banner (10-27 memory EROFS).
+    for key,label in (('mcp_error','MCP 오류'),('stderr_tail','표준 오류')):
+        value=diagnostics.get(key)
+        if isinstance(value,str) and value:
+            message+=f' · {label}: '+await inspected(value)
     return message[:500]
 
 
