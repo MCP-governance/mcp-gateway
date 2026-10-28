@@ -627,6 +627,24 @@ class Reinstall(unittest.TestCase):
         self.assertFalse(folder.exists())
         self.assertFalse(model.exists())
 
+    def test_service_rereads_harness_logins_so_a_later_sign_in_clears_login_needed(self):
+        c = self.core
+        programs = self.root / "programs"
+        programs.mkdir()
+        (programs / "model-emp.json").write_text('{"claude": false, "codex": true}')
+        answers = {"claude": ('{"loggedIn": true, "authMethod": "claude.ai"}', 0), "codex": ("", 1)}
+
+        def process(config, tool, arguments):
+            output, code = answers[tool]
+            return SimpleNamespace(communicate=lambda timeout=None: (output, ""), returncode=code, kill=lambda: None)
+        with patch.object(c, "PROGRAMS", programs), patch.object(c, "run_as_managed", process), \
+             patch.object(c, "private_write", lambda path, text: path.write_text(text)):
+            c.read_logins({"username": "emp", "harnesses": ["claude", "codex"]})
+            self.assertEqual(json.loads((programs / "model-emp.json").read_text()), {"claude": True, "codex": False})
+            answers["claude"] = ("not json", 0)  # an unreadable answer keeps the last known value
+            c.read_logins({"username": "emp", "harnesses": ["claude"]})
+            self.assertTrue(json.loads((programs / "model-emp.json").read_text())["claude"])
+
     def test_status_command_is_mint_and_never_overwrites_someone_elses_mint(self):
         c = self.core
         mint, old = self.root / "mint", self.root / "mcpgw-status"

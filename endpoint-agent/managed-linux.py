@@ -956,6 +956,44 @@ def read_versions(config):
             pass  # the version is shown when known, never required
 
 
+LOGIN_EVERY = 30
+
+
+def read_logins(config):
+    """Whether each harness is signed in, by its own status command (no model call, no tokens spent):
+    `claude auth status` (JSON loggedIn) and `codex login status` (exit 0). Unknown results keep the last value."""
+    found = {}
+    for tool, arguments in (("claude", ["auth", "status"]), ("codex", ["login", "status"])):
+        if tool not in config.get("harnesses", ()):
+            continue
+        process = run_as_managed(config, tool, arguments)
+        try:
+            output, _ = process.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            continue
+        if tool == "codex":
+            found[tool] = process.returncode == 0
+            continue
+        try:
+            state = json.loads(output[output.index("{"):]).get("loggedIn")
+        except ValueError:
+            continue
+        if type(state) is bool:
+            found[tool] = state
+    if not found:
+        return
+    path = PROGRAMS / f"model-{config['username']}.json"
+    try:
+        signed = json.loads(path.read_text())
+    except (OSError, ValueError):
+        signed = {}
+    signed = {**(signed if isinstance(signed, dict) else {}), **found}
+    private_write(path, json.dumps(signed))
+    path.chmod(0o644)
+
+
 def collect_inventory(config):
     """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
     marks every item of a reported harness absent, so a failed read must not look like an empty one."""
@@ -1110,8 +1148,17 @@ def serve(args):
                                   "status": getattr(exc, "code", None)}), flush=True)
                 wait = 900
             time.sleep(wait)
+    def logins():
+        # 설치 때 한 번 본 로그인 상태가 계속 보이면 직원이 로그인한 뒤에도 「로그인 필요」가 남는다(PJ1, 10-28).
+        while True:
+            try:
+                read_logins(config)
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                pass
+            time.sleep(LOGIN_EVERY)
     if sys.platform.startswith("linux") and config.get("harnesses"):
         threading.Thread(target=harness_inventory, daemon=True).start()
+        threading.Thread(target=logins, daemon=True).start()
 
     def keep_home_launchers():
         while True:
