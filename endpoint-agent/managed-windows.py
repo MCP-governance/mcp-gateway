@@ -718,6 +718,11 @@ def harness_versions(profile):
             value = file_version(path)
             if name not in found and value:
                 found[name] = value
+    for name, pattern in NATIVE_HARNESSES:
+        # Installed without a version resource (the Codex desktop installer's codex.exe): still a harness on this PC.
+        # An empty version reads as 「설치됨」; leaving it out hid Codex from the tray and the console (pj3 10-28).
+        if name not in found and any(Path(profile).glob(pattern)):
+            found[name] = ""
     for name, package in (("claude", "@anthropic-ai/claude-code"), ("codex", "@openai/codex")):
         manifest = Path(profile) / "AppData/Roaming/npm/node_modules" / package / "package.json"
         if name not in found and manifest.is_file():
@@ -968,19 +973,22 @@ def serve(args):
         while True:
             inventory_status = "success"
             try:  # configuration inventory is independent from OS event observation
-                done = subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
-                                      check=True, timeout=40, capture_output=True, text=True, encoding="utf-8")
+                # -X utf8: under pythonw the child prints in the ANSI code page (cp949) and -I ignores PYTHONIOENCODING.
+                # pj3 10-28: the Korean progress line failed to decode, stdout came back None and the thread died at once.
+                done = subprocess.run([sys.executable, "-B", "-I", "-S", "-X", "utf8", str(PROGRAMS / "agent.py"), "--config",
+                                       str(observer_config), "--once"], check=True, timeout=40, capture_output=True, text=True,
+                                      encoding="utf-8", errors="replace")
                 observation = json.loads(done.stdout.strip().splitlines()[-1])["observation"]
                 states = {observation[channel]["state"] for channel in ("inventory", "process", "network")}
                 if not states <= {"success", "partial", "disabled"}:
                     raise ValueError("invalid collector output")
                 inventory_status = "partial" if "partial" in states else "success"
-            except (OSError, ValueError, KeyError, IndexError, TypeError, subprocess.SubprocessError) as exc:
+            except Exception as exc:  # any failure is a reported result, never the end of this thread
                 inventory_status = type(exc).__name__
             os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
             try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
                 done = subprocess.run(
-                    [sys.executable, "-B", "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
+                    [sys.executable, "-B", "-I", "-S", "-X", "utf8", str(PROGRAMS / "os-observer-windows.py"),
                      "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
                     encoding="utf-8", errors="replace")
                 lines = [line for line in done.stdout.splitlines() if line.startswith("{")]
@@ -992,7 +1000,7 @@ def serve(args):
                         os_observer["error_code"] = "invalid_collector_output"
                 else:
                     os_observer["error_code"] = "missing_collector_output"
-            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            except Exception as exc:
                 os_observer["error_code"] = type(exc).__name__
             with lock:
                 latest.update(inventory=inventory_status, os=os_observer)
