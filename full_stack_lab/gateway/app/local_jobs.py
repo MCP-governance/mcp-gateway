@@ -413,7 +413,7 @@ async def cleanup(connection):
 
 
 async def authorized(connection, device, server, digest, method, *, generation=None):
-    row = await (await connection.execute("""SELECT a.*,s.lifecycle,s.status AS server_status,p.status AS account_status,
+    row = await (await connection.execute("""SELECT a.*,s.lifecycle,s.status AS server_status,s.deployment,p.status AS account_status,
         e.managed_state,e.status AS device_status,e.policy_hash,e.device_epoch,e.owner_token,e.local_uid,
         EXISTS(SELECT 1 FROM user_server_suspensions x WHERE x.user_token=e.owner_token
                AND x.server_id=a.server_id AND x.resumed_at IS NULL) AS suspended,
@@ -437,7 +437,10 @@ async def authorized(connection, device, server, digest, method, *, generation=N
         return None
     if row['observed']:
         return row if row['lifecycle']=='OPERATING' and row['server_status'] in ('READY','DRIFT') else None
-    if row['lifecycle'] is not None and (row['lifecycle']!='OPERATING' or row['server_status'] not in ('PENDING','READY','DRIFT')):
+    # 솔루션 실행기로 등록됐다 멈춘 서버의 엔드포인트 실행 재승인(D-299): 승인 전 관찰만 같은 관찰 PC에서 허용한다.
+    reapproval = row['server_status'] == 'DISABLED' and (row['deployment'] or '') != 'local'
+    if row['lifecycle'] is not None and (row['lifecycle']!='OPERATING'
+                                         or (row['server_status'] not in ('PENDING','READY','DRIFT') and not reapproval)):
         return None
     return row if method in ('initialize','tools/list') and row['observer_device']==device['endpoint_id'] else None
 
