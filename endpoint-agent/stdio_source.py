@@ -87,6 +87,10 @@ def environment(manifest):
         if not ctypes.windll.kernel32.GetWindowsDirectoryW(buffer, len(buffer)):
             raise OSError('Windows 시스템 경로 확인 실패')
         env['SystemRoot'] = buffer.value
+    # 관리자가 넣을 수 없는 고정 시스템 경로만(PATH는 아래 거부 목록). 없으면 os.environ['PATH']를 읽는
+    # 의존성이 바로 죽는다(MarkItDown의 pydub, PJ1 10-28). 직원 PATH를 물려받지 않는다.
+    env['PATH'] = (os.pathsep.join([str(Path(env['SystemRoot']) / 'System32'), env['SystemRoot']]) if os.name == 'nt'
+                   else '/usr/local/bin:/usr/bin:/bin')
     denied = re.compile(r'^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|NODE_PATH$|SYSTEMROOT$|WINDIR$|COMSPEC$|PATHEXT$|BASH_ENV$|ENV$|PATH$|HOME$)')
     values = manifest.get('env')
     if not isinstance(values, dict) or len(values) > 32:

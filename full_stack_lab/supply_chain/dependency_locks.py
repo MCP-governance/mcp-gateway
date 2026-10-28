@@ -25,10 +25,44 @@ def normalized(name):
 
 
 def projects(checkout, repository, subpath):
-    if repository.rstrip('/').removesuffix('.git').lower() == 'https://github.com/microsoft/markitdown':
-        return [checkout / 'packages/markitdown', checkout / 'packages/markitdown-mcp'], 'packages/markitdown-mcp/src/markitdown_mcp/__main__.py'
+    """신청한 경로의 pyproject와, 그것이 이름으로 의존하는 같은 커밋 안의 패키지들(monorepo).
+
+    진입 파일은 그 패키지의 `__main__.py`(`python -m 패키지`)다. 저장소별 예외 규칙을 두지 않는다.
+    """
+    found, servers = {}, []
+    for path in sorted(checkout.glob('**/pyproject.toml')):
+        if len(path.relative_to(checkout).parts) > 4 or any(part.startswith('.') for part in path.relative_to(checkout).parts):
+            continue
+        try:
+            project = tomllib.loads(path.read_text(encoding='utf-8'))['project']
+            name, needs = project['name'], {normalized(Requirement(t).name) for t in project.get('dependencies', [])}
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        found.setdefault(normalized(name), path.parent)
+        if needs & {'mcp', 'fastmcp'}:
+            servers.append(path.parent)
     folder = checkout / subpath if subpath else checkout
-    return [folder], ''
+    if not subpath and not (folder / 'pyproject.toml').is_file() and len(servers) == 1:
+        # 경로를 적지 않은 monorepo: MCP SDK에 의존하는 패키지가 하나뿐이면 그것이 서버다. 둘 이상이면 신청에 경로가 필요하다.
+        folder = servers[0]
+    if not (folder / 'pyproject.toml').is_file():
+        return [folder], ''
+    chosen, queue = [], [folder]
+    while queue:
+        current = queue.pop()
+        if current in chosen:
+            continue
+        chosen.append(current)
+        project = tomllib.loads((current / 'pyproject.toml').read_text(encoding='utf-8')).get('project', {})
+        for text in project.get('dependencies', []):
+            local = found.get(normalized(Requirement(text).name))
+            if local and local not in chosen:
+                queue.append(local)
+    name = tomllib.loads((folder / 'pyproject.toml').read_text(encoding='utf-8')).get('project', {}).get('name', '')
+    module = normalized(name).replace('-', '_')
+    entry = next((candidate for candidate in (folder / 'src' / module / '__main__.py', folder / module / '__main__.py')
+                  if candidate.is_file()), None)
+    return chosen, entry.relative_to(checkout).as_posix() if entry else ''
 
 
 def requirements(folders):

@@ -197,8 +197,11 @@ def trivy_database() -> datetime | None:
         return None
 
 
-def repository_license(report: Path) -> dict | None:
-    """The licence files at the repository root, as Trivy's licence classifier names them."""
+def repository_license(report: Path, prefix: str = "") -> dict | None:
+    """The licence files at the repository root, as Trivy's licence classifier names them.
+
+    prefix: the checkout's folder inside the scan root when the scan also holds the locked wheels (source/).
+    """
     try:
         results = json.loads(report.read_text(encoding="utf-8")).get("Results") or []
     except (OSError, ValueError, AttributeError):
@@ -209,6 +212,10 @@ def repository_license(report: Path) -> dict | None:
             continue
         for item in result.get("Licenses") or []:
             path = str(item.get("FilePath") or "")
+            if prefix:
+                if not path.startswith(prefix):
+                    continue
+                path = path[len(prefix):]
             if item.get("Name") and not item.get("PkgName") and "/" not in path:
                 found.setdefault(str(item["Name"]), path)
     return {"spdx": " AND ".join(sorted(found)), "files": sorted(set(found.values())), "source": "trivy"} if found else None
@@ -320,7 +327,7 @@ def validate(connection, request: dict) -> None:
     connection.execute(
         "UPDATE mcp_intake_requests SET provenance=%s WHERE id=%s AND status='VALIDATING'",
         (Jsonb({"kind": "source", "source_url": url, "version": commit, "version_immutable": True,
-                "license": repository_license(trivy), "artifact": artifact,
+                "license": repository_license(trivy, "" if scan_root == checkout else "source/"), "artifact": artifact,
                 "supplier_metadata": supplier_metadata(checkout, url, commit),
                 "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}), request["id"]))
     note = (f"격리 검증 완료 · SBOM 구성요소 {components}개 · "

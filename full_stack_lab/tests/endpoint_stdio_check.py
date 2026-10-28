@@ -64,7 +64,9 @@ class Preparation(unittest.TestCase):
         args,folder,env=source.prepare(self.config,self.body,self.request)
         self.assertEqual(folder.parent,self.base)
         self.assertIn('-I',args)
-        self.assertNotIn('PATH',env)
+        # 고정 시스템 경로만, 실행기 자신의 PATH는 물려주지 않는다.
+        self.assertNotEqual(env['PATH'],source.os.environ.get('PATH'))
+        self.assertIn('System32' if source.os.name == 'nt' else '/usr/bin', env['PATH'])
         source.prepare(self.config,self.body,self.request)
         self.assertEqual(self.request.call_count,1)
         self.assertEqual(self.started.call_count,1)

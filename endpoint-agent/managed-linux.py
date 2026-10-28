@@ -1117,6 +1117,8 @@ def serve(args):
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
         source_root = Path('/var/lib/mcpgw-sources')
         source_root.mkdir(mode=0o755, exist_ok=True)
+        # 승인 MCP는 직원 계정으로 돈다: 지나가기만 허용(목록은 숨김). 서비스 umask로 700이 되면 ImportError(PJ1 10-28).
+        source_root.chmod(0o711)
         def source_protected(path):
             return all(not p.is_symlink() and p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
                        for p in [path, *path.parents])

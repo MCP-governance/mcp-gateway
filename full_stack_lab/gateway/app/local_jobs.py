@@ -72,7 +72,7 @@ async def failure_message(error, diagnostics=None):
     if diagnostics is None:
         return error
     messages={'permission':'이미지 실행 파일의 권한 때문에 관리 계정으로 실행할 수 없습니다',
-              'exited':'로컬 MCP 컨테이너가 종료되었습니다',
+              'exited':'로컬 MCP가 종료되었습니다',
               'timeout':'로컬 MCP 준비 또는 실행 기한이 지났습니다',
               'failed':'로컬 MCP 실행을 완료하지 못했습니다'}
     message=messages.get(diagnostics.get('kind'),messages['failed'])
