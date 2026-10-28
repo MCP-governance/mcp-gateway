@@ -5,6 +5,8 @@ import asyncio
 import os
 import re
 import tempfile
+import hashlib
+from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 import httpx
@@ -18,7 +20,7 @@ DOWNLOAD_SLOTS = asyncio.Semaphore(4)
 
 
 def source_errors(source):
-    if not isinstance(source, dict) or set(source) != {'commit', 'sha256', 'runtime', 'entrypoint', 'lock', 'lock_sha256'}:
+    if not isinstance(source, dict) or set(source) - {'commit', 'sha256', 'runtime', 'entrypoint', 'lock', 'lock_sha256', 'locks'} or not {'commit', 'sha256', 'runtime', 'entrypoint', 'lock', 'lock_sha256'} <= set(source):
         return ['승인 소스 항목이 올바르지 않습니다.']
     if (not re.fullmatch(r'[0-9a-f]{40}', str(source['commit']))
             or any(not re.fullmatch(r'[0-9a-f]{64}', str(source[k])) for k in ('sha256', 'lock_sha256'))
@@ -31,6 +33,16 @@ def source_errors(source):
             return ['소스 경로는 안전한 상대 경로여야 합니다.']
     if source['runtime'] == 'node' and source['lock'] != 'package-lock.json':
         return ['Node 잠금 파일은 package-lock.json이어야 합니다.']
+    if 'locks' in source:
+        locks = source['locks']
+        if not isinstance(locks, dict) or set(locks) != {'win_amd64', 'linux_x86_64'}:
+            return ['플랫폼별 의존성 잠금이 필요합니다.']
+        for key, lock in locks.items():
+            if (not isinstance(lock, dict) or set(lock) != {'python', 'sha256', 'packages'}
+                    or lock['python'] != {'win_amd64': '3.13', 'linux_x86_64': '3.12'}[key]
+                    or not re.fullmatch(r'[0-9a-f]{64}', str(lock['sha256']))
+                    or type(lock['packages']) is not int or not 0 <= lock['packages'] <= 10000):
+                return ['플랫폼 의존성 잠금 식별자 오류입니다.']
     return []
 
 
@@ -40,6 +52,9 @@ def source_for(row):
             or source['commit'] != row.get('commit_sha')
             or source['sha256'] != ((row.get('provenance') or {}).get('artifact') or {}).get('sha256')):
         raise ValueError('검증한 소스와 실행 잠금 정보가 필요합니다.')
+    if source['runtime'] == 'python' and (not source.get('locks') or source['locks'] !=
+            ((row.get('evidence') or {}).get('endpoint_source') or {}).get('locks')):
+        raise ValueError('공급망 검증에서 생성한 플랫폼별 잠금이 필요합니다.')
     return source
 
 
@@ -102,17 +117,35 @@ async def receive(spool, path):
     return total
 
 
-async def download(device, server_id, digest):
+async def download(device, server_id, digest, lock=None):
     before = await authorized_source(device, server_id, digest)
     spool = tempfile.SpooledTemporaryFile(max_size=4 << 20)
     try:
         async with DOWNLOAD_SLOTS:
-            size = await asyncio.wait_for(receive(spool, before['path']), timeout=120)
+            if lock is None:
+                size = await asyncio.wait_for(receive(spool, before['path']), timeout=120)
+                content_hash = before['source']['sha256']
+            else:
+                selected = (before['source'].get('locks') or {}).get(lock)
+                if not selected:
+                    raise HTTPException(409, '이 플랫폼의 잠금이 없습니다.')
+                content_hash = selected['sha256']
+                path = Path(os.getenv('INTAKE_REPORT_DIR', '/intake-reports')) / f'dependency-{content_hash}.lock'
+                try:
+                    with path.open('rb') as reader:
+                        content = reader.read((4 << 20) + 1)
+                except OSError as exc:
+                    raise HTTPException(409, '검증한 잠금을 찾을 수 없습니다.') from exc
+                if len(content) > 4 << 20 or hashlib.sha256(content).hexdigest() != content_hash:
+                    raise HTTPException(409, '의존성 잠금 무결성 오류입니다.')
+                spool.write(content)
+                spool.seek(0)
+                size = len(content)
         if before != await authorized_source(device, server_id, digest):
             raise HTTPException(409, '소스를 받는 동안 승인이 변경되었습니다.')
         await review.record_event('local-source-download', 'recorded', 'server', server_id, device['endpoint_id'],
                                   scope={'manifest_sha256': digest, 'commit': before['source']['commit'],
-                                         'sha256': before['source']['sha256'], 'bytes': size, 'intake_id': before['intake_id']})
+                                         'sha256': content_hash, 'lock_platform': lock, 'bytes': size, 'intake_id': before['intake_id']})
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
         spool.close()
         raise HTTPException(502, '승인 소스에 연결하지 못했습니다.') from exc
@@ -127,6 +160,6 @@ async def download(device, server_id, digest):
         finally:
             spool.close()
 
-    return StreamingResponse(chunks(), media_type='application/gzip', background=BackgroundTask(spool.close),
-                             headers={'Content-Length': str(size), 'X-Content-SHA256': before['source']['sha256'],
+    return StreamingResponse(chunks(), media_type='text/plain' if lock else 'application/gzip', background=BackgroundTask(spool.close),
+                             headers={'Content-Length': str(size), 'X-Content-SHA256': content_hash,
                                       'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'})

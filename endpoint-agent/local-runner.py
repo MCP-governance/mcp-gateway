@@ -506,9 +506,10 @@ class ProcessSession(Session):
         options = dict(stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                        cwd=folder, env=env, bufsize=0)
         if os.name == 'nt':
-            # shortcut: retain the service token until restricted-token file access and recovery are verified.
+            if not config or not config.get('sid'):
+                raise ValueError('직원 SID가 없습니다')
             self.job = helper('stdio_windows').Job('Global\\MINT-'+identity if identity else None)
-            self.process = self.job.start(args, **options)
+            self.process = self.job.start(args, sid=config['sid'], **options)
         else:
             if account.pw_uid <= 0 or account.pw_gid <= 0:
                 raise ValueError('프로세스 실행 계정은 root일 수 없습니다')
@@ -524,7 +525,7 @@ class ProcessSession(Session):
 
     def mapping(self, namespace):
         return {'engine':'process', 'namespace':namespace, 'network':'호스트 네트워크',
-                'account':'서비스 계정' if os.name=='nt' else '관리 계정'}
+                'account':'등록된 직원 계정'}
 
     def stop(self):
         self.stopped.set()

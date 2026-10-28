@@ -233,6 +233,7 @@ const REVIEW_KIND = {
   "auto-suspend-count-failed": "자동 중지 집계 실패",
   "intake-one-click": "도입 승인",
   "mcp-source-download": "소스 다운로드",
+  "local-source-download": "승인 소스 수신",
   "runtime-start": "실행 요청", "runtime-stop": "실행 중지 요청", "runtime-built": "이미지 빌드", "runtime-active": "실행 시작",
   "runtime-rollback": "실행 판본 되돌리기", "runtime-rollback-queued": "실행 판본 전환", "runtime-rollback-refused": "실행 판본 전환 거부", "runtime-rollback-request-refused": "실행 판본 되돌리기 요청 거부",
   "runtime-failed": "실행 실패", "runtime-stopped": "실행 중지", "runtime-egress": "외부 통신", "runtime-image-scan": "이미지 검사",
@@ -247,10 +248,7 @@ const REVIEW_KIND = {
   "incident-created": "사고 기록 생성", "incident-supplement": "사고 범위 보완", "incident-report": "사고 보고 제출",
   "disposal-reconciled": "폐기 상태 복원", "disposal-integrity-failure": "폐기 목록 확인 실패",
 };
-const RUNTIME_STATUS = {
-  QUEUED: ["approval", "실행 대기"], BUILDING: ["approval", "빌드 중"], STARTING: ["approval", "시작 중"], VERIFYING: ["approval", "응답 확인 중"],
-  ACTIVE: ["allow", "실행 중"], STOPPING: ["alert", "중지 중"], STOPPED: ["outline", "중지됨"], FAILED: ["block", "실행 실패"],
-};
+
 const REVIEW_OUTCOME = { approved: ["allow", "승인"], rejected: ["block", "거부"], refused: ["block", "본인 승인 차단"], held: ["alert", "보류"], recorded: ["outline", "기록됨"], failed: ["block", "확인 실패"], verified: ["outline", "동기화 완료"] };
 const SCAN_STATE = { DONE: ["allow", "완료"], FAILED: ["block", "실패"] };
 const UNSUPPORTED_POLICY = new Set(["PAC-05-DELEGATION-UNSUPPORTED"]);
@@ -1597,7 +1595,7 @@ ROUTES.connections = async () => {
 };
 
 function approvedMcpTable(servers) {
-  const execution = { remote: "원격", pc: "엔드포인트", runtime: "솔루션 런타임" };
+  const execution = { remote: "원격", pc: "엔드포인트", reapproval: "엔드포인트 실행으로 재승인 필요" };
   return servers.length ? html`<table class="data"><thead><tr><th>서버</th><th>출처</th><th>고정 커밋</th><th>승인 기한</th><th>실행 방식</th><th></th></tr></thead>
     <tbody>${servers.map((s) => html`<tr><td><b>${s.display_name || s.server_id}</b></td><td class="mono small">${s.source_url || "—"}</td>
       <td><code>${s.commit_sha || "—"}</code></td><td class="nowrap">${when(s.valid_until)}</td><td>${execution[s.execution] || "—"}</td>
@@ -1620,8 +1618,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
               <span class="sub">${r.intake_kind === "remote-endpoint" ? "원격 MCP" : "소스 코드"} · ${TRANSPORT[r.requested_transport] || r.requested_transport}${r.commit_sha ? ` · ${r.commit_sha.slice(0, 12)}` : ""}</span>
               ${viewer.admin && r.internal_repo_url ? html`<a class="sub" href="${sameSite(r.internal_repo_url)}" target="_blank" rel="noopener noreferrer">사내 저장소 ↗</a>` : ""}
               ${r.registered_server_id ? html`<span class="sub">${chip("allow", "게이트웨이 등록")} <code>/mcp/${r.registered_server_id}/</code></span>` : ""}
-              ${r.runtime ? html`<span class="sub">${chip(...(RUNTIME_STATUS[r.runtime.status] || ["", r.runtime.status]))}
-                ${r.runtime.status === "ACTIVE" ? html`<code>${r.runtime.endpoint}</code>` : r.runtime.status === "FAILED" && r.runtime.error ? short(r.runtime.error, 80) : ""}</span>` : ""}</td>
+              ${r.endpoint_reapproval_required ? chip("alert", "엔드포인트 실행으로 재승인 필요") : ""}</td>
             <td>${chip(...(INTAKE_STATUS[r.status] || ["", r.status]))}
               ${r.status === "HOLD" && r.review_note ? html`<span class="sub">${short(r.review_note, 90)}</span>` : ""}</td>
             <td class="small">${exitConclusionChip(r)}</td>
@@ -1629,10 +1626,10 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
             <td class="small">${when(r.created_at)}</td>
             ${viewer.admin ? html`<td><div class="row-actions">
               ${r.own ? chip("outline", "본인 신청") : ""}
-              ${r.intake_kind !== "remote-endpoint" && ["HOLD", "FAILED"].includes(r.status) ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">재검증</button>` : ""}
+              ${r.intake_kind !== "remote-endpoint" && (["HOLD", "FAILED"].includes(r.status) || r.endpoint_reapproval_required) ? html`<button class="btn sm" data-act="intake-queue" data-id="${r.id}">재검증</button>` : ""}
               <button class="btn sm" data-act="intake-report" data-id="${r.id}">보고서</button>
               ${["HOLD", "VALIDATION_QUEUED", "VALIDATED", "REMOTE_REVIEWED", "FAILED"].includes(r.status) ? html`<button class="btn sm danger" data-act="intake-reject" data-id="${r.id}">거부</button>` : ""}
-              ${!r.own && ["HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"].includes(r.status) && !r.registered_server_id
+              ${!r.own && ["HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"].includes(r.status) && (!r.registered_server_id || r.endpoint_reapproval_required)
                 ? html`<button class="btn sm primary" data-act="intake-one-click" data-id="${r.id}">검토</button>` : ""}</div></td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
         { key: "approved", label: "승인된 MCP", body: panel("승인된 MCP", approvedMcpTable(servers), { flush: true }) },
@@ -1800,14 +1797,15 @@ function intakeApprovalFields(out) {
 const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구", device: "장치" };
 
 async function askLocalRun(id, request, preset = {}, status = "") {
-  const cur = request.evidence?.local_run || preset;
+  const generated = request.evidence?.endpoint_source;
+  const cur = request.evidence?.local_run || (generated ? { source: generated } : preset);
   const fd = await ask({ title: `엔드포인트 실행 · ${request.display_name}`, confirm: "확인", fields: html`
     ${status ? chip("alert", status) : ""}
     ${field.select("execution", "실행 방식", { process: "프로세스", container: "컨테이너" }, cur.source ? "process" : "container")}
     ${field.select("source_runtime", "런타임", { python: "Python", node: "Node.js" }, cur.source?.runtime || "python")}
     ${field.text("source_entrypoint", "진입 파일", 'maxlength="256"', cur.source?.entrypoint || "")}
-    ${field.text("source_lock", "의존성 잠금 파일", 'maxlength="256"', cur.source?.lock || "requirements.lock")}
-    ${field.text("source_lock_hash", "의존성 잠금 해시", 'maxlength="64"', cur.source?.lock_sha256 || "")}
+    ${!generated ? html`${field.text("source_lock", "의존성 잠금 파일", 'maxlength="256"', cur.source?.lock || "package-lock.json")}
+      ${field.text("source_lock_hash", "의존성 잠금 해시", 'maxlength="64"', cur.source?.lock_sha256 || "")}` : ""}
     ${field.text("image", "이미지", 'maxlength="300"',
       cur.image || (request.repository_path && !status ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
@@ -1830,8 +1828,8 @@ async function askLocalRun(id, request, preset = {}, status = "") {
     image: fd.get("execution") === "process" ? "" : String(fd.get("image")).trim(),
     ...(fd.get("execution") === "process" ? { source: { commit: request.commit_sha,
       sha256: request.provenance?.artifact?.sha256, runtime: fd.get("source_runtime"),
-      entrypoint: String(fd.get("source_entrypoint")).trim(), lock: String(fd.get("source_lock")).trim(),
-      lock_sha256: String(fd.get("source_lock_hash")).trim() } } : {}), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
+      entrypoint: String(fd.get("source_entrypoint")).trim(), lock: generated?.lock || String(fd.get("source_lock") || "").trim(),
+      lock_sha256: generated?.lock_sha256 || String(fd.get("source_lock_hash") || "").trim() } } : {}), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
     mounts, env, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
   toast(result.message);
   return true;
@@ -1839,7 +1837,7 @@ async function askLocalRun(id, request, preset = {}, status = "") {
 
 async function showIntakeApproval(id) {
   let out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
-  if (out.request.requested_transport === "stdio" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
+  if (out.request.intake_kind === "repository" && out.proposal.blockers.some((b) => b.code === "execution-missing")) {
     if (!(await askLocalRun(id, out.request, out.local_run_preset, out.local_run_status))) return;
     out = await api(`/api/mcp-requests/${id}/approval-preview`, { method: "POST", body: {} });
   }
@@ -2022,15 +2020,6 @@ async function showIntakeReport(id) {
       ${panel("원본 보고서", report.artifacts.length ? html`<div class="row-actions">${report.artifacts.map((a) => html`
         <button class="btn sm" data-act="intake-download" data-id="${id}" data-kind="${a.kind}" data-name="${a.filename}">${ARTIFACT_KIND[a.kind] || a.kind} JSON</button>`)}</div>` : empty("생성된 보고서 없음"))}
     </div>` },
-    { key: "runtime", label: "실행", n: (report.runtimes || []).length, body: html`${(report.runtimes || []).length ? html`<table class="data">
-      <thead><tr><th>세대</th><th>상태</th><th>이미지</th><th>주소</th><th>시각</th></tr></thead><tbody>
-      ${report.runtimes.map((rt) => html`<tr><td>${rt.generation}</td>
-        <td>${chip(...(RUNTIME_STATUS[rt.status] || ["", rt.status]))}${rt.error ? html`<span class="sub">${short(rt.error, 120)}</span>` : ""}</td>
-        <td class="mono small">${rt.image_id ? rt.image_id.slice(7, 19) : "—"}<span class="sub">${rt.source_commit.slice(0, 12)} · ${rt.recipe_id}</span></td>
-        <td class="mono small">${rt.endpoint || "—"}</td><td class="small">${when(rt.updated_at)}</td></tr>`)}</tbody></table>` : empty("실행 기록 없음")}
-      ${(report.rollback_options || []).length ? panel("되돌릴 수 있는 판본", html`<table class="data"><thead><tr><th>세대</th><th>승인 시각</th><th>승인자</th><th>계약 해시</th><th></th></tr></thead><tbody>
-        ${report.rollback_options.map((item) => html`<tr><td>${item.generation}</td><td>${when(item.approved_at)}</td><td>${item.approved_by || "—"}</td>
-          <td class="mono small">${item.contract_sha256}</td><td><button class="btn sm" data-act="runtime-rollback" data-id="${id}" data-generation="${item.generation}">되돌리기</button></td></tr>`)}</tbody></table>`) : ""}` },
     { key: "findings", label: "취약점·코드 검사", n: findings.length, body: html`
       ${report.reports.some((s) => s.summary?.truncated && s.scanner !== "Syft") ? html`<p class="small muted">검사기별 최대 200건</p>` : ""}
       ${findings.length ? html`<table class="data"><thead><tr><th>검사기·등급</th><th>발견</th><th>대상</th><th>설치 → 수정 버전</th></tr></thead>
@@ -2824,25 +2813,6 @@ const ACTIONS = {
     toast(r.message); reload();
   },
   async "intake-report"(el) { await showIntakeReport(el.dataset.id); },
-  async "runtime-start"(el) {
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime`, { method: "POST" });
-    toast(r.message); reload();
-  },
-  async "runtime-stop"(el) {
-    const fd = await ask({ title: "실행 중지", body: "게이트웨이 호출이 이 실행에 닿지 않게 됩니다.", confirm: "중지", danger: true });
-    if (!fd) return;
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/stop`, { method: "POST" });
-    toast(r.message); reload();
-  },
-  async "runtime-rollback"(el) {
-    const fd = await ask({ title: `실행 판본 되돌리기 · ${el.dataset.generation}`,
-      fields: field.text("note", "사유", 'required maxlength="300"'), confirm: "되돌리기", danger: true });
-    if (!fd) return;
-    const r = await api(`/api/mcp-requests/${el.dataset.id}/runtime/rollback`, {
-      method: "POST", body: { generation: Number(el.dataset.generation), note: fd.get("note") },
-    });
-    toast(r.message); reload();
-  },
   async "mcp-source-download"(el) {
     const response = await fetch(`/api/approved-mcp/${encodeURIComponent(el.dataset.id)}/source?commit=${encodeURIComponent(el.dataset.commit)}`,
       { headers: { authorization: `Bearer ${token}` } });

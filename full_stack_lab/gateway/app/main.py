@@ -1764,9 +1764,10 @@ async def endpoint_local_manifests(device: dict = Depends(endpoint_device("enfor
 
 @app.get("/api/endpoint/local-sources/{server_id}")
 async def endpoint_local_source(server_id: str, manifest: str,
+                                lock: str | None = None,
                                 device: dict = Depends(endpoint_device("enforcement"))):
     from . import local_sources
-    return await local_sources.download(device, server_id, manifest)
+    return await local_sources.download(device, server_id, manifest, lock)
 
 
 @app.get("/api/endpoint/local-jobs/{job_id}/control")

@@ -19,7 +19,7 @@ const row = { server_id: "notes", display_name: "Notes", source_url: "https://gi
 
 test("approved sources show their fixed commit, expiry, mode and download action", () => {
   const result = String(render([row]));
-  for (const value of ["출처", "고정 커밋", "승인 기한", "실행 방식", "PC 격리", "소스 받기", row.source_url, row.commit_sha, row.valid_until]) {
+  for (const value of ["출처", "고정 커밋", "승인 기한", "실행 방식", "엔드포인트", "소스 받기", row.source_url, row.commit_sha, row.valid_until]) {
     assert.ok(result.includes(value), value);
   }
   assert.ok(result.includes('data-act="mcp-source-download"'));
@@ -32,7 +32,7 @@ test("remote services have connection information and no source action", () => {
   for (const value of ["원격", "MCP 주소", "/mcp/notes/", "—"]) assert.ok(result.includes(value));
   assert.ok(!result.includes("mcp-source-download"));
   assert.ok(!result.includes("<button"));
-  assert.ok(String(render([{ ...row, execution: "runtime" }])).includes("솔루션 런타임"));
+  assert.ok(String(render([{ ...row, execution: "reapproval" }])).includes("엔드포인트 실행으로 재승인 필요"));
 });
 
 test("approved source values are escaped, missing values use a dash and the empty state has no action", () => {
@@ -47,7 +47,7 @@ test("approved source values are escaped, missing values use a dash and the empt
 
 test("approved source labels translate into English", () => {
   const english = makeTranslator(EN).translate;
-  for (const label of ["승인된 MCP", "승인된 MCP 없음", "고정 커밋", "승인 기한", "실행 방식", "원격", "PC 격리", "솔루션 런타임", "소스 받기", "소스 다운로드"]) {
+  for (const label of ["승인된 MCP", "승인된 MCP 없음", "고정 커밋", "승인 기한", "실행 방식", "원격", "엔드포인트", "솔루션 런타임", "소스 받기", "소스 다운로드"]) {
     assert.notEqual(english(label), label);
     assert.ok(!/[가-힣]/.test(english(label)));
   }

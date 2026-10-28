@@ -195,6 +195,7 @@ services:
       - ./reports:/reports:ro
       - ./opa:/policy:ro
       - ./registry:/registry:ro
+      - intake_reports:/intake-reports:ro
       - registry_runtime:/registry-runtime
       - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro

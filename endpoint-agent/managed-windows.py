@@ -983,16 +983,27 @@ def serve(args):
     runner_spec = importlib.util.spec_from_file_location('local_runner', runner_path)
     runner = importlib.util.module_from_spec(runner_spec)
     runner_spec.loader.exec_module(runner)
-    source_root = args.config.parent / 'sources'
+    source_root = PROGRAMS / 'sources' / config['sid']
     def source_protected(path):
         if any(p.exists() and p.lstat().st_file_attributes & 0x400 for p in (path, *path.parents)):
             return False
-        if not protected([args.config.parent]):
+        if not protected([PROGRAMS]):
             return False
-        path.mkdir(exist_ok=True)
-        return protected([path])
+        if path == source_root and not path.exists():
+            lock_down(path, readers=False)
+            subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                           check=True, capture_output=True)
+        paths = [path, *path.rglob('*')]
+        if any(p.lstat().st_file_attributes & 0x400 for p in paths):
+            return False
+        return protected(paths)
+    def source_seal(path):
+        lock_down(path, readers=False)
+        subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                       check=True, capture_output=True)
+        return source_protected(path)
     runner_config={**config, "uid":None, "source_root":str(source_root),
-                   "source_protected":source_protected}
+                   "source_protected":source_protected, "source_seal":source_seal}
     for target in (runner.run, runner.prepare):
         threading.Thread(target=target, args=(runner_config, request, record), daemon=True).start()
     latest = {"inventory": "pending", "os": {"state": "failed", "error_code": "not_run", "accepted_count": 0}}

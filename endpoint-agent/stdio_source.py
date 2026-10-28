@@ -10,6 +10,7 @@ import tarfile
 import tempfile
 import threading
 import time
+import platform
 
 LIMIT = 128 << 20
 LOCK = threading.Lock()
@@ -108,6 +109,18 @@ def prepare(config, manifest, request, check=None, seconds=1800):
         raise ValueError('승인 소스 식별자가 아닙니다')
     relative(source['entrypoint']); relative(source['lock'])
     env = environment(manifest)
+    selected = None
+    if source.get('locks'):
+        if platform.machine().lower() not in ('amd64', 'x86_64'):
+            raise ValueError('승인된 x86_64 플랫폼이 아닙니다')
+        target = 'win_amd64' if os.name == 'nt' else 'linux_x86_64' if sys.platform == 'linux' else ''
+        selected = source['locks'].get(target)
+        if not selected or selected['python'] != f'{sys.version_info.major}.{sys.version_info.minor}':
+            raise ValueError('공급망 검사한 Python 판본의 잠금이 없습니다')
+        if target == 'linux_x86_64':
+            libc, version = platform.libc_ver()
+            if libc != 'glibc' or tuple(int(part) for part in version.split('.')[:2]) < (2, 28):
+                raise ValueError('검사한 Linux wheel에는 glibc 2.28 이상이 필요합니다')
     base = Path(config['source_root'])
     digest = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     folder = base / digest
@@ -125,6 +138,8 @@ def prepare(config, manifest, request, check=None, seconds=1800):
             raise ValueError('실행기 폴더 보호 확인 실패')
         ready = folder / '.ready.json'
         if ready.is_file():
+            if not config['source_protected'](folder):
+                raise ValueError('준비 폴더 보호 확인 실패')
             if json.loads(ready.read_text(encoding='utf-8')) != inventory(folder):
                 raise ValueError('준비한 실행 파일이 변경되었습니다')
             return command(folder, source, manifest, config), folder, env
@@ -141,7 +156,14 @@ def prepare(config, manifest, request, check=None, seconds=1800):
                 spool.seek(0)
                 unpack(spool, tree, source['sha256'])
             lock = tree / source['lock']
-            if file_hash(lock) != source['lock_sha256']:
+            if selected:
+                lock = stage / 'requirements.lock'
+                with lock.open('xb') as writer:
+                    headers = request(config, f"/api/endpoint/local-sources/{manifest['server_id']}?manifest={digest}&lock={target}",
+                                      download=writer, deadline=end)
+                if headers.get('X-Content-SHA256') != selected['sha256']:
+                    raise ValueError('의존성 잠금 응답 해시 불일치')
+            if file_hash(lock) != (selected['sha256'] if selected else source['lock_sha256']):
                 raise ValueError('의존성 잠금 해시 불일치')
             if not (tree / source['entrypoint']).is_file():
                 raise ValueError('진입 파일이 없습니다')
@@ -192,6 +214,8 @@ def prepare(config, manifest, request, check=None, seconds=1800):
                 for path in stage.rglob('*'):
                     path.chmod(0o755 if path.is_dir() else 0o644)
                 stage.chmod(0o755)
+            elif not config['source_seal'](stage):
+                raise ValueError('직원 읽기·실행 권한 설정 실패')
             os.rename(stage, folder)
         current()
         return command(folder, source, manifest, config), folder, env

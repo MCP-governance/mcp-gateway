@@ -701,20 +701,13 @@ async def register_server(request: dict, actor: str) -> dict:
     row = await db.fetch_one("SELECT lifecycle FROM mcp_servers WHERE id=%s", (server_id,))
     if row and (row["lifecycle"] or "OPERATING") in {"TERMINATING", "RETIRED"}:
         raise ValueError("종료 절차를 거친 서버 id는 다시 쓸 수 없습니다. 새 id로 등록하세요.")
-    runtime = None
     if local and intake["intake_kind"] != "repository":
         raise ValueError("로컬 실행은 검증한 구현 저장소 신청으로만 등록합니다.")
     if local:
         local = local_jobs.local_block(local["manifest"], local["signature"],
                                        await local_jobs.applicant_device(intake["submitted_by"], intake_id), server_id)
     if intake["intake_kind"] == "repository" and not local:
-        # A source the solution runs itself is registered at the address of that run, so the
-        # registration names the image built from the approved commit (DEV-38).
-        runtime = await db.fetch_one(
-            """SELECT id, generation, image_id, source_commit, source_archive_sha256, recipe_id, recipe_sha256, endpoint
-               FROM mcp_runtimes WHERE intake_id=%s AND status='ACTIVE'""", (intake_id,))
-        if runtime and endpoint != runtime["endpoint"]:
-            raise ValueError(f"이 신청은 솔루션이 실행하고 있습니다. 실행 주소로 등록하세요: {runtime['endpoint']}")
+        raise ValueError("엔드포인트 실행으로 재승인 필요")
     if local:
         await local_jobs.approve_manifest(local, str(intake_id))
         token = local_jobs.registering.set(local)
@@ -794,8 +787,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "display_name": request["display_name"], "package": package, "version": version,
         "source_url": source_url or endpoint, "supplier": request.get("supplier") or host,
         "license": ((intake.get("provenance") or {}).get("license") or {}).get("spdx"), "endpoint": endpoint,
-        # Only an active managed runtime proves that the solution runs this registration.
-        "deployment": "internal" if runtime else "provider",
+        "deployment": "provider",
         "residency": server_location,
         "downstream": request.get("downstream") or None, "data_class": request["data_class"],
         "tools": dict(sorted(request["tools"].items())), "exit_terms": request.get("exit_terms") or {},
@@ -819,7 +811,6 @@ async def register_server(request: dict, actor: str) -> dict:
                             "approvers": approved_risk.get("approvers") or [],
                             "solo_mode": approved_risk.get("solo_mode"),
                             "solo_operator": approved_risk.get("solo_operator"), "version": stated["version"]},
-        "runtime": {key: str(value) for key, value in runtime.items()} if runtime else None,
     }
     if local:
         spec.update(local=local, deployment="local")

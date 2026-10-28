@@ -3,12 +3,9 @@ import ast
 from datetime import datetime, timedelta, timezone
 from contextlib import ExitStack
 import hashlib
-import importlib.util
 import io
-import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tarfile
@@ -46,7 +43,7 @@ class Preparation(unittest.TestCase):
         self.body={**manifest(),'image':'','source':{'runtime':'python','commit':'a'*40,'sha256':self.digest,
                   'entrypoint':'main.py','lock':'requirements.lock','lock_sha256':hashlib.sha256(b'').hexdigest()}}
         self.body['command']=[]
-        self.config={'source_root':str(self.base),'source_protected':lambda path:True}
+        self.config={'source_root':str(self.base),'source_protected':lambda path:True, 'source_seal':lambda path:True}
         self.request=Mock(side_effect=self.receive)
         # Keep the real filesystem for all paths except the bundled pip artifact.
         real_is_file=Path.is_file
@@ -79,6 +76,27 @@ class Preparation(unittest.TestCase):
         _,folder,_=source.prepare(self.config,self.body,self.request)
         (folder/'source/main.py').write_text('changed')
         with self.assertRaises(ValueError):source.prepare(self.config,self.body,self.request)
+
+    def test_target_lock_download_and_runtime_mismatch(self):
+        from collections import namedtuple
+        Version = namedtuple("Version", "major minor")
+        target = "win_amd64" if os.name == "nt" else "linux_x86_64"
+        minor = 13 if os.name == "nt" else 12
+        lock=b'example==1 --hash=sha256:' + b'a'*64 + b'\n'
+        digest=hashlib.sha256(lock).hexdigest()
+        self.body['source']['locks']={target:{'python':f'3.{minor}','sha256':digest,'packages':1}}
+        receive=self.receive
+        def request(config,path,**kwargs):
+            if '&lock='+target in path:
+                kwargs['download'].write(lock)
+                return {'X-Content-SHA256':digest}
+            return receive(config,path,**kwargs)
+        with patch.object(source.platform,'machine',return_value='AMD64'), \
+                patch.object(source.sys,'version_info',Version(3,minor)):
+            source.prepare(self.config,self.body,request)
+        with patch.object(source.platform,'machine',return_value='AMD64'), patch.object(source.sys,'version_info',Version(3,10)):
+            with self.assertRaisesRegex(ValueError,'판본'):
+                source.prepare(self.config,self.body,request)
 
     def test_source_hash_lock_hash_and_network_failure_never_install(self):
         for key in ('sha256','lock_sha256'):
@@ -130,6 +148,7 @@ class ProcessChecks(unittest.TestCase):
         import pwd
         return pwd.getpwnam('nobody') if os.getuid()==0 else pwd.getpwuid(os.getuid())
 
+    @unittest.skipIf(os.name == 'nt', 'CreateProcessAsUserW requires SYSTEM; ctypes path tested separately')
     def test_silent_process_deadline_and_confirmed_tree_stop(self):
         session=runner.ProcessSession(self.prepared('import time; time.sleep(60)'),self.account(),lambda:None)
         try:
@@ -140,6 +159,7 @@ class ProcessChecks(unittest.TestCase):
             self.assertTrue(session.stop())
         self.assertIsNotNone(session.process.poll())
 
+    @unittest.skipIf(os.name == 'nt', 'CreateProcessAsUserW requires SYSTEM; ctypes path tested separately')
     def test_child_tree_is_reaped(self):
         code='import subprocess,sys,time;subprocess.Popen([sys.executable,"-I","-S","-c","import time;time.sleep(60)"]);time.sleep(60)'
         session=runner.ProcessSession(self.prepared(code),self.account(),lambda:None)

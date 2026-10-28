@@ -13,7 +13,7 @@
 ## DEV-83 후속 — 승인 소스 stdio 프로세스 모드 (D-299, 10-28)
 
 - 구현·신규 로컬 단위 26건 통과, 공용 Git index.lock 권한 때문에 미커밋. [작업 보고](reports/2026-10-28-endpoint-stdio.md), [요구사항·시험 정본](../analysis/endpoint-stdio/README.md).
-- 완료 조건: 정상 권한 환경의 변경 검토·커밋, 포함 Windows Python/OpenSSL와 잠금된 실제 OSS MCP의 Linux/Windows 정상·해시/계약 불일치·철회·기한·서비스 중단/복구 및 실제 하네스·원장/독립 효과 확인. Windows 서비스 계정 권한·호스트 네트워크·lock 없는 승인 커밋·Node 런타임의 범위를 고객 적용 전에 확인한다. 현재 배포·실기기 검증으로 세지 않는다.
+- 2차: 직원 WTS 토큰·wheel 잠금 생성/서명/장치 다운로드·솔루션 runtime 제거·기존 등록 재승인을 작업 트리에 반영했다. 완료 조건은 실제 SYSTEM 세션/ACL/Job, Linux 등록 직원 UID, 실제 MarkItDown의 플랫폼별 패키지 해석·Syft/Trivy와 설치 집합·실제 하네스·원장/독립 효과 확인이다. Windows 3.13/Linux 3.12 x86_64, 호스트 네트워크, wheel 오프라인 미러 보류, 기존 운영 자원 회수 조건을 검수한다. 커밋·배포·실기기 시험은 이번 소유자 지시로 실행하지 않는다.
 
 ## S4 후속 (2026-10-27)
 

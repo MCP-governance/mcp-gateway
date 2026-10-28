@@ -6,8 +6,6 @@ import hashlib
 import os
 import re
 import tempfile
-import sys
-from types import ModuleType
 import unittest
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -20,7 +18,8 @@ from open_endpoints import route_auth
 ROOT=APP.parents[2]
 SOURCE=APP/'local_sources.py'
 SOURCE_SPEC={'commit':'a'*40,'sha256':'b'*64,'runtime':'python','entrypoint':'main.py',
-             'lock':'requirements.lock','lock_sha256':'c'*64}
+             'lock':'requirements.lock','lock_sha256':'c'*64,
+             'locks':{key:{'python':version,'sha256':'c'*64,'packages':1} for key,version in [('win_amd64','3.13'),('linux_x86_64','3.12')]}}
 
 
 def functions(path,names,scope):
@@ -40,10 +39,25 @@ def gateway_scope():
                           BackgroundTask=BackgroundTask,DOWNLOAD_SLOTS=asyncio.Semaphore(1),httpx=SimpleNamespace(HTTPError=OSError)))
 
 class SourceSpec(unittest.TestCase):
+    def test_legacy_execution_is_ineligible_without_mutating_history(self):
+        history={'servers':{'old':{'runtime':{'id':'old'}}, 'remote':{'endpoint':'https://vendor/mcp'},
+                            'pc':{'local':{'manifest_sha256':'d'*64}}}}
+        scope=functions(APP/'registry.py',{'servers','server'},dict(catalog=lambda:history))
+        self.assertEqual(set(scope['servers']()),{'remote','pc'})
+        self.assertIsNone(scope['server']('old'))
+        self.assertIn('old',history['servers'])
+
+    def test_python_source_cannot_use_an_unscanned_legacy_lock(self):
+        scope=gateway_scope()
+        row={'intake_kind':'repository','validated_at':'verified','commit_sha':SOURCE_SPEC['commit'],
+             'provenance':{'artifact':{'sha256':SOURCE_SPEC['sha256']}},
+             'evidence':{'local_run':{'source':{k:v for k,v in SOURCE_SPEC.items() if k!='locks'}}}}
+        with self.assertRaisesRegex(ValueError,'플랫폼별 잠금'):scope['source_for'](row)
+
     def test_source_metadata_pins_validation_and_lock(self):
         scope=gateway_scope()
         row={'intake_kind':'repository','validated_at':'verified','commit_sha':SOURCE_SPEC['commit'],
-             'provenance':{'artifact':{'sha256':SOURCE_SPEC['sha256']}},'evidence':{'local_run':{'source':SOURCE_SPEC}}}
+             'provenance':{'artifact':{'sha256':SOURCE_SPEC['sha256']}},'evidence':{'local_run':{'source':SOURCE_SPEC},'endpoint_source':SOURCE_SPEC}}
         self.assertEqual(scope['source_for'](row),SOURCE_SPEC)
         for change in ({'commit_sha':'f'*40},{'validated_at':None},{'provenance':{}},{'intake_kind':'remote-endpoint'}):
             with self.assertRaises(ValueError):scope['source_for']({**row,**change})
@@ -53,6 +67,21 @@ class SourceSpec(unittest.TestCase):
 
 
 class DeviceAPI(unittest.IsolatedAsyncioTestCase):
+    async def test_migration_revalidation_preserves_commit_and_requires_admin(self):
+        database=SimpleNamespace(fetch_one=AsyncMock(side_effect=[{'intake_kind':'repository'}, {'id':'intake'}]))
+        scope=functions(APP/'agent_service.py',{'queue_validation'},dict(
+            current_identity=AsyncMock(return_value={'roles':['admin'],'principal':'admin'}),db=database,
+            HTTPException=HTTPException,Header=lambda **kw:None))
+        await scope['queue_validation']('intake',None)
+        query=database.fetch_one.call_args.args[0]
+        self.assertIn('revalidation_commit',query)
+        self.assertIn("status='APPROVED' AND EXISTS",query)
+        self.assertIn('mcp_runtimes',query)
+        scope['current_identity'].return_value={'roles':['employee']}
+        database.fetch_one.reset_mock()
+        with self.assertRaises(HTTPException) as error:await scope['queue_validation']('intake',None)
+        self.assertEqual(error.exception.status_code,403)
+        database.fetch_one.assert_not_awaited()
     async def asyncSetUp(self):
         self.scope=gateway_scope()
         self.device={'endpoint_id':'device','owner_token':'employee','device_epoch':'epoch','policy_hash':'policy'}
@@ -71,23 +100,10 @@ class DeviceAPI(unittest.IsolatedAsyncioTestCase):
 
     async def check(self):return await self.scope['authorized_source'](self.device,'local-files','e'*64)
 
-    async def test_stdio_cannot_queue_or_reconcile_in_solution_runtime(self):
-        row={'intake_kind':'repository','status':'APPROVED','commit_sha':'a'*40,
-             'internal_repo_url':'internal','requested_transport':'stdio'}
-        database=SimpleNamespace(fetch_one=AsyncMock(side_effect=[row,None]))
-        scope=functions(APP/'agent_service.py',{'start_runtime'},dict(
-            current_identity=AsyncMock(return_value={'roles':['admin']}),db=database,HTTPException=HTTPException,Header=lambda **kw:None))
-        errors=ModuleType('psycopg.errors');errors.UniqueViolation=RuntimeError
-        with patch.dict(sys.modules,{'psycopg.errors':errors}):
-            with self.assertRaises(HTTPException) as error:await scope['start_runtime']('intake',None)
-        self.assertEqual(error.exception.status_code,409)
-        self.assertEqual(database.fetch_one.await_count,2)
-        connection=Mock()
-        connection.execute.return_value.fetchone.return_value=row
-        worker=functions(APP.parents[1]/'runtime/worker.py',{'approval_problem'}, {})
-        reason=worker['approval_problem'](connection,{'intake_id':'intake'}, {})
-        self.assertIn('stdio',reason)
-        self.assertEqual(connection.execute.call_count,1)
+    def test_solution_runtime_routes_and_worker_are_removed(self):
+        tree=ast.parse((APP/'agent_service.py').read_text(encoding='utf-8'))
+        self.assertFalse(any(getattr(node,'name','') in {'start_runtime','stop_runtime','rollback_runtime','runtime_recipe'} for node in tree.body))
+        self.assertFalse((APP.parents[1]/'runtime/worker.py').exists())
 
     async def test_current_authorization_and_only_bound_observer_can_fetch(self):
         out=await self.check()
@@ -133,6 +149,26 @@ class DeviceAPI(unittest.IsolatedAsyncioTestCase):
                 await self.scope['download'](self.device,'local-files','e'*64)
             self.assertIn(error.exception.status_code,(403,409));self.assertTrue(handles[-1].closed)
             self.scope['review'].record_event.assert_not_awaited()
+
+    async def test_lock_download_is_authenticated_rechecked_and_hash_verified(self):
+        before=await self.check()
+        content=b'package==1 --hash=sha256:' + b'a'*64 + b'\n'
+        digest=hashlib.sha256(content).hexdigest()
+        before={**before,'source':{**SOURCE_SPEC,'locks':{'win_amd64':{'sha256':digest}}}}
+        self.scope['authorized_source']=AsyncMock(return_value=before)
+        with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ,{'INTAKE_REPORT_DIR':folder}):
+            path=Path(folder)/f'dependency-{digest}.lock'
+            path.write_bytes(content)
+            response=await self.scope['download'](self.device,'local-files','e'*64,'win_amd64')
+            self.assertEqual(b''.join([b async for b in response.body_iterator]),content)
+            self.assertEqual(response.headers['X-Content-SHA256'],digest)
+            self.assertEqual(self.scope['authorized_source'].await_count,2)
+            path.write_bytes(b'tampered')
+            with self.assertRaises(HTTPException) as error:
+                await self.scope['download'](self.device,'local-files','e'*64,'win_amd64')
+            self.assertEqual(error.exception.status_code,409)
+            with self.assertRaises(HTTPException):
+                await self.scope['download'](self.device,'local-files','e'*64,'../escape')
 
     async def test_stream_bounds_and_internal_credentials_without_device_key(self):
         class Response:
