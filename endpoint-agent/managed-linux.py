@@ -765,17 +765,17 @@ def status(args):
     if args.check:
         try:
             cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
-        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
-            cells = [("연결 확인", f"실패 · {exc}")]
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
+            # 점검 실패의 원문(헤더 도우미·서버 응답)은 화면에 내지 않는다. 결과만 보인다.
+            cells = [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
     screen = Screen()
     if getattr(args, "sources", False):
         screen.stop()
         return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
     if screen.window is None:
-        print("\n".join(kit_screen.banner(True)) + "\nMINT · MCP 연결 관리")
-        print(render_status(summary, time.time()), end="")
-        for name, value in cells:
-            print(f"{name}: {value}")
+        # 파이프·로그로 나갈 때도 실제 화면과 같은 배치를 색 없이 남긴다.
+        screen.summary, screen.cells, screen.next, screen.keys = summary, cells, next_step(summary, time.time()), ()
+        print(screen.text())
         return
     screen.cells = cells
 
