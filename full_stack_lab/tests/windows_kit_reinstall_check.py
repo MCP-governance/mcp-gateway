@@ -215,5 +215,15 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(values["HTTPS_PROXY"], "https://employee-proxy")
 
 
+    def test_status_text_shows_display_names_and_older_snapshots_keep_ids(self):
+        path = self.root / "status.json"
+        self.status.publish(path, True, details={"servers": ["docs-1"], "server_names": ["문서 검색"], "state": "active"})
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(document["server_names"], ["문서 검색"])
+        self.assertIn("승인 서버: 1개 · 문서 검색", self.status.render(document))
+        del document["server_names"]
+        self.assertIn("1개 · docs-1", self.status.render(document))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -848,7 +848,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
 
 
 async def managed_policy(device: dict, *, connection=None) -> dict:
-    from . import pac
+    from . import pac, registry
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -865,13 +865,16 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],), connection=connection)
     usable = set(pac.servers_for(owner)) if owner else set()
     servers = [r["id"] for r in rows if r["id"] in usable]
+    windows = managed_platform(device) == "windows"
+    if windows:
+        # Windows has no PC-isolated local runner: a local-run server would be listed but fail every call (MCP-CATALOG-001).
+        servers = [s for s in servers if (registry.server(s) or {}).get("deployment") != "local"]
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.
     guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
                 "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
                 if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
-    windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
               else f'/Library/MCPGatewayManaged/enforcement/mcpgw-{device["local_username"]}/header-helper'
@@ -947,6 +950,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     files = render(servers, guidance)
     policy = {"version": 2, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
+              "server_names": {s: (registry.server(s) or {}).get("display_name") or s for s in servers},
               "local_username": device["local_username"], "local_uid": device["local_uid"],
               "heartbeat_seconds": HEARTBEAT_INTERVAL, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
     if proxy_port:
@@ -966,7 +970,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     #   features), permissions.deny, web_search, the header helper and the per-server template (approval, timeouts).
     # Left out: which servers are listed (judged per call, managed_failure) and the guidance text, which follows
     # the activation state; putting either in made every approval or activation look like tampering.
-    control = {k: v for k, v in policy.items() if k not in ("servers", "files", "configuration_hashes")}
+    control = {k: v for k, v in policy.items() if k not in ("servers", "server_names", "files", "configuration_hashes")}
     control["files"] = render(["server"], None)
     policy["control_hash"] = hashlib.sha256(json_document(control).encode()).hexdigest()
     policy["servers_version"] = (version or {}).get("last_value") or 0
@@ -987,7 +991,7 @@ def installed_hash(control_hash: str, hashes: dict) -> str:
 
 def legacy_hash(policy: dict) -> str:
     """policy_hash as Gateways before D-238 computed it, over the same rendering."""
-    return hashlib.sha256(json_document({k: v for k, v in policy.items() if k not in ("policy_hash", "control_hash", "servers_version")}).encode()).hexdigest()
+    return hashlib.sha256(json_document({k: v for k, v in policy.items() if k not in ("policy_hash", "control_hash", "servers_version", "server_names")}).encode()).hexdigest()
 
 
 def policy_installed(policy: dict, reported: str | None, hashes: dict | None) -> bool:
