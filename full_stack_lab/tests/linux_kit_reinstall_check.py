@@ -142,7 +142,7 @@ class Reinstall(unittest.TestCase):
         result = json.loads(output.getvalue().splitlines()[-1])
         with patch.object(c, "PROGRAMS", programs):
             summary = c.model_status(json.loads(report.read_text()))
-            with patch.object(c, "Screen", return_value=SimpleNamespace(window=None)), \
+            with patch.object(c, "Screen", side_effect=lambda: c.kit_screen.Screen(output=io.StringIO(), input=io.StringIO())), \
                  patch.object(c, "check_connection", return_value={"initialized": ["memory"], "tools": 2}), \
                  redirect_stdout(io.StringIO()) as status_output:
                 c.status(SimpleNamespace(user="emp", check=True))

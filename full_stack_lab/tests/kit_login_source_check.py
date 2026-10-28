@@ -230,7 +230,8 @@ class Product(unittest.TestCase):
             view = screen.Screen(output=output, input=io.StringIO())
             text = view.text()
             self.assertNotIn("\x1b", text)
-            self.assertIn("###", text)
+            self.assertNotIn("###", text)  # ASCII output keeps the title, not a smeared block logo
+            self.assertIn("MINT", text)
             self.assertTrue(all(screen.width(row) < 80 for row in text.splitlines()))
             view.stop()
         self.assertTrue(all(screen.width(row) < 80 for row in screen.banner()))

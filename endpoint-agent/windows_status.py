@@ -83,7 +83,6 @@ def main():
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        print("\n".join(screen_module.banner(True)) + "\nMINT")
         print(render(json.loads(args.status.read_text(encoding="utf-8")), language=args.language), end="")
         return
     if args.settings is None:

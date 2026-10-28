@@ -78,8 +78,8 @@ class Frame(unittest.TestCase):
                          kit.check_cells({"model": {"ok": True, "seconds": 2.1},
                                           "connection": {"initialized": ["learn"], "tools": 12}}),
                          columns=90, lines=40, now=1800000000)
-        for label in ("MINT 엔드포인트", "차단 발생", "연결 등록  완료 · 4초", "하네스 응답",
-                      "게이트웨이 MCP 목록", "관리 설정 적용  완료", "승인 MCP 서버  2개", "codex 0.115.0", kit.KEYS):
+        for label in ("MINT  엔드포인트 · MCP 연결 관리", "차단 발생", "✓ 연결 등록", "4초", "✓ 하네스 응답  완료 · 2.1초",
+                      "✓ MCP 목록     완료 · 도구 12개", "✓ 관리 설정    완료", "승인 MCP 서버  2개", "codex 0.115.0", kit.KEYS):
             self.assertIn(label, text)
         self.assertEqual(text.count("엔드포인트에서 차단"), 5)
         for hidden in ("active", "simple", "device_key", "super-secret", "private-event"):
@@ -91,7 +91,7 @@ class Frame(unittest.TestCase):
             self.assertIn("연결 끊김", text)
             self.assertNotIn("new-enum", text)
         text = kit.frame({"connected": True, "updated": 1800000000}, now=1800000000)
-        self.assertIn("관리 설정 적용  —", text)
+        self.assertIn("관리 설정    —", text)
 
     def test_stopped_service_is_not_shown_as_waiting_for_activation(self):
         probe = {"model": {"ok": True, "seconds": 1.0}, "connection": {"service": "stopped", "initialized": [], "tools": 0}}
@@ -99,7 +99,7 @@ class Frame(unittest.TestCase):
         self.assertEqual(cells["게이트웨이 MCP 목록"], "서비스 중지")
         text = kit.frame(example(), cells=kit.check_cells(probe), columns=120, lines=40, now=1800000000, language="en")
         self.assertIn("Service stopped", text)
-        self.assertNotIn("Waiting for activation", text.split("Gateway MCP list", 1)[1])
+        self.assertNotIn("Waiting for activation", text.split("MCP list", 1)[1])
         self.assertEqual(dict(kit.check_cells({"connection": {"waiting": "pending"}}))["게이트웨이 MCP 목록"], "활성화 대기")
 
     def test_probe_errors_and_credentials_never_leave_the_projection(self):
@@ -117,6 +117,7 @@ class Frame(unittest.TestCase):
         self.assertEqual(kit.clip("한글a", 4), "한글")
         self.assertEqual(kit.width("e\u0301"), 1)
         self.assertEqual(kit.clip("e\u0301한", 1), "e\u0301")
+        self.assertIn("창을 넓혀 주세요", kit.frame(example(), columns=40, lines=10, now=1800000000))
         for columns, lines in ((1, 1), (10, 4), (40, 10), (80, 24)):
             text = kit.frame(example(), columns=columns, lines=lines, now=1800000000)
             self.assertLessEqual(len(text.splitlines()), max(0, lines - 1))
@@ -173,7 +174,40 @@ class Terminal(unittest.TestCase):
             screen.finish(0)
         self.assertEqual(output.getvalue().count(kit.ENTER), 2)
         self.assertEqual(output.getvalue().count(kit.LEAVE), 2)
-        self.assertIn("MINT 엔드포인트", output.getvalue().split(kit.LEAVE)[-1])
+        self.assertIn("MINT", output.getvalue().split(kit.LEAVE)[-1])
+        self.assertIn("엔드포인트 · MCP 연결 관리", output.getvalue().split(kit.LEAVE)[-1])
+
+    def test_finish_stays_until_a_closing_key(self):
+        screen, output = self.screen()
+        keys = mock.Mock(side_effect=["", "x", "", "\r"])
+        with mock.patch.object(screen, "read_key", keys):
+            screen.finish()
+        self.assertEqual(keys.call_count, 4)
+        self.assertIn("MCP 연결 관리", output.getvalue().split(kit.LEAVE)[-1])
+        screen, _ = self.screen()
+        with mock.patch.object(screen, "read_key", side_effect=KeyboardInterrupt):
+            screen.finish()
+        self.assertIsNone(screen.window)
+
+    def test_draw_failure_still_shows_the_keys(self):
+        screen, output = self.screen()
+        with mock.patch.object(screen, "lines", side_effect=RuntimeError("broken")):
+            screen.draw()
+        self.assertIn(kit.KEYS, output.getvalue())
+        screen.stop()
+
+    def test_no_color_dumb_terminal_and_pipes_get_plain_text(self):
+        for env in ({"NO_COLOR": "1"}, {"TERM": "dumb", "NO_COLOR": ""}):
+            with mock.patch.dict(os.environ, env):
+                self.assertEqual(kit.color_profile(TTY()), "none")
+        self.assertEqual(kit.color_profile(io.StringIO()), "none")
+        with mock.patch.dict(os.environ, {"NO_COLOR": "", "TERM": "xterm", "COLORTERM": "truecolor"}):
+            self.assertEqual(kit.color_profile(TTY()), "true")
+        text = "\n".join(line.text for line in kit.layout(example(), columns=80, lines=40, now=1800000000,
+                                                          profile="none", g=kit.ASCII))
+        self.assertNotIn("\x1b", text)
+        self.assertTrue(all(ord(ch) < 0x2500 or ord(ch) > 0x257f for ch in text))
+        self.assertIn("+-", text)
 
     def test_c_checks_r_rereads_and_q_exits(self):
         screen, _ = self.screen()
