@@ -67,6 +67,127 @@ class Reinstall(unittest.TestCase):
             self.assertFalse(self.enrollment.exists())
             config.unlink()
 
+    def linux_install_flow(self, model_detail="", harness="claude"):
+        """Real bootstrap/installer/check/JSON; only OS, enrollment and model transport are doubles."""
+        b, c = self.boot, self.core
+        programs = self.root / "programs"
+        report = programs / "status-emp.json"
+        config = {"device_key": "synthetic", "gateway_url": "https://gw.example", "tailscale_node_id": "node"}
+        prepared = (config, self.policy, {"endpoint_id": "new", "state": "pending-organization-activation"})
+        observer = SimpleNamespace(MODEL_PROMPT="OK", model_check=Mock(return_value={
+            "ok": not model_detail, "seconds": 1, "detail": model_detail}))
+        installed = []
+        install_managed = b.install_managed
+        def capture_install(*args, **kwargs):
+            result = install_managed(*args, **kwargs)
+            installed.append(dict(result))
+            return result
+        def run(argv, **kwargs):
+            if argv[:3] == ["systemctl", "enable", "--now"]:
+                c.private_write(report, json.dumps({"state": "active", "updated": c.time.time(), "connected": True,
+                                                   "names": ["memory"]}))
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        def local_path(*parts):
+            path = Path(*parts)
+            if str(parts[0]).startswith("/etc/systemd/"):
+                path = self.root / "systemd" / path.name
+                path.parent.mkdir(exist_ok=True)
+            return path
+        screen = Mock(summary={})
+        with ExitStack() as stack:
+            for name in ("ensure_packages", "remove_shims", "remove_companion"):
+                stack.enter_context(patch.object(b, name))
+            stack.enter_context(patch.object(b, "installed", return_value=False))
+            stack.enter_context(patch.object(b, "find_clients", return_value={harness: "/usr/bin/" + harness}))
+            stack.enter_context(patch.object(b, "STATE", self.root / "state"))
+            stack.enter_context(patch.object(b, "SCREEN", screen))
+            stack.enter_context(patch.object(b, "install_managed", side_effect=capture_install))
+            stack.enter_context(patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)))
+            # Keep the actual imported install function, while allowing temporary OS paths.
+            stack.enter_context(patch.object(b.importlib.util, "spec_from_file_location", return_value=SimpleNamespace(
+                loader=SimpleNamespace(exec_module=lambda module: None))))
+            stack.enter_context(patch.object(b.importlib.util, "module_from_spec", return_value=c))
+            for name, value in {"PROGRAMS": programs, "STATE": b.STATE,
+                                "FILES": {name: self.root / "settings" / name for name in c.FILES},
+                                "ENVIRONMENT": self.root / "environment", "Path": local_path,
+                                "pwd": SimpleNamespace(getpwnam=lambda n: self.person),
+                                "grp": SimpleNamespace(getgrgid=lambda n: SimpleNamespace(gr_name="users"))}.items():
+                stack.enter_context(patch.object(c, name, value))
+            for name in ("verify_transport", "forget_stale_sign_in", "write_helper", "write_status_shim", "diagnostic"):
+                stack.enter_context(patch.object(c, name))
+            stack.enter_context(patch.object(c, "protected", return_value=True))
+            stack.enter_context(patch.object(c.os, "geteuid", return_value=0, create=True))
+            stack.enter_context(patch.object(c.os, "getgrouplist", return_value=[], create=True))
+            stack.enter_context(patch.object(c, "enroll", return_value=prepared))
+            stack.enter_context(patch.object(c.subprocess, "run", side_effect=run))
+            stack.enter_context(patch.object(c, "load_module", return_value=observer))
+            stack.enter_context(patch.object(c, "check_connection", return_value={
+                "initialized": ["memory"], "failed": {}, "tools": 2}))
+            # An existing credentials file is deliberately expired at the provider.
+            home = self.root / "home"
+            credential = home / b.LOGINS[harness][0]
+            credential.parent.mkdir(parents=True)
+            credential.write_text('{}')
+            stack.enter_context(patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda n: SimpleNamespace(
+                pw_uid=1001, pw_dir=str(home)))))
+            with redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(b.connect(c, "emp", False, SimpleNamespace(
+                    enrollment=self.enrollment, skip_login=False), 0), 0)
+        result = json.loads(output.getvalue().splitlines()[-1])
+        self.assertFalse(self.enrollment.exists())
+        self.assertEqual(installed[0]["state"], "active")
+        self.assertEqual(result["state"], "active")
+        self.assertEqual(screen.summary["state"], "active")
+        self.assertEqual(json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"],
+                         ["/usr/bin/" + harness])
+        return result, screen
+
+    def test_linux_install_check_and_final_json_use_service_activation(self):
+        result, screen = self.linux_install_flow()
+        self.assertEqual(result["checks"]["도구"], "2개 (서버 1/1)")
+        self.assertIs(result["model_signed_in"]["claude"], True)
+        self.assertIn("claude 또는 codex", screen.result.call_args.args[1])
+
+    def test_linux_service_passes_installed_entries_to_observer(self):
+        c = self.core
+        config_path = self.root / "config.json"
+        config_path.write_text(json.dumps({"username": "emp", "uid": 1001, "gateway_url": "https://gw.example",
+                                          "device_key": "synthetic", "endpoint_id": "new", "tailscale_node_id": "node",
+                                          "socket": str(self.root / "header.sock"), "harness_paths": ["/opt/approved/claude"]}))
+        write = c.private_write
+        def stop_after_write(path, text):
+            write(path, text)
+            raise StopIteration("observer config captured")
+        def bind(address, handler):
+            Path(address).touch()
+            return Mock()
+        with patch.object(c.os, "geteuid", return_value=0, create=True), \
+             patch.object(c, "protected", return_value=True), patch.object(c, "verify_transport"), \
+             patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+             patch.object(c, "load_module"), patch.object(c.threading, "Thread"), \
+             patch.object(c.socketserver, "ThreadingUnixStreamServer", side_effect=bind, create=True), \
+             patch.object(c.os, "chown", create=True), patch.object(c, "private_write", side_effect=stop_after_write), \
+             self.assertRaises(StopIteration):
+            c.serve(SimpleNamespace(config=config_path))
+        observer = json.loads((self.root / "observer.json").read_text())
+        self.assertEqual(observer["ENDPOINT_HARNESS_PATHS"], ["/opt/approved/claude"])
+
+    def test_expired_model_auth_overrides_existing_credentials_in_final_json(self):
+        result, screen = self.linux_install_flow("Failed to authenticate: OAuth session expired and could not be refreshed")
+        self.assertIs(result["model_signed_in"]["claude"], False)
+        self.assertIn("로그인", result["checks"]["모델 응답"])
+        self.assertIn("claude auth login", screen.result.call_args.args[1])
+
+    def test_model_transport_failure_does_not_claim_credentials_expired(self):
+        result, screen = self.linux_install_flow("Connection timeout")
+        self.assertIs(result["model_signed_in"]["claude"], True)
+        self.assertNotIn("모델 로그인", screen.result.call_args.args[1])
+
+    def test_codex_auth_failure_names_the_checked_harness(self):
+        result, screen = self.linux_install_flow("401 Unauthorized", harness="codex")
+        self.assertIs(result["model_signed_in"]["codex"], False)
+        self.assertIn("codex login --device-auth", screen.result.call_args.args[1])
+
     def test_consumed_linux_kit_cannot_use_another_employee_or_partial_install(self):
         b = self.boot
         self.enrollment.unlink()
@@ -95,6 +216,58 @@ class Reinstall(unittest.TestCase):
             self.assertIn("연결 상태: " + label + "\n", output.getvalue())
             if state == "active":
                 self.assertNotIn("활성화 대기", output.getvalue())
+
+    def test_macos_real_install_and_completion_use_service_activation(self):
+        m, c = self.mac, self.core
+        programs, state, launchd = (self.root / name for name in ("programs", "state", "launchd"))
+        launchd.mkdir()
+        homes = self.root / "homes"
+        homes.mkdir()
+        files = {name: self.root / "settings" / name for name in c.FILES}
+        report = programs / "status-managed-emp.json"
+        config = {"device_key": "synthetic", "gateway_url": "https://gw.example", "tailscale_node_id": "node"}
+        prepared = (config, self.policy, {"endpoint_id": "new", "state": "pending-organization-activation"})
+        boot = SimpleNamespace(place_harnesses=Mock(return_value={"claude": {"path": str(programs / "approved/claude")}}))
+        def person(name):
+            if name == "emp":
+                return self.person
+            raise KeyError(name)
+        def local_path(*parts):
+            if str(parts[0]) == "/Users":
+                return homes.joinpath(*parts[1:])
+            return Path(*parts)
+        def run(*argv, **kwargs):
+            if argv[:2] == ("/bin/launchctl", "bootstrap"):
+                c.private_write(report, json.dumps({"state": "active", "updated": c.time.time()}))
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        with ExitStack() as stack:
+            for module in (m, c):
+                stack.enter_context(patch.multiple(module, PROGRAMS=programs, STATE=state, FILES=files))
+            stack.enter_context(patch.multiple(m, LAUNCHD=launchd, Path=local_path,
+                                               pwd=SimpleNamespace(getpwnam=person, getpwall=lambda: [self.person])))
+            stack.enter_context(patch.object(m, "core_module", return_value=c))
+            stack.enter_context(patch.object(m, "configure_bootstrap", return_value=boot))
+            stack.enter_context(patch.object(m, "run", side_effect=run))
+            stack.enter_context(patch.object(m, "apply_pf"))
+            stack.enter_context(patch.object(m, "write_wrappers"))
+            stack.enter_context(patch.object(m.os, "chown", create=True))
+            stack.enter_context(patch.object(m.os, "geteuid", return_value=0, create=True))
+            stack.enter_context(patch.object(c, "verify_transport"))
+            stack.enter_context(patch.object(c, "protected", return_value=True))
+            stack.enter_context(patch.object(c, "diagnostic"))
+            stack.enter_context(patch.object(c, "enroll", return_value=prepared))
+            stack.enter_context(patch.object(sys, "platform", "darwin"))
+            stack.enter_context(patch.object(sys, "argv", ["managed-macos.py", "--user", "emp",
+                                                          "--enrollment", str(self.enrollment)]))
+            with redirect_stdout(io.StringIO()) as output:
+                m.main()
+        result = json.loads(output.getvalue().splitlines()[0])
+        self.assertEqual(result["state"], "active")
+        self.assertIn("연결 상태: 활성\n", output.getvalue())
+        self.assertNotIn("활성화 대기", output.getvalue())
+        self.assertFalse(self.enrollment.exists())
+        saved = json.loads((state / "managed-emp/config.json").read_text())
+        self.assertEqual(saved["harness_paths"], [str(programs / "approved/claude")])
 
     def test_consumed_macos_kit_reports_existing_install_without_using_token(self):
         m = self.mac

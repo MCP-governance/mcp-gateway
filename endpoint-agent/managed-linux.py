@@ -477,6 +477,7 @@ def install(args, prepared=None):
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=None if simple else args.owner_uid, mode=args.mode,
                   broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
+                  harness_paths=list(binaries.values()),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
@@ -908,7 +909,8 @@ def serve(args):
                  "ENDPOINT_CA_CERTIFICATE": config.get("ca_certificate", ""), "ENDPOINT_CA_SHA256": config.get("ca_sha256", ""),
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
-                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
+                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic",
+                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
     local = None

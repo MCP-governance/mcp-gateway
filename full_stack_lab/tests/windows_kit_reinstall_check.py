@@ -91,6 +91,9 @@ class Reinstall(unittest.TestCase):
 
     def test_success_enrolls_then_replaces_without_rolling_back_same_account(self):
         order = []
+        harness = Path(self.person["profile"]) / ".local/bin/claude.exe"
+        harness.parent.mkdir(parents=True)
+        harness.touch()
         (self.folder / "config.toml.backup").write_text("original employee backup", encoding="utf-8")
         def request(config, path, *a, **kw):
             self.assertNotIn("endpoint_id", json.loads((self.folder / "config.json").read_text()))
@@ -105,6 +108,7 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(order[:3], ["/oauth/device-enroll", "/api/endpoint/managed-policy", "task"])
         rollback.assert_not_called()
         self.assertEqual(json.loads((self.folder / "config.json").read_text())["endpoint_id"], "new")
+        self.assertEqual(json.loads((self.folder / "config.json").read_text())["harness_paths"], [str(harness)])
         self.assertEqual((self.folder / "config.toml.backup").read_text(), "original employee backup")
         self.assertFalse(self.enrollment.exists())
         self.assertEqual(json.loads(sys.stdout.getvalue().splitlines()[0])["state"], "active")

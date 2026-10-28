@@ -323,10 +323,11 @@ def install(employee, enrollment):
         for name in SOURCES:
             core.private_write(PROGRAMS / name, (HERE / name).read_text(encoding='utf-8'))
             (PROGRAMS / name).chmod(0o755)
-        boot.place_harnesses(employee)
+        placed = boot.place_harnesses(employee)
         config.update(endpoint_id=enrolled['endpoint_id'], username=account, uid=uid, employee=employee,
                       socket='/var/run/mcpgw-' + account + '.sock', config_path=str(folder / 'config.json'),
-                      pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'))
+                      pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'),
+                      harness_paths=[item['path'] for item in placed.values()])
         save(core, folder / 'config.json', config)
         config.update({key: policy[key] for key in ('gateway_ips', 'gateway_port', 'policy_hash')})
         config.update(proxy_port=policy.get('proxy_port'), proxy_environment=policy.get('proxy_environment', {}))

@@ -621,7 +621,7 @@ def resume_screen() -> None:
     getattr(SCREEN, "resume", lambda: None)()
 
 
-def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tuple[str, str]:
+def model_cell(managed, account: str, harnesses: list[str], simple: bool, signed: dict | None = None) -> tuple[str, str]:
     """① A real model answer from the harness the employee will type, as that account (D-239)."""
     name = next((h for h in ("claude", "codex") if h in harnesses), None)
     if not name:
@@ -640,11 +640,17 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tup
     else:
         argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
+    auth_failed = not found["ok"] and re.search(
+        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|log ?in|/login|로그인",
+        found["detail"] or "", re.I)
+    if signed is not None and (found["ok"] or auth_failed):
+        signed[name] = bool(found["ok"])
+    detail = ("로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
-            else f"{name} 실패 · {found['detail'] or '응답 없음'}")
+            else f"{name} 실패 · {detail}")
 
 
-def install_check(managed, account: str, harnesses: list[str], simple: bool) -> tuple[list, str]:
+def install_check(managed, account: str, harnesses: list[str], simple: bool, signed: dict | None = None) -> tuple[list, str]:
     """The three cells (model answer, tool count, one server's initialize) and the next thing to do."""
     step("설치 확인")
     summary = managed.kit_screen.wait_summary(managed.status_path(account, "json"), seconds=0)
@@ -652,7 +658,7 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool) -> 
     state = summary.get("state")
     if state != "active":
         waiting = {"pending": "관리자 활성화 대기", "quarantined": "격리됨", "revoked": "등록 해제됨"}.get(state, "상태 확인 안 됨")
-        cells = [model_cell(managed, account, harnesses, simple), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
+        cells = [model_cell(managed, account, harnesses, simple, signed), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
         next_line = ("관리자 활성화 뒤 claude·codex를 실행하세요(활성화되면 자동으로 연결됩니다)" if state == "pending"
                      else "mcpgw-status로 상태를 확인하세요")
         close_step()
@@ -661,12 +667,14 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool) -> 
         connection = managed.connection_cells(managed.check_connection(summary), len(summary.get("names") or []))
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
-    cells = [model_cell(managed, account, harnesses, simple), *connection]
+    cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
     close_step()
     if re.search(r"log ?in|/login|401|로그인", cells[0][1], re.I):
         shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
-        return cells, ("모델 로그인: claude auth login" if simple
-                       else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c 'claude auth login'")
+        name = next(h for h in ("claude", "codex") if h in harnesses)
+        command = LOGINS[name][1]
+        return cells, ("모델 로그인: " + command if simple
+                       else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c '{command}'")
     healthy = all("실패" not in value for _, value in cells)
     return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mcpgw-status --check 로 다시 확인하세요")
 
@@ -868,7 +876,8 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     installing = round(time.monotonic() - started)
     if not args.skip_login:
         result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
-    cells, next_line = install_check(managed, account, list(placed), simple=not isolated)
+    cells, next_line = install_check(managed, account, list(placed), simple=not isolated,
+                                    signed=result.setdefault("model_signed_in", {}))
     result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated

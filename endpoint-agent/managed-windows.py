@@ -576,6 +576,8 @@ if (-not $existing) { New-LocalUser -Name $in.name -NoPassword -FullName 'MCP ma
 "@ok" | Out-Null
 """
 HARNESS = ("codex.exe", "codex-code-mode-host.exe", "claude.exe")
+NATIVE_HARNESSES = (("claude", "AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode*/claude.exe"),
+                    ("claude", ".local/bin/claude.exe"), ("codex", "AppData/Local/Programs/OpenAI/Codex/bin/codex.exe"))
 
 
 def managed_user(name, *, isolated=False):
@@ -677,8 +679,7 @@ def harness_versions(profile):
         found["claude"] = native[0][:40]
     # WinGet and the Codex desktop installer keep no version in the path: the executable's own version resource
     # (read as data, not run). pj3 10-25: WinGet claude.exe 2.1.302.0; codex.exe carries none.
-    for name, pattern in (("claude", "AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode*/claude.exe"),
-                          ("claude", ".local/bin/claude.exe"), ("codex", "AppData/Local/Programs/OpenAI/Codex/bin/codex.exe")):
+    for name, pattern in NATIVE_HARNESSES:
         for path in sorted(Path(profile).glob(pattern)):
             value = file_version(path)
             if name not in found and value:
@@ -834,6 +835,9 @@ def install(args):
         harness_folder, harnesses = place_harnesses(source_person["profile"])
     else:
         harness_folder, harnesses = None, harness_versions(person["profile"])
+    config["harness_paths"] = ([str(harness_folder / name) for name in ("claude.exe", "codex.exe") if name in harnesses]
+                               if isolated else [str(path) for _, pattern in NATIVE_HARNESSES
+                                                 for path in Path(person["profile"]).glob(pattern) if path.is_file()])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
@@ -909,7 +913,7 @@ def serve(args):
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
-        "ENDPOINT_ORIGIN": "automatic"}))
+        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
     previous = config["policy_hash"]
     last_state = None
     from windows_status import publish

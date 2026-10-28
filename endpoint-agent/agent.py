@@ -56,6 +56,7 @@ import math
 import os
 import platform
 import re
+import shutil
 import socket
 import ssl
 import subprocess
@@ -699,16 +700,21 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
 # A harness's own command line carries the employee's prompt (`claude -p "…modelcontextprotocol/python-sdk…"`): matching
 # the markers there reported the harness itself as a stdio MCP server (S4-03, PJ1 10-25). The servers it starts are
 # separate processes and are still checked.
-HARNESS_PROGRAM = re.compile(r"(?:^|[\\/])(?:claude|codex)(?:\.exe|\.cmd)?$", re.I)
-HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code|@openai[\\/]codex)[\\/]", re.I)
+HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code[\\/]cli\.js|@openai[\\/]codex[\\/]bin[\\/]codex\.js)$", re.I)
 
 
 def harness_process(command_line: str) -> bool:
     words = [word.strip("\"'") for word in re.findall(r'''"[^"]*"|'[^']*'|\S+''', command_line)]
-    if words and HARNESS_PROGRAM.search(words[0]):
+    if not words:
+        return False
+    # A basename is not file identity: a renamed Python interpreter can run FastMCP.
+    entry = os.path.normcase(os.path.realpath(shutil.which(words[0]) or words[0]))
+    paths = CONFIG.get("ENDPOINT_HARNESS_PATHS", [])
+    if isinstance(paths, list) and any(isinstance(path, str) and os.path.isabs(path)
+                                     and entry == os.path.normcase(os.path.realpath(path)) for path in paths):
         return True
     # node (or bun) running the harness package's entry script
-    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?$", words[0], re.I) is not None \
+    return re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?$", words[0], re.I) is not None \
         and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
 
 
