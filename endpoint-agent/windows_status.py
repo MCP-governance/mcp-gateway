@@ -64,7 +64,7 @@ def render(document, now=None, language="ko"):
         t("관리 상태: ") + t(screen_module.STATES.get(document.get("state"), document.get("management") or "—")),
         t("연결 방식: ") + t({"simple": "간편 모드 (게이트웨이 판정)", "isolated": "격리 계정"}.get(document.get("mode"), "—")),
         t("승인 서버: ") + (t(f"{len(servers)}개 · ") + ", ".join(servers) if servers else "—"),
-        t("하네스: ") + (", ".join(f"{k} {v}" for k, v in sorted(versions.items())) or "—"),
+        t("하네스: ") + (", ".join(f"{k} {v or t('설치됨')}" for k, v in sorted(versions.items())) or "—"),
         t("최근 보고: ") + (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(document["updated"])) if document.get("updated") else "—"),
     ]) + "\n"
 
