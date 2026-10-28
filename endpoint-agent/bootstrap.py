@@ -35,6 +35,7 @@ HERE = Path(__file__).resolve().parent
 APPROVED = Path("/opt/mcpgw-approved")
 PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
+ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
 SHIM_DIR = Path("/usr/local/bin")
 SUDOERS = Path("/etc/sudoers.d/mcpgw-managed")
 FUNCTIONS = Path("/etc/profile.d/mcpgw-managed.sh")
@@ -460,7 +461,9 @@ def remove_shims(managed: str) -> None:
 # -- the managed installer ----------------------------------------------------------
 
 def installed(account: str) -> bool:
-    return ((STATE / account).exists()
+    # A folder an older kit's isolated install left (its state.json holds the shell to restore) counts too:
+    # otherwise switching to simple mode skipped it and the profiles and account stayed (PJ1, 10-28).
+    return ((STATE / account).exists() or (ENFORCEMENT / f"mcpgw-{account}" / "state.json").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-managed-{account}.service").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-egress-{account}.service").exists())
 
@@ -480,15 +483,21 @@ def companion_of(employee: str) -> str:
     return ("managed-" + employee)[:31]
 
 
-def remove_companion(employee: str) -> None:
+def legacy_companion(employee: str) -> bool:
+    """An older kit made the account without the comment; its launcher folder is the proof. Read before rollback."""
+    return (ENFORCEMENT / f"mcpgw-{companion_of(employee)}" / "state.json").exists()
+
+
+def remove_companion(employee: str, legacy: bool = False) -> None:
     """The separate account an isolated install created, once nothing of it is installed. Only one this kit
-    made (its comment says so); its home stays, with whatever the employee kept there (D-239)."""
+    made (its comment says so, or an older kit's launcher folder did); its home stays, with whatever the
+    employee kept there (D-239)."""
     name = companion_of(employee)
     try:
         entry = pwd.getpwnam(name)
     except KeyError:
         return
-    if entry.pw_gecos.split(",")[0] != COMPANION_COMMENT or installed(name):
+    if (entry.pw_gecos.split(",")[0] != COMPANION_COMMENT and not legacy) or installed(name):
         return
     close_sessions(name)
     run("userdel", name, check=False, quiet=True, stderr=subprocess.DEVNULL)
@@ -664,7 +673,7 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
         waiting = {"pending": "관리자 활성화 대기", "quarantined": "격리됨", "revoked": "등록 해제됨"}.get(state, "상태 확인 안 됨")
         cells = [model_cell(managed, account, harnesses, simple, signed), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
         next_line = ("관리자 활성화 뒤 claude·codex를 실행하세요(활성화되면 자동으로 연결됩니다)" if state == "pending"
-                     else "mcpgw-status로 상태를 확인하세요")
+                     else "mint로 상태를 확인하세요")
         close_step()
         return cells, next_line
     try:
@@ -674,7 +683,7 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
     cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
     close_step()
     if "실행 장애 · " in cells[0][1]:
-        return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mcpgw-status --check 로 다시 확인하세요"
+        return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mint --check 로 다시 확인하세요"
     if "로그인 필요 · " in cells[0][1]:
         shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
         name = next(h for h in ("claude", "codex") if h in harnesses)
@@ -682,7 +691,7 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
         return cells, ("모델 로그인: " + command if simple
                        else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c '{command}'")
     healthy = all("실패" not in value for _, value in cells)
-    return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mcpgw-status --check 로 다시 확인하세요")
+    return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mint --check 로 다시 확인하세요")
 
 
 def self_check() -> None:
@@ -801,7 +810,7 @@ def main() -> int:
         if not args.remove:
             if not args.enrollment.is_file():
                 if any((STATE / account / "config.json").is_file() for account in (employee, companion_of(employee))):
-                    print("이미 설치됨 · 상태 확인: mcpgw-status --check · 새로 설치하려면 콘솔에서 새 키트를 받으세요.")
+                    print("이미 설치됨 · 상태 확인: mint --check · 새로 설치하려면 콘솔에서 새 키트를 받으세요.")
                     return 0
                 raise Failed("등록 파일이 없습니다. 콘솔에서 새 키트를 받으세요.")
             bundle = json.loads(args.enrollment.read_text())
@@ -809,13 +818,13 @@ def main() -> int:
             if expired(bundle):
                 raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
         if args.remove:
-            removed = False
+            removed, legacy = False, legacy_companion(employee)
             for account in (employee, companion_of(employee)):
                 if installed(account):
                     rollback(account)
                     removed = True
             remove_shims(companion_of(employee))
-            remove_companion(employee)
+            remove_companion(employee, legacy)
             print("MINT 연결을 제거했습니다." if removed else "제거할 연결이 없습니다.")
             if not sys.stdout.isatty():
                 print(json.dumps({"removed": employee}, ensure_ascii=False))
@@ -872,6 +881,7 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
                      + " · 기존 설치는 유지됩니다.") from None
     credentials.append(prepared[0]["device_key"])
     managed.diagnostic("prepared", None)
+    legacy = legacy_companion(employee)
     for previous in (employee, companion_of(employee)):
         if installed(previous):
             rollback(previous)
@@ -880,7 +890,7 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         placed = place_harnesses(employee)
     else:
         remove_shims(companion_of(employee))
-        remove_companion(employee)
+        remove_companion(employee, legacy)
         step("하네스 찾기")
         placed = {name: {"path": path} for name, path in find_clients(employee).items()}
     try:
@@ -915,7 +925,7 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         say(f"격리 계정 {account}에서 실행됩니다. 평소 계정({employee})에서 {' 또는 '.join(placed)}를 실행하세요.")
     say("로컬 MCP 준비(폴더 만들기·이미지 받기): 백그라운드 진행" if result["state"] == "active"
         else "로컬 MCP 준비(폴더 만들기·이미지 받기): 활성화 뒤 백그라운드 진행")
-    say("연결 상태: mcpgw-status (실시간 화면) · mcpgw-status --check (연결 확인)")
+    say("연결 상태: mint (실시간 화면) · mint --check (연결 확인)")
     say(f"설치 소요(로그인 제외) {installing}초 · 확인까지 {result['total_seconds']}초")
     SCREEN.result(cells, next_line)
     SCREEN.finish()

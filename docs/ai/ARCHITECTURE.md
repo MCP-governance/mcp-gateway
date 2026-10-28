@@ -68,7 +68,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
 `observed_only`(근거 「간편 모드 · 게이트웨이 판정 적용」)이고, 모든 MCP 호출은 지금처럼 게이트웨이가 판정한다.
 **격리 계정(고급)**: Linux `--isolated`·Windows 「고급: 격리 계정」. 별도 관리 계정·AppArmor/nft(Windows SID 방화벽)·관리자 활성화로
 아래 기존 설명 그대로이며 `endpoint_enforced`를 주장할 수 있는 유일한 경로다. 설치 끝에 모델 응답·도구 수·승인 서버 1건 `initialize`를
-실측해 보인다(Linux 설치기·`mcpgw-status`의 curses 화면, Windows 트레이 「연결 확인」). 간편 모드가 포기하는 것은
+실측해 보인다(Linux 설치기·`mint`의 curses 화면, Windows 트레이 「연결 확인」). 간편 모드가 포기하는 것은
 [SECURITY_BOUNDARIES](SECURITY_BOUNDARIES.md#2026-10-25--간편-모드-기본이-포기하는-것-d-239).
 
 macOS 키트(D-196)는 기존 관리형 정책과 Linux 브로커 루프를 재사용하고 dscl 일반 계정·pf 하위 anchor·launchd를

@@ -19,7 +19,7 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 | 선택 | 기본 | 콘솔 「내 PC 연결 → 고급: 격리 계정」, Linux `install.sh --isolated`, Windows 마법사 체크 |
 | 실행 계정 | 지금 로그인한 직원 계정(관리자·표준 모두, 로그아웃 없음) | 별도 관리 계정 `managed-<직원>`(Linux)·`mcpgw-<직원>`(Windows) |
 | 하네스 | 직원이 설치한 그대로 | `/opt/mcpgw-approved`·`%ProgramFiles%\MCPGatewayManaged\harness`에 복사·SHA-256 |
-| 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mcpgw-status`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
+| 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mint`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
 | 패키지 | curl·openssl·컨테이너 엔진을 시도만(실패해도 계속) | gcc·nftables·apparmor-utils·curl·openssl 필수 + 엔진 |
 | 활성화 | 설치 점검 통과 시 자동(콘솔 「새 PC 활성화」에서 끌 수 있음) | 관리자 |
 | 콘솔 통제 범위 | `observed_only` · 「간편 모드 · 게이트웨이 판정 적용」 | `endpoint_enforced`(다른 계정이 있으면 `bypass_possible`) |
@@ -27,7 +27,7 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 설치는 파일 하나 실행·관리자 확인 1회·질문 0개다. 끝에 세 칸을 실측해 보인다: **모델 응답**(하네스가 실제로 답하는지), **도구**
 (직원 하네스와 같은 헤더로 승인 서버의 `tools/list` 도구 수), **서버 연결**(승인 서버 1건 `initialize`). 자격 파일이 있다는 것만으로
 성공 처리하지 않는다. Linux는 터미널이면 curses 풀화면(단계·소요·세 칸·다음 할 일), 아니면 한 줄씩 출력한다.
-`mcpgw-status`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mcpgw-status --check`는 세 칸 중 두 칸을 다시 잰다.
+`mint`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mint --check`는 세 칸 중 두 칸을 다시 잰다.
 Linux 상태 화면의 「다음 할 일」은 설치 점검에서 로그인이 필요했던 하네스의 로그인 명령을 표시한다. 모델 로그인 값은 마지막 설치 점검의 관측이며, 상태 명령은 모델 인증을 다시 검사하지 않는다.
 설치 전 연결 거부·임시 DNS 오류와 정책 수신의 일시 오류는 단계별 최대 3회(1·2초 간격, 요청당 15초 제한) 시도한다. 인증 거부·인증서 오류는 즉시 실패한다.
 등록 요청의 응답 시간 초과·응답 유실·HTTP 오류는 등록 토큰이 이미 소모됐을 수 있어 다시 보내지 않는다. 실패 문구와 보호된 설치 로그에는 HTTP 상태 또는 오류 종류만 남긴다.
@@ -91,7 +91,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
 같은 직원이 같은 PC에 키트를 다시 설치하면(업데이트) 직전 활성 장치를 대체하고 활성화를 이어받습니다(D-217). 격리되거나 중지된 장치는 이어받지 않고 다른 PC는 새 활성화가 필요합니다.
-직원은 `mcpgw-status`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
+직원은 `mint`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
 관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
 안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 

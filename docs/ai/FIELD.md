@@ -78,7 +78,7 @@ rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit 
 
 Windows는 `mcp-managed-kit-windows.zip`을 풀고 `install.cmd`를 두 번 눌러 실행합니다. Python 3.10 이상이 모든 사용자용
 (Program Files)으로 설치돼 있어야 합니다. Linux는 Python 3.10 이상(설치기와 `/usr/bin/python3` 모두)과 systemd가 필요하고, gcc·nftables·AppArmor 도구·curl·openssl과 로컬 MCP용 컨테이너 엔진은 설치기가 한 번에 깝니다(엔진을 못 받아도 원격 MCP 설치는 계속, D-225).
-활성화된 뒤에는 승인된 로컬 MCP의 문서 폴더와 이미지를 첫 호출 전에 백그라운드로 준비하고, `mcpgw-status`가 준비 현황(n/m)과 직원 문서 폴더를 보입니다(D-226).
+활성화된 뒤에는 승인된 로컬 MCP의 문서 폴더와 이미지를 첫 호출 전에 백그라운드로 준비하고, `mint`가 준비 현황(n/m)과 직원 문서 폴더를 보입니다(D-226).
 
 직원 계정이 **관리 권한이 있는 계정**이면 자기가 지울 수 있는 규칙으로 자기를 통제할 수 없으므로, 설치기가 관리 계정을 따로 만듭니다.
 Linux는 평소 계정에서 `codex`·`claude`를 그대로 치면 그 계정의 로그인 셸을 거쳐 실행되고(AppArmor·방화벽 동일 적용),
