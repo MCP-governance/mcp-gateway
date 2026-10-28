@@ -71,10 +71,13 @@ def banner(ascii_only=False):
     return [row.replace("█", "#") for row in rows] if ascii_only else rows
 
 
-def login_inputs(address):
+def login_inputs(address, notice=""):
     import getpass
     import warnings
-    terminal = sys.stdin.isatty() and sys.stdout.isatty()
+    if not sys.stdin.isatty():
+        # 파이프·리다이렉트 실행은 비밀번호를 칠 수 없다. 빈 입력으로 죽기 전에 화면 없이 멈춘다.
+        raise ValueError("로그인: 터미널 입력 필요")
+    terminal = sys.stdout.isatty()
     restore = enable_vt(sys.stdout) if terminal else None
     try:
         if restore:
@@ -84,7 +87,7 @@ def login_inputs(address):
             if restore and not os.environ.get("NO_COLOR") and ("256color" in os.environ.get("TERM", "") or os.environ.get("COLORTERM")):
                 row = f"\x1b[38;5;{[51, 50, 49, 48, 47][i]}m{row}\x1b[0m"
             print(row)
-        print("MINT · MCP 연결 관리\n1 로그인 · 2 상태 확인 · 3 승인된 MCP")
+        print("MINT · MCP 연결 관리" + (f"\n{clean(notice)}" if notice else ""))
         selected = input("게이트웨이 [" + address + "]: ").strip() or address
         username = input("MINT 아이디: ").strip()
         # getpass's stdin fallback echoes a secret; fail instead when a secure terminal is unavailable.
@@ -172,6 +175,8 @@ def result_label(value):
 def legacy_cell(value):
     """Old Linux checks carry raw failure details; the terminal only needs their result."""
     text = clean(value)
+    if "로그인 필요" in text:
+        return "로그인 필요"
     if "실패" in text:
         return "실패"
     if "대기" in text:
@@ -222,7 +227,7 @@ def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=No
             pass
     height = max(0, lines - 1)
     shown = max(1, height - 13 - max(1, len(blocks[-5:])))
-    body = [*banner(), "MINT 엔드포인트 · MCP 연결 관리", "1 로그인 · 2 상태 확인 · 3 승인된 MCP", f"상태  [{badge}]",
+    body = [*banner(), "MINT 엔드포인트 · MCP 연결 관리", f"상태  [{badge}]",
             "관리 상태  " + STATES.get(summary.get("state"), "—") + " · 연결 방식  " +
             {"simple": "간편 모드", "isolated": "격리 계정"}.get(summary.get("mode"), "—"),
             "장치  " + clean(summary.get("user") or summary.get("endpoint_id") or "—"),

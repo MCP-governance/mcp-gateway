@@ -18,6 +18,7 @@ import pwd
 import queue
 import re
 import secrets
+import contextlib
 import shutil
 import socket
 import socketserver
@@ -771,7 +772,7 @@ def status(args):
         screen.stop()
         return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
     if screen.window is None:
-        print("\n".join(kit_screen.banner(True)) + "\nMINT · MCP 연결 관리\n1 로그인 · 2 상태 확인 · 3 승인된 MCP")
+        print("\n".join(kit_screen.banner(True)) + "\nMINT · MCP 연결 관리")
         print(render_status(summary, time.time()), end="")
         for name, value in cells:
             print(f"{name}: {value}")
@@ -1237,6 +1238,14 @@ def rollback(args):
     others = [c for c in remaining if c.get("mode") == "simple" and c.get("ca_certificate")]
     if config.get("mode") == "simple" or not others:
         edit_environment(ca_environment(others[0]) if others else {})
+    if not remaining:
+        # 마지막 설치를 지우면 키트 사본도 남기지 않는다(bootstrap은 키트 폴더의 파일로 돌므로 재설치에 영향 없다).
+        for name in PROGRAM_FILES:
+            (PROGRAMS / name).unlink(missing_ok=True)
+        shutil.rmtree(PROGRAMS / "__pycache__", ignore_errors=True)
+        for folder_ in (PROGRAMS, ENFORCEMENT):
+            with contextlib.suppress(OSError):
+                folder_.rmdir()
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
 
 
@@ -1292,6 +1301,8 @@ def main():
     args = parser.parse_args()
     try:
         args.run(args)
+    except (KeyboardInterrupt, EOFError):
+        parser.exit(130, "\n")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         # Never echo requests, credentials, response bodies or header dictionaries.
         if args.command in {"install", "rollback"} and os.geteuid() == 0:

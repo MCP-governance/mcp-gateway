@@ -64,9 +64,49 @@ class Login(unittest.TestCase):
                              (urllib.error.HTTPError("secret", 429, "secret", {}, io.BytesIO(b'')), "시도 제한"),
                              (OSError("secret"), "네트워크")]:
             with self.subTest(label=label), self.assertRaises(access.LoginError) as caught:
-                access.login({"gateway_url": "https://gateway.example"}, Mock(side_effect=error), lambda _: ("https://gateway.example", "staff", "secret"))
+                access.login({"gateway_url": "https://gateway.example"}, Mock(side_effect=error), lambda *_: ("https://gateway.example", "staff", "secret"))
             self.assertIn(label, str(caught.exception))
             self.assertNotIn("secret", str(caught.exception))
+
+    def test_wrong_password_asks_again_with_reason_then_succeeds(self):
+        wrong = urllib.error.HTTPError("u", 401, "u", {}, io.BytesIO(b""))
+        call = Mock(side_effect=[wrong, {"enrollment_token": "t"}])
+        asked = []
+        def inputs(address, notice=""):
+            asked.append((address, notice))
+            return ("gateway.example:8000/", "staff", "pw")
+        result = access.login({"gateway_url": "https://gateway.example"}, call, inputs)
+        self.assertEqual(result["gateway_url"], "https://gateway.example:8000")
+        self.assertEqual(asked[0][1], "")
+        self.assertIn("아이디·비밀번호", asked[1][1])
+
+    def test_refused_account_stops_at_once_and_shows_gateway_sentence(self):
+        for code, text in [(403, "사용 중지된 계정입니다."), (429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")]:
+            error = urllib.error.HTTPError("u", code, "u", {}, io.BytesIO(json.dumps({"detail": text}).encode()))
+            call, inputs = Mock(side_effect=error), Mock(return_value=("https://gateway.example", "staff", "pw"))
+            with self.assertRaises(access.LoginError) as caught:
+                access.login({"gateway_url": "https://gateway.example"}, call, inputs)
+            self.assertEqual(caught.exception.kit_reason, text)
+            self.assertEqual(call.call_count, 1)
+
+    def test_three_mistakes_end_and_closed_input_is_a_label_not_a_traceback(self):
+        wrong = urllib.error.HTTPError("u", 401, "u", {}, io.BytesIO(b""))
+        call = Mock(side_effect=wrong)
+        with self.assertRaises(access.LoginError):
+            access.login({"gateway_url": "https://g.example"}, call, lambda *_: ("https://g.example", "staff", "pw"))
+        self.assertEqual(call.call_count, 3)
+        with self.assertRaises(access.LoginError) as caught:
+            access.login({"gateway_url": "https://g.example"}, call, Mock(side_effect=EOFError))
+        self.assertIn("터미널", caught.exception.kit_reason)
+
+    def test_login_prompt_without_terminal_stops_before_any_screen(self):
+        with patch("sys.stdin", io.StringIO("")), contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(ValueError):
+            screen.login_inputs("https://gateway.example")
+        self.assertEqual(out.getvalue(), "")
+
+    def test_expired_model_login_reads_as_login_needed(self):
+        self.assertEqual(screen.legacy_cell("claude 실패 · 로그인 필요 · Failed to authenticate"), "로그인 필요")
+        self.assertNotIn("1 로그인", screen.frame({}, lines=40))
 
     def test_noninteractive_password_never_falls_back_to_echo(self):
         import getpass

@@ -199,7 +199,7 @@ function preferredKitPlatform() {
 }
 // 설치 절차: 운영체제마다 실행 방법만 다르다. 명령 문자열 외에는 라벨만 둔다.
 function kitSteps(os, kit = {}) {
-  const run = os === "linux" ? html`<li>터미널에서 실행<code>rm -rf ~/mcp-managed-kit && unzip -q ~/Downloads/${KIT_FILE.linux} -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code><span class="sub">관리자 암호 1회</span></li>`
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>rm -rf ~/mcp-managed-kit && unzip -q "$(ls -t ~/Downloads/mcp-managed-kit-linux*.zip | head -1)" -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code><span class="sub">관리자 암호 1회</span></li>`
     : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
     : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회 · 지금 계정 그대로</span></li>`;
   const ready = kit.auto_activate === false ? "관리자 활성화 뒤 사용" : "설치가 끝나면 바로 사용";
