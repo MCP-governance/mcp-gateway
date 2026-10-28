@@ -124,6 +124,42 @@ class Frame(unittest.TestCase):
             self.assertTrue(all(kit.width(line) < columns for line in text.splitlines()))
 
 
+    def test_every_size_keeps_whole_cards_inside_the_window(self):
+        summary = {**example(), "mode": "isolated", "local": {"ready": 1, "total": 1, "documents": ["/home/emp/문서"]}}
+        steps = [["구성요소 확인", 0, 2, "✓"], ["하네스 찾기", 0, None, "…"]]
+        long_next = "모델 로그인: sudo -u emp /usr/local/lib/mcpgw-enforcement/mcpgw-emp/login-shell -c 'codex login --device-auth'"
+        for summary_, rows, next_line in ((summary, [], long_next), ({}, steps, ""), (summary, steps[:1], "")):
+            for columns in (44, 50, 60, 80, 100, 120):
+                for lines in (12, 14, 16, 24, 40):
+                    with self.subTest(columns=columns, lines=lines, rows=len(rows)):
+                        out = [kit.strip_ansi(x.text) for x in kit.layout(summary_, rows, [], next_line, columns, lines,
+                                                                          now=1800000000, profile="256")]
+                        self.assertLessEqual(len(out), lines - 1)
+                        self.assertTrue(all(kit.width(x) < columns for x in out))
+                        self.assertEqual(sum(x.count("╭") for x in out), sum(x.count("╰") for x in out))
+                        self.assertTrue(any("다음 할 일" in x for x in out))
+
+    def test_install_in_progress_shows_steps_not_empty_cards(self):
+        steps = [["구성요소 확인", 0, 2, "✓"], ["하네스 찾기", 0, None, "…"]]
+        text = kit.frame({}, steps, columns=80, lines=24, now=1800000000)
+        self.assertIn("설치 단계", text)
+        self.assertIn("설치 진행 중", text)
+        for empty in ("╭─ 연결 ", "╭─ 승인된 MCP", "╭─ 최근 엔드포인트 차단"):
+            self.assertNotIn(empty, text)
+
+    def test_long_values_wrap_at_spaces_and_keys_drop_whole_items(self):
+        self.assertEqual(kit.chunks("완료 · 10개 (서버 2/2) · 서버 연결 완료", 20), ["완료 · 10개 (서버", "2/2) · 서버 연결", "완료"])
+        self.assertEqual(kit.chunks("/usr/local/lib/mcpgw-enforcement", 10)[0], "/usr/local")
+        bar = kit.keybar(kit.KEY_ITEMS, "none", room=33)
+        self.assertEqual(bar.text, "q 종료 · c 지금 점검 · r 새로고침")
+        self.assertEqual(bar.cells, 33)
+
+    def test_check_without_a_model_cell_keeps_the_reported_login_state(self):
+        text = kit.frame({**example(), "model_signed_in": {"codex": False}}, cells=[("도구", "2개 (서버 1/1)")],
+                         now=1800000000)
+        self.assertIn("하네스 응답  로그인 필요", text)
+
+
 class Terminal(unittest.TestCase):
     def screen(self, vt=True):
         output = TTY()
@@ -219,6 +255,19 @@ class Terminal(unittest.TestCase):
         self.assertEqual(read.call_count, 3)
         check.assert_called_once()
         self.assertEqual(screen.cells, [("하네스 응답", "완료")])
+
+    def test_source_menu_closed_without_a_result_returns_without_another_enter(self):
+        for shown, prompts in ((None, 0), (True, 1)):
+            screen, _ = self.screen()
+            with mock.patch.object(screen, "read_key", side_effect=["s", "q"]), \
+                    mock.patch.object(screen, "pause"), mock.patch.object(screen, "resume"), \
+                    mock.patch("builtins.input", return_value="") as typed:
+                kit.live(example, screen=screen, sources=lambda: shown)
+            self.assertEqual(typed.call_count, prompts)
+        screen, _ = self.screen()
+        with mock.patch.object(screen, "read_key", return_value="q"):
+            kit.live(example, screen=screen)
+        self.assertEqual([key for key, _ in screen.keys], ["q", "r"])
 
     def test_windows_console_mode_is_enabled_and_restored(self):
         kernel = SimpleNamespace(GetConsoleMode=mock.Mock(), SetConsoleMode=mock.Mock(return_value=1))

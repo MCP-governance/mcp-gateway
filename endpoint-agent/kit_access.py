@@ -60,7 +60,8 @@ def login(bundle, request, inputs, attempts=3):
         try:
             address, username, password = inputs(address, notice) if notice else inputs(address)
         except EOFError:
-            raise LoginError("로그인: 터미널 입력 필요") from None
+            # Ctrl-D at the prompt: the employee is at a terminal and chose to stop, same as Ctrl-C.
+            raise KeyboardInterrupt from None
         except ValueError as exc:
             raise LoginError(str(exc)) from None
         address = address.strip().rstrip("/")

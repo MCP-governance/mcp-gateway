@@ -124,7 +124,7 @@ def main():
     try:
         def sources():
             settings = json.loads(args.settings.read_text(encoding="utf-8")) if args.settings else {}
-            screen_module.source_menu("\\\\.\\pipe\\mcpgw-" + settings.get("user", "").lower() + "-source")
+            return screen_module.source_menu("\\\\.\\pipe\\mcpgw-" + settings.get("user", "").lower() + "-source")
         screen_module.live(read, check, screen, sources=sources)
     finally:
         screen.stop()

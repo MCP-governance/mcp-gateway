@@ -1,15 +1,12 @@
 """Offline production bodies, real temporary files and local IPC; no live MCP evidence."""
 import ast
-import asyncio
 import contextlib
 import copy
 import hashlib
 import importlib.util
 import io
-import ipaddress
 import json
 import os
-import re
 import tempfile
 import types
 import unittest
@@ -95,9 +92,9 @@ class Login(unittest.TestCase):
         with self.assertRaises(access.LoginError):
             access.login({"gateway_url": "https://g.example"}, call, lambda *_: ("https://g.example", "staff", "pw"))
         self.assertEqual(call.call_count, 3)
-        with self.assertRaises(access.LoginError) as caught:
+        # Ctrl-D at a terminal prompt is a cancel (the installer prints the cancel line), not a terminal error.
+        with self.assertRaises(KeyboardInterrupt):
             access.login({"gateway_url": "https://g.example"}, call, Mock(side_effect=EOFError))
-        self.assertIn("터미널", caught.exception.kit_reason)
 
     def test_login_prompt_without_terminal_stops_before_any_screen(self):
         with patch("sys.stdin", io.StringIO("")), contextlib.redirect_stdout(io.StringIO()) as out, self.assertRaises(ValueError):
