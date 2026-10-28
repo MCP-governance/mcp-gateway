@@ -406,11 +406,11 @@ def main() -> None:
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
     if args.self_check:
-        text = nft_rules(1234, ["100.83.175.111", "fd7a:115c:a1e0::1"], 443)
+        text = nft_rules(1234, ["192.0.2.10", "fd7a:115c:a1e0::1"], 443)
         assert "tcp dport 443 accept" in text and "ip6 daddr" in text
         assert "udp" not in text and "sport 22" not in text
         assert "meta skuid 1234 counter reject" in text
-        assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["100.83.175.111"], 443, 3128)
+        assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["192.0.2.10"], 443, 3128)
         confined = profile("mcpgw-u", Path("/x/login-shell"), "/home/u", {"codex": Path("/opt/a/codex"), "claude": Path("/opt/a/claude")},
                            True, True, {"codex": [Path("/opt/a/codex-code-mode-host")], "claude": []})
         # only inside the codex harness profile and its tool profile

@@ -42,6 +42,8 @@ class PolicySync(unittest.IsolatedAsyncioTestCase):
         package = ModuleType(PACKAGE)
         package.pac = SimpleNamespace(servers_for=lambda owner: self.usable,
                                       harness_guidance=lambda owner, servers: self.guidance + ",".join(servers))
+        self.catalog = {"docs": {"display_name": "문서 검색"}, "git": {"display_name": "저장소", "deployment": "local"}}
+        package.registry = SimpleNamespace(server=lambda server_id: self.catalog.get(server_id))
         self.updates = []
 
         async def execute(sql, params=None):
@@ -116,6 +118,20 @@ class PolicySync(unittest.IsolatedAsyncioTestCase):
         self.assertIn(self.guidance.strip(), first["files"]["managed-settings.json"])
         self.assertEqual(first["servers_version"], 7)
         self.assertEqual(first["policy_hash"], self.plane.installed_hash(first["control_hash"], first["configuration_hashes"]))
+
+    async def test_windows_policy_leaves_out_local_run_servers_and_carries_display_names(self):
+        self.usable = ["docs", "git"]
+        linux = await self.plane.managed_policy(self.device)
+        self.assertEqual(linux["servers"], ["docs", "git"])
+        self.device["detail"] = {"local_sid": "S-1-5-21-1", "helper_command": "helper.exe header"}
+        windows = await self.plane.managed_policy(self.device)
+        self.assertEqual(windows["servers"], ["docs"])
+        self.assertNotIn("/mcp/git/", windows["files"]["managed-mcp.json"])
+        self.assertEqual(windows["server_names"], {"docs": "문서 검색"})
+        self.assertEqual(linux["server_names"]["git"], "저장소")
+        self.assertEqual(linux["control_hash"] == windows["control_hash"], False)  # platform fields differ, names never enter it
+        self.catalog["docs"]["display_name"] = "새 이름"
+        self.assertEqual((await self.plane.managed_policy(self.device))["control_hash"], windows["control_hash"])
 
     async def test_control_changes_stop_everything_and_quarantine(self):
         installed = await self.install(["git"])

@@ -15,7 +15,7 @@ from pathlib import Path
 
 ENTER = "\x1b[?1049h\x1b[?25l"
 LEAVE = "\x1b[0m\x1b[?25h\x1b[?1049l"
-KEYS = "q 종료 · c 지금 점검 · r 새로고침"
+KEYS = "q 종료 · c 지금 점검 · r 새로고침 · s 승인된 MCP"
 STATES = {"active": "활성", "pending": "활성화 대기", "quarantined": "격리됨",
           "revoked": "등록 해제됨", "removed": "제거됨", "unknown": "확인 필요"}
 
@@ -42,6 +42,8 @@ def wait_summary(path, since=0, seconds=60):
 
 
 TEXT_EN = {
+    "MCP 연결 관리": "MCP connection management", "로그인": "Sign in", "상태 확인": "Status",
+    "승인된 MCP": "Approved MCP", "장치": "Device", "게이트웨이": "Gateway",
     "MINT 엔드포인트": "MINT endpoint", "엔드포인트에서 차단": "Blocked at endpoint",
     "연결 상태": "Connection", "연결됨": "Connected", "연결 끊김": "Disconnected",
     "관리 상태": "Management", "상태": "Status", "연결 방식": "Mode", "간편 모드": "Simple mode",
@@ -61,6 +63,71 @@ TEXT_EN = {
     "게이트웨이 연결 점검": "Check gateway connection", "다음 할 일": "Next step",
     "종료": "Quit", "지금 점검": "Check now", "새로고침": "Refresh", "점검 설정 없음": "No check settings",
 }
+
+
+def banner(ascii_only=False):
+    rows = ["███   ███ ██ ███  ██ ████████", "████ ████ ██ ████ ██    ██",
+            "██ ███ ██ ██ ██ ████    ██", "██  █  ██ ██ ██  ███    ██", "██     ██ ██ ██   ██    ██"]
+    return [row.replace("█", "#") for row in rows] if ascii_only else rows
+
+
+def login_inputs(address):
+    import getpass
+    import warnings
+    terminal = sys.stdin.isatty() and sys.stdout.isatty()
+    restore = enable_vt(sys.stdout) if terminal else None
+    try:
+        if restore:
+            print("\x1b[?1049h\x1b[2J\x1b[H", end="")
+        rows = banner(not terminal)
+        for i, row in enumerate(rows):
+            if restore and not os.environ.get("NO_COLOR") and ("256color" in os.environ.get("TERM", "") or os.environ.get("COLORTERM")):
+                row = f"\x1b[38;5;{[51, 50, 49, 48, 47][i]}m{row}\x1b[0m"
+            print(row)
+        print("MINT · MCP 연결 관리\n1 로그인 · 2 상태 확인 · 3 승인된 MCP")
+        selected = input("게이트웨이 [" + address + "]: ").strip() or address
+        username = input("MINT 아이디: ").strip()
+        # getpass's stdin fallback echoes a secret; fail instead when a secure terminal is unavailable.
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", getpass.GetPassWarning)
+            try:
+                password = getpass.getpass("비밀번호: ")
+            except getpass.GetPassWarning:
+                raise ValueError("로그인: 보안 입력 필요") from None
+        return selected, username, password
+    finally:
+        if restore:
+            print(LEAVE, end="", flush=True)
+            restore()
+
+
+def source_menu(address):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
+    access = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(access)
+    try:
+        servers = access.receive(address, {"action": "list"})
+        print("승인된 MCP")
+        for i, server in enumerate(servers, 1):
+            print(f"{i} {clean(server.get('display_name') or server['server_id'])} · " +
+                  ("소스 받기" if server.get("source_available") else "원격 연결"))
+        if not servers:
+            print("목록: —")
+            return
+        selected = input("번호 [Enter 종료]: ").strip()
+        if not selected:
+            return
+        if not selected.isdigit() or not 1 <= int(selected) <= len(servers):
+            raise ValueError("번호 확인 필요")
+        server = servers[int(selected) - 1]
+        if not server.get("source_available"):
+            print("소스: —")
+            return
+        target = access.receive(address, {"action": "download", "server": server["server_id"], "commit": server["commit_sha"]})
+        print("소스 받기: 완료\n파일: " + target)
+    except (OSError, ValueError, KeyError, TypeError):
+        print("소스 받기: 실패")
 
 
 def translate(value, language="ko"):
@@ -155,9 +222,12 @@ def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=No
             pass
     height = max(0, lines - 1)
     shown = max(1, height - 13 - max(1, len(blocks[-5:])))
-    body = ["MINT 엔드포인트", f"상태  [{badge}]",
+    body = [*banner(), "MINT 엔드포인트 · MCP 연결 관리", "1 로그인 · 2 상태 확인 · 3 승인된 MCP", f"상태  [{badge}]",
             "관리 상태  " + STATES.get(summary.get("state"), "—") + " · 연결 방식  " +
-            {"simple": "간편 모드", "isolated": "격리 계정"}.get(summary.get("mode"), "—"), "설치 단계"]
+            {"simple": "간편 모드", "isolated": "격리 계정"}.get(summary.get("mode"), "—"),
+            "장치  " + clean(summary.get("user") or summary.get("endpoint_id") or "—"),
+            "게이트웨이  " + clean(summary.get("gateway") or "—"),
+            "최근 보고  " + (time.strftime("%H:%M:%S", time.localtime(summary["updated"])) if summary.get("updated") else "—"), "설치 단계"]
     for label, started, seconds, mark in rows[-shown:]:
         spent = seconds if seconds is not None else max(0, int(time.monotonic() - started))
         state = "진행 중" if seconds is None else "실패" if mark == "✗" else "완료"
@@ -272,7 +342,15 @@ class Screen:
 
     def text(self):
         size = shutil.get_terminal_size((80, 30))
-        return frame(self.summary, self.rows, self.cells, self.next, size.columns, size.lines, language=self.language)
+        result = frame(self.summary, self.rows, self.cells, self.next, size.columns, size.lines, language=self.language)
+        if self.window is None or not self.output.encoding or "utf" not in self.output.encoding.lower():
+            return result.replace("█", "#")
+        if not os.environ.get("NO_COLOR") and ("256color" in os.environ.get("TERM", "") or os.environ.get("COLORTERM") in ("truecolor", "24bit")):
+            rows = result.splitlines()
+            for i in range(min(5, len(rows))):
+                rows[i] = f"\x1b[38;5;{[51, 50, 49, 48, 47][i]}m{rows[i]}\x1b[0m"
+            return "\n".join(rows)
+        return result
 
     def draw(self, extra=()):
         if self.window is not None:
@@ -336,7 +414,7 @@ class Screen:
         print(self.text(), file=self.output, flush=True)
 
 
-def live(read, check=None, screen=None):
+def live(read, check=None, screen=None, sources=None):
     """Read snapshots afresh; an interrupted read never keeps a stale success on screen."""
     screen = screen or Screen()
     results = queue.Queue()
@@ -370,6 +448,13 @@ def live(read, check=None, screen=None):
             key = screen.read_key(2)
             if key in ("q", "\x1b"):
                 break
+            if key in ("s", "3") and sources:
+                screen.pause()
+                try:
+                    sources()
+                    input("Enter: ")
+                finally:
+                    screen.resume()
             if key == "c" and check and not checking:
                 checking = True
                 screen.cells = [("하네스 응답", "진행 중"), ("게이트웨이 MCP 목록", "진행 중")]

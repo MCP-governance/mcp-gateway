@@ -53,7 +53,7 @@ async def run(args):
             assert meta['decision'] in {'Allow', 'Alert', 'Restrict'} and not result.is_error
             assert meta['upstream_attempted'] and meta['upstream_executed']
             body = json.dumps([c.model_dump(mode='json') for c in result.content]).encode()
-            report = {'field_release_check': 'PASS', 'vm': '100.110.81.60', 'gateway': args.url,
+            report = {'field_release_check': 'PASS', 'gateway': args.url,
                       'build': health['build'], 'console_build': ready['build']['console'], 'policy': health['policy'], 'mcp_admin_status': denied.status_code,
                       'server': args.server, 'tool': selected.name, 'decision_id': meta['decision_id'],
                       'decision': meta['decision'], 'policy_id': meta['policy_id'],

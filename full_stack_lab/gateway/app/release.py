@@ -13,7 +13,7 @@ from . import cache, connections
 # The files a Linux install copies to the PC (endpoint-agent/managed-linux.py PROGRAM_FILES). The digest of their
 # text is the kit version: the PC's status command prints the digest of what it installed, /api/health this one.
 KIT_PROGRAMS = ('managed-linux.py', 'enforce-linux.py', 'broker_binding.py', 'agent.py', 'os-observer.py',
-                'offline_buffer.py', 'local-runner.py', 'kit_screen.py')
+                'offline_buffer.py', 'local-runner.py', 'kit_screen.py', 'kit_access.py')
 
 
 def kit_sha256() -> str | None:

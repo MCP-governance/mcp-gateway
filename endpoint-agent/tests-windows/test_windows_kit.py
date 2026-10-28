@@ -377,7 +377,7 @@ Write-Output 'Per-request CA verification OK'
         code.mkdir()
         policy.mkdir()
         names = ('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
-                 'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
+                 'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
                  'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         for name in names:
             (code / name).write_bytes(('synthetic, never executed: ' + name).encode())
@@ -486,11 +486,11 @@ Write-Output 'Per-user ACL and bounded data snapshot OK'
         enrollment = profile / 'Downloads/enrollment.json'
         enrollment.parent.mkdir()
         enrollment.write_text(json.dumps({'gateway_url': 'https://changed.example', 'tailscale_node_id': 'changed',
-                                          'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64,
-                                          'enrollment_token': 'synthetic-enrollment'}), encoding='utf-8')
+                                          'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64}), encoding='utf-8')
         # The one-click template's request: no gateway_url/tailscale_node_id of its own (pj3 10-25 failed on that).
         (work / 'request.json').write_text(json.dumps({'mode': 'managed', 'action': 'install', 'user': 'fixture',
-            'requester_sid': 'S-1-5-21-1-2-3-1001', 'isolated_account': False, 'enrollment': str(enrollment)}), encoding='utf-8')
+            'requester_sid': 'S-1-5-21-1-2-3-1001', 'isolated_account': False, 'enrollment': str(enrollment),
+            'kit_enrollment_token': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'}), encoding='utf-8')
         script = r'''
 $ErrorActionPreference='Stop'
 . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-trust.ps1')
@@ -518,7 +518,7 @@ if ($bundle.ca_sha256 -ne [IO.File]::ReadAllText((Join-Path $env:KIT_TEST_TEMP '
 if ($request.ca_certificate -ne $bundle.ca_certificate -or $request.ca_sha256 -ne $bundle.ca_sha256) { throw 'CA not carried to privileged request' }
 [IO.File]::WriteAllText((Join-Path $script:testProfile 'Downloads/enrollment.json'),'{"enrollment_token":"later replacement"}')
 $copy=Get-Content -LiteralPath $request.enrollment -Raw | ConvertFrom-Json
-if ($copy.enrollment_token -ne 'synthetic-enrollment') { throw 'mutable source was reread' }
+if ($copy.enrollment_token -ne 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') { throw 'mutable source was reread or login grant lost' }
 if ($script:readers[$request.result_directory] -ne 'S-1-5-21-1-2-3-1001') { throw 'result readable by wrong user' }
 if ($script:readers[$request.private_directory]) { throw 'private enrollment readable by caller' }
 $rejected=$false; try { $null=Read-EndpointManagedRequest $input $approved 'S-1-5-21-1-2-3-1001' } catch { $rejected=$true }
@@ -533,7 +533,7 @@ if (-not $rejected) { throw 'array bypassed account validation' }
 Write-Output 'Managed request data snapshot and approved destination OK'
 '''
         process = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
-                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=30)
+                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=120)
         self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
 
     def test_managed_rollback_waits_for_service_and_preserves_new_user_settings(self):

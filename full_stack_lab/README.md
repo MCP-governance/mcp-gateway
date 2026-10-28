@@ -93,8 +93,8 @@ REPLAY_POLICY_DIR=./candidate-opa ./console.sh replay  # 후보 정책 디렉터
 ## 6. 열려 있는 API
 
 Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다: `/api/health` (구성요소 상태와 준비된 MCP 서버 수).
-로그인(`/api/session`)과 보호 자원 메타데이터(`/.well-known/oauth-protected-resource`)는 토큰을 받기 위한
-경로라 제외합니다. 나머지는 사용자 토큰(`Depends(caller)`), 관리자(`admin_caller`), 또는 범위가 제한된
+로그인(`/api/session`)·키트 로그인(`/auth/kit-enrollment`)과 보호 자원 메타데이터(`/.well-known/oauth-protected-resource`)는 토큰을 받기 위한
+경로라 제외합니다. 키트 로그인은 아이디·비밀번호 자체가 인증이며 로그인과 같은 시도 제한을 씁니다. 나머지는 사용자 토큰(`Depends(caller)`), 관리자(`admin_caller`), 또는 범위가 제한된
 장치 키가 필요합니다. `tests/open_endpoints.py`가 이 문장과 코드를 대조합니다.
 워크스테이션이 `/mcp/` 때문에 Gateway와 같은 망에 있으므로, 읽기 API를 열어 두면 프롬프트 주입된
 에이전트가 전체 감사 기록을 읽을 수 있습니다(D-16).

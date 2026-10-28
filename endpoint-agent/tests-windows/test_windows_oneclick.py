@@ -380,9 +380,13 @@ for ($i=0; $i -lt $paths.Count; $i++) {
             self.assertEqual(result.headers['Cache-Control'], 'no-store')
             body = json.loads(base64.b64decode(result.content.decode().split(':MCPGW_PAYLOAD\r\n')[1]))
             with zipfile.ZipFile(io.BytesIO(base64.b64decode(body['archive']))) as archive:
-                self.assertEqual(json.loads(archive.read('enrollment.json'))['enrollment_token'], 'synthetic-private-enrollment')
+                kit = json.loads(archive.read('enrollment.json'))
+                self.assertNotIn('enrollment_token', kit)
+                self.assertNotIn('owner', kit)
+                self.assertEqual(kit['gateway_url'], 'https://gateway.example')
             result = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows'))
             self.assertEqual(result.media_type, 'application/zip')
+            enrollment.assert_not_awaited()
 
 
 if __name__ == '__main__':

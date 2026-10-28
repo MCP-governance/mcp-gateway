@@ -5,6 +5,9 @@ import io
 import json
 import os
 import shlex
+import shutil
+import socket
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -67,7 +70,7 @@ class Reinstall(unittest.TestCase):
             self.assertFalse(self.enrollment.exists())
             config.unlink()
 
-    def linux_install_flow(self, model_detail="", harness="claude"):
+    def linux_install_flow(self, model_detail="", harness="claude", binary=None):
         """Real bootstrap/installer/check/JSON; only OS, enrollment and model transport are doubles."""
         b, c = self.boot, self.core
         programs = self.root / "programs"
@@ -78,13 +81,16 @@ class Reinstall(unittest.TestCase):
             "ok": not model_detail, "seconds": 1, "detail": model_detail}))
         installed = []
         install_managed = b.install_managed
+        subprocess_run = subprocess.run
         def capture_install(*args, **kwargs):
             result = install_managed(*args, **kwargs)
             installed.append(dict(result))
             return result
         def run(argv, **kwargs):
+            if argv[0] == shutil.which("node"):
+                return subprocess_run(argv, **kwargs)
             if argv[:3] == ["systemctl", "enable", "--now"]:
-                c.private_write(report, json.dumps({"state": "active", "updated": c.time.time(), "connected": True,
+                c.private_write(report, json.dumps({"user": "emp", "state": "active", "updated": c.time.time(), "connected": True,
                                                    "names": ["memory"]}))
             return SimpleNamespace(returncode=0, stdout="", stderr="")
         def local_path(*parts):
@@ -98,7 +104,7 @@ class Reinstall(unittest.TestCase):
             for name in ("ensure_packages", "remove_shims", "remove_companion"):
                 stack.enter_context(patch.object(b, name))
             stack.enter_context(patch.object(b, "installed", return_value=False))
-            stack.enter_context(patch.object(b, "find_clients", return_value={harness: "/usr/bin/" + harness}))
+            stack.enter_context(patch.object(b, "find_clients", return_value={harness: binary or "/usr/bin/" + harness}))
             stack.enter_context(patch.object(b, "STATE", self.root / "state"))
             stack.enter_context(patch.object(b, "SCREEN", screen))
             stack.enter_context(patch.object(b, "install_managed", side_effect=capture_install))
@@ -134,13 +140,85 @@ class Reinstall(unittest.TestCase):
                 self.assertEqual(b.connect(c, "emp", False, SimpleNamespace(
                     enrollment=self.enrollment, skip_login=False), 0), 0)
         result = json.loads(output.getvalue().splitlines()[-1])
+        with patch.object(c, "PROGRAMS", programs):
+            summary = c.model_status(json.loads(report.read_text()))
+            with patch.object(c, "Screen", return_value=SimpleNamespace(window=None)), \
+                 patch.object(c, "check_connection", return_value={"initialized": ["memory"], "tools": 2}), \
+                 redirect_stdout(io.StringIO()) as status_output:
+                c.status(SimpleNamespace(user="emp", check=True))
+        self.assertEqual(summary["model_signed_in"], result["model_signed_in"])
+        if summary["model_signed_in"].get(harness) is False:
+            self.assertIn(b.LOGINS[harness][1], status_output.getvalue())
         self.assertFalse(self.enrollment.exists())
         self.assertEqual(installed[0]["state"], "active")
         self.assertEqual(result["state"], "active")
         self.assertEqual(screen.summary["state"], "active")
-        self.assertEqual(json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"],
-                         ["/usr/bin/" + harness])
+        self.assertIn(binary or "/usr/bin/" + harness,
+                      json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"])
         return result, screen
+
+    def npm_codex_entry(self, platform_package=True):
+        entry = self.root / "npm space/node_modules/@openai/codex/bin/codex.js"
+        entry.parent.mkdir(parents=True)
+        entry.write_text("// synthetic npm entry; must not be executed\n")
+        # Use the real Node platform and module resolver, but never execute a harness.
+        target = subprocess.run([shutil.which("node"), "-p", "JSON.stringify([process.platform, process.arch])"],
+                                capture_output=True, text=True, check=True)
+        system, arch = json.loads(target.stdout)
+        machine = {"x64": "x86_64", "arm64": "aarch64"}[arch]
+        suffix = {"linux": "unknown-linux-musl", "darwin": "apple-darwin", "win32": "pc-windows-msvc"}[system]
+        package = entry.parents[2] / ("codex-" + system + "-" + arch) if platform_package else entry.parents[1]
+        package.mkdir(exist_ok=True)
+        if platform_package:
+            (package / "package.json").write_text('{}')
+        native = package / "vendor" / (machine + "-" + suffix) / "bin" / ("codex.exe" if system == "win32" else "codex")
+        native.parent.mkdir(parents=True)
+        native.touch()
+        return entry, native
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed for npm entry resolution")
+    def test_npm_codex_install_registers_only_the_resolved_native_child(self):
+        entry, native = self.npm_codex_entry()
+        unrelated = native.parent / "server-fastmcp"
+        unrelated.touch()
+        self.linux_install_flow(harness="codex", binary=str(entry))
+        paths = json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"]
+        self.assertEqual(paths, [str(entry), str(native.resolve())])
+        observer = load("npm_observer", KIT / "agent.py")
+        with patch.object(observer, "CONFIG", {"ENDPOINT_HARNESS_PATHS": paths}):
+            self.assertTrue(observer.harness_process(f'"{native}" exec "fastmcp"'))
+            self.assertFalse(observer.harness_process(f'"{unrelated}" -m fastmcp run server.py'))
+            with patch.object(observer.platform, "system", return_value="Windows"), \
+                 patch.object(observer, "_windows_processes", return_value={"123": ("codex", f'"{native}" exec fastmcp')}):
+                self.assertEqual(observer.stdio_processes(), [])
+            row = {"address": "127.0.0.1", "port": 54321, "command_line": f'"{native}" exec fastmcp'}
+            with patch.object(observer, "local_listeners", return_value=[row]), \
+                 patch.object(observer, "probe_mcp", return_value=None):
+                self.assertEqual(observer.listener_findings({"probe_mcp": False}), [])
+            with patch.object(observer, "local_listeners", return_value=[row]), \
+                 patch.object(observer, "probe_mcp", return_value={"server_name": "synthetic"}):
+                self.assertEqual(observer.listener_findings({})[0]["mcp_evidence"], "confirmed")
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed for npm entry resolution")
+    def test_npm_codex_vendor_fallback_missing_binary_and_resolver_failure(self):
+        entry, native = self.npm_codex_entry(platform_package=False)
+        binaries = {"codex": str(entry)}
+        with patch.dict(os.environ, {"NODE_OPTIONS": "--require=/unapproved/injection.js", "NODE_PATH": "/unapproved"}):
+            self.assertEqual(self.core.harness_paths(binaries), [str(entry), str(native.resolve())])
+        native.unlink()
+        self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        for error in (OSError("node unavailable"), subprocess.TimeoutExpired("node", 5),
+                      subprocess.CalledProcessError(1, "node")):
+            with self.subTest(error=type(error).__name__), patch.object(self.core.subprocess, "run", side_effect=error):
+                self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        with patch.object(self.core.shutil, "which", return_value=None):
+            self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        other = self.root / "unregistered/codex.js"
+        other.parent.mkdir()
+        other.touch()
+        with patch.object(self.core.subprocess, "run") as run:
+            self.assertEqual(self.core.harness_paths({"codex": str(other)}), [str(other)])
+            run.assert_not_called()
 
     def test_linux_install_check_and_final_json_use_service_activation(self):
         result, screen = self.linux_install_flow()
@@ -182,6 +260,44 @@ class Reinstall(unittest.TestCase):
         result, screen = self.linux_install_flow("Connection timeout")
         self.assertIs(result["model_signed_in"]["claude"], True)
         self.assertNotIn("모델 로그인", screen.result.call_args.args[1])
+
+    def test_login_shell_permission_error_is_execution_failure_not_model_auth(self):
+        result, screen = self.linux_install_flow(
+            "runuser: failed to execute /usr/local/lib/mcpgw-enforcement/mcpgw-emp/login-shell: Permission denied")
+        self.assertIs(result["model_signed_in"]["claude"], True)
+        self.assertIn("실행 장애", result["checks"]["모델 응답"])
+        self.assertNotIn("로그인 필요", result["checks"]["모델 응답"])
+        self.assertNotIn("모델 로그인", screen.result.call_args.args[1])
+        self.assertIn("실행 권한", screen.result.call_args.args[1])
+
+    def test_login_path_is_not_a_login_request_but_login_command_is(self):
+        for message, failed in (("Cannot read /opt/login/config.json", False),
+                                ("Please run /login to authenticate", True), ("Please log in", True)):
+            signed = {"claude": True}
+            observer = SimpleNamespace(MODEL_PROMPT="OK", model_check=lambda argv: {
+                "ok": False, "seconds": 1, "detail": message})
+            with self.subTest(message=message), patch.object(self.core, "load_module", return_value=observer):
+                _, text = self.boot.model_cell(self.core, "emp", ["claude"], False, signed)
+            self.assertEqual(signed["claude"], not failed)
+            self.assertEqual("로그인 필요" in text, failed)
+
+    def test_codex_refresh_failures_override_credentials_and_request_login(self):
+        messages = [
+            "Your access token could not be refreshed because your refresh token has expired. Please log out and sign in again.",
+            "Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.",
+            "Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again.",
+            "Your access token could not be refreshed. Please log out and sign in again.",
+            "Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again.",
+        ]
+        for message in messages:
+            # Each install consumes its enrollment and writes credentials in a temporary HOME.
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as folder, \
+                 patch.object(self, "root", Path(folder)), patch.object(self, "enrollment", Path(folder) / "enrollment.json"):
+                self.enrollment.write_text(json.dumps(self.bundle))
+                result, screen = self.linux_install_flow(message, harness="codex")
+                self.assertIs(result["model_signed_in"]["codex"], False)
+                self.assertIn("로그인 필요", result["checks"]["모델 응답"])
+                self.assertIn("codex login --device-auth", screen.result.call_args.args[1])
 
     def test_codex_auth_failure_names_the_checked_harness(self):
         result, screen = self.linux_install_flow("401 Unauthorized", harness="codex")
@@ -362,11 +478,12 @@ class Reinstall(unittest.TestCase):
         for failure_at in (0, 1):
             for code in (401, 403, 409, 410, None):
                 error = urllib.error.HTTPError("https://gw.example", code, "refused", {}, None) if code else OSError("network")
-                replies = [error] if failure_at == 0 else [{"endpoint_id": "new"}, error]
+                replies = [error] if failure_at == 0 else [{"endpoint_id": "new"}, error, error, error]
                 old = self.root / "old-config.json"
                 old.write_bytes(b"existing credential and settings")
                 with patch.object(self.core, "verify_transport"), patch.object(self.core, "machine_id", return_value=None), \
                      patch.object(self.core, "request", side_effect=replies), patch.object(self.core, "diagnostic"), \
+                     patch.object(self.core.time, "sleep"), \
                      patch.object(b, "ensure_packages"), patch.object(b, "installed", return_value=True), \
                      patch.object(b, "rollback") as remove, patch.object(b, "find_clients") as find, \
                      patch.object(b, "remove_shims") as shims, patch.object(b, "install_managed") as install, \
@@ -378,10 +495,58 @@ class Reinstall(unittest.TestCase):
                     operation.assert_not_called()
                 self.assertTrue(self.enrollment.exists())
 
+    def test_enrollment_retries_connection_refused_and_policy_retries_without_consuming_again(self):
+        c = self.core
+        refused = urllib.error.URLError(ConnectionRefusedError("synthetic-secret"))
+        unavailable = urllib.error.HTTPError("https://gw.example/secret", 503, "synthetic-secret", {}, None)
+        with patch.object(c, "verify_transport"), patch.object(c, "machine_id", return_value=None), \
+             patch.object(c.time, "sleep") as sleep, patch.object(c, "request", side_effect=[
+                 refused, {"endpoint_id": "new"}, unavailable, TimeoutError(), self.policy]) as request:
+            config, policy, enrolled = c.enroll(self.bundle, "emp", 1001, "simple")
+        self.assertEqual((config["endpoint_id"], enrolled["endpoint_id"]), ("new", "new"))
+        self.assertIs(policy, self.policy)
+        self.assertEqual([call.args[1] for call in request.call_args_list],
+                         ["/oauth/device-enroll"] * 2 + ["/api/endpoint/managed-policy"] * 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 1, 2])
+        first, second = request.call_args_list[:2]
+        self.assertEqual(first, second)  # the same device key, not a new enrollment identity
+
+    def test_preparation_retry_is_bounded_and_never_replays_an_ambiguous_enrollment(self):
+        c = self.core
+        for path, body, error, count in (
+            ("/oauth/device-enroll", {}, urllib.error.URLError(ConnectionRefusedError()), 3),
+            ("/oauth/device-enroll", {}, TimeoutError(), 1),
+            ("/oauth/device-enroll", {}, urllib.error.URLError(ConnectionResetError()), 1),
+            ("/oauth/device-enroll", {}, urllib.error.HTTPError("https://gw", 503, "busy", {}, None), 1),
+            ("/api/endpoint/managed-policy", None, urllib.error.HTTPError("https://gw", 502, "busy", {}, None), 3),
+            ("/api/endpoint/managed-policy", None, urllib.error.HTTPError("https://gw", 401, "denied", {}, None), 1),
+            ("/api/endpoint/managed-policy", None, urllib.error.URLError(ssl.SSLCertVerificationError()), 1),
+            ("/oauth/device-enroll", {}, urllib.error.URLError(socket.gaierror(socket.EAI_AGAIN, "temporary")), 3),
+        ):
+            with self.subTest(path=path, error=error), patch.object(c, "request", side_effect=error) as request, \
+                 patch.object(c.time, "sleep") as sleep, self.assertRaises(type(error)):
+                c.preparation_request(self.bundle, path, body)
+            self.assertEqual(request.call_count, count)
+            self.assertEqual(sleep.call_count, count - 1)
+
+    def test_final_preparation_failure_explains_cause_without_url_or_credentials(self):
+        b, c = self.boot, self.core
+        error = urllib.error.HTTPError("https://gw.example/?token=synthetic-secret", 503, "synthetic-secret", {}, None)
+        with patch.object(b, "ensure_packages"), patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+             patch.object(c, "enroll", side_effect=error), patch.object(c, "diagnostic") as diagnostic, \
+             patch.object(b, "rollback") as rollback, self.assertRaises(b.Failed) as caught:
+            b.connect(c, "emp", False, SimpleNamespace(enrollment=self.enrollment), 0)
+        self.assertIn("HTTP 503", str(caught.exception))
+        self.assertNotIn("synthetic-secret", str(caught.exception))
+        self.assertNotIn("https://", str(caught.exception))
+        diagnostic.assert_called_once()
+        rollback.assert_not_called()
+
     def test_linux_policy_success_precedes_removal_and_install_receives_same_result(self):
         b, events = self.boot, []
         prepared = ({"device_key": "new-secret"}, self.policy, {"endpoint_id": "new"})
-        core = SimpleNamespace(enroll=Mock(side_effect=lambda *a: events.append("policy") or prepared), diagnostic=Mock())
+        core = SimpleNamespace(enroll=Mock(side_effect=lambda *a: events.append("policy") or prepared), diagnostic=Mock(),
+                               private_write=self.core.private_write, PROGRAMS=self.root)
         with ExitStack() as stack:
             for name in ("ensure_packages", "remove_shims", "remove_companion"):
                 stack.enter_context(patch.object(b, name))
@@ -416,7 +581,8 @@ class Reinstall(unittest.TestCase):
         (folder / "installer.json").write_text(json.dumps({"created": True, "employee": "emp", "home_created": True}))
         config = folder / "config.json"
         config.write_bytes(b"old config")
-        core = SimpleNamespace(verify_transport=Mock(), enroll=Mock(side_effect=OSError("offline")), diagnostic=Mock())
+        core = SimpleNamespace(verify_transport=Mock(), enroll=Mock(side_effect=OSError("offline")), diagnostic=Mock(),
+                               preparation_error=self.core.preparation_error)
         with patch.object(m, "STATE", folder.parent), patch.object(m, "core_module", return_value=core), \
              patch.object(m, "account_name", return_value="managed-emp"), \
              patch.object(m, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
@@ -437,6 +603,8 @@ class Reinstall(unittest.TestCase):
         folder.mkdir(parents=True)
         programs = self.root / "programs"
         programs.mkdir()
+        model = programs / "model-emp.json"
+        model.write_text('{"claude": false}')
         settings = self.root / "managed-settings.json"
         settings.write_text("old managed settings")
         (folder / (settings.name + ".backup")).write_text("employee original")
@@ -457,6 +625,7 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(settings.read_text(), "employee original")
         self.assertEqual(foreign.read_text(), "organization original")
         self.assertFalse(folder.exists())
+        self.assertFalse(model.exists())
 
     def test_macos_removal_without_config_or_journal_clears_known_tasks_but_keeps_account(self):
         m = self.mac
@@ -503,10 +672,14 @@ class Reinstall(unittest.TestCase):
              patch.object(c.os, "O_NOFOLLOW", getattr(c.os, "O_NOFOLLOW", 0), create=True), patch.object(c.os, "fchmod", create=True):
             error = subprocess.CalledProcessError(1, ["never-log-argv"], stderr="useful diagnostic\nenroll-secret\nnew-secret\nBearer abc\npassword=pwd\ndevice_key=abc")
             c.diagnostic("install", error, ("enroll-secret", "new-secret"))
+            c.diagnostic("enroll", urllib.error.HTTPError("https://secret", 503, "secret-body", {}, None))
             c.diagnostic("retry", None)
         log = (self.root / "setup.log").read_text(encoding="utf-8")
         self.assertIn("useful diagnostic", log)
         self.assertIn("retry", log)
+        self.assertIn("HTTP 503", log)
+        self.assertNotIn("https://secret", log)
+        self.assertNotIn("secret-body", log)
         for secret in ("enroll-secret", "new-secret", "Bearer", "password", "device_key", "never-log-argv"):
             self.assertNotIn(secret, log)
 

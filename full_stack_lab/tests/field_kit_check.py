@@ -182,7 +182,7 @@ class KitTest(unittest.TestCase):
         self.assertEqual(self.kit.gateway_url("https://mcp-gw.internal/"), "https://mcp-gw.internal")
         self.assertEqual(self.kit.gateway_url("http://127.0.0.1:8443"), "http://127.0.0.1:8443")
         with self.assertRaises(SystemExit):
-            self.kit.gateway_url("http://100.83.175.111:443")
+            self.kit.gateway_url("http://192.0.2.10:443")
 
     def test_setup_writes_helpers_keeps_user_config_and_is_idempotent(self):
         fake = FakeIdpGateway()
@@ -375,10 +375,10 @@ class OverlayTest(unittest.TestCase):
                                   ("model-proxy", tailnet_ip, proxy_port, 3128, "tcp")})
 
     def test_field_publications_reject_wildcard_other_service_wrong_port_and_protocol(self):
-        baseline = {"caddy": {"ports": [{"host_ip": "100.83.175.111", "published": 443, "target": 8080},
-                                        {"host_ip": "100.83.175.111", "published": 8000, "target": 8081}]},
-                    "model-proxy": {"ports": [{"host_ip": "100.83.175.111", "published": 3128, "target": 3128}]}}
-        self.assert_field_publications(baseline, "100.83.175.111")
+        baseline = {"caddy": {"ports": [{"host_ip": "192.0.2.10", "published": 443, "target": 8080},
+                                        {"host_ip": "192.0.2.10", "published": 8000, "target": 8081}]},
+                    "model-proxy": {"ports": [{"host_ip": "192.0.2.10", "published": 3128, "target": 3128}]}}
+        self.assert_field_publications(baseline, "192.0.2.10")
         for case in ("wildcard", "console-wildcard", "other-service", "wrong-port", "wrong-protocol", "missing-proxy"):
             with self.subTest(case=case):
                 services = json.loads(json.dumps(baseline))
@@ -387,7 +387,7 @@ class OverlayTest(unittest.TestCase):
                 elif case == "console-wildcard":
                     services["caddy"]["ports"][1]["host_ip"] = "0.0.0.0"
                 elif case == "other-service":
-                    services["db"] = {"ports": [{"host_ip": "100.83.175.111", "published": 5432, "target": 5432}]}
+                    services["db"] = {"ports": [{"host_ip": "192.0.2.10", "published": 5432, "target": 5432}]}
                 elif case == "wrong-port":
                     services["caddy"]["ports"][0]["published"] = 80
                 elif case == "wrong-protocol":
@@ -395,7 +395,7 @@ class OverlayTest(unittest.TestCase):
                 else:
                     del services["model-proxy"]
                 with self.assertRaises(AssertionError):
-                    self.assert_field_publications(services, "100.83.175.111")
+                    self.assert_field_publications(services, "192.0.2.10")
 
     def test_caddyfile_routes(self):
         lines = (LAB / "field" / "Caddyfile").read_text(encoding="utf-8").splitlines()
@@ -432,7 +432,7 @@ class OverlayTest(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("docker"), "docker CLI 없음")
     def test_overlay_publishes_only_caddy_and_model_proxy_on_the_tailnet_address(self):
-        env = {**os.environ, "APPLIANCE_BIND": "100.83.175.111", "FIELD_TLS_ADDRESSES": "https://100.83.175.111:8080",
+        env = {**os.environ, "APPLIANCE_BIND": "192.0.2.10", "FIELD_TLS_ADDRESSES": "https://192.0.2.10:8080",
                "AGENT_JWT_PRIVATE_KEY": "x", "AGENT_JWT_PUBLIC_KEY": "x", "LITELLM_MASTER_KEY": "x",
                "MODEL_PROXY_PORT": "3128"}
         command = ["docker", "compose", "--project-directory", str(LAB), "-f", str(LAB / "compose.yaml"),

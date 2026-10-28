@@ -640,12 +640,16 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool, signed
     else:
         argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
-    auth_failed = not found["ok"] and re.search(
-        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|log ?in|/login|로그인",
+    execution_failed = not found["ok"] and re.search(
+        r"(?:\brunuser:|\blogin-shell\b).*(?:failed to execute|permission denied|operation not permitted)",
         found["detail"] or "", re.I)
+    auth_failed = not found["ok"] and not execution_failed and (re.search(
+        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|"
+        r"(?<![\w/.-])(?:log ?in|/login)(?![\w/.-])|로그인", found["detail"] or "", re.I)
+        or (name == "codex" and re.search(r"\byour access token could not be refreshed\b", found["detail"] or "", re.I)))
     if signed is not None and (found["ok"] or auth_failed):
         signed[name] = bool(found["ok"])
-    detail = ("로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
+    detail = ("실행 장애 · " if execution_failed else "로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
             else f"{name} 실패 · {detail}")
 
@@ -669,7 +673,9 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
     cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
     close_step()
-    if re.search(r"log ?in|/login|401|로그인", cells[0][1], re.I):
+    if "실행 장애 · " in cells[0][1]:
+        return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mcpgw-status --check 로 다시 확인하세요"
+    if "로그인 필요 · " in cells[0][1]:
         shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
         name = next(h for h in ("claude", "codex") if h in harnesses)
         command = LOGINS[name][1]
@@ -841,10 +847,19 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     bundle = json.loads(args.enrollment.read_text())
     credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
     try:
+        if not bundle.get("enrollment_token"):
+            SCREEN.pause()
+            try:
+                access = managed.load_module("kit_access", HERE / "kit_access.py")
+                bundle = access.login(bundle, managed.request, managed.kit_screen.login_inputs)
+            finally:
+                SCREEN.resume()
+            credentials.append(bundle["enrollment_token"])
         prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         managed.diagnostic("enroll", exc, credentials)
-        raise Failed("연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.") from None
+        raise Failed("연결 등록·정책 수신에 실패했습니다. " + managed.preparation_error(exc)
+                     + " · 기존 설치는 유지됩니다.") from None
     credentials.append(prepared[0]["device_key"])
     managed.diagnostic("prepared", None)
     for previous in (employee, companion_of(employee)):
@@ -878,6 +893,9 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
     cells, next_line = install_check(managed, account, list(placed), simple=not isolated,
                                     signed=result.setdefault("model_signed_in", {}))
+    model_path = managed.PROGRAMS / f"model-{account}.json"
+    managed.private_write(model_path, json.dumps(result["model_signed_in"]))
+    model_path.chmod(0o644)
     result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated

@@ -21,6 +21,7 @@ import secrets
 import shutil
 import socket
 import socketserver
+import ssl
 import stat
 import subprocess
 import sys
@@ -43,7 +44,7 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py", "kit_screen.py")
+                 "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
 STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
@@ -60,6 +61,40 @@ def load_module(name, path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def harness_paths(binaries):
+    paths = list(binaries.values())
+    entry = Path(binaries.get("codex", "")).resolve()
+    node = shutil.which("node")
+    if not node or entry.parts[-4:] != ("@openai", "codex", "bin", "codex.js") or not entry.is_file():
+        return paths
+    # Resolve without executing the npm wrapper, which would start a harness as root.
+    script = r'''
+const fs = require('node:fs'), path = require('node:path');
+const entry = process.argv[1], resolve = require('node:module').createRequire(entry).resolve;
+const machine = {x64: 'x86_64', arm64: 'aarch64'}[process.arch];
+const suffix = {linux: 'unknown-linux-musl', darwin: 'apple-darwin', win32: 'pc-windows-msvc'}[process.platform];
+if (!machine || !suffix) process.exit(1);
+let vendor;
+try {
+  vendor = path.join(path.dirname(resolve('@openai/codex-' + process.platform + '-' + process.arch + '/package.json')), 'vendor');
+} catch {
+  vendor = path.join(path.dirname(entry), '..', 'vendor');
+}
+const binary = path.join(vendor, machine + '-' + suffix, 'bin', process.platform === 'win32' ? 'codex.exe' : 'codex');
+if (fs.existsSync(binary)) process.stdout.write(fs.realpathSync(binary));
+'''
+    try:
+        result = subprocess.run([node, "-e", script, str(entry)], capture_output=True, text=True, timeout=5,
+                                check=True, env={k: v for k, v in os.environ.items()
+                                                 if k not in ("NODE_OPTIONS", "NODE_PATH")})
+        native = Path(result.stdout.strip())
+        if result.stdout.strip() and native.is_absolute() and native.is_file() and str(native) not in paths:
+            paths.append(str(native))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return paths
 
 
 def kit_version(folder):
@@ -370,7 +405,7 @@ def redact_diagnostic(text, credentials=()):
 
 def diagnostic(stage, error, credentials=()):
     """Keep stderr across attempts, without command arguments or response bodies."""
-    detail = getattr(error, "stderr", "") or ""
+    detail = (getattr(error, "stderr", "") or "") if isinstance(error, subprocess.SubprocessError) else ""
     if isinstance(detail, bytes):
         detail = detail.decode("utf-8", "replace")
     detail = redact_diagnostic(detail, credentials)
@@ -381,23 +416,62 @@ def diagnostic(stage, error, credentials=()):
         fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "a", encoding="utf-8") as output:
             os.fchmod(output.fileno(), 0o600)
-            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}"
+                         f" {preparation_error(error) if error else ''}\n{detail}\n")
     except (OSError, ValueError):
         pass  # 기록 실패가 원래 오류를 가리면 안 된다(권한 없는 상태 폴더 등)
+
+
+def preparation_error(error):
+    """Only error classes/codes: a URL or response body may contain credentials."""
+    if isinstance(error, ValueError) and getattr(error, "kit_reason", None):
+        return error.kit_reason
+    if isinstance(error, urllib.error.HTTPError):
+        return f"HTTP {error.code}"
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, ssl.SSLError):
+        return "TLS 인증서·연결 확인 필요"
+    if isinstance(reason, TimeoutError):
+        return "게이트웨이 응답 시간 초과"
+    if isinstance(error, OSError):
+        return f"네트워크 연결 실패 ({type(reason).__name__})"
+    return {KeyError: "정책 응답 필수 항목 누락", ValueError: "설치 설정·정책 검증 실패"}.get(
+        type(error), type(error).__name__)
+
+
+def preparation_request(config, path, body=None, *, credential=True):
+    for attempt in range(3):
+        try:
+            return request(config, path, body, credential=credential)
+        except OSError as exc:
+            reason = getattr(exc, "reason", exc)
+            if isinstance(exc, urllib.error.HTTPError):
+                retry = body is None and exc.code in (502, 503, 504)
+            else:
+                # A lost POST response can already have consumed the one-use token; only refusal/DNS is safe.
+                retry = (not isinstance(reason, ssl.SSLError) and
+                         (body is None or isinstance(reason, ConnectionRefusedError) or
+                          isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_AGAIN))
+            if not retry or attempt == 2:
+                raise
+            time.sleep(attempt + 1)
 
 
 def enroll(bundle, username, uid, mode="isolated", platform="linux"):
     """Network preparation only; no installed file or OS task is changed."""
     verify_transport(bundle)
+    if not bundle.get("enrollment_token"):
+        access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+        bundle = access.login(bundle, request, kit_screen.login_inputs)
     bundle = dict(bundle, device_key=secrets.token_urlsafe(32))
     machine = machine_id() if platform == "linux" else None
-    enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
+    enrolled = preparation_request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
         "device_key": bundle["device_key"], "hostname": socket.gethostname(), "local_username": username,
         "local_uid": uid, "mode": mode, "platform": platform, **({"machine_id": machine} if machine else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
     config["endpoint_id"] = enrolled["endpoint_id"]
-    policy = request(config, "/api/endpoint/managed-policy")
+    policy = preparation_request(config, "/api/endpoint/managed-policy")
     if (policy["tailscale_node_id"] != config["tailscale_node_id"]
             or policy.get("gateway_url", config["gateway_url"]) != config["gateway_url"]):
         raise ValueError("설치 키트와 정책의 게이트웨이가 다릅니다")
@@ -477,7 +551,7 @@ def install(args, prepared=None):
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=None if simple else args.owner_uid, mode=args.mode,
                   broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
-                  harness_paths=list(binaries.values()),
+                  harness_paths=harness_paths(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
@@ -514,7 +588,8 @@ def install(args, prepared=None):
         config["home_launchers"] = [] if simple else home_launchers(config)
     except OSError:
         config["home_launchers"] = []  # a new terminal still gets the launcher function
-    args.enrollment.unlink()
+    if bundle.get("enrollment_token"):
+        args.enrollment.unlink()
     write_status_shim()
     summary = kit_screen.wait_summary(status_path(args.user, "json"), since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
@@ -545,6 +620,15 @@ def next_step(summary, now, environment=None):
         return "콘솔 내 PC 연결에서 새 설치 파일을 받아 다시 설치하세요"
     if not summary.get("connected"):
         return "게이트웨이 연결을 확인하세요 (네트워크·VPN)"
+    signed = summary.get("model_signed_in") or {}
+    commands = [command for name, command in (("claude", "claude auth login"), ("codex", "codex login --device-auth"))
+                if signed.get(name) is False]
+    if commands:
+        if summary.get("mode") != "simple":
+            user = summary["user"]
+            commands = [f"sudo -u {user} /usr/local/lib/mcpgw-enforcement/mcpgw-{user}/login-shell -c '{command}'"
+                        for command in commands]
+        return "모델 로그인: " + " · ".join(commands)
     # A terminal opened before the install lacks the CA variable: the harness cannot reach the Gateway from it.
     ca = summary.get("ca")
     if summary.get("mode") == "simple" and ca and environment.get("NODE_EXTRA_CA_CERTS") != ca:
@@ -591,10 +675,21 @@ kit_screen = load_module("kit_screen", Path(__file__).with_name("kit_screen.py")
 Screen = kit_screen.Screen
 
 
+def model_status(summary):
+    """Installer observations survive heartbeats; no provider credentials enter the public summary."""
+    try:
+        signed = json.loads((PROGRAMS / f"model-{summary['user']}.json").read_text())
+    except (OSError, ValueError, KeyError):
+        signed = {}
+    signed = {name: signed[name] for name in ("claude", "codex")
+              if isinstance(signed, dict) and type(signed.get(name)) is bool}
+    return {**summary, **({"model_signed_in": signed} if signed else {})}
+
+
 def publish_status(summary):
     """Root writes, anyone reads: the summary the status command prints, and the same text for an account whose
     profile cannot run Python (`cat` is allowed there)."""
-    summary = {**summary, "updated": time.time()}
+    summary = {**model_status(summary), "updated": time.time()}
     for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"], {}))):
         path = status_path(summary["user"], suffix)
         private_write(path, text)
@@ -657,7 +752,7 @@ def status(args):
         found = sorted(PROGRAMS.glob("status-*.json"))
         path = found[0] if len(found) == 1 else path
     try:
-        summary = json.loads(path.read_text())
+        summary = model_status(json.loads(path.read_text()))
     except (OSError, ValueError):
         # Right after install the service has not written its first summary yet (10-23 pj2): not a failure.
         if list(Path("/etc/systemd/system").glob("mcpgw-managed-*.service")):
@@ -672,7 +767,11 @@ def status(args):
         except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
             cells = [("연결 확인", f"실패 · {exc}")]
     screen = Screen()
+    if getattr(args, "sources", False):
+        screen.stop()
+        return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
     if screen.window is None:
+        print("\n".join(kit_screen.banner(True)) + "\nMINT · MCP 연결 관리\n1 로그인 · 2 상태 확인 · 3 승인된 MCP")
         print(render_status(summary, time.time()), end="")
         for name, value in cells:
             print(f"{name}: {value}")
@@ -680,14 +779,14 @@ def status(args):
     screen.cells = cells
 
     def read():
-        current = json.loads(path.read_text())
+        current = model_status(json.loads(path.read_text()))
         screen.next = next_step(current, time.time())
         return current
 
     def check(current):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
-    kit_screen.live(read, check, screen)
+    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
     print(screen.text())
 
 
@@ -887,6 +986,30 @@ def serve(args):
         binding.configure_runtime(sys.modules[__name__])
         binding.start_runtime(config, sys.modules[__name__])
     cache, lock = {}, threading.Lock()
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+
+    class Source(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.request.settimeout(5)
+            if hasattr(self.request, "getpeereid"):
+                peer = self.request.getpeereid()[0]
+            else:
+                import struct
+                peer = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))[1]
+            if peer != (config.get("owner_uid") or config["uid"]):
+                return
+            try:
+                command = json.loads(self.rfile.readline(4096))
+                access.serve_source(config, command, verify_transport, self.request.sendall)
+            except (OSError, ValueError, TypeError):
+                return
+    source_sock = Path(config["socket"]).with_suffix(".source")
+    source_sock.unlink(missing_ok=True)
+    source_server = socketserver.ThreadingUnixStreamServer(str(source_sock), Source)
+    source_server.daemon_threads = True
+    os.chown(source_sock, config.get("owner_uid") or config["uid"], -1)
+    source_sock.chmod(0o600)
+    threading.Thread(target=source_server.serve_forever, daemon=True).start()
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
             permitted = binding.authorize_peer(self.request, config)
@@ -983,6 +1106,7 @@ def serve(args):
     # gateway and ca let the employee's own `mcpgw-status --check` reach the Gateway as their harness does.
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
+               "source_socket": str(source_sock),
                "ca": str(PROGRAMS / f"ca-{config['uid']}.crt") if config.get("ca_certificate") else None}
     known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
@@ -1102,6 +1226,8 @@ def rollback(args):
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
     for suffix in ("json", "txt"):
         status_path(args.user, suffix).unlink(missing_ok=True)
+    (PROGRAMS / f"model-{args.user}.json").unlink(missing_ok=True)
+    Path(f"/run/mcpgw-{args.user}.source").unlink(missing_ok=True)
     if not list(PROGRAMS.glob("status-*.json")):
         STATUS_SHIM.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
@@ -1158,6 +1284,7 @@ def main():
     show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
     show.add_argument("--user")
     show.add_argument("--check", action="store_true", help="게이트웨이로 initialize·tools/list를 보내 연결을 확인")
+    show.add_argument("--sources", action="store_true", help="승인된 MCP 소스 받기")
     show.set_defaults(run=status)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)

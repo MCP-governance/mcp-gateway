@@ -40,7 +40,7 @@ class Bootstrap(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.enrollment = Path(self.temp.name) / "enrollment.json"
-        self.enrollment.write_text('{}')
+        self.enrollment.write_text('{"enrollment_token":"synthetic-existing-grant"}')
 
     def connect(self, isolated, state="active"):
         b = self.b
@@ -62,7 +62,8 @@ class Bootstrap(unittest.TestCase):
         with mock.patch.multiple(b, **doubles), mock.patch.object(b, "SCREEN", screen), \
                 mock.patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda name: SimpleNamespace(pw_uid=1000))), \
                 redirect_stdout(io.StringIO()) as out:
-            core = SimpleNamespace(enroll=mock.Mock(return_value=({"device_key": "synthetic"}, {}, {})), diagnostic=mock.Mock())
+            core = SimpleNamespace(enroll=mock.Mock(return_value=({"device_key": "synthetic"}, {}, {})), diagnostic=mock.Mock(),
+                                   private_write=lambda path, text: path.write_text(text), PROGRAMS=Path(self.temp.name))
             code = b.connect(core, "emp", isolated, args, 0.0)
         calls.update(doubles)
         return code, calls, json.loads(out.getvalue().strip().splitlines()[-1]), screen

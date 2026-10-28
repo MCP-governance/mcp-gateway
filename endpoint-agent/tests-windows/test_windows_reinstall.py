@@ -201,7 +201,7 @@ $keys=@('connection','management','way','servers','harness','reported','model','
 $captions=@{};$values=@{}
 foreach ($key in $keys) { $captions[$key]=[pscustomobject]@{Text=''}; $values[$key]=[pscustomobject]@{Text=''} }
 $script:window=[pscustomobject]@{IsDisposed=$false;Text='';Tag=@{captions=$captions;values=$values;buttons=@()}}
-$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');harnesses=@{claude='2.1.302'}}
+$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');server_names=@('문서 검색');harnesses=@{claude='2.1.302'}}
 $script:healthResult=Get-EndpointText 'gateway_ok' 'ko'
 $script:probe=@{model=@{detail='하네스 없음'};connection=@{initialized=@();waiting='pending'}}
 $script:label='connected'; $simple=$true; $script:updated='—'
@@ -212,9 +212,12 @@ foreach ($lang in @('en','ko','en')) {
     if ($values.gateway.Text -ne (Get-EndpointText 'gateway_ok' $lang)) { throw 'cached gateway language stale' }
     if ($values.model.Text -ne (Get-EndpointText 'no_harness_probe' $lang)) { throw 'model language stale' }
     if ($values.tools.Text -ne (Get-EndpointText 'waiting' $lang)) { throw 'tools language stale' }
-    if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'server id guessed' }
+    if ($values.servers.Text -ne '1 · 문서 검색') { throw 'server id shown instead of display name' }
 }
 if ($script:snapshot.management -ne '활성') { throw 'display translation mutated status' }
+$script:snapshot.Remove('server_names'); Update-EndpointWindow
+if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'older snapshot lost server id' }
+$script:snapshot.server_names=@('문서 검색')
 foreach ($state in @('active','pending','quarantined','revoked','removed','unknown')) {
     $script:snapshot.state=$state
     Update-EndpointWindow

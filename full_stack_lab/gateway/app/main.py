@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
@@ -12,7 +14,8 @@ from zoneinfo import ZoneInfo
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Path, Query
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+from starlette.background import BackgroundTask
 from fastapi.exceptions import RequestValidationError
 from fastapi.encoders import jsonable_encoder
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -1632,6 +1635,57 @@ async def endpoint_managed_policy(device: dict = Depends(endpoint_device("enforc
     except (PermissionError, ValueError) as exc:
         raise HTTPException(403, str(exc)) from exc
     return policy
+
+
+async def endpoint_source_proxy(path: str, key: str, params=None):
+    spool = tempfile.SpooledTemporaryFile(max_size=4 << 20)
+    try:
+        async with httpx.AsyncClient(timeout=130) as client:
+            async with client.stream("GET", AGENT_SERVICE_URL + path, params=params,
+                                     headers={"X-Endpoint-Key": key, "Accept-Encoding": "identity"},
+                                     follow_redirects=False) as response:
+                if response.status_code != 200:
+                    raise HTTPException(response.status_code if response.status_code in (401, 403, 409, 413) else 502,
+                                        "승인된 MCP 확인 실패")
+                headers = {k: v for k, v in response.headers.items() if k.lower() in
+                           {"content-type", "content-length", "content-disposition", "x-content-sha256"}}
+                size = 0
+                async for block in response.aiter_raw():
+                    size += len(block)
+                    if size > 128 << 20:
+                        raise HTTPException(413, "소스 크기 상한 초과")
+                    await asyncio.to_thread(spool.write, block)
+    except BaseException as exc:
+        spool.close()
+        if isinstance(exc, httpx.HTTPError):
+            raise HTTPException(502, "승인된 MCP 연결 실패") from None
+        raise
+    spool.seek(0)
+
+    async def chunks():
+        try:
+            while block := await asyncio.to_thread(spool.read, 64 << 10):
+                yield block
+        finally:
+            spool.close()
+    return StreamingResponse(chunks(), headers={**headers, "Cache-Control": "no-store"},
+                             background=BackgroundTask(spool.close))
+
+
+@app.get("/api/endpoint/approved-mcp")
+async def endpoint_approved_mcp(device: dict = Depends(endpoint_device("enforcement")),
+                                x_endpoint_key: str = Header()):
+    return await endpoint_source_proxy("/internal/endpoint/approved-mcp", x_endpoint_key)
+
+
+@app.get("/api/endpoint/approved-mcp/{server_id}/source")
+async def endpoint_approved_source(server_id: str, commit: str,
+                                  device: dict = Depends(endpoint_device("enforcement")),
+                                  x_endpoint_key: str = Header()):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", server_id) or not re.fullmatch(r"[0-9a-f]{40}", commit):
+        raise HTTPException(409, "승인된 소스 확인 필요")
+    return await endpoint_source_proxy(f"/internal/endpoint/approved-mcp/{server_id}/source",
+                                        x_endpoint_key, {"commit": commit})
 
 
 @app.post("/api/endpoint/heartbeat")
