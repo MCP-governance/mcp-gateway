@@ -177,7 +177,7 @@
     "employee_codex_version": "0.158.0",
     "protected_native_policies_present_at_initial_inspection": false,
     "independent_outside_gateway_receiver": {
-      "test_pc_peer": "100.110.81.60",
+      "test_pc_peer": "<시험 PC>",
       "synthetic_bytes": 24,
       "http_status": 204,
       "model_invoked": false

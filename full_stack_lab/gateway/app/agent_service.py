@@ -18,7 +18,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
-from urllib.parse import parse_qs, quote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
@@ -378,11 +378,20 @@ async def password_principal(email: str, password: str, caller: str) -> dict:
     return row
 
 
+@app.post("/auth/kit-enrollment")
+async def kit_enrollment(request: Login, http_request: Request):
+    from .endpoint_plane import enrollment_token
+    peer = http_request.client.host if http_request.client else "unknown"
+    row = await password_principal(request.email, request.password, peer)
+    return JSONResponse(await enrollment_token(row["token"]), headers={"Cache-Control": "no-store"})
+
+
 @app.get("/auth/me")
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     field = os.getenv("MCP_FIELD_MODE") == "1"
-    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field and "admin" in user["roles"] else ""
+    # 직원도 사내 저장소를 읽을 수 있다. 다운로드는 /auth/gitea가 막는다(D-262 정정).
+    git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
     # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
     return {**console_user(user), "synthetic": not field,
             "managed_required": user["managed_required"],
@@ -392,10 +401,10 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py"),
-             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py"),
+             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py", "kit_access.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
-                         "runtime-check.py", "windows_status.py", "kit_screen.py", "install.py", "install-windows.ps1",
+                         "runtime-check.py", "windows_status.py", "kit_screen.py", "kit_access.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}
@@ -420,8 +429,8 @@ def field_ca() -> dict:
 
 
 async def pc_kit() -> dict | None:
-    """개인별 1회용 enrollment 키트. MCP 서버가 없어도 단말 등록은 가능하다."""
-    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    """직원 자격이 없는 설치 키트. 신원은 설치 시 로그인으로 정한다."""
+    public = os.getenv("GATEWAY_PUBLIC_URL", os.getenv("IDP_ISSUER", "")).rstrip("/")
     if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "bootstrap.py").is_file() or not public:
         return None
     rows = await db.fetch_all(
@@ -445,7 +454,6 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
                                authorization: str | None = Header(default=None),
                                packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False,
                                issue_ticket: bool = False):
-    from .endpoint_plane import enrollment_token
     download_prefix = "Bearer kit-download."
     if not authorization and request.headers.get("content-type", "").split(";", 1)[0].strip().lower() == "application/x-www-form-urlencoded":
         body = bytearray()
@@ -486,7 +494,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
     runtime = Path(os.getenv("WINDOWS_PYTHON_DIR", "/opt/windows-python"))
     if platform == "windows" and any(not (runtime / name).is_file() for name in ("python.zip", "windows-python.json")):
         raise HTTPException(503, "Windows 실행 파일이 배포되지 않았습니다.")
-    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    public = os.getenv("GATEWAY_PUBLIC_URL", os.getenv("IDP_ISSUER", "")).rstrip("/")
     if not public:
         raise HTTPException(503, "Gateway 공개 주소가 없습니다.")
     if os.getenv("MCP_FIELD_MODE") == "1" and urlsplit(public).scheme != "https":
@@ -519,8 +527,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
              datetime.now(UTC) + timedelta(minutes=5)))
         return Response(script, media_type="application/octet-stream",
                         headers={"Content-Disposition": 'attachment; filename="mcp-connect-macos.command"', "Cache-Control": "no-store"})
-    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
-              "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca}
     if isolated:
         # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
         bundle["isolated"] = True
@@ -712,7 +719,33 @@ async def gitea_forward_auth(request: Request):
             target = uri if uri.startswith("/git/") and "//" not in uri else "/git/"
             return RedirectResponse("/login?next=" + quote(target, safe="/"), status_code=302)
         return Response(status_code=401, headers={"WWW-Authenticate": 'Basic realm="MCP Gateway Git"'})
+    if "admin" not in user["roles"] and not gitea_browse_only(request, from_cookie=basic[:6].lower() != "basic "):
+        # 직원이 Gitea에서 직접 받으면 승인 커밋·기한 확인과 다운로드 기록을 건너뛴다. 직원은 브라우저로 읽기만 하고,
+        # 소스는 Console 「승인된 MCP」나 엔드포인트 키트로만 받는다.
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse("/workspace#/intake?t=approved", status_code=302)
+        return Response(status_code=403)
     return Response(status_code=200, headers={"X-WEBAUTH-USER": await ensure_gitea_user(user)})
+
+
+# Gitea가 파일·보관본·저장소를 내려 주는 경로. 화면(코드 보기·이슈 목록)은 열고 이것만 막는다.
+# ponytail: 경로 거부 목록이다. Gitea 판올림으로 새 다운로드 경로가 생기면 여기에 더한다(tests/approved_mcp_download_check.py).
+GITEA_DOWNLOAD = re.compile(
+    r"^/(?:api|attachments|-)(?:/|$)"
+    r"|/(?:archive|raw|media|attachments|releases/download|info/refs|info/lfs|objects|git-upload-pack|git-receive-pack"
+    r"|actions/runs|wiki/raw|-/packages)(?:/|$)"
+    r"|\.git(?:/|$)|\.(?:patch|diff|zip|tar\.gz|bundle)$", re.I)
+
+
+def gitea_browse_only(request: Request, *, from_cookie: bool) -> bool:
+    """직원에게 허용하는 Gitea 요청: 로그인한 브라우저의 조회(GET·HEAD)이면서 다운로드 경로가 아닌 것."""
+    if not from_cookie or request.headers.get("x-forwarded-method", "GET").upper() not in {"GET", "HEAD"}:
+        return False
+    path = urlsplit(request.headers.get("x-forwarded-uri", "")).path
+    if not path.startswith("/git/"):
+        return False
+    path = unquote(path[len("/git"):])
+    return ".." not in path.split("/") and not GITEA_DOWNLOAD.search(path)
 
 
 class AccountStatus(StrictModel):
@@ -1057,8 +1090,7 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "consent", "intake", "connections"),
     "employee": ("activity", "consent", "intake", "connections"),
-    "admin": ("overview", "activity", "audit", "approvals", "coverage", "servers", "people", "endpoints", "consent", "intake", "sbom-impact",
-              "termination", "policy", "connections"),
+    "admin": ("overview", "approvals", "activity", "servers", "coverage", "people", "endpoints", "policy", "intake", "termination", "connections"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -2075,6 +2107,11 @@ MCP_SOURCE_DOWNLOAD_SLOTS = asyncio.Semaphore(2)
 
 
 async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[dict]:
+    if user.get("endpoint_id") and not await db.fetch_one(
+            """SELECT 1 FROM endpoint_agents a JOIN principals p ON p.token=a.owner_token
+               WHERE a.endpoint_id=%s AND a.owner_token=%s AND a.status='active'
+                 AND a.managed_state='active' AND p.status='active'""", (user["endpoint_id"], user["principal"])):
+        raise HTTPException(403, "장치·계정 확인 필요")
     rows = await db.fetch_all(
         """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.repository_url,
                   r.endpoint_url, r.intake_kind, r.commit_sha, r.internal_repo_url,
@@ -2186,7 +2223,8 @@ async def download_approved_mcp_source(server_id: str, commit: str, user: dict =
             raise HTTPException(409, "소스를 받는 동안 승인이 변경되었습니다.")
         await review.record_event("mcp-source-download", "recorded", "server", server_id, user["principal"],
                                   scope={"intake_id": str(row["intake_id"]), "commit": commit,
-                                         "sha256": digest, "bytes": size})
+                                         "sha256": digest, "bytes": size,
+                                         **({"endpoint_id": user["endpoint_id"]} if user.get("endpoint_id") else {})})
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
         spool.close()
         raise HTTPException(502, "승인된 소스에 연결하지 못했습니다.") from exc
@@ -2205,6 +2243,32 @@ async def download_approved_mcp_source(server_id: str, commit: str, user: dict =
                              headers={"Content-Disposition": f'attachment; filename="{server_id}-{commit[:12]}.zip"',
                                       "Content-Length": str(size), "X-Content-SHA256": digest,
                                       "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+
+async def endpoint_source_caller(x_endpoint_key: str | None = Header(default=None)) -> dict:
+    from .endpoint_plane import authenticate_device
+    try:
+        device = await authenticate_device(x_endpoint_key, "enforcement")
+    except PermissionError as exc:
+        raise HTTPException(401, "장치 자격 확인 필요") from exc
+    if device.get("managed_state") != "active":
+        raise HTTPException(403, "장치 활성화 필요")
+    owner = await db.fetch_one("SELECT token FROM principals WHERE token=%s AND status='active'",
+                               (device["owner_token"],))
+    if not owner:
+        raise HTTPException(403, "계정 확인 필요")
+    # Administrators' devices use the same employee audience boundary as every other device.
+    return {"principal": owner["token"], "roles": ["employee"], "endpoint_id": device["endpoint_id"]}
+
+
+@app.get("/internal/endpoint/approved-mcp")
+async def endpoint_approved_mcp(user: dict = Depends(endpoint_source_caller)):
+    return await list_approved_mcp(user)
+
+
+@app.get("/internal/endpoint/approved-mcp/{server_id}/source")
+async def endpoint_approved_source(server_id: str, commit: str, user: dict = Depends(endpoint_source_caller)):
+    return await download_approved_mcp_source(server_id, commit, user)
 
 
 class IntakeDiscovery(StrictModel):

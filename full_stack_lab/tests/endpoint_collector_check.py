@@ -103,6 +103,77 @@ class Collector(unittest.TestCase):
         self.assertEqual(len(status),3)
         self.assertEqual(json.loads(out.getvalue())['observation'],result)
 
+    def test_harness_prompt_is_not_socket_evidence_but_initialize_is(self):
+        row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude',
+               'command_line': '/opt/claude -p "fastmcp modelcontextprotocol"'}
+        for enabled in (False, True):
+            with self.subTest(probe=enabled), patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': ['/opt/claude']}), \
+                 patch.object(agent, 'local_listeners', return_value=[row]), \
+                 patch.object(agent, 'probe_mcp', return_value=None):
+                self.assertEqual(agent.listener_findings({'probe_mcp': enabled}), [])
+        with patch.object(agent, 'local_listeners', return_value=[row]), \
+             patch.object(agent, 'probe_mcp', return_value={'server_name': 'fixture'}):
+            self.assertEqual(agent.listener_findings({})[0]['mcp_evidence'], 'confirmed')
+
+    def test_real_server_commands_are_still_reported_on_process_and_socket_paths(self):
+        commands = ['python -m fastmcp run server.py', 'npx -y @modelcontextprotocol/server-filesystem /docs']
+        for command in commands:
+            with self.subTest(command=command), patch.object(agent.platform, 'system', return_value='Windows'), \
+                 patch.object(agent, '_windows_processes', return_value={'123': ('server', command)}):
+                self.assertEqual(agent.stdio_processes()[0]['mcp_evidence'], 'suspected')
+            row = {'address': '127.0.0.1', 'port': 54321, 'command_line': command}
+            with patch.object(agent, 'local_listeners', return_value=[row]):
+                self.assertEqual(agent.listener_findings({'probe_mcp': False})[0]['mcp_evidence'], 'suspected')
+
+    def test_quoted_node_harness_prompt_is_not_a_stdio_server(self):
+        command = r'"C:\Program Files\nodejs\node.exe" "C:\Program Files\nodejs\node_modules\@openai\codex\bin\codex.js" exec "fastmcp"'
+        with patch.object(agent.platform, 'system', return_value='Windows'), \
+             patch.object(agent, '_windows_processes', return_value={'123': ('node.exe', command)}):
+            self.assertEqual(agent.stdio_processes(), [])
+
+    def test_nested_server_script_is_not_the_harness_entry(self):
+        command = (r'"C:\Program Files\nodejs\node.exe" '
+                   r'"C:\Program Files\nodejs\node_modules\@anthropic-ai\claude-code\node_modules'
+                   r'\@modelcontextprotocol\server-filesystem\dist\index.js" C:\docs')
+        with patch.object(agent.platform, 'system', return_value='Windows'), \
+             patch.object(agent, '_windows_processes', return_value={'123': ('node.exe', command)}):
+            rows = agent.stdio_processes()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['mcp_evidence'], 'suspected')
+
+    def test_npm_entry_symlink_resolves_to_exact_harness_script(self):
+        realpath = agent.os.path.realpath
+        entry = '/usr/local/lib/node_modules/@openai/codex/bin/codex.js'
+        nested = '/usr/local/lib/node_modules/@openai/codex/node_modules/@modelcontextprotocol/server-filesystem/index.js'
+        for target, expected in ((entry, True), (nested, False)):
+            with self.subTest(target=target), patch.object(agent.os.path, 'realpath', side_effect=lambda path:
+                    target if path == '/usr/local/bin/codex' else realpath(path)):
+                self.assertEqual(agent.harness_process('/usr/bin/node /usr/local/bin/codex exec fastmcp'), expected)
+
+    def test_renamed_python_is_not_an_approved_harness_socket(self):
+        row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude.exe',
+               'command_line': r'"C:\unapproved\claude.exe" -m fastmcp run server.py'}
+        for enabled in (False, True):
+            with self.subTest(probe=enabled), patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': [r'C:\approved\claude.exe']}), \
+                 patch.object(agent, 'local_listeners', return_value=[row]), \
+                 patch.object(agent, 'probe_mcp', return_value=None):
+                rows = agent.listener_findings({'probe_mcp': enabled})
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]['mcp_evidence'], 'suspected')
+
+    def test_native_harness_exclusion_requires_the_installed_entry_path(self):
+        with tempfile.TemporaryDirectory() as folder:
+            approved = Path(folder) / 'approved/claude.exe'
+            other = Path(folder) / 'other/claude.exe'
+            for path in (approved, other):
+                path.parent.mkdir()
+                path.touch()
+            with patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': [str(approved)]}):
+                self.assertTrue(agent.harness_process(f'"{approved}" -p fastmcp'))
+                self.assertFalse(agent.harness_process(f'"{other}" -m fastmcp run server.py'))
+            with patch.object(agent, 'CONFIG', {}):
+                self.assertFalse(agent.harness_process(f'"{approved}" -p fastmcp'))
+
     def test_listener_permission_and_policy_disabled_are_distinct(self):
         with patch.object(agent,'SCAN_ENABLED',True), patch.object(agent,'call',side_effect=urllib.error.HTTPError(
                 'https://fixture.invalid',403,'denied',{},None)):

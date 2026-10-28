@@ -25,6 +25,7 @@
 | [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유 — 본문은 번호대 파일 `decisions/D-xxx-yyy.md`(50개 단위), 한 건은 `split_decisions.py show D-n`, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" — 처음부터 읽지 않는다: [결정 색인](../../research/llm-wiki/status/decisions-index.md)에서 번호를 찾고 `python research/llm-wiki/tools/split_decisions.py show D-번호` |
 | [RUNBOOK.md](RUNBOOK.md) | 운영 배포(`deploy/`)·실습 스택 명령, 백업·복구·업그레이드·롤백, 계정, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
 | [TESTING.md](TESTING.md) | 검증 층, 개별 실행, 시험 작성 규칙 | 고친 뒤 |
+| [MANUAL_TEST_LINUX.md](MANUAL_TEST_LINUX.md)·[MANUAL_TEST_WINDOWS.md](MANUAL_TEST_WINDOWS.md) | 직원 PC에서 사람이 하는 수동 시험: 설치·상태·동의·로컬 MCP·출력 통제·동시 사용·정책 변경 중 사용·수명주기·제거, 결과 기록 표 | 배포 뒤 직접 확인할 때 |
 | [MCP_SERVERS.md](MCP_SERVERS.md) | 10종 서버, 설치·실행, 함정, 추가 절차 | 서버를 만질 때 |
 | [POLICY.md](POLICY.md) | Rego 구조, 우선순위, PAC15·검토된 capability, 예외, 정책 추가 절차 | 판정을 바꿀 때 |
 | [TERMINATION_MODEL.md](TERMINATION_MODEL.md) | 논문 모델 ↔ 코드, C1~C4 규칙, E1~E3 | 종료·폐기 |

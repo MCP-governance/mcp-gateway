@@ -31,7 +31,7 @@ from psycopg.types.json import Jsonb
 
 from . import classify, db, registry
 from .agent_contract import StrictModel, authenticated_user
-from .connectors import DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
+from .connectors import DEFAULT_KINDS, DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
 from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_mode, managed_platform
 
 router = APIRouter()
@@ -230,16 +230,21 @@ async def snapshot() -> dict:
     # Harness reports (from the kit, or from a managed device): vendor connectors/apps/features and local plugins.
     decided = {d["item_key"]: d for d in await db.fetch_all("SELECT * FROM harness_decisions")}
     vendor_records = {v["item_key"]: v["record"] for v in await db.fetch_all("SELECT * FROM harness_vendor_controls")}
-    for row in await db.fetch_all(
+    harness_rows = await db.fetch_all(
             """SELECT item_key, harness, kind, name, target, principal, workstation, status, active, first_seen, last_seen
-                 FROM harness_items ORDER BY last_seen DESC LIMIT 2000"""):
+                 FROM harness_items ORDER BY last_seen DESC LIMIT 2000""")
+    kinds_by_key: dict[str, set] = {}
+    for row in harness_rows:
+        kinds_by_key.setdefault(row["item_key"], set()).add(row["kind"])
+    for row in harness_rows:
         decision = decided.get(row["item_key"]) or {}
-        approval = state_of(decision.get("decision"), False, row["first_seen"], now)
+        # Same rule as connectors.groups: a key mixed with plugins is reviewed, not allowed by default.
+        approval = state_of(decision.get("decision"), kinds_by_key[row["item_key"]] <= DEFAULT_KINDS, row["first_seen"], now)
         local = row["kind"] in {"plugin", "server"} and not row["target"].startswith(("http://", "https://"))
         vendor = vendor_records.get(row["item_key"]) or {}
         bound = row["workstation"].startswith(DEVICE_PREFIX)
         device_id = row["workstation"][len(DEVICE_PREFIX):] if bound else None
-        state, evidence, bypass = harness_item_state(devices.get(device_id), approval == "approved", row["active"], row["status"])
+        state, evidence, bypass = harness_item_state(devices.get(device_id), approval in ("approved", "default"), row["active"], row["status"])
         if row["kind"] in {"connector", "app"} and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
             # A manual record ages like a review: past REVIEW_DAYS it no longer vouches.
             checked = datetime.fromisoformat(vendor["verified_at"])

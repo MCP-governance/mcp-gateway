@@ -13,6 +13,7 @@ import argparse
 import ctypes
 import hashlib
 import ipaddress
+import importlib.util
 import json
 import os
 import platform
@@ -488,7 +489,14 @@ def host_report(config):
 
 # -- named pipe (header broker) ----------------------------------------------------
 
-def serve_pipe(config, cache, lock):
+def kit_access():
+    spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def serve_pipe(config, cache, lock, source=False):
     from ctypes import wintypes
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
@@ -499,16 +507,22 @@ def serve_pipe(config, cache, lock):
     # Protected DACL: the enrolled account may only read; SYSTEM and the creating owner (who must be able
     # to add instances) have full control; nobody else may open it.
     if not advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            f"D:P(A;;GR;;;{config['sid']})(A;;GA;;;SY)(A;;GA;;;OW)", 1, ctypes.byref(descriptor), None):
+            f"D:P(A;;{'GRGW' if source else 'GR'};;;{config.get('source_sid', config['sid']) if source else config['sid']})(A;;GA;;;SY)(A;;GA;;;OW)", 1, ctypes.byref(descriptor), None):
         raise OSError(ctypes.get_last_error(), "파이프 보안 설명자")
     attributes = SecurityAttributes(ctypes.sizeof(SecurityAttributes), descriptor, False)
     kernel32.CreateNamedPipeW.restype = wintypes.HANDLE
+    kernel32.ReadFile.argtypes = [wintypes.HANDLE, wintypes.LPVOID, wintypes.DWORD, ctypes.POINTER(wintypes.DWORD), wintypes.LPVOID]
+    kernel32.WriteFile.argtypes = kernel32.ReadFile.argtypes
+    kernel32.ConnectNamedPipe.argtypes = [wintypes.HANDLE, wintypes.LPVOID]
+    kernel32.FlushFileBuffers.argtypes = [wintypes.HANDLE]
+    kernel32.DisconnectNamedPipe.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
     invalid = wintypes.HANDLE(-1).value
 
     def instance(first=False):
         # PIPE_ACCESS_OUTBOUND (+ FILE_FLAG_FIRST_PIPE_INSTANCE: refuse a name someone already holds);
         # PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS
-        handle = kernel32.CreateNamedPipeW(pipe_name(config["username"]), 0x2 | (0x00080000 if first else 0), 0x8, 255,
+        handle = kernel32.CreateNamedPipeW(pipe_name(config["username"]) + ("-source" if source else ""), (0x3 if source else 0x2) | (0x00080000 if first else 0), 0x8, 255,
                                            8192, 8192, 0, ctypes.byref(attributes))
         if handle == invalid:
             raise OSError(ctypes.get_last_error(), "파이프를 만들 수 없습니다")
@@ -519,6 +533,24 @@ def serve_pipe(config, cache, lock):
         waiting = instance()  # the next client never finds the name missing
         try:
             if connected:
+                if source:
+                    received, command = wintypes.DWORD(), bytearray()
+                    while b"\n" not in command and len(command) < 4096:
+                        buffer = ctypes.create_string_buffer(4096 - len(command))
+                        if not kernel32.ReadFile(handle, buffer, len(buffer), ctypes.byref(received), None) or not received.value:
+                            raise OSError("소스 요청 실패")
+                        command.extend(buffer.raw[:received.value])
+
+                    def send(data):
+                        while data:
+                            written = wintypes.DWORD()
+                            if not kernel32.WriteFile(handle, data, len(data), ctypes.byref(written), None) or not written.value:
+                                raise OSError("소스 전송 실패")
+                            data = data[written.value:]
+                    kit_access().serve_source(config, json.loads(command), verify_transport, send)
+                    kernel32.FlushFileBuffers(handle)
+                    kernel32.DisconnectNamedPipe(handle)
+                    continue
                 with lock:
                     answer = ({"Authorization": "Bearer " + cache["token"]} if time.monotonic() < cache.get("until", 0)
                               else {"error": "엔드포인트 활성화·정책 연결이 필요합니다"})
@@ -527,9 +559,11 @@ def serve_pipe(config, cache, lock):
                 kernel32.WriteFile(handle, data, len(data), ctypes.byref(written), None)
                 kernel32.FlushFileBuffers(handle)
                 kernel32.DisconnectNamedPipe(handle)
+        except (OSError, ValueError, TypeError):
+            pass
         finally:
             kernel32.CloseHandle(handle)
-        handle = waiting
+            handle = waiting
 
 
 def read_broker(username):
@@ -576,6 +610,8 @@ if (-not $existing) { New-LocalUser -Name $in.name -NoPassword -FullName 'MCP ma
 "@ok" | Out-Null
 """
 HARNESS = ("codex.exe", "codex-code-mode-host.exe", "claude.exe")
+NATIVE_HARNESSES = (("claude", "AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode*/claude.exe"),
+                    ("claude", ".local/bin/claude.exe"), ("codex", "AppData/Local/Programs/OpenAI/Codex/bin/codex.exe"))
 
 
 def managed_user(name, *, isolated=False):
@@ -677,8 +713,7 @@ def harness_versions(profile):
         found["claude"] = native[0][:40]
     # WinGet and the Codex desktop installer keep no version in the path: the executable's own version resource
     # (read as data, not run). pj3 10-25: WinGet claude.exe 2.1.302.0; codex.exe carries none.
-    for name, pattern in (("claude", "AppData/Local/Microsoft/WinGet/Packages/Anthropic.ClaudeCode*/claude.exe"),
-                          ("claude", ".local/bin/claude.exe"), ("codex", "AppData/Local/Programs/OpenAI/Codex/bin/codex.exe")):
+    for name, pattern in NATIVE_HARNESSES:
         for path in sorted(Path(profile).glob(pattern)):
             value = file_version(path)
             if name not in found and value:
@@ -778,6 +813,7 @@ def enroll(args):
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
     folder = STATE / args.user.lower()
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
+                  source_sid=source_person["sid"] if source_person else person["sid"],
                   mode="isolated" if isolated else "simple", firewall_baseline=str(folder / "firewall-baseline.json"))
     policy = request(config, "/api/endpoint/managed-policy")
     if policy["tailscale_node_id"] != config["tailscale_node_id"]:
@@ -815,7 +851,7 @@ def install(args):
     companion, source_person = registration["companion"], registration["source_person"]
     python = PROGRAMS / "python" / "python.exe"
     lock_down(PROGRAMS)
-    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py", "kit_screen.py"):
+    for name in ("managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py", "kit_screen.py", "kit_access.py"):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
@@ -834,6 +870,9 @@ def install(args):
         harness_folder, harnesses = place_harnesses(source_person["profile"])
     else:
         harness_folder, harnesses = None, harness_versions(person["profile"])
+    config["harness_paths"] = ([str(harness_folder / name) for name in ("claude.exe", "codex.exe") if name in harnesses]
+                               if isolated else [str(path) for _, pattern in NATIVE_HARNESSES
+                                                 for path in Path(person["profile"]).glob(pattern) if path.is_file()])
     folder = STATE / args.user.lower()
     lock_down(folder, readers=False)
     config_path = folder / "config.json"
@@ -856,6 +895,7 @@ def install(args):
         set_user_environment(config, ca_environment(config))
         broadcast_environment()
     pythonw = python.with_name("pythonw.exe")
+    started = time.time()
     powershell("""
 $a = New-ScheduledTaskAction -Execute $in.python -Argument $in.arguments
 $t = New-ScheduledTaskTrigger -AtStartup
@@ -866,13 +906,17 @@ Start-ScheduledTask -TaskName $in.name
 """, {"python": str(pythonw), "name": TASK.format(user=args.user.lower()),
       "arguments": f'-B -I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
+    from windows_status import screen_module
+    summary = screen_module.wait_summary(PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"] / "status.json",
+                                         since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
-                      "mode": config["mode"], "state": "active" if enrolled.get("state") == "active"
-                      else "pending-organization-activation", "harnesses": harnesses if isolated else {},
+                      "mode": config["mode"], "state": summary.get("state", "unknown"), "harnesses": harnesses if isolated else {},
                       "versions": {} if isolated else harnesses, "launcher_files": launcher_files,
                       "task": TASK.format(user=args.user.lower())}, ensure_ascii=False))
     if isolated:
-        print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+        print("\n연결 상태: " + screen_module.STATES.get(summary.get("state"), "확인 필요"))
+        if summary.get("state") == "pending":
+            print("조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
         if companion:
             print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
         print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")
@@ -896,6 +940,7 @@ def serve(args):
     log = args.config.with_name("service.log")
     cache, lock = {}, threading.Lock()
     threading.Thread(target=serve_pipe, args=(config, cache, lock), daemon=True).start()
+    threading.Thread(target=serve_pipe, args=(config, cache, lock, True), daemon=True).start()
     observer_config = args.config.with_name("observer.json")
     write_file(observer_config, json.dumps({
         "ENDPOINT_GATEWAY_URL": config["gateway_url"], "ENDPOINT_DEVICE_KEY": config["device_key"], "ENDPOINT_ID": config["endpoint_id"],
@@ -904,7 +949,7 @@ def serve(args):
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
-        "ENDPOINT_ORIGIN": "automatic"}))
+        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
     previous = config["policy_hash"]
     last_state = None
     from windows_status import publish
@@ -1012,7 +1057,8 @@ def serve(args):
             # inventory is a completeness result the Gateway already received; it is in service.log, not a lost link.
             # The tray shows the approved servers, the state and the versions; no key, token or policy text.
             publish(status_path, True, os_observer.get("recent_blocks", []), management,
-                    details={"state": report["state"], "servers": sorted(policy["servers"]), "mode": config.get("mode", "isolated"),
+                    details={"state": report["state"], "servers": sorted(policy["servers"]),
+                             "server_names": [policy.get("server_names", {}).get(s) or s for s in sorted(policy["servers"])], "mode": config.get("mode", "isolated"),
                              "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"],
                              "protected_configs": health.get("protected_configs")})
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
@@ -1141,12 +1187,12 @@ def probe(args):
 
 
 def self_check():
-    assert complement(["100.83.175.111"]) == ["0.0.0.0-100.83.175.110", "100.83.175.112-255.255.255.255",
+    assert complement(["192.0.2.10"]) == ["0.0.0.0-192.0.2.9", "192.0.2.11-255.255.255.255",
                                               "::-ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"]
     assert complement(["0.0.0.0", "fd7a:115c:a1e0::1"])[0] == "0.0.0.1-255.255.255.255"
     assert other_ports([443, 3128]) == ["1-442", "444-3127", "3129-65535"]
     assert other_ports([1, 65535]) == ["2-65534"]
-    rules = firewall_rules("kim", "S-1-5-21-1-2-3-1001", ["100.83.175.111"], [443, 3128])
+    rules = firewall_rules("kim", "S-1-5-21-1-2-3-1001", ["192.0.2.10"], [443, 3128])
     assert [r["Name"] for r in rules] == ["MCPGW-kim-egress", "MCPGW-kim-gateway-tcp", "MCPGW-kim-gateway-udp"]
     assert all(r["LocalUser"] == "D:(A;;CC;;;S-1-5-21-1-2-3-1001)" for r in rules)
     text = with_codex_block('model = "x"\n', "\n[mcp_servers.a]\nurl = \"u\"\n")
@@ -1154,6 +1200,16 @@ def self_check():
     assert codex_block(with_codex_block(text, "\n[mcp_servers.b]\n")) == "\n[mcp_servers.b]\n"
     assert codex_block("no block") is None
     print("managed-windows self-check OK")
+
+
+def sources_command(args):
+    settings = json.loads(args.settings.read_text(encoding="utf-8"))
+    name = settings["user"]
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,31}", name):
+        raise ValueError("장치 계정 확인 필요")
+    command = ({"action": "download", "server": args.server, "commit": args.commit} if args.server else {"action": "list"})
+    result = kit_access().receive(pipe_name(name) + "-source", command)
+    print(json.dumps({"file": result} if args.server else {"servers": result}, ensure_ascii=False))
 
 
 def main():
@@ -1170,6 +1226,11 @@ def main():
     service.add_argument("--config", type=Path, required=True)
     service.set_defaults(run=serve)
     commands.add_parser("header").set_defaults(run=header)
+    sources = commands.add_parser("sources")
+    sources.add_argument("--settings", type=Path, required=True)
+    sources.add_argument("--server")
+    sources.add_argument("--commit")
+    sources.set_defaults(run=sources_command)
     check = commands.add_parser("probe")
     check.add_argument("--settings", required=True)
     check.add_argument("--skip-model", action="store_true")

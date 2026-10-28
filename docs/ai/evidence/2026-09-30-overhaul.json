@@ -233,7 +233,7 @@
     },
     {
       "testbed": "fresh SSH VM Docker image and disposable profiles",
-      "vm": "100.110.81.60",
+      "vm": "<시험 PC>",
       "native_image": "sha256:abacd9b854ce6989f91aff58993ad75b3878047883016bf543adee3f1cd7631f",
       "oracle": "VM host tcpdump, container source IP, outbound HTTPS SYN metadata",
       "phases": [
@@ -298,8 +298,8 @@
     "accounts_and_audit_preserved": true,
     "release_probe": {
       "field_release_check": "PASS",
-      "vm": "100.110.81.60",
-      "gateway": "http://100.83.175.111:443",
+      "vm": "<시험 PC>",
+      "gateway": "http://<솔루션 주소>:443",
       "build": {
         "revision": "fbd75898bb805278ebf413d1dc855d6612a639ea",
         "code_sha256": "58906f9453ca4aad513a90b602a14964c60196d50ece9b3bc67a1f2226481047",

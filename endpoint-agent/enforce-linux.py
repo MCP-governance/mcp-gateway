@@ -14,6 +14,7 @@ import mmap
 import os
 import pwd
 import re
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -406,11 +407,11 @@ def main() -> None:
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args()
     if args.self_check:
-        text = nft_rules(1234, ["100.83.175.111", "fd7a:115c:a1e0::1"], 443)
+        text = nft_rules(1234, ["192.0.2.10", "fd7a:115c:a1e0::1"], 443)
         assert "tcp dport 443 accept" in text and "ip6 daddr" in text
         assert "udp" not in text and "sport 22" not in text
         assert "meta skuid 1234 counter reject" in text
-        assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["100.83.175.111"], 443, 3128)
+        assert "tcp dport { 443, 3128 } accept" in nft_rules(1234, ["192.0.2.10"], 443, 3128)
         confined = profile("mcpgw-u", Path("/x/login-shell"), "/home/u", {"codex": Path("/opt/a/codex"), "claude": Path("/opt/a/claude")},
                            True, True, {"codex": [Path("/opt/a/codex-code-mode-host")], "claude": []})
         # only inside the codex harness profile and its tool profile
@@ -467,6 +468,10 @@ def main() -> None:
         run("nft", "delete", "table", "inet", f"mcpgw_uid_{person.pw_uid}", **quiet)
         if policy.exists():
             run("apparmor_parser", "-R", str(policy), **quiet)
+            # 파일이 남으면 재부팅 때 프로필이 다시 올라온다.
+            policy.unlink(missing_ok=True)
+        # 원복이 끝난 실행기·원래 셸 기록은 남길 이유가 없다(남으면 간편 모드 PC에 격리 잔재로 보인다).
+        shutil.rmtree(folder, ignore_errors=True)
         print("해당 계정의 로그인 셸·프로필·전용 방화벽 테이블을 원복했습니다")
         return
     groups = {grp.getgrgid(g).gr_name for g in os.getgrouplist(args.user, person.pw_gid)}

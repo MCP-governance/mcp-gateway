@@ -19,7 +19,19 @@ from .agent_contract import CONSOLE_SCOPE, StrictModel, authenticated_user, toke
 
 router = APIRouter()
 REVIEW_DAYS = int(os.getenv("CONNECTOR_REVIEW_DAYS", "14"))
-BLOCKING = {"pending", "denied", "expired", "default"}
+BLOCKING = {"pending", "denied", "expired"}
+# 하네스가 기본으로 가진 기능과 하네스 계정이 붙이는 커넥터(claude.ai 커넥터·ChatGPT 앱)는 기본 승인이고 관리자가 막는다.
+# 플러그인과 직원이 직접 붙인 서버는 지금처럼 검토를 받는다(D-298).
+DEFAULT_KINDS = {"feature", "connector", "app"}
+# 보고가 없어도 콘솔에서 막을 수 있는 항목. 키는 key_of와 같은 형식이다.
+FEATURES = (("claude", "WebFetch", "웹 가져오기"), ("claude", "WebSearch", "웹 검색"), ("claude", "chrome", "브라우저 연동"),
+            ("codex", "web_search", "웹 검색"), ("codex", "browser_use", "브라우저 조작"),
+            ("codex", "computer_use", "컴퓨터 조작"), ("codex", "image_generation", "이미지 생성"),
+            ("codex", "memories", "메모리"))
+CONNECTOR_SWITCHES = (("claude", "claude:connectors:all", "claude.ai 커넥터 전체"),
+                      ("codex", "codex:feature:apps", "ChatGPT 앱 전체"))
+CATALOG = {**{f"{h}:feature:{n}": {"harness": h, "kind": "feature", "name": n, "label": label} for h, n, label in FEATURES},
+           **{k: {"harness": h, "kind": "connector", "name": k, "label": label} for h, k, label in CONNECTOR_SWITCHES}}
 
 
 def host_of(target: str) -> str:
@@ -32,7 +44,7 @@ def key_of(harness: str, kind: str, name: str, target: str) -> str:
     if kind == "app":
         return f"codex:app:{target or name}"
     if kind == "feature":
-        return f"codex:feature:{name}"
+        return f"{harness}:feature:{name}"
     host = host_of(target)
     return f"{harness}:host:{host}" if host else f"{harness}:stdio:{name}"
 
@@ -43,10 +55,12 @@ def first_party(kind: str, target: str) -> bool:
             or (kind == "connector" and (host == "anthropic.com" or host.endswith(".anthropic.com"))))
 
 
-def state_of(decision: str | None, vendor_own: bool, first_seen: datetime, now: datetime) -> str:
+def state_of(decision: str | None, default: bool, first_seen: datetime, now: datetime) -> str:
+    """default: 하네스 기본 기능·기본 커넥터 — 결정이 없으면 기본 승인이다(관리자가 막을 수 있다)."""
     if decision:
         return decision
-    # 출처는 표시용이다. 벤더 접두어와 기본 기능은 권한의 근거가 아니다.
+    if default:
+        return "default"
     if REVIEW_DAYS and now - first_seen > timedelta(days=REVIEW_DAYS):
         return "expired"
     return "pending"
@@ -129,7 +143,9 @@ async def groups() -> list[dict]:
     for g in rows:
         g["harness"] = g["key"].split(":", 1)[0]
         g["vendor_own"] = any(first_party(k, g["target"]) for k in g["kinds"])
-        g["state"] = state_of(g["decision"], g["vendor_own"], g["first_seen"], now)
+        # 같은 호스트로 묶인 플러그인이 섞이면 기본 승인에서 뺀다(플러그인은 검토 대상).
+        g["builtin"] = all(k in DEFAULT_KINDS for k in g["kinds"])
+        g["state"] = state_of(g["decision"], g["builtin"], g["first_seen"], now)
         g["due"] = (g["first_seen"] + timedelta(days=REVIEW_DAYS)).isoformat() if REVIEW_DAYS else None
         g["enforcement"] = "unverified"  # 보고에서 사라져도 실행·송신 차단을 입증하지 못한다.
     return rows
@@ -204,26 +220,82 @@ async def list_connectors(summary: bool = False, authorization: str | None = Hea
         g["violation"] = g["state"] in BLOCKING and g["active_pcs"] > 0
     rows.sort(key=lambda g: ({"pending": 0, "expired": 1, "denied": 2, "default": 3, "approved": 4}[g["state"]],
                              -g["active_pcs"], g["key"]))
-    return {"items": rows, "review_days": REVIEW_DAYS, "summary": counts | {"violations": sum(g["violation"] for g in rows)}}
+    return {"items": rows, "builtins": await builtins(rows), "review_days": REVIEW_DAYS,
+            "summary": counts | {"violations": sum(g["violation"] for g in rows)}}
+
+
+async def builtins(rows: list[dict] | None = None) -> list[dict]:
+    """기본 기능·기본 커넥터 스위치(보고와 무관하게 늘 보인다). 상태는 기본 승인 또는 차단뿐이다."""
+    decided = {d["item_key"]: d for d in await db.fetch_all(
+        "SELECT item_key, decision, note, decided_by, decided_at FROM harness_decisions WHERE item_key = ANY(%s)", (list(CATALOG),))}
+    used = {g["key"]: g for g in rows or []}
+    out = []
+    for key, item in CATALOG.items():
+        d = decided.get(key) or {}
+        out.append({**item, "key": key, "state": "denied" if d.get("decision") == "denied" else "default",
+                    "note": d.get("note") or "", "decided_by": d.get("decided_by"), "decided_at": d.get("decided_at"),
+                    "active_pcs": (used.get(key) or {}).get("active_pcs", 0)})
+    return out
+
+
+def controls_from(denied: set[str], names: dict[str, list[str]] | None = None) -> dict:
+    """관리형 설정에 쓰는 차단 목록. denied: 차단 결정 키, names: 키별로 보고된 이름.
+    관리자가 막은 호스트·앱은 같은 키로 무엇이 더 보고되든(플러그인 등) 그대로 막힌다."""
+    claude_servers, apps = [], []
+    for key in sorted(denied - set(CATALOG)):
+        harness, how, value = key.split(":", 2)
+        if harness == "claude" and how == "host":
+            # 호스트로 막는다(이름은 바뀔 수 있다). 모든 스킴·포트.
+            claude_servers.append({"serverUrl": f"*://{value}:*/*"})
+            claude_servers += [{"serverName": n} for n in sorted((names or {}).get(key, [])) if n.startswith("claude.ai ")]
+        elif harness == "codex" and how == "app":
+            apps.append(value)
+    if "claude:feature:chrome" in denied:
+        claude_servers.append({"serverName": "claude-in-chrome"})
+    return {"claude_tools_denied": [n for n in ("WebFetch", "WebSearch") if f"claude:feature:{n}" in denied],
+            "claude_chrome": "claude:feature:chrome" not in denied,
+            "claude_connectors": "claude:connectors:all" not in denied,
+            "claude_servers_denied": claude_servers,
+            "codex_features_off": [n for h, n, _ in FEATURES if h == "codex" and f"codex:feature:{n}" in denied],
+            "codex_apps": "codex:feature:apps" not in denied,
+            "codex_apps_disabled": sorted(a for a in apps if a.replace("_", "").replace("-", "").isalnum())}
+
+
+async def managed_controls(connection=None) -> dict:
+    query = """SELECT d.item_key AS key, array_agg(DISTINCT i.name) FILTER (WHERE i.name IS NOT NULL) AS names
+                 FROM harness_decisions d LEFT JOIN harness_items i USING (item_key)
+                WHERE d.decision='denied' GROUP BY d.item_key"""
+    rows = await db.fetch_all(query, connection=connection)
+    return controls_from({r["key"] for r in rows}, {r["key"]: r["names"] or [] for r in rows})
 
 
 @router.put("/api/connectors/decision")
 async def decide_connector(request: Decision, authorization: str | None = Header(default=None)):
     user = await authenticated_user(authorization)
     require_admin(user)
-    if not await db.fetch_one("SELECT 1 FROM harness_items WHERE item_key=%s LIMIT 1", (request.key,)):
+    if request.key not in CATALOG and not await db.fetch_one("SELECT 1 FROM harness_items WHERE item_key=%s LIMIT 1", (request.key,)):
         raise HTTPException(404, "보고된 적 없는 항목입니다.")
-    if request.decision == "reset":
-        await db.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
-        return {"message": "결정을 취소했습니다."}
     if request.decision == "denied" and len(request.note.strip()) < 2:
-        raise HTTPException(422, "거부 사유를 입력하세요.")
-    await db.execute(
-        """INSERT INTO harness_decisions(item_key, decision, note, decided_by) VALUES (%s,%s,%s,%s)
-           ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
-             decided_by=EXCLUDED.decided_by, decided_at=now()""",
-        (request.key, request.decision, request.note.strip(), user["principal"]))
-    return {"message": "승인했습니다." if request.decision == "approved" else "거부했습니다."}
+        raise HTTPException(422, "차단 사유를 입력하세요.")
+    if request.decision == "approved" and request.key in CATALOG:
+        raise HTTPException(422, "기본 승인 항목입니다. 차단을 해제하려면 결정을 취소하세요.")
+    async with db.transaction() as connection:
+        before = await (await connection.execute("SELECT decision FROM harness_decisions WHERE item_key=%s FOR UPDATE",
+                                                 (request.key,))).fetchone()
+        if request.decision == "reset":
+            await connection.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
+        else:
+            await connection.execute(
+                """INSERT INTO harness_decisions(item_key, decision, note, decided_by) VALUES (%s,%s,%s,%s)
+                   ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
+                     decided_by=EXCLUDED.decided_by, decided_at=now()""",
+                (request.key, request.decision, request.note.strip(), user["principal"]))
+        # Only a change to what the endpoints must hold opens the grace for heartbeats rendered just before it (D-298).
+        if ((before or {}).get("decision") == "denied") != (request.decision == "denied"):
+            await connection.execute("UPDATE endpoint_settings SET controls_changed_at=now() WHERE id=1")
+    if request.decision == "reset":
+        return {"message": "결정을 취소했습니다."}
+    return {"message": "승인했습니다." if request.decision == "approved" else "차단했습니다."}
 
 
 @router.get("/api/connectors/policy")
@@ -241,11 +313,23 @@ if __name__ == "__main__":
     assert key_of("claude", "plugin", "plugin:pdf-viewer:pdf", "stdio") == "claude:stdio:plugin:pdf-viewer:pdf"
     assert key_of("codex", "app", "Notion", "asdk_app_1") == "codex:app:asdk_app_1"
     assert key_of("codex", "feature", "web_search", "cached") == "codex:feature:web_search"
+    assert key_of("claude", "feature", "WebFetch", "") == "claude:feature:WebFetch" and "claude:feature:WebFetch" in CATALOG
+    assert state_of(None, True, old_ := now - timedelta(days=REVIEW_DAYS + 1), now) == "default"  # 기본 승인은 기한이 없다
+    assert "default" not in BLOCKING
+    c = controls_from({"claude:feature:WebSearch", "codex:feature:browser_use", "claude:connectors:all",
+                       "claude:host:mcp.notion.com", "codex:app:asdk_app_1"},
+                      {"claude:host:mcp.notion.com": ["claude.ai Notion", "plugin:engineering:notion"]})
+    assert c["claude_tools_denied"] == ["WebSearch"] and c["claude_connectors"] is False and c["codex_apps"] is True
+    # 같은 호스트로 플러그인이 보고돼도 관리자의 호스트 차단은 그대로다.
+    assert c["claude_servers_denied"] == [{"serverUrl": "*://mcp.notion.com:*/*"}, {"serverName": "claude.ai Notion"}]
+    assert c["claude_chrome"] is True and {"serverName": "claude-in-chrome"} in controls_from({"claude:feature:chrome"})["claude_servers_denied"]
+    assert c["codex_features_off"] == ["browser_use"] and c["codex_apps_disabled"] == ["asdk_app_1"]
+    assert controls_from(set(), [])["claude_tools_denied"] == [] and controls_from(set(), [])["claude_connectors"] is True
     assert first_party("connector", "https://api.anthropic.com") and not first_party("connector", "https://evil-anthropic.com")
     assert first_party("app", "connector_openai_hotline") and not first_party("app", "asdk_app_1")
     old = now - timedelta(days=REVIEW_DAYS + 1)
     assert state_of(None, False, now, now) == "pending" and state_of(None, False, old, now) == "expired"
-    assert state_of(None, True, now, now) == "pending" and state_of(None, True, old, now) == "expired"
+    assert state_of(None, True, now, now) == "default" and state_of(None, True, old, now) == "default"
     assert state_of("approved", False, old, now) == "approved"
     assert HarnessItem(harness="claude", kind="server", name="redaction",
                        target="https://user:secret@example.com:443/key-secret?token=secret").target == "https://example.com:443"

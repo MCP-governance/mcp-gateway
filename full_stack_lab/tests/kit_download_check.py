@@ -136,7 +136,10 @@ class KitDownloadCheck(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.headers['Content-Disposition'], 'attachment; filename="mcp-managed-kit-linux.zip"')
         self.assertEqual(result.headers['Cache-Control'], 'no-store')
         with zipfile.ZipFile(io.BytesIO(result.body)) as archive:
-            self.assertEqual(json.loads(archive.read('enrollment.json'))['owner'], 'staff')
+            bundle = json.loads(archive.read('enrollment.json'))
+            self.assertEqual(bundle['gateway_url'], 'https://gateway.invalid')
+            self.assertTrue({'owner', 'enrollment_token', 'device_key', 'expires_at'}.isdisjoint(bundle))
+        self.enrollment.assert_not_awaited()
         await self.denied(Request(ticket))
 
     async def test_all_output_scope_fields_are_bound_without_consuming_on_mismatch(self):
@@ -171,7 +174,7 @@ class KitDownloadCheck(unittest.IsolatedAsyncioTestCase):
         await self.denied(request, issue_ticket=True)
         result = await self.download(Request(), authorization='Bearer console')
         self.assertEqual(result.headers['Cache-Control'], 'no-store')
-        self.enrollment.assert_awaited_once()
+        self.enrollment.assert_not_awaited()
 
     async def test_windows_oneclick_and_zip_keep_filenames(self):
         for packaging, filename in (('oneclick', 'mcp-managed-setup-windows.cmd'), ('zip', 'mcp-managed-kit-windows.zip')):

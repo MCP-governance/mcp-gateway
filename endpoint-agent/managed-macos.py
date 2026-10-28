@@ -27,7 +27,7 @@ FILES = {'managed-mcp.json': Path('/Library/Application Support/ClaudeCode/manag
          'managed-settings.json': Path('/Library/Application Support/ClaudeCode/managed-settings.json'),
          'requirements.toml': Path('/etc/codex/requirements.toml'),
          'managed_config.toml': Path('/etc/codex/managed_config.toml')}
-SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py', 'kit_screen.py')
+SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py', 'kit_screen.py', 'kit_access.py')
 ROLLBACK_ORDER = ('launchd', 'shims', 'wrappers', 'pf', 'settings', 'programs', 'account')
 
 
@@ -295,7 +295,8 @@ def install(employee, enrollment):
         config, policy, enrolled = core.enroll(bundle, account, uid, platform='macos')
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         core.diagnostic('enroll', exc, credentials)
-        raise ValueError('연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.') from None
+        raise ValueError('연결 등록·정책 수신에 실패했습니다. ' + core.preparation_error(exc)
+                         + ' · 기존 설치는 유지됩니다.') from None
     credentials.append(config['device_key'])
     core.diagnostic('prepared', None)
     rollback(account)
@@ -323,10 +324,11 @@ def install(employee, enrollment):
         for name in SOURCES:
             core.private_write(PROGRAMS / name, (HERE / name).read_text(encoding='utf-8'))
             (PROGRAMS / name).chmod(0o755)
-        boot.place_harnesses(employee)
+        placed = boot.place_harnesses(employee)
         config.update(endpoint_id=enrolled['endpoint_id'], username=account, uid=uid, employee=employee,
                       socket='/var/run/mcpgw-' + account + '.sock', config_path=str(folder / 'config.json'),
-                      pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'))
+                      pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'),
+                      harness_paths=core.harness_paths({name: item['path'] for name, item in placed.items()}))
         save(core, folder / 'config.json', config)
         config.update({key: policy[key] for key in ('gateway_ips', 'gateway_port', 'policy_hash')})
         config.update(proxy_port=policy.get('proxy_port'), proxy_environment=policy.get('proxy_environment', {}))
@@ -347,10 +349,13 @@ def install(employee, enrollment):
         plist = LAUNCHD / ('org.mcpgw.managed.' + account + '.plist')
         plist.write_bytes(daemon_plist(account, folder / 'config.json', sys.executable))
         plist.chmod(0o644)
+        started = core.time.time()
         run('/bin/launchctl', 'bootstrap', 'system', str(plist))
-        enrollment.unlink()
+        if bundle.get('enrollment_token'):
+            enrollment.unlink()
         core.diagnostic('installed', None)
-        return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': 'pending-organization-activation'}
+        summary = core.kit_screen.wait_summary(core.status_path(account, 'json'), since=started)
+        return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': summary.get('state', 'unknown')}
     except BaseException as exc:
         core.diagnostic('install', exc, credentials)
         rollback(account)
@@ -369,8 +374,19 @@ def main():
         if args.remove:
             rollback(account_name(args.user))
         else:
-            print(json.dumps(install(args.user, args.enrollment)))
-            print('연결 상태: 활성화 대기\n실행: 새 터미널에서 codex 또는 claude')
+            if not args.enrollment.is_file():
+                account = account_name(args.user)
+                if (STATE / account / 'config.json').is_file():
+                    print('이미 설치됨 · 상태 확인: cat ' + shlex.quote(str(PROGRAMS / ('status-' + account + '.txt')))
+                          + ' · 새로 설치하려면 콘솔에서 새 키트를 받으세요.')
+                    return
+                parser.exit(1, '등록 파일 없음 · 콘솔에서 새 키트를 받으세요.\n')
+            result = install(args.user, args.enrollment)
+            print(json.dumps(result))
+            core = core_module()
+            print('연결 상태: ' + core.kit_screen.STATES.get(result['state'], '확인 필요'))
+            print('실행: 새 터미널에서 codex 또는 claude' if result['state'] == 'active'
+                  else '상태 확인: 콘솔의 엔드포인트')
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         parser.exit(1, '설치/제거 실패: ' + type(exc).__name__ + '\n')
 

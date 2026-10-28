@@ -36,11 +36,12 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 
 ## 내부 Git(Gitea)
 
-검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea `mcp` 조직으로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 승인이 완료되며 내부 저장소 주소가 신청 목록과 검색 결과에 표시됩니다. Console 왼쪽 메뉴 **바로가기 → 내부 저장소**는 개인 홈이 아니라 조직의 저장소 목록(`https://<Tailscale IP>/git/mcp`)을 엽니다.
+검증을 통과한 공개 GitHub 저장소는 관리자가 승인할 때 같은 솔루션의 Gitea `mcp` 조직으로 가져옵니다. 가져온 기본 브랜치 HEAD가 검증 커밋과 같을 때만 승인이 완료되며 내부 저장소 주소가 관리자의 신청 목록에 표시됩니다. 관리자 Console 왼쪽 메뉴 **바로가기 → 사내 저장소**는 개인 홈이 아니라 조직의 저장소 목록(`https://<Tailscale IP>/git/mcp`)을 엽니다.
 
-- 로그인은 솔루션 계정 하나입니다. Console에 로그인한 브라우저는 그대로 Gitea에 들어가고, 아니면 로그인 화면을 거쳐 돌아옵니다. 계정을 중지하면 Gitea도 다음 요청부터 막힙니다.
-- `root`를 포함한 솔루션 계정은 `mcp` 조직의 전체 저장소 읽기 팀에 동기화됩니다. 새 계정은 가입 승인 즉시 가입하며, 기존 계정은 서비스 기동 때 보정합니다. 관리자 역할은 Gitea 관리자입니다. 풀 리퀘스트는 끕니다. 고친 코드는 도입 신청을 다시 거칩니다.
-- 클론은 같은 ID/PW로 합니다: `git -c http.sslCAInfo=/path/to/root.crt clone https://<Tailscale IP>/git/mcp/<저장소>.git`. Gitea 관리 자격은 솔루션 내부에만 둡니다.
+- 직원은 바로가기 **사내 저장소**로 코드·이슈를 읽기만 합니다. 내려받기·클론·쓰기는 막혀 승인된 MCP 화면으로 돌아갑니다(D-262). 관리자는 전체를 씁니다. 관리자는 솔루션 계정 하나로 로그인하고, Console에 로그인한 브라우저는 그대로 Gitea에 들어갑니다. 계정을 중지하면 Gitea도 다음 요청부터 막힙니다.
+- 직원의 git 명령은 403입니다. 소스는 그 화면의 **소스 받기**로 승인된 커밋만 받으며, 받을 때마다 승인 상태·기한을 다시 확인하고 다운로드 기록을 남깁니다.
+- 관리자 역할은 Gitea 관리자이며 `mcp` 조직의 전체 저장소 읽기 팀에 동기화됩니다. 풀 리퀘스트는 끕니다. 고친 코드는 도입 신청을 다시 거칩니다.
+- 관리자 클론은 같은 ID/PW로 합니다: `git -c http.sslCAInfo=/path/to/root.crt clone https://<Tailscale IP>/git/mcp/<저장소>.git`. Gitea 관리 자격은 솔루션 내부에만 둡니다.
 
 ## 승인한 소스 MCP 실행
 
@@ -72,12 +73,12 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 관리 계정 결정, 관리형 설정·프록시 구성, 모델 로그인까지 설치기가 합니다. 이미 설치돼 있으면 같은 파일이 재설치·복구 경로입니다.
 
 ```bash
-unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
 
 Windows는 `mcp-managed-kit-windows.zip`을 풀고 `install.cmd`를 두 번 눌러 실행합니다. Python 3.10 이상이 모든 사용자용
 (Program Files)으로 설치돼 있어야 합니다. Linux는 Python 3.10 이상(설치기와 `/usr/bin/python3` 모두)과 systemd가 필요하고, gcc·nftables·AppArmor 도구·curl·openssl과 로컬 MCP용 컨테이너 엔진은 설치기가 한 번에 깝니다(엔진을 못 받아도 원격 MCP 설치는 계속, D-225).
-활성화된 뒤에는 승인된 로컬 MCP의 문서 폴더와 이미지를 첫 호출 전에 백그라운드로 준비하고, `mcpgw-status`가 준비 현황(n/m)과 직원 문서 폴더를 보입니다(D-226).
+활성화된 뒤에는 승인된 로컬 MCP의 문서 폴더와 이미지를 첫 호출 전에 백그라운드로 준비하고, `mint`가 준비 현황(n/m)과 직원 문서 폴더를 보입니다(D-226).
 
 직원 계정이 **관리 권한이 있는 계정**이면 자기가 지울 수 있는 규칙으로 자기를 통제할 수 없으므로, 설치기가 관리 계정을 따로 만듭니다.
 Linux는 평소 계정에서 `codex`·`claude`를 그대로 치면 그 계정의 로그인 셸을 거쳐 실행되고(AppArmor·방화벽 동일 적용),
@@ -154,7 +155,7 @@ Caddy는 **Tailscale IP의 443에 HTTPS**를 게시합니다. `tls internal`의 
 클라이언트도 원격 HTTP URL을 거부하므로 인증 토큰을 보내기 전에 멈춥니다.
 기본 loopback 실습의 내부 HTTP는 현장 게시와 별개입니다.
 
-브라우저 콘솔은 같은 Tailscale IP의 `http://…:8000`으로도 엽니다(D-129). 이 포트는 콘솔·내부 Git만 제공하고 하네스·키트·장치 보고 경로는 421로 거절합니다.
+브라우저 콘솔도 같은 `https://<Tailscale IP>`로 엽니다. `http://…:8000`은 콘솔을 제공하지 않고 같은 경로의 HTTPS로 301 리디렉트합니다(D-262, D-129 대체). 사설 CA 경고 없이 열려면 아래 `tailscale`·`file` 방식을 씁니다.
 
 #### 콘솔 인증서 방식
 
@@ -178,7 +179,7 @@ Caddy는 **Tailscale IP의 443에 HTTPS**를 게시합니다. `tls internal`의 
 브라우저는 발급 CA를 신뢰해야 합니다. 인증서 갱신 후 `field up`으로 다시 읽힙니다. 키 파일은 저장소 밖에 보관합니다.
 
 두 방식 모두 `https://<FIELD_CONSOLE_NAME>/`으로 콘솔·다운로드를 제공합니다. 호스트의 게시 주소는 계속
-자동 검색한 Tailscale IP 하나이며, 기존 `:8000` 콘솔도 유지합니다. 하네스 경로는 이름 기반 콘솔에서 421로
+자동 검색한 Tailscale IP 하나이며, `:8000`은 이름 기반 콘솔로 리디렉트합니다. 하네스 경로는 이름 기반 콘솔에서 421로
 거절하며, 키트의 주소·`IDP_ISSUER`·MCP 경로는 기존 IP 기반 `:443`과 사설 CA를 그대로 사용합니다.
 `FIELD_PUBLIC_NAME`이 콘솔 이름과 같으면 그 이름은 콘솔 사이트에만 배정됩니다. 하네스는 IP 주소를 사용합니다.
 

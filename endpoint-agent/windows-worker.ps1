@@ -169,7 +169,7 @@ try {
     catch [Threading.AbandonedMutexException] { $ownsMutex = $true }
     if (-not $ownsMutex) { throw '다른 설치 작업 진행 중' }
     Assert-EndpointTree $root
-    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'kit_screen.py', 'install.py',
+    $codeFiles = @('agent.py', 'managed-windows.py', 'os-observer-windows.py', 'offline_buffer.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py',
         'runtime-check.py', 'setup.ps1', 'tray.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1')
     if ($managed) {
         # Registration and removal work even if the old runtime is missing; nothing installed is touched here.
@@ -197,11 +197,13 @@ try {
             Stop-EndpointTask ("MCPGatewayEndpoint-" + $settings.endpoint_id)
         }
         Stop-EndpointTask ("MCPGatewayTray-" + $settings.sid)
+        Stop-EndpointLauncher $root
         $profile = (Get-ItemProperty -LiteralPath ("HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\" + $settings.sid)).ProfileImagePath
         $trayWork = [IO.Path]::GetFullPath((Join-Path $profile ("AppData\Local\MCPGatewaySetup\tray-" + $settings.sid)))
         $profileRoot = [IO.Path]::GetFullPath($profile).TrimEnd('\') + '\'
         if (-not $trayWork.StartsWith($profileRoot, [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         Assert-EndpointTree $trayWork
+        Remove-EndpointDesktopShortcut $trayWork $profile $root
         foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log', 'lang.txt', 'probe.json', 'probe.json.tmp', 'probe.err', 'show-status')) {
             $item = Join-Path $trayWork $name
             if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
@@ -221,7 +223,7 @@ try {
                 $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'python.zip'))
                 try { $ownedFiles = $codeFiles + @($archive.Entries | ForEach-Object { 'python\' + $_.FullName }) }
                 finally { $archive.Dispose() }
-                $ownedFiles += @('config.json', 'status.json', 'status.tmp', 'tray-settings.json',
+                $ownedFiles += @('MCPGateway.exe', 'MCPGateway.ico', 'config.json', 'status.json', 'status.tmp', 'tray-settings.json',
                     'harness\codex.exe', 'harness\codex-code-mode-host.exe', 'harness\claude.exe')
                 Remove-EndpointFiles $root $ownedFiles
             }
@@ -273,7 +275,8 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'python.zip'))
     try { $runtimeFiles = @($archive.Entries | ForEach-Object { 'python\' + $_.FullName }) } finally { $archive.Dispose() }
-    $owned = @{ product = 'MCPGatewayEndpoint'; files = @($codeFiles) + $runtimeFiles + @('config.json', 'status.json', 'status.tmp', 'tray-settings.json') }
+    $launcherFiles = Install-EndpointLauncher $root
+    $owned = @{ product = 'MCPGatewayEndpoint'; files = @($codeFiles) + $launcherFiles + $runtimeFiles + @('config.json', 'status.json', 'status.tmp', 'tray-settings.json') }
     $manifestPath = Join-Path $root '.endpoint-kit'
     [IO.File]::WriteAllText($manifestPath, ($owned | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     Set-EndpointAcl $root $sid -Managed:$managed
@@ -351,10 +354,15 @@ try {
     # Simple mode: the employee is signed in now, so the tray starts in their session at once (also when UAC ran as
     # another administrator). A companion account has no session until it signs in.
     if ($person -eq $sid -or ($managed -and -not $isolated)) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
+    $management = '확인 필요'
+    if ($managed) {
+        $management = @{ active='활성'; pending='활성화 대기'; quarantined='격리됨'; revoked='철회됨' }[$summary.state]
+        if (-not $management) { $management = '확인 필요' }
+    }
     Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed -and -not $isolated) {
-        "지금 계정 그대로 사용`r`n연결 확인`t트레이 아이콘 > 연결 확인`r`n모델 로그인`t트레이 아이콘 > 모델 로그인"
+        "연결 상태`t$management`r`n지금 계정 그대로 사용`r`n연결 확인`t트레이 아이콘 > 연결 확인`r`n모델 로그인`t트레이 아이콘 > 모델 로그인"
     } elseif ($managed) {
-        "조직 활성화 대기`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
+        "연결 상태`t$management`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
     } else { '트레이 실행' })
 } catch {
     $known = @('경로 형식 오류', '설치 폴더 권한 적용 실패', '설치 경로 연결 파일 확인 필요', '게이트웨이 주소 형식 오류',

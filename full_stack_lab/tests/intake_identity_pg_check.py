@@ -383,7 +383,8 @@ async def minimal_set(console: httpx.AsyncClient) -> None:
     check("[mcp_servers.notes2]" in mine["files"]["managed_config.toml"] and "filesystem" not in mine["files"]["managed_config.toml"]
           and "notes2" not in other["files"]["managed_config.toml"], "Codex 설정")
     route = os.environ["IDP_ISSUER"].rstrip("/") + "/mcp/notes2/"
-    check(__import__("json").loads(mine["files"]["managed-settings.json"])["allowedMcpServers"] == [{"serverUrl": route}], "허용 서버 URL")
+    # claude.ai 커넥터가 기본 승인이면 허용 목록 끝에 https 전체가 붙는다(D-298); 이 사용자의 게이트웨이 서버는 하나다.
+    check(__import__("json").loads(mine["files"]["managed-settings.json"])["allowedMcpServers"] in ([{"serverUrl": route}], [{"serverUrl": route}, {"serverUrl": "https://*/*"}]), "허용 서버 URL")
     ok("렌더링된 Claude·Codex 설정에는 그 사용자에게 승인된 서버만 들어간다")
     await core.deregister_server("notes2", "wbsb-admin-a")
     gone = await endpoint_plane.managed_policy(device("wbsb-emp"))

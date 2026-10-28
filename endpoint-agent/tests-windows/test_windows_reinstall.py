@@ -40,6 +40,32 @@ function Import-TestFunction($file, $name) {
                               env=dict(os.environ, WINKIT_ROOT=str(ROOT), WINKIT_TEMP=str(self.root), WINKIT_PYTHON=sys.executable))
         self.assertEqual(done.returncode, 0, done.stderr.decode(errors="replace"))
 
+    def test_launcher_hosts_tray_in_its_own_process_and_shortcut_is_ours_only(self):
+        self.run_ps(r"""
+Set-Content -LiteralPath (Join-Path $work 'tray.ps1') -Encoding UTF8 -Value @'
+param([string]$SettingsPath, [switch]$Show)
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'ran.txt'), "$SettingsPath|$Show|$([Threading.Thread]::CurrentThread.ApartmentState)|$([Diagnostics.Process]::GetCurrentProcess().ProcessName)")
+'@
+$files = Install-EndpointLauncher $work
+if (($files -join ',') -ne 'MCPGateway.exe,MCPGateway.ico') { throw "launcher not built: $files" }
+$exe = Join-Path $work 'MCPGateway.exe'
+Start-Process -FilePath $exe -ArgumentList '-SettingsPath "C:\dir with space\s.json" -Show' -Wait
+$ran = Get-Content -LiteralPath (Join-Path $work 'ran.txt') -Raw
+if ($ran -ne 'C:\dir with space\s.json|True|STA|MCPGateway') { throw "hosted run: $ran" }
+Add-Type -AssemblyName System.Drawing
+if ((Set-EndpointAppIdentity).Width -ne 32) { throw 'icon' }
+$profile = Join-Path $work 'profile'
+New-Item -ItemType Directory -Path $profile | Out-Null
+$shell = New-Object -ComObject WScript.Shell
+foreach ($case in @(@('ours.lnk', $exe, $false), @('other.lnk', $env:ComSpec, $true))) {
+    $path = Join-Path $profile $case[0]
+    $link = $shell.CreateShortcut($path); $link.TargetPath = $case[1]; $link.Save()
+    [IO.File]::WriteAllText((Join-Path $work 'shortcut.txt'), $path)
+    Remove-EndpointDesktopShortcut $work $profile $work
+    if ((Test-Path -LiteralPath $path) -ne $case[2] -or (Test-Path -LiteralPath (Join-Path $work 'shortcut.txt'))) { throw "shortcut $($case[0])" }
+}
+""")
+
     def test_fresh_and_legacy_parent_allow_employee_without_opening_private_children(self):
         self.run_ps(r"""
 $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -175,7 +201,7 @@ $keys=@('connection','management','way','servers','harness','reported','model','
 $captions=@{};$values=@{}
 foreach ($key in $keys) { $captions[$key]=[pscustomobject]@{Text=''}; $values[$key]=[pscustomobject]@{Text=''} }
 $script:window=[pscustomobject]@{IsDisposed=$false;Text='';Tag=@{captions=$captions;values=$values;buttons=@()}}
-$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');harnesses=@{claude='2.1.302'}}
+$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');server_names=@('문서 검색');harnesses=@{claude='2.1.302'}}
 $script:healthResult=Get-EndpointText 'gateway_ok' 'ko'
 $script:probe=@{model=@{detail='하네스 없음'};connection=@{initialized=@();waiting='pending'}}
 $script:label='connected'; $simple=$true; $script:updated='—'
@@ -186,9 +212,12 @@ foreach ($lang in @('en','ko','en')) {
     if ($values.gateway.Text -ne (Get-EndpointText 'gateway_ok' $lang)) { throw 'cached gateway language stale' }
     if ($values.model.Text -ne (Get-EndpointText 'no_harness_probe' $lang)) { throw 'model language stale' }
     if ($values.tools.Text -ne (Get-EndpointText 'waiting' $lang)) { throw 'tools language stale' }
-    if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'server id guessed' }
+    if ($values.servers.Text -ne '1 · 문서 검색') { throw 'server id shown instead of display name' }
 }
 if ($script:snapshot.management -ne '활성') { throw 'display translation mutated status' }
+$script:snapshot.Remove('server_names'); Update-EndpointWindow
+if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'older snapshot lost server id' }
+$script:snapshot.server_names=@('문서 검색')
 foreach ($state in @('active','pending','quarantined','revoked','removed','unknown')) {
     $script:snapshot.state=$state
     Update-EndpointWindow

@@ -1,4 +1,4 @@
-"""MINT 구성도 10-23판 — 요청 흐름 순서 배치, 양방향 상호작용, 오픈소스 목적, 한/영.
+"""MINT 구성도 10-28판(10-23판 배치 유지) — 요청 흐름 순서 배치, 양방향 상호작용, 오픈소스 목적, 한/영.
 
 사용: python build_architecture.py [MMDDHHmm]
 출력: export/ 아래 구성도·역할 설명 SVG·PNG(한/영)와 draw.io(한/영).
@@ -29,7 +29,9 @@ TEAL = "#1E9E9A"
 # 상태 표지: 키 → (한국어, 영어, 색)
 STATUS = {"test": ("시험", "Pilot", "#7B3FA0"), "int": ("연동 시험", "Integration pilot", "#7B3FA0"),
           "off": ("기본 꺼짐", "Off by default", "#8A94A3"), "unset": ("미설정", "Not configured", "#C0392B"),
-          "os": ("Windows·macOS 시험", "Windows/macOS pilot", "#7B3FA0")}
+          "os": ("Windows·macOS 시험", "Windows/macOS pilot", "#7B3FA0"),
+          "iso": ("격리 모드", "Isolated mode", "#8A94A3")}
+VENDOR = "#0F9D84"  # 기본 기능·계정 커넥터: 게이트웨이 밖 벤더 직접(관리형 설정으로 차단)
 
 
 class Scene2(Scene):
@@ -52,7 +54,7 @@ def build(lang="ko"):
     # ── 영역: 왼쪽에서 오른쪽으로 요청이 지나는 순서 ─────────────────────────
     z("emp", 20, 80, 330, 790, T("직원 PC", "Employee PC"), C_EMP, icon_key="flat-laptop", note=T("엔드포인트", "endpoint"))
     z("usr", 40, 122, 290, 118, T("사용자 계정", "User account"), C_EMP, sub=True, lab_at="tl")
-    z("kit", 40, 258, 290, 596, T("엔드포인트 키트 · 관리 계정", "Endpoint kit · managed account"), C_EMP, sub=True, lab_at="tl")
+    z("kit", 40, 258, 290, 596, T("엔드포인트 키트 · 간편 모드(기본)", "Endpoint kit · simple mode (default)"), C_EMP, sub=True, lab_at="tl")
     z("hn", 50, 290, 270, 222, T("하네스 (AI 코딩 에이전트)", "Harness (AI coding agents)"), C_EMP, sub=True, lab_at="tl")
     z("loc", 50, 662, 270, 180, T("로컬 MCP 격리 실행", "Local MCP isolation"), C_EMP, sub=True, lab_at="tl")
     z("adm", 20, 890, 330, 160, T("관리자 PC", "Admin PC"), C_ADM, icon_key="flat-desktop")
@@ -83,9 +85,9 @@ def build(lang="ko"):
     n("codex", "Codex CLI", "", "logo-codex", 250, 345, 46)
     n("gemini", "Gemini CLI", "", "logo-gemini", 110, 440, 46, "test")
     n("opencode", "OpenCode", "", "logo-opencode", 250, 440, 46, "test")
-    n("apparmor", "AppArmor", T("실행·파일 제한", "Exec & file limits"), "logo-apparmor", 85, 572, 40)
-    n("nft", "nftables", T("통신 경로 강제", "Forces net path"), "logo-nftables", 175, 572, 40)
-    n("epprog", T("엔드포인트\n프로그램", "Endpoint\nagent"), T("정책 적용·보고", "Enforce · report"), "logo-ubuntu", 268, 572, 40, "os",
+    n("apparmor", "AppArmor", T("실행·파일 제한", "Exec & file limits"), "logo-apparmor", 85, 572, 40, "iso")
+    n("nft", "nftables", T("통신 경로 강제", "Forces net path"), "logo-nftables", 175, 572, 40, "iso")
+    n("epprog", T("엔드포인트\n프로그램", "Endpoint\nagent"), T("로그인·관리형 설정·상태", "Sign-in · settings · status"), "logo-ubuntu", 268, 572, 40, "os",
       icon2="logo-windows11")
     n("lrunner", T("로컬 실행기", "Local runner"), T("서명 확인·기동", "Verify · launch"), "flat-container", 95, 725, 38)
     n("ldocker", "Docker", T("컨테이너 격리", "Container isolation"), "logo-docker", 185, 725, 38)
@@ -104,7 +106,7 @@ def build(lang="ko"):
             ("syft", "Syft", T("SBOM 생성", "SBOM"), "logo-syft"),
             ("trivy", "Trivy", T("취약점 검사", "Vuln scan"), "logo-trivy"),
             ("semgrep", "Semgrep", T("코드 검사", "Code scan"), "logo-semgrep"),
-            ("gitea", "Gitea", T("내부 저장소", "Internal Git"), "logo-gitea")]):
+            ("gitea", "Gitea", T("내부 저장소\n콘솔·키트로만", "Internal Git\nconsole & kit only"), "logo-gitea")]):
         n(k, lab, pur, ic, 940 + i * 87, 320, 38)
     n("runner", T("MCP 실행기", "MCP runner"), T("승인 서버 기동", "Runs approved"), "flat-container", 1398, 320, 38)
     n("docker", "Docker", T("컨테이너 엔진", "Containers"), "logo-docker", 1482, 320, 38)
@@ -141,7 +143,7 @@ def build(lang="ko"):
     # 직원 PC ⇄ 솔루션: 사설망을 지나 진입(Caddy)으로
     e("mcp_pc", [(320, 470), (733, 470)], MCP, 4, T("MCP 요청 ⇄ 응답", "MCP ⇄"), (400, 454), src="hn", dst="core", both=True)
     e("model_pc", [(320, 345), (495, 345)], LLM, 3, T("모델 요청 ⇄ 응답", "Model ⇄"), (408, 329), src="hn", dst="prx", both=True)
-    e("kit_pc", [(330, 572), (630, 572)], CTL, 2.5, T("정책 배포 ⇄ 장치 보고", "Policy ⇄ report"), (400, 556), src="kit", dst="gw", both=True)
+    e("kit_pc", [(330, 572), (630, 572)], CTL, 2.5, T("정책 ⇄ 장치 보고 · 승인 소스", "Policy ⇄ report · approved source"), (418, 556), src="kit", dst="gw", both=True)
     e("loc_pc", [(320, 750), (630, 750)], MCP, 3, T("실행 작업 ⇄ 결과", "Job ⇄ result"), (400, 734), src="loc", dst="gw", both=True)
     e("web_e", [(330, 175), (448, 175), (448, 430)], CTL, 3, src="usr", both=False, arrow=False)
     e("web_a", [(350, 965), (448, 965), (448, 430)], CTL, 3, src="adm", arrow=False)
@@ -155,6 +157,11 @@ def build(lang="ko"):
     e("model_lgw", [(1865, 243), (1865, 230)], LLM, 2.5, "", None, dash="6 4", dst="lgw")
     e("lgw_prov", [(1975, 150), (2015, 150)], LLM, 2.5, "", None, dash="6 4", src="lgw", dst="prov", both=True)
     s.dots.append((1865, 243, LLM))
+    # 하네스 기본 기능(웹 검색 등)·계정 커넥터(claude.ai 커넥터·ChatGPT 앱): 벤더 직접, 기본 승인 · 관리자 차단(D-298)
+    e("vendor_direct", [(305, 290), (305, 64), (2240, 64), (2240, 80)], VENDOR, 2.5,
+      T("기본 기능·계정 커넥터 ⇄ 벤더 · 게이트웨이 외부 · 기본 승인, 관리자 차단(관리형 설정)",
+        "Built-in features · account connectors ⇄ vendor · outside the gateway · allowed by default, admin can block"),
+      (1180, 64), dash="8 4", src="hn", dst="prov", both=True)
     # 조직 로그인
     e("oidc", [(810, 280), (810, 262), (1735, 262), (1735, 320), (1755, 320)], INT, 2.5, "OIDC", (1500, 262), dash="7 5",
       src="con", dst="idp", both=True)
@@ -193,11 +200,11 @@ def roles(lang):
     T = (lambda ko, en: ko) if lang == "ko" else (lambda ko, en: en)
     return [
         ("A", T("직원 PC", "Employee PC"), (14, 74, 342, 802),
-         T("사용자 계정의 브라우저로 MCP 도입 신청·이용 동의를 하고, 키트가 관리하는 관리 계정에서 하네스를 쓴다. 키트는 AppArmor·nftables로 MCP 통신이 게이트웨이만 지나게 강제하고, 승인된 로컬 MCP는 서명을 확인한 뒤 Docker 격리로 띄운다.",
-           "The user account's browser files MCP requests and consents; harnesses run in a managed account controlled by the kit. AppArmor and nftables force MCP traffic through the gateway, and approved local MCPs start in Docker isolation after a signature check.")),
+         T("키트는 MINT 계정으로 로그인해 설치되고(간편 모드: 직원 계정·하네스 그대로), 관리형 설정으로 하네스가 승인 MCP만 게이트웨이로 쓰게 한다. mint 명령·트레이로 상태를 보고, 승인 MCP 소스도 키트로 받는다. 격리 모드는 AppArmor·nftables를 더한다. 승인된 로컬 MCP는 서명 확인 뒤 Docker 격리로 띄운다.",
+           "The kit installs after a MINT sign-in (simple mode keeps the employee's account and harness) and uses managed settings so harnesses reach approved MCPs only through the gateway. Status shows in `mint` and the tray; approved MCP sources download through the kit. Isolated mode adds AppArmor and nftables. Approved local MCPs start in Docker isolation after a signature check.")),
         ("B", T("관리자 PC", "Admin PC"), (14, 884, 342, 172),
-         T("보안 관리자가 웹 콘솔로 도입 승인·도구 분류·계약 검토·장치 활성화·종료 판정을 한다.",
-           "Security admins approve intakes, set tool classes, review contracts, activate devices and decide terminations in the console.")),
+         T("보안 관리자가 웹 콘솔로 도입 승인·도구 분류·계약 검토·장치 활성화·종료 판정을 하고, 하네스 기본 기능·계정 커넥터를 항목별로 차단한다.",
+           "Security admins approve intakes, set tool classes, review contracts, activate devices, decide terminations and block harness built-in features or account connectors item by item.")),
         ("C", T("사설망", "Private network"), (364, 74, 102, 982),
          T("Tailscale(WireGuard)로 PC와 솔루션을 잇는다. 하네스·키트·브라우저의 HTTPS가 이 망 안에서만 오간다.",
            "Tailscale (WireGuard) links PCs and the solution; harness, kit and browser HTTPS stays inside it.")),
@@ -208,7 +215,7 @@ def roles(lang):
          T("가입·도입 신청·승인·동의를 처리한다. Authlib로 조직 로그인(OIDC)을 검증한다.",
            "Handles sign-up, intake, approval and consent; Authlib verifies org sign-in (OIDC).")),
         ("F", T("공급망 검증 · 격리 실행", "Supply chain · runtime"), (884, 274, 842, 152),
-         T("신청한 소스를 반입해 Syft·Trivy·Semgrep으로 검사하고 Gitea에 보관한다. 승인된 서버만 솔루션의 격리 실행으로 띄우고 출구 프록시로 외부 통신을 제한한다.",
+         T("신청한 소스를 반입해 Syft·Trivy·Semgrep으로 검사하고 Gitea에 보관한다(직원은 콘솔·키트로만 받는다). 승인된 서버만 솔루션의 격리 실행으로 띄우고 출구 프록시로 외부 통신을 제한한다.",
            "Imported sources are scanned by Syft, Trivy and Semgrep and stored in Gitea. Only approved servers run in the solution's isolated runtime behind an egress proxy.")),
         ("G", T("호출 중계", "Call relay"), (624, 429, 272, 347),
          T("FastAPI·MCP SDK로 만든 게이트웨이가 모든 도구 호출을 받아 판정을 받은 뒤 MCP 서버로 중계하고 응답을 돌려준다. 직원 토큰은 넘기지 않는다.",
@@ -223,7 +230,7 @@ def roles(lang):
          T("이미 쓰는 LLM 게이트웨이·IdP·비밀 저장소·SIEM과 이어진다. 점선은 고객 환경에 따라 켜는 연동이다.",
            "Connects to the LLM gateway, IdP, secrets store and SIEM the company already runs. Dashed boxes are integrations enabled per customer.")),
         ("K", T("외부", "External"), (2009, 74, 257, 682),
-         T("LLM 제공자와 원격 MCP 서버. 도구 호출은 게이트웨이를 거쳐서만 나간다.",
+         T("LLM 제공자와 원격 MCP 서버. 승인 MCP 호출은 게이트웨이를 거쳐서만 나간다. 하네스 기본 기능·계정 커넥터는 벤더로 바로 가고 관리형 설정으로 막는다.",
            "LLM providers and remote MCP servers. Tool calls leave only through the gateway.")),
     ]
 
@@ -324,7 +331,8 @@ def svg(s, annotate=False):
     o.append(f'<rect x="20" y="{ly}" width="1710" height="104" rx="14" fill="#FFFFFF" stroke="#C5D3E6" stroke-width="1.5"/>')
     items = [(T("MCP 호출", "MCP calls"), MCP, None, 4), (T("모델 호출", "Model calls"), LLM, None, 3),
              (T("관리·판정·검사", "Admin · decisions · checks"), CTL, None, 3), (T("기업 연동", "Enterprise link"), INT, "7 5", 2.5),
-             (T("감사·추적 전달", "Audit · trace export"), OBS, None, 3)]
+             (T("감사·추적 전달", "Audit · trace export"), OBS, None, 3),
+             (T("게이트웨이 외부(벤더 직접)", "Outside the gateway"), VENDOR, "8 4", 2.5)]
     o.append(f'<text x="40" y="{ly + 30}" font-size="13" font-weight="800" fill="{TEXT}">{T("선", "Lines")}</text>')
     x = 100
     for lab, c, da, w in items:
@@ -411,7 +419,7 @@ def drawio(s):
     s.nodes = keep
     if s.lang != "ko":
         page = page.replace('value="MINT 구성도"', 'value="MINT Architecture"')
-    return '<mxfile host="app.diagrams.net" agent="MINT build_architecture.py (10-23)" version="24.0.0">' + page + "</mxfile>"
+    return '<mxfile host="app.diagrams.net" agent="MINT build_architecture.py (10-28)" version="24.0.0">' + page + "</mxfile>"
 
 
 def main():

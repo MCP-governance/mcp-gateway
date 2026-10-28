@@ -21,6 +21,7 @@ function routes(provider = 'local') {
       return { agents: [], managed_events: [], coverage: { reporting_recently: 0 } };
     },
     planes: async () => ({ devices: [] }),
+    covPage: async () => ({ rows: [], total: 0 }), endpointSettings: () => '',
     html: () => '', raw: (v) => v, panel: () => '', empty: () => '', kv: () => '',
     listToolbar: () => '', kpiStrip: (v) => v,
     head: (title) => title, page: (value) => value,

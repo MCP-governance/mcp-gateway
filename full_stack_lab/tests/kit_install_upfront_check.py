@@ -170,7 +170,7 @@ class Packages(unittest.TestCase):
 
     def test_the_install_end_message_points_at_the_status_command(self):
         source = (KIT / "bootstrap.py").read_text(encoding="utf-8")
-        self.assertIn("mcpgw-status", source[source.index("로컬 MCP 준비(폴더 만들기"):][:200])
+        self.assertIn("mint", source[source.index("로컬 MCP 준비(폴더 만들기"):][:200])
 
 
 # ── 2. 첫 호출 전에 폴더와 이미지를 준비 ─────────────────────────────────────────
