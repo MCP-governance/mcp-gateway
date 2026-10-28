@@ -42,9 +42,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "committed_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "normalized_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
+        "sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "committed_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "normalized_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
         "worktree_modified": false
       }
     ],
@@ -184,9 +184,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "committed_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "normalized_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
+        "sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "committed_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "normalized_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
         "worktree_modified": false
       },
       {
@@ -862,9 +862,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
-        "committed_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
-        "normalized_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
+        "sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
+        "committed_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
+        "normalized_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
         "worktree_modified": false
       }
     ],
