@@ -357,6 +357,10 @@ field_up() {
   # ledger it read at boot, so a policy-only change reached neither (D-59).
   docker compose "${FIELD_COMPOSE[@]}" up -d --force-recreate opa gateway gateway-sse
   docker compose "${FIELD_COMPOSE[@]}" up -d "${services[@]}"
+  # 솔루션 MCP 실행기는 판본에서 빠졌다(D-299). 업그레이드한 기기에 남은 이 프로젝트의 runtime-worker만 지운다.
+  # 그 실행기가 띄웠던 MCP는 새 게이트웨이가 재승인 대상으로 돌린 뒤 실행기 스스로 멈춘다(10-28 시험 스택 실측).
+  local project; project="$(docker compose "${FIELD_COMPOSE[@]}" config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')"
+  docker ps -aq --filter "label=com.docker.compose.project=$project" --filter "label=com.docker.compose.service=runtime-worker"     | xargs -r docker rm -f >/dev/null
   wait_ready
   if [[ $with_lab_mcp == 1 ]]; then ensure_contracts; fi
   echo "[field 3/4] Caddy·모델 프록시(Tailscale IP 전용 앞단)"
