@@ -574,7 +574,7 @@ def render_status(summary, now, environment=None):
              *([f"새로 반영된 서버: {', '.join(fresh)} ({clock(added['at'])}) "
                 "— 이미 열려 있는 하네스에 보이지 않으면 다시 시작하세요."]
                if (added := summary.get("added")) and not silent and now - added["at"] < ADDED_SHOWN_SECONDS
-               and (fresh := [s for s in added["servers"] if s in (summary.get("names") or added["servers"])]) else []),
+               and (fresh := [s for s in added["servers"] if s in (summary.get("names") or [])]) else []),
              "로컬 MCP 준비: " + prepared + (f" ({local['note']})" if local.get("note") and local.get("total") else ""),
              "직원 문서 폴더: " + (", ".join(local["documents"]) if local.get("documents") else "—"),
              "키트 판본: " + (summary.get("kit") or "—")[:12]]

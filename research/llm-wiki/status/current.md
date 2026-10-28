@@ -1,6 +1,10 @@
-# 개발 현황 — 2026-10-25
+# 개발 현황 — 2026-10-27
 
 지금 상태만 담는다. 열린 일의 담당·완료 조건·근거는 [백로그](backlog.md) 한 곳, 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이다. 같은 사실을 여기와 백로그 두 곳에 쓰지 않는다. 10-23 판 원본은 [이력](history/2026-10-23-current.md), 처음 오는 에이전트의 읽기 순서는 [START_HERE](../START_HERE.md).
+
+## 10-27 S4 잔여 수정
+
+- `10/27-bugfix-round1` 작업 트리에서 S4-03·S4-11의 남은 경계 조건을 수정했다(D-269·D-270). 로컬 검증과 커밋 권한 오류를 구분해 [작업 보고](reports/2026-10-27-bugfix-round1.md)에 기록했다. 배포·실제 하네스 재시험은 하지 않았다. 남은 일과 다른 S4의 처리 근거는 [백로그](backlog.md#s4-후속-2026-10-27)에 둔다.
 
 ## 10-25 기준
 

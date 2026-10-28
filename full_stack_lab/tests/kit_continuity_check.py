@@ -291,6 +291,11 @@ class StatusCommand(unittest.TestCase):
         # S4-11: a server revoked within the hour is no longer "newly reflected".
         revoked = self.linux.render_status(self.summary(names=["a"], added={"servers": ["b"], "at": now - 30}), now)
         self.assertNotIn("새로 반영된 서버", revoked)
+        for fields in ({"names": [], "servers": 0}, {"servers": 0}):
+            with self.subTest(fields=fields):
+                empty = self.linux.render_status(self.summary(**fields, added={"servers": ["b"], "at": now - 30}), now)
+                self.assertIn("승인 서버: 0개", empty)
+                self.assertNotIn("새로 반영된 서버", empty)
         partly = self.linux.render_status(self.summary(names=["a", "c"], added={"servers": ["b", "c"], "at": now - 30}), now)
         self.assertIn("새로 반영된 서버: c (", partly)
         silent = self.linux.render_status(self.summary(updated=now - 600, added={"servers": ["b"], "at": now - 30}), now)

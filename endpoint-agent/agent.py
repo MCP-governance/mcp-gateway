@@ -704,13 +704,11 @@ HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code|@openai[\\/]
 
 
 def harness_process(command_line: str) -> bool:
-    program = command_line.strip().strip('"').split('" ', 1)[0] if command_line.strip().startswith('"') \
-        else command_line.strip().split(" ", 1)[0]
-    if HARNESS_PROGRAM.search(program):
+    words = [word.strip("\"'") for word in re.findall(r'''"[^"]*"|'[^']*'|\S+''', command_line)]
+    if words and HARNESS_PROGRAM.search(words[0]):
         return True
     # node (or bun) running the harness package's entry script
-    words = command_line.split()
-    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?\"?$", words[0], re.I) is not None \
+    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?$", words[0], re.I) is not None \
         and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
 
 
@@ -972,7 +970,7 @@ def listener_findings(policy: dict) -> list[dict]:
             info = probe_mcp("127.0.0.1", row["port"])
         if info:
             evidence = "confirmed"
-        elif marker:
+        elif marker and not harness_process(row.get("command_line") or row.get("process_name") or ""):
             evidence = "suspected"
         else:
             continue  # MCP 표지도 없고 initialize에도 답하지 않으면 MCP가 아니다.

@@ -103,6 +103,33 @@ class Collector(unittest.TestCase):
         self.assertEqual(len(status),3)
         self.assertEqual(json.loads(out.getvalue())['observation'],result)
 
+    def test_harness_prompt_is_not_socket_evidence_but_initialize_is(self):
+        row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude',
+               'command_line': '/opt/claude -p "fastmcp modelcontextprotocol"'}
+        for enabled in (False, True):
+            with self.subTest(probe=enabled), patch.object(agent, 'local_listeners', return_value=[row]), \
+                 patch.object(agent, 'probe_mcp', return_value=None):
+                self.assertEqual(agent.listener_findings({'probe_mcp': enabled}), [])
+        with patch.object(agent, 'local_listeners', return_value=[row]), \
+             patch.object(agent, 'probe_mcp', return_value={'server_name': 'fixture'}):
+            self.assertEqual(agent.listener_findings({})[0]['mcp_evidence'], 'confirmed')
+
+    def test_real_server_commands_are_still_reported_on_process_and_socket_paths(self):
+        commands = ['python -m fastmcp run server.py', 'npx -y @modelcontextprotocol/server-filesystem /docs']
+        for command in commands:
+            with self.subTest(command=command), patch.object(agent.platform, 'system', return_value='Windows'), \
+                 patch.object(agent, '_windows_processes', return_value={'123': ('server', command)}):
+                self.assertEqual(agent.stdio_processes()[0]['mcp_evidence'], 'suspected')
+            row = {'address': '127.0.0.1', 'port': 54321, 'command_line': command}
+            with patch.object(agent, 'local_listeners', return_value=[row]):
+                self.assertEqual(agent.listener_findings({'probe_mcp': False})[0]['mcp_evidence'], 'suspected')
+
+    def test_quoted_node_harness_prompt_is_not_a_stdio_server(self):
+        command = r'"C:\Program Files\nodejs\node.exe" "C:\Program Files\nodejs\node_modules\@openai\codex\bin\codex.js" exec "fastmcp"'
+        with patch.object(agent.platform, 'system', return_value='Windows'), \
+             patch.object(agent, '_windows_processes', return_value={'123': ('node.exe', command)}):
+            self.assertEqual(agent.stdio_processes(), [])
+
     def test_listener_permission_and_policy_disabled_are_distinct(self):
         with patch.object(agent,'SCAN_ENABLED',True), patch.object(agent,'call',side_effect=urllib.error.HTTPError(
                 'https://fixture.invalid',403,'denied',{},None)):
