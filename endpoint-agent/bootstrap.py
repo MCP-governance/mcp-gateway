@@ -640,12 +640,16 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool, signed
     else:
         argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
-    auth_failed = not found["ok"] and re.search(
-        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|log ?in|/login|로그인",
+    execution_failed = not found["ok"] and re.search(
+        r"(?:\brunuser:|\blogin-shell\b).*(?:failed to execute|permission denied|operation not permitted)",
         found["detail"] or "", re.I)
+    auth_failed = not found["ok"] and not execution_failed and (re.search(
+        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|"
+        r"(?<![\w/.-])(?:log ?in|/login)(?![\w/.-])|로그인", found["detail"] or "", re.I)
+        or (name == "codex" and re.search(r"\byour access token could not be refreshed\b", found["detail"] or "", re.I)))
     if signed is not None and (found["ok"] or auth_failed):
         signed[name] = bool(found["ok"])
-    detail = ("로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
+    detail = ("실행 장애 · " if execution_failed else "로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
             else f"{name} 실패 · {detail}")
 
@@ -669,7 +673,9 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
     cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
     close_step()
-    if re.search(r"log ?in|/login|401|로그인", cells[0][1], re.I):
+    if "실행 장애 · " in cells[0][1]:
+        return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mcpgw-status --check 로 다시 확인하세요"
+    if "로그인 필요 · " in cells[0][1]:
         shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
         name = next(h for h in ("claude", "codex") if h in harnesses)
         command = LOGINS[name][1]

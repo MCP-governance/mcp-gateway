@@ -715,7 +715,7 @@ def harness_process(command_line: str) -> bool:
         return True
     # node (or bun) running the harness package's entry script
     return re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?$", words[0], re.I) is not None \
-        and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
+        and len(words) > 1 and HARNESS_SCRIPT.search(os.path.realpath(words[1])) is not None
 
 
 def stdio_processes() -> list[dict]:

@@ -1,7 +1,7 @@
 # 하네스 진입 파일·설치 연결부·모델 인증 표시 수정 — 2026-10-28
 
 - 작업자: Codex
-- 코드 기준: `10/27-bugfix-round1`, 시작 `bf6782631e98de21f4c6e2247634ded4d7c65b5a`. 기존 작업 줄기의 후속 수정이므로 새 브랜치·PR을 만들지 않는다. 작업 단위로 커밋하며 push·병합·배포는 하지 않는다.
+- 코드 기준: `10/27-bugfix-round1`, 시작·최종 HEAD `bf6782631e98de21f4c6e2247634ded4d7c65b5a`. 기존 작업 줄기의 후속 수정이므로 새 브랜치·PR을 만들지 않았다. 커밋을 위해 명시한 변경 파일만 `git add`했으나 `index.lock` 생성 권한 오류로 실패해 미커밋이다. push·병합·배포는 하지 않았다.
 - 시작 근거: `BRIEF-fix3.md`, `R3-REVIEW.md`, `R3-TEST-RESULT.md`. 두 문서는 제공된 검토·pj2 관찰이고 이번 작업의 실기기 실행 증거가 아니다.
 - 완료 조건: 두 탐지 누락 반례의 수정 전 실패·수정 후 통과, 실제 설치/점검 함수 연결 시험, 모델 인증 실패와 최종 JSON의 일치, 결정·현황·백로그·결과 파일 기록.
 
@@ -36,6 +36,7 @@ Windows Python 3.10에서 `python -B -X utf8`로 실행했다. 합성 프로세�
 
 ## 실패·미완료·한계
 
+- Git이 지정된 공통 저장소 아래 `.git/worktrees/r1-fix/index.lock`을 만들지 못했다(`Permission denied`). 경로는 `git rev-parse --git-dir --git-common-dir`로 대조했고 `git diff --cached --name-only`는 비어 있다. 커밋 해시는 생성되지 않았으며 변경·보고서는 작업 트리에 보존했다. 권한 우회·ACL 변경은 하지 않았다.
 - `unittest discover -s endpoint-agent/tests-windows -p test_*.py`: 49건 중 실패 5·오류 4·생략 1. PowerShell 실행 정책의 스크립트 차단 6건(오류 1 포함), `windows_status` 검색 경로 부재 3건이다. 전체 통과라고 보고하지 않는다. 이번에 변경한 경로 저장·전달 부분은 위 보완 실행에서 통과했다. 시스템 실행 정책은 변경하지 않았다.
 - `loopback_owner_replies_test.py`: 10건 중 1건은 Windows의 `grp` 부재로 오류다. 나머지 9건 성공과 구분한다. `agent.py --self-check`는 TOML 파서 부재, `bootstrap.py --self-check`는 `grp` 부재로 중단했다. 지원 기기 이미지에서 확인 필요다.
 - 원격 HEAD 조회는 GitHub 443 연결 실패로 확인하지 못했다. 기존 브랜치와 시작 commit은 로컬 Git에서 확인했다. 신규 OSS·SDK를 도입할 규모의 기능 추가는 없으며 기존 코드·표준 라이브러리만 썼다.

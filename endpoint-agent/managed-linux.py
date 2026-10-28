@@ -62,6 +62,40 @@ def load_module(name, path):
     return module
 
 
+def harness_paths(binaries):
+    paths = list(binaries.values())
+    entry = Path(binaries.get("codex", "")).resolve()
+    node = shutil.which("node")
+    if not node or entry.parts[-4:] != ("@openai", "codex", "bin", "codex.js") or not entry.is_file():
+        return paths
+    # Resolve without executing the npm wrapper, which would start a harness as root.
+    script = r'''
+const fs = require('node:fs'), path = require('node:path');
+const entry = process.argv[1], resolve = require('node:module').createRequire(entry).resolve;
+const machine = {x64: 'x86_64', arm64: 'aarch64'}[process.arch];
+const suffix = {linux: 'unknown-linux-musl', darwin: 'apple-darwin', win32: 'pc-windows-msvc'}[process.platform];
+if (!machine || !suffix) process.exit(1);
+let vendor;
+try {
+  vendor = path.join(path.dirname(resolve('@openai/codex-' + process.platform + '-' + process.arch + '/package.json')), 'vendor');
+} catch {
+  vendor = path.join(path.dirname(entry), '..', 'vendor');
+}
+const binary = path.join(vendor, machine + '-' + suffix, 'bin', process.platform === 'win32' ? 'codex.exe' : 'codex');
+if (fs.existsSync(binary)) process.stdout.write(fs.realpathSync(binary));
+'''
+    try:
+        result = subprocess.run([node, "-e", script, str(entry)], capture_output=True, text=True, timeout=5,
+                                check=True, env={k: v for k, v in os.environ.items()
+                                                 if k not in ("NODE_OPTIONS", "NODE_PATH")})
+        native = Path(result.stdout.strip())
+        if result.stdout.strip() and native.is_absolute() and native.is_file() and str(native) not in paths:
+            paths.append(str(native))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return paths
+
+
 def kit_version(folder):
     digest = hashlib.sha256()
     for name in PROGRAM_FILES:
@@ -477,7 +511,7 @@ def install(args, prepared=None):
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=None if simple else args.owner_uid, mode=args.mode,
                   broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
-                  harness_paths=list(binaries.values()),
+                  harness_paths=harness_paths(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():

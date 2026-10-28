@@ -327,7 +327,7 @@ def install(employee, enrollment):
         config.update(endpoint_id=enrolled['endpoint_id'], username=account, uid=uid, employee=employee,
                       socket='/var/run/mcpgw-' + account + '.sock', config_path=str(folder / 'config.json'),
                       pf_anchor=anchor_name(account), pf_file=str(folder / 'egress.pf'),
-                      harness_paths=[item['path'] for item in placed.values()])
+                      harness_paths=core.harness_paths({name: item['path'] for name, item in placed.items()}))
         save(core, folder / 'config.json', config)
         config.update({key: policy[key] for key in ('gateway_ips', 'gateway_port', 'policy_hash')})
         config.update(proxy_port=policy.get('proxy_port'), proxy_environment=policy.get('proxy_environment', {}))

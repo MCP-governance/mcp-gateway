@@ -141,6 +141,15 @@ class Collector(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['mcp_evidence'], 'suspected')
 
+    def test_npm_entry_symlink_resolves_to_exact_harness_script(self):
+        realpath = agent.os.path.realpath
+        entry = '/usr/local/lib/node_modules/@openai/codex/bin/codex.js'
+        nested = '/usr/local/lib/node_modules/@openai/codex/node_modules/@modelcontextprotocol/server-filesystem/index.js'
+        for target, expected in ((entry, True), (nested, False)):
+            with self.subTest(target=target), patch.object(agent.os.path, 'realpath', side_effect=lambda path:
+                    target if path == '/usr/local/bin/codex' else realpath(path)):
+                self.assertEqual(agent.harness_process('/usr/bin/node /usr/local/bin/codex exec fastmcp'), expected)
+
     def test_renamed_python_is_not_an_approved_harness_socket(self):
         row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude.exe',
                'command_line': r'"C:\unapproved\claude.exe" -m fastmcp run server.py'}

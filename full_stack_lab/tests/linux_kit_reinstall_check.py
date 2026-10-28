@@ -5,6 +5,7 @@ import io
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -67,7 +68,7 @@ class Reinstall(unittest.TestCase):
             self.assertFalse(self.enrollment.exists())
             config.unlink()
 
-    def linux_install_flow(self, model_detail="", harness="claude"):
+    def linux_install_flow(self, model_detail="", harness="claude", binary=None):
         """Real bootstrap/installer/check/JSON; only OS, enrollment and model transport are doubles."""
         b, c = self.boot, self.core
         programs = self.root / "programs"
@@ -78,11 +79,14 @@ class Reinstall(unittest.TestCase):
             "ok": not model_detail, "seconds": 1, "detail": model_detail}))
         installed = []
         install_managed = b.install_managed
+        subprocess_run = subprocess.run
         def capture_install(*args, **kwargs):
             result = install_managed(*args, **kwargs)
             installed.append(dict(result))
             return result
         def run(argv, **kwargs):
+            if argv[0] == shutil.which("node"):
+                return subprocess_run(argv, **kwargs)
             if argv[:3] == ["systemctl", "enable", "--now"]:
                 c.private_write(report, json.dumps({"state": "active", "updated": c.time.time(), "connected": True,
                                                    "names": ["memory"]}))
@@ -98,7 +102,7 @@ class Reinstall(unittest.TestCase):
             for name in ("ensure_packages", "remove_shims", "remove_companion"):
                 stack.enter_context(patch.object(b, name))
             stack.enter_context(patch.object(b, "installed", return_value=False))
-            stack.enter_context(patch.object(b, "find_clients", return_value={harness: "/usr/bin/" + harness}))
+            stack.enter_context(patch.object(b, "find_clients", return_value={harness: binary or "/usr/bin/" + harness}))
             stack.enter_context(patch.object(b, "STATE", self.root / "state"))
             stack.enter_context(patch.object(b, "SCREEN", screen))
             stack.enter_context(patch.object(b, "install_managed", side_effect=capture_install))
@@ -138,9 +142,72 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(installed[0]["state"], "active")
         self.assertEqual(result["state"], "active")
         self.assertEqual(screen.summary["state"], "active")
-        self.assertEqual(json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"],
-                         ["/usr/bin/" + harness])
+        self.assertIn(binary or "/usr/bin/" + harness,
+                      json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"])
         return result, screen
+
+    def npm_codex_entry(self, platform_package=True):
+        entry = self.root / "npm space/node_modules/@openai/codex/bin/codex.js"
+        entry.parent.mkdir(parents=True)
+        entry.write_text("// synthetic npm entry; must not be executed\n")
+        # Use the real Node platform and module resolver, but never execute a harness.
+        target = subprocess.run([shutil.which("node"), "-p", "JSON.stringify([process.platform, process.arch])"],
+                                capture_output=True, text=True, check=True)
+        system, arch = json.loads(target.stdout)
+        machine = {"x64": "x86_64", "arm64": "aarch64"}[arch]
+        suffix = {"linux": "unknown-linux-musl", "darwin": "apple-darwin", "win32": "pc-windows-msvc"}[system]
+        package = entry.parents[2] / ("codex-" + system + "-" + arch) if platform_package else entry.parents[1]
+        package.mkdir(exist_ok=True)
+        if platform_package:
+            (package / "package.json").write_text('{}')
+        native = package / "vendor" / (machine + "-" + suffix) / "bin" / ("codex.exe" if system == "win32" else "codex")
+        native.parent.mkdir(parents=True)
+        native.touch()
+        return entry, native
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed for npm entry resolution")
+    def test_npm_codex_install_registers_only_the_resolved_native_child(self):
+        entry, native = self.npm_codex_entry()
+        unrelated = native.parent / "server-fastmcp"
+        unrelated.touch()
+        self.linux_install_flow(harness="codex", binary=str(entry))
+        paths = json.loads((self.root / "state/emp/config.json").read_text())["harness_paths"]
+        self.assertEqual(paths, [str(entry), str(native.resolve())])
+        observer = load("npm_observer", KIT / "agent.py")
+        with patch.object(observer, "CONFIG", {"ENDPOINT_HARNESS_PATHS": paths}):
+            self.assertTrue(observer.harness_process(f'"{native}" exec "fastmcp"'))
+            self.assertFalse(observer.harness_process(f'"{unrelated}" -m fastmcp run server.py'))
+            with patch.object(observer.platform, "system", return_value="Windows"), \
+                 patch.object(observer, "_windows_processes", return_value={"123": ("codex", f'"{native}" exec fastmcp')}):
+                self.assertEqual(observer.stdio_processes(), [])
+            row = {"address": "127.0.0.1", "port": 54321, "command_line": f'"{native}" exec fastmcp'}
+            with patch.object(observer, "local_listeners", return_value=[row]), \
+                 patch.object(observer, "probe_mcp", return_value=None):
+                self.assertEqual(observer.listener_findings({"probe_mcp": False}), [])
+            with patch.object(observer, "local_listeners", return_value=[row]), \
+                 patch.object(observer, "probe_mcp", return_value={"server_name": "synthetic"}):
+                self.assertEqual(observer.listener_findings({})[0]["mcp_evidence"], "confirmed")
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js is needed for npm entry resolution")
+    def test_npm_codex_vendor_fallback_missing_binary_and_resolver_failure(self):
+        entry, native = self.npm_codex_entry(platform_package=False)
+        binaries = {"codex": str(entry)}
+        with patch.dict(os.environ, {"NODE_OPTIONS": "--require=/unapproved/injection.js", "NODE_PATH": "/unapproved"}):
+            self.assertEqual(self.core.harness_paths(binaries), [str(entry), str(native.resolve())])
+        native.unlink()
+        self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        for error in (OSError("node unavailable"), subprocess.TimeoutExpired("node", 5),
+                      subprocess.CalledProcessError(1, "node")):
+            with self.subTest(error=type(error).__name__), patch.object(self.core.subprocess, "run", side_effect=error):
+                self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        with patch.object(self.core.shutil, "which", return_value=None):
+            self.assertEqual(self.core.harness_paths(binaries), [str(entry)])
+        other = self.root / "unregistered/codex.js"
+        other.parent.mkdir()
+        other.touch()
+        with patch.object(self.core.subprocess, "run") as run:
+            self.assertEqual(self.core.harness_paths({"codex": str(other)}), [str(other)])
+            run.assert_not_called()
 
     def test_linux_install_check_and_final_json_use_service_activation(self):
         result, screen = self.linux_install_flow()
@@ -182,6 +249,44 @@ class Reinstall(unittest.TestCase):
         result, screen = self.linux_install_flow("Connection timeout")
         self.assertIs(result["model_signed_in"]["claude"], True)
         self.assertNotIn("모델 로그인", screen.result.call_args.args[1])
+
+    def test_login_shell_permission_error_is_execution_failure_not_model_auth(self):
+        result, screen = self.linux_install_flow(
+            "runuser: failed to execute /usr/local/lib/mcpgw-enforcement/mcpgw-emp/login-shell: Permission denied")
+        self.assertIs(result["model_signed_in"]["claude"], True)
+        self.assertIn("실행 장애", result["checks"]["모델 응답"])
+        self.assertNotIn("로그인 필요", result["checks"]["모델 응답"])
+        self.assertNotIn("모델 로그인", screen.result.call_args.args[1])
+        self.assertIn("실행 권한", screen.result.call_args.args[1])
+
+    def test_login_path_is_not_a_login_request_but_login_command_is(self):
+        for message, failed in (("Cannot read /opt/login/config.json", False),
+                                ("Please run /login to authenticate", True), ("Please log in", True)):
+            signed = {"claude": True}
+            observer = SimpleNamespace(MODEL_PROMPT="OK", model_check=lambda argv: {
+                "ok": False, "seconds": 1, "detail": message})
+            with self.subTest(message=message), patch.object(self.core, "load_module", return_value=observer):
+                _, text = self.boot.model_cell(self.core, "emp", ["claude"], False, signed)
+            self.assertEqual(signed["claude"], not failed)
+            self.assertEqual("로그인 필요" in text, failed)
+
+    def test_codex_refresh_failures_override_credentials_and_request_login(self):
+        messages = [
+            "Your access token could not be refreshed because your refresh token has expired. Please log out and sign in again.",
+            "Your access token could not be refreshed because your refresh token was already used. Please log out and sign in again.",
+            "Your access token could not be refreshed because your refresh token was revoked. Please log out and sign in again.",
+            "Your access token could not be refreshed. Please log out and sign in again.",
+            "Your access token could not be refreshed because you have since logged out or signed in to another account. Please sign in again.",
+        ]
+        for message in messages:
+            # Each install consumes its enrollment and writes credentials in a temporary HOME.
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as folder, \
+                 patch.object(self, "root", Path(folder)), patch.object(self, "enrollment", Path(folder) / "enrollment.json"):
+                self.enrollment.write_text(json.dumps(self.bundle))
+                result, screen = self.linux_install_flow(message, harness="codex")
+                self.assertIs(result["model_signed_in"]["codex"], False)
+                self.assertIn("로그인 필요", result["checks"]["모델 응답"])
+                self.assertIn("codex login --device-auth", screen.result.call_args.args[1])
 
     def test_codex_auth_failure_names_the_checked_harness(self):
         result, screen = self.linux_install_flow("401 Unauthorized", harness="codex")
