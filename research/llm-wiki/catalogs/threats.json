@@ -21,16 +21,9 @@
       },
       {
         "path": "full_stack_lab/supply_chain/intake_worker.py",
-        "sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
-        "committed_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
-        "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd",
-        "worktree_modified": false
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "committed_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
+        "sha256": "edc59810d0f31226829bcdcdfa0b997f9d97f299f81be144dc7ea5aabc35f5c6",
+        "committed_sha256": "edc59810d0f31226829bcdcdfa0b997f9d97f299f81be144dc7ea5aabc35f5c6",
+        "normalized_sha256": "edc59810d0f31226829bcdcdfa0b997f9d97f299f81be144dc7ea5aabc35f5c6",
         "worktree_modified": false
       },
       {
@@ -42,9 +35,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "committed_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "normalized_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
+        "sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
+        "committed_sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
+        "normalized_sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
         "worktree_modified": false
       }
     ],
@@ -72,22 +65,6 @@
         "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd"
       },
       {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "fetch_source",
-        "anchor": "",
-        "line": 381,
-        "end_line": 411,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "build",
-        "anchor": "",
-        "line": 445,
-        "end_line": 463,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-      },
-      {
         "path": "full_stack_lab/gateway/app/artifact_provenance.py",
         "symbol": "verify_source_attestation",
         "anchor": "",
@@ -102,14 +79,6 @@
         "line": 1960,
         "end_line": 1987,
         "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4"
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "verify_rollback_provenance",
-        "anchor": "",
-        "line": 441,
-        "end_line": 442,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       }
     ],
     "regression_tests": [
@@ -149,14 +118,14 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
       "changed_review_files": [
         "full_stack_lab/gateway/app/agent_service.py",
         "full_stack_lab/gateway/app/review.py",
-        "full_stack_lab/runtime/worker.py"
+        "full_stack_lab/supply_chain/intake_worker.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -184,9 +153,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
-        "sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "committed_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
-        "normalized_sha256": "98f218a32ca4c61ce15a316a083cac42c9f136d7d48846915ab904f0b01349dc",
+        "sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
+        "committed_sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
+        "normalized_sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa",
         "worktree_modified": false
       },
       {
@@ -198,16 +167,16 @@
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       }
     ],
@@ -294,7 +263,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -335,9 +304,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -442,7 +411,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -476,16 +445,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "worktree_modified": false
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "committed_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       }
     ],
@@ -503,48 +465,20 @@
         "line": 185,
         "end_line": 324,
         "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "mcp_run_args",
-        "anchor": "",
-        "line": 120,
-        "end_line": 131,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "egress_run_args",
-        "anchor": "",
-        "line": 134,
-        "end_line": 140,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       }
     ],
-    "regression_tests": [
-      {
-        "path": "full_stack_lab/tests/runtime_worker_check.py",
-        "symbol": "",
-        "anchor": "",
-        "line": 1,
-        "end_line": 102,
-        "normalized_sha256": "40076e9dc348e414fd874cf6d7fe839f24998a2a43a2d8fc0ee9ee93e6b12b56",
-        "coverage": "읽기 전용/권한/자원·egress 실행 인자 단위",
-        "execution_in_this_review": "미실행"
-      }
-    ],
+    "regression_tests": [],
     "evidence_ids": [
       "E01"
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
       "changed_review_files": [
-        "full_stack_lab/gateway/app/pac.py",
-        "full_stack_lab/runtime/worker.py"
+        "full_stack_lab/gateway/app/pac.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -580,9 +514,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
-        "sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
-        "committed_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
-        "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
+        "sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
+        "committed_sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
+        "normalized_sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
         "worktree_modified": false
       },
       {
@@ -677,7 +611,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -721,16 +655,16 @@
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
-        "sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
-        "committed_sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
-        "normalized_sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
+        "sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
+        "committed_sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
+        "normalized_sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
         "worktree_modified": false
       }
     ],
@@ -812,7 +746,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -855,9 +789,9 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
-        "committed_sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
-        "normalized_sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
+        "sha256": "e5e380fe0568f6507cd91c95b5d1481203b1066e312567093663b3268ed65525",
+        "committed_sha256": "e5e380fe0568f6507cd91c95b5d1481203b1066e312567093663b3268ed65525",
+        "normalized_sha256": "e5e380fe0568f6507cd91c95b5d1481203b1066e312567093663b3268ed65525",
         "worktree_modified": false
       },
       {
@@ -961,7 +895,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1014,9 +948,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       },
       {
@@ -1104,7 +1038,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1138,9 +1072,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       }
     ],
@@ -1193,7 +1127,7 @@
     "evidence_ids": [],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1236,9 +1170,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/upstream.py",
-        "sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
-        "committed_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
-        "normalized_sha256": "fd7ec1ea1d5b45e87df1bbb89f0fe15c5ab09c8539e3869c2528e80a56c3c870",
+        "sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
+        "committed_sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
+        "normalized_sha256": "db2229f72a0e3a26f46751e51f8b2035bdbeb35bb0b6fb210abd28534609d09d",
         "worktree_modified": false
       }
     ],
@@ -1301,7 +1235,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1338,9 +1272,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -1352,9 +1286,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
-        "sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "committed_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "normalized_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
+        "sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "committed_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "normalized_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
         "worktree_modified": false
       }
     ],
@@ -1443,7 +1377,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1487,9 +1421,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       }
     ],
@@ -1550,7 +1484,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1587,16 +1521,16 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       },
       {
@@ -1684,7 +1618,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1727,9 +1661,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       }
     ],
@@ -1809,7 +1743,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -1850,16 +1784,16 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -2027,7 +1961,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2063,16 +1997,16 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/pac.py",
-        "sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "committed_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
-        "normalized_sha256": "582d0c1892320cc7f248e75a61d35b915fb363cef946d8955f422077960442f5",
+        "sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "committed_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
+        "normalized_sha256": "b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf",
         "worktree_modified": false
       },
       {
@@ -2178,7 +2112,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2215,9 +2149,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -2306,7 +2240,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2344,9 +2278,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       }
     ],
@@ -2426,7 +2360,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2460,9 +2394,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -2562,7 +2496,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2600,9 +2534,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -2709,7 +2643,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2745,16 +2679,16 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/registry.py",
-        "sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
-        "committed_sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
-        "normalized_sha256": "ba0b5357231f45e9cc0d4d5fce9d8575e5391ea78beb62a590445093cd0b3274",
+        "sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
+        "committed_sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
+        "normalized_sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884",
         "worktree_modified": false
       }
     ],
@@ -2845,7 +2779,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -2875,9 +2809,9 @@
     "code_candidates": [
       {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
@@ -2991,7 +2925,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -3044,24 +2978,17 @@
         "worktree_modified": false
       },
       {
-        "path": "full_stack_lab/runtime/worker.py",
-        "sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "committed_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "normalized_sha256": "867c094fcd4fc4546901b19a7fa7bd6d2672055d399335a38c696be138538a18",
-        "worktree_modified": false
-      },
-      {
         "path": "full_stack_lab/gateway/app/core.py",
-        "sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "committed_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
-        "normalized_sha256": "00c06844f2f79acb503cb409f2fd496f5cb09315a399e2891d91787a48098808",
+        "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "committed_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
+        "normalized_sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
-        "sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "committed_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "normalized_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
+        "sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "committed_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "normalized_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
         "worktree_modified": false
       },
       {
@@ -3103,14 +3030,6 @@
         "line": 50,
         "end_line": 67,
         "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
-      },
-      {
-        "path": "full_stack_lab/runtime/worker.py",
-        "symbol": "reconcile",
-        "anchor": "",
-        "line": 641,
-        "end_line": 753,
-        "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
       },
       {
         "path": "full_stack_lab/gateway/app/core.py",
@@ -3205,7 +3124,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
@@ -3213,7 +3132,6 @@
         "full_stack_lab/gateway/app/core.py",
         "full_stack_lab/gateway/app/decommission.py",
         "full_stack_lab/gateway/app/local_jobs.py",
-        "full_stack_lab/runtime/worker.py",
         "full_stack_lab/tests/resource_residual_check.py",
         "full_stack_lab/tests/termination_flow.py"
       ]
@@ -3253,9 +3171,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/disposal.py",
-        "sha256": "3abb706f2761a6240a40518b9c216b41ee9e7ef65b10ca0df012bff0b3ead9cd",
-        "committed_sha256": "3abb706f2761a6240a40518b9c216b41ee9e7ef65b10ca0df012bff0b3ead9cd",
-        "normalized_sha256": "3abb706f2761a6240a40518b9c216b41ee9e7ef65b10ca0df012bff0b3ead9cd",
+        "sha256": "cf86a9b6d907bb827679f2c52a575dcd245fd5cb3a01058d2aeb7ec3e837a70c",
+        "committed_sha256": "cf86a9b6d907bb827679f2c52a575dcd245fd5cb3a01058d2aeb7ec3e837a70c",
+        "normalized_sha256": "cf86a9b6d907bb827679f2c52a575dcd245fd5cb3a01058d2aeb7ec3e837a70c",
         "worktree_modified": false
       },
       {
@@ -3267,9 +3185,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/local_jobs.py",
-        "sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "committed_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
-        "normalized_sha256": "694a727e275822bfaaba5583af7acde660d0500e30f6ab834bf1bdebc2c51e7d",
+        "sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "committed_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
+        "normalized_sha256": "55a525bb51fb1bb02356b0a5286145c4862c05a06d8d630ab4b6bfd91a92f3f7",
         "worktree_modified": false
       }
     ],
@@ -3367,7 +3285,7 @@
     ],
     "independent_review": {
       "path": "analysis/threat-trace-review-1020/review.json",
-      "sha256": "263da08b7baf1392eea213215bc68a09499b6cd3727746384903586826e92bb7",
+      "sha256": "af8e1e6380397367ed2fc0da2efbba38b3ea320e8ff9795d9953b383183df37c",
       "reviewer": "Codex 독립 변경 검토",
       "reviewed_commit": "fbd1fc4c30e7cc44a543ad6a243e086362322b9f",
       "files_match_review": false,
