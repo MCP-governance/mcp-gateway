@@ -189,10 +189,168 @@ function Stop-EndpointTask([string]$Name) {
     Unregister-ScheduledTask -TaskName $Name -Confirm:$false
 }
 
+# The kit's own mark (the console's shield on its blue tile), as PNG frames of one .ico.
+function Get-EndpointIconBytes {
+    Add-Type -AssemblyName System.Drawing
+    $frames = foreach ($size in @(16, 24, 32, 48, 256)) {
+        $bitmap = New-Object Drawing.Bitmap($size, $size)
+        $graphics = [Drawing.Graphics]::FromImage($bitmap)
+        try {
+            $graphics.SmoothingMode = 'AntiAlias'
+            $graphics.ScaleTransform($size / 32, $size / 32)
+            $tile = New-Object Drawing.Drawing2D.GraphicsPath
+            foreach ($arc in @(@(0, 0, 180), @(16, 0, 270), @(16, 16, 0), @(0, 16, 90))) { $tile.AddArc($arc[0], $arc[1], 16, 16, $arc[2], 90) }
+            $tile.CloseFigure()
+            $graphics.FillPath((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(0x1f, 0x42, 0x87))), $tile)
+            $pen = New-Object Drawing.Pen([Drawing.Color]::White, 2)
+            $pen.LineJoin = 'Round'; $pen.StartCap = 'Round'; $pen.EndCap = 'Round'
+            $shield = New-Object Drawing.Drawing2D.GraphicsPath
+            $shield.AddLine(9, 9, 16, 6); $shield.AddLine(16, 6, 23, 9); $shield.AddLine(23, 9, 23, 16)
+            $shield.AddBezier(23, 16, 23, 21, 19.5, 23.5, 16, 25.5); $shield.AddBezier(16, 25.5, 12.5, 23.5, 9, 21, 9, 16)
+            $shield.CloseFigure()
+            $graphics.DrawPath($pen, $shield)
+            $graphics.DrawLines($pen, [Drawing.PointF[]]@((New-Object Drawing.PointF(13, 16)), (New-Object Drawing.PointF(15, 18)), (New-Object Drawing.PointF(19, 14))))
+            $stream = New-Object IO.MemoryStream
+            $bitmap.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+            , @($size, $stream.ToArray())
+        } finally { $graphics.Dispose(); $bitmap.Dispose() }
+    }
+    $out = New-Object IO.MemoryStream
+    $writer = New-Object IO.BinaryWriter($out)
+    $writer.Write([uint16]0); $writer.Write([uint16]1); $writer.Write([uint16]$frames.Count)
+    $offset = 6 + 16 * $frames.Count
+    foreach ($frame in $frames) {
+        $edge = if ($frame[0] -ge 256) { 0 } else { $frame[0] }
+        $writer.Write([byte]$edge); $writer.Write([byte]$edge); $writer.Write([uint16]0); $writer.Write([uint16]1); $writer.Write([uint16]32)
+        $writer.Write([uint32]$frame[1].Length); $writer.Write([uint32]$offset)
+        $offset += $frame[1].Length
+    }
+    foreach ($frame in $frames) { $writer.Write([byte[]]$frame[1]) }
+    $writer.Flush()
+    return $out.ToArray()
+}
+
+# A script's windows group under powershell.exe on the taskbar: its own app ID and icon make the kit a program of its
+# own there. Returns the icon for the window.
+function Set-EndpointAppIdentity {
+    $icon = New-Object Drawing.Icon((New-Object IO.MemoryStream(, (Get-EndpointIconBytes))))
+    if ([Diagnostics.Process]::GetCurrentProcess().ProcessName -ne 'powershell') { return $icon }
+    if (-not ('EndpointKit.Shell' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+namespace EndpointKit {
+    public static class Shell {
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern int SetCurrentProcessExplicitAppUserModelID(string id);
+    }
+}
+'@
+    }
+    [void][EndpointKit.Shell]::SetCurrentProcessExplicitAppUserModelID('MCPGateway.Endpoint')
+    return $icon
+}
+
+# One desktop shortcut per account, made once: a removed shortcut stays removed. The worker deletes it on removal.
+function Add-EndpointDesktopShortcut([string]$Work, [string]$ProgramDirectory, [string]$SettingsPath, [string]$Name) {
+    $record = Join-Path $Work 'shortcut.txt'
+    $launcher = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    if ((Test-Path -LiteralPath $record) -or -not (Test-Path -LiteralPath $launcher)) { return }
+    $path = Join-Path ([Environment]::GetFolderPath('Desktop')) ($Name + '.lnk')
+    $shell = New-Object -ComObject WScript.Shell
+    $link = $shell.CreateShortcut($path)
+    $link.TargetPath = $launcher
+    $link.Arguments = '-SettingsPath ' + (Quote-EndpointArgument $SettingsPath) + ' -Show'
+    $link.WorkingDirectory = $ProgramDirectory
+    $link.IconLocation = $launcher + ',0'
+    $link.Save()
+    [IO.File]::WriteAllText($record, $path, [Text.UTF8Encoding]::new($false))
+}
+
+# The record sits in a folder the employee can write: only a .lnk of ours inside their own profile is deleted.
+function Remove-EndpointDesktopShortcut([string]$Work, [string]$Profile, [string]$ProgramDirectory) {
+    $record = Join-Path $Work 'shortcut.txt'
+    if (-not (Test-Path -LiteralPath $record)) { return }
+    try {
+        $path = [IO.Path]::GetFullPath((Get-Content -LiteralPath $record -Raw -Encoding UTF8).Trim())
+        $root = [IO.Path]::GetFullPath($Profile).TrimEnd('\') + '\'
+        if ($path.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -and $path.EndsWith('.lnk', [StringComparison]::OrdinalIgnoreCase) -and
+            (Test-Path -LiteralPath $path -PathType Leaf)) {
+            Assert-EndpointTree $path
+            $target = (New-Object -ComObject WScript.Shell).CreateShortcut($path).TargetPath
+            if ($target -eq (Join-Path $ProgramDirectory 'MCPGateway.exe')) { Remove-Item -LiteralPath $path -Force }
+        }
+    } catch { }
+    Remove-Item -LiteralPath $record -Force
+}
+
+# MCPGateway.exe hosts tray.ps1 in its own process: no console window, and Windows lists it as its own program.
+$script:EndpointLauncherSource = @'
+using System;
+using System.IO;
+using System.Management.Automation;
+using System.Management.Automation.Runspaces;
+[assembly: System.Reflection.AssemblyTitle("MCP Gateway")]
+[assembly: System.Reflection.AssemblyProduct("MCP Gateway")]
+public static class MCPGatewayLauncher {
+    [STAThread]
+    public static int Main(string[] args) {
+        var state = InitialSessionState.CreateDefault();
+        state.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Bypass;
+        using (var runspace = RunspaceFactory.CreateRunspace(state)) {
+            runspace.ThreadOptions = PSThreadOptions.UseCurrentThread;
+            runspace.Open();
+            using (var shell = PowerShell.Create()) {
+                shell.Runspace = runspace;
+                shell.AddCommand(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray.ps1"));
+                for (var i = 0; i < args.Length; i++) {
+                    var name = args[i].TrimStart('-');
+                    if (i + 1 < args.Length && !args[i + 1].StartsWith("-")) shell.AddParameter(name, args[++i]);
+                    else shell.AddParameter(name);
+                }
+                shell.Invoke();
+                return shell.HadErrors ? 1 : 0;
+            }
+        }
+    }
+}
+'@
+
+function Stop-EndpointLauncher([string]$ProgramDirectory) {
+    $exe = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    Get-CimInstance Win32_Process -Filter "Name = 'MCPGateway.exe'" | Where-Object { $_.ExecutablePath -eq $exe } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
+
+# Builds MCPGateway.exe and its icon next to tray.ps1; returns the files made, none when the compiler is unavailable
+# (the tray then runs under powershell.exe as before).
+function Install-EndpointLauncher([string]$ProgramDirectory) {
+    $exe = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    $ico = Join-Path $ProgramDirectory 'MCPGateway.ico'
+    try {
+        Stop-EndpointLauncher $ProgramDirectory
+        [IO.File]::WriteAllBytes($ico, (Get-EndpointIconBytes))
+        $parameters = New-Object CodeDom.Compiler.CompilerParameters
+        [void]$parameters.ReferencedAssemblies.AddRange(@('System.dll', 'System.Core.dll', [PSObject].Assembly.Location))
+        $parameters.GenerateExecutable = $true
+        $parameters.OutputAssembly = $exe
+        $parameters.CompilerOptions = '/target:winexe /win32icon:' + (Quote-EndpointArgument $ico)
+        Add-Type -TypeDefinition $script:EndpointLauncherSource -CompilerParameters $parameters
+        return @('MCPGateway.exe', 'MCPGateway.ico')
+    } catch {
+        Remove-Item -LiteralPath $exe, $ico -Force -ErrorAction SilentlyContinue
+        return @()
+    }
+}
+
 function Register-EndpointTray([string]$SettingsPath, [string]$Sid, [string]$ProgramDirectory) {
     $root = $ProgramDirectory
-    $action = New-ScheduledTaskAction -Execute $script:PowerShellExe -Argument ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' +
-        (Quote-EndpointArgument (Join-Path $root 'tray.ps1')) + ' -SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    $launcher = Join-Path $root 'MCPGateway.exe'
+    $action = if (Test-Path -LiteralPath $launcher) {
+        New-ScheduledTaskAction -Execute $launcher -Argument ('-SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    } else {
+        New-ScheduledTaskAction -Execute $script:PowerShellExe -Argument ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' +
+            (Quote-EndpointArgument (Join-Path $root 'tray.ps1')) + ' -SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    }
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $Sid
     $principal = New-ScheduledTaskPrincipal -UserId $Sid -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries

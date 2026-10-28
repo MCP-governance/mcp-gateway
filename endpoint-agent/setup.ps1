@@ -66,6 +66,7 @@ $script:lang = 'ko'
 function T([string]$Key) { return (Get-EndpointText $Key $script:lang) }
 
 $form = New-Object Windows.Forms.Form
+$form.Icon = Set-EndpointAppIdentity
 $form.Text = if ($Remove) { T 'title_remove' } else { T 'title_install' }
 $form.Font = New-Object Drawing.Font('맑은 고딕', 10)
 $form.AutoScaleMode = 'Dpi'

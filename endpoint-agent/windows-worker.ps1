@@ -197,11 +197,13 @@ try {
             Stop-EndpointTask ("MCPGatewayEndpoint-" + $settings.endpoint_id)
         }
         Stop-EndpointTask ("MCPGatewayTray-" + $settings.sid)
+        Stop-EndpointLauncher $root
         $profile = (Get-ItemProperty -LiteralPath ("HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\" + $settings.sid)).ProfileImagePath
         $trayWork = [IO.Path]::GetFullPath((Join-Path $profile ("AppData\Local\MCPGatewaySetup\tray-" + $settings.sid)))
         $profileRoot = [IO.Path]::GetFullPath($profile).TrimEnd('\') + '\'
         if (-not $trayWork.StartsWith($profileRoot, [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         Assert-EndpointTree $trayWork
+        Remove-EndpointDesktopShortcut $trayWork $profile $root
         foreach ($name in @('request.json', 'result.json', 'result.json.tmp', 'setup.log', 'lang.txt', 'probe.json', 'probe.json.tmp', 'probe.err', 'show-status')) {
             $item = Join-Path $trayWork $name
             if (Test-Path -LiteralPath $item) { Remove-Item -LiteralPath $item -Force }
@@ -221,7 +223,7 @@ try {
                 $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'python.zip'))
                 try { $ownedFiles = $codeFiles + @($archive.Entries | ForEach-Object { 'python\' + $_.FullName }) }
                 finally { $archive.Dispose() }
-                $ownedFiles += @('config.json', 'status.json', 'status.tmp', 'tray-settings.json',
+                $ownedFiles += @('MCPGateway.exe', 'MCPGateway.ico', 'config.json', 'status.json', 'status.tmp', 'tray-settings.json',
                     'harness\codex.exe', 'harness\codex-code-mode-host.exe', 'harness\claude.exe')
                 Remove-EndpointFiles $root $ownedFiles
             }
@@ -273,7 +275,8 @@ try {
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $archive = [IO.Compression.ZipFile]::OpenRead((Join-Path $PSScriptRoot 'python.zip'))
     try { $runtimeFiles = @($archive.Entries | ForEach-Object { 'python\' + $_.FullName }) } finally { $archive.Dispose() }
-    $owned = @{ product = 'MCPGatewayEndpoint'; files = @($codeFiles) + $runtimeFiles + @('config.json', 'status.json', 'status.tmp', 'tray-settings.json') }
+    $launcherFiles = Install-EndpointLauncher $root
+    $owned = @{ product = 'MCPGatewayEndpoint'; files = @($codeFiles) + $launcherFiles + $runtimeFiles + @('config.json', 'status.json', 'status.tmp', 'tray-settings.json') }
     $manifestPath = Join-Path $root '.endpoint-kit'
     [IO.File]::WriteAllText($manifestPath, ($owned | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     Set-EndpointAcl $root $sid -Managed:$managed
