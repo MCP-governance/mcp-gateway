@@ -379,7 +379,7 @@ field_up() {
   echo "하네스·키트     : https://${APPLIANCE_BIND}:${FIELD_HTTPS_PORT}"
   if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
   echo "내부 저장소     : ${CONSOLE_URL}/git/"
-  echo "직원 PC 키트    : Console 로그인 → 내 PC 연결 → 개인별 1회용 키트"
+  echo "직원 PC 키트    : Console → PC 연결 설정 → 키트 설치 → MINT 계정 로그인"
 }
 
 field_status() {
