@@ -494,7 +494,7 @@ print(("관리자" if db_role == "admin" else "직원") + " 계정을 만들었�
 field_pc_command() {
   field_browser_trust
   echo "${CONSOLE_URL}/workspace 로그인 → 내 PC 연결 → 설치 키트 다운로드"
-  echo "unzip mcp-managed-kit.zip -d mcp-managed-kit"
+  echo "rm -rf mcp-managed-kit && unzip -q mcp-managed-kit.zip -d mcp-managed-kit"
   echo "cd mcp-managed-kit"
   echo "조직 IT가 승인된 설치기를 확인한 뒤: sudo python3 managed-linux.py install --user 일반사용자계정"
   echo "설치 뒤 Console 단말 표에서 실제 호스트 집행 확인 후 독립 관리자 활성화"

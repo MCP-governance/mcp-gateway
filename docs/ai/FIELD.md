@@ -73,7 +73,7 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 관리 계정 결정, 관리형 설정·프록시 구성, 모델 로그인까지 설치기가 합니다. 이미 설치돼 있으면 같은 파일이 재설치·복구 경로입니다.
 
 ```bash
-unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
 
 Windows는 `mcp-managed-kit-windows.zip`을 풀고 `install.cmd`를 두 번 눌러 실행합니다. Python 3.10 이상이 모든 사용자용

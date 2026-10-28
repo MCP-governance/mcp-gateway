@@ -55,7 +55,7 @@ Windows 트레이: 상태 창(연결·관리 상태·모드·승인 서버·하�
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
 
 ```bash
-unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
 
 `install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
