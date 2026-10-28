@@ -417,7 +417,7 @@ const PAGES = [
   { id: "activity", label: "도구 호출 로그", group: "운영" },
   { id: "audit", label: "감사 기록", group: "운영" },
   { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
-  { id: "coverage", label: "통제 범위", group: "접근 통제", badge: "coverage" },
+  { id: "coverage", label: "통제 현황", group: "접근 통제", badge: "coverage" },
   { id: "servers", label: "MCP 서버", group: "접근 통제" },
   { id: "people", label: "사용자·엔드포인트", group: "접근 통제" },
   { id: "policy", label: "정책", group: "접근 통제" },
@@ -1253,7 +1253,7 @@ ROUTES.coverage = async (_, tab, query) => {
   const shadowTotal = entriesPage.total + listenersPage.total + eventsPage.total;
   return {
     html: page({
-      head: head("통제 범위", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
+      head: head("통제 현황", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
       kpis: kpiStrip([["게이트웨이 통제", count("gateway_enforced"), "allow", "#/coverage?t=items&state=gateway_enforced"],
         ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/coverage?t=items&state=endpoint_enforced"],
         ["벤더 통제", count("vendor_enforced"), "restrict", "#/coverage?t=items&state=vendor_enforced"],
@@ -1261,7 +1261,7 @@ ROUTES.coverage = async (_, tab, query) => {
         ["조직 통제 의존", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]]),
       active: tab || "items",
       tabs: [
-        { key: "items", label: "MCP·커넥터", n: items.length, body: html`<div class="stack">
+        { key: "items", label: "연결 목록", n: items.length, body: html`<div class="stack">
           ${panel("MCP·커넥터·플러그인", html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th>승인</th><th class="num">우회 경로</th><th>발견</th></tr></thead><tbody>
             ${rows.map((i) => html`<tr class="clickable" tabindex="0" data-act="integration" data-key="${i.key}">
               <td><b>${i.name}</b><span class="sub">${entityRef(i.target || "", 48)}</span>${i.pcs > 1 ? html`<span class="sub">엔드포인트 ${i.pcs}대</span>` : ""}</td>
@@ -1283,7 +1283,7 @@ ROUTES.coverage = async (_, tab, query) => {
               <td class="small">${(d.bypass || []).length ? html`<div class="pill-list">${d.bypass.map((b) => chip("block", b))}</div>` : NONE}
                 ${denialCount(d) ? html`<span class="sub">엔드포인트 차단 24시간 ${denialCount(d)}</span>` : ""}</td></tr>`)}
             </tbody></table>${p.devices.length ? "" : empty("엔드포인트 없음")}`, { flush: true }) },
-        { key: "shadow", label: "미등록·잔존", n: shadowTotal,
+        { key: "shadow", label: "미등록 및 잔존", n: shadowTotal,
           hot: entriesPage.total + listenersPage.total > 0, body: html`<div class="stack">
           ${panel("엔드포인트 MCP 설정", html`<table class="data"><thead><tr><th>엔드포인트</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th><th>출처</th><th>증거</th></tr></thead><tbody>
             ${shadowRows.map((e) => recordRow("config", e.id, html`<td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
