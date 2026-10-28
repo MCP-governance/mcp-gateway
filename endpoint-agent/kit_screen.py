@@ -1,5 +1,6 @@
 """Shared, credential-free terminal view of the kit's existing status snapshots."""
 import atexit
+import json
 import os
 import queue
 import re
@@ -10,12 +11,36 @@ import threading
 import time
 import unicodedata
 from datetime import datetime
+from pathlib import Path
 
 ENTER = "\x1b[?1049h\x1b[?25l"
 LEAVE = "\x1b[0m\x1b[?25h\x1b[?1049l"
 KEYS = "q 종료 · c 지금 점검 · r 새로고침"
 STATES = {"active": "활성", "pending": "활성화 대기", "quarantined": "격리됨",
           "revoked": "등록 해제됨", "removed": "제거됨", "unknown": "확인 필요"}
+
+
+def wait_summary(path, since=0, seconds=60):
+    """Installation output uses the service report, never the earlier enrollment response."""
+    deadline = time.monotonic() + seconds
+    while True:
+        summary = {}
+        try:
+            candidate = Path(path).read_text(encoding="utf-8")
+            candidate = json.loads(candidate)
+            updated = candidate.get("updated") if isinstance(candidate, dict) else None
+            state = candidate.get("state") if isinstance(candidate, dict) else None
+            now = time.time()
+            if (type(updated) in (int, float) and since <= updated <= now
+                    and now - updated <= 180 and isinstance(state, str) and state in STATES):
+                summary = candidate
+        except (OSError, ValueError):
+            pass
+        if summary.get("state") in ("active", "quarantined", "revoked") or time.monotonic() >= deadline:
+            return summary
+        time.sleep(2)
+
+
 TEXT_EN = {
     "MINT 엔드포인트": "MINT endpoint", "엔드포인트에서 차단": "Blocked at endpoint",
     "연결 상태": "Connection", "연결됨": "Connected", "연결 끊김": "Disconnected",

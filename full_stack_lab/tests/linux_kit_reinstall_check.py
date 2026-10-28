@@ -44,6 +44,73 @@ class Reinstall(unittest.TestCase):
         self.policy = {"tailscale_node_id": "node", "gateway_ips": ["127.0.0.1"], "gateway_port": 443,
                        "policy_hash": "p", "files": dict.fromkeys(self.core.FILES, "managed")}
 
+    def test_consumed_linux_kit_reports_existing_employee_or_companion_without_reenrollment(self):
+        b = self.boot
+        self.enrollment.unlink()
+        for account in ("emp", "managed-emp"):
+            config = self.root / account / "config.json"
+            config.parent.mkdir()
+            config.write_text('{}')
+            with self.subTest(account=account), patch.object(b, "STATE", self.root), \
+                 patch.object(b, "employee_account", return_value="emp"), patch.object(b, "check_python"), \
+                 patch.object(b, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)), \
+                 patch.dict(sys.modules, {"pwd": ModuleType("pwd"), "grp": ModuleType("grp")}), \
+                 patch.object(b, "connect") as connect, patch.object(b, "rollback") as remove, \
+                 patch.object(sys, "argv", ["bootstrap.py", "--enrollment", str(self.enrollment)]), \
+                 redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(b.main(), 0)
+            self.assertIn("이미 설치됨", output.getvalue())
+            self.assertIn("mcpgw-status --check", output.getvalue())
+            self.assertIn("콘솔에서 새 키트", output.getvalue())
+            connect.assert_not_called()
+            remove.assert_not_called()
+            self.assertFalse(self.enrollment.exists())
+            config.unlink()
+
+    def test_consumed_linux_kit_cannot_use_another_employee_or_partial_install(self):
+        b = self.boot
+        self.enrollment.unlink()
+        (self.root / "other").mkdir()
+        (self.root / "other/config.json").write_text('{}')
+        (self.root / "emp").mkdir()
+        with patch.object(b, "STATE", self.root), patch.object(b, "employee_account", return_value="emp"), \
+             patch.object(b, "check_python"), patch.object(b, "os", SimpleNamespace(name="posix", geteuid=lambda: 0)), \
+             patch.dict(sys.modules, {"pwd": ModuleType("pwd"), "grp": ModuleType("grp")}), \
+             patch.object(b, "connect") as connect, \
+             patch.object(sys, "argv", ["bootstrap.py", "--enrollment", str(self.enrollment)]), \
+             patch("sys.stderr", new_callable=io.StringIO) as error:
+            self.assertEqual(b.main(), 1)
+        self.assertIn("콘솔에서 새 키트", error.getvalue())
+        connect.assert_not_called()
+
+    def test_macos_completion_text_matches_reported_state(self):
+        m = self.mac
+        for state, label in (("active", "활성"), ("pending", "활성화 대기"), ("unknown", "확인 필요")):
+            with self.subTest(state=state), patch.object(sys, "argv", ["managed-macos.py", "--user", "emp", "--enrollment", str(self.enrollment)]), \
+                 patch.object(sys, "platform", "darwin"), patch.object(m.os, "geteuid", return_value=0, create=True), \
+                 patch.object(m, "core_module", return_value=self.core), \
+                 patch.object(m, "install", return_value={"state": state}), \
+                 redirect_stdout(io.StringIO()) as output:
+                m.main()
+            self.assertIn("연결 상태: " + label + "\n", output.getvalue())
+            if state == "active":
+                self.assertNotIn("활성화 대기", output.getvalue())
+
+    def test_consumed_macos_kit_reports_existing_install_without_using_token(self):
+        m = self.mac
+        self.enrollment.unlink()
+        folder = self.root / "managed-emp"
+        folder.mkdir()
+        (folder / 'config.json').write_text('{}')
+        with patch.object(m, "STATE", self.root), patch.object(m, "account_name", return_value="managed-emp"), \
+             patch.object(sys, "argv", ["managed-macos.py", "--enrollment", str(self.enrollment)]), \
+             patch.object(sys, "platform", "darwin"), patch.object(m.os, "geteuid", return_value=0, create=True), \
+             patch.object(m, "install") as install, redirect_stdout(io.StringIO()) as output:
+            m.main()
+        self.assertIn("이미 설치됨", output.getvalue())
+        self.assertIn("콘솔에서 새 키트", output.getvalue())
+        install.assert_not_called()
+
     def test_expired_kit_is_refused_before_anything_changes(self):
         bootstrap = load("bootstrap")
         self.assertTrue(bootstrap.expired({"expires_at": "2026-10-23T11:23:33.649135+00:00"}, now=1792999999))
@@ -151,7 +218,7 @@ class Reinstall(unittest.TestCase):
             stack.enter_context(patch.object(b, "find_clients", return_value={}))
             install = stack.enter_context(patch.object(b, "install_managed", side_effect=lambda *a, **k: events.append("install") or {}))
             stack.enter_context(patch.object(b, "install_check", return_value=([], "")))
-            stack.enter_context(patch.object(b, "SCREEN", Mock()))
+            stack.enter_context(patch.object(b, "SCREEN", Mock(summary={})))
             stack.enter_context(redirect_stdout(io.StringIO()))
             self.assertEqual(b.connect(core, "emp", False, SimpleNamespace(enrollment=self.enrollment, skip_login=True), 0), 0)
         self.assertEqual(events, ["policy", "remove", "remove", "install"])

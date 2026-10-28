@@ -621,22 +621,6 @@ def resume_screen() -> None:
     getattr(SCREEN, "resume", lambda: None)()
 
 
-def wait_active(managed, account: str, seconds: int = 60) -> dict:
-    """The service's own summary until the device is active (the Gateway activates a new simple-mode PC on its
-    first passing heartbeat, about 10 s after the install) or the wait ends."""
-    deadline = time.monotonic() + seconds
-    summary = {}
-    while time.monotonic() < deadline:
-        try:
-            summary = json.loads(managed.status_path(account, "json").read_text())
-        except (OSError, ValueError):
-            summary = {}
-        if summary.get("state") in ("active", "quarantined", "revoked"):
-            break
-        time.sleep(2)
-    return summary
-
-
 def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tuple[str, str]:
     """① A real model answer from the harness the employee will type, as that account (D-239)."""
     name = next((h for h in ("claude", "codex") if h in harnesses), None)
@@ -663,7 +647,7 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tup
 def install_check(managed, account: str, harnesses: list[str], simple: bool) -> tuple[list, str]:
     """The three cells (model answer, tool count, one server's initialize) and the next thing to do."""
     step("설치 확인")
-    summary = wait_active(managed, account)
+    summary = managed.kit_screen.wait_summary(managed.status_path(account, "json"), seconds=0)
     SCREEN.summary = summary
     state = summary.get("state")
     if state != "active":
@@ -798,15 +782,18 @@ def main() -> int:
         managed = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(managed)
         DIAGNOSTIC = managed.diagnostic
+        employee = employee_account(args.user)
         bundle = {}
         if not args.remove:
             if not args.enrollment.is_file():
-                raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
+                if any((STATE / account / "config.json").is_file() for account in (employee, companion_of(employee))):
+                    print("이미 설치됨 · 상태 확인: mcpgw-status --check · 새로 설치하려면 콘솔에서 새 키트를 받으세요.")
+                    return 0
+                raise Failed("등록 파일이 없습니다. 콘솔에서 새 키트를 받으세요.")
             bundle = json.loads(args.enrollment.read_text())
             managed.verify_transport(bundle)
             if expired(bundle):
                 raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
-        employee = employee_account(args.user)
         if args.remove:
             for account in (employee, companion_of(employee)):
                 if installed(account):
@@ -882,13 +869,15 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     if not args.skip_login:
         result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
     cells, next_line = install_check(managed, account, list(placed), simple=not isolated)
+    result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated
                              else {name: item["path"] for name, item in placed.items()}),
                   checks=dict(cells), install_seconds=installing, total_seconds=round(time.monotonic() - started))
     if isolated and companion:
         say(f"격리 계정 {account}에서 실행됩니다. 평소 계정({employee})에서 {' 또는 '.join(placed)}를 실행하세요.")
-    say("로컬 MCP 준비(폴더 만들기·이미지 받기)는 활성화 뒤 백그라운드로 진행됩니다.")
+    say("로컬 MCP 준비(폴더 만들기·이미지 받기): 백그라운드 진행" if result["state"] == "active"
+        else "로컬 MCP 준비(폴더 만들기·이미지 받기): 활성화 뒤 백그라운드 진행")
     say("연결 상태: mcpgw-status (실시간 화면) · mcpgw-status --check (연결 확인)")
     say(f"설치 소요(로그인 제외) {installing}초 · 확인까지 {result['total_seconds']}초")
     SCREEN.result(cells, next_line)

@@ -856,6 +856,7 @@ def install(args):
         set_user_environment(config, ca_environment(config))
         broadcast_environment()
     pythonw = python.with_name("pythonw.exe")
+    started = time.time()
     powershell("""
 $a = New-ScheduledTaskAction -Execute $in.python -Argument $in.arguments
 $t = New-ScheduledTaskTrigger -AtStartup
@@ -866,13 +867,17 @@ Start-ScheduledTask -TaskName $in.name
 """, {"python": str(pythonw), "name": TASK.format(user=args.user.lower()),
       "arguments": f'-B -I -S "{PROGRAMS / "managed-windows.py"}" serve --config "{config_path}"'})
     args.enrollment.unlink()
+    from windows_status import screen_module
+    summary = screen_module.wait_summary(PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"] / "status.json",
+                                         since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "employee": employee, "managed_account": args.user,
-                      "mode": config["mode"], "state": "active" if enrolled.get("state") == "active"
-                      else "pending-organization-activation", "harnesses": harnesses if isolated else {},
+                      "mode": config["mode"], "state": summary.get("state", "unknown"), "harnesses": harnesses if isolated else {},
                       "versions": {} if isolated else harnesses, "launcher_files": launcher_files,
                       "task": TASK.format(user=args.user.lower())}, ensure_ascii=False))
     if isolated:
-        print("\n연결을 신청했습니다. 조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
+        print("\n연결 상태: " + screen_module.STATES.get(summary.get("state"), "확인 필요"))
+        if summary.get("state") == "pending":
+            print("조직 관리자가 콘솔에서 활성화하면 사용할 수 있습니다.")
         if companion:
             print(f"{args.user} 계정으로 로그인해 비밀번호를 정하고, 그 계정에서 codex 또는 claude를 실행하세요.")
         print("처음 한 번은 codex login --device-auth 로 모델 로그인을 하세요.")

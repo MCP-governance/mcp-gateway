@@ -507,6 +507,7 @@ def install(args, prepared=None):
         f"ExecStart=/usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py serve --config {config_path}\n"
         "Restart=always\nRestartSec=10\nUMask=0077\n\n[Install]\nWantedBy=multi-user.target\n")
     subprocess.run(["systemctl", "daemon-reload"], check=True)
+    started = time.time()
     subprocess.run(["systemctl", "enable", "--now", unit], check=True, capture_output=True, text=True)
     try:
         config["home_launchers"] = [] if simple else home_launchers(config)
@@ -514,9 +515,9 @@ def install(args, prepared=None):
         config["home_launchers"] = []  # a new terminal still gets the launcher function
     args.enrollment.unlink()
     write_status_shim()
-    # "active": the Gateway continued the activation of the earlier device of this employee on this PC (D-217).
+    summary = kit_screen.wait_summary(status_path(args.user, "json"), since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
-                      "state": "active" if enrolled.get("state") == "active" else "pending-organization-activation",
+                      "state": summary.get("state", "unknown"),
                       "service": unit, "status_command": str(STATUS_SHIM), "home_launchers": config["home_launchers"]}))
 
 

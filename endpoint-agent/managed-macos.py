@@ -347,10 +347,12 @@ def install(employee, enrollment):
         plist = LAUNCHD / ('org.mcpgw.managed.' + account + '.plist')
         plist.write_bytes(daemon_plist(account, folder / 'config.json', sys.executable))
         plist.chmod(0o644)
+        started = core.time.time()
         run('/bin/launchctl', 'bootstrap', 'system', str(plist))
         enrollment.unlink()
         core.diagnostic('installed', None)
-        return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': 'pending-organization-activation'}
+        summary = core.kit_screen.wait_summary(core.status_path(account, 'json'), since=started)
+        return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': summary.get('state', 'unknown')}
     except BaseException as exc:
         core.diagnostic('install', exc, credentials)
         rollback(account)
@@ -369,8 +371,19 @@ def main():
         if args.remove:
             rollback(account_name(args.user))
         else:
-            print(json.dumps(install(args.user, args.enrollment)))
-            print('연결 상태: 활성화 대기\n실행: 새 터미널에서 codex 또는 claude')
+            if not args.enrollment.is_file():
+                account = account_name(args.user)
+                if (STATE / account / 'config.json').is_file():
+                    print('이미 설치됨 · 상태 확인: cat ' + shlex.quote(str(PROGRAMS / ('status-' + account + '.txt')))
+                          + ' · 새로 설치하려면 콘솔에서 새 키트를 받으세요.')
+                    return
+                parser.exit(1, '등록 파일 없음 · 콘솔에서 새 키트를 받으세요.\n')
+            result = install(args.user, args.enrollment)
+            print(json.dumps(result))
+            core = core_module()
+            print('연결 상태: ' + core.kit_screen.STATES.get(result['state'], '확인 필요'))
+            print('실행: 새 터미널에서 codex 또는 claude' if result['state'] == 'active'
+                  else '상태 확인: 콘솔의 엔드포인트')
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         parser.exit(1, '설치/제거 실패: ' + type(exc).__name__ + '\n')
 

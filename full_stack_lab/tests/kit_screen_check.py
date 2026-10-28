@@ -23,6 +23,32 @@ kit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(kit)
 
 
+class InstallSnapshot(unittest.TestCase):
+    def test_first_pending_report_is_replaced_by_automatic_activation(self):
+        pending = {"updated": 100, "state": "pending", "connected": True}
+        active = {**pending, "updated": 102, "state": "active"}
+        with mock.patch.object(kit.Path, "read_text", side_effect=[json.dumps(pending), json.dumps(active)]), \
+             mock.patch.object(kit.time, "time", return_value=102), mock.patch.object(kit.time, "sleep"):
+            self.assertEqual(kit.wait_summary(kit.Path("snapshot.json"), since=99), active)
+
+    def test_timeout_keeps_pending_quarantine_and_revocation_without_claiming_activation(self):
+        for state in ("pending", "quarantined", "revoked"):
+            report = {"updated": 100, "state": state, "connected": True}
+            with self.subTest(state=state), mock.patch.object(kit.Path, "read_text", return_value=json.dumps(report)), \
+                 mock.patch.object(kit.time, "time", return_value=100):
+                self.assertEqual(kit.wait_summary(kit.Path("snapshot.json"), since=99, seconds=0), report)
+
+    def test_missing_invalid_and_previous_install_reports_cannot_claim_activation(self):
+        for raw in ('null', '[]', '{', '{"state":"active","updated":98}',
+                    '{"state":"active","updated":"bad"}', '{"state":"active","updated":999}',
+                    '{"state":[],"updated":100}'):
+            with self.subTest(raw=raw), mock.patch.object(kit.Path, "read_text", return_value=raw), \
+                 mock.patch.object(kit.time, "time", return_value=100):
+                self.assertEqual(kit.wait_summary(kit.Path("snapshot.json"), since=99, seconds=0), {})
+        with mock.patch.object(kit.Path, "read_text", side_effect=FileNotFoundError):
+            self.assertEqual(kit.wait_summary(kit.Path("snapshot.json"), seconds=0), {})
+
+
 class TTY(io.StringIO):
     def isatty(self):
         return True

@@ -42,7 +42,7 @@ class Bootstrap(unittest.TestCase):
         self.enrollment = Path(self.temp.name) / "enrollment.json"
         self.enrollment.write_text('{}')
 
-    def connect(self, isolated):
+    def connect(self, isolated, state="active"):
         b = self.b
         calls = {}
         args = SimpleNamespace(enrollment=self.enrollment, skip_login=True)
@@ -58,6 +58,7 @@ class Bootstrap(unittest.TestCase):
         doubles["install_check"].return_value = ([("모델 응답", "claude 정상 · 2.0초"), ("도구", "4개 (서버 1/1)"),
                                                   ("서버 연결", "learn 연결 정상")], "새 터미널에서 claude 또는 codex를 실행하세요")
         screen = mock.Mock()
+        screen.summary = {"state": state, "connected": True}
         with mock.patch.multiple(b, **doubles), mock.patch.object(b, "SCREEN", screen), \
                 mock.patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda name: SimpleNamespace(pw_uid=1000))), \
                 redirect_stdout(io.StringIO()) as out:
@@ -79,6 +80,7 @@ class Bootstrap(unittest.TestCase):
         calls["ensure_packages"].assert_called_once_with(False)
         self.assertEqual((result["mode"], result["managed_account"]), ("simple", "emp"))
         self.assertEqual(result["checks"]["서버 연결"], "learn 연결 정상")
+        self.assertEqual(result["state"], "active")
         screen.result.assert_called_once()  # the three cells and the next step reach the screen
 
     def test_isolated_mode_is_the_earlier_install(self):
@@ -91,6 +93,12 @@ class Bootstrap(unittest.TestCase):
         calls["write_shims"].assert_called_once()
         calls["ensure_packages"].assert_called_once_with(True)
         self.assertEqual(result["mode"], "isolated")
+
+    def test_pending_quarantine_revocation_and_unknown_are_not_reported_as_active(self):
+        for state in ("pending", "quarantined", "revoked", "unknown"):
+            with self.subTest(state=state):
+                _, _, result, _ = self.connect(isolated=False, state=state)
+                self.assertEqual(result["state"], state)
 
     def test_isolated_install_does_not_name_a_harness_the_pc_lacks(self):
         b = self.b

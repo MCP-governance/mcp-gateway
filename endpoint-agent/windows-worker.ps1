@@ -351,10 +351,15 @@ try {
     # Simple mode: the employee is signed in now, so the tray starts in their session at once (also when UAC ran as
     # another administrator). A companion account has no session until it signs in.
     if ($person -eq $sid -or ($managed -and -not $isolated)) { Start-ScheduledTask -TaskName "MCPGatewayTray-$person" }
+    $management = '확인 필요'
+    if ($managed) {
+        $management = @{ active='활성'; pending='활성화 대기'; quarantined='격리됨'; revoked='철회됨' }[$summary.state]
+        if (-not $management) { $management = '확인 필요' }
+    }
     Set-EndpointResult 100 '설치 완료' 'completed' $(if ($managed -and -not $isolated) {
-        "지금 계정 그대로 사용`r`n연결 확인`t트레이 아이콘 > 연결 확인`r`n모델 로그인`t트레이 아이콘 > 모델 로그인"
+        "연결 상태`t$management`r`n지금 계정 그대로 사용`r`n연결 확인`t트레이 아이콘 > 연결 확인`r`n모델 로그인`t트레이 아이콘 > 모델 로그인"
     } elseif ($managed) {
-        "조직 활성화 대기`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
+        "연결 상태`t$management`r`n관리 계정`t$user`r`n모델 로그인`t관리 계정에서 실행`r`nClaude`tclaude auth login`r`nCodex`tcodex login --device-auth"
     } else { '트레이 실행' })
 } catch {
     $known = @('경로 형식 오류', '설치 폴더 권한 적용 실패', '설치 경로 연결 파일 확인 필요', '게이트웨이 주소 형식 오류',

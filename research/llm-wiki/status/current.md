@@ -1,6 +1,10 @@
-# 개발 현황 — 2026-10-27
+# 개발 현황 — 2026-10-28
 
 지금 상태만 담는다. 열린 일의 담당·완료 조건·근거는 [백로그](backlog.md) 한 곳, 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이다. 같은 사실을 여기와 백로그 두 곳에 쓰지 않는다. 10-23 판 원본은 [이력](history/2026-10-23-current.md), 처음 오는 에이전트의 읽기 순서는 [START_HERE](../START_HERE.md).
+
+## 10-28 설치 결과·재실행 수정
+
+- 같은 `10/27-bugfix-round1` 작업 트리에 D-271·D-272를 구현했다. 관련 단위 시험 110건·Node 4건 통과, POSIX 2건 생략이며 별도 환경 제약 시험은 통과로 세지 않았다. Git 메타데이터 쓰기 권한 오류로 이번 변경은 미커밋이다. 실기기 재검증·배포는 미실행이며 [작업 보고](reports/2026-10-28-kit-install-result.md)와 [백로그](backlog.md#s4-후속-2026-10-27)에 남겼다.
 
 ## 10-27 S4 잔여 수정
 
