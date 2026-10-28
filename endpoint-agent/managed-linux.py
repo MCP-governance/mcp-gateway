@@ -946,10 +946,7 @@ def codex_rpc(config, calls, timeout=60):
     return answers
 
 
-def collect_inventory(config):
-    """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
-    marks every item of a reported harness absent, so a failed read must not look like an empty one."""
-    found = {}
+def read_versions(config):
     for tool in config.get("harnesses", ()):
         try:
             version = re.search(r"\d+\.\d+[0-9A-Za-z.+_-]*", run_text(config, tool, ["--version"], timeout=30))
@@ -957,6 +954,13 @@ def collect_inventory(config):
                 HARNESS_VERSIONS[tool] = version.group(0)[:40]
         except (ValueError, OSError, subprocess.TimeoutExpired):
             pass  # the version is shown when known, never required
+
+
+def collect_inventory(config):
+    """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
+    marks every item of a reported harness absent, so a failed read must not look like an empty one."""
+    found = {}
+    read_versions(config)
     if "claude" in config.get("harnesses", ()):
         try:
             items = parse_claude_servers(run_text(config, "claude", ["mcp", "list"]), config["gateway_url"])
@@ -1093,6 +1097,8 @@ def serve(args):
     except OSError:
         kit = None
     def harness_inventory():
+        # 판본은 `--version` 하나라 바로 읽는다: 설치 끝 화면과 첫 `mint`에서 하네스가 「—」로 보이지 않게.
+        read_versions(config)
         time.sleep(60)  # after the first heartbeat: the employee's harness gets its token first
         while True:
             try:
