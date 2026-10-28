@@ -194,7 +194,7 @@ async def applicant_device(token: str, intake_id: str) -> str:
             return device["endpoint_id"]
     row = await db.fetch_one(
         """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active' AND managed_state='active'
-           AND (local_uid IS NOT NULL OR (platform='windows' AND detail->>'local_sid' IS NOT NULL)) ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
+           AND (local_uid IS NOT NULL OR detail->>'local_sid' IS NOT NULL) ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
     if not row:
         raise ValueError("신청자의 활성 관리형 PC가 없어 로컬 실행 계약을 확인할 수 없습니다.")
     bound = await db.fetch_one(
@@ -270,7 +270,8 @@ def control_generation(server_id: str) -> str:
 
 async def _device(device_id: str | None) -> dict:
     device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (device_id,)) if device_id else None
-    if not device or device["status"] != "active" or device["managed_state"] != "active" or not (device.get("local_uid") or (device.get("platform") == "windows" and (device.get("detail") or {}).get("local_sid"))):
+    # Windows는 platform 열이 아니라 local_sid로 안다: 관측기 등록 보고가 platform을 「Windows 11」로 덮어쓴다(managed_platform, pj3 10-28).
+    if not device or device["status"] != "active" or device["managed_state"] != "active" or not (device.get("local_uid") or (device.get("detail") or {}).get("local_sid")):
         raise NotStarted("로컬 실행을 맡을 활성 관리형 엔드포인트가 없습니다.")
     if not device.get('heartbeat_at') or (datetime.now(UTC)-device['heartbeat_at']).total_seconds() >= 180:
         raise NotStarted("엔드포인트 점검 보고가 만료됐습니다.")
