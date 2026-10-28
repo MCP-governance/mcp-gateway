@@ -5,6 +5,7 @@ DB·소켓·AppArmor는 대역이며 집행 증거가 아니다. 저장소 루�
 import ast
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import socketserver
@@ -385,7 +386,7 @@ class StatusCommand(unittest.TestCase):
     def test_status_command_reads_the_published_summary(self):
         module = load_module("managed-linux")
         with patch.object(module, "PROGRAMS", Path(self.folder.name)), \
-             patch.object(module, "Screen", return_value=SimpleNamespace(window=None)), \
+             patch.object(module, "Screen", side_effect=lambda: module.kit_screen.Screen(output=io.StringIO(), input=io.StringIO())), \
              patch.object(module, "check_connection") as connection_check:
             module.publish_status(self.summary(state="pending"))
             with patch("builtins.print") as printed:

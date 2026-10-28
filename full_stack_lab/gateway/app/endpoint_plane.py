@@ -1052,7 +1052,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     # An administrator changed the harness controls a moment ago: a heartbeat for the previous rendering is a device
     # that has not fetched yet (it applies the policy before its next heartbeat), not a tampered one (D-298).
     # Only a device that holds exactly what it held at its last good heartbeat, with every check passing, is behind.
-    changed = await db.fetch_one("SELECT controls_changed_at FROM endpoint_settings WHERE id=1")
+    changed = None if installed else await db.fetch_one("SELECT controls_changed_at FROM endpoint_settings WHERE id=1")
     behind = (not installed and bool(changed and changed.get("controls_changed_at"))
               and (datetime.now(UTC) - changed["controls_changed_at"]).total_seconds() < HEARTBEAT_SECONDS
               and ((device.get("detail") or {}).get("install_receipt") or {}).get("match") is True

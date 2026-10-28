@@ -916,8 +916,11 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     cells, next_line = install_check(managed, account, list(placed), simple=not isolated,
                                     signed=result.setdefault("model_signed_in", {}))
     model_path = managed.PROGRAMS / f"model-{account}.json"
-    managed.private_write(model_path, json.dumps(result["model_signed_in"]))
-    model_path.chmod(0o644)
+    try:
+        managed.private_write(model_path, json.dumps(result["model_signed_in"]))
+        model_path.chmod(0o644)
+    except OSError:
+        pass  # the service re-reads the sign-in state every 30 seconds (D-297); the install itself is done
     result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated

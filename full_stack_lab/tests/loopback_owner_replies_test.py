@@ -112,7 +112,7 @@ class Installer(unittest.TestCase):
                  enroll=lambda bundle, *args, **kwargs: ({"device_key": "unit-device"}, {}, {}),
                  diagnostic=lambda *args, **kwargs: None)):
             enrollment = Path(folder) / "enrollment.json"
-            enrollment.write_text('{"gateway_url":"https://gateway.example"}', encoding="utf-8")
+            enrollment.write_text('{"gateway_url":"https://gateway.example","enrollment_token":"unit-grant"}', encoding="utf-8")
             for companion in (True, False):
                 with self.subTest(companion=companion), \
                      mock.patch.object(sys, "argv", ["bootstrap.py", "--isolated", "--skip-login", "--enrollment", str(enrollment)]), \
