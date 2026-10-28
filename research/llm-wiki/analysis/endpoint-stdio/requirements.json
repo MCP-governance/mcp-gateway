@@ -1,0 +1,276 @@
+{
+  "base_commit": "0c0bb1512865ff72a53fb120a7442ad7a17b0ff0",
+  "code_revision": "uncommitted worktree; file SHA-256 anchors",
+  "requirements": [
+    {
+      "id": "ES-01",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "장치 자격으로 승인 소스 수신 및 철회 재확인",
+      "conditions": [
+        "정상 승인→수신",
+        "다운로드 중 철회·세대 교체→거부·감사 미기록",
+        "상한 초과·리디렉트→거부"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/gateway/app/local_sources.py",
+          "symbol": "async def authorized_source",
+          "line": 61,
+          "sha256": "013fbae943d20090071eddd49b5f46544e4a76f84c2a936eb2978e4fb74c92c8"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/main.py",
+          "symbol": "async def endpoint_local_source",
+          "line": 1766,
+          "sha256": "3838733bd6e3a576b9f071370efdd852b0fe27f25cd659262b8e326efb10a7fa"
+        }
+      ],
+      "tests": [
+        "test_current_authorization_and_only_bound_observer_can_fetch",
+        "test_download_rechecks_after_io_and_audits_only_success",
+        "test_stream_bounds_and_internal_credentials_without_device_key"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-02",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "소스·잠금·준비 캐시 검증과 실패 시 미실행",
+      "conditions": [
+        "트리/잠금 해시 일치→준비",
+        "해시·네트워크·런타임 부재·기한 초과→실패",
+        "캐시 변경→실행 금지"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/stdio_source.py",
+          "symbol": "def prepare(",
+          "line": 102,
+          "sha256": "b14178dbcc83a196ab79ad305124ee286d33e5a06967fcebe8017e640194302a"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/local_sources.py",
+          "symbol": "def source_for(",
+          "line": 49,
+          "sha256": "013fbae943d20090071eddd49b5f46544e4a76f84c2a936eb2978e4fb74c92c8"
+        }
+      ],
+      "tests": [
+        "test_prepare_and_verified_cache_no_second_install",
+        "test_source_hash_lock_hash_and_network_failure_never_install",
+        "test_missing_node_runtime_and_missing_lock_fail",
+        "test_unprotected_root_and_deadline_do_not_download",
+        "test_changed_prepared_file_fails_closed"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-03",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "기존 프로토콜과 계약 검사를 공유하는 프로세스 실행",
+      "conditions": [
+        "정상 계약→도구 호출",
+        "다른 계약→tools/call 미실행",
+        "기한 초과→정지 확인",
+        "환경 허용 목록·실행기 cwd"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/local-runner.py",
+          "symbol": "class ProcessSession",
+          "line": 493,
+          "sha256": "2062e660f51f432afa454ee1b60a5450c9bf6ae96caa9a362bfc6707ae944461"
+        },
+        {
+          "file": "endpoint-agent/local-runner.py",
+          "symbol": "def execute_job(",
+          "line": 588,
+          "sha256": "2062e660f51f432afa454ee1b60a5450c9bf6ae96caa9a362bfc6707ae944461"
+        }
+      ],
+      "tests": [
+        "test_source_mode_uses_same_contract_and_refuses_mismatch",
+        "test_silent_process_deadline_and_confirmed_tree_stop",
+        "test_environment_and_path_boundaries",
+        "test_windows_path_command_has_no_shell_and_no_host_environment"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-04",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "Windows 직원 로그온 토큰·파이프 상속 제한·작업 개체 수명",
+      "conditions": [
+        "SID 일치 토큰만 복제",
+        "다른 직원·세션 부재→프로세스 미생성",
+        "파이프 3개만 상속·허용 목록 환경",
+        "정지 생성→Job 결속→재개",
+        "결속 실패→재개 금지·핸들 회수",
+        "실제 SYSTEM/세션 검수는 미실행"
+      ],
+      "code": [
+        {
+          "file": "endpoint-agent/stdio_windows.py",
+          "symbol": "def signed(",
+          "line": 13,
+          "sha256": "26cc131a696efada88d4e3b81d0007a1f9f8ef1f1c9f9f1130a3c0693e9fe2d1"
+        },
+        {
+          "file": "endpoint-agent/stdio_windows.py",
+          "symbol": "class Job",
+          "line": 154,
+          "sha256": "26cc131a696efada88d4e3b81d0007a1f9f8ef1f1c9f9f1130a3c0693e9fe2d1"
+        },
+        {
+          "file": "endpoint-agent/managed-windows.py",
+          "symbol": "def serve(",
+          "line": 955,
+          "sha256": "e5e380fe0568f6507cd91c95b5d1481203b1066e312567093663b3268ed65525"
+        },
+        {
+          "file": "endpoint-agent/stdio_windows.py",
+          "symbol": "def user_token(",
+          "line": 80,
+          "sha256": "26cc131a696efada88d4e3b81d0007a1f9f8ef1f1c9f9f1130a3c0693e9fe2d1"
+        }
+      ],
+      "tests": [
+        "test_ctypes_user_creation_inherits_only_pipes_and_binds_before_resume",
+        "test_wts_sid_mismatch_and_duplicate_token_cleanup",
+        "test_missing_session_never_creates_a_process",
+        "test_named_empty_job_recovery_is_idempotent",
+        "test_ed25519_valid_tampered_message_signature_and_key"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-05",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "솔루션 실행 제거와 기존 등록의 수동 재승인",
+      "conditions": [
+        "소스는 전송 방식 무관 엔드포인트 stdio",
+        "runtime 실행 API·worker·compose 서비스 제거",
+        "과거 기록 보존·운영 대상 제외",
+        "관리자 재검증·과거 커밋 유지·사람 계약 승인",
+        "원격 MCP는 URL 중계"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/gateway/app/registry.py",
+          "symbol": "def servers(",
+          "line": 102,
+          "sha256": "ab10253a1a1a235291a0d0faf06ff2e8d0f5cb9d0a9e4594382d1a5d09a48884"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/agent_service.py",
+          "symbol": "async def queue_validation(",
+          "line": 1382,
+          "sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/core.py",
+          "symbol": "async def register_server(",
+          "line": 620,
+          "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08"
+        }
+      ],
+      "tests": [
+        "test_solution_runtime_routes_and_worker_are_removed",
+        "test_legacy_execution_is_ineligible_without_mutating_history",
+        "test_migration_revalidation_preserves_commit_and_requires_admin"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-06",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "키트의 기존 승인 목록·설치 파일 무결성과 함께 배포",
+      "conditions": [
+        "새 실행기·pip 파일을 키트 해시에 포함",
+        "키트 파일 변조·추가 경로→거부",
+        "기존 설치·상태 버전 비교 유지"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/gateway/app/agent_service.py",
+          "symbol": "async def download_managed_kit(",
+          "line": 447,
+          "sha256": "371e867a2d9834b7b9110a8a403cd0ff960262e758e44d1b270ad67136a52eaa"
+        },
+        {
+          "file": "endpoint-agent/windows-oneclick.ps1.in",
+          "symbol": "$required =",
+          "line": 28,
+          "sha256": "c724e4a41b2430c097acbf32c2c09a06221a5cabf94885f4716347e0e5ceb693"
+        },
+        {
+          "file": "endpoint-agent/windows-trust.ps1",
+          "symbol": "$required =",
+          "line": 132,
+          "sha256": "8973d9e58056bc6f219e1cb48ac9d268a965f7d2d5c121968ffbe08a8aad240d"
+        }
+      ],
+      "tests": [
+        "test_download_includes_runtime_and_missing_runtime_does_not_consume_enrollment",
+        "test_archive_validation_rejects_tampering_and_extra_paths_before_any_installation",
+        "test_kit_version_is_the_same_on_the_pc_and_in_health"
+      ],
+      "status": "local unit/static evidence; deployment and OSS MCP execution unverified"
+    },
+    {
+      "id": "ES-07",
+      "decision": "D-299",
+      "backlog": "DEV-83",
+      "requirement": "공급망 검사 집합에 결속한 플랫폼별 wheel 해시 잠금",
+      "conditions": [
+        "같은 commit 내부 의존성·Hatch 상수 비실행 파싱",
+        "Windows3.13/Linux3.12 wheel만 해석·수신",
+        "Syft/Trivy 확정 집합·SBOM 포함 강제",
+        "서명 잠금 해시·장치 인증·다운로드 후 철회 재확인",
+        "동적 의존성·빌드 필요·SBOM 불일치·잠금 변조→실패"
+      ],
+      "code": [
+        {
+          "file": "full_stack_lab/supply_chain/dependency_locks.py",
+          "symbol": "def generate(",
+          "line": 80,
+          "sha256": "38f27bcb5e41f5384f10589b41177ac27b3c055df1f533e40727b08ed47ba071"
+        },
+        {
+          "file": "full_stack_lab/supply_chain/dependency_locks.py",
+          "symbol": "def verify_sbom(",
+          "line": 149,
+          "sha256": "38f27bcb5e41f5384f10589b41177ac27b3c055df1f533e40727b08ed47ba071"
+        },
+        {
+          "file": "full_stack_lab/supply_chain/intake_worker.py",
+          "symbol": "def validate(",
+          "line": 217,
+          "sha256": "edc59810d0f31226829bcdcdfa0b997f9d97f299f81be144dc7ea5aabc35f5c6"
+        },
+        {
+          "file": "full_stack_lab/gateway/app/local_sources.py",
+          "symbol": "async def download(",
+          "line": 120,
+          "sha256": "013fbae943d20090071eddd49b5f46544e4a76f84c2a936eb2978e4fb74c92c8"
+        }
+      ],
+      "tests": [
+        "test_platform_wheels_hashes_and_scanner_set_match",
+        "test_hatch_dynamic_version_is_read_as_data_without_importing",
+        "test_sbom_must_include_every_locked_name_and_version",
+        "test_lock_download_is_authenticated_rechecked_and_hash_verified",
+        "test_target_lock_download_and_runtime_mismatch"
+      ],
+      "status": "로컬 단위/정적 검사; 실제 해석·스캐너·설치·OSS 실행 미실행"
+    }
+  ],
+  "previous_base_commit": "91524ab5e0d53f08439e8233aa44b979ca0cfd63",
+  "round": 2
+}

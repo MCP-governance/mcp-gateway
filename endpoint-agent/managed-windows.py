@@ -346,7 +346,7 @@ def set_user_environment(config, values, *, owned_only=False):
 
 # -- Gateway ---------------------------------------------------------------------
 
-def request(config, path, body=None, *, credential=True):
+def request(config, path, body=None, *, credential=True, download=None, deadline=None):
     context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
@@ -358,7 +358,20 @@ def request(config, path, body=None, *, credential=True):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=context))
-    with opener.open(urllib.request.Request(config["gateway_url"] + path, data=data, headers=headers), timeout=15) as response:
+    with opener.open(urllib.request.Request(config["gateway_url"] + path, data=data, headers=headers), timeout=min(15, max(.001, deadline-time.monotonic())) if deadline is not None else 15) as response:
+        if download is not None:
+            total = 0
+            while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('소스 수신 기한이 지났습니다')
+                block = response.read(65536)
+                if not block:
+                    break
+                total += len(block)
+                if total > 128 << 20:
+                    raise ValueError('소스 크기 상한')
+                download.write(block)
+            return response.headers
         return json.loads(response.read(131072))
 
 
@@ -815,7 +828,7 @@ def enroll(args):
                              else "등록 자격 확인 필요 · 새 키트로 다시 시도") from None
         raise
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
-    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey") if k in bundle})
     folder = STATE / args.user.lower()
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
                   source_sid=source_person["sid"] if source_person else person["sid"],
@@ -965,6 +978,34 @@ def serve(args):
             log.unlink()
         with open(log, "a", encoding="utf-8") as output:
             output.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry}, ensure_ascii=False) + "\n")
+    import importlib.util
+    runner_path = Path(__file__).with_name('local-runner.py')
+    runner_spec = importlib.util.spec_from_file_location('local_runner', runner_path)
+    runner = importlib.util.module_from_spec(runner_spec)
+    runner_spec.loader.exec_module(runner)
+    source_root = PROGRAMS / 'sources' / config['sid']
+    def source_protected(path):
+        if any(p.exists() and p.lstat().st_file_attributes & 0x400 for p in (path, *path.parents)):
+            return False
+        if not protected([PROGRAMS]):
+            return False
+        if path == source_root and not path.exists():
+            lock_down(path, readers=False)
+            subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                           check=True, capture_output=True)
+        paths = [path, *path.rglob('*')]
+        if any(p.lstat().st_file_attributes & 0x400 for p in paths):
+            return False
+        return protected(paths)
+    def source_seal(path):
+        lock_down(path, readers=False)
+        subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                       check=True, capture_output=True)
+        return source_protected(path)
+    runner_config={**config, "uid":None, "source_root":str(source_root),
+                   "source_protected":source_protected, "source_seal":source_seal}
+    for target in (runner.run, runner.prepare):
+        threading.Thread(target=target, args=(runner_config, request, record), daemon=True).start()
     latest = {"inventory": "pending", "os": {"state": "failed", "error_code": "not_run", "accepted_count": 0}}
 
     def observe():

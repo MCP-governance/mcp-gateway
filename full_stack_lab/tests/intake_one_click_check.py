@@ -170,8 +170,6 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(params[2].obj, self.state["evidence"])
                 self.state["evidence"] = copy.deepcopy(params[0].obj)
                 return {"id": REQUEST_ID}
-            if "SELECT endpoint FROM mcp_runtimes" in sql:
-                return {"endpoint": self.catalog["endpoint"]}
             return copy.deepcopy(self.state)
 
         async def transition(sql, params, **event):
@@ -256,12 +254,16 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
 
     async def test_repository_one_approval_publishes_and_registers(self):
         self.state = row("repository")
-        preview = await self.preview()
-        await service.approve_and_register(REQUEST_ID, self.approval(preview), self.admin, "console-token")
+        self.state['evidence']['local_run'] = {'source': {'commit': self.state['commit_sha']}}
+        signed = {'manifest': {'source': self.state['evidence']['local_run']['source']}, 'signature': 'unit-fixture'}
+        with patch.object(service, 'signed_local_run', AsyncMock(return_value=signed), create=True):
+            preview = await self.preview()
+            await service.approve_and_register(REQUEST_ID, self.approval(preview), self.admin, "console-token")
         service.publish_internal_repo.assert_awaited_once()
         self.assertEqual(len(self.registered), 1)
         self.assertEqual(self.state["provenance"]["verification"]["by"], "admin-a")
-        self.assertEqual(self.registered[0]["endpoint"], self.catalog["endpoint"])
+        self.assertEqual(self.registered[0]["endpoint"], service.local_jobs.PREFIX + preview['proposal']['server_id'])
+        self.assertEqual(self.registered[0]['local'], signed)
 
     async def test_gateway_scope_guard_accepts_exact_review_and_refuses_edits(self):
         preview = await self.preview()
@@ -397,9 +399,8 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
             await service.approve_and_register(REQUEST_ID, self.approval(preview), self.admin, "console-token")
         self.assertEqual(self.registered, [])
 
-    async def test_repository_without_active_runtime_is_not_registered(self):
+    async def test_repository_without_endpoint_execution_is_not_registered(self):
         self.state = row("repository")
-        service.db.fetch_one.side_effect = AsyncMock(side_effect=lambda sql, params=(), connection=None: None if "SELECT endpoint FROM" in sql else copy.deepcopy(self.state))
         preview = await self.preview()
         self.assertIn("execution-missing", {b["code"] for b in preview["proposal"]["blockers"]})
         with self.assertRaises(HTTPException):

@@ -201,7 +201,7 @@ up() {
   echo "[2/4] 게이트웨이·콘솔·검사기"
   # OPA와 게이트웨이는 정책 파일을 기동할 때만 읽는다. 정책이 바뀐 판본에서도 반영되게 다시 만든다.
   dc up -d --force-recreate opa gateway
-  dc up -d db presidio-analyzer presidio-anonymizer agent-service intake-worker runtime-worker corp-git
+  dc up -d db presidio-analyzer presidio-anonymizer agent-service intake-worker corp-git
   wait_ready
   first_admin
   echo "[3/4] HTTPS 앞단·모델 프록시 ($MINT_BIND)"
@@ -292,9 +292,9 @@ backup() {
   echo "백업: $dir"
   dc exec -T db pg_dump -U mcp -d mcp_governance -Fc > "$dir/mcp_governance.dump"
   # 폐기 목록·내부 Git은 DB와 같은 시점이어야 하므로 쓰는 서비스를 잠시 멈추고 묶는다.
-  dc stop gateway agent-service runtime-worker corp-git >/dev/null
+  dc stop gateway agent-service corp-git >/dev/null
   local v; for v in "${VOLUMES[@]}"; do volume_tar save "$v" "$dir"; done
-  dc start corp-git gateway agent-service runtime-worker >/dev/null
+  dc start corp-git gateway agent-service >/dev/null
   (umask 077; cp .env "$dir/env"; printf '%s\n' "$MCP_BUILD_REVISION" > "$dir/VERSION")
   # LiteLLM 매핑·CA는 함께 둔다. 관리 키는 비밀 저장소가 정본이라 복구 뒤 rotate-key로 다시 넣는다.
   local f; for f in bindings.json ca.pem; do [[ ! -f "litellm/$f" ]] || cp "litellm/$f" "$dir/litellm-$f"; done
@@ -320,7 +320,7 @@ restore() {
   local f; for f in bindings.json ca.pem; do [[ ! -f "$dir/litellm-$f" ]] || { cp "$dir/litellm-$f" "litellm/$f"; chmod 644 "litellm/$f"; }; done
   echo "복구: $dir (백업 판본 $(cat "$dir/VERSION" 2>/dev/null || echo '—'), 현재 체크아웃 $MCP_BUILD_REVISION)"
   dc build -q
-  dc stop caddy model-proxy gateway agent-service intake-worker runtime-worker corp-git >/dev/null 2>&1 || true
+  dc stop caddy model-proxy gateway agent-service intake-worker corp-git >/dev/null 2>&1 || true
   local v
   for v in "${VOLUMES[@]}"; do
     if [[ " ${KEEP_IF_PRESENT[*]} " == *" $v "* ]] && docker volume inspect "$(project)_$v" >/dev/null 2>&1; then

@@ -22,8 +22,6 @@ from unittest.mock import AsyncMock, Mock, patch
 LAB = Path(__file__).resolve().parent.parent
 sys.path[:0] = [str(LAB / "gateway"), str(LAB / "runtime"), str(LAB / "supply_chain")]
 from app import disposal
-import image_scan
-import trivy_scan
 
 
 def ops_module():
@@ -54,71 +52,6 @@ ops, DEPENDENCIES = ops_module()
 NOW = datetime(2026, 10, 17, tzinfo=timezone.utc)
 FINDING = {"id": "CVE-example", "target": "linux", "package": "lib-example", "installed_version": "1", "severity": "CRITICAL"}
 IMAGE = "sha256:" + "a" * 64
-
-
-class ImageScan(unittest.TestCase):
-    def test_deadline_boundary_survives_a_new_scan(self):
-        first = image_scan.assess([FINDING], {}, NOW)
-        self.assertFalse(image_scan.assess([FINDING], first["critical"], NOW + timedelta(days=7, microseconds=-1))["overdue"])
-        overdue = image_scan.assess([FINDING], first["critical"], NOW + timedelta(days=7))
-        self.assertEqual(len(overdue["overdue"]), 1)
-        self.assertEqual(first["critical"], overdue["critical"])
-        self.assertFalse(image_scan.assess([], first["critical"], NOW + timedelta(days=8))["critical"])
-
-    def test_report_cannot_truncate_away_critical_findings(self):
-        with tempfile.TemporaryDirectory(dir=LAB) as folder:
-            report = Path(folder) / "report.json"
-            items = [{"Severity": "LOW", "VulnerabilityID": f"low-{i}"} for i in range(205)]
-            items.append({"Severity": "CRITICAL", "VulnerabilityID": "last-critical"})
-            report.write_text(json.dumps({"SchemaVersion": 2, "Results": [{"Target": "x", "Vulnerabilities": items}]}))
-            counts, findings = trivy_scan.trivy_counts(report, Path(folder), limit=None)
-            self.assertEqual(counts["CRITICAL"], 1)
-            self.assertEqual(findings[-1]["id"], "last-critical")
-            report.write_text("{}")
-            with self.assertRaises(ValueError):
-                trivy_scan.trivy_counts(report, Path(folder))
-
-    def run_scan(self, *, age=0, code=0, image=IMAGE, malformed=False):
-        def run(command, **_):
-            if command[1] == "image":
-                report = Path(command[command.index("--output") + 1])
-                report.write_text("{" if malformed else json.dumps({"SchemaVersion": 2,
-                    "Metadata": {"ImageID": image}, "Results": []}))
-                self.assertEqual(command[-1], IMAGE)
-                self.assertIn("--image-src", command)
-                return types.SimpleNamespace(returncode=code)
-            return types.SimpleNamespace(returncode=0, stdout=json.dumps({"VulnerabilityDB": {
-                "UpdatedAt": (NOW - timedelta(days=age)).isoformat()}}))
-        original = tempfile.TemporaryDirectory
-        with patch.object(image_scan.subprocess, "run", side_effect=run), patch.object(
-                image_scan.tempfile, "TemporaryDirectory", side_effect=lambda **kw: original(dir=LAB, **kw)):
-            return image_scan.scan(IMAGE, {}, NOW)
-
-    def test_fresh_db_seven_days_is_accepted(self):
-        self.assertEqual(self.run_scan(age=7)["status"], "checked")
-
-    def test_stale_future_missing_bad_scanner_and_wrong_image_are_not_passes(self):
-        for kwargs in ({"age": 7.01}, {"age": -1}, {"code": 1}, {"image": "sha256:" + "b" * 64}, {"malformed": True}):
-            with self.subTest(kwargs=kwargs), self.assertRaises((ValueError, RuntimeError)):
-                self.run_scan(**kwargs)
-        for document in ({}, {"VulnerabilityDB": {"UpdatedAt": "bad"}}, {"VulnerabilityDB": {"UpdatedAt": "2026-01-01T00:00:00"}}):
-            self.assertIsNone(trivy_scan.database_time(document))
-
-    def test_scanner_failure_records_hold_and_preserves_deadline(self):
-        previous = image_scan.assess([FINDING], {}, NOW)["critical"]
-        connection = Mock()
-        connection.execute.return_value.fetchone.side_effect = [
-            {"acquired": True}, {"runtime_id": "r", "checked_at": NOW, "result": {"critical": previous, "status": "failed"}}]
-        event = Mock()
-        with patch.dict(sys.modules, DEPENDENCIES), patch.object(image_scan, "scan", side_effect=OSError("unavailable")):
-            reason = image_scan.rescan(connection, {"id": "r", "image_id": IMAGE, "intake_id": "i"}, event)
-        self.assertEqual(reason, "운영 이미지 검사 실패")
-        event.assert_called_once()
-        self.assertEqual(event.call_args.kwargs["scope"]["scan"]["critical"], previous)
-        queries = "\n".join(call.args[0] for call in connection.execute.call_args_list)
-        self.assertIn("INSERT INTO runtime_image_scans", queries)
-        self.assertIn("INSERT INTO ops_suspensions", queries)
-        self.assertIn("status='DISABLED'", queries)
 
 
 class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
@@ -180,7 +113,7 @@ class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(ops.selected("other", "drift"))
             self.assertFalse(ops.selected("chosen", "anomaly"))
 
-    async def test_suspend_stops_runtime_and_never_reactivates(self):
+    async def test_suspend_disables_server_and_never_reactivates(self):
         connection = AsyncMock()
         cursor = AsyncMock()
         cursor.fetchone.side_effect = [{"status": "READY"}, {"id": 1}]
@@ -192,7 +125,7 @@ class AlertSelfTest(unittest.IsolatedAsyncioTestCase):
         ops.db.fetch_one = AsyncMock(return_value={"status": "READY", "suspended": False})
         await ops.suspend("chosen", "drift", "자동 중지", {"findings": []})
         queries = "\n".join(c.args[0] for c in connection.execute.call_args_list)
-        self.assertIn("status='STOPPING'", queries)
+        self.assertNotIn("UPDATE mcp_runtimes", queries)
         self.assertIn("status='DISABLED'", queries)
         self.assertIn("INSERT INTO approval_events", queries)
         self.assertNotIn("status='READY'", queries)
@@ -412,7 +345,7 @@ class Disposal(unittest.TestCase):
         queries = "\n".join(c.args[0] for c in connection.execute.call_args_list)
         self.assertIn("INSERT INTO agent_revoked_tokens", queries)
         self.assertIn("lifecycle='RETIRED'", queries)
-        self.assertIn("status='STOPPING'", queries)
+        self.assertNotIn("UPDATE mcp_runtimes", queries)
         self.assertIn("INSERT INTO approval_events", queries)
         self.assertNotIn("UPDATE decisions", queries)
 

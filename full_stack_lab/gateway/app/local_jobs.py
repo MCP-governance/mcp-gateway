@@ -38,6 +38,7 @@ RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 102
 CLAIM_SECONDS = 5
 RUN_SECONDS = 20
 PREPARE_SECONDS = 180
+SOURCE_PREPARE_SECONDS = 1800
 QUEUE_LIMIT = 8
 ACTIVE_LIMIT = 1
 RATE_LIMIT = 30
@@ -49,7 +50,7 @@ transport_context = contextvars.ContextVar("local_job_transport", default={})
 IMAGE = re.compile(r"^[a-z0-9][a-z0-9._/:-]{0,200}@sha256:[0-9a-f]{64}$")
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
 # Loader and interpreter hooks would let a manifest run code the image does not contain.
-ENV_DENIED = re.compile(r"^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|BASH_ENV$|ENV$|PATH$|HOME$)")
+ENV_DENIED = re.compile(r"^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|NODE_PATH$|SYSTEMROOT$|WINDIR$|COMSPEC$|PATHEXT$|BASH_ENV$|ENV$|PATH$|HOME$)")
 REASONS = {"local_file": "로컬 파일", "local_tool": "로컬 도구", "device": "장치"}
 # A manifest under review during registration, before the server exists in the registry.
 registering: contextvars.ContextVar[dict | None] = contextvars.ContextVar("registering", default=None)
@@ -97,11 +98,16 @@ async def failure_message(error, diagnostics=None):
 def manifest_errors(manifest: dict, server_id: str) -> list[str]:
     """The same rules the device runner applies again before it starts anything (C10 §8)."""
     errors = []
-    if set(manifest) - {"approval"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
+    if set(manifest) - {"approval", "source"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
         return ["매니페스트 항목은 server_id·image·command·mounts·env·reason만 허용합니다."]
     if manifest["server_id"] != server_id:
         errors.append("매니페스트의 서버 id가 등록 id와 다릅니다.")
-    if not isinstance(manifest["image"], str) or not IMAGE.fullmatch(manifest["image"]):
+    if "source" in manifest:
+        from .local_sources import source_errors
+        errors += source_errors(manifest["source"])
+        if manifest["image"] or manifest["mounts"]:
+            errors.append('프로세스 실행에는 이미지와 마운트를 지정할 수 없습니다.')
+    elif not isinstance(manifest["image"], str) or not IMAGE.fullmatch(manifest["image"]):
         errors.append("이미지는 sha256 digest로 고정해야 합니다.")
     command = manifest["command"]
     if not isinstance(command, list) or len(command) > 32 or not all(
@@ -188,7 +194,7 @@ async def applicant_device(token: str, intake_id: str) -> str:
             return device["endpoint_id"]
     row = await db.fetch_one(
         """SELECT endpoint_id FROM endpoint_agents WHERE owner_token=%s AND status='active' AND managed_state='active'
-           AND local_uid IS NOT NULL ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
+           AND (local_uid IS NOT NULL OR (platform='windows' AND detail->>'local_sid' IS NOT NULL)) ORDER BY heartbeat_at DESC NULLS LAST LIMIT 1""", (token,))
     if not row:
         raise ValueError("신청자의 활성 관리형 PC가 없어 로컬 실행 계약을 확인할 수 없습니다.")
     bound = await db.fetch_one(
@@ -211,10 +217,15 @@ async def approve_manifest(local: dict, intake_id: str, *, observed: bool = Fals
     """The review pins the observer and signed generation; a withdrawn generation cannot be revived."""
     generation, expires = approval_window(local["manifest"])
     mirrors = [m.strip() for m in os.getenv("LOCAL_IMAGE_MIRRORS", "").split(',') if m.strip()]
-    if not mirror_image(local["manifest"]["image"], mirrors):
+    if "source" not in local["manifest"] and not mirror_image(local["manifest"]["image"], mirrors):
         raise ValueError("사전 반입한 내부 미러 digest 이미지만 허용합니다.")
     async with db.transaction() as connection:
         await connection.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ('local-approval:' + local['manifest']['server_id'],))
+        if "source" in local['manifest']:
+            from . import local_sources
+            row = await (await connection.execute("SELECT * FROM mcp_intake_requests WHERE id=%s FOR SHARE", (intake_id,))).fetchone()
+            if not row or local['manifest']['source'] != local_sources.source_for(row):
+                raise ValueError('검증한 승인 소스가 아닙니다.')
         old = await (await connection.execute("SELECT * FROM local_approvals WHERE server_id=%s FOR UPDATE",
                                              (local['manifest']['server_id'],))).fetchone()
         if old and (generation < old['signature_generation'] or
@@ -259,7 +270,7 @@ def control_generation(server_id: str) -> str:
 
 async def _device(device_id: str | None) -> dict:
     device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (device_id,)) if device_id else None
-    if not device or device["status"] != "active" or device["managed_state"] != "active" or not device.get("local_uid"):
+    if not device or device["status"] != "active" or device["managed_state"] != "active" or not (device.get("local_uid") or (device.get("platform") == "windows" and (device.get("detail") or {}).get("local_sid"))):
         raise NotStarted("로컬 실행을 맡을 활성 관리형 엔드포인트가 없습니다.")
     if not device.get('heartbeat_at') or (datetime.now(UTC)-device['heartbeat_at']).total_seconds() >= 180:
         raise NotStarted("엔드포인트 점검 보고가 만료됐습니다.")
@@ -286,7 +297,7 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
     # calls/checks keep their caller's total timeout (and therefore their reservation bound).
     prepare_timeout=0
     if method=='initialize':
-        prepare_timeout=PREPARE_SECONDS if registering.get() else min(PREPARE_SECONDS,max(0,timeout-run_timeout))
+        prepare_timeout=(SOURCE_PREPARE_SECONDS if 'source' in local['manifest'] else PREPARE_SECONDS) if registering.get() else min(PREPARE_SECONDS,max(0,timeout-run_timeout))
     timeout = run_timeout + prepare_timeout
     server = local['manifest']['server_id']
     event = evidence_context.get()
@@ -765,7 +776,7 @@ async def prepare_token_revocation(connection, tokens):
 
 
 async def recoverable(device):
-    return await db.fetch_all("""SELECT id FROM local_jobs WHERE device_id=%s AND claimed_at IS NOT NULL
+    return await db.fetch_all("""SELECT id, (manifest ? 'source') AS process FROM local_jobs WHERE device_id=%s AND claimed_at IS NOT NULL
         AND stopped_at IS NULL AND (started_at IS NOT NULL OR lease_until<=clock_timestamp()) ORDER BY created_at LIMIT 16""",
         (device['endpoint_id'],))
 

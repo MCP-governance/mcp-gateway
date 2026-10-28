@@ -45,7 +45,7 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
+                 "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py", "kit_screen.py", "kit_access.py")
 STATUS_SHIM = Path("/usr/local/bin/mint")
 OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")  # 10-28 이전 이름
 SHIM_MARK = "# mcpgw managed status"
@@ -134,7 +134,7 @@ def private_write(path, content):
         temporary.unlink(missing_ok=True)
 
 
-def request(config, path, body=None, *, credential=True):
+def request(config, path, body=None, *, credential=True, download=None, deadline=None):
     context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
@@ -146,7 +146,20 @@ def request(config, path, body=None, *, credential=True):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=context))
-    with opener.open(req, timeout=15) as response:
+    with opener.open(req, timeout=min(15, max(.001, deadline-time.monotonic())) if deadline is not None else 15) as response:
+        if download is not None:
+            total = 0
+            while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('소스 수신 기한이 지났습니다')
+                block = response.read(65536)
+                if not block:
+                    break
+                total += len(block)
+                if total > 128 << 20:
+                    raise ValueError('소스 크기 상한')
+                download.write(block)
+            return response.headers
         return json.loads(response.read(131072))
 
 
@@ -540,6 +553,10 @@ def install(args, prepared=None):
     for name in PROGRAM_FILES:
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
+    pip_archive = source / 'pip.zip'
+    if pip_archive.is_file():
+        (PROGRAMS / 'pip.zip').write_bytes(pip_archive.read_bytes())
+        (PROGRAMS / 'pip.zip').chmod(0o644)
     folder = STATE / args.user
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     folder.chmod(0o700)
@@ -1098,10 +1115,16 @@ def serve(args):
     local = None
     if runner.exists():
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
+        source_root = Path('/var/lib/mcpgw-sources')
+        source_root.mkdir(mode=0o755, exist_ok=True)
+        def source_protected(path):
+            return all(not p.is_symlink() and p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
+                       for p in [path, *path.parents])
+        runner_config={**config, "source_root":str(source_root), "source_protected":source_protected}
         local = load_module("local_runner", runner)
         # Separate threads: an image pull that takes minutes must not hold the job loop, and the reverse.
         for target in (local.run, local.prepare):
-            threading.Thread(target=target, daemon=True, args=(config, request, log)).start()
+            threading.Thread(target=target, daemon=True, args=(runner_config, request, log)).start()
 
     recent_blocks = []
 
@@ -1313,7 +1336,7 @@ def rollback(args):
         edit_environment(ca_environment(others[0]) if others else {})
     if not remaining:
         # 마지막 설치를 지우면 키트 사본도 남기지 않는다(bootstrap은 키트 폴더의 파일로 돌므로 재설치에 영향 없다).
-        for name in PROGRAM_FILES:
+        for name in (*PROGRAM_FILES, "pip.zip"):
             (PROGRAMS / name).unlink(missing_ok=True)
         shutil.rmtree(PROGRAMS / "__pycache__", ignore_errors=True)
         for folder_ in (PROGRAMS, ENFORCEMENT):

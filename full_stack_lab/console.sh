@@ -316,7 +316,7 @@ field_up() {
   python3 registry/render_residency.py --check
   local with_ws=0 with_lab_mcp=0 with_siem=0
   # The analyzer image is built from ./privacy here; left out, a change to its recognizers or pipeline never shipped.
-  local services=(corp-git presidio-analyzer gateway gateway-sse agent-service intake-worker runtime-worker)
+  local services=(corp-git presidio-analyzer gateway gateway-sse agent-service intake-worker)
   local lab_services=(corp-redis corp-db corp-mail intranet external-web corp-seed
     mcp-filesystem mcp-git mcp-fetch mcp-memory mcp-desktop mcp-postgres mcp-redis mcp-email mcp-gitea mcp-playwright)
   for a in "$@"; do
