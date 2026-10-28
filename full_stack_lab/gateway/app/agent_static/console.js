@@ -317,6 +317,7 @@ const ICON = {
   connections: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   policy: '<path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
 };
+ICON.endpoints = ICON.people;
 const icon = (name) => raw(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ""}</svg>`);
 
 // ── chrome: toast, drawer, dialog ────────────────────────────────────────────
@@ -419,7 +420,8 @@ const PAGES = [
   { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
   { id: "coverage", label: "통제 현황", group: "접근 통제", badge: "coverage" },
   { id: "servers", label: "MCP 서버", group: "접근 통제" },
-  { id: "people", label: "사용자·엔드포인트", group: "접근 통제" },
+  { id: "people", label: "사용자 관리", group: "접근 통제" },
+  { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
   { id: "policy", label: "정책", group: "접근 통제" },
   { id: "consent", label: "이용 동의", group: "접근 통제", badge: "consent" },
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
@@ -472,6 +474,10 @@ async function route() {
   setDrawer(false);
   charts.disposeAll();
   const at = parseHash();
+  if (at.page === "people" && ["devices", "managed"].includes(at.query.get("t")) && viewer.pages.includes("endpoints")) {
+    history.replaceState(null, "", `#/endpoints?${at.query}`);
+    return route();
+  }
   const id = viewer.pages.includes(at.page) ? at.page : viewer.pages[0];
   // Canonicalize synchronously: a later hashchange would close first-login setup.
   if (id !== at.page) { history.replaceState(null, "", `#/${id}`); return route(); }
@@ -1357,21 +1363,14 @@ const managedEventDetail = (d) => (d && (d.reason || d.note || (d.actor ? `처�
 let peopleAccounts = [];
 let integrationItems = [];
 ROUTES.people = async (_, tab) => {
-  const [{ accounts }, { accounts: deletedAccounts }, { requests: signups }, inv, o, p, identity, { suspensions }] = await Promise.all([
-    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"), gw("endpoint/inventory"), gw("overview"), planes(), api("/api/identity").catch(() => ({ provider: "local", bindings: [] })),
-    gw("suspensions")]);
+  const [{ accounts }, { accounts: deletedAccounts }, { requests: signups }, identity, { suspensions }] = await Promise.all([
+    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"),
+    api("/api/identity").catch(() => ({ provider: "local", bindings: [] })), gw("suspensions")]);
   peopleAccounts = accounts;
-  const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
-  const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
-  const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
-  const managed = inv.agents.filter((a) => a.managed_state && a.managed_state !== "unmanaged");
   return {
     html: page({
-      head: head("사용자·엔드포인트", { actions: html`<button class="btn" type="button" data-act="device-issue">엔드포인트 등록</button><button class="btn primary" type="button" data-act="account-invite">사용자 초대</button>` }),
-      kpis: kpiStrip([["최근 15분 보고", inv.coverage.reporting_recently],
-        ["격리", managed.filter((a) => a.managed_state === "quarantined").length, "block"],
-        ["활성화 대기", managed.filter((a) => a.managed_state === "pending").length, "approval"]]),
-      active: tab || "accounts",
+      head: head("사용자 관리", { actions: html`<button class="btn primary" type="button" data-act="account-invite">사용자 초대</button>` }),
+      active: ["accounts", "deleted", "suspensions", "signups", ...(identity.provider === "oidc" ? ["sso"] : [])].includes(tab) ? tab : "accounts",
       tabs: [
         { key: "accounts", label: "사용자", n: accounts.length, body: panel("사용자", html`<table class="data"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>부서</th><th>상태</th><th></th></tr></thead><tbody id="account-list">
           ${accounts.map((a) => html`<tr><td><b>${a.display_name}</b><span class="sub">${a.job_title || ""}</span></td><td class="small">${a.email}</td>
@@ -1391,17 +1390,6 @@ ROUTES.people = async (_, tab) => {
               <td class="small">${when(a.status_changed_at)}<span class="sub">${a.status_changed_by || "—"}</span></td>
               <td class="num"><button class="btn sm primary" type="button" data-act="account-restore" data-id="${a.user_id}" data-name="${a.display_name}">복구</button></td></tr>`)}
             </tbody></table>${deletedAccounts.length ? "" : empty("삭제된 사용자 없음")}`, { flush: true }) },
-        { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
-          ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th>상태</th><th>마지막 보고</th><th></th></tr></thead><tbody>
-            ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
-              <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : NONE}</td>
-              <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관찰만")}
-                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state} · ${MANAGED_MODE[deviceState[a.endpoint_id]?.mode] || "—"}</span>` : ""}</td>
-              <td class="small">${ago(a.last_seen_at)}</td>
-              <td class="num nowrap">${a.status === "revoked" ? chip("outline", "등록 해제됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">등록 해제</button>`}
-                ${["pending", "quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">활성화</button>` : ""}</td></tr>`)}
-            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true,
-            tools: html`<label>새 PC 활성화<select data-act-change="endpoint-auto" aria-label="새 PC 활성화">${option("on", "자동", inv.settings?.auto_activate === false ? "off" : "on")}${option("off", "관리자 확인", inv.settings?.auto_activate === false ? "off" : "on")}</select></label>` })}</div>` },
         { key: "suspensions", label: "이용 중지", n: suspensions.filter((x) => !x.resumed_at).length,
           body: panel("이용 중지", html`<table class="data"><thead><tr><th>사용자</th><th>서버</th><th>사유</th><th>중지</th><th>해제 예정</th><th>상태</th><th>재개</th><th></th></tr></thead><tbody>
             ${suspensions.map((x) => html`<tr><td>${x.display_name || "—"}</td><td>${x.server_name || x.server_id}</td><td class="small">${x.reason}</td>
@@ -1418,15 +1406,48 @@ ROUTES.people = async (_, tab) => {
             <td class="num nowrap">${s.status === "pending" ? html`<button class="btn sm danger" data-act="signup-reject" data-id="${s.id}">거부</button>
               <button class="btn sm primary" data-act="signup-approve" data-id="${s.id}">승인</button>` : ""}</td></tr>`)}
           </tbody></table>${signups.length ? "" : empty("가입 요청 없음")}`, { flush: true }) },
+        ...(identity.provider === "oidc" ? [{ key: "sso", label: "SSO", n: identity.bindings.length, body: html`<div class="stack">
+          ${panel("SSO", kv([["로그인 방식", identity.label || "SSO"], ["상태", identity.configured ? "사용" : "설정 필요"], ["발급자", identity.issuer || "—"]]),
+            { end: identity.configured ? html`<button class="btn sm primary" data-act="identity-bind">SSO 계정 연결</button>` : "" })}
+          ${panel("연결된 SSO 계정", identity.bindings.length ? html`<table class="data"><thead><tr><th>사용자</th><th>SSO 계정</th><th>연결</th><th></th></tr></thead><tbody>${identity.bindings.map((b) => html`<tr><td>${b.principal}</td><td class="mono">${b.subject}</td><td>${b.linked_by}<span class="sub">${when(b.linked_at)}</span></td><td class="num"><button class="btn sm danger" data-act="identity-unbind" data-id="${b.id}">연결 해제</button></td></tr>`)}</tbody></table>` : empty("연결된 계정 없음"), { flush: true })}</div>` }] : []),
+      ],
+    }),
+  };
+};
+
+ROUTES.endpoints = async (_, tab) => {
+  const [{ accounts }, inv, o, p] = await Promise.all([
+    api("/api/accounts"), gw("endpoint/inventory"), gw("overview"), planes()]);
+  peopleAccounts = accounts;
+  const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
+  const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
+  const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
+  const managed = inv.agents.filter((a) => a.managed_state && a.managed_state !== "unmanaged");
+  return {
+    html: page({
+      head: head("엔드포인트 관리", { actions: html`<button class="btn" type="button" data-act="device-issue">엔드포인트 등록</button>` }),
+      kpis: kpiStrip([["최근 15분 보고", inv.coverage.reporting_recently],
+        ["격리", managed.filter((a) => a.managed_state === "quarantined").length, "block"],
+        ["활성화 대기", managed.filter((a) => a.managed_state === "pending").length, "approval"]]),
+      active: ["devices", "managed"].includes(tab) ? tab : "devices",
+      tabs: [
+        { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
+          ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th>상태</th><th>마지막 보고</th><th></th></tr></thead><tbody>
+            ${inv.agents.map((a) => html`<tr><td>${entityRef(a.endpoint_id)}<span class="sub">${PLATFORM[String(a.platform || "").toLowerCase()] || a.platform || ""}</span></td><td>${a.owner_name || harnessOf[a.endpoint_id]?.display_name || "—"}</td>
+              <td>${harnessOf[a.endpoint_id]?.harness ? chip("plain", harnessLabel(harnessOf[a.endpoint_id].harness)) : NONE}</td>
+              <td>${deviceState[a.endpoint_id] ? statusPair(deviceState[a.endpoint_id]) : chip("outline", "관찰만")}
+                ${a.managed_state && a.managed_state !== "unmanaged" ? html`<span class="sub">${MANAGED_STATE[a.managed_state] || a.managed_state} · ${MANAGED_MODE[deviceState[a.endpoint_id]?.mode] || "—"}</span>` : ""}</td>
+              <td class="small">${ago(a.last_seen_at)}</td>
+              <td class="num nowrap">${a.status === "revoked" ? chip("outline", "등록 해제됨") : html`<button class="btn sm danger" type="button" data-act="device-revoke" data-id="${a.endpoint_id}">등록 해제</button>`}
+                ${["pending", "quarantined"].includes(a.managed_state) && a.policy_hash ? html`<button class="btn sm primary" type="button" data-act="device-activate" data-id="${a.endpoint_id}" data-hash="${a.policy_hash}">활성화</button>` : ""}</td></tr>`)}
+            </tbody></table>${inv.agents.length ? "" : empty("엔드포인트 없음")}`, { flush: true,
+            tools: html`<label>새 PC 활성화<select data-act-change="endpoint-auto" aria-label="새 PC 활성화">${option("on", "자동", inv.settings?.auto_activate === false ? "off" : "on")}${option("off", "관리자 확인", inv.settings?.auto_activate === false ? "off" : "on")}</select></label>` })}</div>` },
         { key: "managed", label: "연결 이력", n: (inv.managed_events || []).length,
           body: panel("연결 이력", html`<table class="data"><thead><tr><th>시각</th><th>사용자·엔드포인트</th><th>내용</th><th>사유</th></tr></thead><tbody>
             ${(inv.managed_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.owner_name || "사용자 확인 불가"}<span class="sub mono">${e.endpoint_id || "—"}</span></td>
               <td>${chip(...(MANAGED_EVENT[e.kind] || ["", e.kind]))}</td><td class="small">${managedEventDetail(e.detail)}</td></tr>`)}</tbody></table>
             ${(inv.managed_events || []).length ? "" : empty("연결 이력 없음")}`, { flush: true }) },
-        ...(identity.provider === "oidc" ? [{ key: "sso", label: "SSO", n: identity.bindings.length, body: html`<div class="stack">
-          ${panel("SSO", kv([["로그인 방식", identity.label || "SSO"], ["상태", identity.configured ? "사용" : "설정 필요"], ["발급자", identity.issuer || "—"]]),
-            { end: identity.configured ? html`<button class="btn sm primary" data-act="identity-bind">SSO 계정 연결</button>` : "" })}
-          ${panel("연결된 SSO 계정", identity.bindings.length ? html`<table class="data"><thead><tr><th>사용자</th><th>SSO 계정</th><th>연결</th><th></th></tr></thead><tbody>${identity.bindings.map((b) => html`<tr><td>${b.principal}</td><td class="mono">${b.subject}</td><td>${b.linked_by}<span class="sub">${when(b.linked_at)}</span></td><td class="num"><button class="btn sm danger" data-act="identity-unbind" data-id="${b.id}">연결 해제</button></td></tr>`)}</tbody></table>` : empty("연결된 계정 없음"), { flush: true })}</div>` }] : []),
+
       ],
     }),
   };

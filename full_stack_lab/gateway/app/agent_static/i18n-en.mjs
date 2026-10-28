@@ -247,6 +247,8 @@ export const EN = {
   "대시보드": "Dashboard",
   "도구 호출 로그": "Tool call log",
   "감사 기록": "Audit log",
+  "사용자 관리": "User management",
+  "엔드포인트 관리": "Endpoint management",
   "통제 현황": "Control status",
   "접근 통제": "Access control",
   "MCP 서버": "MCP servers",

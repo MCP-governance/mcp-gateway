@@ -1,5 +1,9 @@
 # 개발 현황 — 2026-10-25
 
+## 10-28 콘솔 관리 화면 분리
+
+- 사용자 관리와 엔드포인트 관리를 별도 메뉴로 분리했다. 로컬 검증 통과, 기기 배포와 브라우저 검수는 미실행. [보고](reports/2026-10-28-console-management-split.md)
+
 지금 상태만 담는다. 열린 일의 담당·완료 조건·근거는 [백로그](backlog.md) 한 곳, 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이다. 같은 사실을 여기와 백로그 두 곳에 쓰지 않는다. 10-23 판 원본은 [이력](history/2026-10-23-current.md), 처음 오는 에이전트의 읽기 순서는 [START_HERE](../START_HERE.md).
 
 ## 10-25 기준
