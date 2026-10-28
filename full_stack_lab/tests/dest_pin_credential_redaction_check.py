@@ -341,7 +341,7 @@ class ManagedKitCredentials(unittest.IsolatedAsyncioTestCase):
     async def test_endpoint_managed_policy_and_os_file_writers_use_only_helpers(self):
         package = ModuleType("policy_under_test")
         package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
-        package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={"claude_tools_denied": [], "claude_connectors": True, "claude_servers_denied": [], "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
+        package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={"claude_tools_denied": [], "claude_chrome": True, "claude_connectors": True, "claude_servers_denied": [], "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
         package.registry = SimpleNamespace(server=lambda server: {})
         module = selected(APP / "endpoint_plane.py", ["managed_policy", "managed_platform", "json_document", "installed_hash"],
                           {"__package__": "policy_under_test", "os": os, "urlsplit": urlsplit,

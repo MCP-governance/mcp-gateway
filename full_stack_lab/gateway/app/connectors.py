@@ -24,7 +24,7 @@ BLOCKING = {"pending", "denied", "expired"}
 # 플러그인과 직원이 직접 붙인 서버는 지금처럼 검토를 받는다(D-298).
 DEFAULT_KINDS = {"feature", "connector", "app"}
 # 보고가 없어도 콘솔에서 막을 수 있는 항목. 키는 key_of와 같은 형식이다.
-FEATURES = (("claude", "WebFetch", "웹 가져오기"), ("claude", "WebSearch", "웹 검색"),
+FEATURES = (("claude", "WebFetch", "웹 가져오기"), ("claude", "WebSearch", "웹 검색"), ("claude", "chrome", "브라우저 연동"),
             ("codex", "web_search", "웹 검색"), ("codex", "browser_use", "브라우저 조작"),
             ("codex", "computer_use", "컴퓨터 조작"), ("codex", "image_generation", "이미지 생성"),
             ("codex", "memories", "메모리"))
@@ -238,18 +238,22 @@ async def builtins(rows: list[dict] | None = None) -> list[dict]:
     return out
 
 
-def controls_from(denied: set[str], connectors: list[dict]) -> dict:
-    """관리형 설정에 쓰는 차단 목록. denied: 차단 결정 키, connectors: 차단된 개별 커넥터·앱 {key, kinds, names}."""
+def controls_from(denied: set[str], names: dict[str, list[str]] | None = None) -> dict:
+    """관리형 설정에 쓰는 차단 목록. denied: 차단 결정 키, names: 키별로 보고된 이름.
+    관리자가 막은 호스트·앱은 같은 키로 무엇이 더 보고되든(플러그인 등) 그대로 막힌다."""
     claude_servers, apps = [], []
-    for g in sorted(connectors, key=lambda g: g["key"]):
-        harness, how, value = g["key"].split(":", 2)
+    for key in sorted(denied - set(CATALOG)):
+        harness, how, value = key.split(":", 2)
         if harness == "claude" and how == "host":
             # 호스트로 막는다(이름은 바뀔 수 있다). 모든 스킴·포트.
             claude_servers.append({"serverUrl": f"*://{value}:*/*"})
-            claude_servers += [{"serverName": n} for n in sorted(g["names"]) if n.startswith("claude.ai ")]
+            claude_servers += [{"serverName": n} for n in sorted((names or {}).get(key, [])) if n.startswith("claude.ai ")]
         elif harness == "codex" and how == "app":
             apps.append(value)
-    return {"claude_tools_denied": [n for h, n, _ in FEATURES if h == "claude" and f"claude:feature:{n}" in denied],
+    if "claude:feature:chrome" in denied:
+        claude_servers.append({"serverName": "claude-in-chrome"})
+    return {"claude_tools_denied": [n for n in ("WebFetch", "WebSearch") if f"claude:feature:{n}" in denied],
+            "claude_chrome": "claude:feature:chrome" not in denied,
             "claude_connectors": "claude:connectors:all" not in denied,
             "claude_servers_denied": claude_servers,
             "codex_features_off": [n for h, n, _ in FEATURES if h == "codex" and f"codex:feature:{n}" in denied],
@@ -258,15 +262,11 @@ def controls_from(denied: set[str], connectors: list[dict]) -> dict:
 
 
 async def managed_controls(connection=None) -> dict:
-    query = """SELECT d.item_key AS key, array_agg(DISTINCT i.kind) FILTER (WHERE i.kind IS NOT NULL) AS kinds,
-                      array_agg(DISTINCT i.name) FILTER (WHERE i.name IS NOT NULL) AS names
+    query = """SELECT d.item_key AS key, array_agg(DISTINCT i.name) FILTER (WHERE i.name IS NOT NULL) AS names
                  FROM harness_decisions d LEFT JOIN harness_items i USING (item_key)
                 WHERE d.decision='denied' GROUP BY d.item_key"""
     rows = await db.fetch_all(query, connection=connection)
-    denied = {r["key"] for r in rows}
-    connectors = [{"key": r["key"], "kinds": r["kinds"] or [], "names": r["names"] or []} for r in rows
-                  if r["key"] not in CATALOG and r["kinds"] and all(k in {"connector", "app"} for k in r["kinds"])]
-    return controls_from(denied, connectors)
+    return controls_from({r["key"] for r in rows}, {r["key"]: r["names"] or [] for r in rows})
 
 
 @router.put("/api/connectors/decision")
@@ -275,20 +275,26 @@ async def decide_connector(request: Decision, authorization: str | None = Header
     require_admin(user)
     if request.key not in CATALOG and not await db.fetch_one("SELECT 1 FROM harness_items WHERE item_key=%s LIMIT 1", (request.key,)):
         raise HTTPException(404, "보고된 적 없는 항목입니다.")
-    # The managed settings every endpoint holds change with this decision; heartbeats rendered just before it are behind, not tampered.
-    await db.execute("UPDATE endpoint_settings SET controls_changed_at=now() WHERE id=1")
-    if request.decision == "reset":
-        await db.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
-        return {"message": "결정을 취소했습니다."}
     if request.decision == "denied" and len(request.note.strip()) < 2:
         raise HTTPException(422, "차단 사유를 입력하세요.")
     if request.decision == "approved" and request.key in CATALOG:
-        raise HTTPException(422, "기본 승인 항목입니다. 차단을 되돌리려면 결정을 취소하세요.")
-    await db.execute(
-        """INSERT INTO harness_decisions(item_key, decision, note, decided_by) VALUES (%s,%s,%s,%s)
-           ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
-             decided_by=EXCLUDED.decided_by, decided_at=now()""",
-        (request.key, request.decision, request.note.strip(), user["principal"]))
+        raise HTTPException(422, "기본 승인 항목입니다. 차단을 해제하려면 결정을 취소하세요.")
+    async with db.transaction() as connection:
+        before = await (await connection.execute("SELECT decision FROM harness_decisions WHERE item_key=%s FOR UPDATE",
+                                                 (request.key,))).fetchone()
+        if request.decision == "reset":
+            await connection.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
+        else:
+            await connection.execute(
+                """INSERT INTO harness_decisions(item_key, decision, note, decided_by) VALUES (%s,%s,%s,%s)
+                   ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
+                     decided_by=EXCLUDED.decided_by, decided_at=now()""",
+                (request.key, request.decision, request.note.strip(), user["principal"]))
+        # Only a change to what the endpoints must hold opens the grace for heartbeats rendered just before it (D-298).
+        if ((before or {}).get("decision") == "denied") != (request.decision == "denied"):
+            await connection.execute("UPDATE endpoint_settings SET controls_changed_at=now() WHERE id=1")
+    if request.decision == "reset":
+        return {"message": "결정을 취소했습니다."}
     return {"message": "승인했습니다." if request.decision == "approved" else "차단했습니다."}
 
 
@@ -310,11 +316,13 @@ if __name__ == "__main__":
     assert key_of("claude", "feature", "WebFetch", "") == "claude:feature:WebFetch" and "claude:feature:WebFetch" in CATALOG
     assert state_of(None, True, old_ := now - timedelta(days=REVIEW_DAYS + 1), now) == "default"  # 기본 승인은 기한이 없다
     assert "default" not in BLOCKING
-    c = controls_from({"claude:feature:WebSearch", "codex:feature:browser_use", "claude:connectors:all"},
-                      [{"key": "claude:host:mcp.notion.com", "kinds": ["connector"], "names": ["claude.ai Notion"]},
-                       {"key": "codex:app:asdk_app_1", "kinds": ["app"], "names": ["Notion"]}])
+    c = controls_from({"claude:feature:WebSearch", "codex:feature:browser_use", "claude:connectors:all",
+                       "claude:host:mcp.notion.com", "codex:app:asdk_app_1"},
+                      {"claude:host:mcp.notion.com": ["claude.ai Notion", "plugin:engineering:notion"]})
     assert c["claude_tools_denied"] == ["WebSearch"] and c["claude_connectors"] is False and c["codex_apps"] is True
+    # 같은 호스트로 플러그인이 보고돼도 관리자의 호스트 차단은 그대로다.
     assert c["claude_servers_denied"] == [{"serverUrl": "*://mcp.notion.com:*/*"}, {"serverName": "claude.ai Notion"}]
+    assert c["claude_chrome"] is True and {"serverName": "claude-in-chrome"} in controls_from({"claude:feature:chrome"})["claude_servers_denied"]
     assert c["codex_features_off"] == ["browser_use"] and c["codex_apps_disabled"] == ["asdk_app_1"]
     assert controls_from(set(), [])["claude_tools_denied"] == [] and controls_from(set(), [])["claude_connectors"] is True
     assert first_party("connector", "https://api.anthropic.com") and not first_party("connector", "https://evil-anthropic.com")

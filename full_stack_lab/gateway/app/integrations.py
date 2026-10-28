@@ -230,11 +230,16 @@ async def snapshot() -> dict:
     # Harness reports (from the kit, or from a managed device): vendor connectors/apps/features and local plugins.
     decided = {d["item_key"]: d for d in await db.fetch_all("SELECT * FROM harness_decisions")}
     vendor_records = {v["item_key"]: v["record"] for v in await db.fetch_all("SELECT * FROM harness_vendor_controls")}
-    for row in await db.fetch_all(
+    harness_rows = await db.fetch_all(
             """SELECT item_key, harness, kind, name, target, principal, workstation, status, active, first_seen, last_seen
-                 FROM harness_items ORDER BY last_seen DESC LIMIT 2000"""):
+                 FROM harness_items ORDER BY last_seen DESC LIMIT 2000""")
+    kinds_by_key: dict[str, set] = {}
+    for row in harness_rows:
+        kinds_by_key.setdefault(row["item_key"], set()).add(row["kind"])
+    for row in harness_rows:
         decision = decided.get(row["item_key"]) or {}
-        approval = state_of(decision.get("decision"), row["kind"] in DEFAULT_KINDS, row["first_seen"], now)
+        # Same rule as connectors.groups: a key mixed with plugins is reviewed, not allowed by default.
+        approval = state_of(decision.get("decision"), kinds_by_key[row["item_key"]] <= DEFAULT_KINDS, row["first_seen"], now)
         local = row["kind"] in {"plugin", "server"} and not row["target"].startswith(("http://", "https://"))
         vendor = vendor_records.get(row["item_key"]) or {}
         bound = row["workstation"].startswith(DEVICE_PREFIX)

@@ -44,6 +44,9 @@ class PolicySync(unittest.IsolatedAsyncioTestCase):
                                       harness_guidance=lambda owner, servers: self.guidance + ",".join(servers))
         self.catalog = {"docs": {"display_name": "문서 검색"}, "git": {"display_name": "저장소", "deployment": "local"}}
         package.registry = SimpleNamespace(server=lambda server_id: self.catalog.get(server_id))
+        package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={
+            "claude_tools_denied": [], "claude_chrome": True, "claude_connectors": True, "claude_servers_denied": [],
+            "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
         self.updates = []
 
         async def execute(sql, params=None):

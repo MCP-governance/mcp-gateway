@@ -911,6 +911,8 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
         # then (managed servers skip the list); the deny-list blocks the ones an administrator closed.
         allowed = [{"serverUrl": u} for u in routes.values()] + ([{"serverUrl": "https://*/*"}] if controls["claude_connectors"] else [])
         settings = {"allowAllClaudeAiMcps": controls["claude_connectors"], "disableClaudeAiConnectors": not controls["claude_connectors"],
+                    # Claude in Chrome is a built-in server the managed set blocks unless this device setting allows it.
+                    "allowClaudeInChromeWithManagedMcp": controls["claude_chrome"],
                     "allowManagedMcpServersOnly": True, "allowedMcpServers": allowed,
                     "deniedMcpServers": controls["claude_servers_denied"],
                     "strictKnownMarketplaces": [],
@@ -933,6 +935,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
         off = set(controls["codex_features_off"])
         # Plugins stay off (they are reviewed, not built in); ChatGPT apps follow the connector switch.
         features_off = sorted({"plugins"} | (off - {"web_search"}) | (set() if controls["codex_apps"] else {"apps"}))
+        # Per-app blocks go in requirements: `enabled = false` from any layer wins and the user cannot turn it back on.
         disabled_apps = "".join(f"\n[apps.{a}]\nenabled = false\n" for a in controls["codex_apps_disabled"])
         codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
                                 'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
@@ -946,19 +949,19 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                         + 'allow_managed_hooks_only = true\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
                         + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
-                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
+                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps,
         }
         if windows:
             # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
             # their definitions go in the account's own config.toml as one marked block.
-            files["codex-config.toml"] = codex_servers + disabled_apps
+            files["codex-config.toml"] = codex_servers
         else:
             # developer_instructions is a top-level key, so it precedes the server tables.
             # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
             files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\n'
                                             + ('web_search = "disabled"\n' if "web_search" in off else "")
                                             + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
-                                            + codex_servers + disabled_apps)
+                                            + codex_servers)
         return files
 
     files = render(servers, guidance)
@@ -1048,9 +1051,13 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     installed = policy_installed(policy, policy_hash, hashes)
     # An administrator changed the harness controls a moment ago: a heartbeat for the previous rendering is a device
     # that has not fetched yet (it applies the policy before its next heartbeat), not a tampered one (D-298).
+    # Only a device that holds exactly what it held at its last good heartbeat, with every check passing, is behind.
     changed = await db.fetch_one("SELECT controls_changed_at FROM endpoint_settings WHERE id=1")
     behind = (not installed and bool(changed and changed.get("controls_changed_at"))
-              and (datetime.now(UTC) - changed["controls_changed_at"]).total_seconds() < HEARTBEAT_SECONDS)
+              and (datetime.now(UTC) - changed["controls_changed_at"]).total_seconds() < HEARTBEAT_SECONDS
+              and ((device.get("detail") or {}).get("install_receipt") or {}).get("match") is True
+              and policy_hash == device.get("policy_hash") and hashes == (device.get("configuration_hashes") or {})
+              and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values()))
     compliant = (installed
                  and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
                  and (simple or not user_command_settings))
@@ -1100,7 +1107,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  quality["jitter_ms"], quality["failure_pct"], quality["probes"]))
             await connection.execute("DELETE FROM endpoint_network_samples WHERE measured_at < now() - make_interval(days => %s)",
                                      (NETWORK_RETENTION_DAYS,))
-        if not compliant or (row["managed_state"] != device["managed_state"] and not automatic):
+        if (not compliant and not behind) or (row["managed_state"] != device["managed_state"] and not automatic):
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
                 (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,

@@ -81,14 +81,14 @@ class ManagedCommandSurfaces(unittest.TestCase):
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), namespace)
         connectors = {"__name__": "connectors_under_test"}
         source = (LAB / "gateway/app/connectors.py").read_text(encoding="utf-8")
-        wanted = {"FEATURES", "CONNECTOR_SWITCHES", "controls_from"}
+        wanted = {"FEATURES", "CONNECTOR_SWITCHES", "CATALOG", "controls_from"}
         exec(compile(ast.Module(body=[n for n in ast.parse(source).body if getattr(n, "name", None) in wanted
                                       or any(getattr(t, "id", None) in wanted for t in getattr(n, "targets", []))],
                                 type_ignores=[]), "connectors.py", "exec"), connectors)
-        open_controls = connectors["controls_from"](set(), [])
+        open_controls = connectors["controls_from"](set())
         closed = connectors["controls_from"]({"claude:feature:WebFetch", "claude:feature:WebSearch", "claude:connectors:all",
-                                             "codex:feature:web_search", "codex:feature:browser_use", "codex:feature:computer_use",
-                                             "codex:feature:apps"}, [])
+                                             "claude:feature:chrome", "codex:feature:web_search", "codex:feature:browser_use",
+                                             "codex:feature:computer_use", "codex:feature:apps", "codex:app:asdk_app_1"})
         for platform, controls in (("linux", open_controls), ("windows", open_controls), ("linux", closed), ("windows", closed)):
             package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value=controls))
             detail = {"local_sid": "S-1-5-21-1-2-3-4", "helper_command": "helper header"} if platform == "windows" else {}
@@ -112,6 +112,11 @@ class ManagedCommandSurfaces(unittest.TestCase):
             self.assertEqual(requirements.get("allowed_web_search_modes"), ["disabled"] if blocked else None)
             self.assertEqual(requirements["features"].get("apps"), False if blocked else None)
             self.assertEqual(requirements.get("allow_browser_and_computer_use"), False if blocked else None)
+            self.assertIs(claude["allowClaudeInChromeWithManagedMcp"], not blocked)
+            self.assertEqual({"serverName": "claude-in-chrome"} in claude["deniedMcpServers"], blocked)
+            # A per-app block is a requirement (any layer's false wins), never a user-editable config file.
+            self.assertEqual(requirements.get("apps", {}).get("asdk_app_1"), {"enabled": False} if blocked else None)
+            self.assertNotIn("[apps.", files.get("codex-config.toml", "") + files.get("managed_config.toml", ""))
 
 
 if __name__ == "__main__":

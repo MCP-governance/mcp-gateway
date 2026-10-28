@@ -79,7 +79,7 @@ def render_policy(guide, platform="linux"):
     package = ModuleType("detect_pkg")
     package.pac = SimpleNamespace(servers_for=lambda owner: ["github"], harness_guidance=lambda owner, servers: guide)
     package.registry = SimpleNamespace(server=lambda server: {})
-    package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={"claude_tools_denied": [], "claude_connectors": True, "claude_servers_denied": [], "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
+    package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={"claude_tools_denied": [], "claude_chrome": True, "claude_connectors": True, "claude_servers_denied": [], "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
     names = {"managed_policy", "managed_platform", "json_document", "installed_hash"}
     namespace = extract(APP / "endpoint_plane.py", names, {
         "__name__": "detect_under_test", "__package__": package.__name__, "os": os, "urlsplit": urlsplit, "ipaddress": ipaddress,

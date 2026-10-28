@@ -37,7 +37,7 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         package = ModuleType(PACKAGE)
         package.pac = SimpleNamespace(servers_for=lambda owner: ["learn"], harness_guidance=lambda owner, servers: "g")
-        open_controls = {"claude_tools_denied": [], "claude_connectors": True, "claude_servers_denied": [],
+        open_controls = {"claude_tools_denied": [], "claude_chrome": True, "claude_connectors": True, "claude_servers_denied": [],
                          "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}
         package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value=open_controls))
         package.registry = SimpleNamespace(server=lambda server: {})
@@ -88,12 +88,11 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
                        "device_epoch": "e", "local_username": "emp", "local_uid": 1000, "detail": {"mode": mode, **detail}}
         return self.device
 
-    async def beat(self, checks=None, findings=None, stale=False):
+    async def beat(self, checks=None, findings=None):
         policy = await self.plane.managed_policy(self.device)
         checks = checks if checks is not None else dict.fromkeys(self.plane.managed_checks(self.device), True)
         self.events.clear()
-        hashes = {**policy["configuration_hashes"], "managed-settings.json": "0" * 64} if stale else policy["configuration_hashes"]
-        report = await self.plane.heartbeat(self.device, policy["policy_hash"], hashes, checks,
+        report = await self.plane.heartbeat(self.device, policy["policy_hash"], policy["configuration_hashes"], checks,
                                             user_command_settings=findings)
         self.device = {**self.device, "managed_state": self.stored}
         return report
@@ -103,13 +102,27 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
 
     async def test_a_heartbeat_just_behind_an_admin_control_change_is_not_a_quarantine(self):
         from datetime import UTC, datetime, timedelta
-        self.pc(state="active")
+        old = {**(await self.plane.managed_policy(self.pc(state="active")))["configuration_hashes"], "managed-settings.json": "1" * 64}
+        held = {"policy_hash": "previous", "configuration_hashes": old, "detail": {"mode": "simple", "install_receipt": {"match": True}}}
+        checks = dict.fromkeys(self.plane.managed_checks(self.device), True)
         self.controls_changed_at = datetime.now(UTC) - timedelta(seconds=20)
-        report = await self.beat(stale=True)
-        self.assertEqual(report["state"], "active")  # rendered before the change, applied before the next heartbeat
+        # Rendered before the change and unchanged since its last good heartbeat: behind, not tampered, no quarantine event.
+        self.device = {**self.device, **held}
+        report = await self.plane.heartbeat(self.device, "previous", old, checks)
+        self.assertEqual(report["state"], "active")
+        self.assertFalse([v for v, _ in self.events if "'quarantined'" in v])
+        # The same moment, but the device's files changed since: quarantined.
+        report = await self.plane.heartbeat(self.device, "previous", {**old, "requirements.toml": "2" * 64}, checks)
+        self.assertEqual(report["state"], "quarantined")
+        # A failing check is never covered by the grace.
+        self.device = {**self.device, **held, "managed_state": "active"}
+        report = await self.plane.heartbeat(self.device, "previous", old, {**checks, next(iter(checks)): False})
+        self.assertEqual(report["state"], "quarantined")
+        # Long after a change, an unchanged but old rendering is a mismatch again.
+        self.device = {**self.device, **held, "managed_state": "active"}
         self.controls_changed_at = datetime.now(UTC) - timedelta(minutes=10)
-        report = await self.beat(stale=True)
-        self.assertEqual(report["state"], "quarantined")  # long after a change, a mismatch is tampering again
+        report = await self.plane.heartbeat(self.device, "previous", old, checks)
+        self.assertEqual(report["state"], "quarantined")
 
     async def test_a_new_simple_pc_that_passes_is_activated_by_the_gateway(self):
         self.pc()

@@ -1226,44 +1226,44 @@ function connectorState(g) {
   return chip(tone, g.state === "pending" && days !== null ? `${label} D-${Math.max(days, 0)}` : label);
 }
 const connectorButtons = (g) => g.decision
-  ? html`<button class="btn sm" data-act="connector-decide" data-key="${g.key}" data-decision="reset">되돌리기</button>`
+  ? html`<button class="btn sm" data-act="connector-decide" data-key="${g.key}" data-decision="reset">${g.decision === "denied" ? "차단 해제" : "승인 취소"}</button>`
   : html`<button class="btn sm danger" data-act="connector-deny" data-key="${g.key}" data-name="${connectorName(g)}">차단</button>
     ${g.state === "default" ? "" : html`<button class="btn sm primary" data-act="connector-decide" data-key="${g.key}" data-decision="approved">승인</button>`}`;
 const connectorControlChip = (all, key) => { const c = connectorControl(all, key); return c ? chip(c[0], c[1]) : NONE; };
 // Built-in features and the harness account's connectors start allowed; an administrator blocks them here.
-const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain", harnessLabel(b.harness))}</td>
-  <td class="num">${b.active_pcs || NONE}</td><td>${connectorState(b)}${b.state === "denied" && b.note ? html`<span class="sub">${b.note}</span>` : ""}</td>
+// They reach the vendor directly, so the path column says so instead of a gateway decision.
+const OUTSIDE = chip("outline", "게이트웨이 외부");
+const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain", harnessLabel(b.harness))}</td><td>${OUTSIDE}</td>
+  <td class="num">${b.active_pcs ?? NONE}</td><td>${connectorState(b)}${b.state === "denied" && b.note ? html`<span class="sub">${b.note}</span>` : ""}</td>
   <td class="num nowrap">${b.state === "denied"
-    ? html`<button class="btn sm" data-act="connector-decide" data-key="${b.key}" data-decision="reset">허용</button>`
+    ? html`<button class="btn sm" data-act="connector-decide" data-key="${b.key}" data-decision="reset">차단 해제</button>`
     : html`<button class="btn sm danger" data-act="connector-deny" data-key="${b.key}" data-name="${b.label}">차단</button>`}</td></tr>`;
-const groupRow = (g, items) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
+// switchOff: the harness-wide switch for this kind is blocked, so the row is blocked whatever its own decision says.
+const groupRow = (g, items, switchOff = false) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
   <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
   <td>${chip("plain", harnessLabel(g.harness))}</td>
   <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
   <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
-  <td>${connectorState(g)}${g.violation ? chip("block", "미승인 사용") : ""}</td>
+  <td>${connectorState(g)}${switchOff && g.state !== "denied" ? chip("block", "전체 차단") : ""}${g.violation ? chip("block", "미승인 사용") : ""}</td>
   <td>${connectorControlChip(connectorItems, g.key)}</td>
-  <td class="small">${vendor ? html`${chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state)}<span class="sub">${vendor.verified_by} · ${when(vendor.verified_at)}</span>` : NONE}</td>
+  <td class="small">${vendor ? chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state) : NONE}</td>
   <td class="num nowrap">${connectorButtons(g)}</td></tr>`; };
-const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 엔드포인트</th><th>상태</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead>`;
+const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">보고 엔드포인트</th><th>상태</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead>`;
+const BUILTIN_HEAD = (first) => html`<thead><tr><th>${first}</th><th>하네스</th><th>경로</th><th class="num">보고 엔드포인트</th><th>상태</th><th></th></tr></thead>`;
 function builtinTabs(conn, items) {
   const builtins = conn.builtins || [], catalog = new Set(builtins.map((b) => b.key));
   const reported = conn.items.filter((g) => !catalog.has(g.key));
   const features = builtins.filter((b) => b.kind === "feature");
   const switches = builtins.filter((b) => b.kind === "connector");
+  const off = new Set(switches.filter((b) => b.state === "denied").map((b) => b.harness));
   const extraFeatures = reported.filter((g) => g.builtin && g.kinds.includes("feature"));
   const connectors = reported.filter((g) => g.builtin && !g.kinds.includes("feature"));
   const review = reported.filter((g) => !g.builtin);
-  const blocked = (rows) => rows.filter((r) => r.state === "denied").length;
   return html`<div class="stack">
-    ${panel("기본 기능", html`<table class="data"><thead><tr><th>기능</th><th>하네스</th><th class="num">사용 엔드포인트</th><th>상태</th><th></th></tr></thead><tbody>
-      ${features.map(builtinRow)}</tbody></table>
-      ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`,
-      { flush: true, sub: `차단 ${blocked(features) + blocked(extraFeatures)} / ${features.length + extraFeatures.length}` })}
-    ${panel("기본 커넥터", html`<table class="data"><thead><tr><th>커넥터</th><th>하네스</th><th class="num">사용 엔드포인트</th><th>상태</th><th></th></tr></thead><tbody>
-      ${switches.map(builtinRow)}</tbody></table>
-      ${connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items))}</tbody></table>` : ""}`,
-      { flush: true, sub: `차단 ${blocked(switches) + blocked(connectors)} / ${switches.length + connectors.length}` })}
+    ${panel("기본 기능", html`<table class="data">${BUILTIN_HEAD("기능")}<tbody>${features.map(builtinRow)}</tbody></table>
+      ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`, { flush: true })}
+    ${panel("기본 커넥터", html`<table class="data">${BUILTIN_HEAD("커넥터")}<tbody>${switches.map(builtinRow)}</tbody></table>
+      ${connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items, off.has(g.harness)))}</tbody></table>` : ""}`, { flush: true })}
     ${panel("플러그인·직접 추가", review.length ? html`<table class="data">${GROUP_HEAD}<tbody>${review.map((g) => groupRow(g, items))}</tbody></table>`
       : empty("보고된 항목 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" })}</div>`;
 }
