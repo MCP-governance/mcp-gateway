@@ -261,6 +261,8 @@ inventory/listener `complete` 기본은 False다. 정보원 오류나500건 초�
 
 Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event TargetUser가 정확한 관리SID인 차단만 보며, WFP event-time SID가 없으면 partial/sid_unavailable로 제외한다. 감사/방화벽/실행 정책을 자동 활성화하지 않는다. Windows 실제 이벤트 전달 시험은 미실행이다.
 
+하네스 명령줄의 프롬프트는 MCP 서버 기동 증거로 쓰지 않는다(D-273, D-269의 제외 범위 정정). Node/Bun은 Claude Code의 `@anthropic-ai/claude-code/cli.js` 또는 Codex의 `@openai/codex/bin/codex.js`로 끝나는 진입 파일만 제외한다. native 실행 파일은 설치기가 `harness_paths`로 기록하고 서비스가 보호된 관측 설정 `ENDPOINT_HARNESS_PATHS`로 전달한 경로와 실경로가 같을 때 제외한다. 하위 패키지의 서버 스크립트·다른 경로의 동명 실행 파일은 계속 검사하며, MCP initialize 응답은 제외 조건과 관계없이 확정 증거다. 경로 목록이 없는 기존 설치·관측 전용 설치는 native 이름만으로 제외하지 않는다. 관리형 키트를 재설치하면 경로가 기록된다. 이는 파일 서명·내용 검증이나 변조 방지 증명이 아니다.
+
 [PJ1 Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.
 
 ## 증거 계약 (D-86 – D-89)

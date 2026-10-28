@@ -268,6 +268,7 @@ Write-Output 'Per-request CA verification OK'
             saved = json.loads(config_path.read_text(encoding='utf-8'))
             self.assertEqual(saved['ca_certificate'], ca['ca_certificate'])
             self.assertEqual(saved['ca_sha256'], ca['ca_sha256'])
+            self.assertEqual(saved['harness_paths'], [str(native / 'codex.exe')])
             values = environment.call_args.args[1]
             self.assertNotIn('NODE_EXTRA_CA_CERTS', values)
             self.assertNotIn('CODEX_CA_CERTIFICATE', values)
@@ -279,6 +280,7 @@ Write-Output 'Per-request CA verification OK'
             observer = json.loads(config_path.with_name('observer.json').read_text(encoding='utf-8'))
             self.assertEqual(observer['ENDPOINT_CA_CERTIFICATE'], ca['ca_certificate'])
             self.assertEqual(observer['ENDPOINT_CA_SHA256'], ca['ca_sha256'])
+            self.assertEqual(observer['ENDPOINT_HARNESS_PATHS'], saved['harness_paths'])
 
     def test_simple_install_keeps_the_signed_in_admin_account_and_names_the_ca_in_its_environment(self):
         managed = load('windows_simple_install_test', 'endpoint-agent/managed-windows.py')

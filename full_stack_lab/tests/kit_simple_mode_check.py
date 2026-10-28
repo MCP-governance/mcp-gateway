@@ -243,18 +243,23 @@ class HarnessCommandLine(unittest.TestCase):
 
     def test_harnesses_are_not_stdio_servers_but_the_servers_still_are(self):
         agent = load("agent_markers", KIT / "agent.py")
+        claude = str(Path(tempfile.gettempdir()) / "harness path/claude.exe")
+        codex = str(Path(tempfile.gettempdir()) / "harness path/codex.exe")
         harnesses = [
             '/home/pj2/.local/bin/claude -p "modelcontextprotocol/python-sdk 위키 목차"',
-            r'"C:\Users\pj3\AppData\Local\Microsoft\WinGet\Packages\Anthropic.ClaudeCode_x\claude.exe" -p "modelcontextprotocol"',
+            f'"{claude}" -p "modelcontextprotocol"',
             "/usr/bin/node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js -p fastmcp",
             'codex exec "mcp-server 예제를 보여줘"',
-            r"C:\Users\pj3\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe exec \"fastmcp\"",
+            f'"{codex}" exec "fastmcp"',
         ]
         servers = ["npx -y @modelcontextprotocol/server-filesystem /tmp", "node /home/u/mcp-server/index.js",
                    "python -m mcp_server_git", "/usr/bin/node /opt/claude-mcp/server.js modelcontextprotocol"]
         for line in harnesses:
             self.assertTrue(agent.PROCESS_MARKERS.search(line), line)  # the marker matches: that was the false alarm
-            self.assertTrue(agent.harness_process(line), line)
+            with mock.patch.object(agent, "CONFIG", {"ENDPOINT_HARNESS_PATHS": [
+                    "/home/pj2/.local/bin/claude", "/usr/bin/codex", claude, codex]}), \
+                 mock.patch.object(agent.shutil, "which", side_effect=lambda p: "/usr/bin/codex" if p == "codex" else None):
+                self.assertTrue(agent.harness_process(line), line)
         for line in servers:
             self.assertFalse(agent.harness_process(line), line)
 

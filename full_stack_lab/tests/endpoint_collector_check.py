@@ -107,7 +107,8 @@ class Collector(unittest.TestCase):
         row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude',
                'command_line': '/opt/claude -p "fastmcp modelcontextprotocol"'}
         for enabled in (False, True):
-            with self.subTest(probe=enabled), patch.object(agent, 'local_listeners', return_value=[row]), \
+            with self.subTest(probe=enabled), patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': ['/opt/claude']}), \
+                 patch.object(agent, 'local_listeners', return_value=[row]), \
                  patch.object(agent, 'probe_mcp', return_value=None):
                 self.assertEqual(agent.listener_findings({'probe_mcp': enabled}), [])
         with patch.object(agent, 'local_listeners', return_value=[row]), \
@@ -129,6 +130,40 @@ class Collector(unittest.TestCase):
         with patch.object(agent.platform, 'system', return_value='Windows'), \
              patch.object(agent, '_windows_processes', return_value={'123': ('node.exe', command)}):
             self.assertEqual(agent.stdio_processes(), [])
+
+    def test_nested_server_script_is_not_the_harness_entry(self):
+        command = (r'"C:\Program Files\nodejs\node.exe" '
+                   r'"C:\Program Files\nodejs\node_modules\@anthropic-ai\claude-code\node_modules'
+                   r'\@modelcontextprotocol\server-filesystem\dist\index.js" C:\docs')
+        with patch.object(agent.platform, 'system', return_value='Windows'), \
+             patch.object(agent, '_windows_processes', return_value={'123': ('node.exe', command)}):
+            rows = agent.stdio_processes()
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['mcp_evidence'], 'suspected')
+
+    def test_renamed_python_is_not_an_approved_harness_socket(self):
+        row = {'address': '127.0.0.1', 'port': 54321, 'process_name': 'claude.exe',
+               'command_line': r'"C:\unapproved\claude.exe" -m fastmcp run server.py'}
+        for enabled in (False, True):
+            with self.subTest(probe=enabled), patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': [r'C:\approved\claude.exe']}), \
+                 patch.object(agent, 'local_listeners', return_value=[row]), \
+                 patch.object(agent, 'probe_mcp', return_value=None):
+                rows = agent.listener_findings({'probe_mcp': enabled})
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]['mcp_evidence'], 'suspected')
+
+    def test_native_harness_exclusion_requires_the_installed_entry_path(self):
+        with tempfile.TemporaryDirectory() as folder:
+            approved = Path(folder) / 'approved/claude.exe'
+            other = Path(folder) / 'other/claude.exe'
+            for path in (approved, other):
+                path.parent.mkdir()
+                path.touch()
+            with patch.object(agent, 'CONFIG', {'ENDPOINT_HARNESS_PATHS': [str(approved)]}):
+                self.assertTrue(agent.harness_process(f'"{approved}" -p fastmcp'))
+                self.assertFalse(agent.harness_process(f'"{other}" -m fastmcp run server.py'))
+            with patch.object(agent, 'CONFIG', {}):
+                self.assertFalse(agent.harness_process(f'"{approved}" -p fastmcp'))
 
     def test_listener_permission_and_policy_disabled_are_distinct(self):
         with patch.object(agent,'SCAN_ENABLED',True), patch.object(agent,'call',side_effect=urllib.error.HTTPError(
