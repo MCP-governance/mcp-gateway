@@ -1316,7 +1316,10 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
-    args = parser.parse_args()
+    args, extra = parser.parse_known_args()
+    if extra:
+        # `mint <틀린 인자>`의 오류도 `mint` 사용법으로 보인다(내부 파일·명령 이름을 내보이지 않는다).
+        (show if args.command == "status" else parser).error("알 수 없는 인자: " + " ".join(extra))
     try:
         args.run(args)
     except (KeyboardInterrupt, EOFError):
