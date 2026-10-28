@@ -681,6 +681,8 @@ def install_check(managed, account: str, harnesses: list[str], simple: bool, sig
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
     cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
+    # The service reads harness versions right after it starts; by now (seconds of checks later) they are in.
+    SCREEN.summary = managed.kit_screen.wait_summary(managed.status_path(account, "json"), seconds=0) or summary
     close_step()
     if "실행 장애 · " in cells[0][1]:
         return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mint --check 로 다시 확인하세요"
