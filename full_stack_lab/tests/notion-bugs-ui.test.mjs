@@ -58,7 +58,8 @@ test("내 PC 연결: 운영체제 버튼은 선택만 하고 받기는 별도 �
 test("내 PC 연결: 선택한 운영체제의 절차만 보인다", () => {
   const context = sandbox("Linux x86_64");
   const linux = context.kit("linux");
-  assert.ok(linux.includes("unzip ~/Downloads/mcp-managed-kit-linux.zip -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh"));
+  // 10-28 PJ1: 이전 키트 폴더가 있으면 unzip이 파일마다 덮어쓰기를 물어 설치가 멈췄다.
+  assert.ok(linux.includes("rm -rf ~/mcp-managed-kit && unzip -q ~/Downloads/mcp-managed-kit-linux.zip -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh"));
   assert.ok(linux.includes("sudo ~/mcp-managed-kit/install.sh --remove"));
   assert.ok(!linux.includes("mint-"));
   assert.ok(!linux.includes("mcp-connect-macos") && !linux.includes(".cmd"));
