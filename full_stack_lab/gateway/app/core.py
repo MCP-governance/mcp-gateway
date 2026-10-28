@@ -1851,8 +1851,8 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
 def _root_cause(exc: BaseException) -> str:
     while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
         exc = exc.exceptions[0]
-    if isinstance(exc, local_jobs.LocalExecutionError):
-        return str(exc)
+    if isinstance(exc, (local_jobs.LocalExecutionError, local_jobs.NotStarted)):
+        return str(exc)  # 게이트웨이가 쓴 문장이다: 관리자가 원인(장치 없음·보고 만료·승인 변경)을 바로 본다.
     # SDK/provider/schema exceptions may quote response values or credentials.
     # Public MCP responses, audit rows and diagnostics retain the type only.
     return f"{type(exc).__name__}: 요청 처리를 완료하지 못했습니다."
