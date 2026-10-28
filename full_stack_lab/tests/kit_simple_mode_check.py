@@ -74,7 +74,7 @@ class Bootstrap(unittest.TestCase):
         calls["managed_account"].assert_not_called()
         calls["place_harnesses"].assert_not_called()
         calls["write_shims"].assert_not_called()
-        calls["remove_companion"].assert_called_once_with("emp")  # an earlier isolated companion goes
+        calls["remove_companion"].assert_called_once_with("emp", False)  # an earlier isolated companion goes
         account, placed, _, owner, mode = calls["install_managed"].call_args.args
         self.assertEqual((account, owner, mode), ("emp", None, "simple"))
         self.assertEqual(placed, {"claude": {"path": "/home/emp/.local/bin/claude"}})
@@ -83,6 +83,26 @@ class Bootstrap(unittest.TestCase):
         self.assertEqual(result["checks"]["서버 연결"], "learn 연결 정상")
         self.assertEqual(result["state"], "active")
         screen.result.assert_called_once()  # the three cells and the next step reach the screen
+
+    def test_an_older_kits_companion_without_the_comment_is_still_cleaned_up(self):
+        b = self.b
+        root = Path(self.temp.name)
+        folder = root / "enforcement" / "mcpgw-managed-emp"
+        folder.mkdir(parents=True)
+        (folder / "state.json").write_text('{"uid": 1001, "shell": "/bin/bash"}')
+        entry = SimpleNamespace(pw_gecos="", pw_dir="/home/managed-emp")
+        with mock.patch.object(b, "ENFORCEMENT", root / "enforcement"), mock.patch.object(b, "STATE", root / "state"), \
+                mock.patch.object(b.pwd, "getpwnam", return_value=entry, create=True), mock.patch.object(b, "close_sessions"), \
+                mock.patch.object(b, "run") as run, mock.patch.object(b, "say"):
+            # The launcher folder counts as an install (so the switch to simple mode rolls it back) and proves the kit made the account.
+            self.assertTrue(b.installed("managed-emp"))
+            self.assertTrue(b.legacy_companion("emp"))
+            (folder / "state.json").unlink()  # what rollback does
+            b.remove_companion("emp")
+            run.assert_not_called()  # no comment and no proof: someone else's account stays
+            b.remove_companion("emp", legacy=True)
+            run.assert_called_once()
+            self.assertEqual(run.call_args.args[:2], ("userdel", "managed-emp"))
 
     def test_isolated_mode_is_the_earlier_install(self):
         code, calls, result, _ = self.connect(isolated=True)

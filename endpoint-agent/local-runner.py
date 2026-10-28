@@ -626,7 +626,7 @@ def recover(config, request):
         request(config,f'/api/endpoint/local-jobs/{identity}',{'error':'실행기 재연결 후 정지 확인','stopped':True})
 
 
-# 승인된 로컬 서버의 폴더·이미지를 첫 호출 전에 준비한 결과. 서비스가 읽어 `mcpgw-status`에 싣는다.
+# 승인된 로컬 서버의 폴더·이미지를 첫 호출 전에 준비한 결과. 서비스가 읽어 `mint`에 싣는다.
 # ready·total이 None이면 아직 게이트웨이에서 목록을 받지 못한 것이다(활성화 대기 등).
 preparation={'ready':None,'total':None,'note':'','documents':[]}
 

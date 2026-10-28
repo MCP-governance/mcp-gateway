@@ -57,7 +57,7 @@ TEXT_EN = {
     "설치 단계": "Installation steps", "설치 확인": "Installation checks", "설치 중": "Installing",
     "설치 완료": "Installed", "설치 실패": "Installation failed", "차단 발생": "Blocked",
     "관리 설정 적용": "Managed settings applied", "서버 연결": "Server connection", "서버": "Servers",
-    "일부 실패": "Some failed", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
+    "일부 실패": "Some failed", "승인 MCP": "Approved MCP", "응답": "responding", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
     "관리자 활성화 대기": "Waiting for an administrator", "관리자에게 격리 해제 요청": "Ask an administrator to release",
     "새 키트로 다시 설치": "Reinstall with a new kit", "하네스 실행": "Run a harness",
     "게이트웨이 연결 점검": "Check gateway connection", "다음 할 일": "Next step",
@@ -496,7 +496,13 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
         # 연결 점검만 한 경우에도 서비스가 본 모델 로그인 만료는 같은 칸에 같은 말로 보인다.
         answer = "로그인 필요"
     tools = values.get("게이트웨이 MCP 목록", legacy_cell(values.get("도구", "—")))
-    if values.get("서버 연결"):
+    # Linux 점검의 「10개 (서버 2/2)」는 승인 MCP 2개 중 2개가 응답했고 도구가 10개라는 뜻이다. 그 말 그대로 보인다.
+    counted = re.fullmatch(r"(\d+)개 \(서버 (\d+)/(\d+)\)", clean(values.get("도구", "")))
+    if counted:
+        found, answered, approved = map(int, counted.groups())
+        tools = (f"완료 · 승인 MCP {approved}개 응답" if answered == approved
+                 else f"일부 실패 · 승인 MCP {answered}/{approved}개 응답") + f" · 도구 {found}개"
+    if values.get("서버 연결") and legacy_cell(values["서버 연결"]) != "완료":
         tools += " · " + t("서버 연결") + " " + legacy_cell(values["서버 연결"])
     versions = summary.get("harnesses") or {}
     version_text = " · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
@@ -590,7 +596,8 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
             cards.append(card(t("설치 단계"), steps[-step_limit:], inner, profile, g))
         if "servers" not in dropped:
             cards.append(card(t("승인된 MCP"), servers, inner, profile, g))
-        if "blocks" not in dropped:
+        # 간편 모드는 커널 차단이 없다: 기록이 없으면 늘 비어 있을 카드를 그리지 않는다.
+        if "blocks" not in dropped and (blocks or summary.get("mode") != "simple"):
             cards.append(card(t("최근 엔드포인트 차단"), block_rows, inner, profile, g))
         if wide:
             columns_ = [[], []]
@@ -808,7 +815,7 @@ class Screen:
         self.draw()
 
     def finish(self, wait=None):
-        """설치 끝 화면은 사람이 닫을 때까지 남긴다(wait=None). 닫으면 같은 화면을 스크롤백에 남긴다."""
+        """설치 끝 화면은 사람이 닫을 때까지 남긴다(wait=None). 닫으면 터미널에는 결과 한 줄만 남는다."""
         if self.window is None:
             return
         try:
@@ -824,7 +831,9 @@ class Screen:
         finally:
             self.stop()
         self.keys = ()
-        print(self.text(), file=self.output, flush=True)
+        badge = _badge(self.summary, self.rows, time.time(), 180)[0]
+        line = "MINT " + translate(badge, self.language) + (" · " + translate(clean(self.next, trusted=True), self.language) if self.next else "")
+        print(line, file=self.output, flush=True)
 
 
 def live(read, check=None, screen=None, sources=None):

@@ -46,7 +46,9 @@ TOKEN_CACHE_SECONDS = 180
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
                  "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
-STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
+STATUS_SHIM = Path("/usr/local/bin/mint")
+OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")  # 10-28 이전 이름
+SHIM_MARK = "# mcpgw managed status"
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
 ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
@@ -591,11 +593,11 @@ def install(args, prepared=None):
         config["home_launchers"] = []  # a new terminal still gets the launcher function
     if bundle.get("enrollment_token"):
         args.enrollment.unlink()
-    write_status_shim()
+    command = write_status_shim()
     summary = kit_screen.wait_summary(status_path(args.user, "json"), since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
                       "state": summary.get("state", "unknown"),
-                      "service": unit, "status_command": str(STATUS_SHIM), "home_launchers": config["home_launchers"]}))
+                      "service": unit, "status_command": str(command), "home_launchers": config["home_launchers"]}))
 
 
 STATE_LABEL = {"active": "활성", "pending": "활성화 대기", "quarantined": "중지 (점검에서 격리됨)",
@@ -697,10 +699,22 @@ def publish_status(summary):
         path.chmod(0o644)
 
 
+def ours_shim(path):
+    try:
+        return SHIM_MARK in path.read_text(errors="replace")[:200]
+    except OSError:
+        return False
+
+
 def write_status_shim():
-    private_write(STATUS_SHIM, "#!/bin/sh\n# mcpgw managed status\n"
+    """`mint` 한 단어로 상태 화면을 연다. 다른 프로그램의 `mint`가 이미 있으면 덮지 않고 옛 이름을 쓴다."""
+    target = STATUS_SHIM if not STATUS_SHIM.exists() or ours_shim(STATUS_SHIM) else OLD_STATUS_SHIM
+    private_write(target, "#!/bin/sh\n" + SHIM_MARK + "\n"
                   f'exec /usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py status "$@"\n')
-    STATUS_SHIM.chmod(0o755)
+    target.chmod(0o755)
+    if target == STATUS_SHIM and ours_shim(OLD_STATUS_SHIM):
+        OLD_STATUS_SHIM.unlink(missing_ok=True)
+    return target
 
 
 def account_header(summary):
@@ -713,7 +727,7 @@ def account_header(summary):
         command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--", *command]
     elif summary.get("mode") != "simple" and os.geteuid() != pwd.getpwnam(user).pw_uid:
         # The existing sudo login-shell cannot execute the header helper under AppArmor.
-        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mcpgw-status --check)")
+        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mint --check)")
     done = subprocess.run(command, capture_output=True, text=True, timeout=20, cwd="/", env={"PATH": "/usr/bin:/bin"})
     value = json.loads(done.stdout.strip().splitlines()[-1])["Authorization"]
     if value.startswith("Bearer endpoint-not-active"):
@@ -722,7 +736,7 @@ def account_header(summary):
 
 
 def check_connection(summary):
-    """tools/list and initialize over the Gateway with the account's own header (installer and mcpgw-status --check)."""
+    """tools/list and initialize over the Gateway with the account's own header (installer and mint --check)."""
     observer = load_module("check_observer", Path(__file__).with_name("agent.py"))
     ca = summary.get("ca")
     certificate = Path(ca).read_text() if ca else ""
@@ -787,8 +801,8 @@ def status(args):
     def check(current):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
+    # 닫으면 화면을 지운 채 끝난다(대체 화면). 상태를 남기려면 `mint | cat`.
     kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
-    print(screen.text())
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
@@ -1104,7 +1118,7 @@ def serve(args):
             time.sleep(HOME_LAUNCHER_EVERY)
     if sys.platform.startswith("linux") and config.get("owner_uid") is not None:
         threading.Thread(target=keep_home_launchers, daemon=True).start()
-    # gateway and ca let the employee's own `mcpgw-status --check` reach the Gateway as their harness does.
+    # gateway and ca let the employee's own `mint --check` reach the Gateway as their harness does.
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
                "source_socket": str(source_sock),
@@ -1230,7 +1244,9 @@ def rollback(args):
     (PROGRAMS / f"model-{args.user}.json").unlink(missing_ok=True)
     Path(f"/run/mcpgw-{args.user}.source").unlink(missing_ok=True)
     if not list(PROGRAMS.glob("status-*.json")):
-        STATUS_SHIM.unlink(missing_ok=True)
+        for shim in (STATUS_SHIM, OLD_STATUS_SHIM):
+            if ours_shim(shim):
+                shim.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
     (PROGRAMS / f"ca-{person.pw_uid}.crt").unlink(missing_ok=True)
     # The CA lines serve every simple install on this PC; the last one removed takes them out.
@@ -1290,9 +1306,11 @@ def main():
     helper = commands.add_parser("header")
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
-    show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
-    show.add_argument("--user")
-    show.add_argument("--check", action="store_true", help="게이트웨이로 initialize·tools/list를 보내 연결을 확인")
+    # 직원이 치는 `mint`는 이 하위 명령이다. 도움말은 직원이 쓰는 옵션만 직원의 말로 보인다.
+    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False)
+    show.add_argument("-h", "--help", action="help", help="도움말")
+    show.add_argument("--user", help=argparse.SUPPRESS)
+    show.add_argument("--check", action="store_true", help="게이트웨이 연결을 지금 점검")
     show.add_argument("--sources", action="store_true", help="승인된 MCP 소스 받기")
     show.set_defaults(run=status)
     remove = commands.add_parser("rollback")

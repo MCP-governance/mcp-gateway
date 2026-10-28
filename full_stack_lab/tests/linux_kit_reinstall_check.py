@@ -63,7 +63,7 @@ class Reinstall(unittest.TestCase):
                  redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(b.main(), 0)
             self.assertIn("이미 설치됨", output.getvalue())
-            self.assertIn("mcpgw-status --check", output.getvalue())
+            self.assertIn("mint --check", output.getvalue())
             self.assertIn("콘솔에서 새 키트", output.getvalue())
             connect.assert_not_called()
             remove.assert_not_called()
@@ -417,7 +417,7 @@ class Reinstall(unittest.TestCase):
              patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
              patch.object(c.subprocess, "run", return_value=SimpleNamespace(
                  stdout='{"Authorization":"Bearer endpoint-not-active"}', returncode=0)) as run, \
-             self.assertRaisesRegex(ValueError, "sudo mcpgw-status --check"):
+             self.assertRaisesRegex(ValueError, "sudo mint --check"):
             c.account_header(summary)
         run.assert_not_called()
 
@@ -617,7 +617,7 @@ class Reinstall(unittest.TestCase):
         with patch.object(c, "STATE", folder.parent), patch.object(c, "PROGRAMS", programs), \
              patch.object(c, "ENFORCEMENT", self.root / "enforcement"), patch.object(c, "Path", local_path), \
              patch.object(c, "FILES", {settings.name: settings, foreign.name: foreign}), \
-             patch.object(c, "STATUS_SHIM", self.root / "shim"), patch.object(c, "edit_environment"), \
+             patch.object(c, "STATUS_SHIM", self.root / "shim"), patch.object(c, "OLD_STATUS_SHIM", self.root / "old-shim"), patch.object(c, "edit_environment"), \
              patch.object(c.os, "geteuid", return_value=0, create=True), \
              patch.object(c, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
              patch.object(c.subprocess, "run"), redirect_stdout(io.StringIO()):
@@ -626,6 +626,19 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(foreign.read_text(), "organization original")
         self.assertFalse(folder.exists())
         self.assertFalse(model.exists())
+
+    def test_status_command_is_mint_and_never_overwrites_someone_elses_mint(self):
+        c = self.core
+        mint, old = self.root / "mint", self.root / "mcpgw-status"
+        with patch.object(c, "STATUS_SHIM", mint), patch.object(c, "OLD_STATUS_SHIM", old), \
+             patch.object(c, "private_write", lambda path, text: path.write_text(text)):
+            old.write_text("#!/bin/sh\n" + c.SHIM_MARK + "\n")
+            self.assertEqual(c.write_status_shim(), mint)
+            self.assertIn(c.SHIM_MARK, mint.read_text())
+            self.assertFalse(old.exists())  # the earlier name goes once `mint` is ours
+            mint.write_text("#!/bin/sh\necho another program\n")
+            self.assertEqual(c.write_status_shim(), old)
+            self.assertIn("another program", mint.read_text())
 
     def test_macos_removal_without_config_or_journal_clears_known_tasks_but_keeps_account(self):
         m = self.mac

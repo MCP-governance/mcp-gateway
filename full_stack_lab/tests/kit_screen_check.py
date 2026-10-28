@@ -154,6 +154,19 @@ class Frame(unittest.TestCase):
         self.assertEqual(bar.text, "q 종료 · c 지금 점검 · r 새로고침")
         self.assertEqual(bar.cells, 33)
 
+    def test_server_count_reads_as_approved_mcp_and_simple_mode_hides_the_empty_block_card(self):
+        cells = [("도구", "10개 (서버 2/2)"), ("서버 연결", "memory 연결 정상")]
+        text = kit.frame({**example(), "blocks": [], "mode": "simple"}, cells=cells, columns=80, lines=40, now=1800000000)
+        self.assertIn("완료 · 승인 MCP 2개 응답 · 도구 10개", text)
+        self.assertNotIn("서버 2/2", text)
+        self.assertNotIn("서버 연결", text)
+        self.assertNotIn("╭─ 최근 엔드포인트 차단", text)
+        partial = kit.frame(example(), cells=[("도구", "5개 (서버 1/2)"), ("서버 연결", "실패 · learn")], columns=99,
+                            lines=40, now=1800000000)
+        self.assertIn("일부 실패 · 승인 MCP 1/2개 응답 · 도구 5개", partial)
+        self.assertIn("╭─ 최근 엔드포인트 차단", kit.frame({**example(), "mode": "isolated", "blocks": []}, now=1800000000,
+                                                       columns=80, lines=40))
+
     def test_check_without_a_model_cell_keeps_the_reported_login_state(self):
         text = kit.frame({**example(), "model_signed_in": {"codex": False}}, cells=[("도구", "2개 (서버 1/1)")],
                          now=1800000000)
@@ -210,8 +223,8 @@ class Terminal(unittest.TestCase):
             screen.finish(0)
         self.assertEqual(output.getvalue().count(kit.ENTER), 2)
         self.assertEqual(output.getvalue().count(kit.LEAVE), 2)
-        self.assertIn("MINT", output.getvalue().split(kit.LEAVE)[-1])
-        self.assertIn("엔드포인트 · MCP 연결 관리", output.getvalue().split(kit.LEAVE)[-1])
+        # 닫은 뒤 터미널에는 결과 한 줄만 남는다(화면 전체를 다시 찍지 않는다).
+        self.assertEqual(output.getvalue().split(kit.LEAVE)[-1].strip(), "MINT 설치 완료")
 
     def test_finish_stays_until_a_closing_key(self):
         screen, output = self.screen()
@@ -219,7 +232,7 @@ class Terminal(unittest.TestCase):
         with mock.patch.object(screen, "read_key", keys):
             screen.finish()
         self.assertEqual(keys.call_count, 4)
-        self.assertIn("MCP 연결 관리", output.getvalue().split(kit.LEAVE)[-1])
+        self.assertEqual(len(output.getvalue().split(kit.LEAVE)[-1].splitlines()), 1)
         screen, _ = self.screen()
         with mock.patch.object(screen, "read_key", side_effect=KeyboardInterrupt):
             screen.finish()
