@@ -49,7 +49,7 @@ TEXT_EN = {
     "게이트웨이 판정": "Gateway decision", "격리 계정": "Isolated account",
     "활성화 대기": "Waiting for activation", "서비스 중지": "Service stopped", "활성": "Active", "격리됨": "Quarantined",
     "등록 해제됨": "Unregistered", "철회됨": "Revoked", "제거됨": "Removed", "확인 필요": "Needs attention",
-    "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers", "로컬 MCP 준비": "Local MCP ready", "직원 문서 폴더": "Document folders", "새로 반영": "Newly added", "열린 하네스는 다시 시작": "restart open harnesses",
+    "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers", "로컬 MCP 준비": "Local MCP ready", "직원 문서 폴더": "Document folders", "새로 반영": "Newly added", "Enter 돌아가기": "Enter to go back", "설치 진행 중": "Installing", "열린 하네스는 다시 시작": "restart open harnesses",
     "하네스 판본": "Harness versions", "하네스 응답": "Harness response", "하네스": "Harnesses",
     "최근 보고": "Last report", "최근 엔드포인트 차단": "Recent endpoint blocks",
     "게이트웨이 MCP 목록": "Gateway MCP list", "MCP 목록": "MCP list", "관리 설정": "Managed settings", "엔드포인트 · MCP 연결 관리": "Endpoint · MCP connection management",
@@ -160,8 +160,26 @@ def fit(text, room):
     return text if width(text) <= room else clip(text, max(0, room - 1)) + "…"
 
 
+def chunks(text, room):
+    """칸 폭으로 나눈 줄들. 띄어쓰기에서 나누고, 한 낱말이 한 줄보다 길 때만 낱말 안에서 나눈다."""
+    lines = []
+    for word in re.split(r"(?<= )", text):
+        if lines and width(lines[-1] + word.rstrip()) <= room:
+            lines[-1] += word
+            continue
+        while width(word.rstrip()) > room:
+            cut = clip(word, room, trusted=True) or word[:1]  # 걸러 내기는 부른 쪽에서 이미 했다
+            lines.append(cut)
+            word = word[len(cut):]
+        if word:
+            lines.append(word)
+    return [line.rstrip() for line in lines]
+
+
 def card(title, rows, inner, profile, g, role="border", title_role="title"):
-    """Rounded box with the title in the top border (Lip Gloss RoundedBorder); rows are Lines no wider than inner."""
+    """Rounded box with the title in the top border (Lip Gloss RoundedBorder); rows are Lines no wider than inner
+    (a row may be a list of Lines: a wrapped value)."""
+    rows = [x for r in rows for x in (r if isinstance(r, list) else [r])]
     b = lambda text: paint(text, role, profile)
     title = fit(title, max(1, inner - 4))
     top = (b(g["tl"] + g["h"]) + " " + paint(title, title_role, profile, bold=True) + " " +
@@ -183,29 +201,41 @@ def mark_for(value, profile, g, spin=0):
     return paint(g["none"], "dim", profile), None
 
 
-def kv(label, value, inner, profile, g, label_width=10, role=None, marked=False, spin=0, indent=False):
-    """라벨(회색·고정 폭)과 값. marked면 결과 기호를 앞에 붙이고 값 색을 결과에 맞춘다. indent는 기호 칸만 비운다."""
+def kv(label, value, inner, profile, g, label_width=10, role=None, marked=False, spin=0, indent=False, wrap=False):
+    """라벨(회색·고정 폭)과 값. marked면 결과 기호를 앞에 붙이고 값 색을 결과에 맞춘다. indent는 기호 칸만 비운다.
+    wrap이면 긴 값을 자르지 않고 값 칸 아래로 이어 쓴다(Line 목록을 돌려준다)."""
     lead, lead_cells = ("  ", 2) if indent else ("", 0)
     if marked:
         symbol, role = mark_for(value, profile, g, spin)
         lead, lead_cells = symbol + " ", 2
     label = fit(label, label_width)
     room = max(1, inner - lead_cells - label_width - 2)
+    bold = role in ("ok", "err", "warn")
+    if wrap and width(clean(value)) > room:
+        first, *rest = chunks(clean(value), room)
+        pad = " " * (lead_cells + label_width + 2)
+        head = lead + paint(label, "dim", profile) + " " * (label_width - width(label) + 2) + paint(first, role, profile, bold=bold)
+        return [Line(head, len(pad) + width(first))] + [Line(pad + paint(x, role, profile, bold=bold), len(pad) + width(x)) for x in rest]
     value = fit(value, room)
     text = (lead + paint(label, "dim", profile) + " " * (label_width - width(label) + 2) +
-            paint(value, role, profile, bold=role in ("ok", "err", "warn")))
+            paint(value, role, profile, bold=bold))
     return Line(text, lead_cells + label_width + 2 + width(value))
 
 
-def keybar(items, profile, language="ko"):
-    if profile == "none":
-        return Line(translate(" · ".join(f"{k} {v}" for k, v in items), language))
+def keybar(items, profile, language="ko", room=999):
+    """키 안내 한 줄. 폭이 모자라면 뒤쪽 항목을 통째로 뺀다(단어 중간에서 줄이 넘어가지 않게)."""
+    plain = profile == "none"
     parts, cells = [], 0
     for key, label in items:
         label = translate(label, language)
-        parts.append(paint(f" {key} ", "accent", profile, bold=True, reverse=True) + " " + paint(label, "dim", profile))
-        cells += width(key) + 3 + width(label) + 3
-    return Line("   ".join(parts), max(0, cells - 3))
+        need = width(key) + 1 + width(label) + (0 if plain else 2)
+        gap = (3 if plain else 3) if parts else 0
+        if cells + gap + need > room:
+            break
+        parts.append(f"{key} {label}" if plain else
+                     paint(f" {key} ", "accent", profile, bold=True, reverse=True) + " " + paint(label, "dim", profile))
+        cells += gap + need
+    return Line((" · " if plain else "   ").join(parts), cells)
 
 
 def notice_line(text, role, inner, profile, g):
@@ -259,6 +289,7 @@ def login_inputs(address, notice=""):
 
 
 def source_menu(address):
+    """승인된 MCP 메뉴. 읽을 결과를 남겼으면 True, 그냥 닫았으면 None."""
     import importlib.util
     spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
     access = importlib.util.module_from_spec(spec)
@@ -275,10 +306,10 @@ def source_menu(address):
         servers = access.receive(address, {"action": "list"})
     except (OSError, ValueError, KeyError, TypeError):
         show("승인된 MCP", [notice_line("목록을 받지 못했습니다", "err", inner, profile, g)])
-        return
+        return True
     if not servers:
         show("승인된 MCP", [Line(paint("—", "dim", profile), 1)])
-        return
+        return True
     rows = []
     for i, server in enumerate(servers, 1):
         kind = "소스 받기" if server.get("source_available") else "원격 연결"
@@ -298,20 +329,21 @@ def source_menu(address):
         return
     if not selected.isdigit() or not 1 <= int(selected) <= len(servers):
         show("소스 받기", [notice_line("번호 확인 필요", "warn", inner, profile, g)])
-        return
+        return True
     server = servers[int(selected) - 1]
     name = server.get("display_name") or server.get("server_id", "—")
     if not server.get("source_available"):
         show("소스 받기", [kv("서버", name, inner, profile, g, 6), kv("소스", "원격 연결 서버", inner, profile, g, 6, "dim")])
-        return
+        return True
     print("\n  " + paint(g["spin"][0], "warn", profile) + " " + paint("받는 중", "dim", profile), flush=True)
     try:
         target = access.receive(address, {"action": "download", "server": server["server_id"], "commit": server["commit_sha"]})
     except (OSError, ValueError, KeyError, TypeError):
         show("소스 받기", [kv("서버", name, inner, profile, g, 6), kv("결과", "실패", inner, profile, g, 6, "err")])
-        return
+        return True
     show("소스 받기", [kv("서버", name, inner, profile, g, 6), kv("결과", "완료", inner, profile, g, 6, "ok"),
                      kv("파일", str(target), inner, profile, g, 6, "accent")])
+    return True
 
 
 def translate(value, language="ko"):
@@ -336,9 +368,9 @@ def width(text):
     return sum(0 if unicodedata.combining(c) else 2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in text)
 
 
-def clip(text, room):
+def clip(text, room, trusted=False):
     out, used = "", 0
-    for c in clean(text):
+    for c in clean(text, trusted):
         used += width(c)
         if used > room:
             break
@@ -459,6 +491,10 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     # 점검
     values = dict(cells)
     answer = values.get("하네스 응답", legacy_cell(values.get("모델 응답", "—")))
+    signed = summary.get("model_signed_in") if isinstance(summary.get("model_signed_in"), dict) else {}
+    if answer == "—" and False in signed.values():
+        # 연결 점검만 한 경우에도 서비스가 본 모델 로그인 만료는 같은 칸에 같은 말로 보인다.
+        answer = "로그인 필요"
     tools = values.get("게이트웨이 MCP 목록", legacy_cell(values.get("도구", "—")))
     if values.get("서버 연결"):
         tools += " · " + t("서버 연결") + " " + legacy_cell(values["서버 연결"])
@@ -466,10 +502,10 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     version_text = " · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
                               if name in {"claude", "codex", "gemini", "opencode"}) or "—"
     lw = lab("하네스 응답", "MCP 목록", "관리 설정", "하네스 판본")
-    checks = [kv(t("하네스 응답"), t(clean(answer)), inner, profile, g, lw, marked=True, spin=spin),
-              kv(t("MCP 목록"), t(clean(tools)), inner, profile, g, lw, marked=True, spin=spin),
+    checks = [kv(t("하네스 응답"), t(clean(answer)), inner, profile, g, lw, marked=True, spin=spin, wrap=True),
+              kv(t("MCP 목록"), t(clean(tools)), inner, profile, g, lw, marked=True, spin=spin, wrap=True),
               kv(t("관리 설정"), t(result_label(summary.get("protected_configs"))), inner, profile, g, lw, marked=True),
-              kv(t("하네스 판본"), version_text, inner, profile, g, lw, indent=True)]
+              kv(t("하네스 판본"), version_text, inner, profile, g, lw, indent=True, wrap=True)]
 
     # 설치 단계
     steps = []
@@ -492,18 +528,18 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     if local.get("total"):
         ready = f"{local.get('ready', 0)}/{local['total']}"
         servers.append(kv(t("로컬 MCP 준비"), ready + (" · " + t(clean(local["note"])) if local.get("note") else ""), inner,
-                          profile, g, lw, "ok" if local.get("ready") == local["total"] else "warn"))
+                          profile, g, lw, "ok" if local.get("ready") == local["total"] else "warn", wrap=True))
         servers.append(kv(t("직원 문서 폴더"), ", ".join(clean(d) for d in local.get("documents") or []) or "—",
-                          inner, profile, g, lw))
+                          inner, profile, g, lw, wrap=True))
     if names:
         joined = ", ".join(clean(n) for n in names)
-        servers.append(Line(paint(fit(joined, inner), "title", profile)))
+        servers.append([Line(paint(x, "title", profile), width(x)) for x in chunks(joined, inner)])
     added = summary.get("added") if isinstance(summary.get("added"), dict) else {}
     fresh = [clean(s) for s in added.get("servers") or [] if s in (summary.get("names") or [])]
     if fresh and isinstance(added.get("at"), (int, float)) and 0 <= now - added["at"] < 3600:
         # 이미 열려 있는 하네스는 새 서버를 모른다(재시작해야 보인다).
-        servers.append(Line(paint(fit(t("새로 반영") + "  " + ", ".join(fresh) + " · " + t("열린 하네스는 다시 시작"), inner),
-                                  "warn", profile)))
+        text = t("새로 반영") + "  " + ", ".join(fresh) + " · " + t("열린 하네스는 다시 시작")
+        servers.append([Line(paint(x, "warn", profile), width(x)) for x in chunks(text, inner)])
 
     # 최근 엔드포인트 차단
     blocks = summary.get("blocks") or []
@@ -512,6 +548,8 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
                   for row in blocks[-5:] if isinstance(row, dict)] or [Line(paint("—", "dim", profile), 1)]
 
     # 다음 할 일
+    if not next_line and rows and rows[-1][2] is None:
+        next_line = "설치 진행 중"
     if not next_line:
         next_line = {"pending": "관리자 활성화 대기", "quarantined": "관리자에게 격리 해제 요청",
                      "revoked": "새 키트로 다시 설치"}.get(summary.get("state"), "하네스 실행" if connected else "게이트웨이 연결 점검")
@@ -525,44 +563,40 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     else:
         # 복사해 붙일 명령은 자르지 않고 줄을 나눠 전부 보인다.
         nxt = [Line(head, 2 + width(label))]
-        parts = [""] if command else []
-        for ch in command:
-            if width(parts[-1] + ch) > room - 2:
-                parts.append("")
-            parts[-1] += ch
-        nxt += [Line("  " + paint(part, "accent", profile, bold=True), 2 + width(part)) for part in parts]
+        nxt += [Line("  " + paint(part, "accent", profile, bold=True), 2 + width(part)) for part in chunks(command, room - 2)]
 
-    def assemble(big_logo, step_limit, show_blocks, show_versions):
-        out = [Line("")]
-        logo_rows = LOGO if big_logo and g is UTF else []  # 블록 글꼴은 UTF-8 터미널에서만
-        for row in logo_rows:
+    # 높이가 모자라면 덜 중요한 카드를 통째로 뺀다(카드를 중간에서 자르지 않는다). 다음 할 일·키 안내는 늘 남는다.
+    def assemble(big_logo, step_limit, show_versions, dropped, compact):
+        out = [] if compact else [Line("")]
+        for row in LOGO if big_logo and g is UTF else []:  # 블록 글꼴은 UTF-8 터미널에서만
             out.append(Line(" " + logo_line(row, profile, g), 1 + width(row)))
-        head = paint("MINT", "accent", profile, bold=True) + "  " + paint(t("엔드포인트 · MCP 연결 관리"), "dim", profile)
-        head_cells = 6 + width(t("엔드포인트 · MCP 연결 관리"))
-        pill = paint(g["dot"] + " " + t(badge), badge_role, profile, bold=True)
-        pill_cells = 2 + width(t(badge))
-        gap = max(2, total - head_cells - pill_cells)
-        out.append(Line(" " + head + " " * gap + pill, 1 + head_cells + gap + pill_cells))
-        out.append(Line(" " + paint(g["h"] * total, "border", profile), 1 + total))
-        left = card(t("연결"), connection, inner, profile, g)
-        check_rows = checks if show_versions else checks[:3]
-        right = card(t("점검") if cells else t("설치 확인") if rows else t("점검"), check_rows, inner, profile, g)
-        cards = [left, right]
-        if rows:
-            shown = steps[-step_limit:] if step_limit else []
-            if shown:
-                cards.append(card(t("설치 단계"), shown, inner, profile, g))
-        cards.append(card(t("승인된 MCP"), servers, inner, profile, g))
-        if show_blocks:
+        title = t("엔드포인트 · MCP 연결 관리")
+        head = paint("MINT", "accent", profile, bold=True) + "  " + paint(title, "dim", profile)
+        head_cells = 6 + width(title)
+        pill_text = g["dot"] + " " + t(badge)
+        if head_cells + 2 + width(pill_text) > total:
+            head, head_cells = paint("MINT", "accent", profile, bold=True), 4
+        gap = max(2, total - head_cells - width(pill_text))
+        out.append(Line(" " + head + " " * gap + paint(pill_text, badge_role, profile, bold=True), 1 + head_cells + gap + width(pill_text)))
+        if not compact:
+            out.append(Line(" " + paint(g["h"] * total, "border", profile), 1 + total))
+        cards = []
+        if "connection" not in dropped:
+            cards.append(card(t("연결"), connection, inner, profile, g))
+        if "checks" not in dropped:
+            check_rows = checks if show_versions else checks[:3]
+            cards.append(card(t("점검") if cells else t("설치 확인") if rows else t("점검"), check_rows, inner, profile, g))
+        if rows and step_limit:
+            cards.append(card(t("설치 단계"), steps[-step_limit:], inner, profile, g))
+        if "servers" not in dropped:
+            cards.append(card(t("승인된 MCP"), servers, inner, profile, g))
+        if "blocks" not in dropped:
             cards.append(card(t("최근 엔드포인트 차단"), block_rows, inner, profile, g))
         if wide:
             columns_ = [[], []]
-            heights = [0, 0]
             for c in cards:
-                k = 0 if heights[0] <= heights[1] else 1
-                columns_[k] += c
-                heights[k] += len(c)
-            for i in range(max(heights)):
+                columns_[0 if len(columns_[0]) <= len(columns_[1]) else 1] += c
+            for i in range(max(len(columns_[0]), len(columns_[1]))):
                 a = columns_[0][i] if i < len(columns_[0]) else Line(" " * col, col)
                 b = columns_[1][i] if i < len(columns_[1]) else Line("", 0)
                 out.append(Line(" " + a.text + " " * max(0, col - a.cells) + "  " + b.text, 1 + col + 2 + b.cells))
@@ -570,19 +604,29 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
             for c in cards:
                 out += [Line(" " + x.text, 1 + x.cells) for x in c]
         out += [Line(" " + x.text, 1 + x.cells) for x in card(t("다음 할 일"), nxt, total - 4, profile, g, "accent", "accent")]
-        bar = keybar(keys, profile, language)
-        out.append(Line(" " + bar.text, 1 + bar.cells))
+        if keys:
+            bar = keybar(keys, profile, language, total)
+            out.append(Line(" " + bar.text, 1 + bar.cells))
         return out
 
     height = max(0, lines - 1)
-    for big, limit, blocks_on, versions_on in ((True, 99, True, True), (False, 99, True, True), (False, 6, True, True),
-                                                (False, 4, False, True), (False, 3, False, False), (False, 2, False, False),
-                                                (False, 0, False, False)):
-        result = assemble(big and columns >= 60, limit, blocks_on, versions_on)
+    # 설치 중에는 진행 단계가, 평소에는 점검·연결이 오래 남는다.
+    drop_order = ["blocks", "servers", "connection", "checks"]
+    empty = ("blocks", "servers", "connection") if rows and not summary else ()
+    attempts = [(columns >= 60, 99, True, empty, False), (False, 99, True, empty, False)]
+    for limit in (6, 4, 3):
+        attempts.append((False, limit, True, empty, False))
+    attempts.append((False, 3, False, empty, False))
+    for n in range(1, len(drop_order) + 1):
+        for limit in (3, 2, 1):
+            attempts.append((False, limit, False, tuple(drop_order[:n]), False))
+    attempts += [(False, 1, False, tuple(drop_order), True), (False, 0, False, tuple(drop_order), True)]
+    for attempt in attempts:
+        result = assemble(*attempt)
         if len(result) <= height:
             return result
-    # 마지막 수단: 위에서부터 자르되 다음 할 일과 키 안내는 남긴다.
-    return result[: max(0, height - 4)] + result[-4:] if height > 4 else result[-height:] if height else []
+    message = t("창을 넓혀 주세요") + " (44×12)"
+    return [Line(fit(message, max(0, columns - 1)))][:height]
 
 
 def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=None, stale=180, language="ko"):
@@ -613,7 +657,7 @@ class Screen:
         self.title, self.rows, self.cells, self.next, self.notes = title, [], [], "", []
         self.language = language
         self.summary, self.window = {}, None
-        self.keys, self.spin = KEY_ITEMS, 0
+        self.keys, self.spin = (), 0  # 키를 실제로 받는 화면(live·finish)만 안내를 단다
         self._restore_vt = self._terminal = None
         self._handlers = {}
         self._size = None
@@ -796,6 +840,8 @@ def live(read, check=None, screen=None, sources=None):
             # Exceptions can contain credentials from a header helper; show only the failed result.
             results.put([("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")])
 
+    # 이 화면에서 실제로 동작하는 키만 안내한다.
+    screen.keys = tuple(item for item in KEY_ITEMS if item[0] not in ("c", "s") or (check if item[0] == "c" else sources))
     try:
         while True:
             screen.next = ""
@@ -820,8 +866,8 @@ def live(read, check=None, screen=None, sources=None):
             if key in ("s", "3") and sources:
                 screen.pause()
                 try:
-                    sources()
-                    input("\n  Enter ")
+                    if sources():
+                        input("\n  " + translate("Enter 돌아가기", screen.language) + " ")
                 except (EOFError, KeyboardInterrupt):
                     pass
                 finally:
