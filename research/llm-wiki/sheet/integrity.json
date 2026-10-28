@@ -39,7 +39,7 @@
       "sha256": "8755ddb662f9d8049839fbec848672bb5b6875a9a1af651a73bf8e8cb7e6d72a"
     },
     "backlog": {
-      "rows": 102,
+      "rows": 108,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -66,10 +66,10 @@
           ]
         }
       },
-      "sha256": "17bfab91053c24a94da5118b0c416c5b942c6a018d57fbd69a7ab665474dd88e"
+      "sha256": "0fb1a73d7aeef47fb4d43987cf1df7d69a7dfd5e2adbfb9a889566553bd7cc88"
     },
     "decisions": {
-      "rows": 198,
+      "rows": 274,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -89,10 +89,10 @@
           "missing": []
         }
       },
-      "sha256": "4ce3e39198f7d624da20631bf54c94fe8387345010702d12db4be68fae029647"
+      "sha256": "a9956d7c42c9d153806653c5295619ad063c2ffa480af480809e04450c37368d"
     },
     "commits": {
-      "rows": 828,
+      "rows": 986,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {
@@ -169,7 +169,7 @@
           "missing": []
         }
       },
-      "sha256": "d29e6dd053f9be5a3abe6878b71dfc80865c41d9725813380d1cc8c4cdf6afc1"
+      "sha256": "93a718547a4176d04e12b28d67d9e640d5a470e3c9cb07d8513e40cbc7adee27"
     },
     "deploys": {
       "rows": 19,
@@ -355,7 +355,7 @@
           "missing": []
         }
       },
-      "sha256": "fd25fb6648c73f15aa9842bb42b0d215faf1fe5b36f8f73e897065f4c9020a69"
+      "sha256": "1b01fc78b89a339c26b24aa4e8d9077dfe5c6c1a94f5b6a9beac355c1ac8c228"
     },
     "local-tool-risks": {
       "rows": 13,
@@ -577,7 +577,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "61db141def9b48d3c69e92c7cbe6627ecd0c0260c6b2db89878e789a61d1634c"
+      "sha256": "1783102d673444345213cc17b47f84bef8ec4d08e1117504fe47ede18370bc32"
     },
     "code-structure": {
       "rows": 801,
@@ -617,7 +617,7 @@
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "0554514e36623a67b775edcc2e4c20da974da49ec203c31aa451ef2b5a12d330"
+      "sha256": "b728c2e4305d71ca6b6916fe54e7272e3427ea824926f6f2173b5f36c2c9b66c"
     },
     "mcp-candidates": {
       "rows": 14,
@@ -698,11 +698,11 @@
       "sha256": "4a13eede64119fe5d42a1871e5104594909a191e2847ad56c1f4a76f1b896911"
     },
     "docs": {
-      "rows": 785,
+      "rows": 839,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "4c5a05dd9dde42390e0b7d18847aac0a3f5ed1acb24a7e49471daa735480cace"
+      "sha256": "b295f6df8cbd5a29130b66e9b345d9744326fa3a73d33f97a22f96e94c872ac2"
     },
     "enterprise-summary": {
       "rows": 10,
@@ -712,11 +712,11 @@
       "sha256": "e14897d31d08151baf5982a4b5519061dd6906695835198c9d371b7f2784673e"
     },
     "trace": {
-      "rows": 1569,
+      "rows": 1750,
       "duplicate_ids": [],
       "format_errors": [],
       "links": {},
-      "sha256": "50942ea871de022b20777dcf2cd37db63ce604da35a08e7630e8867166ce2b38"
+      "sha256": "d599e7aa230fbaad19068314a81ea2405ba149b2fbb645963aacd2847682b45f"
     }
   },
   "duplicate_ids": 0,
