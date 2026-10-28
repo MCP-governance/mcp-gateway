@@ -5,6 +5,7 @@ import json
 import os
 import re
 import socket
+import ssl
 import tempfile
 import threading
 import urllib.request
@@ -16,33 +17,66 @@ SLOTS = threading.BoundedSemaphore(2)
 
 
 class LoginError(ValueError):
-    def __init__(self, reason):
-        self.kit_reason = reason
+    def __init__(self, reason, retry=False):
+        self.kit_reason, self.retry = reason, retry
         super().__init__(reason)
 
 
-def login(bundle, request, inputs):
-    address, username, password = inputs(bundle["gateway_url"])
-    config = dict(bundle, gateway_url=address.strip().rstrip("/"))
+def reject_reason(exc):
+    """The Gateway's own sentence for a refused account (disabled, locked, waiting for approval); never a credential."""
+    try:
+        detail = json.loads(exc.read(8192)).get("detail")
+    except (ValueError, AttributeError, OSError):
+        return ""
+    return detail.strip() if isinstance(detail, str) and 0 < len(detail) <= 80 and detail.isprintable() else ""
+
+
+def attempt(bundle, request, address, username, password):
+    config = dict(bundle, gateway_url=address)
     try:
         grant = request(config, "/auth/kit-enrollment", {"email": username, "password": password}, credential=False)
     except urllib.error.HTTPError as exc:
-        reason = {401: "로그인: 아이디·비밀번호 확인 필요", 403: "로그인: 계정 잠김·승인 확인 필요",
-                  429: "로그인: 시도 제한"}.get(exc.code, "로그인: 연결 실패")
-        if exc.code == 403:
-            try:
-                if "승인" in json.loads(exc.read(8192)).get("detail", ""):
-                    reason = "로그인: 관리자 승인 대기"
-            except (ValueError, AttributeError):
-                pass
-        raise LoginError(reason) from None
-    except OSError:
-        raise LoginError("로그인: 네트워크 연결 실패") from None
-    finally:
-        password = None
+        if exc.code == 401:
+            raise LoginError("로그인: 아이디·비밀번호 확인 필요", retry=True) from None
+        text = reject_reason(exc)
+        reason = {403: "로그인: 계정 잠김·승인 확인 필요", 429: "로그인: 시도 제한"}.get(exc.code, "로그인: 연결 실패")
+        raise LoginError(text or reason) from None
+    except ValueError:
+        raise LoginError("로그인: 게이트웨이 주소 확인 필요 (https://주소)", retry=True) from None
+    except OSError as exc:
+        cause = getattr(exc, "reason", exc)
+        raise LoginError("로그인: 게이트웨이 인증서 확인 필요" if isinstance(cause, ssl.SSLError)
+                         else "로그인: 게이트웨이 연결 실패 · 주소와 네트워크 확인 필요", retry=True) from None
     if not isinstance(grant, dict) or not isinstance(grant.get("enrollment_token"), str):
         raise ValueError("로그인 응답 확인 필요")
     return {**config, **{k: grant[k] for k in ("enrollment_token", "expires_at") if k in grant}}
+
+
+def login(bundle, request, inputs, attempts=3):
+    """Asks again after a mistake the employee can fix (password, address, network); a refused account or a
+    throttled address ends it. The prompt gets the last reason so it can show it."""
+    address, notice = bundle["gateway_url"], ""
+    for _ in range(attempts):
+        try:
+            address, username, password = inputs(address, notice) if notice else inputs(address)
+        except EOFError:
+            raise LoginError("로그인: 터미널 입력 필요") from None
+        except ValueError as exc:
+            raise LoginError(str(exc)) from None
+        address = address.strip().rstrip("/")
+        if address and "://" not in address:
+            address = "https://" + address
+        try:
+            if not username.strip() or not password:
+                raise LoginError("로그인: 아이디·비밀번호 입력 필요", retry=True)
+            return attempt(bundle, request, address, username.strip(), password)
+        except LoginError as exc:
+            if not exc.retry:
+                raise
+            error, notice = exc, exc.kit_reason
+        finally:
+            password = None
+    raise error
 
 
 def source_path(command):

@@ -809,12 +809,16 @@ def main() -> int:
             if expired(bundle):
                 raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
         if args.remove:
+            removed = False
             for account in (employee, companion_of(employee)):
                 if installed(account):
                     rollback(account)
+                    removed = True
             remove_shims(companion_of(employee))
             remove_companion(employee)
-            print(json.dumps({"removed": employee}, ensure_ascii=False))
+            print("MINT 연결을 제거했습니다." if removed else "제거할 연결이 없습니다.")
+            if not sys.stdout.isatty():
+                print(json.dumps({"removed": employee}, ensure_ascii=False))
             return 0
         isolated = args.isolated or bundle.get("isolated") is True
         SCREEN = managed.Screen("내 PC 연결 · " + ("격리 계정" if isolated else "간편 모드"))
@@ -824,9 +828,12 @@ def main() -> int:
             SCREEN.close_step("✗")
             raise
         finally:
-            if SCREEN.window is not None:
+            if SCREEN.window is not None and SCREEN.rows:
                 SCREEN.finish(wait=0)  # the steps up to the failure stay in the scrollback
             SCREEN.stop()
+    except KeyboardInterrupt:
+        print("\n설치를 취소했습니다. 다시 하려면 install.sh를 실행하세요.", file=sys.stderr)
+        return 130
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)
         return 1
@@ -838,23 +845,26 @@ def main() -> int:
 
 
 def connect(managed, employee: str, isolated: bool, args, started: float) -> int:
+    bundle = json.loads(args.enrollment.read_text())
+    credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
+    # 로그인이 먼저다: 틀린 비밀번호로 패키지부터 설치하지 않고, 로그인 시간이 단계 시간에 섞이지 않는다.
+    if not bundle.get("enrollment_token"):
+        SCREEN.pause()
+        access = managed.load_module("kit_access", HERE / "kit_access.py")
+        try:
+            bundle = access.login(bundle, managed.request, managed.kit_screen.login_inputs)
+        except access.LoginError as exc:
+            raise Failed(str(exc)) from None
+        finally:
+            SCREEN.resume()
+        credentials.append(bundle["enrollment_token"])
     step("구성요소 확인")
     ensure_packages(isolated)
     if isolated:
         account, companion = managed_account(employee)
     else:
         account, companion = employee, False
-    bundle = json.loads(args.enrollment.read_text())
-    credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
     try:
-        if not bundle.get("enrollment_token"):
-            SCREEN.pause()
-            try:
-                access = managed.load_module("kit_access", HERE / "kit_access.py")
-                bundle = access.login(bundle, managed.request, managed.kit_screen.login_inputs)
-            finally:
-                SCREEN.resume()
-            credentials.append(bundle["enrollment_token"])
         prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         managed.diagnostic("enroll", exc, credentials)
@@ -910,7 +920,8 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     SCREEN.result(cells, next_line)
     SCREEN.finish()
     SCREEN.stop()
-    print(json.dumps(result, ensure_ascii=False))
+    if not sys.stdout.isatty():
+        print(json.dumps(result, ensure_ascii=False))  # 자동화용; 화면에는 결과 표만 보인다
     return 0
 
 
