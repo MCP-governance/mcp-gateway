@@ -21,6 +21,7 @@ import secrets
 import shutil
 import socket
 import socketserver
+import ssl
 import stat
 import subprocess
 import sys
@@ -404,7 +405,7 @@ def redact_diagnostic(text, credentials=()):
 
 def diagnostic(stage, error, credentials=()):
     """Keep stderr across attempts, without command arguments or response bodies."""
-    detail = getattr(error, "stderr", "") or ""
+    detail = (getattr(error, "stderr", "") or "") if isinstance(error, subprocess.SubprocessError) else ""
     if isinstance(detail, bytes):
         detail = detail.decode("utf-8", "replace")
     detail = redact_diagnostic(detail, credentials)
@@ -415,9 +416,43 @@ def diagnostic(stage, error, credentials=()):
         fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "a", encoding="utf-8") as output:
             os.fchmod(output.fileno(), 0o600)
-            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}"
+                         f" {preparation_error(error) if error else ''}\n{detail}\n")
     except (OSError, ValueError):
         pass  # 기록 실패가 원래 오류를 가리면 안 된다(권한 없는 상태 폴더 등)
+
+
+def preparation_error(error):
+    """Only error classes/codes: a URL or response body may contain credentials."""
+    if isinstance(error, urllib.error.HTTPError):
+        return f"HTTP {error.code}"
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, ssl.SSLError):
+        return "TLS 인증서·연결 확인 필요"
+    if isinstance(reason, TimeoutError):
+        return "게이트웨이 응답 시간 초과"
+    if isinstance(error, OSError):
+        return f"네트워크 연결 실패 ({type(reason).__name__})"
+    return {KeyError: "정책 응답 필수 항목 누락", ValueError: "설치 설정·정책 검증 실패"}.get(
+        type(error), type(error).__name__)
+
+
+def preparation_request(config, path, body=None, *, credential=True):
+    for attempt in range(3):
+        try:
+            return request(config, path, body, credential=credential)
+        except OSError as exc:
+            reason = getattr(exc, "reason", exc)
+            if isinstance(exc, urllib.error.HTTPError):
+                retry = body is None and exc.code in (502, 503, 504)
+            else:
+                # A lost POST response can already have consumed the one-use token; only refusal/DNS is safe.
+                retry = (not isinstance(reason, ssl.SSLError) and
+                         (body is None or isinstance(reason, ConnectionRefusedError) or
+                          isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_AGAIN))
+            if not retry or attempt == 2:
+                raise
+            time.sleep(attempt + 1)
 
 
 def enroll(bundle, username, uid, mode="isolated", platform="linux"):
@@ -425,13 +460,13 @@ def enroll(bundle, username, uid, mode="isolated", platform="linux"):
     verify_transport(bundle)
     bundle = dict(bundle, device_key=secrets.token_urlsafe(32))
     machine = machine_id() if platform == "linux" else None
-    enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
+    enrolled = preparation_request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
         "device_key": bundle["device_key"], "hostname": socket.gethostname(), "local_username": username,
         "local_uid": uid, "mode": mode, "platform": platform, **({"machine_id": machine} if machine else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
     config["endpoint_id"] = enrolled["endpoint_id"]
-    policy = request(config, "/api/endpoint/managed-policy")
+    policy = preparation_request(config, "/api/endpoint/managed-policy")
     if (policy["tailscale_node_id"] != config["tailscale_node_id"]
             or policy.get("gateway_url", config["gateway_url"]) != config["gateway_url"]):
         raise ValueError("설치 키트와 정책의 게이트웨이가 다릅니다")
@@ -579,6 +614,15 @@ def next_step(summary, now, environment=None):
         return "콘솔 내 PC 연결에서 새 설치 파일을 받아 다시 설치하세요"
     if not summary.get("connected"):
         return "게이트웨이 연결을 확인하세요 (네트워크·VPN)"
+    signed = summary.get("model_signed_in") or {}
+    commands = [command for name, command in (("claude", "claude auth login"), ("codex", "codex login --device-auth"))
+                if signed.get(name) is False]
+    if commands:
+        if summary.get("mode") != "simple":
+            user = summary["user"]
+            commands = [f"sudo -u {user} /usr/local/lib/mcpgw-enforcement/mcpgw-{user}/login-shell -c '{command}'"
+                        for command in commands]
+        return "모델 로그인: " + " · ".join(commands)
     # A terminal opened before the install lacks the CA variable: the harness cannot reach the Gateway from it.
     ca = summary.get("ca")
     if summary.get("mode") == "simple" and ca and environment.get("NODE_EXTRA_CA_CERTS") != ca:
@@ -625,10 +669,21 @@ kit_screen = load_module("kit_screen", Path(__file__).with_name("kit_screen.py")
 Screen = kit_screen.Screen
 
 
+def model_status(summary):
+    """Installer observations survive heartbeats; no provider credentials enter the public summary."""
+    try:
+        signed = json.loads((PROGRAMS / f"model-{summary['user']}.json").read_text())
+    except (OSError, ValueError, KeyError):
+        signed = {}
+    signed = {name: signed[name] for name in ("claude", "codex")
+              if isinstance(signed, dict) and type(signed.get(name)) is bool}
+    return {**summary, **({"model_signed_in": signed} if signed else {})}
+
+
 def publish_status(summary):
     """Root writes, anyone reads: the summary the status command prints, and the same text for an account whose
     profile cannot run Python (`cat` is allowed there)."""
-    summary = {**summary, "updated": time.time()}
+    summary = {**model_status(summary), "updated": time.time()}
     for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"], {}))):
         path = status_path(summary["user"], suffix)
         private_write(path, text)
@@ -691,7 +746,7 @@ def status(args):
         found = sorted(PROGRAMS.glob("status-*.json"))
         path = found[0] if len(found) == 1 else path
     try:
-        summary = json.loads(path.read_text())
+        summary = model_status(json.loads(path.read_text()))
     except (OSError, ValueError):
         # Right after install the service has not written its first summary yet (10-23 pj2): not a failure.
         if list(Path("/etc/systemd/system").glob("mcpgw-managed-*.service")):
@@ -714,7 +769,7 @@ def status(args):
     screen.cells = cells
 
     def read():
-        current = json.loads(path.read_text())
+        current = model_status(json.loads(path.read_text()))
         screen.next = next_step(current, time.time())
         return current
 
@@ -1136,6 +1191,7 @@ def rollback(args):
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
     for suffix in ("json", "txt"):
         status_path(args.user, suffix).unlink(missing_ok=True)
+    (PROGRAMS / f"model-{args.user}.json").unlink(missing_ok=True)
     if not list(PROGRAMS.glob("status-*.json")):
         STATUS_SHIM.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)

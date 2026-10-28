@@ -295,7 +295,8 @@ def install(employee, enrollment):
         config, policy, enrolled = core.enroll(bundle, account, uid, platform='macos')
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         core.diagnostic('enroll', exc, credentials)
-        raise ValueError('연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.') from None
+        raise ValueError('연결 등록·정책 수신에 실패했습니다. ' + core.preparation_error(exc)
+                         + ' · 기존 설치는 유지됩니다.') from None
     credentials.append(config['device_key'])
     core.diagnostic('prepared', None)
     rollback(account)

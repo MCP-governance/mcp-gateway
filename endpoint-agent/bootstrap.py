@@ -850,7 +850,8 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         managed.diagnostic("enroll", exc, credentials)
-        raise Failed("연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.") from None
+        raise Failed("연결 등록·정책 수신에 실패했습니다. " + managed.preparation_error(exc)
+                     + " · 기존 설치는 유지됩니다.") from None
     credentials.append(prepared[0]["device_key"])
     managed.diagnostic("prepared", None)
     for previous in (employee, companion_of(employee)):
@@ -884,6 +885,9 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
     cells, next_line = install_check(managed, account, list(placed), simple=not isolated,
                                     signed=result.setdefault("model_signed_in", {}))
+    model_path = managed.PROGRAMS / f"model-{account}.json"
+    managed.private_write(model_path, json.dumps(result["model_signed_in"]))
+    model_path.chmod(0o644)
     result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated

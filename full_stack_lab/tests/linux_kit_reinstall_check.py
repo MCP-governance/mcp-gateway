@@ -6,6 +6,8 @@ import json
 import os
 import shlex
 import shutil
+import socket
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -88,7 +90,7 @@ class Reinstall(unittest.TestCase):
             if argv[0] == shutil.which("node"):
                 return subprocess_run(argv, **kwargs)
             if argv[:3] == ["systemctl", "enable", "--now"]:
-                c.private_write(report, json.dumps({"state": "active", "updated": c.time.time(), "connected": True,
+                c.private_write(report, json.dumps({"user": "emp", "state": "active", "updated": c.time.time(), "connected": True,
                                                    "names": ["memory"]}))
             return SimpleNamespace(returncode=0, stdout="", stderr="")
         def local_path(*parts):
@@ -138,6 +140,15 @@ class Reinstall(unittest.TestCase):
                 self.assertEqual(b.connect(c, "emp", False, SimpleNamespace(
                     enrollment=self.enrollment, skip_login=False), 0), 0)
         result = json.loads(output.getvalue().splitlines()[-1])
+        with patch.object(c, "PROGRAMS", programs):
+            summary = c.model_status(json.loads(report.read_text()))
+            with patch.object(c, "Screen", return_value=SimpleNamespace(window=None)), \
+                 patch.object(c, "check_connection", return_value={"initialized": ["memory"], "tools": 2}), \
+                 redirect_stdout(io.StringIO()) as status_output:
+                c.status(SimpleNamespace(user="emp", check=True))
+        self.assertEqual(summary["model_signed_in"], result["model_signed_in"])
+        if summary["model_signed_in"].get(harness) is False:
+            self.assertIn(b.LOGINS[harness][1], status_output.getvalue())
         self.assertFalse(self.enrollment.exists())
         self.assertEqual(installed[0]["state"], "active")
         self.assertEqual(result["state"], "active")
@@ -467,11 +478,12 @@ class Reinstall(unittest.TestCase):
         for failure_at in (0, 1):
             for code in (401, 403, 409, 410, None):
                 error = urllib.error.HTTPError("https://gw.example", code, "refused", {}, None) if code else OSError("network")
-                replies = [error] if failure_at == 0 else [{"endpoint_id": "new"}, error]
+                replies = [error] if failure_at == 0 else [{"endpoint_id": "new"}, error, error, error]
                 old = self.root / "old-config.json"
                 old.write_bytes(b"existing credential and settings")
                 with patch.object(self.core, "verify_transport"), patch.object(self.core, "machine_id", return_value=None), \
                      patch.object(self.core, "request", side_effect=replies), patch.object(self.core, "diagnostic"), \
+                     patch.object(self.core.time, "sleep"), \
                      patch.object(b, "ensure_packages"), patch.object(b, "installed", return_value=True), \
                      patch.object(b, "rollback") as remove, patch.object(b, "find_clients") as find, \
                      patch.object(b, "remove_shims") as shims, patch.object(b, "install_managed") as install, \
@@ -483,10 +495,58 @@ class Reinstall(unittest.TestCase):
                     operation.assert_not_called()
                 self.assertTrue(self.enrollment.exists())
 
+    def test_enrollment_retries_connection_refused_and_policy_retries_without_consuming_again(self):
+        c = self.core
+        refused = urllib.error.URLError(ConnectionRefusedError("synthetic-secret"))
+        unavailable = urllib.error.HTTPError("https://gw.example/secret", 503, "synthetic-secret", {}, None)
+        with patch.object(c, "verify_transport"), patch.object(c, "machine_id", return_value=None), \
+             patch.object(c.time, "sleep") as sleep, patch.object(c, "request", side_effect=[
+                 refused, {"endpoint_id": "new"}, unavailable, TimeoutError(), self.policy]) as request:
+            config, policy, enrolled = c.enroll(self.bundle, "emp", 1001, "simple")
+        self.assertEqual((config["endpoint_id"], enrolled["endpoint_id"]), ("new", "new"))
+        self.assertIs(policy, self.policy)
+        self.assertEqual([call.args[1] for call in request.call_args_list],
+                         ["/oauth/device-enroll"] * 2 + ["/api/endpoint/managed-policy"] * 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 1, 2])
+        first, second = request.call_args_list[:2]
+        self.assertEqual(first, second)  # the same device key, not a new enrollment identity
+
+    def test_preparation_retry_is_bounded_and_never_replays_an_ambiguous_enrollment(self):
+        c = self.core
+        for path, body, error, count in (
+            ("/oauth/device-enroll", {}, urllib.error.URLError(ConnectionRefusedError()), 3),
+            ("/oauth/device-enroll", {}, TimeoutError(), 1),
+            ("/oauth/device-enroll", {}, urllib.error.URLError(ConnectionResetError()), 1),
+            ("/oauth/device-enroll", {}, urllib.error.HTTPError("https://gw", 503, "busy", {}, None), 1),
+            ("/api/endpoint/managed-policy", None, urllib.error.HTTPError("https://gw", 502, "busy", {}, None), 3),
+            ("/api/endpoint/managed-policy", None, urllib.error.HTTPError("https://gw", 401, "denied", {}, None), 1),
+            ("/api/endpoint/managed-policy", None, urllib.error.URLError(ssl.SSLCertVerificationError()), 1),
+            ("/oauth/device-enroll", {}, urllib.error.URLError(socket.gaierror(socket.EAI_AGAIN, "temporary")), 3),
+        ):
+            with self.subTest(path=path, error=error), patch.object(c, "request", side_effect=error) as request, \
+                 patch.object(c.time, "sleep") as sleep, self.assertRaises(type(error)):
+                c.preparation_request(self.bundle, path, body)
+            self.assertEqual(request.call_count, count)
+            self.assertEqual(sleep.call_count, count - 1)
+
+    def test_final_preparation_failure_explains_cause_without_url_or_credentials(self):
+        b, c = self.boot, self.core
+        error = urllib.error.HTTPError("https://gw.example/?token=synthetic-secret", 503, "synthetic-secret", {}, None)
+        with patch.object(b, "ensure_packages"), patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
+             patch.object(c, "enroll", side_effect=error), patch.object(c, "diagnostic") as diagnostic, \
+             patch.object(b, "rollback") as rollback, self.assertRaises(b.Failed) as caught:
+            b.connect(c, "emp", False, SimpleNamespace(enrollment=self.enrollment), 0)
+        self.assertIn("HTTP 503", str(caught.exception))
+        self.assertNotIn("synthetic-secret", str(caught.exception))
+        self.assertNotIn("https://", str(caught.exception))
+        diagnostic.assert_called_once()
+        rollback.assert_not_called()
+
     def test_linux_policy_success_precedes_removal_and_install_receives_same_result(self):
         b, events = self.boot, []
         prepared = ({"device_key": "new-secret"}, self.policy, {"endpoint_id": "new"})
-        core = SimpleNamespace(enroll=Mock(side_effect=lambda *a: events.append("policy") or prepared), diagnostic=Mock())
+        core = SimpleNamespace(enroll=Mock(side_effect=lambda *a: events.append("policy") or prepared), diagnostic=Mock(),
+                               private_write=self.core.private_write, PROGRAMS=self.root)
         with ExitStack() as stack:
             for name in ("ensure_packages", "remove_shims", "remove_companion"):
                 stack.enter_context(patch.object(b, name))
@@ -521,7 +581,8 @@ class Reinstall(unittest.TestCase):
         (folder / "installer.json").write_text(json.dumps({"created": True, "employee": "emp", "home_created": True}))
         config = folder / "config.json"
         config.write_bytes(b"old config")
-        core = SimpleNamespace(verify_transport=Mock(), enroll=Mock(side_effect=OSError("offline")), diagnostic=Mock())
+        core = SimpleNamespace(verify_transport=Mock(), enroll=Mock(side_effect=OSError("offline")), diagnostic=Mock(),
+                               preparation_error=self.core.preparation_error)
         with patch.object(m, "STATE", folder.parent), patch.object(m, "core_module", return_value=core), \
              patch.object(m, "account_name", return_value="managed-emp"), \
              patch.object(m, "pwd", SimpleNamespace(getpwnam=lambda n: self.person)), \
@@ -542,6 +603,8 @@ class Reinstall(unittest.TestCase):
         folder.mkdir(parents=True)
         programs = self.root / "programs"
         programs.mkdir()
+        model = programs / "model-emp.json"
+        model.write_text('{"claude": false}')
         settings = self.root / "managed-settings.json"
         settings.write_text("old managed settings")
         (folder / (settings.name + ".backup")).write_text("employee original")
@@ -562,6 +625,7 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(settings.read_text(), "employee original")
         self.assertEqual(foreign.read_text(), "organization original")
         self.assertFalse(folder.exists())
+        self.assertFalse(model.exists())
 
     def test_macos_removal_without_config_or_journal_clears_known_tasks_but_keeps_account(self):
         m = self.mac
@@ -608,10 +672,14 @@ class Reinstall(unittest.TestCase):
              patch.object(c.os, "O_NOFOLLOW", getattr(c.os, "O_NOFOLLOW", 0), create=True), patch.object(c.os, "fchmod", create=True):
             error = subprocess.CalledProcessError(1, ["never-log-argv"], stderr="useful diagnostic\nenroll-secret\nnew-secret\nBearer abc\npassword=pwd\ndevice_key=abc")
             c.diagnostic("install", error, ("enroll-secret", "new-secret"))
+            c.diagnostic("enroll", urllib.error.HTTPError("https://secret", 503, "secret-body", {}, None))
             c.diagnostic("retry", None)
         log = (self.root / "setup.log").read_text(encoding="utf-8")
         self.assertIn("useful diagnostic", log)
         self.assertIn("retry", log)
+        self.assertIn("HTTP 503", log)
+        self.assertNotIn("https://secret", log)
+        self.assertNotIn("secret-body", log)
         for secret in ("enroll-secret", "new-secret", "Bearer", "password", "device_key", "never-log-argv"):
             self.assertNotIn(secret, log)
 
