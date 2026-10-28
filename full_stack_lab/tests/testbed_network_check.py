@@ -6,6 +6,7 @@ applies to this container, not to every process on the host. No mock MCP or mode
 """
 import argparse
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -19,9 +20,11 @@ def docker(*args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--image', default='mcpgw/native-clean:20260930')
-    parser.add_argument('--gateway', default='http://100.83.175.111:443')
+    parser.add_argument('--gateway', default=os.getenv('TEST_GATEWAY_URL'))
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
+    if not args.gateway:
+        parser.error('TEST_GATEWAY_URL 또는 --gateway 필요')
     gateway = urlsplit(args.gateway)
     assert gateway.scheme == 'http' and gateway.hostname and gateway.port and not gateway.username
     names = ['mcpgw-network-clean-relay', 'mcpgw-network-clean-client']

@@ -1233,8 +1233,8 @@ def demo() -> None:
     # 탐색 범위는 정책이 정하고, 공인 대역은 정책이 내려줘도 펼치지 않는다.
     assert scan_targets({"allowed_cidrs": [], "max_hosts": 8}) == ["127.0.0.1"]
     assert scan_targets({"allowed_cidrs": ["8.8.8.0/30"], "max_hosts": 8}) == ["127.0.0.1"]
-    private = scan_targets({"allowed_cidrs": ["10.1.2.0/30"], "max_hosts": 8})
-    assert "10.1.2.1" in private and "8.8.8.1" not in private
+    private = scan_targets({"allowed_cidrs": ["192.0.2.0/30"], "max_hosts": 8})
+    assert "192.0.2.1" in private and "8.8.8.1" not in private
     assert len(scan_targets({"allowed_cidrs": ["10.0.0.0/20"], "max_hosts": 5})) == 5
     print("endpoint-agent self-check OK")
 

@@ -74,7 +74,7 @@ class FieldTLS(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder, mock.patch.dict(os.environ, {"MCPGW_HOME": folder, "CODEX_HOME": folder}), \
                 mock.patch.object(self.kit, "login") as login, mock.patch.object(self.kit, "preflight") as preflight:
             with self.assertRaises(SystemExit):
-                self.kit.main(["setup", "--url", "https://100.83.175.111", "--servers", "git",
+                self.kit.main(["setup", "--url", "https://192.0.2.10", "--servers", "git",
                                "--ca", str(self.ca), "--ca-sha256", "0" * 64])
             self.assertFalse(list(Path(folder).iterdir()))
             login.assert_not_called()
@@ -83,12 +83,12 @@ class FieldTLS(unittest.TestCase):
             shutil.copyfile(self.ca, Path(folder) / "root.crt")
             (Path(folder) / "root.sha256").write_text(self.sha)
             with mock.patch.dict(os.environ, {"MCPGW_HOME": str(Path(folder) / "home")}), self.assertRaises(SystemExit):
-                self.kit.main(["setup", "--url", "https://100.83.175.111", "--servers", "git", "--ca-sha256", "0" * 64])
+                self.kit.main(["setup", "--url", "https://192.0.2.10", "--servers", "git", "--ca-sha256", "0" * 64])
             self.assertFalse((Path(folder) / "home").exists())
 
     def test_observer_installer_bad_pin_stops_before_key_or_files(self):
         installer = load(ROOT / "endpoint-agent/install.py")
-        argv = ["install.py", "--gateway-url", "https://100.83.175.111", "--endpoint-id", "tls-unit",
+        argv = ["install.py", "--gateway-url", "https://192.0.2.10", "--endpoint-id", "tls-unit",
                 "--scan-path", str(self.folder), "--ca", str(self.ca), "--ca-sha256", "0" * 64]
         with mock.patch.object(sys, "argv", argv), mock.patch.dict(sys.modules, {"agent": self.agent}), \
                 mock.patch.object(installer, "install_dir") as folder, mock.patch.object(installer.getpass, "getpass") as key, \
@@ -109,8 +109,8 @@ class FieldTLS(unittest.TestCase):
     def test_remote_plaintext_rejected_before_transport(self):
         with mock.patch.object(urllib.request, "build_opener") as opener:
             with self.assertRaises(SystemExit):
-                self.kit.request({"url": "http://100.83.175.111"}, "http://100.83.175.111/oauth/token", data=b"synthetic")
-            with mock.patch.object(self.agent, "GATEWAY_URL", "http://100.83.175.111"), self.assertRaises(ValueError):
+                self.kit.request({"url": "http://192.0.2.10"}, "http://192.0.2.10/oauth/token", data=b"synthetic")
+            with mock.patch.object(self.agent, "GATEWAY_URL", "http://192.0.2.10"), self.assertRaises(ValueError):
                 self.agent.call("POST", "/api/endpoint/heartbeat", {})
             opener.assert_not_called()
 
@@ -120,7 +120,7 @@ class FieldTLS(unittest.TestCase):
             "urlsplit": __import__("urllib.parse", fromlist=["urlsplit"]).urlsplit,
             "urllib": __import__("urllib"), "json": json,
         })
-        bundle = {"gateway_url": "https://100.83.175.111", "ca_certificate": self.pem, "ca_sha256": "0" * 64}
+        bundle = {"gateway_url": "https://192.0.2.10", "ca_certificate": self.pem, "ca_sha256": "0" * 64}
         with mock.patch.object(urllib.request, "build_opener") as opener, self.assertRaises(ValueError):
             module.request(bundle, "/oauth/device-enroll", {}, credential=False)
         opener.assert_not_called()

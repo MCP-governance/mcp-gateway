@@ -189,7 +189,7 @@ def main():
     parser.add_argument("--tool")
     parser.add_argument("--arguments", default="{}", help="public/test inputs only; no credentials")
     parser.add_argument("--codex", default="codex", help="native Codex executable for disposable probe")
-    parser.add_argument("--gateway-url", default="http://100.83.175.111:443", help="approved test Gateway URL")
+    parser.add_argument("--gateway-url", default=os.getenv("TEST_GATEWAY_URL"), help="approved test Gateway URL")
     parser.add_argument("--gateway-servers", default="ms-learn", help="approved test Gateway server IDs")
     args = parser.parse_args()
     if args.github_credential_stdin:

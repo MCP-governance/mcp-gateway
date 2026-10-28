@@ -167,7 +167,7 @@ Rego 99/99, acceptance 23/23, 보안 회귀 55/55, 공격 42/42, 정상 대조�
 
 ## 솔루션 실기기·PJ1 배포 후 검증
 
-솔루션 `100.83.175.111`에서 gateway·gateway-sse·agent-service 이미지를 함께 갱신하고
+솔루션 `<솔루션 주소>`에서 gateway·gateway-sse·agent-service 이미지를 함께 갱신하고
 OPA·Caddy를 재생성했습니다. DB·공급자 자격·기존 원장은 유지하고 배포 전 DB 백업을 비공개로 보존했습니다.
 세 서비스 revision·공통 앱 코드 해시 일치, OPA 규칙·데이터 파일 일치를 확인했습니다.
 `data.authorization.grants`는 없고 운영 정적 capability는 0건입니다.
