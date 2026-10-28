@@ -272,7 +272,8 @@ class OutcomeAndQueue(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(namespace['_record_decision'].await_args.args[0]['client']['local_jobs'][0]['id'],'job')
 
     async def test_F7_queue_and_rate_saturation_block_before_insert(self):
-        for dimension in ('queued','active','rate'):
+        # A running job is not a reason to refuse: the next one waits in the queue and claim() serializes (S4-12).
+        for dimension in ('queued','rate'):
             for saturated_at in range(3):
                 calls=[];counter=0
                 class Cursor:

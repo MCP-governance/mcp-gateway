@@ -40,9 +40,9 @@ class Bootstrap(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.enrollment = Path(self.temp.name) / "enrollment.json"
-        self.enrollment.write_text('{}')
+        self.enrollment.write_text('{"enrollment_token":"synthetic-existing-grant"}')
 
-    def connect(self, isolated):
+    def connect(self, isolated, state="active"):
         b = self.b
         calls = {}
         args = SimpleNamespace(enrollment=self.enrollment, skip_login=True)
@@ -58,10 +58,12 @@ class Bootstrap(unittest.TestCase):
         doubles["install_check"].return_value = ([("모델 응답", "claude 정상 · 2.0초"), ("도구", "4개 (서버 1/1)"),
                                                   ("서버 연결", "learn 연결 정상")], "새 터미널에서 claude 또는 codex를 실행하세요")
         screen = mock.Mock()
+        screen.summary = {"state": state, "connected": True}
         with mock.patch.multiple(b, **doubles), mock.patch.object(b, "SCREEN", screen), \
                 mock.patch.object(b, "pwd", SimpleNamespace(getpwnam=lambda name: SimpleNamespace(pw_uid=1000))), \
                 redirect_stdout(io.StringIO()) as out:
-            core = SimpleNamespace(enroll=mock.Mock(return_value=({"device_key": "synthetic"}, {}, {})), diagnostic=mock.Mock())
+            core = SimpleNamespace(enroll=mock.Mock(return_value=({"device_key": "synthetic"}, {}, {})), diagnostic=mock.Mock(),
+                                   private_write=lambda path, text: path.write_text(text), PROGRAMS=Path(self.temp.name))
             code = b.connect(core, "emp", isolated, args, 0.0)
         calls.update(doubles)
         return code, calls, json.loads(out.getvalue().strip().splitlines()[-1]), screen
@@ -72,14 +74,35 @@ class Bootstrap(unittest.TestCase):
         calls["managed_account"].assert_not_called()
         calls["place_harnesses"].assert_not_called()
         calls["write_shims"].assert_not_called()
-        calls["remove_companion"].assert_called_once_with("emp")  # an earlier isolated companion goes
+        calls["remove_companion"].assert_called_once_with("emp", False)  # an earlier isolated companion goes
         account, placed, _, owner, mode = calls["install_managed"].call_args.args
         self.assertEqual((account, owner, mode), ("emp", None, "simple"))
         self.assertEqual(placed, {"claude": {"path": "/home/emp/.local/bin/claude"}})
         calls["ensure_packages"].assert_called_once_with(False)
         self.assertEqual((result["mode"], result["managed_account"]), ("simple", "emp"))
         self.assertEqual(result["checks"]["서버 연결"], "learn 연결 정상")
+        self.assertEqual(result["state"], "active")
         screen.result.assert_called_once()  # the three cells and the next step reach the screen
+
+    def test_an_older_kits_companion_without_the_comment_is_still_cleaned_up(self):
+        b = self.b
+        root = Path(self.temp.name)
+        folder = root / "enforcement" / "mcpgw-managed-emp"
+        folder.mkdir(parents=True)
+        (folder / "state.json").write_text('{"uid": 1001, "shell": "/bin/bash"}')
+        entry = SimpleNamespace(pw_gecos="", pw_dir="/home/managed-emp")
+        with mock.patch.object(b, "ENFORCEMENT", root / "enforcement"), mock.patch.object(b, "STATE", root / "state"), \
+                mock.patch.object(b.pwd, "getpwnam", return_value=entry, create=True), mock.patch.object(b, "close_sessions"), \
+                mock.patch.object(b, "run") as run, mock.patch.object(b, "say"):
+            # The launcher folder counts as an install (so the switch to simple mode rolls it back) and proves the kit made the account.
+            self.assertTrue(b.installed("managed-emp"))
+            self.assertTrue(b.legacy_companion("emp"))
+            (folder / "state.json").unlink()  # what rollback does
+            b.remove_companion("emp")
+            run.assert_not_called()  # no comment and no proof: someone else's account stays
+            b.remove_companion("emp", legacy=True)
+            run.assert_called_once()
+            self.assertEqual(run.call_args.args[:2], ("userdel", "managed-emp"))
 
     def test_isolated_mode_is_the_earlier_install(self):
         code, calls, result, _ = self.connect(isolated=True)
@@ -91,6 +114,12 @@ class Bootstrap(unittest.TestCase):
         calls["write_shims"].assert_called_once()
         calls["ensure_packages"].assert_called_once_with(True)
         self.assertEqual(result["mode"], "isolated")
+
+    def test_pending_quarantine_revocation_and_unknown_are_not_reported_as_active(self):
+        for state in ("pending", "quarantined", "revoked", "unknown"):
+            with self.subTest(state=state):
+                _, _, result, _ = self.connect(isolated=False, state=state)
+                self.assertEqual(result["state"], state)
 
     def test_isolated_install_does_not_name_a_harness_the_pc_lacks(self):
         b = self.b
@@ -235,18 +264,23 @@ class HarnessCommandLine(unittest.TestCase):
 
     def test_harnesses_are_not_stdio_servers_but_the_servers_still_are(self):
         agent = load("agent_markers", KIT / "agent.py")
+        claude = str(Path(tempfile.gettempdir()) / "harness path/claude.exe")
+        codex = str(Path(tempfile.gettempdir()) / "harness path/codex.exe")
         harnesses = [
             '/home/pj2/.local/bin/claude -p "modelcontextprotocol/python-sdk 위키 목차"',
-            r'"C:\Users\pj3\AppData\Local\Microsoft\WinGet\Packages\Anthropic.ClaudeCode_x\claude.exe" -p "modelcontextprotocol"',
+            f'"{claude}" -p "modelcontextprotocol"',
             "/usr/bin/node /usr/lib/node_modules/@anthropic-ai/claude-code/cli.js -p fastmcp",
             'codex exec "mcp-server 예제를 보여줘"',
-            r"C:\Users\pj3\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe exec \"fastmcp\"",
+            f'"{codex}" exec "fastmcp"',
         ]
         servers = ["npx -y @modelcontextprotocol/server-filesystem /tmp", "node /home/u/mcp-server/index.js",
                    "python -m mcp_server_git", "/usr/bin/node /opt/claude-mcp/server.js modelcontextprotocol"]
         for line in harnesses:
             self.assertTrue(agent.PROCESS_MARKERS.search(line), line)  # the marker matches: that was the false alarm
-            self.assertTrue(agent.harness_process(line), line)
+            with mock.patch.object(agent, "CONFIG", {"ENDPOINT_HARNESS_PATHS": [
+                    "/home/pj2/.local/bin/claude", "/usr/bin/codex", claude, codex]}), \
+                 mock.patch.object(agent.shutil, "which", side_effect=lambda p: "/usr/bin/codex" if p == "codex" else None):
+                self.assertTrue(agent.harness_process(line), line)
         for line in servers:
             self.assertFalse(agent.harness_process(line), line)
 

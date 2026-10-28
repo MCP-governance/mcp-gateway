@@ -56,6 +56,7 @@ import math
 import os
 import platform
 import re
+import shutil
 import socket
 import ssl
 import subprocess
@@ -699,19 +700,22 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
 # A harness's own command line carries the employee's prompt (`claude -p "…modelcontextprotocol/python-sdk…"`): matching
 # the markers there reported the harness itself as a stdio MCP server (S4-03, PJ1 10-25). The servers it starts are
 # separate processes and are still checked.
-HARNESS_PROGRAM = re.compile(r"(?:^|[\\/])(?:claude|codex)(?:\.exe|\.cmd)?$", re.I)
-HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code|@openai[\\/]codex)[\\/]", re.I)
+HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code[\\/]cli\.js|@openai[\\/]codex[\\/]bin[\\/]codex\.js)$", re.I)
 
 
 def harness_process(command_line: str) -> bool:
-    program = command_line.strip().strip('"').split('" ', 1)[0] if command_line.strip().startswith('"') \
-        else command_line.strip().split(" ", 1)[0]
-    if HARNESS_PROGRAM.search(program):
+    words = [word.strip("\"'") for word in re.findall(r'''"[^"]*"|'[^']*'|\S+''', command_line)]
+    if not words:
+        return False
+    # A basename is not file identity: a renamed Python interpreter can run FastMCP.
+    entry = os.path.normcase(os.path.realpath(shutil.which(words[0]) or words[0]))
+    paths = CONFIG.get("ENDPOINT_HARNESS_PATHS", [])
+    if isinstance(paths, list) and any(isinstance(path, str) and os.path.isabs(path)
+                                     and entry == os.path.normcase(os.path.realpath(path)) for path in paths):
         return True
     # node (or bun) running the harness package's entry script
-    words = command_line.split()
-    return bool(words) and re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?\"?$", words[0], re.I) is not None \
-        and len(words) > 1 and HARNESS_SCRIPT.search(words[1]) is not None
+    return re.search(r"(?:^|[\\/])(?:node|bun)(?:\.exe)?$", words[0], re.I) is not None \
+        and len(words) > 1 and HARNESS_SCRIPT.search(os.path.realpath(words[1])) is not None
 
 
 def stdio_processes() -> list[dict]:
@@ -972,7 +976,7 @@ def listener_findings(policy: dict) -> list[dict]:
             info = probe_mcp("127.0.0.1", row["port"])
         if info:
             evidence = "confirmed"
-        elif marker:
+        elif marker and not harness_process(row.get("command_line") or row.get("process_name") or ""):
             evidence = "suspected"
         else:
             continue  # MCP 표지도 없고 initialize에도 답하지 않으면 MCP가 아니다.
@@ -1229,8 +1233,8 @@ def demo() -> None:
     # 탐색 범위는 정책이 정하고, 공인 대역은 정책이 내려줘도 펼치지 않는다.
     assert scan_targets({"allowed_cidrs": [], "max_hosts": 8}) == ["127.0.0.1"]
     assert scan_targets({"allowed_cidrs": ["8.8.8.0/30"], "max_hosts": 8}) == ["127.0.0.1"]
-    private = scan_targets({"allowed_cidrs": ["10.1.2.0/30"], "max_hosts": 8})
-    assert "10.1.2.1" in private and "8.8.8.1" not in private
+    private = scan_targets({"allowed_cidrs": ["192.0.2.0/30"], "max_hosts": 8})
+    assert "192.0.2.1" in private and "8.8.8.1" not in private
     assert len(scan_targets({"allowed_cidrs": ["10.0.0.0/20"], "max_hosts": 5})) == 5
     print("endpoint-agent self-check OK")
 

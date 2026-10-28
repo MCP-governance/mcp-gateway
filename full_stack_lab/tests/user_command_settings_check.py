@@ -265,7 +265,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
                                "policy_installed", "installed_hash", "legacy_hash", "json_document"},
                               {"managed_policy": AsyncMock(return_value=self.policy), "Jsonb": lambda value: value, "hashlib": hashlib,
                                "datetime": datetime, "UTC": timezone.utc,
-                               "db": SimpleNamespace(transaction=Transaction)})
+                               "db": SimpleNamespace(transaction=Transaction, fetch_one=AsyncMock(return_value={}))})
 
     async def beat(self, checks, findings=None, policy_hash=None):
         self.connection.execute.reset_mock()
@@ -301,7 +301,7 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
             await self.beat(checks)
             # A passing heartbeat never lifts a quarantine; only a new simple-mode PC is activated (D-239).
             statement = self.connection.execute.call_args_list[0].args[0]
-            self.assertIn("WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'", statement)
+            self.assertIn("WHEN NOT %s AND NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'", statement)
             self.assertIn("ELSE managed_state END", statement)
             self.device["managed_state"] = "active"
 
@@ -322,6 +322,10 @@ class ManagedFlow(unittest.IsolatedAsyncioTestCase):
         path = LAB / "gateway/app/endpoint_plane.py"
         package = ModuleType("user_commands_policy")
         package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
+        package.registry = SimpleNamespace(server=lambda server: {})
+        package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={
+            "claude_tools_denied": [], "claude_chrome": True, "claude_connectors": True, "claude_servers_denied": [],
+            "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
         namespace = {"__name__": "policy_under_test", "__package__": package.__name__, "os": os,
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,

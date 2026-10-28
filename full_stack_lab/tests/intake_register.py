@@ -3,7 +3,7 @@
 request (requester) -> contract review -> approval (approver, never the requester) -> activation.
 There is no other way in: /api/registry/servers refuses a registration without an approved intake.
 
-  python3 intake_register.py --console http://100.83.175.111:443 --endpoint https://mcp.context7.com/mcp \
+  python3 intake_register.py --console http://192.0.2.10:443 --endpoint https://mcp.context7.com/mcp \
       --server-id context7 --tools resolve-library-id=r,query-docs=r --data-class public --valid-days 30 \
       --allowed user --name "Context7" --parameter-constraints reviewed-scopes.json \
       --supplier-assurance supplier.json --impact-input impact.json < identities.json

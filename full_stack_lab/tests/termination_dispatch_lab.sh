@@ -8,7 +8,7 @@
 #   tests/termination_dispatch_lab.sh down
 set -uo pipefail
 HERE=$(cd "$(dirname "$0")/.." && pwd)
-HOST=${LAB_APPLIANCE:-user@100.83.175.111}
+HOST=${LAB_APPLIANCE:?LAB_APPLIANCE 필요}
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=15 "$HOST")
 # endpoint-agent sits beside full_stack_lab; tar stores it without the leading ../
 tar czf - --exclude=__pycache__ -C "$HERE" gateway/app tests registry opa db supply_chain ../endpoint-agent \

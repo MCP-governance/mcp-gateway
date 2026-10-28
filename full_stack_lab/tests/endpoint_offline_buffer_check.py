@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT / "endpoint-agent"))
 from offline_buffer import BufferFull, EventBuffer, flush  # noqa: E402
 
 
-NOW = datetime(2026, 10, 21, tzinfo=timezone.utc)
+# 버퍼는 실제 현재 시각으로 7일 보존을 따지므로, 고정 날짜는 일주일 뒤 시험을 깨뜨린다.
+NOW = datetime.now(timezone.utc).replace(microsecond=0)
 
 
 def event(number: int) -> dict:

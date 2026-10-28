@@ -5,6 +5,7 @@ DB·소켓·AppArmor는 대역이며 집행 증거가 아니다. 저장소 루�
 import ast
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import socketserver
@@ -15,6 +16,7 @@ import threading
 import time
 import unittest
 import uuid
+from urllib.parse import urlsplit
 from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -234,6 +236,43 @@ class PendingReason(unittest.TestCase):
                 server.shutdown()
 
 
+class ConfigShadow(unittest.IsolatedAsyncioTestCase):
+    """Synthetic config files through the real collector and matcher; no MCP/DB execution."""
+    async def test_managed_and_harness_defaults_stay_registered_but_direct_routes_are_shadow(self):
+        observer = load_module("agent")
+        base = "https://gateway.example/mcp"
+        db = SimpleNamespace(fetch_all=AsyncMock(return_value=[{
+            "id": "memory", "transport": "stdio", "endpoint": "npx @modelcontextprotocol/server-memory",
+            "display_name": "memory", "advertised_name": "memory-server", "lifecycle": "OPERATING", "status": "READY"}]))
+        plane = extract(LAB / "gateway/app/endpoint_plane.py",
+                        {"normalise", "safe_endpoint_ref", "command_digest", "_match", "_registry_index"},
+                        {"db": db, "os": os, "hashlib": hashlib, "urlsplit": urlsplit, "SELF_MCP_NAME": "bob-gateway"})
+        with patch.dict(os.environ, {"GATEWAY_PUBLIC_MCP_URL": base + "/"}):
+            index = await plane._registry_index()
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            for filename in ("managed-mcp.json", ".claude.json", ".mcp.json"):
+                (root / filename).write_text(json.dumps({"mcpServers": {
+                    "memory": {"type": "http", "url": base + "/memory/", "headersHelper": "/protected/helper"}}}))
+            with patch.object(observer, "SCAN_PATHS", [root]):
+                entries = observer.collect_configs()
+            self.assertEqual(len(entries), 3)
+            for item in entries:
+                match = plane._match(index, item["transport"], item["endpoint_ref"], item["server_label"])
+                self.assertEqual((match["id"], match["routed_server_id"]), ("__gateway__", "memory"))
+            # A managed filename or registered label must never exempt a bypass route.
+            (root / "managed-mcp.json").write_text(json.dumps({"mcpServers": {
+                "memory": {"command": "npx", "args": ["@modelcontextprotocol/server-memory"]},
+                "unknown": {"url": "https://outside.example/mcp"}}}))
+            with patch.object(observer, "SCAN_PATHS", [root / "managed-mcp.json"]):
+                entries = observer.collect_configs()
+            self.assertEqual(len(entries), 2)
+            direct = plane._match(index, entries[0]["transport"], entries[0]["endpoint_ref"], entries[0]["server_label"])
+            self.assertEqual(direct["id"], "memory")  # receiver classifies a direct registered server as shadow
+            self.assertIsNone(plane._match(index, entries[1]["transport"], entries[1]["endpoint_ref"], entries[1]["server_label"]))
+            self.assertEqual({item["config_path"] for item in entries}, {str(root / "managed-mcp.json")})
+
+
 # ── 3·4. 직원용 상태 명령과 키트 판본 ──────────────────────────────────────────────
 
 class StatusCommand(unittest.TestCase):
@@ -242,7 +281,7 @@ class StatusCommand(unittest.TestCase):
         self.addCleanup(self.folder.cleanup)
         self.linux = extract(KIT / "managed-linux.py",
                              {"STATE_LABEL", "MODE_LABEL", "next_step", "STATUS_STALE_SECONDS", "ADDED_SHOWN_SECONDS", "status_path",
-                              "render_status", "publish_status",
+                              "render_status", "publish_status", "model_status",
                               "private_write", "kit_version", "PROGRAM_FILES", "machine_id"},
                              {"__name__": "status_under_test", "Path": Path, "PROGRAMS": Path(self.folder.name), "time": time,
                               "json": json, "os": os, "tempfile": tempfile, "hashlib": hashlib})
@@ -291,11 +330,38 @@ class StatusCommand(unittest.TestCase):
         # S4-11: a server revoked within the hour is no longer "newly reflected".
         revoked = self.linux.render_status(self.summary(names=["a"], added={"servers": ["b"], "at": now - 30}), now)
         self.assertNotIn("새로 반영된 서버", revoked)
+        for fields in ({"names": [], "servers": 0}, {"servers": 0}):
+            with self.subTest(fields=fields):
+                empty = self.linux.render_status(self.summary(**fields, added={"servers": ["b"], "at": now - 30}), now)
+                self.assertIn("승인 서버: 0개", empty)
+                self.assertNotIn("새로 반영된 서버", empty)
         partly = self.linux.render_status(self.summary(names=["a", "c"], added={"servers": ["b", "c"], "at": now - 30}), now)
         self.assertIn("새로 반영된 서버: c (", partly)
         silent = self.linux.render_status(self.summary(updated=now - 600, added={"servers": ["b"], "at": now - 30}), now)
         self.assertNotIn("새로 반영된 서버", silent)       # a silent service says nothing about what it applied
         self.assertNotIn("서버 이름", self.linux.render_status(self.summary(), now))
+
+    def test_model_login_hint_survives_service_reports_and_respects_device_state(self):
+        path = Path(self.folder.name) / "model-emp.json"
+        path.write_text(json.dumps({"claude": False, "codex": True, "token": "synthetic-secret"}))
+        for _ in range(2):
+            self.linux.publish_status(self.summary(mode="simple"))
+            stored = json.loads(self.linux.status_path("emp", "json").read_text())
+            self.assertEqual(stored["model_signed_in"], {"claude": False, "codex": True})
+            line = self.linux.render_status(stored, time.time(), {}).splitlines()[-1]
+            self.assertIn("모델 로그인: claude auth login", line)
+            self.assertNotIn("codex login", line)
+            self.assertNotIn("synthetic-secret", json.dumps(stored))
+        self.assertIn("관리자 활성화 대기", self.linux.next_step({**stored, "state": "pending"}, time.time()))
+        self.assertIn("게이트웨이 연결", self.linux.next_step({**stored, "connected": False}, time.time()))
+        isolated = self.linux.next_step({**stored, "mode": "isolated"}, time.time())
+        self.assertIn("sudo -u emp", isolated)
+        self.assertIn("login-shell -c 'claude auth login'", isolated)
+        for text in ('{}', '{"claude": true}', '{"claude": 0}', '[]', '{broken'):
+            path.write_text(text)
+            self.linux.publish_status(self.summary())
+            current = json.loads(self.linux.status_path("emp", "json").read_text())
+            self.assertNotIn("모델 로그인:", self.linux.next_step(current, time.time()))
 
     def test_empty_values_are_dashes_and_a_silent_service_is_not_shown_as_active(self):
         text = self.linux.render_status(self.summary(last_report=None, servers=None, kit=None, state="unknown", connected=False),
@@ -320,7 +386,7 @@ class StatusCommand(unittest.TestCase):
     def test_status_command_reads_the_published_summary(self):
         module = load_module("managed-linux")
         with patch.object(module, "PROGRAMS", Path(self.folder.name)), \
-             patch.object(module, "Screen", return_value=SimpleNamespace(window=None)), \
+             patch.object(module, "Screen", side_effect=lambda: module.kit_screen.Screen(output=io.StringIO(), input=io.StringIO())), \
              patch.object(module, "check_connection") as connection_check:
             module.publish_status(self.summary(state="pending"))
             with patch("builtins.print") as printed:

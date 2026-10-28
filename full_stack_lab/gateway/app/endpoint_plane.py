@@ -848,7 +848,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
 
 
 async def managed_policy(device: dict, *, connection=None) -> dict:
-    from . import pac
+    from . import connectors, pac, registry
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -865,13 +865,16 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],), connection=connection)
     usable = set(pac.servers_for(owner)) if owner else set()
     servers = [r["id"] for r in rows if r["id"] in usable]
+    windows = managed_platform(device) == "windows"
+    if windows:
+        # Windows has no PC-isolated local runner: a local-run server would be listed but fail every call (MCP-CATALOG-001).
+        servers = [s for s in servers if (registry.server(s) or {}).get("deployment") != "local"]
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.
     guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
                 "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
                 if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
-    windows = managed_platform(device) == "windows"
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
               else f'/Library/MCPGatewayManaged/enforcement/mcpgw-{device["local_username"]}/header-helper'
@@ -898,10 +901,20 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                 ca_env = {"NODE_EXTRA_CA_CERTS": programs.group(1) + "\\launchers\\" + detail["local_sid"] + "\\root.crt"}
         elif managed_platform(device) == "linux":
             ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
+    # Built-in features and the harness account's connectors are allowed unless an administrator blocked them (D-298).
+    controls = await connectors.managed_controls(connection)
+
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
-        settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
-                    "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
+        # managed-mcp.json keeps exclusive control: the employee's own and plugin servers never load. claude.ai connectors
+        # load beside it only with allowAllClaudeAiMcps, and the allow-list still applies to them, so it admits https hosts
+        # then (managed servers skip the list); the deny-list blocks the ones an administrator closed.
+        allowed = [{"serverUrl": u} for u in routes.values()] + ([{"serverUrl": "https://*/*"}] if controls["claude_connectors"] else [])
+        settings = {"allowAllClaudeAiMcps": controls["claude_connectors"], "disableClaudeAiConnectors": not controls["claude_connectors"],
+                    # Claude in Chrome is a built-in server the managed set blocks unless this device setting allows it.
+                    "allowClaudeInChromeWithManagedMcp": controls["claude_chrome"],
+                    "allowManagedMcpServersOnly": True, "allowedMcpServers": allowed,
+                    "deniedMcpServers": controls["claude_servers_denied"],
                     "strictKnownMarketplaces": [],
                     # Account-synced plugins and skills load from the claude.ai account, outside the managed set
                     # (a synced productivity plugin loaded); only `false` is honoured, so this cannot be undone
@@ -910,7 +923,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                     # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.
                     "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False,
                     "allowManagedPermissionRulesOnly": True,
-                    "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": ["WebFetch", "WebSearch"]},
+                    "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": controls["claude_tools_denied"]},
                     # User, project and plugin hooks run commands the harness starts; a hook could call the
                     # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                     # same gate narrows statusLine and fileSuggestion to managed values (D-147).
@@ -919,6 +932,11 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
         if proxy or ca_env:
             settings["env"] = {**proxy, **ca_env}
+        off = set(controls["codex_features_off"])
+        # Plugins stay off (they are reviewed, not built in); ChatGPT apps follow the connector switch.
+        features_off = sorted({"plugins"} | (off - {"web_search"}) | (set() if controls["codex_apps"] else {"apps"}))
+        # Per-app blocks go in requirements: `enabled = false` from any layer wins and the user cannot turn it back on.
+        disabled_apps = "".join(f"\n[apps.{a}]\nenabled = false\n" for a in controls["codex_apps_disabled"])
         codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
                                 'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
         files = {
@@ -926,11 +944,12 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                         "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
             "managed-settings.json": json_document(settings),
             # Codex user and plugin hooks are the same command surface as Claude's (D-147).
-            "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
-                        'allow_managed_hooks_only = true\n'
+            "requirements.toml": ('allowed_web_search_modes = ["disabled"]\n' if "web_search" in off else "")
+                        + ("allow_browser_and_computer_use = false\n" if {"browser_use", "computer_use"} <= off else "")
+                        + 'allow_managed_hooks_only = true\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
-                        + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
-                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
+                        + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
+                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps,
         }
         if windows:
             # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
@@ -939,7 +958,8 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
         else:
             # developer_instructions is a top-level key, so it precedes the server tables.
             # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
-            files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
+            files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\n'
+                                            + ('web_search = "disabled"\n' if "web_search" in off else "")
                                             + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
                                             + codex_servers)
         return files
@@ -947,6 +967,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     files = render(servers, guidance)
     policy = {"version": 2, "gateway_url": public, "gateway_ips": addresses, "gateway_port": parsed.port or (443 if parsed.scheme == "https" else 80),
               "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), "servers": servers,
+              "server_names": {s: (registry.server(s) or {}).get("display_name") or s for s in servers},
               "local_username": device["local_username"], "local_uid": device["local_uid"],
               "heartbeat_seconds": HEARTBEAT_INTERVAL, "max_heartbeat_age": HEARTBEAT_SECONDS, "files": files}
     if proxy_port:
@@ -966,7 +987,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     #   features), permissions.deny, web_search, the header helper and the per-server template (approval, timeouts).
     # Left out: which servers are listed (judged per call, managed_failure) and the guidance text, which follows
     # the activation state; putting either in made every approval or activation look like tampering.
-    control = {k: v for k, v in policy.items() if k not in ("servers", "files", "configuration_hashes")}
+    control = {k: v for k, v in policy.items() if k not in ("servers", "server_names", "files", "configuration_hashes")}
     control["files"] = render(["server"], None)
     policy["control_hash"] = hashlib.sha256(json_document(control).encode()).hexdigest()
     policy["servers_version"] = (version or {}).get("last_value") or 0
@@ -987,7 +1008,7 @@ def installed_hash(control_hash: str, hashes: dict) -> str:
 
 def legacy_hash(policy: dict) -> str:
     """policy_hash as Gateways before D-238 computed it, over the same rendering."""
-    return hashlib.sha256(json_document({k: v for k, v in policy.items() if k not in ("policy_hash", "control_hash", "servers_version")}).encode()).hexdigest()
+    return hashlib.sha256(json_document({k: v for k, v in policy.items() if k not in ("policy_hash", "control_hash", "servers_version", "server_names")}).encode()).hexdigest()
 
 
 def policy_installed(policy: dict, reported: str | None, hashes: dict | None) -> bool:
@@ -1028,6 +1049,15 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     # Only control decides (D-238): a device that has not yet fetched a server change or the guidance of its
     # new activation state is behind, not tampered with.
     installed = policy_installed(policy, policy_hash, hashes)
+    # An administrator changed the harness controls a moment ago: a heartbeat for the previous rendering is a device
+    # that has not fetched yet (it applies the policy before its next heartbeat), not a tampered one (D-298).
+    # Only a device that holds exactly what it held at its last good heartbeat, with every check passing, is behind.
+    changed = None if installed else await db.fetch_one("SELECT controls_changed_at FROM endpoint_settings WHERE id=1")
+    behind = (not installed and bool(changed and changed.get("controls_changed_at"))
+              and (datetime.now(UTC) - changed["controls_changed_at"]).total_seconds() < HEARTBEAT_SECONDS
+              and ((device.get("detail") or {}).get("install_receipt") or {}).get("match") is True
+              and policy_hash == device.get("policy_hash") and hashes == (device.get("configuration_hashes") or {})
+              and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values()))
     compliant = (installed
                  and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
                  and (simple or not user_command_settings))
@@ -1055,12 +1085,12 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
                  configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,
-                 managed_state=CASE WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
+                 managed_state=CASE WHEN NOT %s AND NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
                                     ELSE managed_state END,
                  activated_by=CASE WHEN %s AND managed_state='pending' THEN 'auto' ELSE activated_by END,
                  activated_at=CASE WHEN %s AND managed_state='pending' THEN now() ELSE activated_at END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
-            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, automatic, automatic, automatic,
+            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, behind, automatic, automatic, automatic,
              device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")
@@ -1077,7 +1107,7 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
                  quality["jitter_ms"], quality["failure_pct"], quality["probes"]))
             await connection.execute("DELETE FROM endpoint_network_samples WHERE measured_at < now() - make_interval(days => %s)",
                                      (NETWORK_RETENTION_DAYS,))
-        if not compliant or (row["managed_state"] != device["managed_state"] and not automatic):
+        if (not compliant and not behind) or (row["managed_state"] != device["managed_state"] and not automatic):
             await connection.execute(
                 "INSERT INTO endpoint_managed_events(endpoint_id,owner_token,kind,detail) VALUES (%s,%s,'quarantined',%s)",
                 (device["endpoint_id"], device["owner_token"], Jsonb({"policy_hash": policy_hash, "checks": checks,

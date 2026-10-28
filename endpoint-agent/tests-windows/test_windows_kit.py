@@ -20,6 +20,9 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# install() asks the status module for the first summary; the real one waits for a service that does not exist here.
+INSTALL_STATUS = SimpleNamespace(screen_module=SimpleNamespace(wait_summary=lambda *a, **k: {'state': 'active'}, STATES={'active': '활성'}), publish=lambda *a: None)
+
 
 def load(name, relative):
     spec = importlib.util.spec_from_file_location(name, ROOT / relative)
@@ -231,6 +234,22 @@ Write-Output 'Per-request CA verification OK'
                                  env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=30)
         self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
 
+    def test_removal_also_takes_the_launcher_an_older_manifest_never_listed(self):
+        # pj3 10-28: a kit without the launcher reinstalled over one with it; its manifest lacked MCPGateway.exe/.ico,
+        # so removal left them and the next install stopped at "다른 파일이 없는 설치 위치 필요".
+        programs = self.root / 'Program Files'
+        root = programs / 'MCPGatewayManaged'
+        root.mkdir(parents=True)
+        (root / '.endpoint-kit').write_text(json.dumps({'product': 'MCPGatewayEndpoint', 'files': ['agent.py']}), encoding='utf-8')
+        for name in ('agent.py', 'MCPGateway.exe', 'MCPGateway.ico'):
+            (root / name).write_bytes(b'x')
+        (root / 'mine.txt').write_text('keep', encoding='utf-8')
+        script = "$env:ProgramFiles = $env:KIT_TEST_PF; . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent\windows-common.ps1'); Remove-EndpointFiles (Join-Path $env:ProgramFiles 'MCPGatewayManaged')"
+        process = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
+                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_PF=str(programs)), timeout=30)
+        self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
+        self.assertEqual(sorted(p.name for p in root.iterdir()), ['mine.txt'])
+
     def test_managed_install_carries_ca_to_private_service_and_observers(self):
         managed = load('windows_tls_install_test', 'endpoint-agent/managed-windows.py')
         ca = self.ca_fixture()
@@ -261,13 +280,14 @@ Write-Output 'Per-request CA verification OK'
                 mock.patch.object(managed, 'place_harnesses', return_value=(native, {'codex.exe': 'fixture'})), \
                 mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
                 mock.patch.object(managed, 'rule_state', return_value={'rules': []}), \
-                mock.patch.object(managed, 'set_user_environment') as environment, mock.patch('sys.stdout', io.StringIO()):
+                mock.patch.object(managed, 'set_user_environment') as environment, mock.patch.dict(sys.modules, {'windows_status': INSTALL_STATUS}), mock.patch('sys.stdout', io.StringIO()):
             # The isolated account carries the CA in its launchers, never in the account environment.
             managed.install(SimpleNamespace(user='fixture', enrollment=enrollment, isolated_account=True))
             config_path = state / 'fixture/config.json'
             saved = json.loads(config_path.read_text(encoding='utf-8'))
             self.assertEqual(saved['ca_certificate'], ca['ca_certificate'])
             self.assertEqual(saved['ca_sha256'], ca['ca_sha256'])
+            self.assertEqual(saved['harness_paths'], [str(native / 'codex.exe')])
             values = environment.call_args.args[1]
             self.assertNotIn('NODE_EXTRA_CA_CERTS', values)
             self.assertNotIn('CODEX_CA_CERTIFICATE', values)
@@ -279,6 +299,7 @@ Write-Output 'Per-request CA verification OK'
             observer = json.loads(config_path.with_name('observer.json').read_text(encoding='utf-8'))
             self.assertEqual(observer['ENDPOINT_CA_CERTIFICATE'], ca['ca_certificate'])
             self.assertEqual(observer['ENDPOINT_CA_SHA256'], ca['ca_sha256'])
+            self.assertEqual(observer['ENDPOINT_HARNESS_PATHS'], saved['harness_paths'])
 
     def test_simple_install_keeps_the_signed_in_admin_account_and_names_the_ca_in_its_environment(self):
         managed = load('windows_simple_install_test', 'endpoint-agent/managed-windows.py')
@@ -310,7 +331,7 @@ Write-Output 'Per-request CA verification OK'
                 mock.patch.object(managed, 'place_harnesses') as place, \
                 mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
                 mock.patch.object(managed, 'set_user_environment') as environment, \
-                mock.patch.object(managed, 'broadcast_environment') as broadcast, mock.patch('sys.stdout', io.StringIO()) as out:
+                mock.patch.object(managed, 'broadcast_environment') as broadcast, mock.patch.dict(sys.modules, {'windows_status': INSTALL_STATUS}), mock.patch('sys.stdout', io.StringIO()) as out:
             managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
         companion.assert_not_called()
         place.assert_not_called()
@@ -356,7 +377,7 @@ Write-Output 'Per-request CA verification OK'
         code.mkdir()
         policy.mkdir()
         names = ('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
-                 'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
+                 'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
                  'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         for name in names:
             (code / name).write_bytes(('synthetic, never executed: ' + name).encode())
@@ -465,11 +486,11 @@ Write-Output 'Per-user ACL and bounded data snapshot OK'
         enrollment = profile / 'Downloads/enrollment.json'
         enrollment.parent.mkdir()
         enrollment.write_text(json.dumps({'gateway_url': 'https://changed.example', 'tailscale_node_id': 'changed',
-                                          'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64,
-                                          'enrollment_token': 'synthetic-enrollment'}), encoding='utf-8')
+                                          'ca_certificate': 'caller changed root', 'ca_sha256': '0' * 64}), encoding='utf-8')
         # The one-click template's request: no gateway_url/tailscale_node_id of its own (pj3 10-25 failed on that).
         (work / 'request.json').write_text(json.dumps({'mode': 'managed', 'action': 'install', 'user': 'fixture',
-            'requester_sid': 'S-1-5-21-1-2-3-1001', 'isolated_account': False, 'enrollment': str(enrollment)}), encoding='utf-8')
+            'requester_sid': 'S-1-5-21-1-2-3-1001', 'isolated_account': False, 'enrollment': str(enrollment),
+            'kit_enrollment_token': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'}), encoding='utf-8')
         script = r'''
 $ErrorActionPreference='Stop'
 . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent/windows-trust.ps1')
@@ -497,7 +518,7 @@ if ($bundle.ca_sha256 -ne [IO.File]::ReadAllText((Join-Path $env:KIT_TEST_TEMP '
 if ($request.ca_certificate -ne $bundle.ca_certificate -or $request.ca_sha256 -ne $bundle.ca_sha256) { throw 'CA not carried to privileged request' }
 [IO.File]::WriteAllText((Join-Path $script:testProfile 'Downloads/enrollment.json'),'{"enrollment_token":"later replacement"}')
 $copy=Get-Content -LiteralPath $request.enrollment -Raw | ConvertFrom-Json
-if ($copy.enrollment_token -ne 'synthetic-enrollment') { throw 'mutable source was reread' }
+if ($copy.enrollment_token -ne 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA') { throw 'mutable source was reread or login grant lost' }
 if ($script:readers[$request.result_directory] -ne 'S-1-5-21-1-2-3-1001') { throw 'result readable by wrong user' }
 if ($script:readers[$request.private_directory]) { throw 'private enrollment readable by caller' }
 $rejected=$false; try { $null=Read-EndpointManagedRequest $input $approved 'S-1-5-21-1-2-3-1001' } catch { $rejected=$true }
@@ -512,7 +533,7 @@ if (-not $rejected) { throw 'array bypassed account validation' }
 Write-Output 'Managed request data snapshot and approved destination OK'
 '''
         process = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
-                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=30)
+                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=120)
         self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
 
     def test_managed_rollback_waits_for_service_and_preserves_new_user_settings(self):

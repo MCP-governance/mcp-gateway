@@ -339,6 +339,8 @@ CREATE TABLE IF NOT EXISTS endpoint_settings (
   updated_at timestamptz
 );
 INSERT INTO endpoint_settings(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+-- 관리자가 하네스 기본 기능·커넥터 통제를 바꾼 시각(D-298). 바로 전 통제로 온 heartbeat는 격리가 아니라 뒤처짐이다.
+ALTER TABLE endpoint_settings ADD COLUMN IF NOT EXISTS controls_changed_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS endpoint_listeners (
   id bigserial PRIMARY KEY,

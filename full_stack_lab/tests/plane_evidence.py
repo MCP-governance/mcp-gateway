@@ -9,7 +9,7 @@ machine it runs on (managed files under /etc on a managed device). The Console A
 (administrator, read only) supplies the ledger rows.
 
   python3 plane_evidence.py --console URL --cases cases.json --person emp-ysg --exec 'docker exec -i ws-ysg' < admin.json
-  SSHPW=... python3 plane_evidence.py --console URL --cases cases.json --person user --ssh managed-pj1@100.110.81.60 < admin.json
+  SSHPW=... python3 plane_evidence.py --console URL --cases cases.json --person user --ssh managed-pj1@198.51.100.20 < admin.json
 
 admin.json: {"email": "...", "password": "..."}
 cases.json: [{"id", "harness": "codex"|"claude", "server", "tool", "arguments", "parallel": 1, "harness_args": [],

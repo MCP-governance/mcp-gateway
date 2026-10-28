@@ -189,10 +189,168 @@ function Stop-EndpointTask([string]$Name) {
     Unregister-ScheduledTask -TaskName $Name -Confirm:$false
 }
 
+# The kit's own mark (the console's shield on its blue tile), as PNG frames of one .ico.
+function Get-EndpointIconBytes {
+    Add-Type -AssemblyName System.Drawing
+    $frames = foreach ($size in @(16, 24, 32, 48, 256)) {
+        $bitmap = New-Object Drawing.Bitmap($size, $size)
+        $graphics = [Drawing.Graphics]::FromImage($bitmap)
+        try {
+            $graphics.SmoothingMode = 'AntiAlias'
+            $graphics.ScaleTransform($size / 32, $size / 32)
+            $tile = New-Object Drawing.Drawing2D.GraphicsPath
+            foreach ($arc in @(@(0, 0, 180), @(16, 0, 270), @(16, 16, 0), @(0, 16, 90))) { $tile.AddArc($arc[0], $arc[1], 16, 16, $arc[2], 90) }
+            $tile.CloseFigure()
+            $graphics.FillPath((New-Object Drawing.SolidBrush([Drawing.Color]::FromArgb(0x1f, 0x42, 0x87))), $tile)
+            $pen = New-Object Drawing.Pen([Drawing.Color]::White, 2)
+            $pen.LineJoin = 'Round'; $pen.StartCap = 'Round'; $pen.EndCap = 'Round'
+            $shield = New-Object Drawing.Drawing2D.GraphicsPath
+            $shield.AddLine(9, 9, 16, 6); $shield.AddLine(16, 6, 23, 9); $shield.AddLine(23, 9, 23, 16)
+            $shield.AddBezier(23, 16, 23, 21, 19.5, 23.5, 16, 25.5); $shield.AddBezier(16, 25.5, 12.5, 23.5, 9, 21, 9, 16)
+            $shield.CloseFigure()
+            $graphics.DrawPath($pen, $shield)
+            $graphics.DrawLines($pen, [Drawing.PointF[]]@((New-Object Drawing.PointF(13, 16)), (New-Object Drawing.PointF(15, 18)), (New-Object Drawing.PointF(19, 14))))
+            $stream = New-Object IO.MemoryStream
+            $bitmap.Save($stream, [Drawing.Imaging.ImageFormat]::Png)
+            , @($size, $stream.ToArray())
+        } finally { $graphics.Dispose(); $bitmap.Dispose() }
+    }
+    $out = New-Object IO.MemoryStream
+    $writer = New-Object IO.BinaryWriter($out)
+    $writer.Write([uint16]0); $writer.Write([uint16]1); $writer.Write([uint16]$frames.Count)
+    $offset = 6 + 16 * $frames.Count
+    foreach ($frame in $frames) {
+        $edge = if ($frame[0] -ge 256) { 0 } else { $frame[0] }
+        $writer.Write([byte]$edge); $writer.Write([byte]$edge); $writer.Write([uint16]0); $writer.Write([uint16]1); $writer.Write([uint16]32)
+        $writer.Write([uint32]$frame[1].Length); $writer.Write([uint32]$offset)
+        $offset += $frame[1].Length
+    }
+    foreach ($frame in $frames) { $writer.Write([byte[]]$frame[1]) }
+    $writer.Flush()
+    return $out.ToArray()
+}
+
+# A script's windows group under powershell.exe on the taskbar: its own app ID and icon make the kit a program of its
+# own there. Returns the icon for the window.
+function Set-EndpointAppIdentity {
+    $icon = New-Object Drawing.Icon((New-Object IO.MemoryStream(, (Get-EndpointIconBytes))))
+    if ([Diagnostics.Process]::GetCurrentProcess().ProcessName -ne 'powershell') { return $icon }
+    if (-not ('EndpointKit.Shell' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System.Runtime.InteropServices;
+namespace EndpointKit {
+    public static class Shell {
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern int SetCurrentProcessExplicitAppUserModelID(string id);
+    }
+}
+'@
+    }
+    [void][EndpointKit.Shell]::SetCurrentProcessExplicitAppUserModelID('MCPGateway.Endpoint')
+    return $icon
+}
+
+# One desktop shortcut per account, made once: a removed shortcut stays removed. The worker deletes it on removal.
+function Add-EndpointDesktopShortcut([string]$Work, [string]$ProgramDirectory, [string]$SettingsPath, [string]$Name) {
+    $record = Join-Path $Work 'shortcut.txt'
+    $launcher = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    if ((Test-Path -LiteralPath $record) -or -not (Test-Path -LiteralPath $launcher)) { return }
+    $path = Join-Path ([Environment]::GetFolderPath('Desktop')) ($Name + '.lnk')
+    $shell = New-Object -ComObject WScript.Shell
+    $link = $shell.CreateShortcut($path)
+    $link.TargetPath = $launcher
+    $link.Arguments = '-SettingsPath ' + (Quote-EndpointArgument $SettingsPath) + ' -Show'
+    $link.WorkingDirectory = $ProgramDirectory
+    $link.IconLocation = $launcher + ',0'
+    $link.Save()
+    [IO.File]::WriteAllText($record, $path, [Text.UTF8Encoding]::new($false))
+}
+
+# The record sits in a folder the employee can write: only a .lnk of ours inside their own profile is deleted.
+function Remove-EndpointDesktopShortcut([string]$Work, [string]$Profile, [string]$ProgramDirectory) {
+    $record = Join-Path $Work 'shortcut.txt'
+    if (-not (Test-Path -LiteralPath $record)) { return }
+    try {
+        $path = [IO.Path]::GetFullPath((Get-Content -LiteralPath $record -Raw -Encoding UTF8).Trim())
+        $root = [IO.Path]::GetFullPath($Profile).TrimEnd('\') + '\'
+        if ($path.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -and $path.EndsWith('.lnk', [StringComparison]::OrdinalIgnoreCase) -and
+            (Test-Path -LiteralPath $path -PathType Leaf)) {
+            Assert-EndpointTree $path
+            $target = (New-Object -ComObject WScript.Shell).CreateShortcut($path).TargetPath
+            if ($target -eq (Join-Path $ProgramDirectory 'MCPGateway.exe')) { Remove-Item -LiteralPath $path -Force }
+        }
+    } catch { }
+    Remove-Item -LiteralPath $record -Force
+}
+
+# MCPGateway.exe hosts tray.ps1 in its own process: no console window, and Windows lists it as its own program.
+$script:EndpointLauncherSource = @'
+using System;
+using System.IO;
+using System.Management.Automation;
+using System.Management.Automation.Runspaces;
+[assembly: System.Reflection.AssemblyTitle("MCP Gateway")]
+[assembly: System.Reflection.AssemblyProduct("MCP Gateway")]
+public static class MCPGatewayLauncher {
+    [STAThread]
+    public static int Main(string[] args) {
+        var state = InitialSessionState.CreateDefault();
+        state.ExecutionPolicy = Microsoft.PowerShell.ExecutionPolicy.Bypass;
+        using (var runspace = RunspaceFactory.CreateRunspace(state)) {
+            runspace.ThreadOptions = PSThreadOptions.UseCurrentThread;
+            runspace.Open();
+            using (var shell = PowerShell.Create()) {
+                shell.Runspace = runspace;
+                shell.AddCommand(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tray.ps1"));
+                for (var i = 0; i < args.Length; i++) {
+                    var name = args[i].TrimStart('-');
+                    if (i + 1 < args.Length && !args[i + 1].StartsWith("-")) shell.AddParameter(name, args[++i]);
+                    else shell.AddParameter(name);
+                }
+                shell.Invoke();
+                return shell.HadErrors ? 1 : 0;
+            }
+        }
+    }
+}
+'@
+
+function Stop-EndpointLauncher([string]$ProgramDirectory) {
+    $exe = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    Get-CimInstance Win32_Process -Filter "Name = 'MCPGateway.exe'" | Where-Object { $_.ExecutablePath -eq $exe } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
+
+# Builds MCPGateway.exe and its icon next to tray.ps1; returns the files made, none when the compiler is unavailable
+# (the tray then runs under powershell.exe as before).
+function Install-EndpointLauncher([string]$ProgramDirectory) {
+    $exe = Join-Path $ProgramDirectory 'MCPGateway.exe'
+    $ico = Join-Path $ProgramDirectory 'MCPGateway.ico'
+    try {
+        Stop-EndpointLauncher $ProgramDirectory
+        [IO.File]::WriteAllBytes($ico, (Get-EndpointIconBytes))
+        $parameters = New-Object CodeDom.Compiler.CompilerParameters
+        [void]$parameters.ReferencedAssemblies.AddRange(@('System.dll', 'System.Core.dll', [PSObject].Assembly.Location))
+        $parameters.GenerateExecutable = $true
+        $parameters.OutputAssembly = $exe
+        $parameters.CompilerOptions = '/target:winexe /win32icon:' + (Quote-EndpointArgument $ico)
+        Add-Type -TypeDefinition $script:EndpointLauncherSource -CompilerParameters $parameters
+        return @('MCPGateway.exe', 'MCPGateway.ico')
+    } catch {
+        Remove-Item -LiteralPath $exe, $ico -Force -ErrorAction SilentlyContinue
+        return @()
+    }
+}
+
 function Register-EndpointTray([string]$SettingsPath, [string]$Sid, [string]$ProgramDirectory) {
     $root = $ProgramDirectory
-    $action = New-ScheduledTaskAction -Execute $script:PowerShellExe -Argument ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' +
-        (Quote-EndpointArgument (Join-Path $root 'tray.ps1')) + ' -SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    $launcher = Join-Path $root 'MCPGateway.exe'
+    $action = if (Test-Path -LiteralPath $launcher) {
+        New-ScheduledTaskAction -Execute $launcher -Argument ('-SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    } else {
+        New-ScheduledTaskAction -Execute $script:PowerShellExe -Argument ('-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' +
+            (Quote-EndpointArgument (Join-Path $root 'tray.ps1')) + ' -SettingsPath ' + (Quote-EndpointArgument $SettingsPath))
+    }
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $Sid
     $principal = New-ScheduledTaskPrincipal -UserId $Sid -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Seconds 0) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
@@ -229,7 +387,9 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
         @{ product = 'MCPGatewayEndpoint'; files = $OwnedFiles }
     } else { throw '설치 소유 정보 확인 실패' }
     if ($manifest.product -ne 'MCPGatewayEndpoint') { throw '설치 소유 정보 확인 실패' }
-    foreach ($name in @($manifest.files) + @('.endpoint-kit')) {
+    # The launcher is this kit's own file even when an older manifest never listed it (a kit without launcher reinstalled over one with).
+    $launcher = if ($resolved -eq $machine) { @('MCPGateway.exe', 'MCPGateway.ico') } else { @() }
+    foreach ($name in @($manifest.files) + $launcher + @('.endpoint-kit')) {
         $target = [IO.Path]::GetFullPath((Join-Path $resolved $name))
         if (-not $target.StartsWith($resolved + '\', [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         if (Test-Path -LiteralPath $target -PathType Leaf) { Remove-Item -LiteralPath $target -Force }
@@ -253,7 +413,11 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
 
 # Screen text of the wizard and the tray, Korean first with an English switch (D-239). Labels only.
 $script:EndpointText = @{
-    ko = @{ product = 'MCP 연결'; connected = '연결됨'; disconnected = '연결 끊김'; blocked = '엔드포인트에서 차단';
+    ko = @{ product = 'MINT'; mint_account = 'MINT 아이디'; mint_password = '비밀번호';
+        mint_invalid = '로그인: 아이디·비밀번호 확인 필요'; mint_locked = '로그인: 계정 잠김·승인 확인 필요';
+        mint_limited = '로그인: 시도 제한'; mint_network = '로그인: 네트워크 연결 실패';
+        approved = '승인된 MCP'; source = '소스 받기'; settings = '설정'; mint_login = '로그인 / 계정';
+        connected = '연결됨'; disconnected = '연결 끊김'; blocked = '엔드포인트에서 차단';
         preparing = '연결 준비 중'; service_stopped = '서비스 중지'; next_service = '연결 서비스가 중지됐습니다 · [다시 연결]을 누르세요'; next_preparing = '잠시 기다리세요 · 서비스가 첫 보고를 보내는 중입니다';
         status = '상태 창'; check = '연결 확인'; login = '모델 로그인'; reconnect = '다시 연결'; recent = '최근 차단';
         open_console = '콘솔 열기'; language = 'English'; remove = '제거'; close = '닫기';
@@ -278,7 +442,11 @@ $script:EndpointText = @{
         isolated = '고급: 격리 계정 (관리자 활성화)'; permission_simple = '관리자 권한 확인 1회 · 지금 계정 그대로';
         permission_isolated = '관리자 권한 · 격리 계정 로그아웃 필요'; title_install = '엔드포인트 설치'; title_remove = '엔드포인트 제거';
         done_install = '설치 완료'; done_remove = '제거 완료'; checking_gateway = '게이트웨이 연결 확인'; confirm = '설치 위치 · 관측 범위 확인' }
-    en = @{ product = 'MCP connection'; connected = 'Connected'; disconnected = 'Disconnected'; blocked = 'Blocked on this PC';
+    en = @{ product = 'MINT'; mint_account = 'MINT ID'; mint_password = 'Password';
+        mint_invalid = 'Sign in: check ID and password'; mint_locked = 'Sign in: account locked or pending approval';
+        mint_limited = 'Sign in: rate limited'; mint_network = 'Sign in: network unavailable';
+        approved = 'Approved MCP'; source = 'Download source'; settings = 'Settings'; mint_login = 'Sign in / account';
+        connected = 'Connected'; disconnected = 'Disconnected'; blocked = 'Blocked at endpoint';
         preparing = 'Preparing'; service_stopped = 'Service stopped'; next_service = 'The connection service is stopped · press [Reconnect]'; next_preparing = 'Wait a moment · the service is sending its first report';
         status = 'Status window'; check = 'Check connection'; login = 'Model sign-in'; reconnect = 'Reconnect'; recent = 'Recent blocks';
         open_console = 'Open console'; language = '한국어'; remove = 'Remove'; close = 'Close';
@@ -309,6 +477,73 @@ function Get-EndpointText([string]$Key, [string]$Language = 'ko') {
     $table = $script:EndpointText[$(if ($Language -eq 'en') { 'en' } else { 'ko' })]
     if ($table.ContainsKey($Key)) { return $table[$Key] }
     return $Key
+}
+
+
+function Set-EndpointChrome($Form, $Layout, [scriptblock]$Approved, [scriptblock]$Account, [scriptblock]$Settings) {
+    $Form.BackColor = [Drawing.ColorTranslator]::FromHtml('#edf5f4')
+    $Form.MinimumSize = New-Object Drawing.Size(780, 600)
+    $shell = New-Object Windows.Forms.TableLayoutPanel
+    $shell.Dock = 'Fill'; $shell.AutoSize = $true; $shell.ColumnCount = 2
+    $shell.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', 164))) | Out-Null
+    $shell.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100))) | Out-Null
+    $nav = New-Object Windows.Forms.FlowLayoutPanel
+    $nav.Dock = 'Fill'; $nav.FlowDirection = 'TopDown'; $nav.WrapContents = $false
+    $nav.BackColor = [Drawing.ColorTranslator]::FromHtml('#e0f0ed'); $nav.Padding = New-Object Windows.Forms.Padding(14)
+    $logo = New-Object Windows.Forms.Label
+    $logo.Text = 'MINT'; $logo.Font = New-Object Drawing.Font('Segoe UI', 25, [Drawing.FontStyle]::Bold)
+    $logo.ForeColor = [Drawing.ColorTranslator]::FromHtml('#087f78'); $logo.AutoSize = $true
+    $logo.Margin = New-Object Windows.Forms.Padding(0, 12, 0, 28)
+    $nav.Controls.Add($logo)
+    $navigation = @{}
+    foreach ($key in @('status', 'approved', 'mint_login', 'settings')) {
+        $button = New-Object Windows.Forms.Button
+        $button.Text = T $key; $button.Tag = $key; $button.Width = 132; $button.Height = 44
+        $button.FlatStyle = 'Flat'; $button.FlatAppearance.BorderSize = 0
+        $button.TextAlign = 'MiddleLeft'; $button.BackColor = [Drawing.Color]::White
+        $button.Margin = New-Object Windows.Forms.Padding(0, 4, 0, 4)
+        $nav.Controls.Add($button); $navigation[$key] = $button
+    }
+    $navigation.approved.Add_Click($Approved)
+    $navigation.mint_login.Add_Click($Account)
+    $navigation.settings.Add_Click($Settings)
+    $navigation.status.Add_Click({ $Layout.Focus() }.GetNewClosure())
+    $Form.Controls.Remove($Layout)
+    $cards = New-Object Windows.Forms.TableLayoutPanel
+    $cards.AutoSize = $true; $cards.Dock = 'Top'; $cards.ColumnCount = 2
+    $cards.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50))) | Out-Null
+    $cards.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 50))) | Out-Null
+    $cards.Padding = New-Object Windows.Forms.Padding(12)
+    for ($row = 0; $row -lt $Layout.RowCount; $row++) {
+        $caption = $Layout.GetControlFromPosition(0, $row)
+        $value = $Layout.GetControlFromPosition(1, $row)
+        if (-not $caption -and -not $value) { continue }
+        $card = New-Object Windows.Forms.TableLayoutPanel
+        $card.AutoSize = $true; $card.Dock = 'Fill'; $card.ColumnCount = 1
+        $card.Padding = New-Object Windows.Forms.Padding(14)
+        $card.Margin = New-Object Windows.Forms.Padding(7)
+        $card.BackColor = [Drawing.Color]::White
+        $card.Add_Resize({
+            $path = New-Object Drawing.Drawing2D.GraphicsPath
+            $w = $this.Width - 1; $h = $this.Height - 1; $r = 12
+            if ($w -gt $r -and $h -gt $r) {
+                $path.AddArc(0, 0, $r, $r, 180, 90); $path.AddArc(($w-$r), 0, $r, $r, 270, 90)
+                $path.AddArc(($w-$r), ($h-$r), $r, $r, 0, 90); $path.AddArc(0, ($h-$r), $r, $r, 90, 90)
+                $path.CloseFigure()
+                $old = $this.Region; $this.Region = New-Object Drawing.Region($path)
+                if ($old) { $old.Dispose() }
+            }
+            $path.Dispose()
+        })
+        if ($caption) { $caption.ForeColor = [Drawing.ColorTranslator]::FromHtml('#526d69'); $card.Controls.Add($caption) }
+        if ($value) { $card.Controls.Add($value) }
+        $cards.Controls.Add($card, ($row % 2), [int][Math]::Floor($row / 2))
+    }
+    $scroll = New-Object Windows.Forms.Panel
+    $scroll.Dock = 'Fill'; $scroll.AutoScroll = $true; $scroll.Controls.Add($cards)
+    $shell.Controls.Add($nav, 0, 0); $shell.Controls.Add($scroll, 1, 0)
+    $Form.Controls.Add($shell)
+    return $navigation
 }
 
 function Get-EndpointValue([string]$Value, [string]$Language = 'ko') {

@@ -165,7 +165,7 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 `verify` 끝에서 loopback 변형으로 실제 Claude Code·Codex CLI와 내부 Git 로그인을 확인한다(D-42·D-46·D-48).
 - 승인한 신청은 Console **도입 신청 → Gateway 등록**으로 올린다(D-49). 등록은 `registry_runtime` 볼륨의 `servers.json`에 남고,
   `./console.sh reset`이면 지워진다. 파일로 검토·보관하려면 `docker compose exec gateway cat /registry-runtime/servers.json`.
-- 내부 Git(`/git/`)은 솔루션 계정으로만 열린다(D-48). 클론은 같은 ID/PW, Gitea 관리는 관리자 역할 계정으로 로그인한 브라우저에서.
+- 내부 Git(`/git/`)은 관리자 역할 솔루션 계정으로만 열린다(D-48·D-262). 직원 브라우저는 Console 「승인된 MCP」로 돌아가고 git 명령은 403이다. 직원의 소스는 Console 「소스 받기」(승인 커밋·기한 재확인·다운로드 기록)로만 받는다.
 
 ### 2.2 console.sh 명령
 

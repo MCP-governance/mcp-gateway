@@ -19,7 +19,7 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 | 선택 | 기본 | 콘솔 「내 PC 연결 → 고급: 격리 계정」, Linux `install.sh --isolated`, Windows 마법사 체크 |
 | 실행 계정 | 지금 로그인한 직원 계정(관리자·표준 모두, 로그아웃 없음) | 별도 관리 계정 `managed-<직원>`(Linux)·`mcpgw-<직원>`(Windows) |
 | 하네스 | 직원이 설치한 그대로 | `/opt/mcpgw-approved`·`%ProgramFiles%\MCPGatewayManaged\harness`에 복사·SHA-256 |
-| 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mcpgw-status`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
+| 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mint`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
 | 패키지 | curl·openssl·컨테이너 엔진을 시도만(실패해도 계속) | gcc·nftables·apparmor-utils·curl·openssl 필수 + 엔진 |
 | 활성화 | 설치 점검 통과 시 자동(콘솔 「새 PC 활성화」에서 끌 수 있음) | 관리자 |
 | 콘솔 통제 범위 | `observed_only` · 「간편 모드 · 게이트웨이 판정 적용」 | `endpoint_enforced`(다른 계정이 있으면 `bypass_possible`) |
@@ -27,9 +27,14 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 설치는 파일 하나 실행·관리자 확인 1회·질문 0개다. 끝에 세 칸을 실측해 보인다: **모델 응답**(하네스가 실제로 답하는지), **도구**
 (직원 하네스와 같은 헤더로 승인 서버의 `tools/list` 도구 수), **서버 연결**(승인 서버 1건 `initialize`). 자격 파일이 있다는 것만으로
 성공 처리하지 않는다. Linux는 터미널이면 curses 풀화면(단계·소요·세 칸·다음 할 일), 아니면 한 줄씩 출력한다.
-`mcpgw-status`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mcpgw-status --check`는 세 칸 중 두 칸을 다시 잰다.
-같은 파일이 재설치·복구·모드 전환이다: 이전 설치를 모드와 무관하게 먼저 원복하고, 간편 모드로 바꾸면 키트가 만든 격리 계정을
-지운다(홈·프로필 폴더는 남김). 간편 모드가 포기하는 것은 [SECURITY_BOUNDARIES](../docs/ai/SECURITY_BOUNDARIES.md)에 있다.
+`mint`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mint --check`는 세 칸 중 두 칸을 다시 잰다.
+Linux 상태 화면의 「다음 할 일」은 설치 점검에서 로그인이 필요했던 하네스의 로그인 명령을 표시한다. 모델 로그인 값은 마지막 설치 점검의 관측이며, 상태 명령은 모델 인증을 다시 검사하지 않는다.
+설치 전 연결 거부·임시 DNS 오류와 정책 수신의 일시 오류는 단계별 최대 3회(1·2초 간격, 요청당 15초 제한) 시도한다. 인증 거부·인증서 오류는 즉시 실패한다.
+등록 요청의 응답 시간 초과·응답 유실·HTTP 오류는 등록 토큰이 이미 소모됐을 수 있어 다시 보내지 않는다. 실패 문구와 보호된 설치 로그에는 HTTP 상태 또는 오류 종류만 남긴다.
+설치 결과의 관리 상태는 서비스 시작 뒤 최대 60초 동안 받은 최신 보고를 따른다. 확인되지 않으면 「확인 필요」이며, 등록 응답만으로 활성이라 표시하지 않는다.
+재설치·복구·모드 전환에는 콘솔에서 새 키트를 받는다. 등록·정책 수신에 성공한 뒤 기존 설치를 원복하며, 간편 모드로 바꾸면 키트가 만든 격리 계정을
+지운다(홈·프로필 폴더는 남김). Linux·macOS에서 등록 파일을 소모한 폴더를 다시 실행하면 현재 직원의 기존 설치 기록과 상태 확인 명령을 안내하고 끝난다.
+등록 토큰은 다시 쓰지 않는다. 간편 모드가 포기하는 것은 [SECURITY_BOUNDARIES](../docs/ai/SECURITY_BOUNDARIES.md)에 있다.
 
 Windows 트레이: 상태 창(연결·관리 상태·모드·승인 서버·하네스 판본·세 칸·다음 할 일), 연결 확인, 모델 로그인(Claude·Codex),
 다시 연결(게이트웨이 점검, 서비스가 멈췄으면 관리자 권한으로 다시 시작), 콘솔 열기, English/한국어, 제거. 처음 활성화되면 한 번 스스로
@@ -50,7 +55,7 @@ Windows 트레이: 상태 창(연결·관리 상태·모드·승인 서버·하�
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
 
 ```bash
-unzip mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
 ```
 
 `install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
@@ -86,7 +91,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 `full_stack_lab/model-proxy/model-domains.txt`의 모델 도메인만 허용하고(TLS 터널은 443만), 임의 외부 주소를 열지 않습니다.
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
 같은 직원이 같은 PC에 키트를 다시 설치하면(업데이트) 직전 활성 장치를 대체하고 활성화를 이어받습니다(D-217). 격리되거나 중지된 장치는 이어받지 않고 다른 PC는 새 활성화가 필요합니다.
-직원은 `mcpgw-status`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
+직원은 `mint`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
 관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
 안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
@@ -258,6 +263,10 @@ Get-ScheduledTask -TaskName 'MCPGatewayEndpoint-endpoint-win-001'
 inventory/listener `complete` 기본은 False다. 정보원 오류나500건 초과는 partial이다. 명시적 complete 성공에서만 기존 미관측 행을 지우며 process-only 보고는 stdio-process 범위만 삭제한다. 네트워크/local-socket 결과는 보존한다. 과거 shadow를 stale 때문에 정상0으로 바꾸지 않는다. Console은 listener fresh/stale/unknown과 별도 수집상태를 표시하고, 목록은 서버가 센 전체 건수와 반환 창을 따로 보이며 커서로 200건 너머를 넘긴다(D-85).
 
 Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event TargetUser가 정확한 관리SID인 차단만 보며, WFP event-time SID가 없으면 partial/sid_unavailable로 제외한다. 감사/방화벽/실행 정책을 자동 활성화하지 않는다. Windows 실제 이벤트 전달 시험은 미실행이다.
+
+하네스 명령줄의 프롬프트는 MCP 서버 기동 증거로 쓰지 않는다(D-273, D-269의 제외 범위 정정). Node/Bun은 Claude Code의 `@anthropic-ai/claude-code/cli.js` 또는 Codex의 `@openai/codex/bin/codex.js`로 끝나는 진입 파일만 제외한다. native 실행 파일은 설치기가 `harness_paths`로 기록하고 서비스가 보호된 관측 설정 `ENDPOINT_HARNESS_PATHS`로 전달한 경로와 실경로가 같을 때 제외한다. 하위 패키지의 서버 스크립트·다른 경로의 동명 실행 파일은 계속 검사하며, MCP initialize 응답은 제외 조건과 관계없이 확정 증거다. 경로 목록이 없는 기존 설치·관측 전용 설치는 native 이름만으로 제외하지 않는다. 관리형 키트를 재설치하면 경로가 기록된다. 이는 파일 서명·내용 검증이나 변조 방지 증명이 아니다.
+
+npm Codex는 진입 링크의 실경로를 확인하고, 설치 시 해당 `bin/codex.js`를 기준으로 Node 모듈 해석기가 선택한 플랫폼 패키지의 실행 파일도 같은 목록에 기록한다(D-276). 플랫폼 패키지가 없으면 공식 래퍼와 같이 해당 Codex 패키지의 `vendor` 경로를 확인한다. 래퍼나 하네스를 실행하지 않고 경로만 확인하며, 확인 실패·파일 누락이면 별도 경로를 제외하지 않는다. 패키지 하위 전체나 다른 위치의 동명 파일을 허용하지 않는다.
 
 [PJ1 Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.
 

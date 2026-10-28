@@ -18,9 +18,11 @@ import pwd
 import queue
 import re
 import secrets
+import contextlib
 import shutil
 import socket
 import socketserver
+import ssl
 import stat
 import subprocess
 import sys
@@ -43,8 +45,10 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py", "kit_screen.py")
-STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
+                 "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
+STATUS_SHIM = Path("/usr/local/bin/mint")
+OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")  # 10-28 이전 이름
+SHIM_MARK = "# mcpgw managed status"
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
 ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
@@ -60,6 +64,40 @@ def load_module(name, path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def harness_paths(binaries):
+    paths = list(binaries.values())
+    entry = Path(binaries.get("codex", "")).resolve()
+    node = shutil.which("node")
+    if not node or entry.parts[-4:] != ("@openai", "codex", "bin", "codex.js") or not entry.is_file():
+        return paths
+    # Resolve without executing the npm wrapper, which would start a harness as root.
+    script = r'''
+const fs = require('node:fs'), path = require('node:path');
+const entry = process.argv[1], resolve = require('node:module').createRequire(entry).resolve;
+const machine = {x64: 'x86_64', arm64: 'aarch64'}[process.arch];
+const suffix = {linux: 'unknown-linux-musl', darwin: 'apple-darwin', win32: 'pc-windows-msvc'}[process.platform];
+if (!machine || !suffix) process.exit(1);
+let vendor;
+try {
+  vendor = path.join(path.dirname(resolve('@openai/codex-' + process.platform + '-' + process.arch + '/package.json')), 'vendor');
+} catch {
+  vendor = path.join(path.dirname(entry), '..', 'vendor');
+}
+const binary = path.join(vendor, machine + '-' + suffix, 'bin', process.platform === 'win32' ? 'codex.exe' : 'codex');
+if (fs.existsSync(binary)) process.stdout.write(fs.realpathSync(binary));
+'''
+    try:
+        result = subprocess.run([node, "-e", script, str(entry)], capture_output=True, text=True, timeout=5,
+                                check=True, env={k: v for k, v in os.environ.items()
+                                                 if k not in ("NODE_OPTIONS", "NODE_PATH")})
+        native = Path(result.stdout.strip())
+        if result.stdout.strip() and native.is_absolute() and native.is_file() and str(native) not in paths:
+            paths.append(str(native))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return paths
 
 
 def kit_version(folder):
@@ -370,7 +408,7 @@ def redact_diagnostic(text, credentials=()):
 
 def diagnostic(stage, error, credentials=()):
     """Keep stderr across attempts, without command arguments or response bodies."""
-    detail = getattr(error, "stderr", "") or ""
+    detail = (getattr(error, "stderr", "") or "") if isinstance(error, subprocess.SubprocessError) else ""
     if isinstance(detail, bytes):
         detail = detail.decode("utf-8", "replace")
     detail = redact_diagnostic(detail, credentials)
@@ -381,23 +419,62 @@ def diagnostic(stage, error, credentials=()):
         fd = os.open(STATE / "setup.log", os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         with os.fdopen(fd, "a", encoding="utf-8") as output:
             os.fchmod(output.fileno(), 0o600)
-            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}\n{detail}\n")
+            output.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {stage} {type(error).__name__}"
+                         f" {preparation_error(error) if error else ''}\n{detail}\n")
     except (OSError, ValueError):
         pass  # 기록 실패가 원래 오류를 가리면 안 된다(권한 없는 상태 폴더 등)
+
+
+def preparation_error(error):
+    """Only error classes/codes: a URL or response body may contain credentials."""
+    if isinstance(error, ValueError) and getattr(error, "kit_reason", None):
+        return error.kit_reason
+    if isinstance(error, urllib.error.HTTPError):
+        return f"HTTP {error.code}"
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, ssl.SSLError):
+        return "TLS 인증서·연결 확인 필요"
+    if isinstance(reason, TimeoutError):
+        return "게이트웨이 응답 시간 초과"
+    if isinstance(error, OSError):
+        return f"네트워크 연결 실패 ({type(reason).__name__})"
+    return {KeyError: "정책 응답 필수 항목 누락", ValueError: "설치 설정·정책 검증 실패"}.get(
+        type(error), type(error).__name__)
+
+
+def preparation_request(config, path, body=None, *, credential=True):
+    for attempt in range(3):
+        try:
+            return request(config, path, body, credential=credential)
+        except OSError as exc:
+            reason = getattr(exc, "reason", exc)
+            if isinstance(exc, urllib.error.HTTPError):
+                retry = body is None and exc.code in (502, 503, 504)
+            else:
+                # A lost POST response can already have consumed the one-use token; only refusal/DNS is safe.
+                retry = (not isinstance(reason, ssl.SSLError) and
+                         (body is None or isinstance(reason, ConnectionRefusedError) or
+                          isinstance(reason, socket.gaierror) and reason.errno == socket.EAI_AGAIN))
+            if not retry or attempt == 2:
+                raise
+            time.sleep(attempt + 1)
 
 
 def enroll(bundle, username, uid, mode="isolated", platform="linux"):
     """Network preparation only; no installed file or OS task is changed."""
     verify_transport(bundle)
+    if not bundle.get("enrollment_token"):
+        access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+        bundle = access.login(bundle, request, kit_screen.login_inputs)
     bundle = dict(bundle, device_key=secrets.token_urlsafe(32))
     machine = machine_id() if platform == "linux" else None
-    enrolled = request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
+    enrolled = preparation_request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
         "device_key": bundle["device_key"], "hostname": socket.gethostname(), "local_username": username,
         "local_uid": uid, "mode": mode, "platform": platform, **({"machine_id": machine} if machine else {})}, credential=False)
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
     config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey", "local_engine") if k in bundle})
     config["endpoint_id"] = enrolled["endpoint_id"]
-    policy = request(config, "/api/endpoint/managed-policy")
+    policy = preparation_request(config, "/api/endpoint/managed-policy")
     if (policy["tailscale_node_id"] != config["tailscale_node_id"]
             or policy.get("gateway_url", config["gateway_url"]) != config["gateway_url"]):
         raise ValueError("설치 키트와 정책의 게이트웨이가 다릅니다")
@@ -477,6 +554,7 @@ def install(args, prepared=None):
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, uid=person.pw_uid,
                   owner_uid=None if simple else args.owner_uid, mode=args.mode,
                   broker_binding="uid" if simple else args.broker_binding, harnesses=sorted(binaries),
+                  harness_paths=harness_paths(binaries),
                   socket=f"/run/mcpgw-{args.user}.sock", nft_baseline=str(folder / "nft-baseline.json"))
     private_write(config_path, json.dumps(config))
     for target in FILES.values():
@@ -507,17 +585,19 @@ def install(args, prepared=None):
         f"ExecStart=/usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py serve --config {config_path}\n"
         "Restart=always\nRestartSec=10\nUMask=0077\n\n[Install]\nWantedBy=multi-user.target\n")
     subprocess.run(["systemctl", "daemon-reload"], check=True)
+    started = time.time()
     subprocess.run(["systemctl", "enable", "--now", unit], check=True, capture_output=True, text=True)
     try:
         config["home_launchers"] = [] if simple else home_launchers(config)
     except OSError:
         config["home_launchers"] = []  # a new terminal still gets the launcher function
-    args.enrollment.unlink()
-    write_status_shim()
-    # "active": the Gateway continued the activation of the earlier device of this employee on this PC (D-217).
+    if bundle.get("enrollment_token"):
+        args.enrollment.unlink()
+    command = write_status_shim()
+    summary = kit_screen.wait_summary(status_path(args.user, "json"), since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
-                      "state": "active" if enrolled.get("state") == "active" else "pending-organization-activation",
-                      "service": unit, "status_command": str(STATUS_SHIM), "home_launchers": config["home_launchers"]}))
+                      "state": summary.get("state", "unknown"),
+                      "service": unit, "status_command": str(command), "home_launchers": config["home_launchers"]}))
 
 
 STATE_LABEL = {"active": "활성", "pending": "활성화 대기", "quarantined": "중지 (점검에서 격리됨)",
@@ -543,6 +623,15 @@ def next_step(summary, now, environment=None):
         return "콘솔 내 PC 연결에서 새 설치 파일을 받아 다시 설치하세요"
     if not summary.get("connected"):
         return "게이트웨이 연결을 확인하세요 (네트워크·VPN)"
+    signed = summary.get("model_signed_in") or {}
+    commands = [command for name, command in (("claude", "claude auth login"), ("codex", "codex login --device-auth"))
+                if signed.get(name) is False]
+    if commands:
+        if summary.get("mode") != "simple":
+            user = summary["user"]
+            commands = [f"sudo -u {user} /usr/local/lib/mcpgw-enforcement/mcpgw-{user}/login-shell -c '{command}'"
+                        for command in commands]
+        return "모델 로그인: " + " · ".join(commands)
     # A terminal opened before the install lacks the CA variable: the harness cannot reach the Gateway from it.
     ca = summary.get("ca")
     if summary.get("mode") == "simple" and ca and environment.get("NODE_EXTRA_CA_CERTS") != ca:
@@ -574,7 +663,7 @@ def render_status(summary, now, environment=None):
              *([f"새로 반영된 서버: {', '.join(fresh)} ({clock(added['at'])}) "
                 "— 이미 열려 있는 하네스에 보이지 않으면 다시 시작하세요."]
                if (added := summary.get("added")) and not silent and now - added["at"] < ADDED_SHOWN_SECONDS
-               and (fresh := [s for s in added["servers"] if s in (summary.get("names") or added["servers"])]) else []),
+               and (fresh := [s for s in added["servers"] if s in (summary.get("names") or [])]) else []),
              "로컬 MCP 준비: " + prepared + (f" ({local['note']})" if local.get("note") and local.get("total") else ""),
              "직원 문서 폴더: " + (", ".join(local["documents"]) if local.get("documents") else "—"),
              "키트 판본: " + (summary.get("kit") or "—")[:12]]
@@ -589,20 +678,43 @@ kit_screen = load_module("kit_screen", Path(__file__).with_name("kit_screen.py")
 Screen = kit_screen.Screen
 
 
+def model_status(summary):
+    """Installer observations survive heartbeats; no provider credentials enter the public summary."""
+    try:
+        signed = json.loads((PROGRAMS / f"model-{summary['user']}.json").read_text())
+    except (OSError, ValueError, KeyError):
+        signed = {}
+    signed = {name: signed[name] for name in ("claude", "codex")
+              if isinstance(signed, dict) and type(signed.get(name)) is bool}
+    return {**summary, **({"model_signed_in": signed} if signed else {})}
+
+
 def publish_status(summary):
     """Root writes, anyone reads: the summary the status command prints, and the same text for an account whose
     profile cannot run Python (`cat` is allowed there)."""
-    summary = {**summary, "updated": time.time()}
+    summary = {**model_status(summary), "updated": time.time()}
     for suffix, text in (("json", json.dumps(summary)), ("txt", render_status(summary, summary["updated"], {}))):
         path = status_path(summary["user"], suffix)
         private_write(path, text)
         path.chmod(0o644)
 
 
+def ours_shim(path):
+    try:
+        return SHIM_MARK in path.read_text(errors="replace")[:200]
+    except OSError:
+        return False
+
+
 def write_status_shim():
-    private_write(STATUS_SHIM, "#!/bin/sh\n# mcpgw managed status\n"
+    """`mint` 한 단어로 상태 화면을 연다. 다른 프로그램의 `mint`가 이미 있으면 덮지 않고 옛 이름을 쓴다."""
+    target = STATUS_SHIM if not STATUS_SHIM.exists() or ours_shim(STATUS_SHIM) else OLD_STATUS_SHIM
+    private_write(target, "#!/bin/sh\n" + SHIM_MARK + "\n"
                   f'exec /usr/bin/python3 -I -S {PROGRAMS}/managed-linux.py status "$@"\n')
-    STATUS_SHIM.chmod(0o755)
+    target.chmod(0o755)
+    if target == STATUS_SHIM and ours_shim(OLD_STATUS_SHIM):
+        OLD_STATUS_SHIM.unlink(missing_ok=True)
+    return target
 
 
 def account_header(summary):
@@ -615,7 +727,7 @@ def account_header(summary):
         command = ["setpriv", "--reuid", str(account.pw_uid), "--regid", str(account.pw_gid), "--clear-groups", "--", *command]
     elif summary.get("mode") != "simple" and os.geteuid() != pwd.getpwnam(user).pw_uid:
         # The existing sudo login-shell cannot execute the header helper under AppArmor.
-        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mcpgw-status --check)")
+        raise ValueError("격리 계정 연결 확인은 관리자 권한으로 실행하세요 (sudo mint --check)")
     done = subprocess.run(command, capture_output=True, text=True, timeout=20, cwd="/", env={"PATH": "/usr/bin:/bin"})
     value = json.loads(done.stdout.strip().splitlines()[-1])["Authorization"]
     if value.startswith("Bearer endpoint-not-active"):
@@ -624,7 +736,7 @@ def account_header(summary):
 
 
 def check_connection(summary):
-    """tools/list and initialize over the Gateway with the account's own header (installer and mcpgw-status --check)."""
+    """tools/list and initialize over the Gateway with the account's own header (installer and mint --check)."""
     observer = load_module("check_observer", Path(__file__).with_name("agent.py"))
     ca = summary.get("ca")
     certificate = Path(ca).read_text() if ca else ""
@@ -655,7 +767,7 @@ def status(args):
         found = sorted(PROGRAMS.glob("status-*.json"))
         path = found[0] if len(found) == 1 else path
     try:
-        summary = json.loads(path.read_text())
+        summary = model_status(json.loads(path.read_text()))
     except (OSError, ValueError):
         # Right after install the service has not written its first summary yet (10-23 pj2): not a failure.
         if list(Path("/etc/systemd/system").glob("mcpgw-managed-*.service")):
@@ -667,32 +779,38 @@ def status(args):
     if args.check:
         try:
             cells = connection_cells(check_connection(summary), len(summary.get("names") or []))
-        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
-            cells = [("연결 확인", f"실패 · {exc}")]
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
+            # 점검 실패의 원문(헤더 도우미·서버 응답)은 화면에 내지 않는다. 결과만 보인다.
+            cells = [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
     screen = Screen()
+    if getattr(args, "sources", False):
+        screen.stop()
+        return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
     if screen.window is None:
-        print(render_status(summary, time.time()), end="")
-        for name, value in cells:
-            print(f"{name}: {value}")
+        # 파이프·로그로 나갈 때도 실제 화면과 같은 배치를 색 없이 남긴다.
+        screen.summary, screen.cells, screen.next, screen.keys = summary, cells, next_step(summary, time.time()), ()
+        print(screen.text())
         return
     screen.cells = cells
 
     def read():
-        current = json.loads(path.read_text())
+        current = model_status(json.loads(path.read_text()))
         screen.next = next_step(current, time.time())
         return current
 
     def check(current):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
-    kit_screen.live(read, check, screen)
-    print(screen.text())
+    # 닫으면 화면을 지운 채 끝난다(대체 화면). 상태를 남기려면 `mint | cat`.
+    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
 # from an unmanaged PC with an employee token; here it goes under the device credential, so nothing in
 # this service ever holds an employee token. --
 INVENTORY_EVERY = 6 * 3600
+# 정책이 바뀌면(관리자가 기본 커넥터·기능을 열거나 막으면) 6시간을 기다리지 않고 다시 보고한다.
+INVENTORY_NOW = threading.Event()
 # `claude mcp list`: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected". Read as mcpgw_pc.py reads it.
 CLAUDE_LINE = re.compile(r"^(?P<name>.+?): (?P<target>.*?)(?: \((?:HTTP|SSE)\))? - (?P<status>[✔✓√✘✗×!-] .*)$")
 PLUGIN_HEAD = re.compile(r"^\s*[❯>*-]\s+(?P<name>[\w.-]+@[\w.-]+)\s*$")
@@ -830,10 +948,7 @@ def codex_rpc(config, calls, timeout=60):
     return answers
 
 
-def collect_inventory(config):
-    """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
-    marks every item of a reported harness absent, so a failed read must not look like an empty one."""
-    found = {}
+def read_versions(config):
     for tool in config.get("harnesses", ()):
         try:
             version = re.search(r"\d+\.\d+[0-9A-Za-z.+_-]*", run_text(config, tool, ["--version"], timeout=30))
@@ -841,6 +956,51 @@ def collect_inventory(config):
                 HARNESS_VERSIONS[tool] = version.group(0)[:40]
         except (ValueError, OSError, subprocess.TimeoutExpired):
             pass  # the version is shown when known, never required
+
+
+LOGIN_EVERY = 30
+
+
+def read_logins(config):
+    """Whether each harness is signed in, by its own status command (no model call, no tokens spent):
+    `claude auth status` (JSON loggedIn) and `codex login status` (exit 0). Unknown results keep the last value."""
+    found = {}
+    for tool, arguments in (("claude", ["auth", "status"]), ("codex", ["login", "status"])):
+        if tool not in config.get("harnesses", ()):
+            continue
+        process = run_as_managed(config, tool, arguments)
+        try:
+            output, _ = process.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+            continue
+        if tool == "codex":
+            found[tool] = process.returncode == 0
+            continue
+        try:
+            state = json.loads(output[output.index("{"):]).get("loggedIn")
+        except ValueError:
+            continue
+        if type(state) is bool:
+            found[tool] = state
+    if not found:
+        return
+    path = PROGRAMS / f"model-{config['username']}.json"
+    try:
+        signed = json.loads(path.read_text())
+    except (OSError, ValueError):
+        signed = {}
+    signed = {**(signed if isinstance(signed, dict) else {}), **found}
+    private_write(path, json.dumps(signed))
+    path.chmod(0o644)
+
+
+def collect_inventory(config):
+    """{harness: items} for the harnesses installed here. A harness whose command failed is left out: the Gateway
+    marks every item of a reported harness absent, so a failed read must not look like an empty one."""
+    found = {}
+    read_versions(config)
     if "claude" in config.get("harnesses", ()):
         try:
             items = parse_claude_servers(run_text(config, "claude", ["mcp", "list"]), config["gateway_url"])
@@ -885,6 +1045,30 @@ def serve(args):
         binding.configure_runtime(sys.modules[__name__])
         binding.start_runtime(config, sys.modules[__name__])
     cache, lock = {}, threading.Lock()
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+
+    class Source(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.request.settimeout(5)
+            if hasattr(self.request, "getpeereid"):
+                peer = self.request.getpeereid()[0]
+            else:
+                import struct
+                peer = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))[1]
+            if peer != (config.get("owner_uid") or config["uid"]):
+                return
+            try:
+                command = json.loads(self.rfile.readline(4096))
+                access.serve_source(config, command, verify_transport, self.request.sendall)
+            except (OSError, ValueError, TypeError):
+                return
+    source_sock = Path(config["socket"]).with_suffix(".source")
+    source_sock.unlink(missing_ok=True)
+    source_server = socketserver.ThreadingUnixStreamServer(str(source_sock), Source)
+    source_server.daemon_threads = True
+    os.chown(source_sock, config.get("owner_uid") or config["uid"], -1)
+    source_sock.chmod(0o600)
+    threading.Thread(target=source_server.serve_forever, daemon=True).start()
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
             permitted = binding.authorize_peer(self.request, config)
@@ -907,7 +1091,8 @@ def serve(args):
                  "ENDPOINT_CA_CERTIFICATE": config.get("ca_certificate", ""), "ENDPOINT_CA_SHA256": config.get("ca_sha256", ""),
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
-                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic"}))
+                 "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic",
+                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
     local = None
@@ -952,6 +1137,8 @@ def serve(args):
     except OSError:
         kit = None
     def harness_inventory():
+        # 판본은 `--version` 하나라 바로 읽는다: 설치 끝 화면과 첫 `mint`에서 하네스가 「—」로 보이지 않게.
+        read_versions(config)
         time.sleep(60)  # after the first heartbeat: the employee's harness gets its token first
         while True:
             try:
@@ -962,9 +1149,19 @@ def serve(args):
                 print(json.dumps({"harness_inventory": "failed", "error": type(exc).__name__,
                                   "status": getattr(exc, "code", None)}), flush=True)
                 wait = 900
-            time.sleep(wait)
+            INVENTORY_NOW.wait(wait)
+            INVENTORY_NOW.clear()
+    def logins():
+        # 설치 때 한 번 본 로그인 상태가 계속 보이면 직원이 로그인한 뒤에도 「로그인 필요」가 남는다(PJ1, 10-28).
+        while True:
+            try:
+                read_logins(config)
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                pass
+            time.sleep(LOGIN_EVERY)
     if sys.platform.startswith("linux") and config.get("harnesses"):
         threading.Thread(target=harness_inventory, daemon=True).start()
+        threading.Thread(target=logins, daemon=True).start()
 
     def keep_home_launchers():
         while True:
@@ -977,9 +1174,10 @@ def serve(args):
             time.sleep(HOME_LAUNCHER_EVERY)
     if sys.platform.startswith("linux") and config.get("owner_uid") is not None:
         threading.Thread(target=keep_home_launchers, daemon=True).start()
-    # gateway and ca let the employee's own `mcpgw-status --check` reach the Gateway as their harness does.
+    # gateway and ca let the employee's own `mint --check` reach the Gateway as their harness does.
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
+               "source_socket": str(source_sock),
                "ca": str(PROGRAMS / f"ca-{config['uid']}.crt") if config.get("ca_certificate") else None}
     known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
@@ -996,6 +1194,7 @@ def serve(args):
                 raise ValueError("Gateway 네트워크 변경은 조직 관리자의 재설치가 필요합니다")
             if previous != policy["policy_hash"]:
                 apply_policy(policy)
+                INVENTORY_NOW.set()
                 config["policy_hash"] = policy["policy_hash"]
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
@@ -1099,8 +1298,12 @@ def rollback(args):
     Path(f"/run/mcpgw-{args.user}.sock").unlink(missing_ok=True)
     for suffix in ("json", "txt"):
         status_path(args.user, suffix).unlink(missing_ok=True)
+    (PROGRAMS / f"model-{args.user}.json").unlink(missing_ok=True)
+    Path(f"/run/mcpgw-{args.user}.source").unlink(missing_ok=True)
     if not list(PROGRAMS.glob("status-*.json")):
-        STATUS_SHIM.unlink(missing_ok=True)
+        for shim in (STATUS_SHIM, OLD_STATUS_SHIM):
+            if ours_shim(shim):
+                shim.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
     (PROGRAMS / f"ca-{person.pw_uid}.crt").unlink(missing_ok=True)
     # The CA lines serve every simple install on this PC; the last one removed takes them out.
@@ -1108,6 +1311,14 @@ def rollback(args):
     others = [c for c in remaining if c.get("mode") == "simple" and c.get("ca_certificate")]
     if config.get("mode") == "simple" or not others:
         edit_environment(ca_environment(others[0]) if others else {})
+    if not remaining:
+        # 마지막 설치를 지우면 키트 사본도 남기지 않는다(bootstrap은 키트 폴더의 파일로 돌므로 재설치에 영향 없다).
+        for name in PROGRAM_FILES:
+            (PROGRAMS / name).unlink(missing_ok=True)
+        shutil.rmtree(PROGRAMS / "__pycache__", ignore_errors=True)
+        for folder_ in (PROGRAMS, ENFORCEMENT):
+            with contextlib.suppress(OSError):
+                folder_.rmdir()
     print("해당 계정의 관리형 서비스·설정·방화벽·프로필을 제거했습니다")
 
 
@@ -1152,16 +1363,24 @@ def main():
     helper = commands.add_parser("header")
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
-    show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
-    show.add_argument("--user")
-    show.add_argument("--check", action="store_true", help="게이트웨이로 initialize·tools/list를 보내 연결을 확인")
+    # 직원이 치는 `mint`는 이 하위 명령이다. 도움말은 직원이 쓰는 옵션만 직원의 말로 보인다.
+    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False)
+    show.add_argument("-h", "--help", action="help", help="도움말")
+    show.add_argument("--user", help=argparse.SUPPRESS)
+    show.add_argument("--check", action="store_true", help="게이트웨이 연결을 지금 점검")
+    show.add_argument("--sources", action="store_true", help="승인된 MCP 소스 받기")
     show.set_defaults(run=status)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
-    args = parser.parse_args()
+    args, extra = parser.parse_known_args()
+    if extra:
+        # `mint <틀린 인자>`의 오류도 `mint` 사용법으로 보인다(내부 파일·명령 이름을 내보이지 않는다).
+        (show if args.command == "status" else parser).error("알 수 없는 인자: " + " ".join(extra))
     try:
         args.run(args)
+    except (KeyboardInterrupt, EOFError):
+        parser.exit(130, "\n")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         # Never echo requests, credentials, response bodies or header dictionaries.
         if args.command in {"install", "rollback"} and os.geteuid() == 0:

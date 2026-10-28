@@ -78,17 +78,19 @@ async def failure_message(error, diagnostics=None):
     code=diagnostics.get('exit_code')
     if type(code) is int and 0<=code<=255:
         message+=f' · 종료 코드 {code}'
-    tail=diagnostics.get('stderr_tail')
-    if isinstance(tail,str) and tail:
-        tail=''.join(c for c in tail if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
+    async def inspected(text):
+        text=''.join(c for c in text if c in '\n\t' or ord(c)>=32 and ord(c)!=127)
         # Diagnostics also reach MCP callers; keep the existing output inspection boundary.
         try:
-            tail='[오류 본문 숨김]' if poisoning.result_findings(tail) else await secret_scan.redact_error(tail)
+            text='[오류 본문 숨김]' if poisoning.result_findings(text) else await secret_scan.redact_error(text)
         except Exception:
-            tail='[오류 본문 숨김]'
-        if tail==secret_scan.ERROR_REDACTED:
-            tail='[비밀 숨김]'
-        message+=' · 표준 오류: '+tail
+            text='[오류 본문 숨김]'
+        return '[비밀 숨김]' if text==secret_scan.ERROR_REDACTED else text
+    # The MCP's own error first: it names the cause, while stderr is often only a start banner (10-27 memory EROFS).
+    for key,label in (('mcp_error','MCP 오류'),('stderr_tail','표준 오류')):
+        value=diagnostics.get(key)
+        if isinstance(value,str) and value:
+            message+=f' · {label}: '+await inspected(value)
     return message[:500]
 
 
@@ -296,13 +298,15 @@ async def exchange(device_id: str, local: dict, method: str, params: dict, timeo
         await cleanup(connection)
         if not await authorized(connection, device, server, local['manifest_sha256'], method):
             raise NotStarted("로컬 실행 승인 또는 정책이 변경됐습니다.")
+        # A job that arrives while another runs waits in the queue; claim() hands a device one job at a time
+        # (ACTIVE_LIMIT). Refusing it here turned a harness's parallel tool calls, and an approval observing the
+        # contract while the employee worked, into P-RATE-003.
         for column, value in [('user_token', device['owner_token']), ('device_id',device_id), ('server_id', server)]:
             counts = await (await connection.execute(
                 f"""SELECT count(*) FILTER(WHERE state='queued') AS queued,
-                     count(*) FILTER(WHERE state='claimed' OR (started_at IS NOT NULL AND stopped_at IS NULL)) AS active,
                      count(*) FILTER(WHERE created_at>clock_timestamp()-interval '60 seconds') AS rate
                      FROM local_jobs WHERE {column}=%s""", (value,))).fetchone()
-            if counts['queued'] >= QUEUE_LIMIT or counts['active'] >= ACTIVE_LIMIT or counts['rate'] >= RATE_LIMIT:
+            if counts['queued'] >= QUEUE_LIMIT or counts['rate'] >= RATE_LIMIT:
                 raise NotStarted("로컬 실행 대기열 또는 생성률 상한입니다.", 'P-RATE-003')
         if (await (await connection.execute('SELECT count(*) AS n FROM local_jobs')).fetchone())['n'] >= ROW_LIMIT:
             raise NotStarted("로컬 실행 저장 상한입니다.", 'P-RATE-003')

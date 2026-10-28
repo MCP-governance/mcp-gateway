@@ -42,9 +42,9 @@ spec.loader.exec_module(commands)
 class MacOSKitCheck(unittest.TestCase):
     def test_pf_dual_stack_allowlist(self):
         render = definitions(AGENT / 'managed-macos.py', {'pf_rules'}, {'ipaddress': ipaddress})['pf_rules']
-        rules = render(502, ['100.83.175.111', 'fd7a:115c:a1e0::1'], 443, 3128).splitlines()
+        rules = render(502, ['192.0.2.10', 'fd7a:115c:a1e0::1'], 443, 3128).splitlines()
         self.assertEqual(len(rules), 3)
-        self.assertIn('inet proto tcp from any to 100.83.175.111 port { 443, 3128 } user 502', rules[0])
+        self.assertIn('inet proto tcp from any to 192.0.2.10 port { 443, 3128 } user 502', rules[0])
         self.assertIn('inet6 proto tcp from any to fd7a:115c:a1e0::1', rules[1])
         self.assertEqual(rules[-1], 'block return out quick proto { tcp udp } all user 502')
         self.assertNotIn('3128', render(502, ['127.0.0.1'], 443))
@@ -65,7 +65,7 @@ class MacOSKitCheck(unittest.TestCase):
 
     def test_download_credentials_are_file_mediated(self):
         ticket = 'x' * 43
-        script = commands.macos_bootstrap('https://100.83.175.111', ticket, 'certificate\n')
+        script = commands.macos_bootstrap('https://192.0.2.10', ticket, 'certificate\n')
         self.assertNotIn(ticket, commands.MACOS_COMMAND)
         self.assertIn('set +x', script)
         self.assertLess(script.index('rm -f -- "$0"'), script.index('/usr/bin/curl'))

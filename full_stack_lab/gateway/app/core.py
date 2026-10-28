@@ -2457,6 +2457,9 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 gap = ""
             if gap:
                 result = {**result, "reason": f"{result['reason']} — {gap}. 승인된 범위 안의 값으로 바꾸거나 관리자에게 범위 변경을 요청하세요."}
+        elif result["decision"] == "Block" and result["policy_id"] == "PAC-12":
+            if gap := pac.transfer_gap(policy_input["pac"], bool((registry.server(cls.server) or {}).get("runtime"))):
+                result = {**result, "reason": f"{result['reason']} — {gap}. 관리자에게 도구 범위 변경을 요청하세요."}
         laps.lap("policy")
 
         policy_basis = result

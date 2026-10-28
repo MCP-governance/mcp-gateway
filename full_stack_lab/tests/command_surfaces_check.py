@@ -29,12 +29,13 @@ def check(test, claude: dict, requirements: dict, helpers: list[str]):
     test.assertTrue(helpers and all(helpers))
 
 
-def check_connector_surfaces(test, claude: dict, servers: list[str]):
-    """Account-side surfaces PJ1 showed open on a managed account (10-23): synced plugins and WebSearch."""
+def check_connector_surfaces(test, claude: dict, servers: list[str], deny=("WebFetch", "WebSearch")):
+    """Account-side surfaces PJ1 showed open on a managed account (10-23): synced plugins and WebSearch.
+    On endpoints the web tools are built-in features: allowed until an administrator blocks them (D-298)."""
     test.assertIs(claude["syncClaudeAiPlugins"], False)
     test.assertIs(claude["syncClaudeAiSkills"], False)
     test.assertIs(claude["allowManagedPermissionRulesOnly"], True)
-    test.assertEqual(claude["permissions"]["deny"], ["WebFetch", "WebSearch"])
+    test.assertEqual(claude["permissions"]["deny"], list(deny))
     # With user rules ignored, the Gateway servers must be allowed by the managed file or `-p` runs could not call them.
     test.assertEqual(claude["permissions"]["allow"], [f"mcp__{s}" for s in servers])
 
@@ -71,13 +72,25 @@ class ManagedCommandSurfaces(unittest.TestCase):
         self.assertEqual({n.name for n in nodes}, names)
         package = ModuleType("policy_under_test")
         package.pac = SimpleNamespace(servers_for=lambda owner: ["git"], harness_guidance=lambda owner, servers: "")
+        package.registry = SimpleNamespace(server=lambda server: {})
         namespace = {"__name__": "endpoint_under_test", "__package__": "policy_under_test", "os": os,
                      "urlsplit": urlsplit, "ipaddress": ipaddress, "hashlib": hashlib,
                      "HEARTBEAT_INTERVAL": 60, "HEARTBEAT_SECONDS": 180,
                      "db": SimpleNamespace(fetch_all=AsyncMock(return_value=[{"id": "git"}]),
                                            fetch_one=AsyncMock(return_value={"token": "tester"}))}
         exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), namespace)
-        for platform in ("linux", "windows"):
+        connectors = {"__name__": "connectors_under_test"}
+        source = (LAB / "gateway/app/connectors.py").read_text(encoding="utf-8")
+        wanted = {"FEATURES", "CONNECTOR_SWITCHES", "CATALOG", "controls_from"}
+        exec(compile(ast.Module(body=[n for n in ast.parse(source).body if getattr(n, "name", None) in wanted
+                                      or any(getattr(t, "id", None) in wanted for t in getattr(n, "targets", []))],
+                                type_ignores=[]), "connectors.py", "exec"), connectors)
+        open_controls = connectors["controls_from"](set())
+        closed = connectors["controls_from"]({"claude:feature:WebFetch", "claude:feature:WebSearch", "claude:connectors:all",
+                                             "claude:feature:chrome", "codex:feature:web_search", "codex:feature:browser_use",
+                                             "codex:feature:computer_use", "codex:feature:apps", "codex:app:asdk_app_1"})
+        for platform, controls in (("linux", open_controls), ("windows", open_controls), ("linux", closed), ("windows", closed)):
+            package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value=controls))
             detail = {"local_sid": "S-1-5-21-1-2-3-4", "helper_command": "helper header"} if platform == "windows" else {}
             device = {"device_epoch": "epoch", "local_username": "tester", "local_uid": 1000, "owner_token": "tester",
                       "detail": detail}
@@ -87,7 +100,23 @@ class ManagedCommandSurfaces(unittest.TestCase):
             mcp = json.loads(files["managed-mcp.json"])["mcpServers"]
             check(self, json.loads(files["managed-settings.json"]), tomllib.loads(files["requirements.toml"]),
                   [s.get("headersHelper") for s in mcp.values()])
-            check_connector_surfaces(self, json.loads(files["managed-settings.json"]), ["git"])
+            claude, requirements = json.loads(files["managed-settings.json"]), tomllib.loads(files["requirements.toml"])
+            blocked = controls is closed
+            check_connector_surfaces(self, claude, ["git"], ("WebFetch", "WebSearch") if blocked else ())
+            # claude.ai connectors: on by default beside the managed set, off with the switch.
+            self.assertIs(claude["allowAllClaudeAiMcps"], not blocked)
+            self.assertIs(claude["disableClaudeAiConnectors"], blocked)
+            self.assertIn({"serverUrl": "https://gateway.example/mcp/git/"}, claude["allowedMcpServers"])
+            self.assertEqual({"serverUrl": "https://*/*"} in claude["allowedMcpServers"], not blocked)
+            self.assertIs(requirements["features"]["plugins"], False)  # plugins are reviewed, never built in
+            self.assertEqual(requirements.get("allowed_web_search_modes"), ["disabled"] if blocked else None)
+            self.assertEqual(requirements["features"].get("apps"), False if blocked else None)
+            self.assertEqual(requirements.get("allow_browser_and_computer_use"), False if blocked else None)
+            self.assertIs(claude["allowClaudeInChromeWithManagedMcp"], not blocked)
+            self.assertEqual({"serverName": "claude-in-chrome"} in claude["deniedMcpServers"], blocked)
+            # A per-app block is a requirement (any layer's false wins), never a user-editable config file.
+            self.assertEqual(requirements.get("apps", {}).get("asdk_app_1"), {"enabled": False} if blocked else None)
+            self.assertNotIn("[apps.", files.get("codex-config.toml", "") + files.get("managed_config.toml", ""))
 
 
 if __name__ == "__main__":

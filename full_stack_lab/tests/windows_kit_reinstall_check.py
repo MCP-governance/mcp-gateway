@@ -28,6 +28,7 @@ class Reinstall(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)
         self.m = load("windows_reinstall", "managed-windows.py")
+        self.status = load("windows_install_status", "windows_status.py")
         self.profile = self.root / "employee"
         self.profile.mkdir()
         (self.profile / "NTUSER.DAT").touch()
@@ -46,6 +47,9 @@ class Reinstall(unittest.TestCase):
         self.args = argparse.Namespace(user="employee", enrollment=self.enrollment, isolated_account=False)
         self.stack = contextlib.ExitStack()
         self.addCleanup(self.stack.close)
+        self.stack.enter_context(mock.patch.dict(sys.modules, {"windows_status": self.status}))
+        self.wait = self.stack.enter_context(mock.patch.object(self.status.screen_module, "wait_summary",
+                                                               return_value={"state": "active"}))
         self.stack.enter_context(mock.patch.multiple(self.m, PROGRAMS=self.root / "programs", STATE=self.root / "state",
                                                     PROGRAM_DATA=self.root / "data", FILES={}))
         self.stack.enter_context(mock.patch.object(self.m.ctypes, "windll", SimpleNamespace(
@@ -87,11 +91,14 @@ class Reinstall(unittest.TestCase):
 
     def test_success_enrolls_then_replaces_without_rolling_back_same_account(self):
         order = []
+        harness = Path(self.person["profile"]) / ".local/bin/claude.exe"
+        harness.parent.mkdir(parents=True)
+        harness.touch()
         (self.folder / "config.toml.backup").write_text("original employee backup", encoding="utf-8")
         def request(config, path, *a, **kw):
             self.assertNotIn("endpoint_id", json.loads((self.folder / "config.json").read_text()))
             order.append(path)
-            return {"endpoint_id": "new", "state": "active"} if path == "/oauth/device-enroll" else self.policy
+            return {"endpoint_id": "new", "state": "pending"} if path == "/oauth/device-enroll" else self.policy
         self.ps.side_effect = lambda *a, **kw: order.append("task")
         with mock.patch.object(self.m, "request", side_effect=request), \
                 mock.patch.object(self.m, "lock_down", side_effect=lambda p, **kw: p.mkdir(parents=True, exist_ok=True)), \
@@ -101,8 +108,11 @@ class Reinstall(unittest.TestCase):
         self.assertEqual(order[:3], ["/oauth/device-enroll", "/api/endpoint/managed-policy", "task"])
         rollback.assert_not_called()
         self.assertEqual(json.loads((self.folder / "config.json").read_text())["endpoint_id"], "new")
+        self.assertEqual(json.loads((self.folder / "config.json").read_text())["harness_paths"], [str(harness)])
         self.assertEqual((self.folder / "config.toml.backup").read_text(), "original employee backup")
         self.assertFalse(self.enrollment.exists())
+        self.assertEqual(json.loads(sys.stdout.getvalue().splitlines()[0])["state"], "active")
+        self.assertIn("since", self.wait.call_args.kwargs)
 
     def test_unprotected_receipt_is_rejected_before_read_or_change(self):
         self.args.registration = self.root / "missing-receipt.json"
@@ -203,6 +213,16 @@ class Reinstall(unittest.TestCase):
         self.assertNotIn("NODE_EXTRA_CA_CERTS", values)
         self.assertEqual(values["CODEX_CA_CERTIFICATE"], "employee-root.crt")
         self.assertEqual(values["HTTPS_PROXY"], "https://employee-proxy")
+
+
+    def test_status_text_shows_display_names_and_older_snapshots_keep_ids(self):
+        path = self.root / "status.json"
+        self.status.publish(path, True, details={"servers": ["docs-1"], "server_names": ["문서 검색"], "state": "active"})
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(document["server_names"], ["문서 검색"])
+        self.assertIn("승인 서버: 1개 · 문서 검색", self.status.render(document))
+        del document["server_names"]
+        self.assertIn("1개 · docs-1", self.status.render(document))
 
 
 if __name__ == "__main__":

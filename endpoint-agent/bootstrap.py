@@ -35,6 +35,7 @@ HERE = Path(__file__).resolve().parent
 APPROVED = Path("/opt/mcpgw-approved")
 PROGRAMS = Path("/usr/local/lib/mcpgw-managed")
 STATE = Path("/var/lib/mcpgw-managed")
+ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
 SHIM_DIR = Path("/usr/local/bin")
 SUDOERS = Path("/etc/sudoers.d/mcpgw-managed")
 FUNCTIONS = Path("/etc/profile.d/mcpgw-managed.sh")
@@ -460,7 +461,9 @@ def remove_shims(managed: str) -> None:
 # -- the managed installer ----------------------------------------------------------
 
 def installed(account: str) -> bool:
-    return ((STATE / account).exists()
+    # A folder an older kit's isolated install left (its state.json holds the shell to restore) counts too:
+    # otherwise switching to simple mode skipped it and the profiles and account stayed (PJ1, 10-28).
+    return ((STATE / account).exists() or (ENFORCEMENT / f"mcpgw-{account}" / "state.json").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-managed-{account}.service").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-egress-{account}.service").exists())
 
@@ -480,15 +483,21 @@ def companion_of(employee: str) -> str:
     return ("managed-" + employee)[:31]
 
 
-def remove_companion(employee: str) -> None:
+def legacy_companion(employee: str) -> bool:
+    """An older kit made the account without the comment; its launcher folder is the proof. Read before rollback."""
+    return (ENFORCEMENT / f"mcpgw-{companion_of(employee)}" / "state.json").exists()
+
+
+def remove_companion(employee: str, legacy: bool = False) -> None:
     """The separate account an isolated install created, once nothing of it is installed. Only one this kit
-    made (its comment says so); its home stays, with whatever the employee kept there (D-239)."""
+    made (its comment says so, or an older kit's launcher folder did); its home stays, with whatever the
+    employee kept there (D-239)."""
     name = companion_of(employee)
     try:
         entry = pwd.getpwnam(name)
     except KeyError:
         return
-    if entry.pw_gecos.split(",")[0] != COMPANION_COMMENT or installed(name):
+    if (entry.pw_gecos.split(",")[0] != COMPANION_COMMENT and not legacy) or installed(name):
         return
     close_sessions(name)
     run("userdel", name, check=False, quiet=True, stderr=subprocess.DEVNULL)
@@ -621,23 +630,7 @@ def resume_screen() -> None:
     getattr(SCREEN, "resume", lambda: None)()
 
 
-def wait_active(managed, account: str, seconds: int = 60) -> dict:
-    """The service's own summary until the device is active (the Gateway activates a new simple-mode PC on its
-    first passing heartbeat, about 10 s after the install) or the wait ends."""
-    deadline = time.monotonic() + seconds
-    summary = {}
-    while time.monotonic() < deadline:
-        try:
-            summary = json.loads(managed.status_path(account, "json").read_text())
-        except (OSError, ValueError):
-            summary = {}
-        if summary.get("state") in ("active", "quarantined", "revoked"):
-            break
-        time.sleep(2)
-    return summary
-
-
-def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tuple[str, str]:
+def model_cell(managed, account: str, harnesses: list[str], simple: bool, signed: dict | None = None) -> tuple[str, str]:
     """① A real model answer from the harness the employee will type, as that account (D-239)."""
     name = next((h for h in ("claude", "codex") if h in harnesses), None)
     if not name:
@@ -656,35 +649,51 @@ def model_cell(managed, account: str, harnesses: list[str], simple: bool) -> tup
     else:
         argv = ["runuser", "-u", account, "--", str(entry / "login-shell"), "-c", command]
     found = observer.model_check(argv)
+    execution_failed = not found["ok"] and re.search(
+        r"(?:\brunuser:|\blogin-shell\b).*(?:failed to execute|permission denied|operation not permitted)",
+        found["detail"] or "", re.I)
+    auth_failed = not found["ok"] and not execution_failed and (re.search(
+        r"\b401\b|\bunauthorized\b|failed to authenticate|oauth.*(?:expired|invalid|revoked)|"
+        r"(?<![\w/.-])(?:log ?in|/login)(?![\w/.-])|로그인", found["detail"] or "", re.I)
+        or (name == "codex" and re.search(r"\byour access token could not be refreshed\b", found["detail"] or "", re.I)))
+    if signed is not None and (found["ok"] or auth_failed):
+        signed[name] = bool(found["ok"])
+    detail = ("실행 장애 · " if execution_failed else "로그인 필요 · " if auth_failed else "") + (found["detail"] or "응답 없음")
     return ("모델 응답", f"{name} 정상 · {found['seconds']}초" if found["ok"]
-            else f"{name} 실패 · {found['detail'] or '응답 없음'}")
+            else f"{name} 실패 · {detail}")
 
 
-def install_check(managed, account: str, harnesses: list[str], simple: bool) -> tuple[list, str]:
+def install_check(managed, account: str, harnesses: list[str], simple: bool, signed: dict | None = None) -> tuple[list, str]:
     """The three cells (model answer, tool count, one server's initialize) and the next thing to do."""
     step("설치 확인")
-    summary = wait_active(managed, account)
+    summary = managed.kit_screen.wait_summary(managed.status_path(account, "json"), seconds=0)
     SCREEN.summary = summary
     state = summary.get("state")
     if state != "active":
         waiting = {"pending": "관리자 활성화 대기", "quarantined": "격리됨", "revoked": "등록 해제됨"}.get(state, "상태 확인 안 됨")
-        cells = [model_cell(managed, account, harnesses, simple), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
+        cells = [model_cell(managed, account, harnesses, simple, signed), ("도구", "— (" + waiting + ")"), ("서버 연결", "—")]
         next_line = ("관리자 활성화 뒤 claude·codex를 실행하세요(활성화되면 자동으로 연결됩니다)" if state == "pending"
-                     else "mcpgw-status로 상태를 확인하세요")
+                     else "mint로 상태를 확인하세요")
         close_step()
         return cells, next_line
     try:
         connection = managed.connection_cells(managed.check_connection(summary), len(summary.get("names") or []))
     except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
         connection = [("도구", "—"), ("서버 연결", f"실패 · {exc}")]
-    cells = [model_cell(managed, account, harnesses, simple), *connection]
+    cells = [model_cell(managed, account, harnesses, simple, signed), *connection]
+    # The service reads harness versions right after it starts; by now (seconds of checks later) they are in.
+    SCREEN.summary = managed.kit_screen.wait_summary(managed.status_path(account, "json"), seconds=0) or summary
     close_step()
-    if re.search(r"log ?in|/login|401|로그인", cells[0][1], re.I):
+    if "실행 장애 · " in cells[0][1]:
+        return cells, "하네스 실행 권한과 설치 상태를 확인한 뒤 mint --check 로 다시 확인하세요"
+    if "로그인 필요 · " in cells[0][1]:
         shell = Path("/usr/local/lib/mcpgw-enforcement") / ("mcpgw-" + account) / "login-shell"
-        return cells, ("모델 로그인: claude auth login" if simple
-                       else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c 'claude auth login'")
+        name = next(h for h in ("claude", "codex") if h in harnesses)
+        command = LOGINS[name][1]
+        return cells, ("모델 로그인: " + command if simple
+                       else f"격리 계정 모델 로그인: sudo -u {account} {shell} -c '{command}'")
     healthy = all("실패" not in value for _, value in cells)
-    return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mcpgw-status --check 로 다시 확인하세요")
+    return cells, ("새 터미널에서 claude 또는 codex를 실행하세요" if healthy else "mint --check 로 다시 확인하세요")
 
 
 def self_check() -> None:
@@ -798,22 +807,29 @@ def main() -> int:
         managed = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(managed)
         DIAGNOSTIC = managed.diagnostic
+        employee = employee_account(args.user)
         bundle = {}
         if not args.remove:
             if not args.enrollment.is_file():
-                raise Failed(f"설치 키트의 enrollment.json이 없습니다: {args.enrollment}")
+                if any((STATE / account / "config.json").is_file() for account in (employee, companion_of(employee))):
+                    print("이미 설치됨 · 상태 확인: mint --check · 새로 설치하려면 콘솔에서 새 키트를 받으세요.")
+                    return 0
+                raise Failed("등록 파일이 없습니다. 콘솔에서 새 키트를 받으세요.")
             bundle = json.loads(args.enrollment.read_text())
             managed.verify_transport(bundle)
             if expired(bundle):
                 raise Failed("설치 파일의 유효 시간이 지났습니다. 콘솔에서 설치 파일을 새로 받으세요. 기존 설치는 그대로입니다.")
-        employee = employee_account(args.user)
         if args.remove:
+            removed, legacy = False, legacy_companion(employee)
             for account in (employee, companion_of(employee)):
                 if installed(account):
                     rollback(account)
+                    removed = True
             remove_shims(companion_of(employee))
-            remove_companion(employee)
-            print(json.dumps({"removed": employee}, ensure_ascii=False))
+            remove_companion(employee, legacy)
+            print("MINT 연결을 제거했습니다." if removed else "제거할 연결이 없습니다.")
+            if not sys.stdout.isatty():
+                print(json.dumps({"removed": employee}, ensure_ascii=False))
             return 0
         isolated = args.isolated or bundle.get("isolated") is True
         SCREEN = managed.Screen("내 PC 연결 · " + ("격리 계정" if isolated else "간편 모드"))
@@ -823,9 +839,12 @@ def main() -> int:
             SCREEN.close_step("✗")
             raise
         finally:
-            if SCREEN.window is not None:
+            if SCREEN.window is not None and SCREEN.rows:
                 SCREEN.finish(wait=0)  # the steps up to the failure stay in the scrollback
             SCREEN.stop()
+    except KeyboardInterrupt:
+        print("\n설치를 취소했습니다. 다시 하려면 install.sh를 실행하세요.", file=sys.stderr)
+        return 130
     except Failed as exc:
         print(f"\n설치하지 못했습니다: {exc}", file=sys.stderr)
         return 1
@@ -837,21 +856,34 @@ def main() -> int:
 
 
 def connect(managed, employee: str, isolated: bool, args, started: float) -> int:
+    bundle = json.loads(args.enrollment.read_text())
+    credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
+    # 로그인이 먼저다: 틀린 비밀번호로 패키지부터 설치하지 않고, 로그인 시간이 단계 시간에 섞이지 않는다.
+    if not bundle.get("enrollment_token"):
+        SCREEN.pause()
+        access = managed.load_module("kit_access", HERE / "kit_access.py")
+        try:
+            bundle = access.login(bundle, managed.request, managed.kit_screen.login_inputs)
+        except access.LoginError as exc:
+            raise Failed(str(exc)) from None
+        finally:
+            SCREEN.resume()
+        credentials.append(bundle["enrollment_token"])
     step("구성요소 확인")
     ensure_packages(isolated)
     if isolated:
         account, companion = managed_account(employee)
     else:
         account, companion = employee, False
-    bundle = json.loads(args.enrollment.read_text())
-    credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
     try:
         prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         managed.diagnostic("enroll", exc, credentials)
-        raise Failed("연결 등록·정책 수신에 실패했습니다. 기존 설치는 유지됩니다.") from None
+        raise Failed("연결 등록·정책 수신에 실패했습니다. " + managed.preparation_error(exc)
+                     + " · 기존 설치는 유지됩니다.") from None
     credentials.append(prepared[0]["device_key"])
     managed.diagnostic("prepared", None)
+    legacy = legacy_companion(employee)
     for previous in (employee, companion_of(employee)):
         if installed(previous):
             rollback(previous)
@@ -860,7 +892,7 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         placed = place_harnesses(employee)
     else:
         remove_shims(companion_of(employee))
-        remove_companion(employee)
+        remove_companion(employee, legacy)
         step("하네스 찾기")
         placed = {name: {"path": path} for name, path in find_clients(employee).items()}
     try:
@@ -881,20 +913,30 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     installing = round(time.monotonic() - started)
     if not args.skip_login:
         result["model_signed_in"] = harness_login(account, list(placed), simple=not isolated)
-    cells, next_line = install_check(managed, account, list(placed), simple=not isolated)
+    cells, next_line = install_check(managed, account, list(placed), simple=not isolated,
+                                    signed=result.setdefault("model_signed_in", {}))
+    model_path = managed.PROGRAMS / f"model-{account}.json"
+    try:
+        managed.private_write(model_path, json.dumps(result["model_signed_in"]))
+        model_path.chmod(0o644)
+    except OSError:
+        pass  # the service re-reads the sign-in state every 30 seconds (D-297); the install itself is done
+    result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated
                              else {name: item["path"] for name, item in placed.items()}),
                   checks=dict(cells), install_seconds=installing, total_seconds=round(time.monotonic() - started))
     if isolated and companion:
         say(f"격리 계정 {account}에서 실행됩니다. 평소 계정({employee})에서 {' 또는 '.join(placed)}를 실행하세요.")
-    say("로컬 MCP 준비(폴더 만들기·이미지 받기)는 활성화 뒤 백그라운드로 진행됩니다.")
-    say("연결 상태: mcpgw-status (실시간 화면) · mcpgw-status --check (연결 확인)")
+    say("로컬 MCP 준비(폴더 만들기·이미지 받기): 백그라운드 진행" if result["state"] == "active"
+        else "로컬 MCP 준비(폴더 만들기·이미지 받기): 활성화 뒤 백그라운드 진행")
+    say("연결 상태: mint (실시간 화면) · mint --check (연결 확인)")
     say(f"설치 소요(로그인 제외) {installing}초 · 확인까지 {result['total_seconds']}초")
     SCREEN.result(cells, next_line)
     SCREEN.finish()
     SCREEN.stop()
-    print(json.dumps(result, ensure_ascii=False))
+    if not sys.stdout.isatty():
+        print(json.dumps(result, ensure_ascii=False))  # 자동화용; 화면에는 결과 표만 보인다
     return 0
 
 
