@@ -1046,6 +1046,11 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
     # Only control decides (D-238): a device that has not yet fetched a server change or the guidance of its
     # new activation state is behind, not tampered with.
     installed = policy_installed(policy, policy_hash, hashes)
+    # An administrator changed the harness controls a moment ago: a heartbeat for the previous rendering is a device
+    # that has not fetched yet (it applies the policy before its next heartbeat), not a tampered one (D-298).
+    changed = await db.fetch_one("SELECT controls_changed_at FROM endpoint_settings WHERE id=1")
+    behind = (not installed and bool(changed and changed.get("controls_changed_at"))
+              and (datetime.now(UTC) - changed["controls_changed_at"]).total_seconds() < HEARTBEAT_SECONDS)
     compliant = (installed
                  and set(checks) == managed_checks(device, checks) and all(value is True for value in checks.values())
                  and (simple or not user_command_settings))
@@ -1073,12 +1078,12 @@ async def heartbeat(device: dict, policy_hash: str, hashes: dict, checks: dict, 
         row = await (await connection.execute(
             """UPDATE endpoint_agents SET heartbeat_at=now(),last_seen_at=now(),policy_hash=%s,
                  configuration_hashes=%s,enforcement_checks=%s, detail=(detail - 'host') || %s,
-                 managed_state=CASE WHEN NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
+                 managed_state=CASE WHEN NOT %s AND NOT %s THEN 'quarantined' WHEN %s AND managed_state='pending' THEN 'active'
                                     ELSE managed_state END,
                  activated_by=CASE WHEN %s AND managed_state='pending' THEN 'auto' ELSE activated_by END,
                  activated_at=CASE WHEN %s AND managed_state='pending' THEN now() ELSE activated_at END
                WHERE endpoint_id=%s AND status='active' RETURNING managed_state""",
-            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, automatic, automatic, automatic,
+            (policy_hash, Jsonb(hashes), Jsonb(checks), Jsonb(detail), compliant, behind, automatic, automatic, automatic,
              device["endpoint_id"]))).fetchone()
         if not row:
             raise PermissionError("폐기한 장치는 heartbeat로 복구할 수 없습니다.")

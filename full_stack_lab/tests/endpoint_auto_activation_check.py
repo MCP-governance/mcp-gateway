@@ -43,12 +43,14 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
         package.registry = SimpleNamespace(server=lambda server: {})
         self.auto = True
         self.events = []
+        self.controls_changed_at = None
 
         async def execute(sql, params=None):
             if sql.lstrip().startswith("UPDATE endpoint_agents"):
                 # The CASE the statement carries, applied to the row the way PostgreSQL would.
-                compliant, automatic, state = params[4], params[5], self.device["managed_state"]
-                state = "quarantined" if not compliant else "active" if automatic and state == "pending" else state
+                compliant, behind, automatic, state = params[4], params[5], params[6], self.device["managed_state"]
+                state = ("quarantined" if not compliant and not behind else "active" if automatic and state == "pending"
+                         else state)
                 self.stored = state  # the row changes; the caller's snapshot of it does not
                 return SimpleNamespace(fetchone=AsyncMock(return_value={"managed_state": state}))
             if "endpoint_managed_events" in sql:
@@ -64,7 +66,8 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
 
         def fetch_one(sql, *args, connection=None):
             if "endpoint_settings" in sql:
-                return {"auto_activate": self.auto, "updated_by": None, "updated_at": None}
+                return {"auto_activate": self.auto, "updated_by": None, "updated_at": None,
+                        "controls_changed_at": self.controls_changed_at}
             return {"token": "o"} if "principals" in sql else {"last_value": 3}
         db = SimpleNamespace(fetch_all=AsyncMock(return_value=[{"id": "learn"}]), fetch_one=AsyncMock(side_effect=fetch_one),
                              transaction=Transaction)
@@ -85,17 +88,28 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
                        "device_epoch": "e", "local_username": "emp", "local_uid": 1000, "detail": {"mode": mode, **detail}}
         return self.device
 
-    async def beat(self, checks=None, findings=None):
+    async def beat(self, checks=None, findings=None, stale=False):
         policy = await self.plane.managed_policy(self.device)
         checks = checks if checks is not None else dict.fromkeys(self.plane.managed_checks(self.device), True)
         self.events.clear()
-        report = await self.plane.heartbeat(self.device, policy["policy_hash"], policy["configuration_hashes"], checks,
+        hashes = {**policy["configuration_hashes"], "managed-settings.json": "0" * 64} if stale else policy["configuration_hashes"]
+        report = await self.plane.heartbeat(self.device, policy["policy_hash"], hashes, checks,
                                             user_command_settings=findings)
         self.device = {**self.device, "managed_state": self.stored}
         return report
 
     def activated(self):
         return [params[2] for values, params in self.events if "'activated'" in values]
+
+    async def test_a_heartbeat_just_behind_an_admin_control_change_is_not_a_quarantine(self):
+        from datetime import UTC, datetime, timedelta
+        self.pc(state="active")
+        self.controls_changed_at = datetime.now(UTC) - timedelta(seconds=20)
+        report = await self.beat(stale=True)
+        self.assertEqual(report["state"], "active")  # rendered before the change, applied before the next heartbeat
+        self.controls_changed_at = datetime.now(UTC) - timedelta(minutes=10)
+        report = await self.beat(stale=True)
+        self.assertEqual(report["state"], "quarantined")  # long after a change, a mismatch is tampering again
 
     async def test_a_new_simple_pc_that_passes_is_activated_by_the_gateway(self):
         self.pc()

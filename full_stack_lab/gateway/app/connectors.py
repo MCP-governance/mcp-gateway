@@ -275,6 +275,8 @@ async def decide_connector(request: Decision, authorization: str | None = Header
     require_admin(user)
     if request.key not in CATALOG and not await db.fetch_one("SELECT 1 FROM harness_items WHERE item_key=%s LIMIT 1", (request.key,)):
         raise HTTPException(404, "보고된 적 없는 항목입니다.")
+    # The managed settings every endpoint holds change with this decision; heartbeats rendered just before it are behind, not tampered.
+    await db.execute("UPDATE endpoint_settings SET controls_changed_at=now() WHERE id=1")
     if request.decision == "reset":
         await db.execute("DELETE FROM harness_decisions WHERE item_key=%s", (request.key,))
         return {"message": "결정을 취소했습니다."}

@@ -809,6 +809,8 @@ def status(args):
 # from an unmanaged PC with an employee token; here it goes under the device credential, so nothing in
 # this service ever holds an employee token. --
 INVENTORY_EVERY = 6 * 3600
+# 정책이 바뀌면(관리자가 기본 커넥터·기능을 열거나 막으면) 6시간을 기다리지 않고 다시 보고한다.
+INVENTORY_NOW = threading.Event()
 # `claude mcp list`: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected". Read as mcpgw_pc.py reads it.
 CLAUDE_LINE = re.compile(r"^(?P<name>.+?): (?P<target>.*?)(?: \((?:HTTP|SSE)\))? - (?P<status>[✔✓√✘✗×!-] .*)$")
 PLUGIN_HEAD = re.compile(r"^\s*[❯>*-]\s+(?P<name>[\w.-]+@[\w.-]+)\s*$")
@@ -1147,7 +1149,8 @@ def serve(args):
                 print(json.dumps({"harness_inventory": "failed", "error": type(exc).__name__,
                                   "status": getattr(exc, "code", None)}), flush=True)
                 wait = 900
-            time.sleep(wait)
+            INVENTORY_NOW.wait(wait)
+            INVENTORY_NOW.clear()
     def logins():
         # 설치 때 한 번 본 로그인 상태가 계속 보이면 직원이 로그인한 뒤에도 「로그인 필요」가 남는다(PJ1, 10-28).
         while True:
@@ -1191,6 +1194,7 @@ def serve(args):
                 raise ValueError("Gateway 네트워크 변경은 조직 관리자의 재설치가 필요합니다")
             if previous != policy["policy_hash"]:
                 apply_policy(policy)
+                INVENTORY_NOW.set()
                 config["policy_hash"] = policy["policy_hash"]
                 private_write(args.config, json.dumps(config))
             previous = policy["policy_hash"]
