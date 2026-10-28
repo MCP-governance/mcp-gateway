@@ -10,6 +10,9 @@ import os
 import queue
 import re
 import stat
+import signal
+import importlib.util
+from functools import lru_cache
 from contextlib import ExitStack
 import subprocess
 import tempfile
@@ -21,7 +24,7 @@ from pathlib import Path
 
 IMAGE = re.compile(r"^[a-z0-9][a-z0-9._/:-]{0,200}@sha256:[0-9a-f]{64}$")
 ENV_NAME = re.compile(r"^[A-Z][A-Z0-9_]{0,63}$")
-ENV_DENIED = re.compile(r"^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|BASH_ENV$|ENV$|PATH$|HOME$)")
+ENV_DENIED = re.compile(r"^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|NODE_PATH$|SYSTEMROOT$|WINDIR$|COMSPEC$|PATHEXT$|BASH_ENV$|ENV$|PATH$|HOME$)")
 PROTOCOL = "2025-06-18"
 MAX_LINE = 262144
 MAX_BYTES = 1048576
@@ -40,6 +43,14 @@ WORKSPACE = '/workspace'  # 컨테이너 안 고정 마운트 위치: 실행 인
 ENGINE_ENV = {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin','HOME':'/root','LANG':'C.UTF-8'}
 
 
+@lru_cache(maxsize=2)
+def helper(name):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(name+'.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def canonical(manifest):
     # Same bytes as gateway/app/local_jobs.canonical and field/sign-local-manifest.py.
     return json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
@@ -49,6 +60,8 @@ def signed(manifest, signature, public_pem):
     """openssl, not a Python crypto package: the root service keeps to the standard library."""
     if not public_pem:
         return False
+    if os.name == "nt":
+        return helper("stdio_windows").signed(canonical(manifest), signature, public_pem)
     with tempfile.TemporaryDirectory() as folder:
         files = {"pub": public_pem.encode(), "body": canonical(manifest), "sig": base64.b64decode(signature, validate=True)}
         for name, content in files.items():
@@ -464,6 +477,86 @@ class Session:
             return gone
 
 
+def group_stopped(pid):
+    if not Path('/proc/self/stat').is_file():
+        raise OSError('프로세스 그룹 확인을 위한 procfs가 없습니다')
+    for candidate in Path('/proc').glob('[0-9]*/stat'):
+        try:
+            fields=candidate.read_text().rsplit(')',1)[1].split()
+            if int(fields[2])==pid and fields[0]!='Z':
+                return False
+        except FileNotFoundError:
+            pass
+    return True
+
+
+class ProcessSession(Session):
+    def __init__(self, prepared, account, check, identity=None, config=None):
+        args, folder, env = prepared
+        self.lines = queue.Queue(MAX_QUEUE)
+        self.next_id, self.failure, self.exit_code = 0, None, None
+        self.stopped = threading.Event()
+        self.stop_lock = threading.Lock()
+        self.stop_confirmed = False
+        self.stderr_tail = bytearray()
+        self.stderr_lock = threading.Lock()
+        self.stderr_done = threading.Event()
+        self.process, self.job = None, None
+        check()
+        options = dict(stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                       cwd=folder, env=env, bufsize=0)
+        if os.name == 'nt':
+            # shortcut: retain the service token until restricted-token file access and recovery are verified.
+            self.job = helper('stdio_windows').Job('Global\\MINT-'+identity if identity else None)
+            self.process = self.job.start(args, **options)
+        else:
+            if account.pw_uid <= 0 or account.pw_gid <= 0:
+                raise ValueError('프로세스 실행 계정은 root일 수 없습니다')
+            self.process = subprocess.Popen(args, start_new_session=True, user=account.pw_uid,
+                                            group=account.pw_gid, extra_groups=[], umask=0o077, **options)
+        if os.name != 'nt' and identity:
+            state = Path(config['source_root']) / 'jobs'
+            state.mkdir(mode=0o700, exist_ok=True)
+            (state / identity).write_text(json.dumps({'pid':self.process.pid,
+                'start':Path(f'/proc/{self.process.pid}/stat').read_text().rsplit(')',1)[1].split()[19]}))
+        threading.Thread(target=self._read_stderr, daemon=True).start()
+        threading.Thread(target=self._read, daemon=True).start()
+
+    def mapping(self, namespace):
+        return {'engine':'process', 'namespace':namespace, 'network':'호스트 네트워크',
+                'account':'서비스 계정' if os.name=='nt' else '관리 계정'}
+
+    def stop(self):
+        self.stopped.set()
+        with self.stop_lock:
+            if self.stop_confirmed:
+                return True
+            if self.job:
+                gone = self.job.close()
+            elif self.process:
+                try:
+                    os.killpg(self.process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                self.process.wait(timeout=3)
+                end=time.monotonic()+3
+                gone=group_stopped(self.process.pid)
+                while not gone and time.monotonic()<end:
+                    time.sleep(.02)
+                    gone=group_stopped(self.process.pid)
+            else:
+                gone = True
+            if gone and self.process:
+                try:
+                    self.exit_code = self.process.wait(timeout=3)
+                    for stream in (self.process.stdin, self.process.stdout, self.process.stderr):
+                        stream.close()
+                except (OSError, subprocess.TimeoutExpired):
+                    gone = False
+            self.stop_confirmed = gone
+            return gone
+
+
 def check_control(job, control):
     now=time.time()
     if (control['revoked'] or control['lifecycle'] not in ('OPERATING','OBSERVING')
@@ -484,7 +577,7 @@ def verify_manifest(config, manifest, signature, digest, server_id):
 
 def employee_documents(config):
     """별도 관리 계정을 쓰는 직원의 (홈, uid, gid). 읽기 전용 마운트는 그 홈에서 온다(D-224)."""
-    if config.get('owner_uid') is None:
+    if os.name == 'nt' or config.get('owner_uid') is None:
         return None
     import pwd
     employee=pwd.getpwuid(config['owner_uid'])
@@ -528,17 +621,26 @@ def execute_job(config, job, request, account):
     isolation=None
     mcp_error=''
     try:
-        engine,namespace=engine_configuration(config,manifest,check)
+        if "source" in manifest:
+            prepared=helper("stdio_source").prepare(config,manifest,request,check)
+            namespace="process"
+        else:
+            engine,namespace=engine_configuration(config,manifest,check)
         check()
         started=request(config,path+'/start',{})
         check_control(job,started)
         deadline=min(iso(started['deadline']).timestamp(),time.time()+READ_SECONDS)
         threading.Thread(target=stop_at_deadline,daemon=True).start()
-        session=Session.__new__(Session)
-        session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
+        if 'source' in manifest:
+            session=ProcessSession.__new__(ProcessSession)
+            session.__init__(prepared,account,check,job["id"],config)
+        else:
+            session=Session.__new__(Session)
+            session.__init__(engine,manifest,account,namespace,'mcpgw-local-'+job['id'],check,employee_documents(config))
         isolation=session.mapping(namespace)
-        isolation['engine_version']=config['local_engine']['version']
-        isolation['engine']=config['local_engine']['engine']
+        if 'source' not in manifest:
+            isolation['engine_version']=config['local_engine']['version']
+            isolation['engine']=config['local_engine']['engine']
         check()
         hello=session.request('initialize',{'protocolVersion':PROTOCOL,'capabilities':{},
                               'clientInfo':{'name':'mint-local-runner','version':'1'}},deadline-time.time())
@@ -610,6 +712,30 @@ def recover(config, request):
     for job in jobs:
         identity=str(uuid.UUID(job['id']))
         name='mcpgw-local-'+identity
+        if job.get('process'):
+            if os.name == 'nt':
+                stopped=helper('stdio_windows').Job.recover('Global\\MINT-'+identity)
+            else:
+                state=Path(config['source_root'])/'jobs'/identity
+                if not state.is_file():
+                    raise OSError('이전 프로세스 신원을 확인할 수 없습니다')
+                saved=json.loads(state.read_text())
+                pid=int(saved['pid'])
+                stat_path=Path(f'/proc/{pid}/stat')
+                if stat_path.exists():
+                    actual=stat_path.read_text().rsplit(')',1)[1].split()
+                    if actual[19]!=saved['start'] or int(actual[2])!=pid:
+                        raise OSError('이전 프로세스 신원이 변경되었습니다')
+                    os.killpg(pid,signal.SIGKILL)
+                end=time.monotonic()+3
+                stopped=group_stopped(pid)
+                while not stopped and time.monotonic()<end:
+                    time.sleep(.02)
+                    stopped=group_stopped(pid)
+            if not stopped:
+                raise OSError('이전 프로세스 트리 정지가 확인되지 않았습니다')
+            request(config,f'/api/endpoint/local-jobs/{identity}',{'error':'실행기 재연결 후 정지 확인','stopped':True})
+            continue
         engines=0
         for engine in ('podman','docker'):
             if not os.path.isfile('/usr/bin/'+engine):
@@ -701,18 +827,24 @@ def prepare_once(config, request, log, account, done, folders, failed):
     return PREPARE_EVERY
 
 
+def runner_account(config):
+    if os.name == 'nt':
+        from types import SimpleNamespace
+        return SimpleNamespace(pw_uid=config.get('uid'))
+    import pwd
+    return pwd.getpwnam(config['username'])
+
+
 def prepare(config, request, log):
     """서비스가 별도 스레드로 돌린다. 작업 수령 루프(run)와 섞이지 않아 이미지를 받는 동안에도 호출이 막히지 않는다."""
-    import pwd
-    account=pwd.getpwnam(config['username'])
+    account=runner_account(config)
     done,folders,failed=set(),{},{}
     while True:
         time.sleep(prepare_once(config,request,log,account,done,folders,failed))
 
 
 def run(config, request, log):
-    import pwd
-    account=pwd.getpwnam(config['username'])
+    account=runner_account(config)
     failures,last=0,None
     while True:
         try:

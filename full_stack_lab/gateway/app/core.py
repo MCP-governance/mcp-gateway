@@ -601,6 +601,8 @@ async def discover_for_registration(endpoint: str, local: dict | None = None, in
         namespace_name = {"podman-auto": "자동 사용자 공간", "docker-remap": "사용자 재매핑"}.get(namespace)
         if namespace == "host":
             isolation_scope = "탈출 시 호스트 root"
+        elif namespace == 'process':
+            isolation_scope = '프로세스 · 호스트 네트워크'
         elif namespace_name:
             isolation_scope = f"{engine_name} {isolation.get('engine_version') or '—'} · {namespace_name} · {isolation.get('scope') or '확인 안 됨'}"
         else:

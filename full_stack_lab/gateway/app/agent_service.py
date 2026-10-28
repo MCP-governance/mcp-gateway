@@ -401,11 +401,11 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py", "kit_screen.py", "kit_access.py"),
              "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py", "kit_access.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "kit_screen.py", "kit_access.py", "install.py", "install-windows.ps1",
-                          "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
+                          "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}
 
@@ -531,7 +531,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
     if isolated:
         # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
         bundle["isolated"] = True
-    if platform == 'linux' and os.getenv('LOCAL_MANIFEST_PUBKEY'):
+    if platform in ('linux', 'windows') and os.getenv('LOCAL_MANIFEST_PUBKEY'):
         bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
         bundle['local_engine']=json.loads(os.getenv('LOCAL_ENGINE_SETTINGS') or '{}')
         # 엔진·판본은 PC마다 다르므로 실행기가 그 PC에서 측정한다. 기기는 허용 저장소만 정한다.
@@ -539,6 +539,24 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
         bundle['local_engine'].setdefault('accepted_risk','탈출 시 호스트 root')
     output = io.BytesIO()
     payload = {name: (source / name).read_bytes() for name in names}
+    if platform in ('linux', 'windows'):
+        import pip
+        from importlib.metadata import distribution
+        pip_distribution = distribution('pip')
+        pip_root = Path(pip.__file__).parent
+        packed = io.BytesIO()
+        with zipfile.ZipFile(packed, 'w', zipfile.ZIP_DEFLATED) as archive:
+            for path in sorted(pip_root.rglob('*')):
+                if path.is_file() and '__pycache__' not in path.parts:
+                    archive.write(path, 'pip/' + path.relative_to(pip_root).as_posix())
+            for resource in pip_distribution.files or []:
+                if '.dist-info/' in str(resource).replace('\\', '/') and (
+                        '/licenses/' in str(resource).replace('\\', '/')
+                        or resource.name.lower().startswith(('license', 'notice', 'copying'))):
+                    archive.write(pip_distribution.locate_file(resource), str(resource))
+            archive.writestr('__main__.py', 'from pip._internal.cli.main import main\nraise SystemExit(main())\n')
+        payload['pip.zip'] = packed.getvalue()
+
     if ca:
         payload.update({"root.crt": ca["ca_certificate"].encode(), "root.sha256": (ca["ca_sha256"] + "\n").encode(),
                         "mcpgw_pc.py": (STATIC_DIR / "kit" / "mcpgw_pc.py").read_bytes()})
@@ -1436,6 +1454,8 @@ async def start_runtime(request_id: UUID, authorization: str | None = Header(def
     server = await db.fetch_one("SELECT status, lifecycle FROM mcp_servers WHERE id=%s", (row.get("registered_server_id"),))
     if server and (server["status"] == "DISABLED" or server["lifecycle"] in ("TERMINATING", "RETIRED")):
         raise HTTPException(409, "등록을 해제했거나 종료 중인 신청입니다. 새 도입 신청이 필요합니다.")
+    if row.get('requested_transport') == 'stdio':
+        raise HTTPException(409, '엔드포인트 실행을 지정하세요.')
     recipe = runtime_recipe(row["repository_url"])
     if not recipe:
         raise HTTPException(409, "이 저장소의 실행 레시피가 없습니다.")
@@ -2366,7 +2386,8 @@ async def collect_proposal_provenance(row: dict, record: dict) -> tuple[dict, st
 
 
 class LocalRunSpec(StrictModel):
-    image: str = Field(min_length=3, max_length=300)
+    image: str = Field(default="", max_length=300)
+    source: dict | None = None
     command: list[str] = Field(default_factory=list, max_length=32)
     mounts: list[dict[str, str]] = Field(default_factory=list, max_length=8)
     env: dict[str, str] = Field(default_factory=dict, max_length=32)
@@ -2411,6 +2432,8 @@ async def signed_local_run(spec: dict, server_id: str) -> dict:
                 "env": spec["env"], "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]},
                 "approval": {"generation": (previous["signature_generation"] + 1) if previous else 1,
                              "expires_at": (datetime.now(UTC) + timedelta(days=365)).isoformat()}}
+    if spec.get("source"):
+        manifest["source"] = spec["source"]
     errors = local_jobs.manifest_errors(manifest, server_id)
     if errors:
         raise HTTPException(422, " / ".join(errors))
@@ -2425,29 +2448,55 @@ def discovery(endpoint: str, local: dict | None, request_id) -> dict:
 LOCAL_DISCOVER_SECONDS = 240  # 직원 PC가 이미지를 처음 받아 도구 목록을 돌려주는 시간
 
 
+def local_discover_timeout(local):
+    if not local:
+        return 45
+    return local_jobs.SOURCE_PREPARE_SECONDS + 60 if local.get('manifest', {}).get('source') else LOCAL_DISCOVER_SECONDS
+
+
+
 @app.post("/api/mcp-requests/{request_id}/local-run")
 async def set_local_run(request_id: UUID, request: LocalRunSpec, user: dict = Depends(admin_caller)):
     """저장소형 stdio 서버를 신청자 PC의 격리 컨테이너로 실행하도록 지정한다(DEV-73). 서명은 승인 화면에서."""
     row = await approval_row(request_id, user)
     if row["intake_kind"] != "repository":
         raise HTTPException(409, "저장소 신청만 PC 격리 실행으로 지정할 수 있습니다.")
-    spec = {**request.model_dump(), "image": await pinned_image(request.image)}
+    spec = request.model_dump()
+    if request.source is not None:
+        from . import local_sources
+        candidate = {**row, 'evidence':{**(row.get('evidence') or {}), 'local_run':spec}}
+        try:
+            local_sources.source_for(candidate)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+    else:
+        spec.pop('source', None)
+        spec['image'] = await pinned_image(request.image)
     errors = local_jobs.manifest_errors({"server_id": "x", "image": spec["image"], "command": spec["command"],
+                                         **({"source":spec["source"]} if spec.get("source") else {}),
                                          "mounts": spec["mounts"], "env": spec["env"],
                                          "reason": {"kind": spec["reason_kind"], "text": spec["reason_text"]}}, "x")
     mirrors = [m.strip() for m in os.getenv("LOCAL_IMAGE_MIRRORS", "").split(",") if m.strip()]
-    if not local_jobs.mirror_image(spec["image"], mirrors):
+    if not spec.get("source") and not local_jobs.mirror_image(spec["image"], mirrors):
         errors.append("허용한 이미지 저장소가 아닙니다: " + (", ".join(mirrors) or "—"))
     if errors:
         raise HTTPException(422, " / ".join(errors))
+    if spec.get('source'):
+        try:
+            internal_url, _ = await publish_internal_repo(row)
+        except ProvenanceMismatch as exc:
+            raise HTTPException(409, '검증 소스와 내부 사본이 다릅니다') from exc
+        await db.execute('UPDATE mcp_intake_requests SET internal_repo_url=%s WHERE id=%s AND commit_sha=%s',
+                         (internal_url, request_id, row['commit_sha']))
     evidence = row.get("evidence") or {}
     changed = await db.fetch_one(
-        "UPDATE mcp_intake_requests SET evidence=%s, updated_at=now() WHERE id=%s AND evidence=%s RETURNING id",
+        """UPDATE mcp_intake_requests SET evidence=%s, updated_at=now() WHERE id=%s AND evidence=%s
+           AND commit_sha IS NOT DISTINCT FROM %s AND provenance IS NOT DISTINCT FROM %s RETURNING id""",
         (Jsonb({**{k: v for k, v in evidence.items() if k != "approval_proposal"}, "local_run": spec}),
-         request_id, Jsonb(evidence)))
+         request_id, Jsonb(evidence), row.get('commit_sha'), Jsonb(row.get('provenance'))))
     if not changed:
         raise HTTPException(409, "신청이 변경되었습니다. 다시 열어 확인하세요.")
-    return {"local_run": spec, "message": f"PC 격리 실행 · {spec['image'].split('@')[0]}"}
+    return {"local_run": spec, "message": "엔드포인트 실행"}
 
 
 @app.post("/api/mcp-requests/{request_id}/approval-preview")
@@ -2461,7 +2510,7 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
         gate = await review.intake_gate({**row, "provenance": proposal["provenance"]})
         found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                     discovery(proposal["endpoint"], proposal.get("local"), request_id),
-                                    timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
+                                    timeout=local_discover_timeout(proposal.get("local")))
         state = await gateway_proxy("/api/registry", authorization)
         if (proposal["basis"] == intake_proposal.basis(row) and proposal["scan_sha256"] == intake_proposal.scan_basis(gate)
                 and proposal["expires_at"] > datetime.now(UTC).isoformat()
@@ -2471,20 +2520,22 @@ async def preview_intake_approval(request_id: UUID, request: ApprovalPreview, us
                     "request": row, "gate": gate}
     endpoint = row.get("endpoint_url") or ""
     sid = intake_proposal.server_id(row)
-    if row["intake_kind"] == "repository":
+    if row["intake_kind"] == "repository" and row.get("requested_transport") != "stdio":
         runtime = await db.fetch_one(
             "SELECT endpoint FROM mcp_runtimes WHERE intake_id=%s AND status='ACTIVE' AND source_commit=%s",
             (request_id, row.get("commit_sha")))
         endpoint = runtime["endpoint"] if runtime else ""
+    if row['intake_kind'] == 'repository' and row.get('requested_transport') == 'stdio':
+        endpoint = ''
     local = None
-    if not endpoint and evidence.get("local_run"):
+    if evidence.get("local_run"):
         local = await signed_local_run(evidence["local_run"], sid)
         endpoint = local_jobs.PREFIX + sid
     found = None
     blockers = []
     if endpoint:
         found = await gateway_proxy("/api/registry/discover", authorization, "POST", discovery(endpoint, local, request_id),
-                                    timeout=LOCAL_DISCOVER_SECONDS if local else 45)
+                                    timeout=local_discover_timeout(local))
     else:
         blockers.append({"code": "execution-missing", "message": "실행 계약이 없습니다. 관리 실행을 확인하세요."})
     record = intake_proposal.source_record(row, found) if found else row.get("provenance") or {}
@@ -2589,7 +2640,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 raise HTTPException(409, "관할 규칙이 바뀌었습니다. 다시 열어 확인하세요.")
             found = await gateway_proxy("/api/registry/discover", authorization, "POST",
                                         discovery(proposal["endpoint"], proposal.get("local"), request_id),
-                                        timeout=LOCAL_DISCOVER_SECONDS if proposal.get("local") else 45)
+                                        timeout=local_discover_timeout(proposal.get("local")))
             if any(found.get(k) != proposal["catalog"].get(k) for k in ("catalog_hash", "server_name", "version", "protocol_version")):
                 raise HTTPException(409, "검토 후 계약이 바뀌었습니다. 다시 열어 확인하세요.")
             current = {**row, "provenance": proposal["provenance"]}

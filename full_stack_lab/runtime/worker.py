@@ -321,7 +321,7 @@ def heartbeat(connection) -> None:
 def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: bool = True) -> str | None:
     """Why this approval may no longer run, re-read from the database every time it matters."""
     row = connection.execute(
-        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, s.lifecycle, s.status AS server_status,
+        """SELECT r.status, r.intake_kind, r.commit_sha, r.repository_url, r.requested_transport, s.lifecycle, s.status AS server_status,
                   s.id AS server_id,
                   EXISTS (SELECT 1 FROM ops_suspensions x WHERE x.server_id=s.id AND x.resumed_at IS NULL) AS suspended,
                   EXISTS (SELECT 1 FROM usage_relationships u WHERE u.server_id=s.id
@@ -330,6 +330,8 @@ def approval_problem(connection, runtime: dict, recipes: dict, *, recipe_fixed: 
            WHERE r.id=%s""", (runtime["intake_id"],)).fetchone()
     if not row or row["status"] != "APPROVED" or row["intake_kind"] != "repository":
         return "도입 승인이 유효하지 않습니다."
+    if row.get('requested_transport') == 'stdio':
+        return 'stdio MCP는 엔드포인트 실행으로 전환해야 합니다.'
     if not runtime.get("rollback_target_generation") and row["commit_sha"] != runtime["source_commit"]:
         return "승인한 커밋이 바뀌었습니다."
     if runtime.get("rollback_target_generation"):

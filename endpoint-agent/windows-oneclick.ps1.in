@@ -27,7 +27,7 @@ function Read-EndpointOneclickArchive([string]$ArchiveBase64) {
         $manifest = [Text.Encoding]::UTF8.GetString($files['windows-kit-manifest.json']) | ConvertFrom-Json
         $required = @('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
             'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
-            'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
+            'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'local-runner.py', 'stdio_source.py', 'stdio_windows.py', 'pip.zip', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         if ($manifest.schema -ne 1 -or ([uri]$manifest.gateway_url).Scheme -ne 'https' -or
             (Compare-Object ($required | Sort-Object) (@($manifest.files.PSObject.Properties.Name) | Sort-Object)) -or
             (Compare-Object (($required + @('windows-kit-manifest.json', 'enrollment.json')) | Sort-Object) (@($files.Keys) | Sort-Object))) {

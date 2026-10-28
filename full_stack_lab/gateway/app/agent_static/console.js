@@ -1597,7 +1597,7 @@ ROUTES.connections = async () => {
 };
 
 function approvedMcpTable(servers) {
-  const execution = { remote: "원격", pc: "PC 격리", runtime: "솔루션 런타임" };
+  const execution = { remote: "원격", pc: "엔드포인트", runtime: "솔루션 런타임" };
   return servers.length ? html`<table class="data"><thead><tr><th>서버</th><th>출처</th><th>고정 커밋</th><th>승인 기한</th><th>실행 방식</th><th></th></tr></thead>
     <tbody>${servers.map((s) => html`<tr><td><b>${s.display_name || s.server_id}</b></td><td class="mono small">${s.source_url || "—"}</td>
       <td><code>${s.commit_sha || "—"}</code></td><td class="nowrap">${when(s.valid_until)}</td><td>${execution[s.execution] || "—"}</td>
@@ -1755,7 +1755,7 @@ function intakeApprovalFields(out) {
       ["계약 지문", p.catalog?.catalog_hash || unknown], ["허용 사용자", r.submitter_name || r.submitted_by],
       ["공급자 홈페이지", p.supplier_metadata?.homepage || unknown], ["라이선스", p.provenance?.license?.spdx || unknown],
       ["관할 규칙", p.jurisdiction_pack_enabled ? "사용" : "사용 안 함"]])}
-    ${localRun ? html`<fieldset><legend>PC 격리 실행</legend>${kv([
+    ${localRun ? html`<fieldset><legend>엔드포인트 실행</legend>${kv([
       ["관찰 엔드포인트", localRun.observer_device || unknown],
       ["실행 계정 번호", localRun.observer_uid == null ? unknown : String(localRun.observer_uid)],
       ["격리 구성", localRun.isolation_scope || unknown], ["사용자 매핑", localRun.user_mapping || unknown],
@@ -1801,9 +1801,14 @@ const LOCAL_REASON = { local_file: "로컬 파일", local_tool: "로컬 도구",
 
 async function askLocalRun(id, request, preset = {}, status = "") {
   const cur = request.evidence?.local_run || preset;
-  const fd = await ask({ title: `PC 격리 실행 · ${request.display_name}`, confirm: "확인", fields: html`
+  const fd = await ask({ title: `엔드포인트 실행 · ${request.display_name}`, confirm: "확인", fields: html`
     ${status ? chip("alert", status) : ""}
-    ${field.text("image", "이미지", 'required minlength="3" maxlength="300"',
+    ${field.select("execution", "실행 방식", { process: "프로세스", container: "컨테이너" }, cur.source ? "process" : "container")}
+    ${field.select("source_runtime", "런타임", { python: "Python", node: "Node.js" }, cur.source?.runtime || "python")}
+    ${field.text("source_entrypoint", "진입 파일", 'maxlength="256"', cur.source?.entrypoint || "")}
+    ${field.text("source_lock", "의존성 잠금 파일", 'maxlength="256"', cur.source?.lock || "requirements.lock")}
+    ${field.text("source_lock_hash", "의존성 잠금 해시", 'maxlength="64"', cur.source?.lock_sha256 || "")}
+    ${field.text("image", "이미지", 'maxlength="300"',
       cur.image || (request.repository_path && !status ? `mcp/${request.repository_path.split("/").pop()}` : ""))}
     ${field.text("command", "실행 인자", 'maxlength="2000" placeholder="/workspace/폴더이름"', (cur.command || []).join(" "))}
     ${field.text("mounts", "폴더 (홈 기준 → /workspace/경로, 쉼표 구분, 경로:ro|rw)", 'maxlength="1000" placeholder="폴더이름:ro"',
@@ -1822,7 +1827,11 @@ async function askLocalRun(id, request, preset = {}, status = "") {
     return at < 0 ? [v, ""] : [v.slice(0, at).trim(), v.slice(at + 1).trim()];
   }));
   const result = await api(`/api/mcp-requests/${id}/local-run`, { method: "POST", body: {
-    image: String(fd.get("image")).trim(), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
+    image: fd.get("execution") === "process" ? "" : String(fd.get("image")).trim(),
+    ...(fd.get("execution") === "process" ? { source: { commit: request.commit_sha,
+      sha256: request.provenance?.artifact?.sha256, runtime: fd.get("source_runtime"),
+      entrypoint: String(fd.get("source_entrypoint")).trim(), lock: String(fd.get("source_lock")).trim(),
+      lock_sha256: String(fd.get("source_lock_hash")).trim() } } : {}), command: String(fd.get("command") || "").trim().split(/\s+/).filter(Boolean),
     mounts, env, reason_kind: fd.get("reason_kind"), reason_text: String(fd.get("reason_text")).trim() } });
   toast(result.message);
   return true;
