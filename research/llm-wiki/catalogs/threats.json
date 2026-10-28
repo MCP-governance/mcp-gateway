@@ -862,9 +862,9 @@
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "c9069fdc52c9b2598f58b6d17deb00de9ae9d4fea174656bfb2444b108f9b5a1",
-        "committed_sha256": "c9069fdc52c9b2598f58b6d17deb00de9ae9d4fea174656bfb2444b108f9b5a1",
-        "normalized_sha256": "c9069fdc52c9b2598f58b6d17deb00de9ae9d4fea174656bfb2444b108f9b5a1",
+        "sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
+        "committed_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
+        "normalized_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
         "worktree_modified": false
       }
     ],

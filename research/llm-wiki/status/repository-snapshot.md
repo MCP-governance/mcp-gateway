@@ -1,27 +1,24 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-28T17:57:27+09:00
+확인 시각: 2026-10-28T18:23:52+09:00
 
-HEAD: `6d3fdc64f56daf1c4c09c2f4da7eae3ba660df08` · 로컬 브랜치: `10/28-windows-kit`
+HEAD: `ae50986997ba0c7aef28eeffa58d0e37658649c6` · 로컬 브랜치: `10/28-windows-kit`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-A  docs/ai/MANUAL_TEST_LINUX.md
-A  docs/ai/MANUAL_TEST_WINDOWS.md
-M  docs/ai/README.md
- M research/llm-wiki/analysis/integration-cases.json
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
-A  research/llm-wiki/status/reports/2026-10-27-retest-pj1.md
- M research/llm-wiki/threats/control-map.md
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/reports/2026-10-27-bugfix-round1.md
+ M research/llm-wiki/status/reports/2026-10-28-kit-install-result.md
 ?? api.py
 ?? c
 ?? p3_ui.py
 ?? q
-?? research/llm-wiki/solutions/harness-builtin-controls-2026-10-28.md
 ?? sftp_put.py
 ```
 
