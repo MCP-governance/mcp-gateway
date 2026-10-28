@@ -1233,7 +1233,8 @@ const connectorControlChip = (all, key) => { const c = connectorControl(all, key
 // Built-in features and the harness account's connectors start allowed; an administrator blocks them here.
 // They reach the vendor directly, so the path column says so instead of a gateway decision.
 const OUTSIDE = chip("outline", "게이트웨이 외부");
-const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain", harnessLabel(b.harness))}</td><td>${OUTSIDE}</td>
+const harnessName = (h) => (h === "claude" ? "Claude Code" : "Codex");
+const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain", harnessName(b.harness))}</td><td>${OUTSIDE}</td>
   <td class="num">${b.active_pcs ?? NONE}</td><td>${connectorState(b)}${b.state === "denied" && b.note ? html`<span class="sub">${b.note}</span>` : ""}</td>
   <td class="num nowrap">${b.state === "denied"
     ? html`<button class="btn sm" data-act="connector-decide" data-key="${b.key}" data-decision="reset">차단 해제</button>`
@@ -1241,11 +1242,11 @@ const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain",
 // switchOff: the harness-wide switch for this kind is blocked, so the row is blocked whatever its own decision says.
 const groupRow = (g, items, switchOff = false) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
   <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
-  <td>${chip("plain", harnessLabel(g.harness))}</td>
+  <td>${chip("plain", harnessName(g.harness))}</td>
   <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
   <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
   <td>${connectorState(g)}${switchOff && g.state !== "denied" ? chip("block", "전체 차단") : ""}${g.violation ? chip("block", "미승인 사용") : ""}</td>
-  <td>${connectorControlChip(connectorItems, g.key)}</td>
+  <td>${["denied", "pending", "expired"].includes(g.state) || switchOff ? connectorControlChip(connectorItems, g.key) : NONE}</td>
   <td class="small">${vendor ? chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state) : NONE}</td>
   <td class="num nowrap">${connectorButtons(g)}</td></tr>`; };
 const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">보고 엔드포인트</th><th>상태</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead>`;
