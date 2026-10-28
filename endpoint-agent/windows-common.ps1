@@ -387,7 +387,9 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
         @{ product = 'MCPGatewayEndpoint'; files = $OwnedFiles }
     } else { throw '설치 소유 정보 확인 실패' }
     if ($manifest.product -ne 'MCPGatewayEndpoint') { throw '설치 소유 정보 확인 실패' }
-    foreach ($name in @($manifest.files) + @('.endpoint-kit')) {
+    # The launcher is this kit's own file even when an older manifest never listed it (a kit without launcher reinstalled over one with).
+    $launcher = if ($resolved -eq $machine) { @('MCPGateway.exe', 'MCPGateway.ico') } else { @() }
+    foreach ($name in @($manifest.files) + $launcher + @('.endpoint-kit')) {
         $target = [IO.Path]::GetFullPath((Join-Path $resolved $name))
         if (-not $target.StartsWith($resolved + '\', [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
         if (Test-Path -LiteralPath $target -PathType Leaf) { Remove-Item -LiteralPath $target -Force }

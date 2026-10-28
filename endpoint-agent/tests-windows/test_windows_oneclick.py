@@ -18,6 +18,9 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# install() asks the status module for the first summary; the real one waits for a service that does not exist here.
+INSTALL_STATUS = SimpleNamespace(screen_module=SimpleNamespace(wait_summary=lambda *a, **k: {'state': 'active'}, STATES={'active': '활성'}), publish=lambda *a: None)
+
 
 def load(name, path):
     spec = importlib.util.spec_from_file_location(name, ROOT / path)
@@ -268,7 +271,7 @@ for ($i=0; $i -lt $paths.Count; $i++) {
                 mock.patch.object(self.managed, 'apply_policy'), \
                 mock.patch.object(self.managed, 'harness_launchers', return_value=(native, {})), \
                 mock.patch.object(self.managed, 'rule_state', return_value={'rules': []}), \
-                mock.patch.object(self.managed, 'set_user_environment'), mock.patch('sys.stdout', output):
+                mock.patch.object(self.managed, 'set_user_environment'), mock.patch.dict(sys.modules, {'windows_status': INSTALL_STATUS}), mock.patch('sys.stdout', output):
             self.managed.install(SimpleNamespace(user='employee', enrollment=enrollment, isolated_account=True))
             place.assert_called_once_with(employee['profile'])
             self.assertEqual(powershell.call_args_list[0].args, (self.managed.OWNED_PROCESSES, {'sid': person['sid']}))

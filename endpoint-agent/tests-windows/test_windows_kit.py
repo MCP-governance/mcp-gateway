@@ -20,6 +20,9 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# install() asks the status module for the first summary; the real one waits for a service that does not exist here.
+INSTALL_STATUS = SimpleNamespace(screen_module=SimpleNamespace(wait_summary=lambda *a, **k: {'state': 'active'}, STATES={'active': '활성'}), publish=lambda *a: None)
+
 
 def load(name, relative):
     spec = importlib.util.spec_from_file_location(name, ROOT / relative)
@@ -231,6 +234,22 @@ Write-Output 'Per-request CA verification OK'
                                  env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_TEMP=str(self.root)), timeout=30)
         self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
 
+    def test_removal_also_takes_the_launcher_an_older_manifest_never_listed(self):
+        # pj3 10-28: a kit without the launcher reinstalled over one with it; its manifest lacked MCPGateway.exe/.ico,
+        # so removal left them and the next install stopped at "다른 파일이 없는 설치 위치 필요".
+        programs = self.root / 'Program Files'
+        root = programs / 'MCPGatewayManaged'
+        root.mkdir(parents=True)
+        (root / '.endpoint-kit').write_text(json.dumps({'product': 'MCPGatewayEndpoint', 'files': ['agent.py']}), encoding='utf-8')
+        for name in ('agent.py', 'MCPGateway.exe', 'MCPGateway.ico'):
+            (root / name).write_bytes(b'x')
+        (root / 'mine.txt').write_text('keep', encoding='utf-8')
+        script = "$env:ProgramFiles = $env:KIT_TEST_PF; . (Join-Path $env:KIT_TEST_ROOT 'endpoint-agent\windows-common.ps1'); Remove-EndpointFiles (Join-Path $env:ProgramFiles 'MCPGatewayManaged')"
+        process = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script], capture_output=True,
+                                 env=dict(os.environ, KIT_TEST_ROOT=str(ROOT), KIT_TEST_PF=str(programs)), timeout=30)
+        self.assertEqual(process.returncode, 0, process.stderr.decode(errors='replace'))
+        self.assertEqual(sorted(p.name for p in root.iterdir()), ['mine.txt'])
+
     def test_managed_install_carries_ca_to_private_service_and_observers(self):
         managed = load('windows_tls_install_test', 'endpoint-agent/managed-windows.py')
         ca = self.ca_fixture()
@@ -261,7 +280,7 @@ Write-Output 'Per-request CA verification OK'
                 mock.patch.object(managed, 'place_harnesses', return_value=(native, {'codex.exe': 'fixture'})), \
                 mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
                 mock.patch.object(managed, 'rule_state', return_value={'rules': []}), \
-                mock.patch.object(managed, 'set_user_environment') as environment, mock.patch('sys.stdout', io.StringIO()):
+                mock.patch.object(managed, 'set_user_environment') as environment, mock.patch.dict(sys.modules, {'windows_status': INSTALL_STATUS}), mock.patch('sys.stdout', io.StringIO()):
             # The isolated account carries the CA in its launchers, never in the account environment.
             managed.install(SimpleNamespace(user='fixture', enrollment=enrollment, isolated_account=True))
             config_path = state / 'fixture/config.json'
@@ -312,7 +331,7 @@ Write-Output 'Per-request CA verification OK'
                 mock.patch.object(managed, 'place_harnesses') as place, \
                 mock.patch.object(managed, 'request', side_effect=request), mock.patch.object(managed, 'apply_policy'), \
                 mock.patch.object(managed, 'set_user_environment') as environment, \
-                mock.patch.object(managed, 'broadcast_environment') as broadcast, mock.patch('sys.stdout', io.StringIO()) as out:
+                mock.patch.object(managed, 'broadcast_environment') as broadcast, mock.patch.dict(sys.modules, {'windows_status': INSTALL_STATUS}), mock.patch('sys.stdout', io.StringIO()) as out:
             managed.install(SimpleNamespace(user='fixture', enrollment=enrollment))
         companion.assert_not_called()
         place.assert_not_called()
