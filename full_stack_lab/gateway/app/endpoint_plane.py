@@ -848,7 +848,7 @@ async def consume_enrollment(raw: str, key: str, hostname: str, username: str, u
 
 
 async def managed_policy(device: dict, *, connection=None) -> dict:
-    from . import pac, registry
+    from . import connectors, pac, registry
     if not device.get("device_epoch"):
         raise PermissionError("관리형 설치로 등록한 장치가 아닙니다.")
     public = os.getenv("IDP_ISSUER", "").rstrip("/")
@@ -901,10 +901,18 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                 ca_env = {"NODE_EXTRA_CA_CERTS": programs.group(1) + "\\launchers\\" + detail["local_sid"] + "\\root.crt"}
         elif managed_platform(device) == "linux":
             ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
+    # Built-in features and the harness account's connectors are allowed unless an administrator blocked them (D-298).
+    controls = await connectors.managed_controls(connection)
+
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
-        settings = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
-                    "allowManagedMcpServersOnly": True, "allowedMcpServers": [{"serverUrl": u} for u in routes.values()],
+        # managed-mcp.json keeps exclusive control: the employee's own and plugin servers never load. claude.ai connectors
+        # load beside it only with allowAllClaudeAiMcps, and the allow-list still applies to them, so it admits https hosts
+        # then (managed servers skip the list); the deny-list blocks the ones an administrator closed.
+        allowed = [{"serverUrl": u} for u in routes.values()] + ([{"serverUrl": "https://*/*"}] if controls["claude_connectors"] else [])
+        settings = {"allowAllClaudeAiMcps": controls["claude_connectors"], "disableClaudeAiConnectors": not controls["claude_connectors"],
+                    "allowManagedMcpServersOnly": True, "allowedMcpServers": allowed,
+                    "deniedMcpServers": controls["claude_servers_denied"],
                     "strictKnownMarketplaces": [],
                     # Account-synced plugins and skills load from the claude.ai account, outside the managed set
                     # (a synced productivity plugin loaded); only `false` is honoured, so this cannot be undone
@@ -913,7 +921,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                     # allow them again. The Gateway servers stay pre-approved in the harness; the Gateway decides.
                     "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False,
                     "allowManagedPermissionRulesOnly": True,
-                    "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": ["WebFetch", "WebSearch"]},
+                    "permissions": {"allow": [f"mcp__{s}" for s in routes], "deny": controls["claude_tools_denied"]},
                     # User, project and plugin hooks run commands the harness starts; a hook could call the
                     # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                     # same gate narrows statusLine and fileSuggestion to managed values (D-147).
@@ -922,6 +930,10 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
         if proxy or ca_env:
             settings["env"] = {**proxy, **ca_env}
+        off = set(controls["codex_features_off"])
+        # Plugins stay off (they are reviewed, not built in); ChatGPT apps follow the connector switch.
+        features_off = sorted({"plugins"} | (off - {"web_search"}) | (set() if controls["codex_apps"] else {"apps"}))
+        disabled_apps = "".join(f"\n[apps.{a}]\nenabled = false\n" for a in controls["codex_apps_disabled"])
         codex_servers = "".join(f'\n[mcp_servers.{s}]\nurl = {json_document(u).strip()}\nhttp_headers_helper = {json_document(helper).strip()}\n'
                                 'default_tools_approval_mode = "approve"\nstartup_timeout_sec = 30\ntool_timeout_sec = 300\n' for s, u in routes.items())
         files = {
@@ -929,22 +941,24 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                         "headersHelper": helper, "timeout": 300000} for s, url in routes.items()}}),
             "managed-settings.json": json_document(settings),
             # Codex user and plugin hooks are the same command surface as Claude's (D-147).
-            "requirements.toml": 'allowed_web_search_modes = ["disabled"]\nallow_browser_and_computer_use = false\n'
-                        'allow_managed_hooks_only = true\n'
+            "requirements.toml": ('allowed_web_search_modes = ["disabled"]\n' if "web_search" in off else "")
+                        + ("allow_browser_and_computer_use = false\n" if {"browser_use", "computer_use"} <= off else "")
+                        + 'allow_managed_hooks_only = true\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
-                        + '\n[features]\napps = false\nplugins = false\nbrowser_use = false\ncomputer_use = false\n'
+                        + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
                         + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n',
         }
         if windows:
             # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
             # their definitions go in the account's own config.toml as one marked block.
-            files["codex-config.toml"] = codex_servers
+            files["codex-config.toml"] = codex_servers + disabled_apps
         else:
             # developer_instructions is a top-level key, so it precedes the server tables.
             # Windows is left out: its block goes into the employee's own config.toml, where the key may already exist.
-            files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\nweb_search = "disabled"\n'
+            files["managed_config.toml"] = ('mcp_oauth_credentials_store = "file"\n'
+                                            + ('web_search = "disabled"\n' if "web_search" in off else "")
                                             + (f"developer_instructions = {json_document(guidance).strip()}\n" if guidance else "")
-                                            + codex_servers)
+                                            + codex_servers + disabled_apps)
         return files
 
     files = render(servers, guidance)

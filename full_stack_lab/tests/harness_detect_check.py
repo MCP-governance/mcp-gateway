@@ -78,7 +78,8 @@ class Guidance(unittest.TestCase):
 def render_policy(guide, platform="linux"):
     package = ModuleType("detect_pkg")
     package.pac = SimpleNamespace(servers_for=lambda owner: ["github"], harness_guidance=lambda owner, servers: guide)
-    package.registry = SimpleNamespace()
+    package.registry = SimpleNamespace(server=lambda server: {})
+    package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value={"claude_tools_denied": [], "claude_connectors": True, "claude_servers_denied": [], "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}))
     names = {"managed_policy", "managed_platform", "json_document", "installed_hash"}
     namespace = extract(APP / "endpoint_plane.py", names, {
         "__name__": "detect_under_test", "__package__": package.__name__, "os": os, "urlsplit": urlsplit, "ipaddress": ipaddress,
@@ -101,7 +102,7 @@ class Rendering(unittest.TestCase):
         codex = tomllib.loads(files["managed_config.toml"])
         self.assertEqual(codex["developer_instructions"], self.GUIDE)
         self.assertEqual(list(codex["mcp_servers"]), ["github"])      # the key is top-level: the server tables survive
-        self.assertEqual(codex["web_search"], "disabled")
+        self.assertNotIn("web_search", codex)  # a built-in feature: allowed until an administrator blocks it (D-298)
 
     def test_no_servers_no_memory(self):
         files = render_policy("")

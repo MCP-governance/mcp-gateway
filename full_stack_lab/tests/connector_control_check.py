@@ -66,7 +66,7 @@ MANAGED = {"requirements": {"allowedWebSearchModes": ["disabled"], "featureRequi
 
 def linux_agent():
     names = {"origin", "parse_claude_servers", "parse_claude_plugins", "effective_web_search", "parse_codex",
-             "collect_inventory", "report_inventory", "CLAUDE_LINE", "PLUGIN_HEAD", "CODEX_FEATURES", "APP_ID", "HARNESS_VERSIONS"}
+             "collect_inventory", "read_versions", "report_inventory", "CLAUDE_LINE", "PLUGIN_HEAD", "CODEX_FEATURES", "APP_ID", "HARNESS_VERSIONS"}
     namespace = {"re": re, "json": __import__("json"), "urlsplit": __import__("urllib.parse").parse.urlsplit,
                  "subprocess": subprocess, "print": lambda *a, **k: None}
     return extract(KIT / "managed-linux.py", names, namespace)

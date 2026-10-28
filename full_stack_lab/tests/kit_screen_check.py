@@ -170,7 +170,7 @@ class Frame(unittest.TestCase):
     def test_check_without_a_model_cell_keeps_the_reported_login_state(self):
         text = kit.frame({**example(), "model_signed_in": {"codex": False}}, cells=[("도구", "2개 (서버 1/1)")],
                          now=1800000000)
-        self.assertIn("하네스 응답  로그인 필요", text)
+        self.assertIn("! 모델 로그인  codex 로그인 필요", text)
 
 
 class Terminal(unittest.TestCase):

@@ -57,7 +57,7 @@ TEXT_EN = {
     "설치 단계": "Installation steps", "설치 확인": "Installation checks", "설치 중": "Installing",
     "설치 완료": "Installed", "설치 실패": "Installation failed", "차단 발생": "Blocked",
     "관리 설정 적용": "Managed settings applied", "서버 연결": "Server connection", "서버": "Servers",
-    "일부 실패": "Some failed", "로그인됨": "Signed in", "승인 MCP": "Approved MCP", "응답": "responding", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
+    "일부 실패": "Some failed", "로그인됨": "Signed in", "모델 로그인": "Model sign-in", "승인 MCP": "Approved MCP", "응답": "responding", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
     "관리자 활성화 대기": "Waiting for an administrator", "관리자에게 격리 해제 요청": "Ask an administrator to release",
     "새 키트로 다시 설치": "Reinstall with a new kit", "하네스 실행": "Run a harness",
     "게이트웨이 연결 점검": "Check gateway connection", "다음 할 일": "Next step",
@@ -492,9 +492,9 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     values = dict(cells)
     answer = values.get("하네스 응답", legacy_cell(values.get("모델 응답", "—")))
     signed = summary.get("model_signed_in") if isinstance(summary.get("model_signed_in"), dict) else {}
-    if answer == "—" and signed:
-        # 연결 점검만 한 경우에도 서비스가 30초마다 본 하네스 로그인 상태를 같은 칸에 보인다.
-        answer = "로그인 필요" if False in signed.values() else "로그인됨"
+    # 하네스마다 로그인 상태(서비스가 30초마다 읽음). 응답 확인은 실제로 재 본 경우에만 따로 보인다.
+    logins = " · ".join(f"{name} " + ("로그인됨" if signed[name] else "로그인 필요")
+                        for name in ("claude", "codex") if type(signed.get(name)) is bool)
     tools = values.get("게이트웨이 MCP 목록", legacy_cell(values.get("도구", "—")))
     # Linux 점검의 「10개 (서버 2/2)」는 승인 MCP 2개 중 2개가 응답했고 도구가 10개라는 뜻이다. 그 말 그대로 보인다.
     counted = re.fullmatch(r"(\d+)개 \(서버 (\d+)/(\d+)\)", clean(values.get("도구", "")))
@@ -507,8 +507,10 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     versions = summary.get("harnesses") or {}
     version_text = " · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
                               if name in {"claude", "codex", "gemini", "opencode"}) or "—"
-    lw = lab("하네스 응답", "MCP 목록", "관리 설정", "하네스 판본")
-    checks = [kv(t("하네스 응답"), t(clean(answer)), inner, profile, g, lw, marked=True, spin=spin, wrap=True),
+    lw = lab("모델 로그인", "하네스 응답", "MCP 목록", "관리 설정", "하네스 판본")
+    checks = ([kv(t("모델 로그인"), t(logins), inner, profile, g, lw, marked=True, wrap=True)] if logins else []) + [
+              *([kv(t("하네스 응답"), t(clean(answer)), inner, profile, g, lw, marked=True, spin=spin, wrap=True)]
+                if answer != "—" or not logins else []),
               kv(t("MCP 목록"), t(clean(tools)), inner, profile, g, lw, marked=True, spin=spin, wrap=True),
               kv(t("관리 설정"), t(result_label(summary.get("protected_configs"))), inner, profile, g, lw, marked=True),
               kv(t("하네스 판본"), version_text, inner, profile, g, lw, indent=True, wrap=True)]
@@ -590,7 +592,7 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
         if "connection" not in dropped:
             cards.append(card(t("연결"), connection, inner, profile, g))
         if "checks" not in dropped:
-            check_rows = checks if show_versions else checks[:3]
+            check_rows = checks if show_versions else checks[:-1]  # 마지막 줄이 하네스 판본
             cards.append(card(t("점검") if cells else t("설치 확인") if rows else t("점검"), check_rows, inner, profile, g))
         if rows and step_limit:
             cards.append(card(t("설치 단계"), steps[-step_limit:], inner, profile, g))

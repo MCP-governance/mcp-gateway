@@ -37,6 +37,10 @@ class AutoActivation(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         package = ModuleType(PACKAGE)
         package.pac = SimpleNamespace(servers_for=lambda owner: ["learn"], harness_guidance=lambda owner, servers: "g")
+        open_controls = {"claude_tools_denied": [], "claude_connectors": True, "claude_servers_denied": [],
+                         "codex_features_off": [], "codex_apps": True, "codex_apps_disabled": []}
+        package.connectors = SimpleNamespace(managed_controls=AsyncMock(return_value=open_controls))
+        package.registry = SimpleNamespace(server=lambda server: {})
         self.auto = True
         self.events = []
 

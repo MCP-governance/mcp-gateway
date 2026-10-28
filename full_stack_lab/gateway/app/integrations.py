@@ -31,7 +31,7 @@ from psycopg.types.json import Jsonb
 
 from . import classify, db, registry
 from .agent_contract import StrictModel, authenticated_user
-from .connectors import DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
+from .connectors import DEFAULT_KINDS, DEVICE_PREFIX, REVIEW_DAYS, require_admin, state_of
 from .endpoint_plane import HEARTBEAT_SECONDS, managed_checks, managed_mode, managed_platform
 
 router = APIRouter()
@@ -234,12 +234,12 @@ async def snapshot() -> dict:
             """SELECT item_key, harness, kind, name, target, principal, workstation, status, active, first_seen, last_seen
                  FROM harness_items ORDER BY last_seen DESC LIMIT 2000"""):
         decision = decided.get(row["item_key"]) or {}
-        approval = state_of(decision.get("decision"), False, row["first_seen"], now)
+        approval = state_of(decision.get("decision"), row["kind"] in DEFAULT_KINDS, row["first_seen"], now)
         local = row["kind"] in {"plugin", "server"} and not row["target"].startswith(("http://", "https://"))
         vendor = vendor_records.get(row["item_key"]) or {}
         bound = row["workstation"].startswith(DEVICE_PREFIX)
         device_id = row["workstation"][len(DEVICE_PREFIX):] if bound else None
-        state, evidence, bypass = harness_item_state(devices.get(device_id), approval == "approved", row["active"], row["status"])
+        state, evidence, bypass = harness_item_state(devices.get(device_id), approval in ("approved", "default"), row["active"], row["status"])
         if row["kind"] in {"connector", "app"} and vendor.get("console_state") == "blocked" and vendor.get("verified_at"):
             # A manual record ages like a review: past REVIEW_DAYS it no longer vouches.
             checked = datetime.fromisoformat(vendor["verified_at"])

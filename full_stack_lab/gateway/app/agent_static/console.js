@@ -132,7 +132,7 @@ const INTEGRATION_CLASS = {
   local_plugin_or_stdio: "로컬 MCP", shadow_or_unknown: "미등록 MCP",
 };
 const APPROVAL_STATE = {
-  approved: "승인", pending: "미승인", unapproved: "미승인", expired: "기한 만료", denied: "거부", default: "재검토",
+  approved: "승인", pending: "미승인", unapproved: "미승인", expired: "기한 만료", denied: "거부", default: "기본 승인",
   drift: "계약 변경", disabled: "사용 중지", error: "연결 오류", blocked_supply_chain: "공급망 차단",
 };
 const PLATFORM = { linux: "Linux", windows: "Windows", wsl: "WSL", macos: "macOS", other: "기타", unknown: "기타" };
@@ -1210,8 +1210,8 @@ function downstreamText(d) {
 
 // ── harness inventory: a reported state is not enforcement evidence ──
 const CONNECTOR_KIND = { connector: "claude.ai 커넥터", plugin: "플러그인", server: "직접 추가", app: "ChatGPT 앱", feature: "기본 기능" };
-const CONNECTOR_STATE = { pending: ["approval", "미승인"], expired: ["block", "검토 기한 만료"], denied: ["block", "거부"],
-  approved: ["outline", "승인 · 기록만"], default: ["outline", "재검토"] };
+const CONNECTOR_STATE = { pending: ["approval", "미승인"], expired: ["block", "검토 기한 만료"], denied: ["block", "차단"],
+  approved: ["outline", "승인 · 기록만"], default: ["allow", "기본 승인"] };
 const FEATURE_LABEL = { web_search: "웹 검색", apps: "ChatGPT 앱 전체", plugins: "플러그인", browser_use: "브라우저 조작",
   computer_use: "컴퓨터 조작", image_generation: "이미지 생성", memories: "메모리" };
 const connectorName = (g) => (g.kinds.includes("feature") ? FEATURE_LABEL[g.names[0]] || g.names[0] : g.names.join(" · "));
@@ -1227,9 +1227,46 @@ function connectorState(g) {
 }
 const connectorButtons = (g) => g.decision
   ? html`<button class="btn sm" data-act="connector-decide" data-key="${g.key}" data-decision="reset">되돌리기</button>`
-  : html`<button class="btn sm danger" data-act="connector-deny" data-key="${g.key}" data-name="${connectorName(g)}">거부</button>
+  : html`<button class="btn sm danger" data-act="connector-deny" data-key="${g.key}" data-name="${connectorName(g)}">차단</button>
     ${g.state === "default" ? "" : html`<button class="btn sm primary" data-act="connector-decide" data-key="${g.key}" data-decision="approved">승인</button>`}`;
 const connectorControlChip = (all, key) => { const c = connectorControl(all, key); return c ? chip(c[0], c[1]) : NONE; };
+// Built-in features and the harness account's connectors start allowed; an administrator blocks them here.
+const builtinRow = (b) => html`<tr><td><b>${b.label}</b></td><td>${chip("plain", harnessLabel(b.harness))}</td>
+  <td class="num">${b.active_pcs || NONE}</td><td>${connectorState(b)}${b.state === "denied" && b.note ? html`<span class="sub">${b.note}</span>` : ""}</td>
+  <td class="num nowrap">${b.state === "denied"
+    ? html`<button class="btn sm" data-act="connector-decide" data-key="${b.key}" data-decision="reset">허용</button>`
+    : html`<button class="btn sm danger" data-act="connector-deny" data-key="${b.key}" data-name="${b.label}">차단</button>`}</td></tr>`;
+const groupRow = (g, items) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
+  <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
+  <td>${chip("plain", harnessLabel(g.harness))}</td>
+  <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
+  <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
+  <td>${connectorState(g)}${g.violation ? chip("block", "미승인 사용") : ""}</td>
+  <td>${connectorControlChip(connectorItems, g.key)}</td>
+  <td class="small">${vendor ? html`${chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state)}<span class="sub">${vendor.verified_by} · ${when(vendor.verified_at)}</span>` : NONE}</td>
+  <td class="num nowrap">${connectorButtons(g)}</td></tr>`; };
+const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 엔드포인트</th><th>상태</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead>`;
+function builtinTabs(conn, items) {
+  const builtins = conn.builtins || [], catalog = new Set(builtins.map((b) => b.key));
+  const reported = conn.items.filter((g) => !catalog.has(g.key));
+  const features = builtins.filter((b) => b.kind === "feature");
+  const switches = builtins.filter((b) => b.kind === "connector");
+  const extraFeatures = reported.filter((g) => g.builtin && g.kinds.includes("feature"));
+  const connectors = reported.filter((g) => g.builtin && !g.kinds.includes("feature"));
+  const review = reported.filter((g) => !g.builtin);
+  const blocked = (rows) => rows.filter((r) => r.state === "denied").length;
+  return html`<div class="stack">
+    ${panel("기본 기능", html`<table class="data"><thead><tr><th>기능</th><th>하네스</th><th class="num">사용 엔드포인트</th><th>상태</th><th></th></tr></thead><tbody>
+      ${features.map(builtinRow)}</tbody></table>
+      ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`,
+      { flush: true, sub: `차단 ${blocked(features) + blocked(extraFeatures)} / ${features.length + extraFeatures.length}` })}
+    ${panel("기본 커넥터", html`<table class="data"><thead><tr><th>커넥터</th><th>하네스</th><th class="num">사용 엔드포인트</th><th>상태</th><th></th></tr></thead><tbody>
+      ${switches.map(builtinRow)}</tbody></table>
+      ${connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items))}</tbody></table>` : ""}`,
+      { flush: true, sub: `차단 ${blocked(switches) + blocked(connectors)} / ${switches.length + connectors.length}` })}
+    ${panel("플러그인·직접 추가", review.length ? html`<table class="data">${GROUP_HEAD}<tbody>${review.map((g) => groupRow(g, items))}</tbody></table>`
+      : empty("보고된 항목 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" })}</div>`;
+}
 let connectorGroups = [], connectorItems = [];
 
 // Which control governs each integration and endpoint, with what evidence.
@@ -1326,18 +1363,7 @@ async function serverControlTabs(query) {
           <td class="mono small">${osEventTarget(e)}${e.details?.parent_executable ? html`<span class="sub">${e.details.parent_executable}</span>` : ""}</td>
           <td>${evidenceChip(e.provenance_state)}</td>`))}
         </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` },
-    { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: panel("하네스 커넥터·앱·기능",
-      conn.items.length ? html`<table class="data"><thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">사용 엔드포인트</th><th>승인</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead><tbody>
-        ${conn.items.map((g) => { const vendor = items.find((i) => i.item_key === g.key)?.vendor_control; return html`<tr class="clickable" tabindex="0" data-act="connector" data-key="${g.key}">
-          <td><b>${connectorName(g)}</b><span class="sub mono">${connectorTarget(g)}</span></td>
-          <td>${chip("plain", g.harness === "claude" ? "Claude Code" : "Codex")}</td>
-          <td class="small">${g.kinds.map((k) => CONNECTOR_KIND[k] || k).join(" · ")}</td>
-          <td class="num">${g.active_pcs}<span class="sub">${g.people}명</span></td>
-          <td>${connectorState(g)}${g.violation ? chip("block", "미승인 사용") : ""}</td>
-          <td>${connectorControlChip(connectorItems, g.key)}</td>
-          <td class="small">${vendor ? html`${chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state)}<span class="sub">${vendor.verified_by} · ${when(vendor.verified_at)}</span>` : NONE}</td>
-          <td class="num nowrap">${connectorButtons(g)}</td></tr>`; })}</tbody></table>`
-        : empty("보고된 커넥터 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" }) },
+    { key: "vendor", label: "기본 기능·커넥터", n: review, hot: review > 0, body: builtinTabs(conn, items) },
   ];
 }
 
@@ -3080,8 +3106,8 @@ const ACTIONS = {
     toast(r.message); reload(); refreshBadges();
   },
   async "connector-deny"(el) {
-    const fd = await ask({ title: `거부 · ${el.dataset.name}`, fields: field.area("note", "사유", 'required minlength="2" maxlength="500"'),
-      confirm: "거부", danger: true });
+    const fd = await ask({ title: `차단 · ${el.dataset.name}`, fields: field.area("note", "사유", 'required minlength="2" maxlength="500"'),
+      confirm: "차단", danger: true });
     if (!fd) return;
     const r = await api("/api/connectors/decision", { method: "PUT", body: { key: el.dataset.key, decision: "denied", note: fd.get("note").trim() } });
     toast(r.message); reload(); refreshBadges();
