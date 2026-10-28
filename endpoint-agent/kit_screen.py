@@ -57,7 +57,7 @@ TEXT_EN = {
     "설치 단계": "Installation steps", "설치 확인": "Installation checks", "설치 중": "Installing",
     "설치 완료": "Installed", "설치 실패": "Installation failed", "차단 발생": "Blocked",
     "관리 설정 적용": "Managed settings applied", "서버 연결": "Server connection", "서버": "Servers",
-    "일부 실패": "Some failed", "승인 MCP": "Approved MCP", "응답": "responding", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
+    "일부 실패": "Some failed", "로그인됨": "Signed in", "승인 MCP": "Approved MCP", "응답": "responding", "진행 중": "In progress", "완료": "Done", "실패": "Failed", "도구": "Tools",
     "관리자 활성화 대기": "Waiting for an administrator", "관리자에게 격리 해제 요청": "Ask an administrator to release",
     "새 키트로 다시 설치": "Reinstall with a new kit", "하네스 실행": "Run a harness",
     "게이트웨이 연결 점검": "Check gateway connection", "다음 할 일": "Next step",
@@ -196,7 +196,7 @@ def mark_for(value, profile, g, spin=0):
         return paint(g["warn"], "warn", profile, bold=True), "warn"
     if "실패" in text or "Failed" in text or "중지" in text or "stopped" in text or "끊김" in text:
         return paint(g["err"], "err", profile, bold=True), "err"
-    if "완료" in text or "Done" in text or "적용" in text or text.startswith("활성") or "Active" in text:
+    if "완료" in text or "Done" in text or "적용" in text or "로그인됨" in text or "Signed in" in text or text.startswith("활성") or "Active" in text:
         return paint(g["ok"], "ok", profile, bold=True), "ok"
     return paint(g["none"], "dim", profile), None
 
@@ -492,9 +492,9 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     values = dict(cells)
     answer = values.get("하네스 응답", legacy_cell(values.get("모델 응답", "—")))
     signed = summary.get("model_signed_in") if isinstance(summary.get("model_signed_in"), dict) else {}
-    if answer == "—" and False in signed.values():
-        # 연결 점검만 한 경우에도 서비스가 본 모델 로그인 만료는 같은 칸에 같은 말로 보인다.
-        answer = "로그인 필요"
+    if answer == "—" and signed:
+        # 연결 점검만 한 경우에도 서비스가 30초마다 본 하네스 로그인 상태를 같은 칸에 보인다.
+        answer = "로그인 필요" if False in signed.values() else "로그인됨"
     tools = values.get("게이트웨이 MCP 목록", legacy_cell(values.get("도구", "—")))
     # Linux 점검의 「10개 (서버 2/2)」는 승인 MCP 2개 중 2개가 응답했고 도구가 10개라는 뜻이다. 그 말 그대로 보인다.
     counted = re.fullmatch(r"(\d+)개 \(서버 (\d+)/(\d+)\)", clean(values.get("도구", "")))
