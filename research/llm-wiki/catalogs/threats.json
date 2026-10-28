@@ -855,16 +855,16 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "dba3aae62c0e35d5353bada28fa0ef5452d865f0199c1faa9b74daf180764533",
-        "committed_sha256": "dba3aae62c0e35d5353bada28fa0ef5452d865f0199c1faa9b74daf180764533",
-        "normalized_sha256": "dba3aae62c0e35d5353bada28fa0ef5452d865f0199c1faa9b74daf180764533",
+        "sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
+        "committed_sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
+        "normalized_sha256": "e93dd1bd3c4ce163c908e41674bb1f6cd46f4bb4285de3b93e0305a820877dd5",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
-        "committed_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
-        "normalized_sha256": "93c8b1db4d1f0ad200718f77ca86a708be09c7d9e0be543e92f397a8f023538e",
+        "sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
+        "committed_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
+        "normalized_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
         "worktree_modified": false
       }
     ],
