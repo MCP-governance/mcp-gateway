@@ -130,7 +130,7 @@ function Get-EndpointApprovedKit {
     Assert-EndpointProtectedPath $approvalPath
     $approval = Get-Content -LiteralPath $approvalPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $required = @('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
-        'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
+        'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
         'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json')
     $names = @($approval.files.PSObject.Properties.Name)
     $caFiles = @('root.crt', 'root.sha256', 'mcpgw_pc.py')
@@ -236,7 +236,13 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
             (Split-Path $source -Leaf) -ne 'enrollment.json') { throw '등록 파일 경로 거부' }
         Assert-EndpointNoLinks $source
         $bundle = Read-EndpointDataFile $source 16384
-        $bundle.gateway_url = $Approval.gateway_url
+        $selectedGateway = if ($request.gateway_url) { $request.gateway_url.TrimEnd('/') } else { $Approval.gateway_url }
+        $null = New-EndpointGatewayRequest ($selectedGateway + '/api/health') $certificate $fingerprint
+        if ($request.kit_enrollment_token -isnot [string] -or $request.kit_enrollment_token -notmatch '^[A-Za-z0-9_-]{43}$') {
+            throw 'MINT 로그인 필요'
+        }
+        $bundle.gateway_url = $selectedGateway
+        $bundle | Add-Member -NotePropertyName enrollment_token -NotePropertyValue $request.kit_enrollment_token -Force
         $bundle.tailscale_node_id = $Approval.tailscale_node_id
         $bundle | Add-Member -NotePropertyName ca_certificate -NotePropertyValue $certificate -Force
         $bundle | Add-Member -NotePropertyName ca_sha256 -NotePropertyValue $fingerprint -Force
@@ -245,7 +251,10 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
     }
     # The one-click request carries neither field (pj3 10-25: assigning a missing property threw, every one-click
     # install stopped here); the approved values replace whatever the caller sent.
-    $request | Add-Member -NotePropertyName gateway_url -NotePropertyValue $Approval.gateway_url -Force
+    $selectedGateway = if ($request.gateway_url) { $request.gateway_url.TrimEnd('/') } else { $Approval.gateway_url }
+    $null = New-EndpointGatewayRequest ($selectedGateway + '/api/health') $certificate $fingerprint
+    $request | Add-Member -NotePropertyName gateway_url -NotePropertyValue $selectedGateway -Force
+    $request.PSObject.Properties.Remove('kit_enrollment_token')
     $request | Add-Member -NotePropertyName tailscale_node_id -NotePropertyValue $Approval.tailscale_node_id -Force
     [IO.File]::WriteAllText((Join-Path $private 'request.json'), ($request | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     $results = Join-Path $paths.state 'results'

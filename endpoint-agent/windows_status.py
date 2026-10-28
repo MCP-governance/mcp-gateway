@@ -10,7 +10,7 @@ screen_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(screen_module)
 
 # What the tray may show beside the connection (D-239): names and versions only, never a key or token.
-DETAILS = {"state", "servers", "mode", "harnesses", "gateway", "protected_configs"}
+DETAILS = {"state", "servers", "server_names", "mode", "harnesses", "gateway", "protected_configs"}
 
 
 def publish(path, connected, blocks=(), management="", details=None):
@@ -56,7 +56,7 @@ def render(document, now=None, language="ko"):
     now = time.time() if now is None else now
     age = now - float(document.get("updated") or 0)
     connected = bool(document.get("connected")) and 0 <= age <= 150
-    servers = document.get("servers") or []
+    servers = document.get("server_names") or document.get("servers") or []
     versions = document.get("harnesses") or {}
     t = lambda value: screen_module.translate(value, language)
     return "\n".join([
@@ -83,6 +83,7 @@ def main():
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        print("\n".join(screen_module.banner(True)) + "\nMINT")
         print(render(json.loads(args.status.read_text(encoding="utf-8")), language=args.language), end="")
         return
     if args.settings is None:
@@ -122,7 +123,10 @@ def main():
             return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
 
     try:
-        screen_module.live(read, check, screen)
+        def sources():
+            settings = json.loads(args.settings.read_text(encoding="utf-8")) if args.settings else {}
+            screen_module.source_menu("\\\\.\\pipe\\mcpgw-" + settings.get("user", "").lower() + "-source")
+        screen_module.live(read, check, screen, sources=sources)
     finally:
         screen.stop()
 

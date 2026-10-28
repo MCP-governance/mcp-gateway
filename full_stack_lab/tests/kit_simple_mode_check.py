@@ -40,7 +40,7 @@ class Bootstrap(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.enrollment = Path(self.temp.name) / "enrollment.json"
-        self.enrollment.write_text('{}')
+        self.enrollment.write_text('{"enrollment_token":"synthetic-existing-grant"}')
 
     def connect(self, isolated, state="active"):
         b = self.b

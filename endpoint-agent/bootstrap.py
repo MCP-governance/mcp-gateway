@@ -847,6 +847,14 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
     bundle = json.loads(args.enrollment.read_text())
     credentials = [bundle.get("enrollment_token"), bundle.get("device_key")]
     try:
+        if not bundle.get("enrollment_token"):
+            SCREEN.pause()
+            try:
+                access = managed.load_module("kit_access", HERE / "kit_access.py")
+                bundle = access.login(bundle, managed.request, managed.kit_screen.login_inputs)
+            finally:
+                SCREEN.resume()
+            credentials.append(bundle["enrollment_token"])
         prepared = managed.enroll(bundle, account, pwd.getpwnam(account).pw_uid, "isolated" if isolated else "simple")
     except (OSError, KeyError, ValueError, subprocess.SubprocessError) as exc:
         managed.diagnostic("enroll", exc, credentials)

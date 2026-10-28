@@ -44,7 +44,7 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py", "kit_screen.py")
+                 "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
 STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
@@ -424,6 +424,8 @@ def diagnostic(stage, error, credentials=()):
 
 def preparation_error(error):
     """Only error classes/codes: a URL or response body may contain credentials."""
+    if isinstance(error, ValueError) and getattr(error, "kit_reason", None):
+        return error.kit_reason
     if isinstance(error, urllib.error.HTTPError):
         return f"HTTP {error.code}"
     reason = getattr(error, "reason", error)
@@ -458,6 +460,9 @@ def preparation_request(config, path, body=None, *, credential=True):
 def enroll(bundle, username, uid, mode="isolated", platform="linux"):
     """Network preparation only; no installed file or OS task is changed."""
     verify_transport(bundle)
+    if not bundle.get("enrollment_token"):
+        access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+        bundle = access.login(bundle, request, kit_screen.login_inputs)
     bundle = dict(bundle, device_key=secrets.token_urlsafe(32))
     machine = machine_id() if platform == "linux" else None
     enrolled = preparation_request(bundle, "/oauth/device-enroll", {"enrollment_token": bundle["enrollment_token"],
@@ -583,7 +588,8 @@ def install(args, prepared=None):
         config["home_launchers"] = [] if simple else home_launchers(config)
     except OSError:
         config["home_launchers"] = []  # a new terminal still gets the launcher function
-    args.enrollment.unlink()
+    if bundle.get("enrollment_token"):
+        args.enrollment.unlink()
     write_status_shim()
     summary = kit_screen.wait_summary(status_path(args.user, "json"), since=started)
     print(json.dumps({"endpoint_id": config["endpoint_id"], "user": args.user, "mode": args.mode,
@@ -761,7 +767,11 @@ def status(args):
         except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError) as exc:
             cells = [("연결 확인", f"실패 · {exc}")]
     screen = Screen()
+    if getattr(args, "sources", False):
+        screen.stop()
+        return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
     if screen.window is None:
+        print("\n".join(kit_screen.banner(True)) + "\nMINT · MCP 연결 관리\n1 로그인 · 2 상태 확인 · 3 승인된 MCP")
         print(render_status(summary, time.time()), end="")
         for name, value in cells:
             print(f"{name}: {value}")
@@ -776,7 +786,7 @@ def status(args):
     def check(current):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
-    kit_screen.live(read, check, screen)
+    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
     print(screen.text())
 
 
@@ -976,6 +986,30 @@ def serve(args):
         binding.configure_runtime(sys.modules[__name__])
         binding.start_runtime(config, sys.modules[__name__])
     cache, lock = {}, threading.Lock()
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+
+    class Source(socketserver.StreamRequestHandler):
+        def handle(self):
+            self.request.settimeout(5)
+            if hasattr(self.request, "getpeereid"):
+                peer = self.request.getpeereid()[0]
+            else:
+                import struct
+                peer = struct.unpack("3i", self.request.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))[1]
+            if peer != (config.get("owner_uid") or config["uid"]):
+                return
+            try:
+                command = json.loads(self.rfile.readline(4096))
+                access.serve_source(config, command, verify_transport, self.request.sendall)
+            except (OSError, ValueError, TypeError):
+                return
+    source_sock = Path(config["socket"]).with_suffix(".source")
+    source_sock.unlink(missing_ok=True)
+    source_server = socketserver.ThreadingUnixStreamServer(str(source_sock), Source)
+    source_server.daemon_threads = True
+    os.chown(source_sock, config.get("owner_uid") or config["uid"], -1)
+    source_sock.chmod(0o600)
+    threading.Thread(target=source_server.serve_forever, daemon=True).start()
     class Header(socketserver.BaseRequestHandler):
         def handle(self):
             permitted = binding.authorize_peer(self.request, config)
@@ -1072,6 +1106,7 @@ def serve(args):
     # gateway and ca let the employee's own `mcpgw-status --check` reach the Gateway as their harness does.
     summary = {"user": config["username"], "state": "unknown", "connected": False, "last_report": None,
                "servers": None, "kit": kit, "mode": config.get("mode", "isolated"), "gateway": config["gateway_url"],
+               "source_socket": str(source_sock),
                "ca": str(PROGRAMS / f"ca-{config['uid']}.crt") if config.get("ca_certificate") else None}
     known = None  # server names of the policy applied before this one: what a new policy adds is shown to the employee
     while True:
@@ -1192,6 +1227,7 @@ def rollback(args):
     for suffix in ("json", "txt"):
         status_path(args.user, suffix).unlink(missing_ok=True)
     (PROGRAMS / f"model-{args.user}.json").unlink(missing_ok=True)
+    Path(f"/run/mcpgw-{args.user}.source").unlink(missing_ok=True)
     if not list(PROGRAMS.glob("status-*.json")):
         STATUS_SHIM.unlink(missing_ok=True)
     shutil.rmtree(folder, ignore_errors=True)
@@ -1248,6 +1284,7 @@ def main():
     show = commands.add_parser("status", help="이 PC의 관리형 연결 상태")
     show.add_argument("--user")
     show.add_argument("--check", action="store_true", help="게이트웨이로 initialize·tools/list를 보내 연결을 확인")
+    show.add_argument("--sources", action="store_true", help="승인된 MCP 소스 받기")
     show.set_defaults(run=status)
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)

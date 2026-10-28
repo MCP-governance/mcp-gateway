@@ -13,6 +13,10 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
+try {
+    Add-Type -Namespace Mint -Name Dpi -MemberDefinition '[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+    [void][Mint.Dpi]::SetProcessDPIAware()
+} catch { }
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $mode = if ($Observer) { 'observer' } else { 'managed' }
 $directory = if ($Observer) { Join-Path $env:LOCALAPPDATA 'MCPGatewayEndpoint' } else { Join-Path $env:ProgramFiles 'MCPGatewayManaged' }
@@ -107,7 +111,7 @@ $title.Font = New-Object Drawing.Font('맑은 고딕', 14, [Drawing.FontStyle]::
 Add-EndpointRow 'step' $title
 $url = New-Object Windows.Forms.TextBox
 $url.Text = $GatewayUrl
-$url.ReadOnly = $mode -eq 'managed' -or $Remove
+$url.ReadOnly = $Remove
 Add-EndpointRow 'gateway' $url
 $location = New-Object Windows.Forms.TextBox
 $location.Text = $directory
@@ -117,6 +121,13 @@ $user = New-Object Windows.Forms.TextBox
 $user.Text = $targetUser
 $user.ReadOnly = $Remove -or $mode -eq 'observer'
 Add-EndpointRow 'account' $user
+$mintUser = New-Object Windows.Forms.TextBox
+$mintPassword = New-Object Windows.Forms.TextBox
+$mintPassword.UseSystemPasswordChar = $true
+if ($mode -eq 'managed' -and -not $Remove) {
+    Add-EndpointRow 'mint_account' $mintUser
+    Add-EndpointRow 'mint_password' $mintPassword
+}
 $scope = New-Object Windows.Forms.TextBox
 $scope.Multiline = $true
 $scope.Height = 65
@@ -189,6 +200,31 @@ Add-EndpointRow '' $buttons
 $form.AcceptButton = $next
 
 function Start-EndpointJob([string]$Action) {
+    $grant = $null
+    if ($Action -eq 'install' -and $mode -eq 'managed') {
+        try {
+            $loginRequest = New-EndpointGatewayRequest ($url.Text.TrimEnd('/') + '/auth/kit-enrollment') $bundle.ca_certificate $bundle.ca_sha256
+            $loginRequest.Method = 'POST'
+            $loginRequest.ContentType = 'application/json'
+            $body = [Text.Encoding]::UTF8.GetBytes((@{ email = $mintUser.Text; password = $mintPassword.Text } | ConvertTo-Json -Compress))
+            $loginRequest.ContentLength = $body.Length
+            $stream = $loginRequest.GetRequestStream()
+            try { $stream.Write($body, 0, $body.Length) } finally { $stream.Dispose() }
+            $response = $loginRequest.GetResponse()
+            try {
+                $reader = New-Object IO.StreamReader($response.GetResponseStream())
+                try { $grant = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+            } finally { $response.Dispose() }
+            if ($grant.enrollment_token -notmatch '^[A-Za-z0-9_-]{43}$') { throw 'login response' }
+        } catch {
+            $code = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+            $results.Text = T $(switch ($code) { 401 { 'mint_invalid' }; 403 { 'mint_locked' }; 429 { 'mint_limited' }; default { 'mint_network' } })
+            return
+        } finally {
+            $mintPassword.Clear()
+            if ($body) { [Array]::Clear($body, 0, $body.Length); $body = $null }
+        }
+    }
     $script:jobAction = $Action
     $requestPath = Join-Path $work 'request.json'
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
@@ -197,6 +233,7 @@ function Start-EndpointJob([string]$Action) {
         endpoint_id = $EndpointId; scan_paths = @($scope.Lines | Where-Object { $_.Trim() }); key_file = $script:keyPath;
         tailscale_node_id = $TailscaleNodeId; enrollment = (Join-Path $PSScriptRoot 'enrollment.json'); settings = $SettingsPath;
         requester_sid = $identity.User.Value; isolated_account = [bool]$isolatedBox.Checked }
+    if ($grant) { $request.kit_enrollment_token = $grant.enrollment_token }
     [IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
     try {
         $worker = Join-Path $PSScriptRoot 'windows-worker.ps1'
@@ -277,6 +314,7 @@ $timer.Add_Tick({
             $next.Enabled = $true
         } else {
             $script:completed = $true
+            if ($navigation) { $navigation.approved.Enabled = $true }
             $title.Text = if ($Remove) { T 'done_remove' } else { T 'done_install' }
             $next.Enabled = $false
             $retry.Enabled = $false
@@ -313,6 +351,17 @@ $next.Add_Click({
 $retry.Add_Click({ Start-EndpointJob $script:jobAction })
 $form.Add_FormClosing({ param($sender, $event) if ($script:job) { $event.Cancel = $true } })
 $title.Text = '시작'
+$navigation = Set-EndpointChrome $form $layout {
+    if ($script:completed -and $script:resultPath) {
+        $result = Get-Content -LiteralPath $script:resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($result.settings) {
+            Start-Process -FilePath $script:PowerShellExe -WindowStyle Hidden -ArgumentList (
+                '-NoProfile -STA -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'tray.ps1')) +
+                ' -SettingsPath ' + (Quote-EndpointArgument $result.settings))
+        }
+    }
+} { $mintUser.Focus() } { $url.Focus() }
+$navigation.approved.Enabled = $false
 try { [void]$form.ShowDialog() } finally {
     $timer.Dispose()
     $form.Dispose()

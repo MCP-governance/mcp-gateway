@@ -3,6 +3,10 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
+try {
+    Add-Type -Namespace Mint -Name Dpi -MemberDefinition '[System.Runtime.InteropServices.DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+    [void][Mint.Dpi]::SetProcessDPIAware()
+} catch { }
 $settings = Get-Content -LiteralPath $SettingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $created = $false
 $mutex = New-Object Threading.Mutex($true, ('Local\MCPGatewayTray-' + $settings.sid), [ref]$created)
@@ -223,7 +227,8 @@ function Update-EndpointWindow {
     if (-not $form -or $form.IsDisposed) { return }
     $form.Text = T 'product'
     $snapshot = $script:snapshot
-    $servers = @($snapshot.servers)
+    $servers = @($snapshot.server_names | Where-Object { $_ })
+    if (-not $servers.Count) { $servers = @($snapshot.servers) }
     $versions = @()
     if ($snapshot.harnesses) { $versions = @($snapshot.harnesses.PSObject.Properties | ForEach-Object { "$($_.Name) $($_.Value)" }) }
     $cells = Get-EndpointCells
@@ -289,9 +294,65 @@ function Show-EndpointWindow {
     $row = $layout.RowCount; $layout.RowCount++
     $layout.Controls.Add($buttons, 0, $row); $layout.SetColumnSpan($buttons, 2)
     $form.Tag = @{ captions = $captions; values = $values; buttons = $list }
+    $navigation = Set-EndpointChrome $form $layout { Show-EndpointSources } { Start-EndpointLogin $(if (Get-Command claude -ErrorAction SilentlyContinue) { 'claude' } else { 'codex' }) } { Start-EndpointReconnect }
+    $form.Tag.navigation = $navigation
     $script:window = $form
     Update-EndpointWindow
     $form.Show()
+}
+
+
+function Show-EndpointSources {
+    $sourceForm = New-Object Windows.Forms.Form
+    $sourceForm.Text = T 'approved'; $sourceForm.AutoScaleMode = 'Dpi'
+    $sourceForm.Size = New-Object Drawing.Size(640, 420); $sourceForm.StartPosition = 'CenterScreen'
+    $sourceForm.BackColor = [Drawing.Color]::White
+    $sources = New-Object Windows.Forms.ListBox
+    $sources.Dock = 'Fill'; $sources.DisplayMember = 'display_name'
+    $download = New-Object Windows.Forms.Button
+    $download.Text = T 'source'; $download.Dock = 'Bottom'; $download.Height = 44; $download.Enabled = $false
+    $result = New-Object Windows.Forms.Label
+    $result.Dock = 'Bottom'; $result.AutoSize = $true
+    $sourceForm.Controls.AddRange(@($sources, $result, $download))
+    $state = @{ job = $null; download = $false }
+    $output = Join-Path $work 'sources.json'
+    $start = {
+        param($server)
+        if ($state.job) { return }
+        $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'managed-windows.py')) +
+            ' sources --settings ' + (Quote-EndpointArgument $SettingsPath)
+        if ($server) {
+            $arguments += ' --server ' + (Quote-EndpointArgument $server.server_id) + ' --commit ' + (Quote-EndpointArgument $server.commit_sha)
+        }
+        $state.download = [bool]$server
+        $download.Enabled = $false; $result.Text = T 'checking'
+        try {
+            $state.job = Start-Process -FilePath $python -ArgumentList $arguments -PassThru -WindowStyle Hidden `
+                -RedirectStandardOutput $output -RedirectStandardError ($output + '.err')
+        } catch { $result.Text = T 'failed' }
+    }.GetNewClosure()
+    $sources.Add_SelectedIndexChanged({ $download.Enabled = -not $state.job -and $sources.SelectedItem.source_available }.GetNewClosure())
+    $download.Add_Click({ & $start $sources.SelectedItem }.GetNewClosure())
+    $timer = New-Object Windows.Forms.Timer
+    $timer.Interval = 400
+    $timer.Add_Tick({
+        if (-not $state.job -or -not $state.job.HasExited) { return }
+        try {
+            if ($state.job.ExitCode -ne 0) { throw 'source' }
+            $answer = Get-Content -LiteralPath $output -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($state.download) { $result.Text = (T 'ok') + ' · ' + $answer.file }
+            else {
+                $sources.Items.Clear()
+                foreach ($server in $answer.servers) { [void]$sources.Items.Add($server) }
+                $result.Text = T 'approved'
+            }
+        } catch { $result.Text = T 'failed' }
+        $state.job.Dispose(); $state.job = $null
+        $download.Enabled = $sources.SelectedItem -and $sources.SelectedItem.source_available
+    }.GetNewClosure())
+    $sourceForm.Add_FormClosing({ param($sender, $event) if ($state.job) { $event.Cancel = $true } }.GetNewClosure())
+    & $start $null; $timer.Start()
+    try { [void]$sourceForm.ShowDialog() } finally { $timer.Dispose(); $sourceForm.Dispose() }
 }
 
 function Switch-EndpointLanguage {

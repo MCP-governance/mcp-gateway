@@ -378,6 +378,14 @@ async def password_principal(email: str, password: str, caller: str) -> dict:
     return row
 
 
+@app.post("/auth/kit-enrollment")
+async def kit_enrollment(request: Login, http_request: Request):
+    from .endpoint_plane import enrollment_token
+    peer = http_request.client.host if http_request.client else "unknown"
+    row = await password_principal(request.email, request.password, peer)
+    return JSONResponse(await enrollment_token(row["token"]), headers={"Cache-Control": "no-store"})
+
+
 @app.get("/auth/me")
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
@@ -393,10 +401,10 @@ async def me(authorization: str | None = Header(default=None)):
             "git_url": git_url.rstrip("/") + f"/{GITEA_ORG}" if git_url else "", "kit": await pc_kit() if field else None}
 
 
-KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py"),
-             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py"),
+KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py", "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py"),
+             "macos": ("install.sh", "install-macos.sh", "bootstrap.py", "managed-macos.py", "managed-linux.py", "agent.py", "offline_buffer.py", "kit_screen.py", "kit_access.py"),
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
-                         "runtime-check.py", "windows_status.py", "kit_screen.py", "install.py", "install-windows.ps1",
+                         "runtime-check.py", "windows_status.py", "kit_screen.py", "kit_access.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py")}
 # The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
 KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}
@@ -421,8 +429,8 @@ def field_ca() -> dict:
 
 
 async def pc_kit() -> dict | None:
-    """개인별 1회용 enrollment 키트. MCP 서버가 없어도 단말 등록은 가능하다."""
-    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    """직원 자격이 없는 설치 키트. 신원은 설치 시 로그인으로 정한다."""
+    public = os.getenv("GATEWAY_PUBLIC_URL", os.getenv("IDP_ISSUER", "")).rstrip("/")
     if not (Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit")) / "bootstrap.py").is_file() or not public:
         return None
     rows = await db.fetch_all(
@@ -446,7 +454,6 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
                                authorization: str | None = Header(default=None),
                                packaging: Literal["zip", "oneclick"] = "zip", isolated: bool = False,
                                issue_ticket: bool = False):
-    from .endpoint_plane import enrollment_token
     download_prefix = "Bearer kit-download."
     if not authorization and request.headers.get("content-type", "").split(";", 1)[0].strip().lower() == "application/x-www-form-urlencoded":
         body = bytearray()
@@ -487,7 +494,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
     runtime = Path(os.getenv("WINDOWS_PYTHON_DIR", "/opt/windows-python"))
     if platform == "windows" and any(not (runtime / name).is_file() for name in ("python.zip", "windows-python.json")):
         raise HTTPException(503, "Windows 실행 파일이 배포되지 않았습니다.")
-    public = os.getenv("IDP_ISSUER", "").rstrip("/")
+    public = os.getenv("GATEWAY_PUBLIC_URL", os.getenv("IDP_ISSUER", "")).rstrip("/")
     if not public:
         raise HTTPException(503, "Gateway 공개 주소가 없습니다.")
     if os.getenv("MCP_FIELD_MODE") == "1" and urlsplit(public).scheme != "https":
@@ -520,8 +527,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
              datetime.now(UTC) + timedelta(minutes=5)))
         return Response(script, media_type="application/octet-stream",
                         headers={"Content-Disposition": 'attachment; filename="mcp-connect-macos.command"', "Cache-Control": "no-store"})
-    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca,
-              "owner": user["user_id"], **await enrollment_token(user["principal"])}
+    bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca}
     if isolated:
         # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
         bundle["isolated"] = True
@@ -2101,6 +2107,11 @@ MCP_SOURCE_DOWNLOAD_SLOTS = asyncio.Semaphore(2)
 
 
 async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[dict]:
+    if user.get("endpoint_id") and not await db.fetch_one(
+            """SELECT 1 FROM endpoint_agents a JOIN principals p ON p.token=a.owner_token
+               WHERE a.endpoint_id=%s AND a.owner_token=%s AND a.status='active'
+                 AND a.managed_state='active' AND p.status='active'""", (user["endpoint_id"], user["principal"])):
+        raise HTTPException(403, "장치·계정 확인 필요")
     rows = await db.fetch_all(
         """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.repository_url,
                   r.endpoint_url, r.intake_kind, r.commit_sha, r.internal_repo_url,
@@ -2212,7 +2223,8 @@ async def download_approved_mcp_source(server_id: str, commit: str, user: dict =
             raise HTTPException(409, "소스를 받는 동안 승인이 변경되었습니다.")
         await review.record_event("mcp-source-download", "recorded", "server", server_id, user["principal"],
                                   scope={"intake_id": str(row["intake_id"]), "commit": commit,
-                                         "sha256": digest, "bytes": size})
+                                         "sha256": digest, "bytes": size,
+                                         **({"endpoint_id": user["endpoint_id"]} if user.get("endpoint_id") else {})})
     except (httpx.HTTPError, asyncio.TimeoutError) as exc:
         spool.close()
         raise HTTPException(502, "승인된 소스에 연결하지 못했습니다.") from exc
@@ -2231,6 +2243,32 @@ async def download_approved_mcp_source(server_id: str, commit: str, user: dict =
                              headers={"Content-Disposition": f'attachment; filename="{server_id}-{commit[:12]}.zip"',
                                       "Content-Length": str(size), "X-Content-SHA256": digest,
                                       "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
+
+async def endpoint_source_caller(x_endpoint_key: str | None = Header(default=None)) -> dict:
+    from .endpoint_plane import authenticate_device
+    try:
+        device = await authenticate_device(x_endpoint_key, "enforcement")
+    except PermissionError as exc:
+        raise HTTPException(401, "장치 자격 확인 필요") from exc
+    if device.get("managed_state") != "active":
+        raise HTTPException(403, "장치 활성화 필요")
+    owner = await db.fetch_one("SELECT token FROM principals WHERE token=%s AND status='active'",
+                               (device["owner_token"],))
+    if not owner:
+        raise HTTPException(403, "계정 확인 필요")
+    # Administrators' devices use the same employee audience boundary as every other device.
+    return {"principal": owner["token"], "roles": ["employee"], "endpoint_id": device["endpoint_id"]}
+
+
+@app.get("/internal/endpoint/approved-mcp")
+async def endpoint_approved_mcp(user: dict = Depends(endpoint_source_caller)):
+    return await list_approved_mcp(user)
+
+
+@app.get("/internal/endpoint/approved-mcp/{server_id}/source")
+async def endpoint_approved_source(server_id: str, commit: str, user: dict = Depends(endpoint_source_caller)):
+    return await download_approved_mcp_source(server_id, commit, user)
 
 
 class IntakeDiscovery(StrictModel):

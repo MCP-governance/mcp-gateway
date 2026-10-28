@@ -27,7 +27,7 @@ FILES = {'managed-mcp.json': Path('/Library/Application Support/ClaudeCode/manag
          'managed-settings.json': Path('/Library/Application Support/ClaudeCode/managed-settings.json'),
          'requirements.toml': Path('/etc/codex/requirements.toml'),
          'managed_config.toml': Path('/etc/codex/managed_config.toml')}
-SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py', 'kit_screen.py')
+SOURCES = ('managed-macos.py', 'managed-linux.py', 'bootstrap.py', 'agent.py', 'offline_buffer.py', 'kit_screen.py', 'kit_access.py')
 ROLLBACK_ORDER = ('launchd', 'shims', 'wrappers', 'pf', 'settings', 'programs', 'account')
 
 
@@ -351,7 +351,8 @@ def install(employee, enrollment):
         plist.chmod(0o644)
         started = core.time.time()
         run('/bin/launchctl', 'bootstrap', 'system', str(plist))
-        enrollment.unlink()
+        if bundle.get('enrollment_token'):
+            enrollment.unlink()
         core.diagnostic('installed', None)
         summary = core.kit_screen.wait_summary(core.status_path(account, 'json'), since=started)
         return {'endpoint_id': config['endpoint_id'], 'managed_account': account, 'state': summary.get('state', 'unknown')}
