@@ -1,7 +1,5 @@
 ﻿param([Parameter(Mandatory = $true)][string]$SettingsPath, [switch]$Show)
-# MCPGateway.exe runs this script in its own runspace: $PSScriptRoot is empty inside button and timer handlers there.
-$script:root = $PSScriptRoot
-. (Join-Path $script:root 'windows-common.ps1')
+. (Join-Path $PSScriptRoot 'windows-common.ps1')
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
@@ -185,7 +183,7 @@ function Start-EndpointReconnect {
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
     [IO.File]::WriteAllText($requestPath, (@{ action = 'health'; gateway_url = $settings.gateway_url;
         ca_certificate = $settings.ca_certificate; ca_sha256 = $settings.ca_sha256 } | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
-    $arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $script:root 'windows-worker.ps1')) +
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'windows-worker.ps1')) +
         ' -RequestPath ' + (Quote-EndpointArgument $requestPath)
     try {
         $script:healthJob = Start-Process -FilePath $script:PowerShellExe -ArgumentList $arguments -PassThru -WindowStyle Hidden
@@ -325,20 +323,27 @@ function Show-EndpointSources {
     $sourceForm.Controls.AddRange(@($sources, $result, $download))
     $state = @{ job = $null; download = $false }
     $output = Join-Path $work 'sources.json'
+    # GetNewClosure() keeps only this function's locals: script variables and functions are not visible inside.
+    $pythonExe = $python
+    $quote = ${function:Quote-EndpointArgument}
+    $base = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'managed-windows.py')) +
+        ' sources --settings ' + (Quote-EndpointArgument $SettingsPath)
+    $text = @{ checking = T 'checking'; failed = T 'failed'; ok = T 'ok'; approved = T 'approved' }
     $start = {
         param($server)
         if ($state.job) { return }
-        $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'managed-windows.py')) +
-            ' sources --settings ' + (Quote-EndpointArgument $SettingsPath)
+        $arguments = $base
         if ($server) {
-            $arguments += ' --server ' + (Quote-EndpointArgument $server.server_id) + ' --commit ' + (Quote-EndpointArgument $server.commit_sha)
+            $arguments += ' --server ' + (& $quote $server.server_id) + ' --commit ' + (& $quote $server.commit_sha)
         }
         $state.download = [bool]$server
-        $download.Enabled = $false; $result.Text = T 'checking'
+        $download.Enabled = $false; $result.Text = $text.checking
         try {
-            $state.job = Start-Process -FilePath $python -ArgumentList $arguments -PassThru -WindowStyle Hidden `
+            $state.job = Start-Process -FilePath $pythonExe -ArgumentList $arguments -PassThru -WindowStyle Hidden `
                 -RedirectStandardOutput $output -RedirectStandardError ($output + '.err')
-        } catch { $result.Text = T 'failed' }
+            # Windows PowerShell reports ExitCode only when the handle was opened before the process exits.
+            [void]$state.job.Handle
+        } catch { $result.Text = $text.failed }
     }.GetNewClosure()
     $sources.Add_SelectedIndexChanged({ $download.Enabled = -not $state.job -and $sources.SelectedItem.source_available }.GetNewClosure())
     $download.Add_Click({ & $start $sources.SelectedItem }.GetNewClosure())
@@ -349,13 +354,13 @@ function Show-EndpointSources {
         try {
             if ($state.job.ExitCode -ne 0) { throw 'source' }
             $answer = Get-Content -LiteralPath $output -Raw -Encoding UTF8 | ConvertFrom-Json
-            if ($state.download) { $result.Text = (T 'ok') + ' · ' + $answer.file }
+            if ($state.download) { $result.Text = $text.ok + ' · ' + $answer.file }
             else {
                 $sources.Items.Clear()
                 foreach ($server in $answer.servers) { [void]$sources.Items.Add($server) }
-                $result.Text = T 'approved'
+                $result.Text = $text.approved
             }
-        } catch { $result.Text = T 'failed' }
+        } catch { $result.Text = $text.failed }
         $state.job.Dispose(); $state.job = $null
         $download.Enabled = $sources.SelectedItem -and $sources.SelectedItem.source_available
     }.GetNewClosure())
@@ -373,7 +378,7 @@ function Switch-EndpointLanguage {
 }
 
 function Start-EndpointRemove {
-    $arguments = '-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $script:root 'setup.ps1')) +
+    $arguments = '-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'setup.ps1')) +
         ' -Remove -SettingsPath ' + (Quote-EndpointArgument $SettingsPath)
     # Explorer launches the wizard outside the scheduled task's process tree.
     $shell = New-Object -ComObject Shell.Application
