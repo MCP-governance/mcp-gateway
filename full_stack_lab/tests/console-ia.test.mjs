@@ -184,7 +184,7 @@ test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 
     deployment: { rules_match: true, data_match: false } } });
   const out = await ui.ROUTES.policy("", "");
   const body = String(out.html.tabs.find((tab) => tab.key === "ledger").body);
-  assert.match(body, /정책 조회 상태[^]*실행 규칙 배포 일치[^]*일치[^]*정책 데이터 배포 일치[^]*불일치[^]*조회 기준 시각/);
+  assert.match(body, /정책 조회 상태[^]*OPA 룰셋 일치 여부[^]*일치[^]*OPA 정책 데이터 일치 여부[^]*불일치[^]*조회 기준 시각/);
   assert.match(body, /등록 상태[^]*최근 24시간 판정[^]*운영[^]*기록 있음[^]*POL-001/);
   assert.ok(body.includes("&lt;img"));
   assert.ok(!body.includes("<img"));
@@ -238,6 +238,16 @@ test("조직 정책 원본이 없으면 정상 빈 목록으로 숨기지 않는
   const out = await ui.ROUTES.policy("", "organization");
   assert.match(String(out.html.tabs[0].body), /조직 정책 원본 조회 실패/);
   assert.doesNotMatch(String(out.html.tabs[0].body), /등록된 조직 정책 없음/);
+});
+
+test("정책 조회 배지는 제목 옆에 상태 색상을 표시하고 기간은 작은 보조 글씨로 표시한다", async () => {
+  for (const [state, tone, label] of [["loaded", "allow", "조회 확인"], ["unavailable", "block", "조회 실패"], [undefined, "outline", "미확인"]]) {
+    const ui = build(true, { "/gw/policy/ledger": { policies: [], source_state: state, record_window_hours: 24 } });
+    const result = await ui.ROUTES.policy("", "ledger");
+    const body = String(result.html.tabs.find((tab) => tab.key === "ledger").body);
+    assert.match(body, new RegExp(`<h2>정책 조회 상태</h2><span class="chip ${tone}">${label}</span><span class="sub">최근 24시간</span>`));
+    assert.doesNotMatch(body, /<dt>정책 원본 조회<\/dt>|<dt>판정 기록 조회 기간<\/dt>/);
+  }
 });
 
 test("MCP 설정 다음 페이지는 사용자 화면의 전체 범위와 서버의 미등록 범위를 보존한다", async () => {

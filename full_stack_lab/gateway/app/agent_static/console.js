@@ -406,8 +406,8 @@ const kpiStrip = (items) => html`<div class="kpis kpis-${items.length}">${items.
   value === 0 || value === "0" ? "" : tone, href]).map(([label, value, tone, href]) => href
   ? html`<a class="kpi ${tone}" href="${href}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></a>`
   : html`<div class="kpi ${tone}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`)}</div>`;
-const panel = (title, body, { sub = "", tools = "", flush = false, end = "" } = {}) => html`<section class="panel">
-  <header><h2>${title}</h2>${sub ? html`<span class="sub">${sub}</span>` : ""}${end ? html`<div class="tools-end">${end}</div>` : ""}</header>
+const panel = (title, body, { sub = "", status = "", tools = "", flush = false, end = "" } = {}) => html`<section class="panel">
+  <header><h2>${title}</h2>${status}${sub ? html`<span class="sub">${sub}</span>` : ""}${end ? html`<div class="tools-end">${end}</div>` : ""}</header>
   ${tools ? html`<div class="tools">${tools}</div>` : ""}
   <div class="body ${flush ? "flush" : ""}">${body}</div></section>`;
 const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="${id}" role="img" aria-label="${label}"></div>`;
@@ -2323,11 +2323,14 @@ ROUTES.policy = async (_, tab) => {
           </tbody></table><p class="empty" data-list-empty="organization-policy-list" hidden>검색 결과 없음</p>
           ${organizationPolicies.length ? "" : empty(ledger.organization?.source_state === "available" ? "등록된 조직 정책 없음" : "조직 정책 원본 조회 실패")}`,
           { flush: true, tools: listToolbar("organization-policy-list", "정책 번호·대상·단계 검색") }) },
-        { key: "ledger", label: "집행 규칙", n: policyLedger.length, body: html`<div class="stack">
-        ${panel("정책 조회 상태", kv([["정책 원본 조회", policySourceLabel(ledger)],
-          ["실행 규칙 배포 일치", policyDeployLabel(ledger, "rules_match")], ["정책 데이터 배포 일치", policyDeployLabel(ledger, "data_match")],
-          ["조회 기준 시각", when(ledger.checked_at)], ["실행 환경", policyEnvironment(ledger.environment)], ["판정 기록 조회 기간", ledger.record_window_hours === 24 ? "최근 24시간" : "—"]]))}
-        ${panel("집행 규칙", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>등록 상태</th><th>정의된 결과</th><th>최근 24시간 판정</th><th>관련 보안 정책</th></tr></thead><tbody>
+        { key: "ledger", label: "보안 통제 규칙", n: policyLedger.length, body: html`<div class="stack">
+        ${panel("정책 조회 상태", kv([
+          ["OPA 룰셋 일치 여부", policyDeployLabel(ledger, "rules_match")], ["OPA 정책 데이터 일치 여부", policyDeployLabel(ledger, "data_match")],
+          ["조회 기준 시각", when(ledger.checked_at)]]), {
+          status: chip(ledger.source_state === "loaded" ? "allow" : ledger.source_state === "unavailable" ? "block" : "outline", policySourceLabel(ledger)),
+          sub: ledger.record_window_hours === 24 ? "최근 24시간" : "—",
+        })}
+        ${panel("보안 통제 규칙", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>등록 상태</th><th>정의된 결과</th><th>최근 24시간 판정</th><th>관련 보안 정책</th></tr></thead><tbody>
           ${policyLedger.map((p) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}">
             <td><b>${p.name}</b><span class="sub mono">${p.policy_id}</span></td><td>${policyExecutor(p)}</td><td>${["운영", "중지", "폐기"].includes(p.status) ? p.status : "—"}</td>
             <td>${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : "—"}</td>
@@ -3040,8 +3043,8 @@ const ACTIONS = {
         ["필요 증빙", p.required_evidence]]) },
       { key: "implementation", label: "구현과 적용", body: kv([["구현 방식", organizationImplementation(p)], ["코드 확인", organizationCode(p)],
         ["시험 정의", p.has_test_definition ? "시험 정의 있음" : "시험 정의 미확인"],
-        ["시험 실행 확인", "미확인"], ["조직 적용 확인", "미확인"], ["집행 규칙 매핑", "검토 필요"]]) },
-      { key: "rules", label: "집행 규칙 검토 후보", body: html`${candidates.length ? html`<div class="row-actions">${candidates.map((id) => html`<button class="btn" type="button" data-act="policy" data-id="${id}">${policyLedger.find((rule) => rule.policy_id === id).name}</button>`)}</div>` : empty("확인된 규칙 후보 없음")}` },
+        ["시험 실행 확인", "미확인"], ["조직 적용 확인", "미확인"], ["보안 통제 규칙 매핑", "검토 필요"]]) },
+      { key: "rules", label: "보안 통제 규칙 검토 후보", body: html`${candidates.length ? html`<div class="row-actions">${candidates.map((id) => html`<button class="btn" type="button" data-act="policy" data-id="${id}">${policyLedger.find((rule) => rule.policy_id === id).name}</button>`)}</div>` : empty("확인된 규칙 후보 없음")}` },
     ]);
   },
   policy(el) {
