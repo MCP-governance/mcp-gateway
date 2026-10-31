@@ -169,22 +169,23 @@ test("접근 권한은 AI 연결 관리에서만 조회하고 정책은 기존 �
   ui.calls.length = 0;
   const policy = await ui.ROUTES.policy("", "");
   assert.equal(policy.html.active, "ledger");
-  assert.deepEqual(Array.from(policy.html.tabs, (tab) => tab.key), ["ledger"]);
+  assert.deepEqual(Array.from(policy.html.tabs, (tab) => tab.key), ["organization", "ledger"]);
   assert.match(String(policy.html.head), /관찰 모드로 전환/);
   assert.ok(!ui.calls.includes("/gw/policy/matrix"));
 });
 
 test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 POL 연결만 표시한다", async () => {
   const policy = { policy_id: "P-1", name: "<img src=x>", status: "운영", enforced_by: "opa", outcome: "차단",
-    purpose: "목적", scope: "<script>bad</script>", condition: "조건", enforcement: "거부",
+    purpose: "목적", scope: "<script>bad</script>", condition: "조건", enforcement: "거부", monitor_behavior: "protected",
     requirement_ids: ["REQ-03"], pol_ids: ["POL-001", "REQ-03", "POL-001"],
     recent: { count: 2, last_seen_at: "2026-10-31T00:00:00Z" } };
   const ui = build(true, { "/gw/policy/ledger": { policies: [policy], source_state: "loaded",
     checked_at: "2026-10-31T01:00:00Z", record_window_hours: 24,
     deployment: { rules_match: true, data_match: false } } });
   const out = await ui.ROUTES.policy("", "");
-  const body = String(out.html.tabs[0].body);
-  assert.match(body, /조회 확인[^]*불일치[^]*운영[^]*기록 확인[^]*POL-001/);
+  const body = String(out.html.tabs.find((tab) => tab.key === "ledger").body);
+  assert.match(body, /정책 조회 상태[^]*실행 규칙 배포 일치[^]*일치[^]*정책 데이터 배포 일치[^]*불일치[^]*조회 기준 시각/);
+  assert.match(body, /등록 상태[^]*최근 24시간 판정[^]*운영[^]*기록 있음[^]*POL-001/);
   assert.ok(body.includes("&lt;img"));
   assert.ok(!body.includes("<img"));
   let detail;
@@ -192,7 +193,9 @@ test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 
   ui.ACTIONS.policy({ dataset: { id: "P-1" } });
   assert.deepEqual(Array.from(detail.tabs, (tab) => tab.key), ["definition", "evidence", "mapping"]);
   assert.match(String(detail.tabs[0].body), /&lt;script&gt;/);
-  assert.match(String(detail.tabs[1].body), /현재 집행 경로 검증[^]*미확인[^]*판정 기록으로 확정 불가/);
+  assert.match(String(detail.tabs[1].body), /집행 경로 시험[^]*미수행/);
+  assert.match(String(detail.tabs[1].body), /관찰 모드에서도 차단 유지/);
+  assert.doesNotMatch(String(detail.tabs[1].body), /독립 효과 검증|현재 집행 경로 검증/);
   assert.match(detail.actions, /policy=P-1[^]*since=2026-10-30T01%3A00%3A00.000Z/);
   assert.ok(!body.includes("REQ-03"));
 });
@@ -200,14 +203,41 @@ test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 
 test("정책 조회 실패와 기록 없음은 집행 성공이나 정상 빈 목록으로 표시하지 않는다", async () => {
   const unavailable = build(true, { "/gw/policy/ledger": { policies: [], source_state: "unavailable", deployment: null } });
   const failed = await unavailable.ROUTES.policy("", "");
-  assert.match(String(failed.html.tabs[0].body), /정책 원본 조회 실패/);
-  assert.doesNotMatch(String(failed.html.tabs[0].body), /등록된 정책 없음/);
+  assert.match(String(failed.html.tabs.find((tab) => tab.key === "ledger").body), /정책 원본 조회 실패/);
+  assert.doesNotMatch(String(failed.html.tabs.find((tab) => tab.key === "ledger").body), /등록된 정책 없음/);
   const unverified = build(true, { "/gw/policy/ledger": { policies: [{ policy_id: "P-2", name: "두 번째", status: "운영",
     enforced_by: "untrusted", recent: { count: 0 }, requirement_ids: ["POL-090"] }], source_state: "loaded", deployment: {} } });
   const result = await unverified.ROUTES.policy("", "");
-  const body = String(result.html.tabs[0].body);
-  assert.match(body, /미확인[^]*기록 없음[^]*연결 미확인/);
+  const body = String(result.html.tabs.find((tab) => tab.key === "ledger").body);
+  assert.match(body, /미확인[^]*기록 없음[^]*매핑 미확인/);
   assert.doesNotMatch(body, /untrusted|POL-090|집행 중/);
+});
+
+test("조직 정책은 코드 존재를 적용 성공으로 표시하지 않으며 규칙 후보만 연결한다", async () => {
+  const ui = build(true, { "/gw/policy/ledger": { source_state: "unavailable", policies: [{ policy_id: "MCP-CATALOG-001", name: "계약 검사" }],
+    organization: { source_state: "available", policies: [{ id: "POL-004", name: "<img src=x>", stage: "도입 검토",
+      implementation: "rego+sensor", category: "pac", has_rule: true, has_test_definition: true,
+      content: "<script>bad</script>", candidate_rule_ids: ["MCP-CATALOG-001", "MISSING-001"] }] } } });
+  const out = await ui.ROUTES.policy("", "organization");
+  assert.equal(out.html.active, "organization");
+  const tab = out.html.tabs.find((t) => t.key === "organization");
+  assert.equal(tab.n, 1);
+  assert.match(String(tab.body), /POL-004[^]*&lt;img[^]*판정 코드 있음[^]*미확인/);
+  let detail;
+  ui.policyDrawer((title, actions, tabs) => { detail = tabs; });
+  ui.ACTIONS["organization-policy"]({ dataset: { id: "POL-004" } });
+  assert.match(String(detail[0].body), /&lt;script&gt;/);
+  assert.match(String(detail[1].body), /시험 정의 있음[^]*시험 실행 확인[^]*미확인[^]*조직 적용 확인[^]*미확인/);
+  assert.match(String(detail[2].body), /data-act="policy" data-id="MCP-CATALOG-001"/);
+  assert.doesNotMatch(String(detail[2].body), /MISSING-001/);
+  assert.doesNotMatch(String(tab.body), /적용 중|시험 통과/);
+});
+
+test("조직 정책 원본이 없으면 정상 빈 목록으로 숨기지 않는다", async () => {
+  const ui = build(true, { "/gw/policy/ledger": { policies: [], organization: { source_state: "unavailable", policies: [] } } });
+  const out = await ui.ROUTES.policy("", "organization");
+  assert.match(String(out.html.tabs[0].body), /조직 정책 원본 조회 실패/);
+  assert.doesNotMatch(String(out.html.tabs[0].body), /등록된 조직 정책 없음/);
 });
 
 test("MCP 설정 다음 페이지는 사용자 화면의 전체 범위와 서버의 미등록 범위를 보존한다", async () => {

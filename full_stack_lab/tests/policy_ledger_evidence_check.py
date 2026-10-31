@@ -19,6 +19,7 @@ def load(core, db, info):
             node.args.defaults = [ast.Constant(None)]
     ns = {"asyncio": asyncio, "datetime": datetime, "UTC": UTC, "timedelta": timedelta,
           "core": core, "db": db, "policy_info": info,
+          "organization_policy": SimpleNamespace(catalog=lambda: {"source_state": "available", "policies": []}),
           "httpx": SimpleNamespace(HTTPError=ConnectionError)}
     exec(compile(ast.fix_missing_locations(ast.Module(body=nodes, type_ignores=[])), str(path), "exec"), ns)
     return ns

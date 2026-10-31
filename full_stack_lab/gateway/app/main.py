@@ -40,6 +40,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
+from . import organization_policy
 from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance, tool_sunset
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
@@ -753,6 +754,7 @@ async def policy_ledger_view(user: dict = Depends(admin_caller)) -> dict:
         "checked_at": checked_at.isoformat(),
         "deployment": deployment,
         "record_window_hours": 24,
+        "organization": organization_policy.catalog(),
         "policy_set": policy_set or {},
         "authorization": authorization or {},
         "deployed_rego": active,

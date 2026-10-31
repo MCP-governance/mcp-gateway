@@ -2263,14 +2263,19 @@ function showTarget(id) {
 // ── policy ───────────────────────────────────────────────────────────────────
 let policyLedger = [];
 let policyEvidence = {};
+let organizationPolicies = [];
+const organizationImplementation = (p) => ({ rego: "판정 코드", "rego+sensor": "판정 코드와 입력 연동", solution: "솔루션 기능" }[p.implementation] || "—");
+const organizationCode = (p) => p.has_rule ? "판정 코드 있음" : p.category === "excluded" ? "적용 범위 제외"
+  : p.implementation === "solution" ? "기능별 확인 필요" : "코드 미확인";
+
 const policyExecutor = (p) => ({ opa: "정책 엔진", gateway: "게이트웨이", endpoint: "엔드포인트", vendor: "벤더" }[p.enforced_by] || "—");
 const policyEnvironment = (env) => ({ prod: "운영 환경", stage: "사전 검증 환경", dev: "개발 환경" }[env] || "—");
 const policyLinks = (p) => Array.isArray(p.pol_ids) ? [...new Set(p.pol_ids.filter((id) => /^POL-\d{3}$/.test(id)))] : [];
 const policyRecorded = (p) => Number.isSafeInteger(p.recent?.count) && p.recent.count > 0;
-const policyRecordLabel = (p) => policyRecorded(p) ? "기록 확인" : p.recent?.count === 0 ? "기록 없음" : "미확인";
+const policyRecordLabel = (p) => policyRecorded(p) ? "기록 있음" : p.recent?.count === 0 ? "기록 없음" : "미확인";
 const policySourceLabel = (ledger) => ledger.source_state === "loaded" ? "조회 확인" : ledger.source_state === "unavailable" ? "조회 실패" : "미확인";
-const policyDeployLabel = (ledger) => !ledger.deployment || typeof ledger.deployment.rules_match !== "boolean" || typeof ledger.deployment.data_match !== "boolean" ? "미확인"
-  : ledger.deployment.rules_match === true && ledger.deployment.data_match === true ? "일치" : "불일치";
+const policyDeployLabel = (ledger, key) => typeof ledger.deployment?.[key] !== "boolean" ? "미확인"
+  : ledger.deployment[key] ? "일치" : "불일치";
 
 async function auditTabs(query) {
   const q = new URLSearchParams(query);
@@ -2304,19 +2309,29 @@ ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, ledger] = await Promise.all([gw("enforcement"), gw("policy/ledger")]);
   policyLedger = ledger.policies;
   policyEvidence = ledger;
+  organizationPolicies = ledger.organization?.policies || [];
   return {
     html: page({
       head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
-      active: "ledger",
-      tabs: [{ key: "ledger", label: "정책 목록", n: policyLedger.length, body: html`<div class="stack">
-        ${panel("적용 근거", kv([["정책 원본 조회", policySourceLabel(ledger)], ["배포 대조", policyDeployLabel(ledger)],
-          ["확인 시각", when(ledger.checked_at)], ["실행 환경", policyEnvironment(ledger.environment)], ["원장 조회 기간", ledger.record_window_hours === 24 ? "최근 24시간" : "—"]]))}
-        ${panel("정책 목록", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>관리 상태</th><th>정의된 결과</th><th>원장 근거</th><th>관련 POL</th></tr></thead><tbody>
+      active: tab === "organization" ? "organization" : "ledger",
+      tabs: [{ key: "organization", label: "조직 보안 정책", n: organizationPolicies.length, body:
+        panel("조직 보안 정책", html`<table class="data"><thead><tr><th>번호</th><th>정책 대상</th><th>적용 단계</th><th>구현 방식</th><th>코드 확인</th><th>조직 적용 확인</th></tr></thead><tbody id="organization-policy-list">
+          ${organizationPolicies.map((p) => html`<tr class="clickable" tabindex="0" data-act="organization-policy" data-id="${p.id}">
+            <td class="mono">${p.id}</td><td>${p.name}</td><td>${p.stage}</td><td>${organizationImplementation(p)}</td>
+            <td>${organizationCode(p)}</td><td>${chip("outline", "미확인")}</td></tr>`)}
+          </tbody></table><p class="empty" data-list-empty="organization-policy-list" hidden>검색 결과 없음</p>
+          ${organizationPolicies.length ? "" : empty(ledger.organization?.source_state === "available" ? "등록된 조직 정책 없음" : "조직 정책 원본 조회 실패")}`,
+          { flush: true, tools: listToolbar("organization-policy-list", "정책 번호·대상·단계 검색") }) },
+        { key: "ledger", label: "집행 규칙", n: policyLedger.length, body: html`<div class="stack">
+        ${panel("정책 조회 상태", kv([["정책 원본 조회", policySourceLabel(ledger)],
+          ["실행 규칙 배포 일치", policyDeployLabel(ledger, "rules_match")], ["정책 데이터 배포 일치", policyDeployLabel(ledger, "data_match")],
+          ["조회 기준 시각", when(ledger.checked_at)], ["실행 환경", policyEnvironment(ledger.environment)], ["판정 기록 조회 기간", ledger.record_window_hours === 24 ? "최근 24시간" : "—"]]))}
+        ${panel("집행 규칙", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>등록 상태</th><th>정의된 결과</th><th>최근 24시간 판정</th><th>관련 보안 정책</th></tr></thead><tbody>
           ${policyLedger.map((p) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}">
             <td><b>${p.name}</b><span class="sub mono">${p.policy_id}</span></td><td>${policyExecutor(p)}</td><td>${["운영", "중지", "폐기"].includes(p.status) ? p.status : "—"}</td>
             <td>${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : "—"}</td>
-            <td>${chip(policyRecorded(p) ? "plain" : "outline", policyRecordLabel(p))}</td><td>${policyLinks(p).join(", ") || "연결 미확인"}</td></tr>`)}
+            <td>${chip(policyRecorded(p) ? "plain" : "outline", policyRecordLabel(p))}</td><td>${policyLinks(p).join(", ") || "매핑 미확인"}</td></tr>`)}
           </tbody></table>${policyLedger.length ? "" : empty(ledger.source_state === "loaded" ? "등록된 정책 없음" : "정책 원본 조회 실패")}`, { flush: true })}
         </div>` }],
     }),
@@ -3015,6 +3030,20 @@ const ACTIONS = {
     await api(`/api/mcp-requests/${el.dataset.id}/reject`, { method: "POST", body: { note: fd.get("note") } });
     toast("거부했습니다."); reload();
   },
+  "organization-policy"(el) {
+    const p = organizationPolicies.find((row) => row.id === el.dataset.id);
+    if (!p) return;
+    const candidates = (p.candidate_rule_ids || []).filter((id) => policyLedger.some((rule) => rule.policy_id === id));
+    openDrawer(p.id, html`<b>${p.name}</b>`, [
+      { key: "definition", label: "정책 정의", body: kv([["정책 번호", p.id], ["적용 단계", p.stage], ["정책 대상", p.name],
+        ["정책 내용", p.content], ["적용 조건", p.condition], ["통과 요건", p.pass_condition], ["차단 요건", p.block_condition],
+        ["필요 증빙", p.required_evidence]]) },
+      { key: "implementation", label: "구현과 적용", body: kv([["구현 방식", organizationImplementation(p)], ["코드 확인", organizationCode(p)],
+        ["시험 정의", p.has_test_definition ? "시험 정의 있음" : "시험 정의 미확인"],
+        ["시험 실행 확인", "미확인"], ["조직 적용 확인", "미확인"], ["집행 규칙 매핑", "검토 필요"]]) },
+      { key: "rules", label: "집행 규칙 검토 후보", body: html`${candidates.length ? html`<div class="row-actions">${candidates.map((id) => html`<button class="btn" type="button" data-act="policy" data-id="${id}">${policyLedger.find((rule) => rule.policy_id === id).name}</button>`)}</div>` : empty("확인된 규칙 후보 없음")}` },
+    ]);
+  },
   policy(el) {
     const p = policyLedger.find((row) => row.policy_id === el.dataset.id);
     if (!p) return;
@@ -3028,13 +3057,13 @@ const ACTIONS = {
       { key: "definition", label: "정책 정의", body: kv([["정책 ID", p.policy_id], ["목적", p.purpose],
         ["조건", p.condition], ["대상 범위", p.scope], ["정의된 결과", p.outcome], ["처리 방식", p.enforcement]]) },
       { key: "evidence", label: "집행 근거", body: kv([["집행 주체", policyExecutor(p)],
-        ["관찰 모드 처리", { protected: "상시 집행 대상", eligible: "관찰 전환 대상" }[p.monitor_behavior] || "—"],
+        ["관찰 모드 처리", { protected: "관찰 모드에서도 차단 유지", eligible: "관찰 모드 전환 가능" }[p.monitor_behavior] || "—"],
         ["등록 상태", ["운영", "중지", "폐기"].includes(p.status) ? p.status : "—"],
-        ["최근 원장 근거", policyRecordLabel(p)], ["최종 판정 기록 수", p.recent?.count ?? "—"],
-        ["마지막 판정 시각", when(p.recent?.last_seen_at)], ["현재 집행 경로 검증", "미확인"],
-        ["독립 효과 검증", "판정 기록으로 확정 불가"], ["평가 우선순위", p.priority ?? "—"],
+        ["최근 24시간 판정", policyRecordLabel(p)], ["최종 판정 기록 수", p.recent?.count ?? "—"],
+        ["마지막 판정 시각", when(p.recent?.last_seen_at)], ["집행 경로 시험", "미수행"],
+        ["평가 우선순위", p.priority ?? "—"],
         ["대상 환경", Array.isArray(p.environments) ? p.environments.map(policyEnvironment).join(", ") : "—"]]) },
-      { key: "mapping", label: "정책 연결", body: kv([["관련 POL", links.join(", ") || "연결 미확인"],
+      { key: "mapping", label: "정책 연결", body: kv([["관련 보안 정책", links.join(", ") || "매핑 미확인"],
         ["연결 근거", links.length ? "정책 관리대장의 명시적 연결" : "검토된 연결 정보 없음"]]) },
     ]);
   },
