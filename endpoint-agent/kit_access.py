@@ -300,6 +300,10 @@ def mint_command(argv, address, status_lines, check):
         if args.command == "servers":
             for title, columns, rows in sections(summary):
                 print_table(title, columns, rows)
+            if summary.get("consents"):
+                print_table("동의 대기", ("서버", "도구"), [(c["name"], c["tools"]) for c in summary["consents"]])
+                if summary.get("consent_url"):
+                    print(f"  콘솔에서 동의: {summary['consent_url']}")
         else:
             print_table("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary, max(1, args.n)))
             print(f"\n전송 대기 {unsent_calls()}건")
@@ -367,7 +371,8 @@ STYLE = (
     ".form{display:grid;gap:16px;max-width:760px}.form label{display:flex;flex-direction:column;gap:7px;font-size:14.58px;font-weight:550}"
     ".form input,.form textarea{width:100%;min-height:42px;padding:10px 12px;background:var(--panel);border:1px solid var(--line-2);border-radius:7px}"
     ".form textarea{min-height:120px;resize:vertical}.form .row{display:flex;gap:8px}"
-    ".note{margin:0 0 16px;background:var(--allow-bg);border:1px solid var(--allow);border-radius:8px;padding:12px 16px;color:var(--ink);font-size:14.58px}"
+    ".note{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;background:var(--allow-bg);border:1px solid var(--allow);border-radius:8px;padding:12px 16px;color:var(--ink);font-size:14.58px}"
+    ".note.warn{background:var(--alert-bg);border-color:var(--alert)}.note .btn{margin-left:auto}"
     ".empty{padding:44px 24px;text-align:center;color:var(--ink-3);margin:0}"
     ".foot{margin:0;padding:12px 20px;color:var(--ink-3);font-size:13.5px;border-top:1px solid var(--line)}"
     "@media (max-width:900px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}"
@@ -399,13 +404,14 @@ def chip(value):
     return f'<span class="chip {CHIPS.get(value, "")}">{html.escape(str(value))}</span>'
 
 
-def page(title, active, body, token, identity="", counts=None):
+def page(title, active, body, token, identity="", counts=None, refresh=0):
     import html
     counts = counts or {}
     nav = "".join(f'<a href="/{token}/{key}"{" aria-current=page" if key == active else ""}>{svg(key)}<span>{html.escape(label)}</span>'
                   + (f'<span class="count">{counts[key]}</span>' if counts.get(key) else "") + "</a>" for key, label in TABS)
     return (f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<meta name="color-scheme" content="light dark"><title>MINT · {html.escape(title)}</title>'
+            + (f'<meta http-equiv="refresh" content="{int(refresh)}">' if refresh else "") +
             f'<link rel="stylesheet" href="/{token}/style.css"></head><body>'
             f'<header class="app-bar"><a class="app-title" href="/{token}/"><span class="mark">{svg("mark")}</span><strong>MINT</strong></a>'
             f'<span class="app-identity">{html.escape(identity)}</span></header>'
@@ -413,12 +419,13 @@ def page(title, active, body, token, identity="", counts=None):
             f'<main class="main"><div class="page-head"><h1>{html.escape(title)}</h1></div>{body}</main></div></body></html>')
 
 
-def table_html(title, columns, rows, foot=""):
+def table_html(title, columns, rows, foot="", actions=None):
     import html
-    head = "".join(f"<th>{html.escape(str(c))}</th>" for c in columns)
+    head = "".join(f"<th>{html.escape(str(c))}</th>" for c in columns) + ("<th></th>" if actions else "")
     body = "".join("<tr>" + "".join(('<td class="t">' if columns[i] == "시각" else "<td>")
                                     + (chip(cell) if columns[i] in CHIP_COLUMNS else html.escape(str(cell))) + "</td>"
-                                    for i, cell in enumerate(row)) + "</tr>" for row in rows)
+                                    for i, cell in enumerate(row)) + (f'<td class="num">{actions[n]}</td>' if actions else "") + "</tr>"
+                   for n, row in enumerate(rows))
     content = (f'<div class="body flush"><table class="data"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
                if rows else '<p class="empty">없음</p>')
     return (f'<section class="panel"><header><h2>{html.escape(title)}</h2><span class="sub">{len(rows)}</span></header>{content}'
@@ -482,9 +489,19 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                       "request": sum(1 for r in known.get("requests", []) if r.get("status") == "OPEN")}
             notice = urllib.parse.parse_qs(self.path.partition("?")[2]).get("done", [""])[0]
 
+            waiting = known.get("consents") or []
+            if waiting and known.get("consent_url", "").startswith("https://"):
+                banner = (f'<p class="note warn">동의 대기 {sum(c["tools"] for c in waiting)}건 · '
+                          + ", ".join(html.escape(c["name"]) for c in waiting)
+                          + f' <a class="btn sm primary" href="{html.escape(known["consent_url"])}" target="_blank" rel="noopener">콘솔에서 동의</a></p>')
+            else:
+                banner = ""
+
             def show(title, body, status=200):
                 note = f'<p class="note">{html.escape(notice)}</p>' if notice else ""
-                self.reply(status, page(title, name, note + body, token, socket.gethostname(), counts))
+                # Read-only pages follow the PC without a reload button; a page with a form or a check result does not.
+                refresh = 60 if name in ("", "servers", "logs") and "check" not in self.path else 0
+                self.reply(status, page(title, name, banner + note + body, token, socket.gethostname(), counts, refresh))
 
             if name == "":
                 pairs = [(a, b) for a, _, b in (line.partition(": ") for line in status_lines())]
@@ -524,15 +541,20 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                     sources = (f'<section class="panel"><header><h2>승인된 소스</h2><span class="sub">{len(local)}</span></header>'
                                f'<div class="body flush"><table class="data"><thead><tr><th>서버</th><th>커밋</th><th></th></tr></thead>'
                                f'<tbody>{rows}</tbody></table></div></section>')
-                return show("MCP 서버", '<div class="stack">' + "".join(table_html(*part) for part in sections(summary)) + sources + "</div>")
+                parts = sections(summary)
+                links = [f'<a class="btn sm" href="/{token}/request?{urllib.parse.urlencode({"server": u["name"]})}">도입 요청</a>'
+                         for u in summary.get("unregistered", [])]
+                tables = [table_html(*part, actions=links if part[0] == "미등록 MCP" and links else None) for part in parts]
+                return show("MCP 서버", '<div class="stack">' + "".join(tables) + sources + "</div>")
             if name == "logs":
                 return show("호출 기록", table_html("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary),
                                                 f"전송 대기 {unsent_calls()}건"))
             if name == "request":
                 options = "".join(f'<option value="{html.escape(u["name"])}">' for u in summary.get("unregistered", []))
+                asked = urllib.parse.parse_qs(self.path.partition("?")[2]).get("server", [""])[0][:120]
                 form = ('<section class="panel"><header><h2>도입 요청</h2></header><div class="body">'
                         f'<form class="form" method="post" action="/{token}/request">'
-                        f'<label>서버 이름<input name="server" list="unregistered" required maxlength="120"></label>'
+                        f'<label>서버 이름<input name="server" list="unregistered" required maxlength="120" value="{html.escape(asked)}"></label>'
                         f'<datalist id="unregistered">{options}</datalist>'
                         f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300"></label>'
                         f'<label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>'

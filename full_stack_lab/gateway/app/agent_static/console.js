@@ -528,7 +528,7 @@ function rememberTab(key) {
   history.replaceState(null, "", `#/${current.page}${current.arg ? `/${encodeURIComponent(current.arg)}` : ""}?${q}`);
 }
 
-const ALERT_KIND = { "unapproved-endpoint-mcp": "미등록 MCP 사용", "unapproved-connection": "미승인 연결", "call-burst": "호출 급증",
+const ALERT_KIND = { "unapproved-endpoint-mcp": "미등록 MCP 사용", "endpoint-quarantined": "엔드포인트 격리", "unapproved-connection": "미승인 연결", "call-burst": "호출 급증",
   "new-tool": "새 도구", "incident-deadline": "사고 보고 기한", "policy-self-test-failed": "정책 점검 실패" };
 const ALERT_SEEN_KEY = "mcp-console-alerts-seen";
 const alertsSeen = () => { try { return Number(localStorage.getItem(ALERT_SEEN_KEY)) || 0; } catch { return 0; } };
@@ -555,6 +555,7 @@ async function refreshAlertBell() {
 const alertTarget = (a) => {
   const e = a.evidence || {};
   if (a.kind === "unapproved-endpoint-mcp") return [`${e.hostname || e.endpoint_id || "—"} · ${e.label || "—"}`, "#/servers?t=shadow"];
+  if (a.kind === "endpoint-quarantined") return [e.hostname || e.endpoint_id || "—", "#/people?t=devices"];
   if (a.kind === "incident-deadline") return [`${e.jurisdiction || ""} ${e.stage || ""}`.trim() || "—", "#/activity?t=incidents"];
   if (e.server_id) return [a.server_name || e.server_id, `#/servers/${encodeURIComponent(e.server_id)}`];
   return ["—", ""];
@@ -562,6 +563,7 @@ const alertTarget = (a) => {
 const alertDetail = (a) => {
   const e = a.evidence || {};
   if (a.kind === "unapproved-endpoint-mcp") return [e.channel, e.place].filter(Boolean).join(" · ");
+  if (a.kind === "endpoint-quarantined") return [...(e.files || []).map((f) => `${f} 변경`), ...(e.checks || []).map((c) => `${CHECK_LABEL[c] || "점검"} 실패`)].join(" · ");
   if (a.kind === "new-tool") return (e.added || []).join(", ");
   return e.policy_id || "";
 };

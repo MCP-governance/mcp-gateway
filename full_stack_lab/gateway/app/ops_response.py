@@ -83,6 +83,23 @@ async def endpoint_alerts():
         await emit_alert("unapproved-endpoint-mcp", row["origin"], row["id"],
                          {"endpoint_id": row["endpoint_id"], "hostname": row["hostname"], "label": row["label"],
                           "channel": row["channel"], "place": row["place"], "policy_id": "MCP-SHADOW-001"})
+    # A PC the Gateway quarantined (managed files changed, a check failed) is cut off from every approved server;
+    # an administrator who is not told keeps wondering why the employee cannot work. One alert per transition.
+    quarantined = await db.fetch_all(
+        """SELECT e.id, e.endpoint_id, a.hostname, e.detail
+             FROM (SELECT id, endpoint_id, kind, detail, observed_at,
+                          lag(kind) OVER (PARTITION BY endpoint_id ORDER BY id) AS previous
+                     FROM endpoint_managed_events) e JOIN endpoint_agents a USING (endpoint_id)
+            WHERE e.kind='quarantined' AND e.previous IS DISTINCT FROM 'quarantined' AND e.observed_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='endpoint-quarantined' AND x.origin='endpoint-managed'
+                              AND x.origin_id=e.id::text AND NOT x.synthetic)
+            ORDER BY e.id LIMIT 200""")
+    for row in quarantined:
+        detail = row["detail"] or {}
+        failed = sorted(name for name, ok in (detail.get("checks") or {}).items() if ok is not True)
+        await emit_alert("endpoint-quarantined", "endpoint-managed", row["id"],
+                         {"endpoint_id": row["endpoint_id"], "hostname": row["hostname"],
+                          "files": detail.get("mismatched_files") or [], "checks": failed})
 
 
 def selected(server_id, source):

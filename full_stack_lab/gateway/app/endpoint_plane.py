@@ -630,10 +630,18 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
     requests = await db.fetch_all(
         """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=ANY(%s)
             ORDER BY created_at DESC LIMIT 10""", (lineage,))
+    # Consent stays in the console, where the employee signs in: the harness on this PC must not be able to give it.
+    # The PC only says that something waits there and where.
+    consents = await db.fetch_all(
+        """SELECT coalesce(s.display_name, c.server_id) AS name, count(*) AS tools FROM user_consents c
+             LEFT JOIN mcp_servers s ON s.id=c.server_id
+            WHERE c.user_token=%s AND c.status='PENDING' GROUP BY 1 ORDER BY 1""", (device.get("owner_token"),)) if owner else []
+    issuer = os.getenv("IDP_ISSUER", "").rstrip("/")
     return {"endpoint": {"id": device["endpoint_id"], "hostname": device.get("hostname"), "managed_state": device.get("managed_state"),
                          "owner": (owner or {}).get("display_name") or (owner or {}).get("user_id")},
             "servers": servers, "connectors": connected, "features": features, "unregistered": unregistered,
-            "calls": calls, "requests": requests}
+            "calls": calls, "requests": requests, "consents": consents,
+            "consent_url": issuer + "/workspace#/consent" if issuer.startswith("https://") else ""}
 
 
 async def self_request(device: dict, server_label: str, source_url: str, purpose: str) -> dict:
