@@ -184,7 +184,7 @@ test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 
     deployment: { rules_match: true, data_match: false } } });
   const out = await ui.ROUTES.policy("", "");
   const body = String(out.html.tabs.find((tab) => tab.key === "ledger").body);
-  assert.match(body, /정책 로드 상태[^]*OPA 룰셋 일치 여부[^]*일치[^]*OPA 정책 데이터 일치 여부[^]*불일치[^]*조회 기준 시각/);
+  assert.match(body, /정책 로드 상태[^]*룰셋 일치 여부[^]*일치[^]*정책 데이터 일치 여부[^]*불일치[^]*조회 기준 시각/);
   assert.match(body, /등록 상태[^]*최근 24시간 판정[^]*운영[^]*기록 있음[^]*POL-001/);
   assert.ok(body.includes("&lt;img"));
   assert.ok(!body.includes("<img"));

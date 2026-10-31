@@ -72,6 +72,9 @@ h1,h2,h3{letter-spacing:-.025em}p{overflow-wrap:anywhere}
 .panel>header h2{margin:0;font-size:16.92px;font-weight:700}
 .panel>header .sub{font-size:13.5px;color:var(--ink-3)}
 .panel>header .tools-end{margin-left:auto;display:flex;gap:8px}
+.policy-load-title{display:inline-flex;align-items:flex-end;gap:12px;flex-wrap:wrap;line-height:1}
+.policy-load-title .sub{line-height:1}
+.policy-load-details .kv dt:last-of-type,.policy-load-details .kv dd:last-of-type{border-bottom:0}
 .panel>.tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 20px 0}
 .panel>.tools>input[type="search"]{flex:1 1 220px;width:240px;min-width:0}
 .panel>.tools input,.panel>.tools select{min-height:40px;border:1px solid var(--line-2);border-radius:7px;padding:7px 11px;background:var(--panel)}

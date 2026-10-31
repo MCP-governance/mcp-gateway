@@ -2315,8 +2315,8 @@ ROUTES.policy = async (_, tab) => {
       head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
       active: tab === "organization" ? "organization" : "ledger",
-      tabs: [{ key: "organization", label: "조직 보안 정책", n: organizationPolicies.length, body:
-        panel("조직 보안 정책", html`<table class="data"><thead><tr><th>번호</th><th>정책 대상</th><th>적용 단계</th><th>구현 방식</th><th>코드 확인</th><th>조직 적용 확인</th></tr></thead><tbody id="organization-policy-list">
+      tabs: [{ key: "organization", label: "전체 보안 정책", n: organizationPolicies.length, body:
+        panel("전체 보안 정책", html`<table class="data"><thead><tr><th>번호</th><th>정책 대상</th><th>적용 단계</th><th>구현 방식</th><th>코드 확인</th><th>조직 적용 확인</th></tr></thead><tbody id="organization-policy-list">
           ${organizationPolicies.map((p) => html`<tr class="clickable" tabindex="0" data-act="organization-policy" data-id="${p.id}">
             <td class="mono">${p.id}</td><td>${p.name}</td><td>${p.stage}</td><td>${organizationImplementation(p)}</td>
             <td>${organizationCode(p)}</td><td>${chip("outline", "미확인")}</td></tr>`)}
@@ -2324,11 +2324,11 @@ ROUTES.policy = async (_, tab) => {
           ${organizationPolicies.length ? "" : empty(ledger.organization?.source_state === "available" ? "등록된 조직 정책 없음" : "조직 정책 원본 조회 실패")}`,
           { flush: true, tools: listToolbar("organization-policy-list", "정책 번호·대상·단계 검색") }) },
         { key: "ledger", label: "보안 통제 규칙", n: policyLedger.length, body: html`<div class="stack">
-        ${panel("정책 로드 상태", kv([
-          ["OPA 룰셋 일치 여부", policyDeployLabel(ledger, "rules_match")], ["OPA 정책 데이터 일치 여부", policyDeployLabel(ledger, "data_match")],
-          ["조회 기준 시각", when(ledger.checked_at)]]), {
+        ${panel(html`<span class="policy-load-title"><span>정책 로드 상태</span><span class="sub">${ledger.record_window_hours === 24 ? "최근 24시간" : "—"}</span></span>`, html`<div class="policy-load-details">${kv([
+          [html`<span title="MINT 게이트웨이의 배포 대상 Rego 규칙 코드와 OPA에 실제로 로드된 대응 규칙 코드가 일치하는지 해시로 비교합니다.">룰셋 일치 여부</span>`, policyDeployLabel(ledger, "rules_match")],
+          [html`<span title="MINT 게이트웨이에 배포된 정책 데이터와 OPA에 실제로 로드된 대응 정책 데이터가 일치하는지 해시로 비교합니다.">정책 데이터 일치 여부</span>`, policyDeployLabel(ledger, "data_match")],
+          ["조회 기준 시각", when(ledger.checked_at)]])}</div>`, {
           status: chip(ledger.source_state === "loaded" ? "allow" : ledger.source_state === "unavailable" ? "block" : "outline", policySourceLabel(ledger)),
-          sub: ledger.record_window_hours === 24 ? "최근 24시간" : "—",
         })}
         ${panel("보안 통제 규칙", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>등록 상태</th><th>정의된 결과</th><th>최근 24시간 판정</th><th>관련 보안 정책</th></tr></thead><tbody>
           ${policyLedger.map((p) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}">
