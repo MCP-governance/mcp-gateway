@@ -148,6 +148,8 @@ class ProcessChecks(unittest.TestCase):
             # requires root; assert the production request but substitute only that syscall.
             popen = subprocess.Popen
             def spawn(*args, **kwargs):
+                if 'user' not in kwargs:  # the test's own subprocess.run, not the runner
+                    return popen(*args, **kwargs)
                 self.assertEqual(kwargs['user'], os.getuid())
                 self.assertEqual(kwargs['group'], os.getgid())
                 self.assertEqual(kwargs.pop('extra_groups'), [])
