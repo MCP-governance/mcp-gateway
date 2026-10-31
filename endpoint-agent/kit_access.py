@@ -417,7 +417,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_address[1]}/{token}/"
-    print(url)
+    print(url, flush=True)
     if open_browser:
         webbrowser.open(url)
     threading.Thread(target=server.serve_forever, daemon=True).start()

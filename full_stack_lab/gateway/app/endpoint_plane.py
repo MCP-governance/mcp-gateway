@@ -598,8 +598,10 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     rows = await db.fetch_all("SELECT id, display_name, deployment FROM mcp_servers"
                               " WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
+    # Same set the managed policy gives this device: Windows has no PC-isolated runner for local-run servers.
+    windows = managed_platform(device) == "windows"
     servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway"}
-               for r in rows if r["id"] in usable]
+               for r in rows if r["id"] in usable and not (windows and r["deployment"] == "local")]
     decided = {d["item_key"]: d["decision"] for d in await db.fetch_all("SELECT item_key, decision FROM harness_decisions")}
     now = datetime.now(UTC)
     items = await db.fetch_all(

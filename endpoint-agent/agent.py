@@ -428,7 +428,8 @@ def toml_loads(text):
 
 
 def read_config(path: Path) -> dict | None:
-    text = path.read_text(encoding="utf-8") or "{}"
+    # utf-8-sig: Windows editors (PowerShell 5.1 Set-Content -Encoding utf8, Notepad) save a BOM; Codex and Claude accept it.
+    text = path.read_text(encoding="utf-8-sig") or "{}"
     if path.suffix == ".toml":
         document = toml_loads(text)
     else:
