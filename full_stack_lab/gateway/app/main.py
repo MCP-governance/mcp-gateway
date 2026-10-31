@@ -689,12 +689,12 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
                         execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
                         endpoint: str | None = None, policy: str | None = None,
                         since: datetime | None = None, until: datetime | None = None,
-                        page: int = 1, q: str | None = None,
+                        page: int = 1, q: str | None = None, decision_id: int | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.recent(after, limit, own, decision, server, person, event_kind, execution,
-                                 endpoint, policy, since, until, page, q)
+                                 endpoint, policy, since, until, page, q, decision_id)
 
 
 @app.get("/api/activity/analysis")

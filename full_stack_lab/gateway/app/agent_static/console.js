@@ -350,8 +350,16 @@ function openDrawer(title, body, tabs = null) {
   setDrawer(true);
   $("#drawer-body").scrollTop = 0;
 }
+// The open call detail is part of the address (d=<number>), so a reload or a shared link opens it again.
+function rememberDetail(id) {
+  const q = new URLSearchParams(current.query);
+  if (id) q.set("d", id); else q.delete("d");
+  current.query = q;
+  history.replaceState(null, "", `#/${current.page}${current.arg ? `/${encodeURIComponent(current.arg)}` : ""}${q.size ? `?${q}` : ""}`);
+}
 function closeDrawer() {
   if (/^#\/servers\/./.test(location.hash)) history.replaceState(null, "", "#/servers");
+  else if (current.query?.has?.("d")) rememberDetail(null);
   const wasOpen = $("#drawer").classList.contains("open");
   setDrawer(false);
   if (wasOpen && drawerReturn?.isConnected) drawerReturn.focus();
@@ -515,6 +523,7 @@ async function route() {
       if (moved) { h1.tabIndex = -1; h1.focus(); }
     }
     out.after?.();
+    if (at.query.get("d") && /^\d+$/.test(at.query.get("d"))) showDecision(at.query.get("d"));
   } catch (error) {
     if (seq === routeSeq) view.innerHTML = String(html`<div class="note bad">${error.message}</div>`);
   }
@@ -1041,8 +1050,11 @@ function relatedBody(related) {
 }
 
 async function showDecision(id) {
-  const r = feed.rows.find((row) => String(row.id) === String(id));
-  if (!r) return;
+  // A call outside the loaded list (another tab, a link, a reload) is fetched by its number.
+  const r = feed.rows.find((row) => String(row.id) === String(id))
+    || (await gw(`activity?decision_id=${encodeURIComponent(id)}&limit=1`).catch(() => ({ rows: [] }))).rows?.[0];
+  if (!r) { toast("호출 기록을 찾을 수 없습니다.", true); return; }
+  rememberDetail(r.id);
   // The device's current state, beside (never instead of) what the call itself carried.
   const [related, device] = viewer.admin ? await Promise.all([
     gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null),
@@ -1057,7 +1069,8 @@ async function showDecision(id) {
       ["이벤트", r.event_kind === "mcp-connection" ? "연결 거부" : ""],
       ["MCP 서버", r.server], ["도구", html`<code>${r.tool}</code>`], ["대상", r.target ? html`<code>${r.target}</code>` : ""]]) },
     { key: "policy", label: "판정", body: html`
-      <div class="decision-reason"><span>판정 사유</span><p>${r.reason || "—"}</p></div>${kv([
+      <div class="decision-reason"><span>판정 사유</span><p>${r.reason || "—"}</p>${String(r.policy_id || "").startsWith("MCP-SHADOW-")
+        ? html`<a href="#/servers?t=shadow">미등록 MCP 보기</a>` : ""}</div>${kv([
         ["적용 정책", html`<code>${r.policy_id}</code>`],
         ["실행 권한 위반", (r.pac_failures || []).length ? html`${r.pac_failures.map((x) => chip("block", x))}` : "없음"],
         ["함께 적용된 정책", (r.conflicts || []).length ? html`${r.conflicts.map(conflictChip)}` : "없음"],
@@ -2360,10 +2373,11 @@ async function auditTabs(query) {
         return html`<tr ${href ? raw(`class="clickable" tabindex="0" data-act="goto" data-href="${href}"`) : ""}><td class="small nowrap">${when(a.created_at)}</td>
           <td>${chip(a.kind === "incident-deadline" || a.kind === "policy-self-test-failed" ? "alert" : "block", ALERT_KIND[a.kind] || a.kind)}</td>
           <td>${target}</td><td class="small mono">${alertDetail(a) || "—"}</td></tr>`; })}</tbody></table>` : empty("경보 없음"), { flush: true, sub: "최근 24시간 " + alertData.last_24h + "건" }) },
-    { key: "tools", label: "엔드포인트 호출", n: toolData.total, body: panel("엔드포인트 호출", toolData.rows.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>하네스</th><th>경로</th><th>MCP 서버 · 도구</th><th class="num">입력</th><th class="num">결과</th></tr></thead><tbody>${toolData.rows.map((e) => html`<tr>
+    { key: "tools", label: "엔드포인트 호출", n: toolData.total, body: panel("엔드포인트 호출", toolData.rows.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>하네스</th><th>경로</th><th>MCP 서버 · 도구</th><th>게이트웨이 판정</th><th class="num">입력</th><th class="num">결과</th></tr></thead><tbody>${toolData.rows.map((e) => html`<tr ${e.decision_id ? raw(`class="clickable" tabindex="0" data-act="decision" data-id="${Number(e.decision_id)}"`) : ""}>
         <td class="small nowrap">${when(e.called_at, { seconds: true })}</td><td>${e.hostname || e.endpoint_id}<span class="sub">${e.owner_name || e.account || ""}</span></td>
         <td>${chip("plain", harnessName(e.harness))}</td><td>${chip(...(TOOL_PATH[e.path] || ["outline", e.path]))}</td>
-        <td><b>${e.server}</b><span class="sub mono">${e.tool}</span></td><td class="num">${byteText(e.input_bytes)}</td>
+        <td><b>${e.server_name || e.server}</b><span class="sub mono">${e.tool}</span></td>
+        <td>${e.decision ? html`${decisionChip(e.decision)}<span class="sub">${e.policy_id || ""}</span>` : "—"}</td><td class="num">${byteText(e.input_bytes)}</td>
         <td class="num">${e.failed ? chip("block", "실패") : byteText(e.output_bytes)}</td></tr>`)}</tbody></table>` : empty("엔드포인트 호출 기록 없음"), { flush: true, sub: `전체 ${toolData.total}건` }) },
     { key: "incidents", label: "사고 보고 기한", body: panel("사고 보고 기한", html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
         <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub:`타이머 ${incidentData.timer_status}`}) },

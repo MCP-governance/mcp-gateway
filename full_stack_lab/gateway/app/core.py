@@ -760,8 +760,12 @@ async def register_server(request: dict, actor: str) -> dict:
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
     rule = risk_tier.APPROVAL[stated["tier"]]
-    # root in single-operator mode approved alone on purpose (forced): its record carries solo_operator.
-    if rule["approvers"] > 1 and not approved_risk.get("solo_operator"):
+    # root in single-operator mode approved alone on purpose (forced, D-306). The mark alone proves nothing: the mode
+    # must be on now and every recorded approver must be root.
+    recorded = approved_risk.get("approvers") or []
+    forced = bool(approved_risk.get("solo_operator") and review.solo_mode_enabled() and recorded
+                  and all([await review.is_root(person) for person in recorded]))
+    if rule["approvers"] > 1 and not forced:
         approvers = []
         for person in approved_risk.get("approvers") or []:
             if await review.same_person(person, intake["submitted_by"]):

@@ -1457,4 +1457,6 @@ export const EN = {
   "엔드포인트 도입 요청": "Endpoint intake requests",
   "관리": "Manage",
   "엔드포인트 격리": "Endpoint quarantined",
+  "호출 기록을 찾을 수 없습니다.": "Call record not found.",
+  "미등록 MCP 보기": "View unregistered MCP",
 };

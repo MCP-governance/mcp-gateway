@@ -248,9 +248,18 @@ def sections(summary):
     ]
 
 
+def call_result(call):
+    """The Gateway's decision when the call went through it (a blocked call still "returns" to the harness)."""
+    if call.get("decision") == "Block":
+        return "차단"
+    if call.get("decision") == "Alert":
+        return "경보"
+    return "실패" if call.get("failed") else "완료"
+
+
 def call_rows(summary, limit=None):
     return [(short_time(c["called_at"]), HARNESSES.get(c["harness"], c["harness"]), PATHS.get(c["path"], c["path"]),
-             f'{c["server"]} · {c["tool"]}', "실패" if c.get("failed") else "완료") for c in summary.get("calls", [])[:limit]]
+             f'{c.get("server_name") or c["server"]} · {c["tool"]}', call_result(c)) for c in summary.get("calls", [])[:limit]]
 
 
 def print_table(title, columns, rows):
@@ -266,7 +275,8 @@ def print_table(title, columns, rows):
 
 def mint_request(address, server, source_url, purpose):
     result = receive(address, {"action": "request", "server": server, "source_url": source_url or "", "purpose": purpose})
-    return "이미 요청함 · 검토 대기" if result.get("duplicate") else "요청함 · 검토 대기"
+    # What happens next, in the employee's words: the administrator reviews it; an approval shows up in `mint servers`.
+    return ("이미 요청함" if result.get("duplicate") else "요청함") + " · 관리자 검토 대기 · 승인되면 mint servers에 표시"
 
 
 def mint_command(argv, address, status_lines, check):
@@ -388,7 +398,7 @@ ICONS = {
 }
 TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("request", "도입 요청"))
 # Values coloured as the console colours them.
-CHIPS = {"사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
+CHIPS = {"경보": "alert", "사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
          "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
          "검토 기한 만료": "alert", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
 CHIP_COLUMNS = {"상태", "결과", "경로"}
@@ -508,7 +518,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 values = dict(pairs)
                 calls = known.get("calls", [])
                 cards = (("연결 상태", values.get("연결 상태", "—"), "allow" if values.get("연결 상태") == "연결됨" else "block", ""),
-                         ("승인 서버", len(known.get("servers", [])), "", "servers"),
+                         ("사용 가능 서버", sum(1 for s in known.get("servers", []) if s.get("available", True)), "", "servers"),
                          ("미등록 MCP", counts["servers"], "alert" if counts["servers"] else "", "servers"),
                          ("MCP 호출", len(calls), "block" if any(c.get("failed") for c in calls) else "", "logs"))
                 kpis = "".join((f'<a class="kpi {tone}" href="/{token}/{link}">' if link else f'<div class="kpi {tone}">')

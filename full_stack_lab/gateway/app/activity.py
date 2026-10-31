@@ -98,10 +98,12 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
                  event_kind: str | None = None, execution: str | None = None,
                  endpoint: str | None = None, policy: str | None = None,
                  since: datetime | None = None, until: datetime | None = None,
-                 page: int = 1, query: str | None = None) -> dict:
+                 page: int = 1, query: str | None = None, decision_id: int | None = None) -> dict:
     base_clauses, base_params = [], []
     if user_token:
         base_clauses.append("d.user_token = %s"); base_params.append(user_token)
+    if decision_id:  # one call by its number: a detail opened from a link, another tab or after a reload
+        base_clauses.append("d.id = %s"); base_params.append(decision_id)
     clauses, params = list(base_clauses), list(base_params)
     if decision:
         clauses.append("d.decision = %s"); params.append(decision)
