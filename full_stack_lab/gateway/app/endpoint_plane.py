@@ -952,8 +952,12 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     elif managed_platform(device) == "linux":
         hook_dir, hook_python = "/usr/local/lib/mcpgw-managed", "/usr/bin/python3"
 
+    def hook_args(harness: str) -> list:
+        return ["-I", "-S", "-X", "utf8", (hook_dir + "/agent.py").replace(chr(92), "/"), "hook", harness]
+
     def hook(harness: str) -> str:
-        return f'"{hook_python}" -I -S -X utf8 "{(hook_dir + "/agent.py").replace(chr(92), "/")}" hook {harness}'
+        # Codex on Windows runs hook commands in PowerShell, where a quoted path is a string until `&` calls it (pj3 10-31).
+        return ("& " if windows else "") + " ".join(f'"{a}"' if " " in a else a for a in [hook_python, *hook_args(harness)])
 
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
@@ -980,7 +984,9 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                     # same gate narrows statusLine and fileSuggestion to managed values (D-147).
                     "allowManagedHooksOnly": True}
         if hook_dir:
-            settings["hooks"] = {"PostToolUse": [{"matcher": "mcp__.*", "hooks": [{"type": "command", "command": hook("claude"), "timeout": 10}]}]}
+            # Executable and arguments apart: Claude Code on Windows runs hooks in Git Bash or PowerShell, whichever it has.
+            settings["hooks"] = {"PostToolUse": [{"matcher": "mcp__.*", "hooks": [{"type": "command", "command": hook_python,
+                                                                                   "args": hook_args("claude"), "timeout": 10}]}]}
         if guidance:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
         if proxy or ca_env:
