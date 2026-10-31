@@ -661,6 +661,7 @@ ROUTES.overview = async (_, tab) => {
   const buckets = hourBuckets(o.series);
   const flowTotal = o.flows.reduce((s, f) => s + Number(f.n || 0), 0);
   const stations = (o.workstations || []).filter((station) => Number(station.calls) > 0);
+  const shadowStations = (o.workstations || []).filter((station) => Number(station.shadow) > 0).length;
   const abnormalServers = (o.servers || []).filter((s) => !["READY", "DISABLED"].includes(s.status)).length;
   const items = dedupeItems(pl?.items || []);
   const count = (s) => items.filter((i) => i.state === s).length;
@@ -690,6 +691,7 @@ ROUTES.overview = async (_, tab) => {
         <section><h2>현재 상태</h2>${kpiStrip([
         ["통제 적용 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/people?t=devices"],
         ["조직 통제 의존", count("bypass_possible"), "block", "#/servers?t=items&state=bypass_possible"],
+          ["미등록 MCP 사용 엔드포인트", shadowStations, "block", "#/servers?t=shadow"],
           ["종료 조치 필요", term.unresolved_grades, "alert", "#/termination"],
           ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]])}</section>
       </div>`,

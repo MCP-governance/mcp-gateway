@@ -55,6 +55,29 @@ async def observed_alerts():
             await emit_alert(kind, "decision", row["id"], {"server_id": row["server_id"], "policy_id": row["policy_id"]})
 
 
+async def endpoint_alerts():
+    """엔드포인트가 보고한 미등록 MCP(설정·확인된 수신기)를 호출 판정과 별개로 경보로 남긴다."""
+    rows = await db.fetch_all(
+        """SELECT 'endpoint-inventory' AS origin, i.id, i.endpoint_id, a.hostname, i.server_label AS label,
+                  i.transport AS channel, i.config_path AS place
+             FROM endpoint_inventory i JOIN endpoint_agents a USING (endpoint_id)
+            WHERE i.classification='shadow' AND i.reported_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp'
+                              AND x.origin='endpoint-inventory' AND x.origin_id=i.id::text AND NOT x.synthetic)
+           UNION ALL
+           SELECT 'endpoint-listener', l.id, l.endpoint_id, a.hostname, coalesce(l.server_name,l.process_name,l.address),
+                  l.source, l.address || coalesce(':' || l.port, '')
+             FROM endpoint_listeners l JOIN endpoint_agents a USING (endpoint_id)
+            WHERE l.classification='shadow' AND l.mcp_evidence='confirmed' AND l.observed_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp'
+                              AND x.origin='endpoint-listener' AND x.origin_id=l.id::text AND NOT x.synthetic)
+           ORDER BY 2 LIMIT 1000""")
+    for row in rows:
+        await emit_alert("unapproved-endpoint-mcp", row["origin"], row["id"],
+                         {"endpoint_id": row["endpoint_id"], "hostname": row["hostname"], "label": row["label"],
+                          "channel": row["channel"], "place": row["place"], "policy_id": "MCP-SHADOW-001"})
+
+
 def selected(server_id, source):
     return source in SOURCES and ("*" in SERVERS or server_id in SERVERS)
 
@@ -236,6 +259,7 @@ async def tick(opa_url):
             except Exception:
                 LOG.exception("Incident deadline check failed")
             await observed_alerts()
+            await endpoint_alerts()
             await contain_repeated()
             await self_test(opa_url)
         finally:
