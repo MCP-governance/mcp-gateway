@@ -1,5 +1,7 @@
 ﻿param([Parameter(Mandatory = $true)][string]$SettingsPath, [switch]$Show)
-. (Join-Path $PSScriptRoot 'windows-common.ps1')
+# MCPGateway.exe runs this script in its own runspace: $PSScriptRoot is empty inside button and timer handlers there.
+$script:root = $PSScriptRoot
+. (Join-Path $script:root 'windows-common.ps1')
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
@@ -183,7 +185,7 @@ function Start-EndpointReconnect {
     Remove-Item -LiteralPath (Join-Path $work 'result.json') -Force -ErrorAction SilentlyContinue
     [IO.File]::WriteAllText($requestPath, (@{ action = 'health'; gateway_url = $settings.gateway_url;
         ca_certificate = $settings.ca_certificate; ca_sha256 = $settings.ca_sha256 } | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
-    $arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'windows-worker.ps1')) +
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $script:root 'windows-worker.ps1')) +
         ' -RequestPath ' + (Quote-EndpointArgument $requestPath)
     try {
         $script:healthJob = Start-Process -FilePath $script:PowerShellExe -ArgumentList $arguments -PassThru -WindowStyle Hidden
@@ -371,7 +373,7 @@ function Switch-EndpointLanguage {
 }
 
 function Start-EndpointRemove {
-    $arguments = '-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $PSScriptRoot 'setup.ps1')) +
+    $arguments = '-NoProfile -STA -ExecutionPolicy Bypass -WindowStyle Hidden -File ' + (Quote-EndpointArgument (Join-Path $script:root 'setup.ps1')) +
         ' -Remove -SettingsPath ' + (Quote-EndpointArgument $SettingsPath)
     # Explorer launches the wizard outside the scheduled task's process tree.
     $shell = New-Object -ComObject Shell.Application

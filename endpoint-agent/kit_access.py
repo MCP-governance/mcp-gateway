@@ -302,33 +302,127 @@ def mint_command(argv, address, status_lines, check):
         return 1
 
 
-STYLE = ("body{font:15px/1.5 system-ui,'Malgun Gothic',sans-serif;margin:0;background:#0f1520;color:#e6edf6}"
-         "header{display:flex;gap:16px;align-items:center;padding:14px 24px;border-bottom:1px solid #263244}"
-         "header b{font-size:17px}nav a{color:#9fb3cc;margin-right:14px;text-decoration:none}nav a.on{color:#fff;font-weight:700}"
-         "main{max-width:1080px;margin:0 auto;padding:20px 24px}section{background:#151d2b;border:1px solid #263244;border-radius:8px;margin:0 0 16px}"
-         "h2{font-size:15px;margin:0;padding:12px 16px;border-bottom:1px solid #263244}h2 span{color:#8b9bb0;font-weight:400;margin-left:6px}"
-         "table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 16px;border-bottom:1px solid #1f2a3a;font-size:14px}"
-         "th{color:#8b9bb0;font-weight:600}.kv td:first-child{color:#8b9bb0;width:160px}.empty{padding:12px 16px;color:#8b9bb0}"
-         "form{display:grid;gap:10px;padding:16px}input,textarea{font:inherit;padding:8px;border-radius:6px;border:1px solid #33425a;background:#0f1520;color:#e6edf6}"
-         "button{font:inherit;padding:8px 14px;border-radius:6px;border:1px solid #3b6fd6;background:#2554b8;color:#fff;cursor:pointer;justify-self:start}"
-         ".note{padding:10px 16px;color:#7fd6a4}.bad{color:#f29b9b}")
+# The console's own tokens and components (console.css), so the local screen reads as the same product.
+STYLE = (
+    ":root{color-scheme:light;--bg:#f5f7fa;--panel:#fff;--panel-2:#f8fafc;--line:#e3e8ef;--line-2:#7c8ca1;--ink:#172337;--ink-2:#475569;"
+    "--ink-3:#58677b;--brand:#244d8c;--brand-2:#245ca6;--brand-soft:#edf3fc;--allow:#17633e;--allow-bg:#eaf6ef;--alert:#805200;"
+    "--alert-bg:#fff4d9;--restrict:#076773;--restrict-bg:#e6f5f7;--approval:#6342bb;--approval-bg:#f0ebfc;--block:#b42332;--block-bg:#fcecee;"
+    "--radius:10px;--sans:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif;"
+    "--mono:ui-monospace,'SFMono-Regular',Consolas,monospace}"
+    "@media (prefers-color-scheme:dark){:root{color-scheme:dark;--bg:#101722;--panel:#192331;--panel-2:#202d3d;--line:#324154;--line-2:#75869d;"
+    "--ink:#edf2f9;--ink-2:#c1cddd;--ink-3:#a1b0c3;--brand:#a7c5ff;--brand-2:#b7d0ff;--brand-soft:#283d5c;--allow:#8be0ad;--allow-bg:#20392e;"
+    "--alert:#f3ce79;--alert-bg:#3c3220;--restrict:#89dce6;--restrict-bg:#203a41;--approval:#cfb8ff;--approval-bg:#352e4b;--block:#ffa7af;--block-bg:#432b34}"
+    ".btn.primary{color:#142438}}"
+    "*{box-sizing:border-box}html,body{margin:0;min-height:100%}"
+    "body{background:var(--bg);color:var(--ink);font:15.75px/1.78 var(--sans);-webkit-font-smoothing:antialiased}"
+    "a{color:var(--brand-2);text-decoration:none}button,input,select,textarea{font:inherit;color:inherit}"
+    ":focus-visible{outline:3px solid var(--brand-2);outline-offset:3px;border-radius:4px}"
+    ".app-bar{height:60px;position:sticky;top:0;z-index:15;display:flex;align-items:center;gap:8px;padding:0 16px;background:var(--panel);border-bottom:1px solid var(--line)}"
+    ".app-title{display:flex;align-items:center;gap:10px;margin:0 auto 0 4px;color:var(--ink);font-weight:750;font-size:18px;letter-spacing:-.02em}"
+    ".app-title .mark{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--brand);color:var(--panel)}"
+    ".app-title .mark svg{width:17px;height:17px}.app-identity{color:var(--ink-3);font-size:14.58px;margin-right:8px}"
+    ".shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100vh - 60px)}"
+    ".side{position:sticky;top:60px;height:calc(100vh - 60px);background:var(--panel);border-right:1px solid var(--line)}"
+    ".nav{padding:12px 10px 20px;display:flex;flex-direction:column;gap:2px}"
+    ".nav a{display:flex;align-items:center;gap:11px;padding:8px 12px;min-height:38px;border-radius:7px;color:var(--ink-2);font-size:15.75px;font-weight:500}"
+    ".nav a svg{width:18px;height:18px;flex:none}.nav a:hover{background:var(--panel-2);color:var(--ink)}"
+    ".nav a[aria-current=page]{background:var(--brand-soft);color:var(--brand);font-weight:700}"
+    ".nav .count{margin-left:auto;padding:0 7px;background:var(--block-bg);color:var(--block);font-size:12.42px;font-weight:750;border-radius:6px;line-height:20px}"
+    ".main{min-width:0;width:100%;max-width:1600px;margin:0 auto;padding:28px 32px 64px}"
+    ".page-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}"
+    ".page-head h1{margin:0;flex:1;font-size:29.25px;font-weight:750;line-height:1.3;letter-spacing:-.025em}"
+    ".stack{display:flex;flex-direction:column;gap:20px}"
+    ".kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:20px}"
+    ".kpi{min-width:0;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);color:inherit}"
+    "a.kpi:hover{border-color:var(--brand)}.kpi .label{font-size:12.6px;color:var(--ink-3);margin-bottom:2px}"
+    ".kpi .value{font-size:22.5px;font-weight:750;line-height:1.2;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}"
+    ".kpi.allow .value{color:var(--allow)}.kpi.block .value{color:var(--block)}.kpi.alert .value{color:var(--alert)}"
+    ".panel{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}"
+    ".panel>header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:18px 20px 0}"
+    ".panel>header h2{margin:0;font-size:16.92px;font-weight:700;letter-spacing:-.025em}.panel>header .sub{font-size:13.5px;color:var(--ink-3)}"
+    ".panel>header .tools-end{margin-left:auto;display:flex;gap:8px}.panel>header form{margin:0}"
+    ".panel .body{padding:16px 20px 20px}.panel .body.flush{padding:16px 0 0;overflow-x:auto}"
+    "table.data{width:100%;border-collapse:collapse;font-size:14.58px}"
+    "table.data th{padding:11px 16px;text-align:left;font-size:13.5px;font-weight:600;color:var(--ink-3);background:var(--panel-2);border-block:1px solid var(--line);white-space:nowrap}"
+    "table.data td{padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:middle;overflow-wrap:anywhere}table.data tr:last-child td{border-bottom:0}"
+    "table.data td.t{font:13.5px var(--mono);color:var(--ink-3);white-space:nowrap}"
+    ".kv{display:grid;grid-template-columns:140px minmax(0,1fr);font-size:14.58px;margin:0}"
+    ".kv dt,.kv dd{padding:11px 0;border-bottom:1px solid var(--line)}.kv dt{color:var(--ink-3)}.kv dd{margin:0;overflow-wrap:anywhere;min-width:0}"
+    ".kv dt:nth-last-child(2),.kv dd:last-child{border-bottom:0}"
+    ".chip{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;line-height:20px;padding:3px 8px;border-radius:6px;background:var(--panel-2);color:var(--ink-2)}"
+    ".chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}"
+    ".chip.allow{color:var(--allow);background:var(--allow-bg)}.chip.alert{color:var(--alert);background:var(--alert-bg)}"
+    ".chip.restrict{color:var(--restrict);background:var(--restrict-bg)}.chip.approval{color:var(--approval);background:var(--approval-bg)}"
+    ".chip.block{color:var(--block);background:var(--block-bg)}.chip.brand{color:var(--brand);background:var(--brand-soft)}"
+    ".btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line-2);border-radius:7px;padding:8px 14px;min-height:40px;"
+    "background:var(--panel);color:var(--ink-2);font-weight:550;font-size:14.58px;cursor:pointer}.btn:hover{background:var(--panel-2);color:var(--ink)}"
+    ".btn.primary{background:var(--brand);border-color:var(--brand);color:var(--panel)}.btn.sm{padding:6px 10px;min-height:34px;font-size:13.5px}"
+    ".form{display:grid;gap:16px;max-width:760px}.form label{display:flex;flex-direction:column;gap:7px;font-size:14.58px;font-weight:550}"
+    ".form input,.form textarea{width:100%;min-height:42px;padding:10px 12px;background:var(--panel);border:1px solid var(--line-2);border-radius:7px}"
+    ".form textarea{min-height:120px;resize:vertical}.form .row{display:flex;gap:8px}"
+    ".note{margin:0 0 16px;background:var(--allow-bg);border:1px solid var(--allow);border-radius:8px;padding:12px 16px;color:var(--ink);font-size:14.58px}"
+    ".empty{padding:44px 24px;text-align:center;color:var(--ink-3);margin:0}"
+    ".foot{margin:0;padding:12px 20px;color:var(--ink-3);font-size:13.5px;border-top:1px solid var(--line)}"
+    "@media (max-width:900px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}"
+    ".nav{flex-direction:row;overflow-x:auto;padding:8px}.nav a{white-space:nowrap}.main{padding:20px 16px 48px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}"
+)
+
+ICONS = {
+    "mark": '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+    "": '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    "servers": '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/>',
+    "logs": '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    "request": '<path d="M12 5v14M5 12h14"/>',
+}
+TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("request", "도입 요청"))
+# Values coloured as the console colours them.
+CHIPS = {"승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
+         "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
+         "검토 기한 만료": "alert", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
+CHIP_COLUMNS = {"상태", "결과", "경로"}
 
 
-def page(title, active, body, token):
+def svg(name):
+    return (f'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" '
+            f'stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>')
+
+
+def chip(value):
     import html
-    tabs = (("", "상태"), ("servers", "MCP"), ("logs", "호출 기록"), ("request", "도입 요청"))
-    nav = "".join(f'<a href="/{token}/{key}" class="{"on" if key == active else ""}">{html.escape(label)}</a>' for key, label in tabs)
+    return f'<span class="chip {CHIPS.get(value, "")}">{html.escape(str(value))}</span>'
+
+
+def page(title, active, body, token, identity="", counts=None):
+    import html
+    counts = counts or {}
+    nav = "".join(f'<a href="/{token}/{key}"{" aria-current=page" if key == active else ""}>{svg(key)}<span>{html.escape(label)}</span>'
+                  + (f'<span class="count">{counts[key]}</span>' if counts.get(key) else "") + "</a>" for key, label in TABS)
     return (f'<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>MINT · {html.escape(title)}</title><link rel="stylesheet" href="/{token}/style.css"></head><body>'
-            f'<header><b>MINT</b><nav>{nav}</nav></header><main>{body}</main></body></html>')
+            f'<meta name="color-scheme" content="light dark"><title>MINT · {html.escape(title)}</title>'
+            f'<link rel="stylesheet" href="/{token}/style.css"></head><body>'
+            f'<header class="app-bar"><a class="app-title" href="/{token}/"><span class="mark">{svg("mark")}</span><strong>MINT</strong></a>'
+            f'<span class="app-identity">{html.escape(identity)}</span></header>'
+            f'<div class="shell"><aside class="side"><nav class="nav" aria-label="메뉴">{nav}</nav></aside>'
+            f'<main class="main"><div class="page-head"><h1>{html.escape(title)}</h1></div>{body}</main></div></body></html>')
 
 
-def table_html(title, columns, rows):
+def table_html(title, columns, rows, foot=""):
     import html
     head = "".join(f"<th>{html.escape(str(c))}</th>" for c in columns)
-    body = "".join("<tr>" + "".join(f"<td>{html.escape(str(cell))}</td>" for cell in row) + "</tr>" for row in rows)
-    content = f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>" if rows else '<p class="empty">—</p>'
-    return f"<section><h2>{html.escape(title)}<span>{len(rows)}</span></h2>{content}</section>"
+    body = "".join("<tr>" + "".join(('<td class="t">' if columns[i] == "시각" else "<td>")
+                                    + (chip(cell) if columns[i] in CHIP_COLUMNS else html.escape(str(cell))) + "</td>"
+                                    for i, cell in enumerate(row)) + "</tr>" for row in rows)
+    content = (f'<div class="body flush"><table class="data"><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>'
+               if rows else '<p class="empty">없음</p>')
+    return (f'<section class="panel"><header><h2>{html.escape(title)}</h2><span class="sub">{len(rows)}</span></header>{content}'
+            + (f'<p class="foot">{html.escape(foot)}</p>' if foot else "") + "</section>")
+
+
+def kv_html(title, pairs, tools=""):
+    import html
+    rows = "".join(f"<dt>{html.escape(a)}</dt><dd>{chip(b) if b in CHIPS else html.escape(b)}</dd>" for a, b in pairs)
+    return (f'<section class="panel"><header><h2>{html.escape(title)}</h2><span class="tools-end">{tools}</span></header>'
+            f'<div class="body"><dl class="kv">{rows}</dl></div></section>')
 
 
 def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
@@ -336,6 +430,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
     import html
     import http.server
     import secrets
+    import socket
     import time
     import urllib.parse
     import webbrowser
@@ -372,35 +467,57 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
             if name == "style.css":
                 return self.reply(200, STYLE, "text/css; charset=utf-8")
             try:
-                if name == "":
-                    rows = "".join(f"<tr><td>{html.escape(a)}</td><td>{html.escape(b)}</td></tr>"
-                                   for a, _, b in (line.partition(": ") for line in status_lines()))
-                    checked = ""
-                    if "check" in self.path:
-                        checked = table_html("연결 점검", ("항목", "결과"), check())
-                    form = f'<form method="get" action="/{token}/"><input type="hidden" name="check" value="1"><button>연결 점검</button></form>'
-                    return self.reply(200, page("상태", "", f'<section><h2>상태</h2><table class="kv">{rows}</table>{form}</section>{checked}', token))
                 summary = receive(address, {"action": "self"})
-                if name == "servers":
-                    return self.reply(200, page("MCP", name, "".join(table_html(*s) for s in sections(summary)), token))
-                if name == "logs":
-                    calls = table_html("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary))
-                    return self.reply(200, page("호출 기록", name, calls + f'<p class="empty">전송 대기 {unsent_calls()}건</p>', token))
-                if name == "request":
-                    query = urllib.parse.parse_qs(self.path.partition("?")[2])
-                    notice = query.get("done", [""])[0]
-                    names = [u["name"] for u in summary.get("unregistered", [])]
-                    options = "".join(f'<option value="{html.escape(n)}">' for n in names)
-                    form = (f'<section><h2>도입 요청</h2>{f"<p class=note>{html.escape(notice)}</p>" if notice else ""}'
-                            f'<form method="post" action="/{token}/request"><input name="server" list="unregistered" placeholder="서버 이름" required maxlength="120">'
-                            f'<datalist id="unregistered">{options}</datalist><input name="source_url" placeholder="소스 주소 (https://)" maxlength="300">'
-                            f'<textarea name="purpose" placeholder="사용 목적" required minlength="10" maxlength="1000"></textarea><button>요청</button></form></section>')
-                    mine = table_html("내 요청", ("서버", "상태", "시각"),
-                                      [(r["name"], REQUEST_STATES.get(r["status"], r["status"]), short_time(r["created_at"])) for r in summary.get("requests", [])])
-                    return self.reply(200, page("도입 요청", name, form + mine, token))
-                self.reply(404, "")
             except (OSError, ValueError, KeyError, TypeError):
-                self.reply(502, page("오류", name, '<p class="empty bad">엔드포인트 서비스 연결 실패</p>', token))
+                summary = None
+            known = summary or {}
+            counts = {"servers": len(known.get("unregistered", [])),
+                      "request": sum(1 for r in known.get("requests", []) if r.get("status") == "OPEN")}
+
+            def show(title, body, status=200):
+                self.reply(status, page(title, name, body, token, socket.gethostname(), counts))
+
+            if name == "":
+                pairs = [(a, b) for a, _, b in (line.partition(": ") for line in status_lines())]
+                values = dict(pairs)
+                calls = known.get("calls", [])
+                cards = (("연결 상태", values.get("연결 상태", "—"), "allow" if values.get("연결 상태") == "연결됨" else "block", ""),
+                         ("승인 서버", len(known.get("servers", [])), "", "servers"),
+                         ("미등록 MCP", counts["servers"], "alert" if counts["servers"] else "", "servers"),
+                         ("MCP 호출", len(calls), "block" if any(c.get("failed") for c in calls) else "", "logs"))
+                kpis = "".join((f'<a class="kpi {tone}" href="/{token}/{link}">' if link else f'<div class="kpi {tone}">')
+                               + f'<div class="label">{html.escape(label)}</div><div class="value">{html.escape(str(value))}</div>'
+                               + ("</a>" if link else "</div>") for label, value, tone, link in cards)
+                button = (f'<form method="get" action="/{token}/"><input type="hidden" name="check" value="1">'
+                          f'<button class="btn sm">연결 점검</button></form>')
+                body = f'<div class="kpis">{kpis}</div><div class="stack">{kv_html("엔드포인트", pairs, button)}'
+                if "check" in self.path:
+                    body += kv_html("연결 점검", list(check()))
+                return show("상태", body + "</div>")
+            if summary is None:
+                return show("오류", '<section class="panel"><p class="empty">엔드포인트 서비스 연결 실패</p></section>', 502)
+            if name == "servers":
+                return show("MCP 서버", '<div class="stack">' + "".join(table_html(*part) for part in sections(summary)) + "</div>")
+            if name == "logs":
+                return show("호출 기록", table_html("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary),
+                                                f"전송 대기 {unsent_calls()}건"))
+            if name == "request":
+                query = urllib.parse.parse_qs(self.path.partition("?")[2])
+                notice = query.get("done", [""])[0]
+                options = "".join(f'<option value="{html.escape(u["name"])}">' for u in summary.get("unregistered", []))
+                form = ('<section class="panel"><header><h2>도입 요청</h2></header><div class="body">'
+                        + (f'<p class="note">{html.escape(notice)}</p>' if notice else "")
+                        + f'<form class="form" method="post" action="/{token}/request">'
+                        f'<label>서버 이름<input name="server" list="unregistered" required maxlength="120"></label>'
+                        f'<datalist id="unregistered">{options}</datalist>'
+                        f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300"></label>'
+                        f'<label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>'
+                        f'<div class="row"><button class="btn primary">요청</button></div></form></div></section>')
+                mine = table_html("내 요청", ("서버", "상태", "시각"),
+                                  [(r["name"], REQUEST_STATES.get(r["status"], r["status"]), short_time(r["created_at"]))
+                                   for r in summary.get("requests", [])])
+                return show("도입 요청", f'<div class="stack">{form}{mine}</div>')
+            self.reply(404, "")
 
         def do_POST(self):
             if self.route() != "request":
