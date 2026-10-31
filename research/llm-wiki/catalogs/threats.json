@@ -125,7 +125,8 @@
       "changed_review_files": [
         "full_stack_lab/gateway/app/agent_service.py",
         "full_stack_lab/gateway/app/review.py",
-        "full_stack_lab/supply_chain/intake_worker.py"
+        "full_stack_lab/supply_chain/intake_worker.py",
+        "full_stack_lab/tests/intake_validation_test.py"
       ]
     },
     "verification": "static-candidate-mapping",
@@ -789,16 +790,16 @@
       },
       {
         "path": "endpoint-agent/managed-windows.py",
-        "sha256": "ebdb6c80eb2c4093d727ac47f7e369adcad0f8803914b324d8b061e5213046a8",
-        "committed_sha256": "ebdb6c80eb2c4093d727ac47f7e369adcad0f8803914b324d8b061e5213046a8",
-        "normalized_sha256": "ebdb6c80eb2c4093d727ac47f7e369adcad0f8803914b324d8b061e5213046a8",
+        "sha256": "0a566e3ba5bdf1771a13a5eba6211296ead0fac982ee114bc8353afadf74fe36",
+        "committed_sha256": "0a566e3ba5bdf1771a13a5eba6211296ead0fac982ee114bc8353afadf74fe36",
+        "normalized_sha256": "0a566e3ba5bdf1771a13a5eba6211296ead0fac982ee114bc8353afadf74fe36",
         "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/endpoint_plane.py",
-        "sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
-        "committed_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
-        "normalized_sha256": "ab3f55d6cf5aa7a94025e06c5a3fdb0ee04bfe6f94b8d7c615f6bd76da6483fd",
+        "sha256": "0d84d7815fccb101cc2f52d39ddf17e69855f58b3e726db2381f360a66b2818c",
+        "committed_sha256": "0d84d7815fccb101cc2f52d39ddf17e69855f58b3e726db2381f360a66b2818c",
+        "normalized_sha256": "0d84d7815fccb101cc2f52d39ddf17e69855f58b3e726db2381f360a66b2818c",
         "worktree_modified": false
       }
     ],

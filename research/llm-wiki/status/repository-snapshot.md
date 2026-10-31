@@ -1,42 +1,24 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-31T14:35:09+09:00
+확인 시각: 2026-10-31T20:51:02+09:00
 
-HEAD: `3402278b1473effba80abfb1b7d21cee295d5533` · 로컬 브랜치: `10/28-windows-kit`
+HEAD: `29248b5328f658e96d2799d92ad2f39b13d6c08e` · 로컬 브랜치: `10/31-overhaul`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M .github/actions/compose-cache/index.cjs
- M .github/ci/compose-cache.test.cjs
- M full_stack_lab/gateway/app/local_sources.py
- M full_stack_lab/supply_chain/dependency_locks.py
- M full_stack_lab/tests/dependency_locks_check.py
- M full_stack_lab/tests/dest_pin_credential_redaction_check.py
- M full_stack_lab/tests/endpoint_stdio_check.py
- M full_stack_lab/tests/field_tls_check.py
- M full_stack_lab/tests/intake_fixture.py
- M full_stack_lab/tests/intake_identity_pg_check.py
- M full_stack_lab/tests/intake_one_click_ast_check.py
- M full_stack_lab/tests/intake_one_click_check.py
- M full_stack_lab/tests/local_run_presets_check.py
- M full_stack_lab/tests/nested_tx_check.py
- M full_stack_lab/tests/nested_tx_refactor_check.py
- M full_stack_lab/tests/oneclick_markers_provenance_check.py
- M full_stack_lab/tests/provenance_verify_check.py
- M full_stack_lab/tests/remaining_controls_check.py
- M full_stack_lab/tests/root_solo_behavior_check.py
- M research/llm-wiki/analysis/integration-cases.json
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/status/backlog.md
- M research/llm-wiki/status/current.md
+ M research/llm-wiki/analysis/threat-trace-review-1020/README.md
+ M research/llm-wiki/catalogs/threats.json
+ M research/llm-wiki/status/decisions-index.md
 ?? api.py
 ?? c
+?? docs/ai/decisions/D-301-350.md
 ?? p3_ui.py
 ?? q
-?? research/llm-wiki/status/reports/2026-10-31-pr69-d299-ci.md
 ?? sftp_put.py
 ```
 
@@ -53,5 +35,5 @@ M .github/actions/compose-cache/index.cjs
 | `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
 | `endpoint-agent/bootstrap.py` | `73d129b5c572ab9290fc0528aff4f7d0a17ddb5ea663f48740453daa7eb1dee9` |
-| `endpoint-agent/managed-linux.py` | `06ae3638334c39d195f09fb87ffb4ec219eee955f333f24584e428107b7a2d2f` |
+| `endpoint-agent/managed-linux.py` | `17c84ec633e511dc1e0b719dff25fe94979b8868d8ed34a28d605dc518c3cabc` |
 | `endpoint-agent/enforce-linux.py` | `2ce6a711e2e9dfcc47e2b1ca3cebdf9fe6f39171267312ab42c87b1e822e025c` |
