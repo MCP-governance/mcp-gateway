@@ -190,8 +190,8 @@ test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관�
   assert.match(String(out.html.kpis), /전체 호출<\/div><div class="value">20/);
   assert.match(String(out.html.kpis), /차단된 호출<\/div><div class="value">6/);
   assert.doesNotMatch(String(out.html.kpis), /오늘 운영 현황|현재 상태|통제 적용 엔드포인트|실행된 호출/);
-  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 여부 확인<\/div><div class="value">305<small>건<\/small>/);
-  assert.match(String(out.html.kpis), /종료 처리<\/div><div class="value">9<small>건<\/small>/);
+  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 여부 확인<\/div><div class="value">305<\/div>/);
+  assert.match(String(out.html.kpis), /종료 처리<\/div><div class="value">9<\/div>/);
   assert.match(String(out.html.kpis), /attention=overdue"><span>기한 초과<\/span><b>3/);
   assert.doesNotMatch(summary, /실행 확인 필요|종료 기한 초과/);
   assert.equal((summary.match(/<tr[^>]+data-act="approval"/g) || []).length, 0);
@@ -211,7 +211,7 @@ test("MCP 점검 목록은 대시보드와 같은 세 상태만 표시한다", a
   const ui = build(true, { "/gw/registry": { servers, tools: [], registrations: {} } });
   ui.responses["/gw/overview"].servers = servers;
   const overview = await ui.ROUTES.overview("", "summary");
-  assert.match(String(overview.html.kpis), /attention=required"><div class="label">MCP 서버 점검<\/div><div class="value">3<small>개<\/small>/);
+  assert.match(String(overview.html.kpis), /attention=required"><div class="label">MCP 서버 점검<\/div><div class="value">3<\/div>/);
   const result = await ui.ROUTES.servers("", "servers", new URLSearchParams("attention=required"));
   const body = String(result.html.tabs[0].body);
   assert.equal(result.html.tabs[0].n, 3);
@@ -343,9 +343,9 @@ test("성능 탭은 호출 시간과 엔드포인트 연결 측정을 분리하�
   assert.match(body, /정책 판정<\/td><td class="num">10/);
   assert.match(body, /95백분위 높은 순, 최대 12개/);
   assert.doesNotMatch(body, /99999|MCP 서버 응답|엔드포인트 왕복/);
-  assert.match(body, /엔드포인트 통신 상태[^]*연결 시간 중앙값[^]*점검 실패율[^]*점검 횟수/);
+  assert.match(body, /엔드포인트 → 게이트웨이 통신[^]*연결 시간 중앙값[^]*연결 시간 95백분위[^]*점검 실패율[^]*점검 횟수/);
   const stale = body.split("<tr>").find((row) => row.includes('title="stale"'));
-  assert.match(stale, /측정 만료/); assert.doesNotMatch(stale, /8888|8\.9 s|9999/);
+  assert.match(stale, /오래됨/); assert.doesNotMatch(stale, /8888|8\.9 s|9999/);
   assert.match(body, /미측정/); assert.match(body, /100%[^]*측정 실패/);
   const href = body.match(/data-href="([^"]+)"/)[1].replaceAll("&amp;", "&");
   const query = new URL(href.slice(1), "http://test").searchParams;
@@ -362,7 +362,7 @@ test("성능 조회 실패는 측정 없음으로 표시하지 않고 두 데이
   const empty = build(true, { "/gw/latency": { calls: 0 }, "/gw/endpoint/network-quality": new Error("unavailable") });
   const result = await empty.ROUTES.overview("", "latency");
   const emptyBody = String(result.html.tabs.find((t) => t.key === "latency").body);
-  assert.match(emptyBody, /측정된 호출 없음/); assert.match(emptyBody, /엔드포인트 통신 상태[^]*조회 실패/);
+  assert.match(emptyBody, /측정된 호출 없음/); assert.match(emptyBody, /엔드포인트 → 게이트웨이 통신[^]*조회 실패/);
   assert.doesNotMatch(emptyBody, /측정 대상 엔드포인트 없음/);
 });
 

@@ -1,6 +1,12 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "엔드포인트 → 게이트웨이 통신": "Endpoint to gateway communication",
+  "연결 시간 95백분위": "95th percentile connection time",
+  "최근 측정 시각": "Last measured at",
+  "최근": "Recent",
+  "연결 점검과 게이트웨이 상태 확인 요청 횟수의 합계입니다.": "Total number of connection probes and gateway health requests.",
+  "조회 시각 기준 최근 3분 이내의 측정입니다.": "Measured within three minutes of the retrieval time.",
   "확인 및 조치": "Review and action",
   "실행 여부 확인": "Execution verification",
   "연결 통제 점검": "Connection control checks",

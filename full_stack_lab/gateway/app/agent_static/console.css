@@ -18,6 +18,8 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;max-width:100%}
+html{scrollbar-gutter:stable}
+@supports not (scrollbar-gutter:stable){html{overflow-y:scroll}}
 body{background:var(--bg);color:var(--ink);font:var(--fs)/1.78 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:var(--brand-2);text-decoration:none}a:hover{text-decoration:underline}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -99,7 +101,6 @@ h1,h2,h3{letter-spacing:-.025em}p{overflow-wrap:anywhere}
 .kpi:hover{text-decoration:none}.kpi[href]:hover{border-color:var(--brand)}
 .kpi .label{font-size:13.5px;color:var(--ink-3);margin-bottom:6px}
 .kpi .value{font-size:var(--fs-kpi);font-weight:750;line-height:1.2;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
-.kpi .value small,.kpi-detail b small{font-size:13.5px;font-weight:500;margin-left:4px;letter-spacing:normal}
 .kpi.block .value{color:var(--block)}.kpi.alert .value{color:var(--alert)}.kpi.approval .value{color:var(--approval)}
 .btn,.icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line-2);border-radius:7px;padding:8px 14px;min-height:40px;background:var(--panel);color:var(--ink-2);font-weight:550;font-size:14.58px;cursor:pointer;text-decoration:none;flex-shrink:0}
 .btn:hover,.icon-btn:hover{background:var(--panel-2);color:var(--ink);text-decoration:none}
