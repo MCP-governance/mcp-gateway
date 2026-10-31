@@ -565,6 +565,17 @@ async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
             "duplicates": len(events) - accepted}
 
 
+def canonical_server(server: str) -> str:
+    """The registry id behind a harness's server name. Codex names a server's tools mcp__<name>__<tool> with every "-"
+    of the id written as "_" (pj3: huggingface_co_b272ed53), which made approved calls look like a local MCP."""
+    from . import registry
+    ids = registry.servers()
+    if server in ids:
+        return server
+    dashed = server.replace("_", "-")
+    return dashed if dashed in ids else server
+
+
 def tool_path(server: str) -> str:
     """Which route a reported MCP call took. Gateway servers carry their registry id as the harness server name;
     claude.ai connectors and ChatGPT apps arrive under the vendor's own server names."""
@@ -585,7 +596,7 @@ async def ingest_tool_events(endpoint_id: str, events: list[dict]) -> dict:
                                                     input_bytes,input_sha256,output_bytes,failed)
                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
                 (endpoint_id, event["event_id"], event["called_at"], event["harness"], event.get("account") or "",
-                 event["server"], event["tool"], tool_path(event["server"]), event.get("input_bytes") or 0,
+                 canonical_server(event["server"]), event["tool"], tool_path(canonical_server(event["server"])), event.get("input_bytes") or 0,
                  event.get("input_sha256") or "", event.get("output_bytes") or 0, bool(event.get("failed"))))).rowcount
         await connection.execute("UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,))
     return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}

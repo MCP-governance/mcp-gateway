@@ -1455,4 +1455,6 @@ export const EN = {
   "요청 없음": "No requests",
   "요청을 닫았습니다.": "Request closed.",
   "엔드포인트 도입 요청": "Endpoint intake requests",
+  "관리": "Manage",
+  "엔드포인트 격리": "Endpoint quarantined",
 };

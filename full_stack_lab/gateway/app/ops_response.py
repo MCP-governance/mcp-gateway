@@ -43,16 +43,27 @@ async def catalog_alerts(server_id, findings, snapshot_id, synthetic=False):
 
 async def observed_alerts():
     rows = await db.fetch_all(
-        """SELECT d.id,d.server_id,d.policy_id,d.conflicts FROM decisions d
+        """SELECT d.id,d.server_id,d.policy_id,d.conflicts,d.user_token FROM decisions d
            WHERE d.created_at>now()-interval '1 day'
              AND (d.policy_id='MCP-REGISTRY-001' OR d.policy_id LIKE 'MCP-SHADOW-%%'
                   OR d.policy_id LIKE 'P-ANOMALY-%%' OR d.policy_id LIKE 'P-VOLUME-%%')
              AND NOT EXISTS (SELECT 1 FROM ops_alerts a WHERE a.origin='decision' AND a.origin_id=d.id::text AND NOT a.synthetic)
+             -- A shadow MCP on the caller's PC marks every call of that person; one alert a day per person says it.
+             AND NOT (d.policy_id LIKE 'MCP-SHADOW-%%' AND EXISTS (
+                  SELECT 1 FROM ops_alerts a WHERE a.kind='unapproved-connection' AND a.evidence->>'policy_id'=d.policy_id
+                     AND a.evidence->>'user_token'=d.user_token AND a.created_at>now()-interval '1 day' AND NOT a.synthetic))
            ORDER BY d.id LIMIT 1000""")
+    seen = set()
     for row in rows:
         kind = alert_kind(row["policy_id"])
-        if kind:
-            await emit_alert(kind, "decision", row["id"], {"server_id": row["server_id"], "policy_id": row["policy_id"]})
+        if not kind:
+            continue
+        shadow = row["policy_id"].startswith("MCP-SHADOW-")
+        if shadow and (row["user_token"], row["policy_id"]) in seen:
+            continue
+        seen.add((row["user_token"], row["policy_id"]))
+        await emit_alert(kind, "decision", row["id"], {"server_id": row["server_id"], "policy_id": row["policy_id"],
+                                                       **({"user_token": row["user_token"]} if shadow else {})})
 
 
 async def endpoint_alerts():

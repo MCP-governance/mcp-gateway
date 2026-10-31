@@ -64,7 +64,7 @@ def describe(row: dict) -> dict:
         "agent": client.get("agent"), "task_id": client.get("task_id"), "traceparent": client.get("traceparent"),
         "harness": (client.get("harness") or {}).get("name"),
         "event_kind": client.get("event_kind") or "tools/call",
-        "server": server, "tool": tool, "target": target,
+        "server": server, "server_name": _server_name(server), "tool": tool, "target": target,
         "action": row.get("action"), "action_ko": ACTION_KO.get(row.get("action") or "", row.get("action")),
         "data_class": row.get("data_class"), "data_class_ko": CLASS_KO.get(row.get("data_class") or "", row.get("data_class")),
         "policy_id": row.get("policy_id"), "reason": row.get("reason"), "outcome": outcome,
@@ -82,6 +82,15 @@ def describe(row: dict) -> dict:
         "timings": row.get("timings") or {}, "outcome_axes": recorded_outcome(row),
         "line": line,
     }
+
+
+def _server_name(server_id: str | None) -> str | None:
+    """The registered name an administrator recognises; the id stays in the detail."""
+    try:
+        from . import registry
+        return (registry.server(server_id or "") or {}).get("display_name")
+    except Exception:  # a list row must not fail on the catalog; the id is shown instead
+        return None
 
 
 async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,

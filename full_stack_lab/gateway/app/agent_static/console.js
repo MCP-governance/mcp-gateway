@@ -406,6 +406,8 @@ const kpiStrip = (items, variant = "compact") => html`<div class="kpis kpis-${it
   value === 0 || value === "0" ? "" : tone, href]).map(([label, value, tone, href]) => href
   ? html`<a class="kpi ${tone}" href="${href}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></a>`
   : html`<div class="kpi ${tone}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`)}</div>`;
+// Row actions in one menu (one button per row, not five): a native disclosure, closed in the wiring below.
+const rowMenu = (items, label = "관리") => html`<details class="row-menu"><summary class="btn sm">${label}</summary><div class="menu" role="menu">${items}</div></details>`;
 const panel = (title, body, { sub = "", tools = "", flush = false, end = "" } = {}) => html`<section class="panel">
   <header><h2>${title}</h2>${sub ? html`<span class="sub">${sub}</span>` : ""}${end ? html`<div class="tools-end">${end}</div>` : ""}</header>
   ${tools ? html`<div class="tools">${tools}</div>` : ""}
@@ -601,14 +603,22 @@ function decisionRow(r) {
     <td class="t">${when(r.at, { seconds: true })}</td>
     <td>${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}</td>
     <td class="who-cell"><b>${r.who}</b></td>
-    <td><code>${r.server}.${r.tool}</code></td>
-    <td>${outcomeChips(r.outcome_axes)}</td></tr>`;
+    <td><b>${r.server_name || r.server}</b><span class="sub mono">${r.tool}</span></td>
+    <td>${outcomeSummary(r.outcome_axes)}</td></tr>`;
 }
 const OUTCOME_LABELS = { connection: "연결", decision: "정책 판정", task: "도구 업무", effect: "독립 효과" };
 function outcomeChips(axes) {
   const tone = (value) => ["연결 성공", "허용", "업무 성공", "실행됨"].includes(value) ? "allow"
     : ["연결 실패", "정책 거부", "통제 장애 차단", "도구 오류", "제공자 인증 실패", "제공자 접근 거부", "제공자 한도 초과"].includes(value) ? "block" : "outline";
   return html`<div class="outcome-axes">${Object.entries(OUTCOME_LABELS).map(([key, label]) => html`<div class="row-actions"><span>${label}</span>${chip(tone(axes?.[key]), axes?.[key] || "—")}</div>`)}</div>`;
+}
+// The row says the one thing that matters (the first axis that went wrong, else the effect); the drawer has all four.
+function outcomeSummary(axes) {
+  const bad = ["연결 실패", "정책 거부", "통제 장애 차단", "도구 오류", "제공자 인증 실패", "제공자 접근 거부", "제공자 한도 초과"];
+  const key = Object.keys(OUTCOME_LABELS).find((k) => bad.includes(axes?.[k]));
+  if (key) return html`${chip("block", axes[key])}<span class="sub">${OUTCOME_LABELS[key]}</span>`;
+  const done = axes?.task || axes?.connection;
+  return done ? html`${chip(["업무 성공", "연결 성공"].includes(done) ? "allow" : "outline", done)}${axes?.effect ? html`<span class="sub">${OUTCOME_LABELS.effect} ${axes.effect}</span>` : ""}` : "—";
 }
 const decisionTable = (rows, id = "") => html`<table class="data call-table"><thead><tr><th>시각</th><th>판정</th><th>사용자</th>
   <th>도구</th><th>호출 결과</th></tr></thead><tbody ${id ? raw(`id="${id}"`) : ""}>${rows.map(decisionRow)}</tbody></table>`;
@@ -1448,7 +1458,7 @@ async function serverControlTabs(query) {
           <td class="mono small">${osEventTarget(e)}${e.details?.parent_executable ? html`<span class="sub">${e.details.parent_executable}</span>` : ""}</td>
           <td>${evidenceChip(e.provenance_state)}</td>`))}
         </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` },
-    { key: "vendor", label: "커넥터", n: review, hot: review > 0, body: connectorTab(conn, items) },
+    { key: "vendor", label: "커넥터", n: conn.items.filter((g) => g.builtin && !g.kinds.includes("feature")).length + review, hot: review > 0, body: connectorTab(conn, items) },
   ];
 }
 
@@ -1500,11 +1510,11 @@ ROUTES.people = async (_, tab) => {
             <td>${ROLE[a.role] || a.role}</td><td>${a.department}</td>
             <td>${chip({ active: "allow", disabled: "block", locked: "alert" }[a.status] || "", { active: "사용", disabled: "중지", locked: "잠김" }[a.status] || a.status)}</td>
             <td class="num">${a.user_id === viewer.user_id ? html`<span class="small muted">본인</span>`
-              : html`<button class="btn sm" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
-                <button class="btn sm" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
-                <button class="btn sm" data-act="suspend-all" data-token="${a.token}" data-name="${a.display_name}">전체 중지</button>
-                <button class="btn sm" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
-                ${a.user_id !== "root" ? html`<button class="btn sm danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`}</td></tr>`)}
+              : rowMenu(html`<button type="button" data-act="account-status" data-id="${a.user_id}" data-name="${a.display_name}" data-status="${a.status}">상태 변경</button>
+                <button type="button" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
+                <button type="button" data-act="suspend-all" data-token="${a.token}" data-name="${a.display_name}">전체 중지</button>
+                <button type="button" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
+                ${a.user_id !== "root" ? html`<button type="button" class="danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`)}</td></tr>`)}
           </tbody></table><p class="empty" data-list-empty="account-list" hidden>검색 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "deleted", label: "삭제된 사용자", n: deletedAccounts.length,
           body: panel("삭제된 사용자", html`<table class="data"><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>부서</th><th>삭제 시각</th><th></th></tr></thead><tbody>
@@ -2343,7 +2353,7 @@ async function auditTabs(query) {
       </div><div class="row-actions"><button class="btn primary" type="submit">조회</button><a class="btn" href="#/activity?t=events">초기화</a></div></form>`)}
       ${panel("감사 원장", html`${data.events.length ? html`<table class="data"><thead><tr><th>번호·시각</th><th>판정·정책</th><th>사용자·도구</th><th>실행 결과</th></tr></thead><tbody>${data.events.map((e) => html`<tr class="clickable" tabindex="0" data-act="audit-event" data-id="${e.id}">
           <td>#${e.id}<span class="sub">${when(e.created_at)} · ${EVENT_KIND[e.event_kind] || e.event_kind}</span></td><td>${decisionChip(e.decision)}${e.invalid ? chip("outline", "무효 처리") : ""}<span class="sub mono">${e.policy_id}</span></td><td>${e.user_token}<span class="sub mono">${e.server_id}.${e.tool_name}</span></td>
-          <td>${outcomeChips(e.outcome_axes)}</td></tr>`)}</tbody></table>` : empty("감사 이벤트 없음")}
+          <td>${outcomeSummary(e.outcome_axes)}</td></tr>`)}</tbody></table>` : empty("감사 이벤트 없음")}
           ${data.has_more ? html`<div class="row-actions center"><a class="btn" href="#/activity?t=events&${new URLSearchParams({...Object.fromEntries(params), before: data.next_before})}">더 보기</a></div>` : ""}`, {flush:true})}</div>` },
     { key: "alerts", label: "경보", n: alertData.last_24h, body: panel("경보", alertData.alerts.length ? html`<table class="data"><thead><tr><th>시각</th><th>종류</th><th>대상</th><th>내용</th></tr></thead><tbody>${alertData.alerts.map((a) => {
         const [target, href] = alertTarget(a);
@@ -3261,6 +3271,15 @@ const FORMS = {
 };
 
 // ── wiring ───────────────────────────────────────────────────────────────────
+// An open row menu closes on a click elsewhere, after one of its items, or on Esc.
+document.addEventListener("click", (event) => {
+  for (const open of document.querySelectorAll("details.row-menu[open]")) {
+    if (!open.contains(event.target) || event.target.closest(".menu button")) open.open = false;
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") for (const open of document.querySelectorAll("details.row-menu[open]")) open.open = false;
+});
 $("#drawer").addEventListener("cancel", (event) => { event.preventDefault(); closeDrawer(); });
 $("#drawer").addEventListener("click", (event) => {
   if (event.target !== event.currentTarget) return;
