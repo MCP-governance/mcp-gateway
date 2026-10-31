@@ -1118,6 +1118,17 @@ async def audit_siem(user: dict = Depends(admin_caller)) -> dict:
     return await siem.status()
 
 
+@app.get("/api/audit/alerts")
+async def audit_alerts(limit: int = Query(100, ge=1, le=500), user: dict = Depends(admin_caller)) -> dict:
+    # 운영 경보는 SIEM으로만 나가면 콘솔 사용자가 볼 곳이 없다. 엔드포인트 경보에는 화면에 쓸 호스트 이름을 붙인다.
+    rows = await db.fetch_all(
+        """SELECT a.id, a.kind, a.origin, a.created_at, a.evidence, s.display_name AS server_name
+             FROM ops_alerts a LEFT JOIN mcp_servers s ON s.id = a.evidence->>'server_id'
+            WHERE NOT a.synthetic ORDER BY a.id DESC LIMIT %s""", (limit,))
+    day = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts WHERE NOT synthetic AND created_at > now() - interval '24 hours'")
+    return {"alerts": rows, "last_24h": int(day["n"] or 0)}
+
+
 @app.get("/api/audit/events/{event_id}")
 async def audit_event(event_id: int, user: dict = Depends(admin_caller)) -> dict:
     return await audit.detail(event_id)

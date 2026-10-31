@@ -237,6 +237,9 @@ async def snapshot() -> dict:
     for row in harness_rows:
         kinds_by_key.setdefault(row["item_key"], set()).add(row["kind"])
     for row in harness_rows:
+        # 하네스 기본 기능(이미지 생성·웹 검색 등)은 MCP 연동이 아니다. 켬/끔은 하네스 설정에서 다룬다(D-303).
+        if row["kind"] == "feature":
+            continue
         decision = decided.get(row["item_key"]) or {}
         # Same rule as connectors.groups: a key mixed with plugins is reviewed, not allowed by default.
         approval = state_of(decision.get("decision"), kinds_by_key[row["item_key"]] <= DEFAULT_KINDS, row["first_seen"], now)
@@ -282,6 +285,8 @@ async def snapshot() -> dict:
         items.append({
             "class": "local_plugin_or_stdio" if stdio and row["classification"] == "retired-residue" else "shadow_or_unknown",
             "key": f"{row['source']}:{row['endpoint_id']}:{row['location']}:{row['name']}", "name": row["name"],
+            # 같은 미등록 서버는 엔드포인트·지문이 달라도 한 항목으로 묶는다.
+            "item_key": f"shadow:{row['source']}:{row['name']}",
             "target": row["target"], "harness": None, "owner": (device or {}).get("owner"), "device": row["endpoint_id"],
             "discovered_from": f"엔드포인트 {'설정' if row['source'] == 'config' else '리스너'} {row['location']}",
             "discovered_at": row["seen"], "source": row["classification"],
