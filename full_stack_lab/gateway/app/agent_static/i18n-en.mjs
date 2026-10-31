@@ -644,7 +644,7 @@ export const EN = {
   "보안 통제 규칙 검토 후보": "Candidate security control rules for review",
   "확인된 규칙 후보 없음": "No identified candidate rules",
   "기록 있음": "Records found",
-  "정책 조회 상태": "Policy retrieval status",
+  "정책 로드 상태": "Policy load status",
   "OPA 룰셋 일치 여부": "OPA ruleset consistency",
   "OPA 정책 데이터 일치 여부": "OPA policy data consistency",
   "조회 기준 시각": "Query reference time",

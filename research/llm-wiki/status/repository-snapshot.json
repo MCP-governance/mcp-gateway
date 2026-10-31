@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-10-31T15:07:19+09:00",
-  "head": "3030475510fbfd2455b8470dcb777e5fa6526e3f",
+  "captured_at": "2026-10-31T15:12:50+09:00",
+  "head": "5cdee2fd469a59469ca7e28c3a3c48a5fd1ea44b",
   "branch": "feat/console-ui",
   "status": [
     "M .github/actions/compose-cache/index.cjs",
@@ -79,9 +79,7 @@
     " M research/llm-wiki/integrations/lab/openbao/requirements.lock",
     " M research/llm-wiki/integrations/lab/openbao/server.hcl",
     " M research/llm-wiki/status/reports/2026-10-14-risk-implementation.patch",
-    " M research/llm-wiki/status/reports/2026-10-31-organization-policy-tab.md",
-    " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md"
+    " M research/llm-wiki/status/reports/2026-10-31-organization-policy-tab.md"
   ],
   "scope": "local-code-only",
   "deployment_verified": false,

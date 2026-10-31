@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-31T15:07:19+09:00
+확인 시각: 2026-10-31T15:12:50+09:00
 
-HEAD: `3030475510fbfd2455b8470dcb777e5fa6526e3f` · 로컬 브랜치: `feat/console-ui`
+HEAD: `5cdee2fd469a59469ca7e28c3a3c48a5fd1ea44b` · 로컬 브랜치: `feat/console-ui`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -86,8 +86,6 @@ M .github/actions/compose-cache/index.cjs
  M research/llm-wiki/integrations/lab/openbao/server.hcl
  M research/llm-wiki/status/reports/2026-10-14-risk-implementation.patch
  M research/llm-wiki/status/reports/2026-10-31-organization-policy-tab.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
 ```
 
 ## 주요 파일 바이트

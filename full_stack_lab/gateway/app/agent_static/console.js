@@ -2324,7 +2324,7 @@ ROUTES.policy = async (_, tab) => {
           ${organizationPolicies.length ? "" : empty(ledger.organization?.source_state === "available" ? "등록된 조직 정책 없음" : "조직 정책 원본 조회 실패")}`,
           { flush: true, tools: listToolbar("organization-policy-list", "정책 번호·대상·단계 검색") }) },
         { key: "ledger", label: "보안 통제 규칙", n: policyLedger.length, body: html`<div class="stack">
-        ${panel("정책 조회 상태", kv([
+        ${panel("정책 로드 상태", kv([
           ["OPA 룰셋 일치 여부", policyDeployLabel(ledger, "rules_match")], ["OPA 정책 데이터 일치 여부", policyDeployLabel(ledger, "data_match")],
           ["조회 기준 시각", when(ledger.checked_at)]]), {
           status: chip(ledger.source_state === "loaded" ? "allow" : ledger.source_state === "unavailable" ? "block" : "outline", policySourceLabel(ledger)),
