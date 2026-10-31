@@ -18,6 +18,9 @@ function build(admin = true, extra = {}) {
   const responses = {
     "/api/consents": { consents: [] }, "/approvals": { approvals: [], history: [] }, "/gw/dispatch-intents": { rows: [] },
     "/gw/registry": { servers: [], tools: [], registrations: {} },
+    "/gw/policy/matrix": { capabilities: [], runtime_envelopes: [] },
+    "/gw/enforcement": { enforcement: "enforce" },
+    "/gw/policy/ledger": { policies: [] },
     "/gw/overview": { servers: [], workstations: [], pending_approvals: 2, termination: {} },
     "/api/integrations": { items: [], devices: [], summary: { devices: { bypass_possible: 0 } } },
     "/api/connectors": { items: [], summary: { pending: 3, expired: 1 } },
@@ -99,6 +102,7 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
     ["servers", "shadow", "endpoints", "shadow"],
     ["people", "devices", "endpoints", "devices"], ["people", "managed", "endpoints", "managed"],
     ["consent", "history", "approvals", "consent"],
+    ["policy", "capabilities", "servers", "capabilities"],
   ]) {
     const at = { page, arg: "", query: new URLSearchParams({ t: tab, q: "a & b", before: "42" }) };
     const out = ui.canonicalRoute(at);
@@ -138,7 +142,7 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.deepEqual(Array.from(approvals.html.tabs, (item) => item.key), ["queue", "unsent", "history", "consent"]);
   assert.match(String(approvals.html.tabs[3].body), /확인할 요청 없음[^]*동의 기록/);
   const servers = await ui.ROUTES.servers("", "servers", new URLSearchParams());
-  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract", "items", "vendor"]);
+  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract", "capabilities", "items", "vendor"]);
   assert.doesNotMatch(String(servers.html.head), /통제 범위/);
   assert.match(String(servers.html.head), /AI 연결 관리/);
   assert.equal(ui.ROUTES.coverage, undefined);
@@ -150,6 +154,24 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   const intake = await ui.ROUTES.intake("", "impact", new URLSearchParams("package=alpha&range=%3E%3D1.0.0"));
   assert.equal(intake.html.tabs.at(-1).key, "impact");
   assert.match(String(intake.html.tabs.at(-1).body), /value="alpha"[^]*sbom-impact-stop/);
+});
+
+test("접근 권한은 AI 연결 관리에서만 조회하고 정책은 기존 목록과 집행 모드를 유지한다", async () => {
+  const ui = build(true, { "/gw/policy/matrix": {
+    capabilities: [{ id: "permission-1", principals: ["alice"], servers: ["docs"], actions: ["r"], path_roots: ["/docs"], valid_until: null }],
+    runtime_envelopes: [{ server_id: "docs", principals: ["*"], tools: { read_file: {} }, valid_until: null }],
+  } });
+  const connections = await ui.ROUTES.servers("", "capabilities", new URLSearchParams());
+  const access = connections.html.tabs.find((tab) => tab.key === "capabilities");
+  assert.equal(access.label, "접근 권한");
+  assert.equal(access.n, 2);
+  assert.match(String(access.body), /permission-1[^]*alice[^]*docs[^]*\/docs[^]*read_file/);
+  ui.calls.length = 0;
+  const policy = await ui.ROUTES.policy("", "");
+  assert.equal(policy.html.active, "ledger");
+  assert.deepEqual(Array.from(policy.html.tabs, (tab) => tab.key), ["ledger"]);
+  assert.match(String(policy.html.head), /관찰 모드로 전환/);
+  assert.ok(!ui.calls.includes("/gw/policy/matrix"));
 });
 
 test("MCP 설정 다음 페이지는 사용자 화면의 전체 범위와 서버의 미등록 범위를 보존한다", async () => {

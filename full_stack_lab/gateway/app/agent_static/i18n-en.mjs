@@ -611,6 +611,7 @@ export const EN = {
   "처리 개인정보": "Personal data handled",
   "외부 전송": "External transfer",
   "있음": "Yes",
+  "접근 권한": "Access permissions",
   "실행 권한": "Execution permission",
   "예상 사용자 수": "Expected users",
   "{n}명": "{1} {1?user:users}",

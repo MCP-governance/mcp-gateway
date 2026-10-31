@@ -471,7 +471,9 @@ function canonicalRoute(at) {
     servers: ["endpoints", "shadow"],
     "sbom-impact": ["intake", "impact"],
     consent: ["approvals", "consent"],
+    policy: ["servers", "capabilities"],
   };
+  if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
   if (at.page === "servers" && at.query.get("t") !== "shadow") return at;
   if (!Object.hasOwn(destinations, at.page)) return at;
@@ -1099,12 +1101,13 @@ async function showApproval(id) {
 
 let registry = null;
 ROUTES.servers = async (id, tab, query) => {
-  const [reg, o, pl, controls] = await Promise.all([gw("registry"), gw("overview"), planes(), serverControlTabs(query)]);
+  const [reg, o, pl, controls, matrix] = await Promise.all([gw("registry"), gw("overview"), planes(), serverControlTabs(query), gw("policy/matrix")]);
   registry = reg;
   const counts = Object.fromEntries(o.servers.map((s) => [s.id, s]));
   const plane = Object.fromEntries((pl?.items || []).filter((i) => i.key.startsWith("gateway:")).map((i) => [i.key.slice(8), i]));
   const servers = reg.servers.map((s) => ({ ...s, registration: reg.registrations?.[s.id], plane: plane[s.id],
     ...(counts[s.id] ? { calls: counts[s.id].calls, blocked: counts[s.id].blocked, tools: counts[s.id].tools } : {}) }));
+  const actions = (list) => (list || []).map((a) => ACTION[a] || a).join(", ");
   const toolFilter = query.get("server") || "";
   const tools = reg.tools.filter((t) => !toolFilter || t.server_id === toolFilter);
   const drifted = servers.filter((s) => s.status !== "READY");
@@ -1147,6 +1150,12 @@ ROUTES.servers = async (id, tab, query) => {
               <td class="small clip">${s.status_reason || "—"}</td><td class="small">${ago(s.last_seen_at)}</td>
               <td class="num">${s.status === "DRIFT" && !s.registration ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</td></tr>`)}
             </tbody></table>`, { flush: true }) },
+        { key: "capabilities", label: "접근 권한", n: matrix.capabilities.length + matrix.runtime_envelopes.length, body: panel("접근 권한",
+          matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료 시각</th></tr></thead><tbody>
+          ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${(g.principals || []).join(", ")}</td><td>${(g.servers || []).join(", ")}</td>
+            <td>${actions(g.actions)}<span class="sub">${(g.path_roots || []).join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
+          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${audienceText(g.principals)}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools || {}).join(", ")}<span class="sub">도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
+          </tbody></table>` : empty("실행 권한 없음"), { flush: true }) },
         ...controls,
       ],
     }),
@@ -2282,21 +2291,14 @@ async function auditTabs(query) {
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
 
 ROUTES.policy = async (_, tab) => {
-  const [{ enforcement }, matrix, ledger] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger")]);
+  const [{ enforcement }, ledger] = await Promise.all([gw("enforcement"), gw("policy/ledger")]);
   policyLedger = ledger.policies;
-  const actions = (list) => (list || []).map((a) => ACTION[a] || a).join(", ");
   return {
     html: page({
       head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
-      active: tab || "capabilities",
+      active: "ledger",
       tabs: [
-        { key: "capabilities", label: "실행 권한", n: matrix.capabilities.length + matrix.runtime_envelopes.length, body: panel("실행 권한",
-          matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료 시각</th></tr></thead><tbody>
-          ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${(g.principals || []).join(", ")}</td><td>${(g.servers || []).join(", ")}</td>
-            <td>${actions(g.actions)}<span class="sub">${(g.path_roots || []).join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
-          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${audienceText(g.principals)}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools || {}).join(", ")}<span class="sub">도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
-          </tbody></table>` : empty("실행 권한 없음"), { flush: true }) },
         { key: "ledger", label: "정책 목록", n: ledger.policies.length, body: panel("정책 목록", html`<table class="data"><thead><tr><th class="n">번호</th><th>정책</th><th>결과</th></tr></thead><tbody>
             ${ledger.policies.map((p, i) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}"><td class="n">${i + 1}</td>
               <td><b>${p.name}</b></td><td>${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : chip("outline", p.outcome)}</td></tr>`)}
