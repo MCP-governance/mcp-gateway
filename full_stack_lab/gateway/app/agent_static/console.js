@@ -2262,6 +2262,16 @@ function showTarget(id) {
 
 // ── policy ───────────────────────────────────────────────────────────────────
 let policyLedger = [];
+let policyEvidence = {};
+const policyExecutor = (p) => ({ opa: "정책 엔진", gateway: "게이트웨이", endpoint: "엔드포인트", vendor: "벤더" }[p.enforced_by] || "—");
+const policyEnvironment = (env) => ({ prod: "운영 환경", stage: "사전 검증 환경", dev: "개발 환경" }[env] || "—");
+const policyLinks = (p) => Array.isArray(p.pol_ids) ? [...new Set(p.pol_ids.filter((id) => /^POL-\d{3}$/.test(id)))] : [];
+const policyRecorded = (p) => Number.isSafeInteger(p.recent?.count) && p.recent.count > 0;
+const policyRecordLabel = (p) => policyRecorded(p) ? "기록 확인" : p.recent?.count === 0 ? "기록 없음" : "미확인";
+const policySourceLabel = (ledger) => ledger.source_state === "loaded" ? "조회 확인" : ledger.source_state === "unavailable" ? "조회 실패" : "미확인";
+const policyDeployLabel = (ledger) => !ledger.deployment || typeof ledger.deployment.rules_match !== "boolean" || typeof ledger.deployment.data_match !== "boolean" ? "미확인"
+  : ledger.deployment.rules_match === true && ledger.deployment.data_match === true ? "일치" : "불일치";
+
 async function auditTabs(query) {
   const q = new URLSearchParams(query);
   const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
@@ -2293,17 +2303,22 @@ const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 �
 ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, ledger] = await Promise.all([gw("enforcement"), gw("policy/ledger")]);
   policyLedger = ledger.policies;
+  policyEvidence = ledger;
   return {
     html: page({
       head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
       active: "ledger",
-      tabs: [
-        { key: "ledger", label: "정책 목록", n: ledger.policies.length, body: panel("정책 목록", html`<table class="data"><thead><tr><th class="n">번호</th><th>정책</th><th>결과</th></tr></thead><tbody>
-            ${ledger.policies.map((p, i) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}"><td class="n">${i + 1}</td>
-              <td><b>${p.name}</b></td><td>${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : chip("outline", p.outcome)}</td></tr>`)}
-            </tbody></table>`, { flush: true }) },
-      ],
+      tabs: [{ key: "ledger", label: "정책 목록", n: policyLedger.length, body: html`<div class="stack">
+        ${panel("적용 근거", kv([["정책 원본 조회", policySourceLabel(ledger)], ["배포 대조", policyDeployLabel(ledger)],
+          ["확인 시각", when(ledger.checked_at)], ["실행 환경", policyEnvironment(ledger.environment)], ["원장 조회 기간", ledger.record_window_hours === 24 ? "최근 24시간" : "—"]]))}
+        ${panel("정책 목록", html`<table class="data"><thead><tr><th>정책</th><th>집행 주체</th><th>관리 상태</th><th>정의된 결과</th><th>원장 근거</th><th>관련 POL</th></tr></thead><tbody>
+          ${policyLedger.map((p) => html`<tr class="clickable" tabindex="0" data-act="policy" data-id="${p.policy_id}">
+            <td><b>${p.name}</b><span class="sub mono">${p.policy_id}</span></td><td>${policyExecutor(p)}</td><td>${["운영", "중지", "폐기"].includes(p.status) ? p.status : "—"}</td>
+            <td>${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : "—"}</td>
+            <td>${chip(policyRecorded(p) ? "plain" : "outline", policyRecordLabel(p))}</td><td>${policyLinks(p).join(", ") || "연결 미확인"}</td></tr>`)}
+          </tbody></table>${policyLedger.length ? "" : empty(ledger.source_state === "loaded" ? "등록된 정책 없음" : "정책 원본 조회 실패")}`, { flush: true })}
+        </div>` }],
     }),
   };
 };
@@ -3003,12 +3018,29 @@ const ACTIONS = {
   policy(el) {
     const p = policyLedger.find((row) => row.policy_id === el.dataset.id);
     if (!p) return;
-    openDrawer(p.name, html`<div class="row-actions">${UNSUPPORTED_POLICY.has(p.policy_id) ? chip("outline", "지원 안 함") : outcomeDecision(p.outcome) ? decisionChip(outcomeDecision(p.outcome)) : chip("outline", p.outcome)}
-      <code>${p.policy_id}</code></div>${kv([["조건", p.condition], ["결과", p.outcome], ["처리", p.enforcement]])}`);
+    const links = policyLinks(p);
+    const logs = new URLSearchParams({ t: "events", policy: p.policy_id });
+    if (policyEvidence.record_window_hours === 24 && Number.isFinite(Date.parse(policyEvidence.checked_at))) {
+      logs.set("since", new Date(Date.parse(policyEvidence.checked_at) - 86400000).toISOString());
+      logs.set("until", policyEvidence.checked_at);
+    }
+    openDrawer(p.name, html`<a class="btn" href="#/activity?${logs}">판정 기록 보기</a>`, [
+      { key: "definition", label: "정책 정의", body: kv([["정책 ID", p.policy_id], ["목적", p.purpose],
+        ["조건", p.condition], ["대상 범위", p.scope], ["정의된 결과", p.outcome], ["처리 방식", p.enforcement]]) },
+      { key: "evidence", label: "집행 근거", body: kv([["집행 주체", policyExecutor(p)],
+        ["관찰 모드 처리", { protected: "상시 집행 대상", eligible: "관찰 전환 대상" }[p.monitor_behavior] || "—"],
+        ["등록 상태", ["운영", "중지", "폐기"].includes(p.status) ? p.status : "—"],
+        ["최근 원장 근거", policyRecordLabel(p)], ["최종 판정 기록 수", p.recent?.count ?? "—"],
+        ["마지막 판정 시각", when(p.recent?.last_seen_at)], ["현재 집행 경로 검증", "미확인"],
+        ["독립 효과 검증", "판정 기록으로 확정 불가"], ["평가 우선순위", p.priority ?? "—"],
+        ["대상 환경", Array.isArray(p.environments) ? p.environments.map(policyEnvironment).join(", ") : "—"]]) },
+      { key: "mapping", label: "정책 연결", body: kv([["관련 POL", links.join(", ") || "연결 미확인"],
+        ["연결 근거", links.length ? "정책 관리대장의 명시적 연결" : "검토된 연결 정보 없음"]]) },
+    ]);
   },
   async enforcement(el) {
     const mode = el.dataset.mode;
-    const fd = await ask({ title: mode === "monitor" ? "관찰 모드로 전환" : "집행 모드로 전환", body: mode === "monitor" ? "차단 대상 호출도 기록만 하고 실행됩니다." : "", confirm: "전환", danger: mode === "monitor" });
+    const fd = await ask({ title: mode === "monitor" ? "관찰 모드로 전환" : "집행 모드로 전환", body: mode === "monitor" ? "관찰 전환 대상 정책은 기록만 하고 실행됩니다. 상시 차단 정책은 유지됩니다." : "", confirm: "전환", danger: mode === "monitor" });
     if (!fd) return;
     await gw("enforcement", { method: "PUT", body: { mode } });
     toast("전환했습니다."); reload();

@@ -730,22 +730,46 @@ async def policy_matrix(user: dict = Depends(caller)) -> dict:
 
 
 @app.get("/api/policy/ledger")
-async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
+async def policy_ledger_view(user: dict = Depends(admin_caller)) -> dict:
     """The policy list as the running OPA holds it, ordered by priority."""
-    ledger, policy_set, authorization, active = await asyncio.gather(
-        core.policy_ledger(refresh=True),
+    checked_at = datetime.now(UTC)
+    ledger, policy_set, authorization, active, records, deployment = await asyncio.gather(
+        core.opa_document("policy_ledger"),
         core.opa_document("policy_set"),
         core.opa_document("authorization"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
+        db.fetch_all("""SELECT policy_id, count(*) AS count, max(created_at) AS last_seen_at
+                        FROM decisions WHERE created_at >= %s AND created_at <= %s
+                        GROUP BY policy_id""", (checked_at - timedelta(hours=24), checked_at)),
+        policy_deployment_evidence(),
     )
-    entries = [{"policy_id": pid, **entry} for pid, entry in sorted(ledger.items(), key=lambda item: item[1].get("priority", 9999))]
+    loaded = isinstance(ledger, dict)
+    recent = {row["policy_id"]: {"count": row["count"], "last_seen_at": row["last_seen_at"]} for row in records}
+    entries = [{**entry, "policy_id": pid, "recent": recent.get(pid, {"count": 0, "last_seen_at": None}),
+                "monitor_behavior": "protected" if pid.startswith(core.ALWAYS_ENFORCED) else "eligible"}
+               for pid, entry in sorted((ledger if loaded else {}).items(), key=lambda item: item[1].get("priority", 9999))]
     return {
+        "source_state": "loaded" if loaded else "unavailable",
+        "checked_at": checked_at.isoformat(),
+        "deployment": deployment,
+        "record_window_hours": 24,
         "policy_set": policy_set or {},
         "authorization": authorization or {},
         "deployed_rego": active,
         "environment": core.GATEWAY_ENVIRONMENT,
         "policies": entries,
     }
+
+
+async def policy_deployment_evidence() -> dict | None:
+    try:
+        info = await policy_info(core.OPA_URL)
+    except (OSError, ValueError, KeyError, TypeError, httpx.HTTPError):
+        return None
+    # A missing OPA response is unknown, not a confirmed mismatch or a successful deployment.
+    if not info.get("loaded_sha256") or not info.get("loaded_data_sha256"):
+        return None
+    return {"rules_match": info["rules_match"], "data_match": info["data_match"]}
 
 
 @app.post("/api/session")

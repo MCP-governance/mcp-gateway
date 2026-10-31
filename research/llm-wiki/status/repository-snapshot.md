@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-31T13:34:14+09:00
+확인 시각: 2026-10-31T14:02:29+09:00
 
-HEAD: `81f33a5a9a1a5755a18b684a2c29b82617aeb933` · 로컬 브랜치: `feat/console-ui`
+HEAD: `e280a9c147ad58087cd182cc254a54d22883a346` · 로컬 브랜치: `feat/console-ui`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -15,7 +15,6 @@ M .github/actions/compose-cache/index.cjs
  M VERSION
  M docs/ai/CONSOLE_UI.md
  M docs/ai/architecture/components.psv
- M docs/ai/decisions/D-251-300.md
  M endpoint-agent/install-windows.ps1
  M endpoint-agent/install.cmd
  M endpoint-agent/setup.ps1
@@ -27,11 +26,10 @@ M .github/actions/compose-cache/index.cjs
  M full_stack_lab/field/console/file.caddy
  M full_stack_lab/field/console/none.caddy
  M full_stack_lab/field/console/tailscale.caddy
- M full_stack_lab/gateway/app/agent_service.py
  M full_stack_lab/gateway/app/agent_static/console.js
  M full_stack_lab/gateway/app/agent_static/i18n-en.mjs
+ M full_stack_lab/gateway/app/main.py
  M full_stack_lab/tests/console-ia.test.mjs
- M full_stack_lab/tests/people-pages.test.mjs
  M research/collaboration-console/install-autostart.ps1
  M research/collaboration-console/run-console.ps1
  M research/collaboration-console/uninstall-autostart.ps1
@@ -92,8 +90,9 @@ M .github/actions/compose-cache/index.cjs
  M research/llm-wiki/status/backlog.md
  M research/llm-wiki/status/current.md
  M research/llm-wiki/status/reports/2026-10-14-risk-implementation.patch
- M research/llm-wiki/threats/control-map.md
-?? research/llm-wiki/status/reports/2026-10-31-control-page-consolidation.md
+?? docs/ai/decisions/D-301-350.md
+?? full_stack_lab/tests/policy_ledger_evidence_check.py
+?? research/llm-wiki/status/reports/2026-10-31-policy-evidence-ui.md
 ```
 
 ## 주요 파일 바이트

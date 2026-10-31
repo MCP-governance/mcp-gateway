@@ -43,9 +43,9 @@
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
         "sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
-        "committed_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "committed_sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
         "normalized_sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
-        "worktree_modified": true
+        "worktree_modified": false
       }
     ],
     "control_locations": [
@@ -185,9 +185,9 @@
       {
         "path": "full_stack_lab/gateway/app/agent_service.py",
         "sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
-        "committed_sha256": "227998792341fbb941ec1b67e3273b330a3f030126736e5fe36bd91d61eebb75",
+        "committed_sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
         "normalized_sha256": "ed4df98820a148859784df02ba0e525992dc62e528e3316bfbb0a639dcfd7f01",
-        "worktree_modified": true
+        "worktree_modified": false
       },
       {
         "path": "full_stack_lab/gateway/app/review.py",
