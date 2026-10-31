@@ -1,17 +1,11 @@
 {
-  "captured_at": "2026-10-28T20:46:19+09:00",
-  "head": "eba54a5d90a556f8b0eec90c806fbc43f3769b54",
+  "captured_at": "2026-10-31T14:10:20+09:00",
+  "head": "21eafed9824f42be58936b6337bfdf970d9837ec",
   "branch": "10/28-windows-kit",
   "status": [
-    "M research/llm-wiki/analysis/endpoint-stdio/local-suite-round2-first.json",
-    " M research/llm-wiki/analysis/endpoint-stdio/test-results-round2.json",
-    " M research/llm-wiki/analysis/integration-cases.json",
+    "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
-    " M research/llm-wiki/analysis/threat-trace-review-1020/review.json",
     " M research/llm-wiki/catalogs/threats.json",
-    " M research/llm-wiki/status/repository-snapshot.json",
-    " M research/llm-wiki/status/repository-snapshot.md",
     " M research/llm-wiki/threats/control-map.md",
     "?? api.py",
     "?? c",
@@ -25,7 +19,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "f09aaa35512ea52179af7056920314b61ff58c9b1406720d71cf19ff6cbe0f08"
+      "sha256": "f8dfbc92cdc8f7972a37bcb412fd61a7801a1c55ec9d42900d4ead3c0861c523"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -61,7 +55,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "f3a4cf8bcf5ee2dd34ae1c9b9431740f7f291d0eadc8b092a28c77d59b8e3e36"
+      "sha256": "06ae3638334c39d195f09fb87ffb4ec219eee955f333f24584e428107b7a2d2f"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
