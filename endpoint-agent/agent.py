@@ -1198,10 +1198,12 @@ def once() -> dict:
             state, error = "failed", "delivery_failed"
         results[channel] = {"state": state, "accepted_count": count, "error_code": error}
     if TOOL_EVENT_FILES:
+        # Same shape as the other channels: the loop and the service read "state" from every entry.
         try:
-            results["tools"] = report_tool_events()
+            results["tools"] = {"state": "success", "accepted_count": report_tool_events()["sent"], "error_code": ""}
         except (OSError, ValueError, urllib.error.URLError) as exc:
             log("도구 호출 기록 전송 실패: %s" % exc)
+            results["tools"] = {"state": "failed", "accepted_count": 0, "error_code": "delivery_failed"}
     print(json.dumps({"observation": results}), flush=True)
     return results
 
