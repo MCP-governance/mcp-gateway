@@ -414,16 +414,15 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
-  { id: "overview", label: "대시보드", group: "운영" },
-  { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
+  { id: "overview", label: "대시보드", group: "운영", badge: "approvals" },
   { id: "activity", label: "호출·감사 기록", group: "운영" },
   { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
   { id: "policy", label: "정책", group: "접근 통제" },
-  { id: "consent", label: "이용 동의", group: "접근 통제", badge: "consent" },
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
   { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
+  { id: "consent", label: "이용 동의", group: "내 계정", badge: "consent" },
   { id: "connections", label: "내 연결", group: "내 계정" },
 ];
 let viewer = null;
@@ -433,10 +432,10 @@ const badges = { approvals: 0, termination: 0, coverage: 0, consent: 0 };
 
 function renderNav(active) {
   const groups = new Map();
-  for (const p of PAGES.filter((x) => viewer.pages.includes(x.id) && (!viewer.admin || x.id !== "consent"))) {
+  for (const p of PAGES.filter((x) => viewer.pages.includes(x.id))) {
     if (!groups.has(p.group)) groups.set(p.group, []);
     groups.get(p.group).push({ ...p, label: p.id === "activity" && !viewer.admin ? "호출 기록" : p.label,
-      count: p.badge === "approvals" ? badges.approvals + badges.consent : badges[p.badge] });
+      count: badges[p.badge] });
   }
   const shortcuts = [
     viewer.git_url && html`<a href="${sameSite(viewer.git_url)}" data-i18n-ctx="nav" target="_blank" rel="noopener" aria-label="사내 저장소 (새 탭)" title="사내 저장소">${icon("git")}<span>사내 저장소</span><span class="ext" aria-hidden="true">↗</span></a>`,
@@ -470,7 +469,9 @@ function canonicalRoute(at) {
     coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
     servers: ["endpoints", "shadow"],
     "sbom-impact": ["intake", "impact"],
-    consent: ["approvals", "consent"],
+    approvals: at.query.get("t") === "consent" ? ["consent", "pending"]
+      : at.query.get("t") === "unsent" ? ["activity", "unsent"]
+        : at.query.get("t") === "history" ? ["activity", "approval-history"] : ["overview", "approvals"],
     policy: ["servers", "capabilities"],
   };
   if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
@@ -658,9 +659,12 @@ function startSystemMetrics() {
   metricsTimer = setInterval(refresh, 10000);
 }
 
-ROUTES.overview = async (_, tab) => {
-  const [o, blocked, pl, lat, net, health] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes(),
-    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null)]);
+ROUTES.overview = async (arg, tab) => {
+  const [o, blocked, pl, lat, net, health, approvalData, signups, inventory] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes(),
+    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null), api("/approvals"), api("/api/signup-requests"), gw("endpoint/inventory")]);
+  const { approvals, history } = approvalData;
+  approvalRows = [...approvals, ...history];
+  const activationCount = inventory.agents.filter((a) => a.status !== "revoked" && ["pending", "quarantined"].includes(a.managed_state) && a.policy_hash).length;
   const serverName = Object.fromEntries((o.servers || []).map((s) => [s.id, s.display_name || s.id]));
   const stages = lat?.stages || [];
   feed.rows = mergeRows([], blocked.rows);
@@ -706,12 +710,16 @@ ROUTES.overview = async (_, tab) => {
         { key: "summary", label: "요약", body: html`<div class="stack">
           ${panel("시스템 상태", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
           ${panel("관리자 조치", html`<div class="action-list">
-            <a class="action-link" href="#/approvals"><span>승인 요청</span><b class="n">${o.pending_approvals || 0}</b></a>
+            <a class="action-link" href="#/overview?t=approvals"><span>호출 승인</span><b class="n">${approvals.length}</b></a>
+            <a class="action-link" href="#/people?t=signups"><span>가입 승인</span><b class="n">${signups.requests.filter((s) => s.status === "pending").length}</b></a>
+            <a class="action-link" href="#/endpoints?t=devices"><span>엔드포인트 활성화</span><b class="n">${activationCount}</b></a>
             <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
             <a class="action-link" href="#/termination"><span>종료 기한 초과</span><b class="n">${term.overdue || 0}</b></a>
           </div>`)}
+          ${approvalQueue(approvals, true)}
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
         </div>` },
+        { key: "approvals", label: "호출 승인", n: approvals.length, hot: approvals.length > 0, body: approvalQueue(approvals) },
         { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
           ${panel("조직 통제 의존 경로 (최대 8건)", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
             ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/servers?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
@@ -759,7 +767,7 @@ ROUTES.overview = async (_, tab) => {
       "c-flow": () => charts.sankey(sankeyData(o.flows, (d) => DECISION_LABEL[d] || d)),
       "c-policies": () => charts.bars(o.top_policies.map((p) => ({ name: p.policy_id, value: Number(p.n), color: charts.color(p.decision) }))),
     },
-    after: startSystemMetrics,
+    after: () => { startSystemMetrics(); if (arg) showApproval(arg); },
   };
 };
 
@@ -878,7 +886,7 @@ function startLive() {
   }, 5000);
 }
 
-ROUTES.activity = async (_, tab, query) => {
+ROUTES.activity = async (arg, tab, query) => {
   // A link that names a filter (an overview KPI) replaces the whole set; keeping the
   // others would AND a stale filter with the new one into an empty list.
   if (FEED_FILTERS.some((key) => query.has(key))) for (const key of FEED_FILTERS) feed.filters[key] = query.get(key) || "";
@@ -906,7 +914,7 @@ ROUTES.activity = async (_, tab, query) => {
   const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const f = feed.filters;
   const advancedOpen = ["execution", "person", "endpoint", "policy"].some((key) => f[key]);
-  const audit = viewer.admin ? await auditTabs(query) : [];
+  const [audit, approvalRecords] = viewer.admin ? await Promise.all([auditTabs(query), approvalRecordTabs()]) : [[], []];
   return {
     html: page({
       head: head(viewer.admin ? "호출·감사 기록" : "호출 기록"),
@@ -941,11 +949,12 @@ ROUTES.activity = async (_, tab, query) => {
           ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}
           ${panel("서버별", chartBox("c-by-server", "전체 호출의 서버별 판정"))}
           ${viewer.admin ? panel("사용자별", chartBox("c-by-person", "전체 호출의 사용자별 판정", "lg")) : ""}</div>` },
+        ...approvalRecords,
         ...audit,
       ],
     }),
     charts: feedCharts(),
-    after: () => { const highlighted = feed.highlight; feed.highlight = []; renderFeed(highlighted); startLive(); },
+    after: () => { const highlighted = feed.highlight; feed.highlight = []; renderFeed(highlighted); startLive(); if (viewer.admin && arg) showApproval(arg); },
   };
 };
 
@@ -1021,19 +1030,12 @@ async function showDecision(id) {
 }
 
 let approvalRows = [];
-ROUTES.approvals = async (_, tab) => {
-  const [{ approvals, history }, { rows: unsent }] = await Promise.all([api("/approvals"), gw("dispatch-intents")]);
-  approvalRows = [...approvals, ...history];
-  const consents = viewer.admin ? await consentTabs() : [];
+function approvalQueue(approvals, preview = false) {
+  const rows = preview ? approvals.slice(0, 5) : approvals;
   const oldest = approvals.reduce((m, a) => Math.min(m, new Date(a.created_at).getTime()), Date.now());
-  return {
-    html: page({
-      head: head("승인 대기"),
-      active: tab || "queue",
-      tabs: [
-        { key: "queue", label: "대기", n: approvals.length, hot: approvals.length > 0, body: panel("승인 요청", approvals.length ? html`<table class="data">
+  return panel("승인 요청", approvals.length ? html`<table class="data">
           <thead><tr><th>요청자</th><th>도구</th><th>행위 · 데이터 등급</th><th>하네스</th><th>요청 시각</th><th>만료 시각</th><th></th></tr></thead><tbody>
-          ${approvals.map((a) => html`<tr class="clickable" tabindex="0" data-act="approval" data-id="${a.id}">
+          ${rows.map((a) => html`<tr class="clickable" tabindex="0" data-act="approval" data-id="${a.id}">
             <td class="who-cell"><b>${a.display_name || a.requested_by}</b><span class="sub">${a.department || ""}</span></td>
             <td><code>${a.server_id}.${a.tool}</code>${a.explanation ? chip("approval", "중대 영향") : ""}</td>
             <td>${ACTION[a.action] || a.action || "—"} · ${DATA_CLASS[a.data_class] || a.data_class || "—"}</td>
@@ -1041,8 +1043,13 @@ ROUTES.approvals = async (_, tab) => {
             <td class="small">${ago(a.created_at)}</td><td class="small">${when(a.expires_at)}</td>
             <td class="num nowrap"><button class="btn sm danger" data-act="reject" data-id="${a.id}">거부</button>
               ${a.own ? chip("outline", "본인 요청") : html`<button class="btn sm primary" data-act="approve" data-id="${a.id}">승인·실행</button>`}</td></tr>`)}
-          </tbody></table>` : empty("대기 중인 요청 없음"), { flush: true, sub: approvals.length ? `가장 오래된 요청 ${ago(oldest)}` : "" }) },
-        { key: "unsent", label: "실행 확인", n: unsent.length, hot: unsent.length > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
+          </tbody></table>` : empty("대기 중인 요청 없음"), { flush: true, end: preview ? html`<a class="btn sm" href="#/overview?t=approvals">전체 보기</a>` : "", sub: approvals.length ? `가장 오래된 요청 ${ago(oldest)}` : "" });
+}
+
+async function approvalRecordTabs() {
+  const [{ approvals, history }, { rows: unsent }] = await Promise.all([api("/approvals"), gw("dispatch-intents")]);
+  approvalRows = [...approvals, ...history];
+  return [{ key: "unsent", label: "실행 확인", n: unsent.length, hot: unsent.length > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
           <thead><tr><th>사용자</th><th>도구</th><th>행위</th><th>전송</th><th></th></tr></thead><tbody>
           ${unsent.map((u) => html`<tr><td class="who-cell"><b>${u.display_name || u.user_token}</b></td>
             <td><code>${u.server_id}.${u.tool_name}</code></td><td>${ACTION[u.action] || u.action}</td>
@@ -1050,17 +1057,12 @@ ROUTES.approvals = async (_, tab) => {
             <td class="num nowrap"><button class="btn sm" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="not_executed">실행 안 됨</button>
               <button class="btn sm primary" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="executed">실행됨</button></td></tr>`)}
           </tbody></table>` : empty("확인할 호출 없음"), { flush: true }) },
-        { key: "history", label: "처리 이력", n: history.length, body: html`${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리 시각</th><th>검토자</th></tr></thead><tbody>
+        { key: "approval-history", label: "승인 처리 이력", n: history.length, body: html`${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리 시각</th><th>검토자</th></tr></thead><tbody>
             ${history.map((h) => html`<tr class="clickable" tabindex="0" data-act="${h.explanation ? "approval" : ""}" data-id="${h.id}"><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
               <td><code>${h.server_id}.${h.tool}</code></td><td>${chip(...(APPROVAL_STATUS[h.status] || ["", h.status]))}</td>
               <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}
-                ${h.explanation && h.can_revoke && ["APPROVED", "UNCONFIRMED", "EXECUTED", "NOT_EXECUTED"].includes(h.status) ? html`<button class="btn sm danger" data-act="approval-revoke" data-id="${h.id}">승인 번복</button>` : ""}</td></tr>`)}</tbody></table>` : "", { flush: true })}` },
-        ...(viewer.admin ? [{ key: "consent", label: "이용 동의", n: badges.consent, hot: badges.consent > 0,
-          body: html`<div class="stack">${consents.map((item) => item.body)}</div>` }] : []),
-      ],
-    }),
-  };
-};
+                ${h.explanation && h.can_revoke && ["APPROVED", "UNCONFIRMED", "EXECUTED", "NOT_EXECUTED"].includes(h.status) ? html`<button class="btn sm danger" data-act="approval-revoke" data-id="${h.id}">승인 번복</button>` : ""}</td></tr>`)}</tbody></table>` : "", { flush: true })}` }];
+}
 
 const IMPACT_DOMAIN = { employment: "고용·급여", credit: "신용", legal: "법적 효력", benefits: "급부", contract: "계약", service_access: "서비스 접근" };
 function impactExplanation(e) {

@@ -1,6 +1,11 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "호출 승인": "Call approvals",
+  "가입 승인": "Signup approvals",
+  "엔드포인트 활성화": "Endpoint activation",
+  "승인 처리 이력": "Approval history",
+  "전체 보기": "View all",
   "호출·감사 기록": "Call and audit logs",
   "호출 기록": "Call logs",
   "통제 점검": "Control checks",
