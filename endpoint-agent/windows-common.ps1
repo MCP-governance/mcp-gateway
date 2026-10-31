@@ -388,7 +388,7 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
     } else { throw '설치 소유 정보 확인 실패' }
     if ($manifest.product -ne 'MCPGatewayEndpoint') { throw '설치 소유 정보 확인 실패' }
     # The launcher is this kit's own file even when an older manifest never listed it (a kit without launcher reinstalled over one with).
-    $launcher = if ($resolved -eq $machine) { @('MCPGateway.exe', 'MCPGateway.ico') } else { @() }
+    $launcher = if ($resolved -eq $machine) { @('MCPGateway.exe', 'MCPGateway.ico', 'bin\mint.cmd') } else { @() }
     foreach ($name in @($manifest.files) + $launcher + @('.endpoint-kit')) {
         $target = [IO.Path]::GetFullPath((Join-Path $resolved $name))
         if (-not $target.StartsWith($resolved + '\', [StringComparison]::OrdinalIgnoreCase)) { throw '제거 경로 확인 실패' }
@@ -402,7 +402,7 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
             if ($item.Extension -eq '.pyc' -and $item.Name.Split('.')[0] -in $stems) { Remove-Item -LiteralPath $item.FullName -Force }
         }
     }
-    foreach ($name in @('python', 'harness', '__pycache__')) {
+    foreach ($name in @('python', 'harness', 'bin', '__pycache__')) {
         $target = Join-Path $resolved $name
         if ((Test-Path -LiteralPath $target) -and -not (Get-ChildItem -LiteralPath $target -Force)) {
             Remove-Item -LiteralPath $target

@@ -73,15 +73,42 @@ def main():
     import argparse
     import subprocess
     import sys
-    parser = argparse.ArgumentParser()
-    parser.add_argument("status", type=Path)
-    parser.add_argument("--settings", type=Path)
-    parser.add_argument("--probe", type=Path)
+    parser = argparse.ArgumentParser(prog="mint", description="MINT 엔드포인트 상태 화면")
+    parser.add_argument("status", type=Path, nargs="?", help=argparse.SUPPRESS)
+    parser.add_argument("--settings", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--probe", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--check", action="store_true", help="게이트웨이 연결 확인")
     parser.add_argument("--language", choices=("ko", "en"), default="ko")
     args = parser.parse_args()
     for stream in (sys.stdout,):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+    if args.status is None:
+        # `mint` typed in a terminal: the signed-in account's own tray folder, as the tray opens it.
+        sid = subprocess.run(["whoami", "/user", "/fo", "csv", "/nh"], capture_output=True, text=True).stdout.strip().split(",")[-1].strip('"')
+        args.settings = Path(os.environ.get("ProgramData", r"C:\ProgramData")) / "MCPGatewayManagedTray" / sid / "settings.json"
+        try:
+            args.status = Path(json.loads(args.settings.read_text(encoding="utf-8"))["status_path"])
+        except (OSError, ValueError, KeyError):
+            print(screen_module.translate("이 계정에 설치된 엔드포인트가 없습니다", args.language))
+            raise SystemExit(1)
+    def check(document):
+        if args.settings is None:
+            return [("하네스 응답", "—"), ("게이트웨이 MCP 목록", "점검 설정 없음")]
+        try:
+            done = subprocess.run([sys.executable, "-X", "utf8", "-B", "-I", "-S",
+                                   str(Path(__file__).with_name("managed-windows.py")), "probe",
+                                   "--settings", str(args.settings)], capture_output=True, text=True,
+                                  encoding="utf-8", timeout=180, check=True)
+            return screen_module.check_cells(json.loads(done.stdout.strip().splitlines()[-1]))
+        except (OSError, ValueError, IndexError, subprocess.SubprocessError):
+            return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
+
+    if args.check:
+        print(render(json.loads(args.status.read_text(encoding="utf-8")), language=args.language), end="")
+        for label, value in check(None):
+            print(f"{screen_module.translate(label, args.language)}: {screen_module.translate(value, args.language)}")
+        return
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         print(render(json.loads(args.status.read_text(encoding="utf-8")), language=args.language), end="")
         return
@@ -108,18 +135,6 @@ def main():
         if not 0 <= time.time() - (document.get("updated") or 0) <= 150:
             document = {**document, "connected": False}
         return document
-
-    def check(document):
-        if args.settings is None:
-            return [("하네스 응답", "—"), ("게이트웨이 MCP 목록", "점검 설정 없음")]
-        try:
-            done = subprocess.run([sys.executable, "-X", "utf8", "-B", "-I", "-S",
-                                   str(Path(__file__).with_name("managed-windows.py")), "probe",
-                                   "--settings", str(args.settings)], capture_output=True, text=True,
-                                  encoding="utf-8", timeout=180, check=True)
-            return screen_module.check_cells(json.loads(done.stdout.strip().splitlines()[-1]))
-        except (OSError, ValueError, IndexError, subprocess.SubprocessError):
-            return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
 
     try:
         def sources():

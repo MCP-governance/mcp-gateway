@@ -76,8 +76,14 @@ try {
     $oneclickMark = Join-Path $paths.state 'approved-by-oneclick'
     $replace = $true
     if (Test-Path -LiteralPath $approvalPath) {
-        # A staff download cannot replace an IT approval or repair a damaged trusted installation.
-        $approved = Get-EndpointApprovedKit
+        # A kit this one-click path installed is replaced whole: checking it against this version's file list first
+        # rejected every update that added a file (pj3 10-31: "ask IT" after each new kit).
+        Assert-EndpointProtectedPath $approvalPath
+        $approved = if (Test-Path -LiteralPath $oneclickMark) {
+            Assert-EndpointProtectedPath $oneclickMark
+            Get-Content -LiteralPath $approvalPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        } else { Get-EndpointApprovedKit }
+        # A staff download cannot replace an IT approval.
         $replace = [bool]($approved.gateway_url -cne $manifest.gateway_url -or $approved.tailscale_node_id -cne $manifest.tailscale_node_id -or
             (Compare-Object -ReferenceObject @($approved.files.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value }) -DifferenceObject @($manifest.files.PSObject.Properties | ForEach-Object { $_.Name + '=' + $_.Value })))
         if ($replace -and -not (Test-Path -LiteralPath $oneclickMark)) { throw 'IT must update the approved installer' }
@@ -86,6 +92,9 @@ try {
         $fileAcl = New-EndpointAccessDescriptor '' $false
         $fileAcl.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule(
             (New-Object Security.Principal.SecurityIdentifier('S-1-5-32-545')), 'ReadAndExecute', 'None', 'None', 'Allow')))
+        # Files an older kit had and this one dropped would fail the approved-installer check below.
+        Get-ChildItem -LiteralPath $paths.code -Force -File | Where-Object { $_.Name -notin ($required + @('windows-kit-manifest.json')) } |
+            Remove-Item -Force
         foreach ($name in $required + @('windows-kit-manifest.json')) {
             $destination = Join-Path $paths.code $name
             [IO.File]::WriteAllBytes($destination, $files[$name])
@@ -134,7 +143,7 @@ try {
         $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ZiE7J6sIOyEpOy5mOqwgCDrgZ3rgpwg65KkIOuLpOyLnCDsi6TtlontlZjshLjsmpQ='))
     }
     if ($owns) { $mutex.ReleaseMutex(); $owns = $false }
-    Show-EndpointResult ($reason + "`r`n" + $next)
+    Show-EndpointResult ($reason + "`r`n" + $_.Exception.Message + "`r`n" + $next)
     exit 1
 } finally {
     if ($private) {

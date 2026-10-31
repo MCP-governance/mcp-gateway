@@ -267,7 +267,7 @@ function Start-EndpointJob([string]$Action) {
         $key.Enabled = $false
         $timer.Start()
     } catch {
-        $results.Text = '조직 승인 설치기·무결성·실행 권한 확인 필요'
+        $results.Text = '설치 파일 확인 실패: ' + $_.Exception.Message
         if ($_.Exception.NativeErrorCode -eq 1223 -or $_.Exception.InnerException.NativeErrorCode -eq 1223) {
             $results.Text = '관리자 권한 승인 취소'
         }

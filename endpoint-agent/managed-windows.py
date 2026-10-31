@@ -748,6 +748,9 @@ def harness_versions(profile):
     return found
 
 
+MINT_COMMAND = '@"%~dp0..\\python\\python.exe" -X utf8 -B -I -S "%~dp0..\\windows_status.py" %*\r\n'
+
+
 def broadcast_environment():
     """Explorer re-reads the user environment, so a terminal opened after the install has the CA variables."""
     try:
@@ -873,6 +876,9 @@ def install(args):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
+    # `mint` in any new terminal, as on Linux: the folder joins the employee's own PATH below.
+    (PROGRAMS / "bin").mkdir(exist_ok=True)
+    write_file(PROGRAMS / "bin" / "mint.cmd", MINT_COMMAND)
     # Only a completed enrollment and policy fetch may retire the employee's working installation.
     for previous in previous_installs(employee):
         if previous.lower() != args.user.lower():
@@ -903,14 +909,15 @@ def install(args):
     apply_policy(config, policy)
     if isolated:
         launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
-        set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
+        set_user_environment(config, {**(policy.get("proxy_environment") or {}),
+                                       "PATH_APPEND": str(launcher_folder) + os.pathsep + str(PROGRAMS / "bin")})
         powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
         write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
     else:
         # The employee's own harnesses trust the Gateway's CA through their user environment. No firewall rule,
         # no PATH entry, no copied harness; Claude takes the model proxy from the managed settings (D-239).
         launcher_files = {}
-        set_user_environment(config, ca_environment(config))
+        set_user_environment(config, {**ca_environment(config), "PATH_APPEND": str(PROGRAMS / "bin")})
         broadcast_environment()
     pythonw = python.with_name("pythonw.exe")
     started = time.time()
