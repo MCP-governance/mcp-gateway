@@ -1060,7 +1060,7 @@ async function showDecision(id) {
     gw(`endpoint/correlation?decision_id=${encodeURIComponent(r.id)}`).catch(() => null),
     r.device_id ? planes().then((p) => p?.devices.find((d) => d.endpoint_id === r.device_id)).catch(() => null) : null]) : [null, null];
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
-  openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
+  openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server_name || r.server} · ${r.tool}</span>
     ${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}<span class="muted small">${dateTimeText(new Date(r.at))}</span></div>`, [
     { key: "flow", label: "요약", body: pipeline(r, device) },
     { key: "call", label: "요청 정보", body: kv([
@@ -2374,7 +2374,7 @@ async function auditTabs(query) {
           <td>${chip(a.kind === "incident-deadline" || a.kind === "policy-self-test-failed" ? "alert" : "block", ALERT_KIND[a.kind] || a.kind)}</td>
           <td>${target}</td><td class="small mono">${alertDetail(a) || "—"}</td></tr>`; })}</tbody></table>` : empty("경보 없음"), { flush: true, sub: "최근 24시간 " + alertData.last_24h + "건" }) },
     { key: "tools", label: "엔드포인트 호출", n: toolData.total, body: panel("엔드포인트 호출", toolData.rows.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>하네스</th><th>경로</th><th>MCP 서버 · 도구</th><th>게이트웨이 판정</th><th class="num">입력</th><th class="num">결과</th></tr></thead><tbody>${toolData.rows.map((e) => html`<tr ${e.decision_id ? raw(`class="clickable" tabindex="0" data-act="decision" data-id="${Number(e.decision_id)}"`) : ""}>
-        <td class="small nowrap">${when(e.called_at, { seconds: true })}</td><td>${e.hostname || e.endpoint_id}<span class="sub">${e.owner_name || e.account || ""}</span></td>
+        <td class="small nowrap">${when(e.called_at, { seconds: true })}</td><td>${e.hostname || e.endpoint_id}<span class="sub">${[e.owner_name, e.account].filter((v, i, all) => v && v !== e.hostname && all.indexOf(v) === i).join(" · ")}</span></td>
         <td>${chip("plain", harnessName(e.harness))}</td><td>${chip(...(TOOL_PATH[e.path] || ["outline", e.path]))}</td>
         <td><b>${e.server_name || e.server}</b><span class="sub mono">${e.tool}</span></td>
         <td>${e.decision ? html`${decisionChip(e.decision)}<span class="sub">${e.policy_id || ""}</span>` : "—"}</td><td class="num">${byteText(e.input_bytes)}</td>
