@@ -854,9 +854,12 @@ async def approval_revoke(approval_id: UUID, request: ApprovalEvidence, user: di
 
 
 @app.get("/api/dispatch-intents")
-async def dispatch_intents(user: dict = Depends(admin_caller)) -> dict:
+async def dispatch_intents(user: dict = Depends(admin_caller), page: int = Query(default=1, ge=1)) -> dict:
     """Calls that were sent and never answered. The gateway does not retry them."""
-    return {"rows": await dispatch.uncertain()}
+    total = await dispatch.uncertain_count()
+    current_page = min(page, max(1, (total + 199) // 200))
+    return {"rows": await dispatch.uncertain(offset=(current_page - 1) * 200),
+            "total": total, "page": current_page, "page_size": 200}
 
 
 @app.post("/api/dispatch-intents/{request_id}/resolve")

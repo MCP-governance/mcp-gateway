@@ -55,6 +55,7 @@ function build(admin = true, extra = {}) {
       let value = responses[url];
       if (value === undefined && url.startsWith("/gw/activity/analysis?")) value = { total: 0 };
       if (value === undefined && url.startsWith("/gw/activity?")) value = { rows: [], total: 0, cursor: 0 };
+      if (value === undefined && url === "/api/signup-requests?status=pending") value = responses["/api/signup-requests"];
       if (value === undefined && url.startsWith("/gw/audit/events?")) value = { events: [], has_more: false };
       assert.notEqual(value, undefined, `unexpected request: ${url}`);
       if (typeof value === "function") value = await value();
@@ -66,6 +67,7 @@ function build(admin = true, extra = {}) {
     globalThis.ui = { ROUTES, canonicalRoute, renderNav, refreshBadges, covPage, covPaging, badges, ACTIONS,
       stopLive, stopIntake, setCurrent(value) { current = value; }, pageModel(fn) { page = fn; },
       refreshApprovalLists, startApprovalRefresh, stopApprovalRefresh,
+      refreshDashboard, startDashboardRefresh, stopDashboardRefresh,
       analysisState() { return feed; },
       analysisHooks() { route = () => {}; },
       approvalState() { return { ...approvalPaging, failed: approvalFailed }; },
@@ -197,7 +199,7 @@ test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관�
   assert.equal((summary.match(/<tr[^>]+data-act="approval"/g) || []).length, 0);
   assert.equal((queue.match(/<tr[^>]+data-act="approval"/g) || []).length, 7);
   assert.doesNotMatch(summary, /호출 승인 요청|approval-preview/);
-  assert.match(summary, /href="#\/people\?t=signups"[^]*?가입 승인<\/span><b class="n">1<\/b>/);
+  assert.match(summary, /href="#\/people\?t=signups&signup_status=pending"[^]*?가입 승인<\/span><b class="n">1<\/b>/);
   assert.match(summary, /엔드포인트 활성화<\/span><b class="n">1<\/b>/);
   assert.match(queue, /&lt;img/);
   assert.doesNotMatch(queue, /data-act="approve" data-id="call-0"/);
@@ -323,6 +325,85 @@ test("통합 분석 새로고침은 표도 갱신하고 이전 필터의 늦은 
   await ui.ACTIONS["analysis-refresh"]();
   assert.equal(ui.analysisState().analysis.total, 1);
   assert.match(ui.node("#analysis-endpoints").innerHTML, /historic/);
+});
+
+test("최근 차단 미리보기와 이동 링크는 같은 24시간 도구 호출 범위다", async () => {
+  const ui = build();
+  const out = await ui.ROUTES.overview("", "summary");
+  const request = new URL(ui.calls.find((p) => p.startsWith("/gw/activity?")), "http://test").searchParams;
+  const body = String(out.html.tabs[0].body);
+  const href = body.match(/href="([^"]+)">차단 로그/)[1].replaceAll("&amp;", "&");
+  const target = new URL(href.slice(1), "http://test").searchParams;
+  for (const key of ["since", "until", "decision", "event_kind"]) assert.equal(request.get(key), target.get(key));
+  assert.equal(request.get("limit"), "10");
+  assert.equal(request.get("event_kind"), "tools/call");
+  assert.equal(new Date(request.get("until")) - new Date(request.get("since")), 86400000);
+});
+
+test("대시보드 갱신은 지표와 등록 건수를 바꾸고 검토와 화면 이동을 보존한다", async () => {
+  const ui = build();
+  await ui.ROUTES.overview("", "summary");
+  ui.setCurrent({ page: "overview", query: new URLSearchParams() });
+  ui.responses["/gw/overview"].execution = { tool_calls: 55, blocked: 4 };
+  ui.responses["/gw/overview"].enforcement = "enforce";
+  ui.responses["/api/signup-requests?status=pending"] = { requests: [], pending_total: 321 };
+  ui.startDashboardRefresh();
+  assert.equal(ui.timers.size, 1);
+  await ui.refreshDashboard();
+  assert.match(ui.node("#dashboard-kpis").innerHTML, /전체 호출<\/div><div class="value">55/);
+  assert.match(ui.node("#dashboard-registration").innerHTML, /가입 승인<\/span><b class="n">321/);
+  assert.match(ui.node("#dashboard-blocked").innerHTML, /최근 24시간/);
+  assert.match(ui.node("#view .page-head .status").innerHTML, /집행 모드/);
+  const reads = ui.calls.length;
+  ui.node("#dialog").open = true;
+  await ui.refreshDashboard(); assert.equal(ui.calls.length, reads);
+  ui.node("#dialog").open = false;
+  ui.responses["/gw/overview"] = () => { ui.node("#drawer").classList.contains = () => true; return { execution: { tool_calls: 99 } }; };
+  await ui.refreshDashboard();
+  assert.doesNotMatch(ui.node("#dashboard-kpis").innerHTML, />99</);
+  ui.node("#drawer").classList.contains = () => false;
+  ui.responses["/gw/overview"] = () => { ui.stopDashboardRefresh(); return { execution: { tool_calls: 99 } }; };
+  await ui.refreshDashboard();
+  assert.equal(ui.timers.size, 0);
+  assert.doesNotMatch(ui.node("#dashboard-kpis").innerHTML, />99</);
+});
+
+test("대시보드 갱신 실패는 기존 값을 유지하고 복구 때 경고를 지운다", async () => {
+  const ui = build();
+  ui.setCurrent({ page: "overview", query: new URLSearchParams() });
+  await ui.refreshDashboard();
+  const previous = ui.node("#dashboard-kpis").innerHTML;
+  ui.responses["/gw/overview"] = new Error("offline");
+  await ui.refreshDashboard();
+  assert.equal(ui.node("#dashboard-kpis").innerHTML, previous);
+  assert.match(ui.node("#dashboard-refresh-status").innerHTML, /갱신 실패/);
+  ui.responses["/gw/overview"] = { execution: { tool_calls: 2 }, servers: [] };
+  await ui.refreshDashboard();
+  assert.equal(ui.node("#dashboard-refresh-status").innerHTML, "");
+  assert.match(ui.node("#dashboard-kpis").innerHTML, />2<\/div>/);
+});
+
+test("가입 승인 전체 건수는 페이지와 무관하고 대기 필터의 나머지 페이지로 이동한다", async () => {
+  const ui = build(true, { "/api/signup-requests?status=pending": { requests: [], pending_total: 321, total: 321, page: 1, page_size: 100 },
+    "/api/signup-requests?status=pending&page=2": { requests: [{ id: "older", status: "pending", username: "old-request" }], pending_total: 321, total: 321, page: 2, page_size: 100 } });
+  const overview = await ui.ROUTES.overview("", "summary");
+  assert.match(String(overview.html.tabs[0].body), /가입 승인<\/span><b class="n">321/);
+  const people = await ui.ROUTES.people("", "signups", new URLSearchParams("signup_status=pending&signup_page=2"));
+  const tab = people.html.tabs.find((t) => t.key === "signups");
+  assert.equal(tab.n, 321);
+  assert.match(String(tab.body), /old-request/);
+  assert.match(String(tab.body), /signup_status=pending&amp;signup_page=3/);
+  assert.match(String(tab.body), /signup-approve" data-id="older"/);
+});
+
+test("실행 확인 전체 건수와 200건 이후 페이지의 처리 버튼을 유지한다", async () => {
+  const ui = build(true, { "/gw/dispatch-intents?page=2": { rows: [{ request_id: "old-intent", server_id: "docs", tool_name: "read", action: "r" }], total: 305, page: 2, page_size: 200 } });
+  const out = await ui.ROUTES.activity("", "unsent", new URLSearchParams("intent_page=2"));
+  const tab = out.html.tabs.find((t) => t.key === "unsent");
+  assert.equal(tab.n, 305);
+  assert.match(String(tab.body), /intent_page=1/);
+  assert.doesNotMatch(String(tab.body), /intent_page=3/);
+  assert.match(String(tab.body), /data-act="intent-resolve" data-id="old-intent"/);
 });
 
 test("성능 탭은 호출 시간과 엔드포인트 연결 측정을 분리하고 표본과 기간을 표시한다", async () => {

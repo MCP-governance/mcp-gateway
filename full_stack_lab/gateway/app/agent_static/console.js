@@ -496,6 +496,7 @@ async function route() {
   stopSystemMetrics();
   stopIntake();
   stopApprovalRefresh();
+  stopDashboardRefresh();
   // Only hide the drawer: closeDrawer() also rewrites #/servers/<id> to #/servers, which here
   // would drop the id this route is about to open (a server row never opened its drawer).
   setDrawer(false);
@@ -649,7 +650,7 @@ function performancePanels(lat, net, serverName) {
         ${servers.map((r) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="${records(r.server_id)}"><td><b>${serverName[r.server_id] || r.server_id}</b></td><td class="num">${r.n}</td><td class="num">${msText(r.p50)}</td><td class="num">${msText(r.p95)}</td><td class="num ${r.failed > 0 ? "bad-text" : ""}">${r.failed ?? "—"}</td></tr>`)}</tbody></table>` : empty("MCP 통신 측정 없음"), { flush: true, sub: "95백분위 높은 순, 최대 12개" })}
       ${panel("구간별 처리 시간", stages.length ? html`<table class="data"><thead><tr><th>구간</th><th class="num">측정 호출</th><th class="num">중앙값</th><th class="num">${p95}</th></tr></thead><tbody>
       ${stages.map((r) => html`<tr><td>${LATENCY_STAGE[r.stage] || "—"}</td><td class="num">${r.n ?? "—"}</td><td class="num">${msText(r.p50)}</td><td class="num">${msText(r.p95)}</td></tr>`)}</tbody></table>` : empty("구간별 측정 없음"), { flush: true })}` : ""}
-    ${panel("엔드포인트 → 게이트웨이 통신", net === null ? failed : devices.length ? html`<table class="data"><colgroup span="1"></colgroup><colgroup span="3"></colgroup><colgroup span="2"></colgroup><colgroup span="2"></colgroup><thead>
+    ${panel("엔드포인트 → 게이트웨이 통신", net === null ? failed : devices.length ? html`<table class="data endpoint-communication-table"><colgroup span="1"></colgroup><colgroup span="3"></colgroup><colgroup span="2"></colgroup><colgroup span="2"></colgroup><thead>
       <tr><th scope="col" rowspan="2">엔드포인트</th><th scope="colgroup" colspan="3">연결 시간</th><th scope="colgroup" colspan="2">점검</th><th scope="colgroup" colspan="2">측정</th></tr>
       <tr><th scope="col" class="num"><span title="엔드포인트에서 게이트웨이로 연결을 맺는 시간의 중앙값입니다.">중앙값</span></th><th scope="col" class="num"><span title="연결 시간의 95백분위수(P95)로, 측정된 연결 시간의 약 95%가 이 값 이하입니다.">P95</span></th><th scope="col" class="num"><span title="연속된 연결 시간 측정값 사이 차이의 절댓값을 평균한 값입니다.">변동</span></th><th scope="col" class="num"><span title="연결 점검과 게이트웨이 상태 확인 요청의 실패 비율이며 패킷 손실률이 아닙니다.">실패율</span></th><th scope="col" class="num"><span title="연결 점검과 게이트웨이 상태 확인 요청 횟수의 합계입니다.">횟수</span></th><th scope="col">최근 시각</th><th scope="col">상태</th></tr></thead><tbody>
       ${devices.map((d) => html`<tr><td>${d.hostname ? html`<b>${d.hostname}</b><span class="sub">${entityRef(d.endpoint_id)}</span>` : entityRef(d.endpoint_id)}</td>
@@ -690,28 +691,62 @@ function startSystemMetrics() {
   metricsTimer = setInterval(refresh, 10000);
 }
 
-ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
-  const [o, blocked, pl, lat, net, health, approvalData, signups, inventory] = await Promise.all([gw("overview"), gw("activity?limit=10&decision=Block"), planes(),
-    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null), api("/approvals"), api("/api/signup-requests"), gw("endpoint/inventory")]);
-  const requestedPage = Math.min(approvalPageNumber(query), Math.max(1, Math.ceil((approvalData.total ?? approvalData.approvals.length) / (approvalData.page_size || 30))));
-  if (requestedPage !== approvalPageNumber(query)) {
-    query.set("approval_page", requestedPage);
-    history.replaceState(null, "", `#/overview?${query}`);
+const signupPendingTotal = (data) => data.pending_total ?? data.requests.filter((r) => r.status === "pending").length;
+const listPageNumber = (query, key) => Math.max(1, Math.floor(Number(query.get(key)) || 1));
+function listPager(data, href) {
+  const page = data.page || 1, pages = Math.max(1, Math.ceil((data.total || 0) / data.page_size));
+  return pages > 1 ? html`<div class="row-actions">${page > 1 ? html`<a class="btn sm" href="${href(page - 1)}">이전</a>` : ""}<span>${page} / ${pages}</span>${page < pages ? html`<a class="btn sm" href="${href(page + 1)}">다음</a>` : ""}</div>` : "";
+}
+let dashboardTimer = null, dashboardRequest = null, dashboardBusy = false, dashboardGeneration = 0;
+function stopDashboardRefresh() {
+  clearInterval(dashboardTimer); dashboardTimer = null;
+  dashboardRequest?.abort(); dashboardRequest = null;
+  dashboardBusy = false; dashboardGeneration += 1;
+}
+function startDashboardRefresh() {
+  stopDashboardRefresh();
+  dashboardTimer = setInterval(() => refreshDashboard(), 30000);
+}
+function dashboardCanRefresh() {
+  return current.page === "overview" && !document.hidden && !$("#drawer")?.classList.contains("open") && !$("#dialog")?.open
+    && !document.activeElement?.closest?.("#dashboard-kpis, #dashboard-registration, #dashboard-blocked");
+}
+async function refreshDashboard() {
+  if (dashboardBusy || !dashboardCanRefresh()) return;
+  const generation = dashboardGeneration, seq = routeSeq, window = recentBlockedWindow();
+  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 10000);
+  dashboardRequest = controller; dashboardBusy = true;
+  try {
+    const options = { signal: controller.signal };
+    const [o, pl, signups, inventory, blocked, health] = await Promise.all([gw("overview", options), api("/api/integrations", options),
+      api("/api/signup-requests?status=pending", options), gw("endpoint/inventory", options), gw(`activity?${blockedParams(window, 10)}`, options),
+      gw("health", options).catch(() => null)]);
+    if (generation !== dashboardGeneration || seq !== routeSeq || !dashboardCanRefresh()) return;
+    planesCache = { at: Date.now(), data: pl };
+    feed.rows = mergeRows([], blocked.rows);
+    $("#dashboard-kpis").innerHTML = String(dashboardKpis(o, pl));
+    $("#dashboard-registration").innerHTML = String(dashboardRegistration(o, signups, inventory));
+    $("#dashboard-blocked").innerHTML = String(dashboardBlocked(feed.rows, window));
+    const status = $("#view .page-head .status");
+    if (status) status.innerHTML = String(html`${modeChip(o.enforcement)}${componentHealth(health)}`);
+    $("#dashboard-refresh-status").innerHTML = "";
+  } catch {
+    controller.abort();
+    if (generation === dashboardGeneration && seq === routeSeq) $("#dashboard-refresh-status").innerHTML = String(chip("alert", "갱신 실패"));
+  } finally {
+    clearTimeout(timeout);
+    if (generation === dashboardGeneration) { dashboardBusy = false; dashboardRequest = null; }
   }
-  const pageData = requestedPage > 1 ? await api(`/approvals?page=${requestedPage}`) : approvalData;
-  setApprovalLists(approvalData, pageData);
-  const activationCount = inventory.agents.filter((a) => a.status !== "revoked" && ["pending", "quarantined"].includes(a.managed_state) && a.policy_hash).length;
-  const serverName = Object.fromEntries((o.servers || []).map((s) => [s.id, s.display_name || s.id]));
-  feed.rows = mergeRows([], blocked.rows);
-  const x = o.execution, term = o.termination || {};
+}
+const recentBlockedWindow = () => { const end = Date.now(); return { since: new Date(end - 86400000).toISOString(), until: new Date(end).toISOString() }; };
+const blockedParams = (window, limit) => new URLSearchParams({ decision: "Block", event_kind: "tools/call", ...window, ...(limit ? { limit } : {}) });
+function dashboardKpis(o, pl) {
+  const x = o.execution || {}, term = o.termination || {};
   const todayFilter = `since=${encodeURIComponent(o.today_since)}&event_kind=tools%2Fcall`;
   const abnormalServers = (o.servers || []).filter(serverNeedsAttention).length;
   const items = dedupeItems(pl?.items || []);
-  const count = (s) => items.filter((i) => i.state === s).length;
-  return {
-    html: page({
-      head: head("대시보드", { status: html`${modeChip(o.enforcement)}${componentHealth(health)}` }),
-      kpis: html`<div class="dashboard-kpi-groups">
+  const count = (state) => items.filter((i) => i.state === state).length;
+  return html`<div class="dashboard-kpi-groups">
         <section><h2>확인 및 조치</h2><div class="kpis kpis-4">
           <a class="kpi ${o.unresolved_execution > 0 ? "alert" : ""}" href="#/activity?t=unsent"><div class="label">실행 여부 확인</div><div class="value">${o.unresolved_execution ?? "—"}</div></a>
           <a class="kpi ${count("bypass_possible") > 0 ? "alert" : ""}" href="#/servers?t=items&state=bypass_possible"><div class="label">연결 통제 점검</div><div class="value">${count("bypass_possible")}</div></a>
@@ -723,23 +758,50 @@ ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
           <a class="kpi" href="#/activity?${todayFilter}"><div class="label">전체 호출</div><div class="value">${x.tool_calls ?? "—"}</div></a>
           <a class="kpi ${x.blocked ? "block" : ""}" href="#/activity?${todayFilter}&decision=Block"><div class="label">차단된 호출</div><div class="value">${x.blocked ?? "—"}</div></a>
         </div></section>
-      </div>`,
+      </div>`;
+}
+function dashboardRegistration(o, signups, inventory) {
+  const activationCount = inventory.agents.filter((a) => a.status !== "revoked" && ["pending", "quarantined"].includes(a.managed_state) && a.policy_hash).length;
+  return panel("승인 및 등록", html`<div class="action-list">
+            <a class="action-link" href="#/people?t=signups&signup_status=pending"><span>가입 승인</span><b class="n">${signupPendingTotal(signups)}</b></a>
+            <a class="action-link" href="#/endpoints?t=devices"><span>엔드포인트 활성화</span><b class="n">${activationCount}</b></a>
+            <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
+          </div>`);
+}
+function dashboardBlocked(rows, window) {
+  return panel("최근 차단 10건", rows.length ? decisionTable(rows) : empty("차단된 호출 없음"), { flush: true, sub: "최근 24시간",
+    end: html`<a class="btn sm" href="#/activity?${blockedParams(window)}">차단 로그 <span aria-hidden="true">↗</span></a>` });
+}
+
+ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
+  const blockedWindow = recentBlockedWindow();
+  const [o, blocked, pl, lat, net, health, approvalData, signups, inventory] = await Promise.all([gw("overview"), gw(`activity?${blockedParams(blockedWindow, 10)}`), planes(),
+    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null), api("/approvals"), api("/api/signup-requests?status=pending"), gw("endpoint/inventory")]);
+  const requestedPage = Math.min(approvalPageNumber(query), Math.max(1, Math.ceil((approvalData.total ?? approvalData.approvals.length) / (approvalData.page_size || 30))));
+  if (requestedPage !== approvalPageNumber(query)) {
+    query.set("approval_page", requestedPage);
+    history.replaceState(null, "", `#/overview?${query}`);
+  }
+  const pageData = requestedPage > 1 ? await api(`/approvals?page=${requestedPage}`) : approvalData;
+  setApprovalLists(approvalData, pageData);
+  const serverName = Object.fromEntries((o.servers || []).map((server) => [server.id, server.display_name || server.id]));
+  feed.rows = mergeRows([], blocked.rows);
+  return {
+    html: page({
+      head: head("대시보드", { status: html`${modeChip(o.enforcement)}${componentHealth(health)}` }),
+      kpis: html`<div id="dashboard-refresh-status" class="dashboard-refresh-status" role="status"></div><div id="dashboard-kpis">${dashboardKpis(o, pl)}</div>`,
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">
-          ${panel("승인 및 등록", html`<div class="action-list">
-            <a class="action-link" href="#/people?t=signups"><span>가입 승인</span><b class="n">${signups.requests.filter((s) => s.status === "pending").length}</b></a>
-            <a class="action-link" href="#/endpoints?t=devices"><span>엔드포인트 활성화</span><b class="n">${activationCount}</b></a>
-            <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
-          </div>`)}
-          ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
+          <div id="dashboard-registration">${dashboardRegistration(o, signups, inventory)}</div>
+          <div id="dashboard-blocked">${dashboardBlocked(feed.rows, blockedWindow)}</div>
         </div>` },
         { key: "approvals", label: "호출 승인", n: approvalPaging.total, hot: approvalPaging.total > 0, body: html`<div id="approval-queue">${approvalQueue(approvalPending)}</div>` },
         { key: "latency", label: "성능", body: performancePanels(lat, net, serverName) },
       ],
     }),
     charts: {},
-    after: () => { startSystemMetrics(); startApprovalRefresh(); if (arg) showApproval(arg); },
+    after: () => { startSystemMetrics(); startApprovalRefresh(); startDashboardRefresh(); if (arg) showApproval(arg); },
   };
 };
 
@@ -934,7 +996,7 @@ ROUTES.activity = async (arg, tab, query) => {
               <label>정책<input data-filter="policy" type="search" placeholder="정책 ID" value="${f.policy}" aria-label="정책" /></label>
             </div></details>
           </div>`;
-  const [audit, approvalRecords] = viewer.admin ? await Promise.all([auditTabs(query), approvalRecordTabs()]) : [[], []];
+  const [audit, approvalRecords] = viewer.admin ? await Promise.all([auditTabs(query), approvalRecordTabs(query)]) : [[], []];
   return {
     html: page({
       head: head(viewer.admin ? "호출·감사 기록" : "호출 기록"),
@@ -1113,17 +1175,21 @@ function approvalQueue(approvals) {
             sub: approvalPaging.total > 0 ? `가장 오래된 요청 ${ago(oldest)}` : "" });
 }
 
-async function approvalRecordTabs() {
-  const [{ approvals, history }, { rows: unsent }] = await Promise.all([api("/approvals"), gw("dispatch-intents")]);
+async function approvalRecordTabs(query = new URLSearchParams()) {
+  const page = listPageNumber(query, "intent_page");
+  const [{ approvals, history }, result] = await Promise.all([api("/approvals"), gw(`dispatch-intents${page > 1 ? `?page=${page}` : ""}`)]);
+  const { rows: unsent } = result, total = result.total ?? unsent.length;
+  const paging = listPager({ ...result, total, page_size: result.page_size || 200 },
+    (p) => `#/activity?${new URLSearchParams({ ...Object.fromEntries(query), t: "unsent", intent_page: p })}`);
   approvalRows = [...approvals.map((a) => ({ ...a, pending: true })), ...history];
-  return [{ key: "unsent", label: "실행 확인", n: unsent.length, hot: unsent.length > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
+  return [{ key: "unsent", label: "실행 확인", n: total, hot: total > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
           <thead><tr><th>사용자</th><th>도구</th><th>행위</th><th>전송</th><th></th></tr></thead><tbody>
           ${unsent.map((u) => html`<tr><td class="who-cell"><b>${u.display_name || u.user_token}</b></td>
             <td><code>${u.server_id}.${u.tool_name}</code></td><td>${ACTION[u.action] || u.action}</td>
             <td class="small">${when(u.attempted_at, { seconds: true })}</td>
             <td class="num nowrap"><button class="btn sm" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="not_executed">실행 안 됨</button>
               <button class="btn sm primary" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="executed">실행됨</button></td></tr>`)}
-          </tbody></table>` : empty("확인할 호출 없음"), { flush: true }) },
+          </tbody></table>` : empty("확인할 호출 없음"), { flush: true, end: paging }) },
         { key: "approval-history", label: "승인 처리 이력", n: history.length, body: html`${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리 시각</th><th>검토자</th></tr></thead><tbody>
             ${history.map((h) => html`<tr class="clickable" tabindex="0" data-act="${h.explanation ? "approval" : ""}" data-id="${h.id}"><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
               <td><code>${h.server_id}.${h.tool}</code></td><td>${chip(...(APPROVAL_STATUS[h.status] || ["", h.status]))}</td>
@@ -1496,10 +1562,17 @@ const managedEventDetail = (d) => (d && (d.reason || d.note || (d.actor ? `처�
 
 let peopleAccounts = [];
 let integrationItems = [];
-ROUTES.people = async (_, tab) => {
-  const [{ accounts }, { accounts: deletedAccounts }, { requests: signups }, identity, { suspensions }] = await Promise.all([
-    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api("/api/signup-requests"),
+ROUTES.people = async (_, tab, query = new URLSearchParams()) => {
+  const status = ["pending", "approved", "rejected"].includes(query.get("signup_status")) ? query.get("signup_status") : "";
+  const signupPage = listPageNumber(query, "signup_page"), signupQuery = new URLSearchParams();
+  if (status) signupQuery.set("status", status);
+  if (signupPage > 1) signupQuery.set("page", signupPage);
+  const [{ accounts }, { accounts: deletedAccounts }, signupData, identity, { suspensions }] = await Promise.all([
+    api("/api/accounts"), api("/api/accounts/deleted").catch(() => ({ accounts: [] })), api(`/api/signup-requests${signupQuery.size ? `?${signupQuery}` : ""}`),
     api("/api/identity").catch(() => ({ provider: "local", bindings: [] })), gw("suspensions")]);
+  const signups = signupData.requests;
+  const signupHref = (p, nextStatus = status) => `#/people?${new URLSearchParams({ t: "signups", ...(nextStatus ? { signup_status: nextStatus } : {}), signup_page: p })}`;
+  const signupPaging = listPager({ ...signupData, total: signupData.total ?? signups.length, page_size: signupData.page_size || 100 }, signupHref);
   peopleAccounts = accounts;
   return {
     html: page({
@@ -1533,13 +1606,14 @@ ROUTES.people = async (_, tab) => {
               <td class="small">${x.resumed_at ? html`${when(x.resumed_at)}<span class="sub">${x.resumed_by || "—"} · ${x.resume_note || "—"}</span>` : "—"}</td>
               <td class="num">${x.resumed_at ? "" : html`<button class="btn sm primary" data-act="suspend-resume" data-id="${x.id}" data-name="${x.display_name || ""}" data-server="${x.server_name || x.server_id}">재개</button>`}</td></tr>`)}
             </tbody></table>${suspensions.length ? "" : empty("중지한 이용 없음")}`, { flush: true }) },
-        { key: "signups", label: "가입 요청", n: signups.filter((s) => s.status === "pending").length,
+        { key: "signups", label: "가입 요청", n: signupPendingTotal(signupData),
           body: panel("가입 요청", html`<table class="data"><thead><tr><th>아이디</th><th>이름</th><th>요청</th><th>상태</th><th></th></tr></thead><tbody>
           ${signups.map((s) => html`<tr><td class="mono">${s.username}</td><td>${s.display_name}</td><td>${when(s.requested_at)}</td>
             <td>${chip(...(SIGNUP_STATUS[s.status] || ["", s.status]))}</td>
             <td class="num nowrap">${s.status === "pending" ? html`<button class="btn sm danger" data-act="signup-reject" data-id="${s.id}">거부</button>
               <button class="btn sm primary" data-act="signup-approve" data-id="${s.id}">승인</button>` : ""}</td></tr>`)}
-          </tbody></table>${signups.length ? "" : empty("가입 요청 없음")}`, { flush: true }) },
+          </tbody></table>${signups.length ? "" : empty("가입 요청 없음")}`, { flush: true, end: signupPaging,
+            tools: html`<div class="row-actions">${[["", "전체"], ["pending", "대기"], ["approved", "승인"], ["rejected", "거부"]].map(([value, label]) => html`<a class="btn sm ${value === status ? "primary" : ""}" href="${signupHref(1, value)}">${label}</a>`)}</div>` }) },
         ...(identity.provider === "oidc" ? [{ key: "sso", label: "SSO", n: identity.bindings.length, body: html`<div class="stack">
           ${panel("SSO", kv([["로그인 방식", identity.label || "SSO"], ["상태", identity.configured ? "사용" : "설정 필요"], ["발급자", identity.issuer || "—"]]),
             { end: identity.configured ? html`<button class="btn sm primary" data-act="identity-bind">SSO 계정 연결</button>` : "" })}

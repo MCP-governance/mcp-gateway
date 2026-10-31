@@ -820,13 +820,22 @@ async def list_accounts(authorization: str | None = Header(default=None)):
 
 
 @app.get("/api/signup-requests")
-async def list_signup_requests(authorization: str | None = Header(default=None)):
+async def list_signup_requests(authorization: str | None = Header(default=None),
+                               status: Literal["pending", "approved", "rejected"] | None = None,
+                               page: int = Query(default=1, ge=1)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "가입 신청은 관리자만 볼 수 있습니다.")
+    counts = await db.fetch_one(
+        """SELECT count(*) FILTER (WHERE %s::text IS NULL OR status=%s) AS total,
+                  count(*) FILTER (WHERE status='pending') AS pending_total FROM signup_requests""", (status, status))
+    total = int(counts["total"])
+    current_page = min(page, max(1, (total + 99) // 100))
     return {"requests": await db.fetch_all(
         """SELECT id, username, display_name, status, requested_at, reviewed_at, reviewed_by
-           FROM signup_requests ORDER BY requested_at DESC LIMIT 100""")}
+           FROM signup_requests WHERE (%s::text IS NULL OR status=%s)
+           ORDER BY requested_at DESC, id DESC LIMIT 100 OFFSET %s""", (status, status, (current_page - 1) * 100)),
+            "total": total, "pending_total": int(counts["pending_total"]), "page": current_page, "page_size": 100}
 
 
 @app.post("/api/signup-requests/{request_id}/approve")
