@@ -760,7 +760,8 @@ async def register_server(request: dict, actor: str) -> dict:
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
     rule = risk_tier.APPROVAL[stated["tier"]]
-    if rule["approvers"] > 1:
+    # root in single-operator mode approved alone on purpose (forced): its record carries solo_operator.
+    if rule["approvers"] > 1 and not approved_risk.get("solo_operator"):
         approvers = []
         for person in approved_risk.get("approvers") or []:
             if await review.same_person(person, intake["submitted_by"]):

@@ -69,7 +69,8 @@ async def bootstrap_field_accounts() -> None:
         return
     # Keep the lab fixture in its own volume; old field volumes may still contain it.
     await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@bob.local'")
-    for username, role in (("root", "admin"), ("user", "employee")):
+    # admin1~3: the field's other administrators, so approvals that need a second person can be tried as they run.
+    for username, role in (("root", "admin"), ("user", "employee"), ("admin1", "admin"), ("admin2", "admin"), ("admin3", "admin")):
         await db.execute(
             """INSERT INTO principals(token, user_id, email, display_name, role, password_hash)
                VALUES (%s,%s,%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
@@ -1591,7 +1592,9 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
             others.append(earlier)
     approvers = 1 + len(others)
     solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)
-    verdict, message = risk_tier.decide(assessed["tier"], approvers, reason)
+    # root in single-operator mode carries out the approval alone (forced); the record keeps solo_operator.
+    verdict, message = risk_tier.decide(assessed["tier"], max(approvers, risk_tier.APPROVAL[assessed["tier"]]["approvers"])
+                                        if solo else approvers, reason)
     if verdict == "refuse":
         raise HTTPException(409, "승인할 수 없습니다: " + message)
     if verdict == "cosign":
@@ -2475,7 +2478,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
                 raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
             assessed = proposal["risk"]
-            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188: recorded per approval, never counted
+            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188, D-306: recorded per approval
             approvers = []
             if pending:
                 for actor in pending["approvers"]:
@@ -2488,7 +2491,9 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
             # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
             risk_reason = request.risk_reason.strip()
-            verdict, message = risk_tier.decide(assessed["tier"], len(approvers), risk_reason)
+            # root in single-operator mode carries out the approval alone (forced); the record keeps solo_operator.
+            verdict, message = risk_tier.decide(assessed["tier"], max(len(approvers), risk_tier.APPROVAL[assessed["tier"]]["approvers"])
+                                                if solo else len(approvers), risk_reason)
             if verdict == "refuse":
                 raise HTTPException(422, message)
             risk_reasons = ({**((pending or {}).get("risk_reasons") or {}), user["principal"]: risk_reason}

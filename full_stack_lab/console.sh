@@ -381,7 +381,7 @@ field_up() {
   echo
   echo "콘솔(브라우저)  : $CONSOLE_URL"
   echo "하네스·키트     : https://${APPLIANCE_BIND}:${FIELD_HTTPS_PORT}"
-  if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
+  if [[ $with_lab_mcp == 0 ]]; then echo "시험 계정       : root/root(최고 관리자), admin1~3/admin1~3(관리자), user/user(직원) · 회원가입은 관리자 승인"; fi
   echo "내부 저장소     : ${CONSOLE_URL}/git/"
   echo "직원 PC 키트    : Console → PC 연결 설정 → 키트 설치 → MINT 계정 로그인"
 }
