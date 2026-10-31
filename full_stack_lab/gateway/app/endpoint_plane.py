@@ -985,9 +985,12 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.
-    guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
-                "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
-                if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
+    # A quarantined PC is told so: "waiting for activation" sent the employee to ask for something already granted.
+    held = {"pending": "조직 관리자의 활성화를 기다리는 중이라",
+            "quarantined": "관리형 설정이 바뀐 것이 감지되어 격리됐고, 관리자가 확인해 다시 활성화할 때까지"}.get(device.get("managed_state"))
+    guidance = ((f"# 조직 승인 MCP 도구\n이 PC는 {held} MCP 도구를 쓸 수 없습니다. "
+                 "사용자에게 이 사실과 함께 관리자에게 확인을 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
+                if held else pac.harness_guidance(owner, servers))
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
               else f'/Library/MCPGatewayManaged/enforcement/mcpgw-{device["local_username"]}/header-helper'
