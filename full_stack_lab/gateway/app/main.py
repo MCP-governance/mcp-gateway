@@ -1490,6 +1490,24 @@ class EndpointOSEvent(StrictModel):
     provenance: Provenance | None = None
 
 
+class EndpointToolEvent(StrictModel):
+    event_id: str = Field(min_length=10, max_length=80)
+    called_at: datetime
+    harness: Literal["claude", "codex"]
+    account: str = Field(default="", max_length=120)
+    server: str = Field(min_length=1, max_length=200)
+    tool: str = Field(min_length=1, max_length=200)
+    input_bytes: int = Field(default=0, ge=0)
+    input_sha256: str = Field(default="", max_length=64)
+    output_bytes: int = Field(default=0, ge=0)
+    failed: bool = False
+
+
+class EndpointToolReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    events: list[EndpointToolEvent] = Field(max_length=500)
+
+
 class EndpointOSReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     events: list[EndpointOSEvent] = Field(max_length=100)
@@ -1968,6 +1986,21 @@ async def endpoint_inventory_entries(classification: ClassQuery = None, cursor: 
 async def endpoint_inventory_listeners(classification: ClassQuery = None, cursor: CursorQuery = None,
                                        limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
     return await endpoint_plane.listeners_page(classification, limit, cursor)
+
+
+@app.post("/api/endpoint/tool-events")
+async def endpoint_tool_report(request: EndpointToolReport,
+                               device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
+    return await endpoint_plane.ingest_tool_events(request.endpoint_id, [e.model_dump() for e in request.events])
+
+
+@app.get("/api/endpoint/tool-events")
+async def endpoint_tool_events(path: Literal["gateway", "connector", "local"] | None = None,
+                               cursor: CursorQuery = None, limit: LimitQuery = 100,
+                               user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.tool_events_page(path, limit, cursor)
 
 
 @app.get("/api/endpoint/inventory/os-events")

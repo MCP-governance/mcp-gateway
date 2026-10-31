@@ -1446,4 +1446,8 @@ export const EN = {
   "이용 목적": "Purpose",
   "예상 결과: {}": "Expected result: {1}",
   "이 MCP 서버의 호출이 즉시 차단됩니다.{}": "Calls to this MCP server are blocked immediately.{1}",
+  "엔드포인트 호출": "Endpoint calls",
+  "엔드포인트 호출 기록 없음": "No endpoint calls",
+  "입력": "Input",
+  "전체 {}건": "{1} total",
 };

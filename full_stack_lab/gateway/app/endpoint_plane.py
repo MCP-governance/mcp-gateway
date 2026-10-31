@@ -565,6 +565,45 @@ async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
             "duplicates": len(events) - accepted}
 
 
+def tool_path(server: str) -> str:
+    """Which route a reported MCP call took. Gateway servers carry their registry id as the harness server name;
+    claude.ai connectors and ChatGPT apps arrive under the vendor's own server names."""
+    from . import registry
+    if server in registry.servers():
+        return "gateway"
+    if server.startswith("claude_ai_") or server == "codex_apps":
+        return "connector"
+    return "local"
+
+
+async def ingest_tool_events(endpoint_id: str, events: list[dict]) -> dict:
+    accepted = 0
+    async with db.transaction() as connection:
+        for event in events:
+            accepted += (await connection.execute(
+                """INSERT INTO endpoint_tool_events(endpoint_id,event_id,called_at,harness,account,server,tool,path,
+                                                    input_bytes,input_sha256,output_bytes,failed)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
+                (endpoint_id, event["event_id"], event["called_at"], event["harness"], event.get("account") or "",
+                 event["server"], event["tool"], tool_path(event["server"]), event.get("input_bytes") or 0,
+                 event.get("input_sha256") or "", event.get("output_bytes") or 0, bool(event.get("failed"))))).rowcount
+        await connection.execute("UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,))
+    return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
+
+
+async def tool_events_page(path: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+    limit, after = _bounds(limit, cursor)
+    base, params = ("e.path=%s", [path]) if path else ("TRUE", [])
+    total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_tool_events e WHERE " + base, tuple(params))
+    rows = await db.fetch_all(
+        """SELECT e.*, a.hostname, p.display_name AS owner_name FROM endpoint_tool_events e
+             JOIN endpoint_agents a USING (endpoint_id) LEFT JOIN principals p ON p.token = a.owner_token WHERE """
+        + base + (" AND e.id < %s" if after else "") + " ORDER BY e.id DESC LIMIT %s",
+        (*params, *([after] if after else []), limit + 1))
+    rows, next_cursor = _window(rows, limit)
+    return {"rows": rows, "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
+
+
 async def os_events_page(kind: str | None = None, denial_class: str | None = None,
                          limit: int = 100, cursor: str | None = None) -> dict:
     limit, after = _bounds(limit, cursor)
@@ -903,6 +942,18 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
     # Built-in features and the harness account's connectors are allowed unless an administrator blocked them (D-298).
     controls = await connectors.managed_controls(connection)
+    # Every MCP tool call the harness makes, on any path, is reported by a managed PostToolUse hook that runs the kit's
+    # own agent (D-301). Only managed hooks load (allowManagedHooksOnly / allow_managed_hooks_only).
+    hook_dir = hook_python = None
+    if windows and '\\managed-windows.py"' in (helper or ""):
+        head = helper[:helper.index('\\managed-windows.py"')]
+        hook_dir = head[head.rfind('"') + 1:]
+        hook_python = (hook_dir + "\\python\\python.exe").replace("\\", "/")
+    elif managed_platform(device) == "linux":
+        hook_dir, hook_python = "/usr/local/lib/mcpgw-managed", "/usr/bin/python3"
+
+    def hook(harness: str) -> str:
+        return f'"{hook_python}" -I -S -X utf8 "{(hook_dir + "/agent.py").replace(chr(92), "/")}" hook {harness}'
 
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
@@ -928,6 +979,8 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                     # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                     # same gate narrows statusLine and fileSuggestion to managed values (D-147).
                     "allowManagedHooksOnly": True}
+        if hook_dir:
+            settings["hooks"] = {"PostToolUse": [{"matcher": "mcp__.*", "hooks": [{"type": "command", "command": hook("claude"), "timeout": 10}]}]}
         if guidance:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
         if proxy or ca_env:
@@ -951,8 +1004,12 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                         # (learn.chatgpt.com managed configuration). A device with no approved server gets the empty table.
                         + '\n[mcp_servers]\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
-                        + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
-                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps,
+                        + '\n[features]\n' + ("hooks = true\n" if hook_dir else "") + "".join(f"{f} = false\n" for f in features_off)
+                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps
+                        + (f'\n[hooks]\n{"windows_managed_dir" if windows else "managed_dir"} = {json_document(hook_dir).strip()}\n'
+                           '\n[[hooks.PostToolUse]]\nmatcher = "^mcp__"\n'
+                           f'\n[[hooks.PostToolUse.hooks]]\ntype = "command"\ncommand = {json_document(hook("codex")).strip()}\ntimeout = 10\n'
+                           if hook_dir else ""),
         }
         if windows:
             # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;

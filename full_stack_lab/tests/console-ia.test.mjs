@@ -51,6 +51,7 @@ function build(admin = true, extra = {}) {
       if (value === undefined && url.startsWith("/gw/activity?")) value = { rows: [], total: 0, cursor: 0 };
       if (value === undefined && url.startsWith("/gw/audit/events?")) value = { events: [], has_more: false };
       if (value === undefined && url.startsWith("/gw/audit/alerts?")) value = { alerts: [], last_24h: 0 };
+      if (value === undefined && url.startsWith("/gw/endpoint/tool-events?")) value = { rows: [], total: 0 };
       assert.notEqual(value, undefined, `unexpected request: ${url}`);
       if (value instanceof Error) throw value;
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => value };
@@ -126,7 +127,7 @@ test("직원에게 감사·동의 관리·공급망 탭과 관리자 조회를 �
 test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유지한다", async () => {
   const ui = build(true, { "/api/supply-chain/impact": { counts: { affected: 1, unaffected: 0, unknown: 0, no_data: 0 } } });
   const activity = await ui.ROUTES.activity("", "events", new URLSearchParams("t=events&principal=alice&before=12"));
-  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "events", "alerts", "incidents", "siem"]);
+  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "events", "alerts", "tools", "incidents", "siem"]);
   assert.match(String(activity.html.tabs[2].body), /audit-verify[^]*audit-export/);
   assert.ok(ui.calls.includes("/gw/audit/events?principal=alice&before=12&limit=100"));
   let rendered = 0, live = 0;

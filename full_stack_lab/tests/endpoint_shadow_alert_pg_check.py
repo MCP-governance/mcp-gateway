@@ -41,6 +41,16 @@ async def main() -> int:
                         VALUES (%s,'config.toml','other','stdio','ref','fp-new','shadow')""", (ENDPOINT,))
     await ops_response.endpoint_alerts()
     CHECKS.ok("새 미등록 서버는 새 경보", len(await alerts()) == len(first) + 1)
+    before = len(await alerts())
+    for n, (server, path) in enumerate((("ghidra", "local"), ("ghidra", "local"), ("memory-gw", "gateway"), ("claude_ai_Drive", "connector"))):
+        await db.execute("""INSERT INTO endpoint_tool_events(endpoint_id,event_id,called_at,harness,server,tool,path)
+                            VALUES (%s,%s,now(),'codex',%s,'decompile_function',%s)""", (ENDPOINT, f"event-{n:06d}", server, path))
+    await ops_response.endpoint_alerts()
+    tool_alerts = [a for a in await alerts() if a["origin"] == "endpoint-tool"]
+    CHECKS.ok("로컬 경로 도구 호출은 서버마다 한 번 경보, 게이트웨이·커넥터는 경보 없음",
+              len(await alerts()) == before + 1 and [a["evidence"]["label"] for a in tool_alerts] == ["ghidra"])
+    await ops_response.endpoint_alerts()
+    CHECKS.ok("같은 서버의 다음 호출은 경보를 늘리지 않는다", len(await alerts()) == before + 1)
     return CHECKS.finish()
 
 

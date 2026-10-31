@@ -131,6 +131,27 @@ CREATE TABLE IF NOT EXISTS endpoint_os_events (
 );
 CREATE INDEX IF NOT EXISTS endpoint_os_events_received_idx ON endpoint_os_events(received_at DESC);
 
+-- MCP tool calls the harness itself reported through the managed PostToolUse hook (D-301): every MCP tool call
+-- leaves a row whatever its path (Gateway, vendor connector, local). Sizes and hashes only, never content. Append-only.
+CREATE TABLE IF NOT EXISTS endpoint_tool_events (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id) ON DELETE CASCADE,
+  event_id text NOT NULL,
+  called_at timestamptz NOT NULL,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  harness text NOT NULL CHECK (harness IN ('claude','codex')),
+  account text NOT NULL DEFAULT '',
+  server text NOT NULL,
+  tool text NOT NULL,
+  path text NOT NULL CHECK (path IN ('gateway','connector','local')),
+  input_bytes integer NOT NULL DEFAULT 0,
+  input_sha256 text NOT NULL DEFAULT '',
+  output_bytes integer NOT NULL DEFAULT 0,
+  failed boolean NOT NULL DEFAULT false,
+  UNIQUE(endpoint_id,event_id)
+);
+CREATE INDEX IF NOT EXISTS endpoint_tool_events_called_idx ON endpoint_tool_events(called_at DESC);
+
 -- Endpoint evidence: where a stored observation came from and whether the stored form
 -- is the form the agent said it sent. NULL origin/provenance = written before this.
 ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));

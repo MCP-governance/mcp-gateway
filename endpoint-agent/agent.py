@@ -59,6 +59,7 @@ import re
 import shutil
 import socket
 import ssl
+import stat
 import subprocess
 import sys
 import time
@@ -1040,6 +1041,85 @@ def enroll() -> None:
     })
 
 
+# Managed PostToolUse hook (D-301). The harness runs it as the employee after every MCP tool call; it appends one line
+# to the employee's own spool and the service, which holds the device key, sends the spool on. Sizes and a hash of the
+# arguments only — never the arguments or the result.
+TOOL_EVENT_SPOOL = Path(".mcpgw") / "tool-events.jsonl"
+TOOL_EVENT_LIMIT = 4 << 20
+TOOL_EVENT_FILES = [Path(p) for p in setting("ENDPOINT_TOOL_EVENT_FILES", "").split(os.pathsep) if p.strip()]
+TOOL_EVENT_FIELDS = {"event_id": str, "called_at": str, "harness": str, "account": str, "server": str, "tool": str,
+                     "input_bytes": int, "input_sha256": str, "output_bytes": int, "failed": bool}
+
+
+def tool_hook(harness: str) -> int:
+    """Never blocks or fails the call it records: every error ends in exit 0."""
+    try:
+        payload = json.loads(sys.stdin.buffer.read(16 << 20) or b"{}")
+        parts = str(payload.get("tool_name") or "").split("__", 2)
+        if harness not in ("claude", "codex") or len(parts) != 3 or parts[0] != "mcp" or not parts[1] or not parts[2]:
+            return 0
+        arguments = json.dumps(payload.get("tool_input"), sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+        response = payload.get("tool_response")
+        output = b"" if response is None else json.dumps(response, ensure_ascii=False).encode()
+        event = {"event_id": os.urandom(16).hex(), "called_at": datetime.now(timezone.utc).isoformat(), "harness": harness,
+                 "account": (os.getenv("USERNAME") or os.getenv("USER") or "")[:120], "server": parts[1][:200], "tool": parts[2][:200],
+                 "input_bytes": len(arguments), "input_sha256": hashlib.sha256(arguments).hexdigest(), "output_bytes": len(output),
+                 "failed": isinstance(response, dict) and bool(response.get("isError") or response.get("is_error"))}
+        spool = Path.home() / TOOL_EVENT_SPOOL
+        spool.parent.mkdir(exist_ok=True)
+        if not spool.exists() or spool.stat().st_size < TOOL_EVENT_LIMIT:
+            with spool.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+    return 0
+
+
+def _plain_file(path: Path) -> bool:
+    """The spool sits in the employee's home and the service reads it with more privilege: no links, junctions or devices."""
+    try:
+        for item in (path.parent, path):
+            info = os.lstat(item)
+            if stat.S_ISLNK(info.st_mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+                return False
+        return stat.S_ISREG(os.lstat(path).st_mode) and os.lstat(path).st_size <= TOOL_EVENT_LIMIT
+    except OSError:
+        return False
+
+
+def _tool_event(line: str) -> dict | None:
+    try:
+        event = json.loads(line)
+    except ValueError:
+        return None
+    if not isinstance(event, dict) or any(not isinstance(event.get(k), t) or (t is int and isinstance(event.get(k), bool))
+                                          for k, t in TOOL_EVENT_FIELDS.items()):
+        return None
+    return {k: event[k] for k in TOOL_EVENT_FIELDS}
+
+
+def report_tool_events() -> dict:
+    """Send what the hook spooled. A batch moves aside first so the hook keeps appending to a fresh file; a batch that
+    failed to send stays aside and goes first next time."""
+    sent = 0
+    for spool in TOOL_EVENT_FILES:
+        batch = spool.with_name(spool.name + ".sending")
+        if not batch.exists() and _plain_file(spool):
+            try:
+                spool.replace(batch)
+            except OSError:
+                continue
+        if not _plain_file(batch):
+            continue
+        lines = batch.read_text(encoding="utf-8", errors="replace").splitlines()
+        events = [e for e in map(_tool_event, lines[:5000]) if e]
+        for start in range(0, len(events), 500):
+            call("POST", "/api/endpoint/tool-events", {"endpoint_id": endpoint_id(), "events": events[start:start + 500]})
+        sent += len(events)
+        batch.unlink()
+    return {"sent": sent}
+
+
 def report_configs() -> dict:
     SCAN_ERRORS.clear()
     entries = collect_configs()
@@ -1104,6 +1184,11 @@ def once() -> dict:
         except (OSError, ValueError, subprocess.SubprocessError):
             state, error = "failed", "delivery_failed"
         results[channel] = {"state": state, "accepted_count": count, "error_code": error}
+    if TOOL_EVENT_FILES:
+        try:
+            results["tools"] = report_tool_events()
+        except (OSError, ValueError, urllib.error.URLError) as exc:
+            log("도구 호출 기록 전송 실패: %s" % exc)
     print(json.dumps({"observation": results}), flush=True)
     return results
 
@@ -1236,10 +1321,17 @@ def demo() -> None:
     private = scan_targets({"allowed_cidrs": ["192.0.2.0/30"], "max_hosts": 8})
     assert "192.0.2.1" in private and "8.8.8.1" not in private
     assert len(scan_targets({"allowed_cidrs": ["10.0.0.0/20"], "max_hosts": 5})) == 5
+    # 훅 기록 줄: 알려진 필드와 형식만 보내고, 형식이 다른 줄은 버린다.
+    good = {"event_id": "e" * 32, "called_at": "2026-10-31T00:00:00+00:00", "harness": "codex", "account": "a", "server": "ghidra",
+            "tool": "decompile_function", "input_bytes": 3, "input_sha256": "0" * 64, "output_bytes": 9, "failed": False, "extra": 1}
+    assert _tool_event(json.dumps(good)) == {k: good[k] for k in TOOL_EVENT_FIELDS}
+    assert _tool_event(json.dumps({**good, "input_bytes": True})) is None and _tool_event("not json") is None
     print("endpoint-agent self-check OK")
 
 
 if __name__ == "__main__":
+    if len(sys.argv) >= 3 and sys.argv[1] == "hook":
+        raise SystemExit(tool_hook(sys.argv[2]))
     if "--self-check" in sys.argv:
         demo()
         raise SystemExit(0)

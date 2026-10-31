@@ -71,6 +71,13 @@ async def endpoint_alerts():
             WHERE l.classification='shadow' AND l.mcp_evidence='confirmed' AND l.observed_at>now()-interval '1 day'
               AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp'
                               AND x.origin='endpoint-listener' AND x.origin_id=l.id::text AND NOT x.synthetic)
+           UNION ALL
+           SELECT DISTINCT ON (t.endpoint_id, t.server) 'endpoint-tool', t.id, t.endpoint_id, a.hostname, t.server,
+                  t.harness, t.tool
+             FROM endpoint_tool_events t JOIN endpoint_agents a USING (endpoint_id)
+            WHERE t.path='local' AND t.called_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp' AND x.origin='endpoint-tool'
+                              AND x.evidence->>'endpoint_id'=t.endpoint_id AND x.evidence->>'label'=t.server AND NOT x.synthetic)
            ORDER BY 2 LIMIT 1000""")
     for row in rows:
         await emit_alert("unapproved-endpoint-mcp", row["origin"], row["id"],

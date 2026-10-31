@@ -1109,7 +1109,8 @@ def serve(args):
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic",
-                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
+                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", []),
+                 "ENDPOINT_TOOL_EVENT_FILES": str(Path(pwd.getpwnam(config["username"]).pw_dir) / ".mcpgw" / "tool-events.jsonl")}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
     local = None

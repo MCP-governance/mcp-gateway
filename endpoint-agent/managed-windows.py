@@ -974,7 +974,8 @@ def serve(args):
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
-        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
+        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", []),
+        "ENDPOINT_TOOL_EVENT_FILES": str(Path(config["profile"]) / ".mcpgw" / "tool-events.jsonl")}))
     previous = config["policy_hash"]
     last_state = None
     from windows_status import publish

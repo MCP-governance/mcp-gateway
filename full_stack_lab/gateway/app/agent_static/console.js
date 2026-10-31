@@ -2311,8 +2311,8 @@ async function auditTabs(query) {
   const q = new URLSearchParams(query);
   const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
   const params = new URLSearchParams([...q].filter(([k, v]) => [...filters, "before"].includes(k) && v));
-  const [data, delivery, incidentData, alertData] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem"),
-    gw("audit/incidents"), gw("audit/alerts?limit=200")]);
+  const [data, delivery, incidentData, alertData, toolData] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem"),
+    gw("audit/incidents"), gw("audit/alerts?limit=200"), gw("endpoint/tool-events?limit=100")]);
   if (q.get("t") === "alerts") markAlertsSeen(alertData.alerts);
   const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
   const local = (iso) => { const d = new Date(iso || NaN); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
@@ -2334,6 +2334,11 @@ async function auditTabs(query) {
         return html`<tr ${href ? raw(`class="clickable" tabindex="0" data-act="goto" data-href="${href}"`) : ""}><td class="small nowrap">${when(a.created_at)}</td>
           <td>${chip(a.kind === "incident-deadline" || a.kind === "policy-self-test-failed" ? "alert" : "block", ALERT_KIND[a.kind] || a.kind)}</td>
           <td>${target}</td><td class="small mono">${alertDetail(a) || "—"}</td></tr>`; })}</tbody></table>` : empty("경보 없음"), { flush: true, sub: "최근 24시간 " + alertData.last_24h + "건" }) },
+    { key: "tools", label: "엔드포인트 호출", n: toolData.total, body: panel("엔드포인트 호출", toolData.rows.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>하네스</th><th>경로</th><th>MCP 서버 · 도구</th><th class="num">입력</th><th class="num">결과</th></tr></thead><tbody>${toolData.rows.map((e) => html`<tr>
+        <td class="small nowrap">${when(e.called_at, { seconds: true })}</td><td>${e.hostname || e.endpoint_id}<span class="sub">${e.owner_name || e.account || ""}</span></td>
+        <td>${chip("plain", harnessName(e.harness))}</td><td>${chip(...(TOOL_PATH[e.path] || ["outline", e.path]))}</td>
+        <td><b>${e.server}</b><span class="sub mono">${e.tool}</span></td><td class="num">${byteText(e.input_bytes)}</td>
+        <td class="num">${e.failed ? chip("block", "실패") : byteText(e.output_bytes)}</td></tr>`)}</tbody></table>` : empty("엔드포인트 호출 기록 없음"), { flush: true, sub: `전체 ${toolData.total}건` }) },
     { key: "incidents", label: "사고 보고 기한", body: panel("사고 보고 기한", html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
         <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub:`타이머 ${incidentData.timer_status}`}) },
     { key: "siem", label: "보안 관제 전달", body: panel("보안 관제 전달", kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]])) },
@@ -2341,6 +2346,8 @@ async function auditTabs(query) {
 }
 
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
+const TOOL_PATH = { gateway: ["allow", "게이트웨이"], connector: ["outline", "커넥터"], local: ["block", "로컬 MCP"] };
+const byteText = (n) => { const v = Number(n) || 0; return v < 1024 ? `${v} B` : v < 1048576 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1048576).toFixed(1)} MB`; };
 
 ROUTES.policy = async (_, tab) => {
   const [{ enforcement }, matrix, ledger, conn] = await Promise.all([gw("enforcement"), gw("policy/matrix"), gw("policy/ledger"), api("/api/connectors")]);
