@@ -473,9 +473,11 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
             known = summary or {}
             counts = {"servers": len(known.get("unregistered", [])),
                       "request": sum(1 for r in known.get("requests", []) if r.get("status") == "OPEN")}
+            notice = urllib.parse.parse_qs(self.path.partition("?")[2]).get("done", [""])[0]
 
             def show(title, body, status=200):
-                self.reply(status, page(title, name, body, token, socket.gethostname(), counts))
+                note = f'<p class="note">{html.escape(notice)}</p>' if notice else ""
+                self.reply(status, page(title, name, note + body, token, socket.gethostname(), counts))
 
             if name == "":
                 pairs = [(a, b) for a, _, b in (line.partition(": ") for line in status_lines())]
@@ -490,6 +492,10 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                                + ("</a>" if link else "</div>") for label, value, tone, link in cards)
                 button = (f'<form method="get" action="/{token}/"><input type="hidden" name="check" value="1">'
                           f'<button class="btn sm">연결 점검</button></form>')
+                if os.name == "nt":
+                    # A console window of its own for the device-code sign-in, as the tray did.
+                    button += "".join(f'<form method="post" action="/{token}/login"><input type="hidden" name="harness" value="{key}">'
+                                      f'<button class="btn sm">{label} 로그인</button></form>' for key, label in HARNESSES.items())
                 body = f'<div class="kpis">{kpis}</div><div class="stack">{kv_html("엔드포인트", pairs, button)}'
                 if "check" in self.path:
                     body += kv_html("연결 점검", list(check()))
@@ -497,17 +503,28 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
             if summary is None:
                 return show("오류", '<section class="panel"><p class="empty">엔드포인트 서비스 연결 실패</p></section>', 502)
             if name == "servers":
-                return show("MCP 서버", '<div class="stack">' + "".join(table_html(*part) for part in sections(summary)) + "</div>")
+                try:
+                    local = [s for s in receive(address, {"action": "list"}) if s.get("source_available")]
+                except (OSError, ValueError, KeyError, TypeError):
+                    local = []
+                sources = ""
+                if local:
+                    rows = "".join(
+                        f'<tr><td>{html.escape(s.get("display_name") or s["server_id"])}</td><td class="t">{html.escape(s["commit_sha"][:12])}</td>'
+                        f'<td><form method="post" action="/{token}/source"><input type="hidden" name="server" value="{html.escape(s["server_id"])}">'
+                        f'<input type="hidden" name="commit" value="{html.escape(s["commit_sha"])}"><button class="btn sm">소스 받기</button></form></td></tr>'
+                        for s in local)
+                    sources = (f'<section class="panel"><header><h2>승인된 소스</h2><span class="sub">{len(local)}</span></header>'
+                               f'<div class="body flush"><table class="data"><thead><tr><th>서버</th><th>커밋</th><th></th></tr></thead>'
+                               f'<tbody>{rows}</tbody></table></div></section>')
+                return show("MCP 서버", '<div class="stack">' + "".join(table_html(*part) for part in sections(summary)) + sources + "</div>")
             if name == "logs":
                 return show("호출 기록", table_html("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary),
                                                 f"전송 대기 {unsent_calls()}건"))
             if name == "request":
-                query = urllib.parse.parse_qs(self.path.partition("?")[2])
-                notice = query.get("done", [""])[0]
                 options = "".join(f'<option value="{html.escape(u["name"])}">' for u in summary.get("unregistered", []))
                 form = ('<section class="panel"><header><h2>도입 요청</h2></header><div class="body">'
-                        + (f'<p class="note">{html.escape(notice)}</p>' if notice else "")
-                        + f'<form class="form" method="post" action="/{token}/request">'
+                        f'<form class="form" method="post" action="/{token}/request">'
                         f'<label>서버 이름<input name="server" list="unregistered" required maxlength="120"></label>'
                         f'<datalist id="unregistered">{options}</datalist>'
                         f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300"></label>'
@@ -520,16 +537,33 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
             self.reply(404, "")
 
         def do_POST(self):
-            if self.route() != "request":
-                return self.reply(404, "")
+            name = self.route()
+            if name not in ("request", "source", "login"):
+                return None if name is None else self.reply(404, "")
             length = min(int(self.headers.get("Content-Length") or 0), 8192)
             form = {k: v[0] for k, v in urllib.parse.parse_qs(self.rfile.read(length).decode("utf-8", "replace")).items()}
+            back = {"request": "request", "source": "servers", "login": ""}[name]
             try:
-                notice = mint_request(address, form.get("server", ""), form.get("source_url", ""), form.get("purpose", ""))
+                if name == "request":
+                    notice = mint_request(address, form.get("server", ""), form.get("source_url", ""), form.get("purpose", ""))
+                elif name == "source":
+                    notice = "받음 · " + receive(address, {"action": "download", "server": form.get("server", ""),
+                                                          "commit": form.get("commit", "")})
+                else:
+                    harness = form.get("harness", "")
+                    if os.name != "nt" or harness not in LOGINS:
+                        raise ValueError(harness)
+                    import shutil
+                    import subprocess
+                    if not shutil.which(harness):
+                        notice = f"{HARNESSES[harness]} 설치 필요"
+                    else:
+                        subprocess.Popen(["cmd.exe", "/k", " ".join(LOGINS[harness])], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                        notice = f"{HARNESSES[harness]} 로그인 창을 열었습니다"
             except (OSError, ValueError, KeyError, TypeError):
-                notice = "요청 실패 · 입력 확인"
+                notice = {"request": "요청 실패 · 입력 확인", "source": "소스 받기 실패", "login": "로그인 실패"}[name]
             self.send_response(303)
-            self.send_header("Location", f"/{token}/request?done={urllib.parse.quote(notice)}")
+            self.send_header("Location", f"/{token}/{back}?done={urllib.parse.quote(notice)}")
             self.end_headers()
 
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)

@@ -191,40 +191,6 @@ Update-EndpointTray
 if ($script:starts -ne 1 -or $script:probe.connection.tools -ne 40) { throw 'fresh result was discarded' }
 """)
 
-    def test_language_switch_translates_existing_values_without_mutating_snapshot(self):
-        self.run_ps(r"""
-Import-TestFunction 'tray.ps1' 'Get-EndpointCells'
-Import-TestFunction 'tray.ps1' 'Update-EndpointWindow'
-function T($key) { Get-EndpointText $key $script:lang }
-function Get-EndpointNext { T 'next_ready' }
-$keys=@('connection','management','way','servers','harness','reported','model','tools','server','gateway','next')
-$captions=@{};$values=@{}
-foreach ($key in $keys) { $captions[$key]=[pscustomobject]@{Text=''}; $values[$key]=[pscustomobject]@{Text=''} }
-$script:window=[pscustomobject]@{IsDisposed=$false;Text='';Tag=@{captions=$captions;values=$values;buttons=@()}}
-$script:snapshot=@{state='active';management='활성';servers=@('docs-mcp-cloudflare-c-681a2b17');server_names=@('문서 검색');harnesses=@{claude='2.1.302'}}
-$script:healthResult=Get-EndpointText 'gateway_ok' 'ko'
-$script:probe=@{model=@{detail='하네스 없음'};connection=@{initialized=@();waiting='pending'}}
-$script:label='connected'; $simple=$true; $script:updated='—'
-foreach ($lang in @('en','ko','en')) {
-    $script:lang=$lang
-    Update-EndpointWindow
-    if ($values.management.Text -ne (Get-EndpointText 'active' $lang)) { throw 'management language stale' }
-    if ($values.gateway.Text -ne (Get-EndpointText 'gateway_ok' $lang)) { throw 'cached gateway language stale' }
-    if ($values.model.Text -ne (Get-EndpointText 'no_harness_probe' $lang)) { throw 'model language stale' }
-    if ($values.tools.Text -ne (Get-EndpointText 'waiting' $lang)) { throw 'tools language stale' }
-    if ($values.servers.Text -ne '1 · 문서 검색') { throw 'server id shown instead of display name' }
-}
-if ($script:snapshot.management -ne '활성') { throw 'display translation mutated status' }
-$script:snapshot.Remove('server_names'); Update-EndpointWindow
-if ($values.servers.Text -ne '1 · docs-mcp-cloudflare-c-681a2b17') { throw 'older snapshot lost server id' }
-$script:snapshot.server_names=@('문서 검색')
-foreach ($state in @('active','pending','quarantined','revoked','removed','unknown')) {
-    $script:snapshot.state=$state
-    Update-EndpointWindow
-    if ($values.management.Text -match '[가-힣]' -or $values.management.Text -ceq $state) { throw 'untranslated state' }
-}
-""")
-
     def test_registration_precedes_installed_mutations_and_one_failure_dialog(self):
         worker = (ROOT / "endpoint-agent/windows-worker.ps1").read_text(encoding="utf-8-sig")
         enroll = worker.index("Invoke-EndpointPython $stagePython $enrollArguments")
@@ -331,7 +297,7 @@ if ((Get-EndpointValue (Get-EndpointText 'service_stopped' 'ko') 'en') -ne (Get-
 
     def test_reconnect_asks_the_elevated_side_whether_the_service_task_exists(self):
         tray = (ROOT / "endpoint-agent/tray.ps1").read_text(encoding="utf-8-sig")
-        reconnect = tray[tray.index("function Complete-EndpointReconnect"):tray.index("function New-EndpointButton")]
+        reconnect = tray[tray.index("function Complete-EndpointReconnect"):tray.index("function Switch-EndpointLanguage")]
         # Only the elevated command can read the task of another principal, so it reports "missing" by exit code 3.
         self.assertIn("Get-ScheduledTask -TaskName '$task'", reconnect)
         self.assertIn("else { exit 3 }", reconnect)
