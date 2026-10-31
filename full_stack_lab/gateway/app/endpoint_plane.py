@@ -598,10 +598,16 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     rows = await db.fetch_all("SELECT id, display_name, deployment FROM mcp_servers"
                               " WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
-    # Same set the managed policy gives this device: Windows has no PC-isolated runner for local-run servers.
+    # Windows has no PC-isolated runner for local-run servers, so the managed policy leaves them out there; the employee
+    # still sees them as approved but not usable on this PC.
     windows = managed_platform(device) == "windows"
-    servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway"}
-               for r in rows if r["id"] in usable and not (windows and r["deployment"] == "local")]
+    servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway",
+                "available": not (windows and r["deployment"] == "local")} for r in rows if r["id"] in usable]
+    # A reinstall on the same PC replaces the device record (superseded_by); its calls and requests stay this PC's history.
+    lineage = [r["id"] for r in await db.fetch_all(
+        """WITH RECURSIVE chain(id) AS (SELECT %s::text UNION
+             SELECT a.endpoint_id FROM endpoint_agents a JOIN chain c ON a.detail->>'superseded_by' = c.id)
+           SELECT id FROM chain""", (device["endpoint_id"],))]
     decided = {d["item_key"]: d["decision"] for d in await db.fetch_all("SELECT item_key, decision FROM harness_decisions")}
     now = datetime.now(UTC)
     items = await db.fetch_all(
@@ -619,11 +625,11 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
             WHERE endpoint_id=%s AND classification='shadow' GROUP BY server_label, transport, config_path ORDER BY 4 DESC""",
         (device["endpoint_id"],))
     calls = await db.fetch_all(
-        """SELECT called_at, harness, server, tool, path, failed FROM endpoint_tool_events WHERE endpoint_id=%s
-            ORDER BY id DESC LIMIT %s""", (device["endpoint_id"], max(1, min(limit, 200))))
+        """SELECT called_at, harness, server, tool, path, failed FROM endpoint_tool_events WHERE endpoint_id=ANY(%s)
+            ORDER BY id DESC LIMIT %s""", (lineage, max(1, min(limit, 200))))
     requests = await db.fetch_all(
-        """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=%s
-            ORDER BY created_at DESC LIMIT 10""", (device["endpoint_id"],))
+        """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=ANY(%s)
+            ORDER BY created_at DESC LIMIT 10""", (lineage,))
     return {"endpoint": {"id": device["endpoint_id"], "hostname": device.get("hostname"), "managed_state": device.get("managed_state"),
                          "owner": (owner or {}).get("display_name") or (owner or {}).get("user_id")},
             "servers": servers, "connectors": connected, "features": features, "unregistered": unregistered,

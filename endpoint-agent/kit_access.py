@@ -232,7 +232,9 @@ def short_time(value):
 def sections(summary):
     """(제목, 열, 행) — the terminal prints them as text, the local screen as tables."""
     return [
-        ("승인된 MCP 서버", ("서버", "경로"), [(s["name"], PATHS.get(s["path"], s["path"])) for s in summary.get("servers", [])]),
+        ("승인된 MCP 서버", ("서버", "경로", "상태"), [(s["name"], PATHS.get(s["path"], s["path"]),
+                                                  "사용 가능" if s.get("available", True) else "이 PC 미지원")
+                                                 for s in summary.get("servers", [])]),
         ("커넥터", ("이름", "하네스", "상태"),
          [(c["name"], HARNESSES.get(c["harness"], c["harness"]), STATES.get(c["state"], c["state"])) for c in summary.get("connectors", [])]),
         ("하네스 기능", ("기능", "하네스", "상태"),
@@ -376,7 +378,7 @@ ICONS = {
 }
 TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("request", "도입 요청"))
 # Values coloured as the console colours them.
-CHIPS = {"승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
+CHIPS = {"사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
          "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
          "검토 기한 만료": "alert", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
 CHIP_COLUMNS = {"상태", "결과", "경로"}
