@@ -258,6 +258,8 @@ class McpIntake(StrictModel):
     risk_input: ImpactInput | None = None
     data_class: Literal["public", "nonimportant", "important"] = "nonimportant"
     requested_tools: list[str] = Field(default_factory=list, max_length=300)
+    # An administrator writing up an employee's request from their PC (`mint request`): the employee is the applicant.
+    endpoint_request_id: UUID | None = None
 
 
 class ExitTermsReview(StrictModel):
@@ -1329,6 +1331,17 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     if existing:
         raise HTTPException(409, "같은 대상의 신청이 이미 진행 중입니다.")
     applicant_input = request.risk_input.model_dump() if request.risk_input else {"data_class": request.data_class}
+    # Written up from an employee's request, the request is theirs: the administrator who typed it stays free to
+    # approve it, as the separation of duties intends (a single administrator could otherwise never approve one).
+    applicant = user["principal"]
+    if request.endpoint_request_id:
+        if "admin" not in user["roles"]:
+            raise HTTPException(403, "관리자 계정이 필요합니다.")
+        asked = await db.fetch_one("SELECT owner_token FROM endpoint_mcp_requests WHERE id=%s AND status='OPEN'",
+                                   (str(request.endpoint_request_id),))
+        if not asked or not asked["owner_token"]:
+            raise HTTPException(409, "이미 처리된 엔드포인트 요청입니다.")
+        applicant = asked["owner_token"]
     if endpoint:
         found = await gateway_proxy("/api/registry/intake-discover", authorization, "POST", {"endpoint": endpoint}, timeout=45)
         if not request.requested_tools or not set(request.requested_tools) <= {t["name"] for t in found["tools"]}:
@@ -1343,14 +1356,18 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
                  ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                  RETURNING id, display_name, repository_url, repository_path, requested_transport, purpose,
                            status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
-            (uuid4(), user["principal"], request.display_name.strip(), repository_url,
+            (uuid4(), applicant, request.display_name.strip(), repository_url,
              request.requested_transport, request.purpose.strip(), Jsonb({}),
              "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint,
              Jsonb(applicant_input), Jsonb(sorted(set(request.requested_tools))),
              "" if endpoint else repository_path))).fetchone()
+        if row and request.endpoint_request_id:
+            await connection.execute(
+                "UPDATE endpoint_mcp_requests SET status='CLOSED', closed_by=%s, closed_at=now() WHERE id=%s AND status='OPEN'",
+                (user["principal"], str(request.endpoint_request_id)))
         if row:
-            await review.record_event("user-consent", "recorded", "intake", row["id"], user["principal"],
-                                      applicant=user["principal"], reason=request.purpose.strip(),
+            await review.record_event("user-consent", "recorded", "intake", row["id"], applicant,
+                                      applicant=applicant, reason=request.purpose.strip(),
                                       scope={"kind": request.intake_kind, "target": endpoint or "/".join(filter(None, (repository_url, repository_path))),
                                              "transport": request.requested_transport}, connection=connection)
     return {"request": row, "message": "신청했습니다."}

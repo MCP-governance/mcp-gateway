@@ -1692,8 +1692,9 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null),
     viewer.admin ? gw("endpoint/requests") : Promise.resolve({ requests: [] })]);
   // An endpoint request opens the new-request form already filled in; the administrator reads and submits it.
-  const pre = { name: query.get("name") || "", purpose: query.get("purpose") || "", repository: query.get("repository") || "" };
-  const fromRepo = Boolean(pre.repository);
+  const pre = { name: query.get("name") || "", purpose: query.get("purpose") || "", source: query.get("source") || "", asked: query.get("asked") || "" };
+  // A GitHub address is source code; any other https address is a remote MCP.
+  const fromRepo = /^https:\/\/github\.com\//.test(pre.source);
   const opt = (value, label, on) => html`<option value="${value}" ${on ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
@@ -1725,7 +1726,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
           body: panel("엔드포인트 요청", asked.requests.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>서버</th><th>사용 목적</th><th></th></tr></thead><tbody>
             ${asked.requests.map((r) => html`<tr><td class="small nowrap">${when(r.created_at)}</td><td>${r.hostname}<span class="sub">${r.owner_name || ""}</span></td>
               <td><b>${r.server_label}</b>${r.source_url ? html`<span class="sub mono">${short(r.source_url, 60)}</span>` : ""}</td><td class="small">${short(r.purpose, 120)}</td>
-              <td class="num nowrap"><a class="btn sm primary" href="#/intake?t=new&${new URLSearchParams({ name: r.server_label, purpose: r.purpose, repository: r.source_url || "" })}">신청서 작성</a>
+              <td class="num nowrap"><a class="btn sm primary" href="#/intake?t=new&${new URLSearchParams({ name: r.server_label, purpose: r.purpose, source: r.source_url || "", asked: r.id })}">신청서 작성</a>
                 <button class="btn sm" data-act="endpoint-request-close" data-id="${r.id}">닫기</button></td></tr>`)}</tbody></table>` : empty("요청 없음"), { flush: true }) }] : []),
         { key: "approved", label: "승인된 MCP", body: panel("승인된 MCP", approvedMcpTable(servers), { flush: true }) },
         { key: "new", label: "새 신청", body: html`<div class="stack">
@@ -1740,8 +1741,9 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
           <fieldset><legend>연결</legend><div class="grid c2">
             <label>유형<select name="intake_kind" data-intake-kind>${opt("remote-endpoint", "원격 MCP", !fromRepo)}${opt("repository", "소스 코드", fromRepo)}</select></label>
             <label>연결 방식<select name="requested_transport">${opt("streamable-http", "Streamable HTTP", !fromRepo)}${opt("stdio", "stdio", fromRepo)}${opt("sse", "SSE", false)}</select></label>
-            <label data-intake-field="remote-endpoint" ${fromRepo ? raw("hidden") : ""}>MCP 주소<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /></label>
-            <label data-intake-field="repository" ${fromRepo ? "" : raw("hidden")}>저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" value="${pre.repository}" /></label>
+            <label data-intake-field="remote-endpoint" ${fromRepo ? raw("hidden") : ""}>MCP 주소<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" value="${fromRepo ? "" : pre.source}" /></label>
+            ${pre.asked ? html`<input type="hidden" name="endpoint_request_id" value="${pre.asked}" />` : ""}
+            <label data-intake-field="repository" ${fromRepo ? "" : raw("hidden")}>저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" value="${fromRepo ? pre.source : ""}" /></label>
           </div></fieldset>
           ${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}
           <fieldset data-intake-field="remote-endpoint"><legend>필요한 도구</legend>
@@ -3249,7 +3251,7 @@ const FORMS = {
     const fd = new FormData(form);
     const body = Object.fromEntries(["display_name", "repository_url", "endpoint_url", "intake_kind", "requested_transport", "purpose"].map((k) => [k, String(fd.get(k) || "").trim()]));
     const r = await api("/api/mcp-requests", { method: "POST", body: { ...body, data_class: fd.get("data_class"),
-      requested_tools: fd.getAll("requested_tool") } });
+      requested_tools: fd.getAll("requested_tool"), ...(fd.get("endpoint_request_id") ? { endpoint_request_id: fd.get("endpoint_request_id") } : {}) } });
     toast(r.message);
     location.hash = "#/intake?t=list";
     reload();
