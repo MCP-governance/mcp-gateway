@@ -13,11 +13,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if sys.version_info < (3, 11):
     from pip._vendor import tomli
     sys.modules.setdefault('tomllib', tomli)
-try:
-    import packaging.requirements
-except ImportError:
-    from pip._vendor.packaging import requirements
-    sys.modules['packaging.requirements'] = requirements
 spec = importlib.util.spec_from_file_location('dependency_locks', ROOT / 'full_stack_lab/supply_chain/dependency_locks.py')
 locks = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(locks)

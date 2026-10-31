@@ -23,9 +23,9 @@ test('shared service builds have one image cache; PRs import without exporting',
 });
 
 test('different Dockerfiles get separate scopes; only selected group targets build', () => {
-  const input = plan({ gateway, worker: { context: path.join(root, 'full_stack_lab'),
-    dockerfile: 'runtime/Dockerfile' }, ignored: { context: root, dockerfile: 'absent' } });
-  input.group.default.targets = ['gateway', 'worker'];
+  const input = plan({ gateway, proxy: { context: path.join(root, 'full_stack_lab'),
+    dockerfile: 'model-proxy/Dockerfile' }, ignored: { context: root, dockerfile: 'absent' } });
+  input.group.default.targets = ['gateway', 'proxy'];
   const result = cachePlan([input], root, true);
   const scopes = Object.values(result.target).map((target) => target['cache-to'][0]);
   assert.equal(new Set(scopes).size, 2);
@@ -65,8 +65,8 @@ test('loaded shared images export once with every service tag and unchanged buil
 function action(stack, event, ref, failBake = false) {
   const calls = [], writes = new Map();
   const base = plan({ gateway, agent: { ...gateway, tags: ['agent'] } });
-  const field = plan({ worker: { context: path.join(root, 'full_stack_lab'),
-    dockerfile: 'runtime/Dockerfile', tags: ['runtime-worker'] } });
+  const field = plan({ 'model-proxy': { context: path.join(root, 'full_stack_lab'),
+    dockerfile: 'model-proxy/Dockerfile', tags: ['model-proxy'] } });
   const filename = path.join(root, '.github/actions/compose-cache/index.cjs');
   const entry = { exports: {} };
   const env = { GITHUB_WORKSPACE: root, INPUT_STACK: stack, INPUT_BUILDER: 'selected',
@@ -77,9 +77,10 @@ function action(stack, event, ref, failBake = false) {
   const mockedRequire = (name) => {
     if (name === 'node:child_process') return { spawnSync(command, args, options) {
       assert.equal(command, 'docker');
+      assert.ok(!args.includes('runtime-worker'));
       calls.push({ args, env: options.env });
       return { status: failBake && args[0] === 'buildx' ? 1 : 0,
-        stdout: JSON.stringify(args.includes('runtime-worker') ? field : base) };
+        stdout: JSON.stringify(args.includes('model-proxy') ? field : base) };
     } };
     if (name === 'node:fs') return { ...fs,
       writeFileSync: (name, value) => writes.set(name, value),
@@ -104,7 +105,8 @@ test('verification action loads images before enabling the base-only overlay', (
     && target['cache-to'].length === 0));
   const overlay = writes.get(path.join('/temporary', 'mint-loaded.yaml'));
   assert.ok(overlay.includes('"gateway"') && overlay.includes('"agent"'));
-  assert.ok(!overlay.includes('worker'));
+  assert.ok(!overlay.includes('model-proxy'));
+  assert.deepEqual(Array.from(calls[1].args.slice(-3)), ['build', '--print', 'model-proxy']);
   assert.match(writes.get('/env'), /COMPOSE_FILE=compose.yaml:.*mint-loaded.yaml/);
 });
 

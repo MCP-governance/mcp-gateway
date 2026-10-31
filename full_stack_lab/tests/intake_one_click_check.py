@@ -362,9 +362,13 @@ class ApprovalFlowCheck(unittest.IsolatedAsyncioTestCase):
 
     async def test_failed_scan_disables_preview_and_refuses_forged_click(self):
         self.state = row("repository")
+        self.state["evidence"]["local_run"] = {"source": {"commit": self.state["commit_sha"]}}
         self.state["evidence"]["scanners"]["semgrep"]["status"] = "FAILED"
-        preview = await self.preview()
+        signed = {"manifest": self.state["evidence"]["local_run"], "signature": "unit-fixture"}
+        with patch.object(service, "signed_local_run", AsyncMock(return_value=signed)):
+            preview = await self.preview()
         self.assertIn("scan-incomplete", {b["code"] for b in preview["proposal"]["blockers"]})
+        self.assertNotIn("execution-missing", {b["code"] for b in preview["proposal"]["blockers"]})
         with self.assertRaises(HTTPException):
             await service.approve_and_register(REQUEST_ID, self.approval(preview), self.admin, "console-token")
         self.assertEqual(self.registered, [])

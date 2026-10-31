@@ -10,7 +10,10 @@ import tomllib
 import zipfile
 from email.parser import BytesParser
 
-from packaging.requirements import Requirement
+try:
+    from packaging.requirements import Requirement
+except ModuleNotFoundError:
+    from pip._vendor.packaging.requirements import Requirement
 
 
 TARGETS = {

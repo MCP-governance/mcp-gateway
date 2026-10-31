@@ -12,6 +12,7 @@
 
 ## DEV-83 후속 — 승인 소스 stdio 프로세스 모드 (D-299, 10-28)
 
+- 10-31 PR #69 CI 정합 수정: 빌드 서비스·pip 내장 packaging 대체·엔드포인트 승인/출처/PG 시험 이행을 로컬 반영했다. 전체 Windows 실행 79통과·54실패·18외부 생략·1검토 대기이며, CI Python 3.12·Linux 비root·PostgreSQL에서 재실행할 때까지 완료로 보지 않는다. 커밋·푸시는 통합 담당자가 한다. [파일별 원인·결과](reports/2026-10-31-pr69-d299-ci.md).
 - 구현·신규 로컬 단위 26건 통과, 공용 Git index.lock 권한 때문에 미커밋. [작업 보고](reports/2026-10-28-endpoint-stdio.md), [요구사항·시험 정본](../analysis/endpoint-stdio/README.md).
 - 2차: 직원 WTS 토큰·wheel 잠금 생성/서명/장치 다운로드·솔루션 runtime 제거·기존 등록 재승인을 작업 트리에 반영했다. 완료 조건은 실제 SYSTEM 세션/ACL/Job, Linux 등록 직원 UID, 실제 MarkItDown의 플랫폼별 패키지 해석·Syft/Trivy와 설치 집합·실제 하네스·원장/독립 효과 확인이다. Windows 3.13/Linux 3.12 x86_64, 호스트 네트워크, wheel 오프라인 미러 보류, 기존 운영 자원 회수 조건을 검수한다. 커밋·배포·실기기 시험은 이번 소유자 지시로 실행하지 않는다.
 

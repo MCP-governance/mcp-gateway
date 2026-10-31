@@ -1,22 +1,42 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-10-31T14:10:20+09:00
+확인 시각: 2026-10-31T14:35:09+09:00
 
-HEAD: `21eafed9824f42be58936b6337bfdf970d9837ec` · 로컬 브랜치: `10/28-windows-kit`
+HEAD: `3402278b1473effba80abfb1b7d21cee295d5533` · 로컬 브랜치: `10/28-windows-kit`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M .github/actions/compose-cache/index.cjs
+ M .github/ci/compose-cache.test.cjs
+ M full_stack_lab/gateway/app/local_sources.py
+ M full_stack_lab/supply_chain/dependency_locks.py
+ M full_stack_lab/tests/dependency_locks_check.py
+ M full_stack_lab/tests/dest_pin_credential_redaction_check.py
+ M full_stack_lab/tests/endpoint_stdio_check.py
+ M full_stack_lab/tests/field_tls_check.py
+ M full_stack_lab/tests/intake_fixture.py
+ M full_stack_lab/tests/intake_identity_pg_check.py
+ M full_stack_lab/tests/intake_one_click_ast_check.py
+ M full_stack_lab/tests/intake_one_click_check.py
+ M full_stack_lab/tests/local_run_presets_check.py
+ M full_stack_lab/tests/nested_tx_check.py
+ M full_stack_lab/tests/nested_tx_refactor_check.py
+ M full_stack_lab/tests/oneclick_markers_provenance_check.py
+ M full_stack_lab/tests/provenance_verify_check.py
+ M full_stack_lab/tests/remaining_controls_check.py
+ M full_stack_lab/tests/root_solo_behavior_check.py
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/threats/control-map.md
+ M research/llm-wiki/status/backlog.md
+ M research/llm-wiki/status/current.md
 ?? api.py
 ?? c
 ?? p3_ui.py
 ?? q
+?? research/llm-wiki/status/reports/2026-10-31-pr69-d299-ci.md
 ?? sftp_put.py
 ```
 

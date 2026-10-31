@@ -117,7 +117,7 @@ async def receive(spool, path):
     return total
 
 
-async def download(device, server_id, digest, lock=None):
+async def download(device, server_id, digest, lock: str | None = None):
     before = await authorized_source(device, server_id, digest)
     spool = tempfile.SpooledTemporaryFile(max_size=4 << 20)
     try:

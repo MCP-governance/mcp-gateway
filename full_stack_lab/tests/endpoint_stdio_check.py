@@ -142,6 +142,20 @@ class Preparation(unittest.TestCase):
 
 
 class ProcessChecks(unittest.TestCase):
+    def setUp(self):
+        if os.name != 'nt' and os.getuid() != 0:
+            # CI checks real process cleanup as its own unprivileged user. setgroups([])
+            # requires root; assert the production request but substitute only that syscall.
+            popen = subprocess.Popen
+            def spawn(*args, **kwargs):
+                self.assertEqual(kwargs['user'], os.getuid())
+                self.assertEqual(kwargs['group'], os.getgid())
+                self.assertEqual(kwargs.pop('extra_groups'), [])
+                return popen(*args, **kwargs)
+            patcher = patch.object(runner.subprocess, 'Popen', side_effect=spawn)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def prepared(self, code):
         return [sys.executable,'-I','-S','-c',code],Path(tempfile.gettempdir()),source.environment({'env':{}})
 

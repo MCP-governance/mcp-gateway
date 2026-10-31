@@ -90,7 +90,7 @@ _artifact_provenance = importlib.util.module_from_spec(_ap_spec)
 _ap_spec.loader.exec_module(_artifact_provenance)
 service = load("app.intake_service_ast", "agent_service.py", ["ApprovalPreview", "OneClickApproval", "IntakeRegistration",
     "ProvenanceMismatch", "approval_row", "preview_intake_approval", "approve_and_register", "register_mcp_request",
-    "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance", "discovery", "LOCAL_DISCOVER_SECONDS", "local_discover_timeout",
+    "EXIT_TERM_KEYS", "exit_term_flags", "collect_proposal_provenance", "discovery", "LOCAL_DISCOVER_SECONDS", "local_discover_timeout", "signed_local_run",
     "ALL_PRINCIPALS", "resolve_audience"],
     {"db": db, "review": review, "StrictModel": contract.StrictModel, "ResidencyFields": contract.ResidencyFields,
      "ToolReview": contract.ToolReview, "Depends": lambda value: None, "Header": lambda **kwargs: None,

@@ -63,13 +63,13 @@ class InputFieldsTest(unittest.TestCase):
 
 
 class TransferBindingTest(unittest.TestCase):
-    def spec(self, runtime=True, **changes):
-        return {"runtime": {"intake_id": "x"} if runtime else None,
+    def spec(self, local=True, **changes):
+        return {"local": {"manifest_sha256": "a" * 64} if local else None,
                 "tool_reviews": {"convert": {**normalized(**changes)["convert"]}}}
 
-    def test_reviewed_destination_on_a_runtime_server_is_bound_to_purpose_and_grade(self):
+    def test_endpoint_review_keeps_pairs_but_does_not_prove_the_final_destination(self):
         ok, pairs = pac.transfer_binding(self.spec(), "convert", ["learn.microsoft.com"])
-        self.assertTrue(ok)
+        self.assertFalse(ok)
         self.assertEqual(pairs, [{"destination_id": "learn.microsoft.com", "grade": "public", "purpose": "사내 문서 변환"}])
         _, wider = pac.transfer_binding(self.spec(grade="nonimportant"), "convert", ["learn.microsoft.com"])
         self.assertEqual([p["grade"] for p in wider], ["public", "nonimportant"])
@@ -77,17 +77,25 @@ class TransferBindingTest(unittest.TestCase):
     def test_anything_else_fails_closed(self):
         for spec, feature, hosts in ((self.spec(), "convert", ["evil.example.net"]),
                                      (self.spec(), "convert", ["learn.microsoft.com", "evil.example.net"]),
-                                     (self.spec(runtime=False), "convert", ["learn.microsoft.com"]),
+                                     (self.spec(local=False), "convert", ["learn.microsoft.com"]),
                                      (self.spec(), "post", ["learn.microsoft.com"]),
                                      (self.spec(), "missing", ["learn.microsoft.com"])):
             ok, pairs = pac.transfer_binding(spec, feature, hosts)
             self.assertFalse(ok and pairs, (feature, hosts))
         self.assertEqual(pac.transfer_binding(self.spec(), "convert", []), (True, []))
 
+    def test_historical_proxy_settings_cannot_prove_current_endpoint_egress(self):
+        spec = {**self.spec(), 'runtime': {'intake_id': 'old', 'egress_proxy': True}}
+        ok, pairs = pac.transfer_binding(spec, 'convert', ['learn.microsoft.com'])
+        self.assertFalse(ok)
+        self.assertEqual(len(pairs), 1)
+
     def test_wildcard_covers_subdomains_only(self):
         spec = self.spec(destinations=["*.example.com"])
-        self.assertTrue(pac.transfer_binding(spec, "convert", ["docs.example.com"])[1])
-        self.assertFalse(pac.transfer_binding(spec, "convert", ["example.com.evil.net"])[1])
+        ok, pairs = pac.transfer_binding(spec, "convert", ["docs.example.com"])
+        self.assertFalse(ok)
+        self.assertEqual([p['destination_id'] for p in pairs], ['docs.example.com'])
+        self.assertEqual(pac.transfer_binding(spec, "convert", ["example.com.evil.net"]), (False, []))
 
 
 class FlowSourcesTest(unittest.TestCase):
