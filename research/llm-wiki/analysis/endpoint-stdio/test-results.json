@@ -1,0 +1,305 @@
+{
+  "base_commit": "91524ab5e0d53f08439e8233aa44b979ca0cfd63",
+  "evidence": "local unit/static; no deployment or MCP server execution",
+  "results": [
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/endpoint_stdio_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.75,
+      "tests": 14,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_rework_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.375,
+      "tests": 23,
+      "summary": [
+        "OK (skipped=4)"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_integration_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.328,
+      "tests": 7,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/local_runner_usability_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.797,
+      "tests": 33,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/kit_continuity_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.063,
+      "tests": 27,
+      "summary": [
+        "OK (skipped=2)"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/kit_install_upfront_check.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.422,
+      "tests": 31,
+      "summary": [
+        "FAILED (failures=3, skipped=4)"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/local_run_manifest_check.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.172,
+      "tests": null,
+      "summary": [
+        "ModuleNotFoundError: No module named 'cryptography'"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.062,
+      "tests": null,
+      "summary": [
+        "PASS 무인증 1개가 문서와 일치, 인증 필요 105개 (그중 장치 자격 18개: GET /api/endpoint/approved-mcp, GET /api/endpoint/approved-mcp/{server_id}/source, GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/local-manifests, GET /api/endpoint/local-sources/{server_id}, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/harness-inventory, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "endpoint-agent/tests-windows",
+        "-p",
+        "test_endpoint_stdio.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.484,
+      "tests": 4,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "endpoint-agent/tests-windows",
+        "-p",
+        "test_windows_oneclick.py"
+      ],
+      "exit_code": 0,
+      "seconds": 9.578,
+      "tests": 17,
+      "summary": [
+        "OK (skipped=1)"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "endpoint-agent/tests-windows",
+        "-p",
+        "test_windows_kit.py"
+      ],
+      "exit_code": 1,
+      "seconds": 6.234,
+      "tests": 18,
+      "summary": [
+        "FAILED (failures=6, errors=1)"
+      ]
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 0.234,
+      "tests": null,
+      "summary": [
+        "ℹ tests 16",
+        "ℹ pass 16",
+        "ℹ fail 0",
+        "ℹ skipped 0"
+      ]
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "exit_code": 0,
+      "seconds": 0.062,
+      "tests": null,
+      "summary": []
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "deploy/check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.109,
+      "tests": null,
+      "summary": [
+        "PASS 판본·변경 기록·배포 묶음 고정·제품 문서 위생"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/stdio_source.py",
+        "endpoint-agent/stdio_windows.py",
+        "full_stack_lab/gateway/app/local_sources.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.047,
+      "tests": null,
+      "summary": [
+        "C:\\Program Files\\Python310\\python.exe: No module named pyflakes"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/endpoint_source_api_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.453,
+      "tests": 8,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_review2_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.172,
+      "tests": 5,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/kit_simple_mode_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.641,
+      "tests": 14,
+      "summary": [
+        "OK"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/runtime_rollback_reconcile_check.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.234,
+      "tests": null,
+      "summary": [
+        "ModuleNotFoundError: No module named 'cryptography'"
+      ]
+    },
+    {
+      "command": [
+        "python",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/intake_one_click_ast_check.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.172,
+      "tests": null,
+      "summary": [
+        "ImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)"
+      ]
+    }
+  ]
+}

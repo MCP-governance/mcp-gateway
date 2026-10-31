@@ -148,7 +148,7 @@ read_password() {
 }
 
 # 콘솔은 기동할 때마다 root(관리자)·user(직원) 기본 계정을 아이디와 같은 비밀번호로 만든다(이미 있으면 그대로).
-# 게시 포트를 열기 전에, 기본 비밀번호가 남은 root는 임의 값으로 바꾸고 기본 직원 계정은 중지한다.
+# 게시 포트를 열기 전에, 기본 비밀번호가 남은 root는 임의 값으로 바꾸고 기본 직원 계정과 기본 관리자 admin1~3은 중지한다.
 # 비밀번호를 이미 바꾼 서버(업그레이드·복구)에서는 아무것도 바꾸지 않는다.
 first_admin() {
   local pw; pw="$(openssl rand -base64 18 | tr '+/' '-_')"
@@ -162,6 +162,9 @@ with psycopg.connect(os.environ["DATABASE_URL"]) as db:
     db.execute("""UPDATE principals SET status = %s
                   WHERE token = %s AND role <> %s AND password_hash = crypt(token, password_hash)""",
                ("disabled", "user", "admin"))
+    db.execute("""UPDATE principals SET status = %s
+                  WHERE token = ANY(%s) AND password_hash = crypt(token, password_hash)""",
+               ("disabled", ["admin1", "admin2", "admin3"]))
 print(n)')"
   if [[ "$rotated" == 1 ]]; then
     (umask 077; printf '%s\n' "$pw" > "$DEPLOY_DIR/initial-admin-password")
@@ -201,7 +204,12 @@ up() {
   echo "[2/4] 게이트웨이·콘솔·검사기"
   # OPA와 게이트웨이는 정책 파일을 기동할 때만 읽는다. 정책이 바뀐 판본에서도 반영되게 다시 만든다.
   dc up -d --force-recreate opa gateway
-  dc up -d db presidio-analyzer presidio-anonymizer agent-service intake-worker runtime-worker corp-git
+  dc up -d db presidio-analyzer presidio-anonymizer agent-service intake-worker corp-git
+  # 솔루션 MCP 실행기는 판본에서 빠졌다(D-299). 이전 판본에서 올린 기기에 남은 실행기와 그것이 띄운 MCP·망을 거둔다.
+  # 이 기기의 Docker는 MINT 전용이라 실행기 라벨(mcpgw.runtime)로 찾는다.
+  docker ps -aq --filter "label=com.docker.compose.project=$(project)" --filter "label=com.docker.compose.service=runtime-worker"     | xargs -r docker rm -f >/dev/null
+  docker ps -aq --filter label=mcpgw.runtime | xargs -r docker rm -f >/dev/null
+  docker network ls -q --filter label=mcpgw.runtime | xargs -r docker network rm >/dev/null 2>&1 || true
   wait_ready
   first_admin
   echo "[3/4] HTTPS 앞단·모델 프록시 ($MINT_BIND)"
@@ -292,9 +300,9 @@ backup() {
   echo "백업: $dir"
   dc exec -T db pg_dump -U mcp -d mcp_governance -Fc > "$dir/mcp_governance.dump"
   # 폐기 목록·내부 Git은 DB와 같은 시점이어야 하므로 쓰는 서비스를 잠시 멈추고 묶는다.
-  dc stop gateway agent-service runtime-worker corp-git >/dev/null
+  dc stop gateway agent-service corp-git >/dev/null
   local v; for v in "${VOLUMES[@]}"; do volume_tar save "$v" "$dir"; done
-  dc start corp-git gateway agent-service runtime-worker >/dev/null
+  dc start corp-git gateway agent-service >/dev/null
   (umask 077; cp .env "$dir/env"; printf '%s\n' "$MCP_BUILD_REVISION" > "$dir/VERSION")
   # LiteLLM 매핑·CA는 함께 둔다. 관리 키는 비밀 저장소가 정본이라 복구 뒤 rotate-key로 다시 넣는다.
   local f; for f in bindings.json ca.pem; do [[ ! -f "litellm/$f" ]] || cp "litellm/$f" "$dir/litellm-$f"; done
@@ -320,7 +328,7 @@ restore() {
   local f; for f in bindings.json ca.pem; do [[ ! -f "$dir/litellm-$f" ]] || { cp "$dir/litellm-$f" "litellm/$f"; chmod 644 "litellm/$f"; }; done
   echo "복구: $dir (백업 판본 $(cat "$dir/VERSION" 2>/dev/null || echo '—'), 현재 체크아웃 $MCP_BUILD_REVISION)"
   dc build -q
-  dc stop caddy model-proxy gateway agent-service intake-worker runtime-worker corp-git >/dev/null 2>&1 || true
+  dc stop caddy model-proxy gateway agent-service intake-worker corp-git >/dev/null 2>&1 || true
   local v
   for v in "${VOLUMES[@]}"; do
     if [[ " ${KEEP_IF_PRESENT[*]} " == *" $v "* ]] && docker volume inspect "$(project)_$v" >/dev/null 2>&1; then

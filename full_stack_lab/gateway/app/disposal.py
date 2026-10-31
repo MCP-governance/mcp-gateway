@@ -244,10 +244,7 @@ async def reconcile():
                         missing = True
                     await connection.execute(
                         "UPDATE usage_relationships SET status='TERMINATED' WHERE server_id=%s AND status<>'TERMINATED'", (server or subject,))
-                await connection.execute(
-                    """UPDATE mcp_runtimes SET status='STOPPING',error='폐기 상태 복원',updated_at=now()
-                       WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
-                         AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (server or subject,))
+
             if missing or changed.rowcount:
                 restored.append({"kind": kind, "subject": subject, "server_id": server})
         if restored:

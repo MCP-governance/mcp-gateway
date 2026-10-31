@@ -1,20 +1,24 @@
-"""DEV-77: signed DSSE source provenance is optional, but present failures fail closed."""
+"""DEV-77/D-299: source provenance verification at endpoint-source approval, without the removed worker."""
 from __future__ import annotations
 
 import base64
+import asyncio
 import json
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+from endpoint_source_api_check import functions
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path[:0] = [str(ROOT / "runtime"), str(ROOT / "gateway" / "app"), str(ROOT / "supply_chain")]
+sys.path[:0] = [str(ROOT / "gateway" / "app"), str(ROOT / "supply_chain")]
 import artifact_provenance as verify  # noqa: E402
-import worker  # noqa: E402
 
 DIGEST = "a" * 64
 TYPE = verify.PAYLOAD_TYPE.encode()
@@ -65,17 +69,26 @@ class ProvenanceVerification(unittest.TestCase):
         self.assertIsNotNone(verify.blocking_reason(result))
         self.assertNotEqual(result["status"], verify.MISSING)
 
-    def test_startup_expected_digest_is_the_recorded_digest(self):
-        evidence = {"source_archive_sha256": DIGEST, "source_attestation": self.envelope()}
-        self.assertEqual(worker.verify_source_provenance(
-            {"source_archive_sha256": DIGEST}, trust_file="")["status"], verify.MISSING)
+    def test_endpoint_source_approval_uses_the_recorded_digest(self):
+        scope = functions(ROOT / 'gateway/app/agent_service.py', {'collect_proposal_provenance'},
+                          {'asyncio': asyncio, 'os': os, 'artifact_provenance': verify})
+        record = {'artifact': {'sha256': DIGEST}, 'verification': {'attestation': self.envelope()}}
         with tempfile.TemporaryDirectory() as folder:
             key_file = Path(folder) / "keys.json"
             key_file.write_text(json.dumps(self.keys), encoding="utf-8")
-            self.assertEqual(worker.verify_source_provenance(evidence, trust_file=str(key_file))["status"], verify.VERIFIED)
-            evidence["source_archive_sha256"] = "b" * 64
-            with self.assertRaisesRegex(worker.Refused, "MCP-SUPPLY-001"):
-                worker.verify_source_provenance(evidence, trust_file=str(key_file))
+            with patch.dict(os.environ, {'MCP_PROVENANCE_TRUST_KEYS_FILE': str(key_file)}), \
+                    patch.object(verify, 'collect_intake_referrer', return_value=None):
+                missing, blocker = asyncio.run(scope['collect_proposal_provenance'](
+                    {'intake_kind': 'repository'}, {'artifact': {'sha256': DIGEST}}))
+                self.assertEqual(missing['verification']['provenance_status'], verify.MISSING)
+                self.assertIsNone(blocker)
+                found, blocker = asyncio.run(scope['collect_proposal_provenance']({'intake_kind': 'repository'}, record))
+                self.assertEqual(found['verification']['provenance_status'], verify.VERIFIED)
+                self.assertIsNone(blocker)
+                record['artifact']['sha256'] = 'b' * 64
+                found, blocker = asyncio.run(scope['collect_proposal_provenance']({'intake_kind': 'repository'}, record))
+                self.assertEqual(found['verification']['provenance_status'], verify.MISMATCH)
+                self.assertIn('MCP-SUPPLY-001', blocker)
 
     def test_missing_trust_key_never_learns_key_from_attestation(self):
         result = verify.verify_source_attestation(self.record(self.envelope()), DIGEST, {})

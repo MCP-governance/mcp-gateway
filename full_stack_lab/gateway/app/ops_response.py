@@ -43,16 +43,74 @@ async def catalog_alerts(server_id, findings, snapshot_id, synthetic=False):
 
 async def observed_alerts():
     rows = await db.fetch_all(
-        """SELECT d.id,d.server_id,d.policy_id,d.conflicts FROM decisions d
+        """SELECT d.id,d.server_id,d.policy_id,d.conflicts,d.user_token FROM decisions d
            WHERE d.created_at>now()-interval '1 day'
              AND (d.policy_id='MCP-REGISTRY-001' OR d.policy_id LIKE 'MCP-SHADOW-%%'
                   OR d.policy_id LIKE 'P-ANOMALY-%%' OR d.policy_id LIKE 'P-VOLUME-%%')
              AND NOT EXISTS (SELECT 1 FROM ops_alerts a WHERE a.origin='decision' AND a.origin_id=d.id::text AND NOT a.synthetic)
+             -- A shadow MCP on the caller's PC marks every call of that person; one alert a day per person says it.
+             AND NOT (d.policy_id LIKE 'MCP-SHADOW-%%' AND EXISTS (
+                  SELECT 1 FROM ops_alerts a WHERE a.kind='unapproved-connection' AND a.evidence->>'policy_id'=d.policy_id
+                     AND a.evidence->>'user_token'=d.user_token AND a.created_at>now()-interval '1 day' AND NOT a.synthetic))
            ORDER BY d.id LIMIT 1000""")
+    seen = set()
     for row in rows:
         kind = alert_kind(row["policy_id"])
-        if kind:
-            await emit_alert(kind, "decision", row["id"], {"server_id": row["server_id"], "policy_id": row["policy_id"]})
+        if not kind:
+            continue
+        shadow = row["policy_id"].startswith("MCP-SHADOW-")
+        if shadow and (row["user_token"], row["policy_id"]) in seen:
+            continue
+        seen.add((row["user_token"], row["policy_id"]))
+        await emit_alert(kind, "decision", row["id"], {"server_id": row["server_id"], "policy_id": row["policy_id"],
+                                                       **({"user_token": row["user_token"]} if shadow else {})})
+
+
+async def endpoint_alerts():
+    """엔드포인트가 보고한 미등록 MCP(설정·확인된 수신기)를 호출 판정과 별개로 경보로 남긴다."""
+    rows = await db.fetch_all(
+        """SELECT 'endpoint-inventory' AS origin, i.id, i.endpoint_id, a.hostname, i.server_label AS label,
+                  i.transport AS channel, i.config_path AS place
+             FROM endpoint_inventory i JOIN endpoint_agents a USING (endpoint_id)
+            WHERE i.classification='shadow' AND i.reported_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp'
+                              AND x.origin='endpoint-inventory' AND x.origin_id=i.id::text AND NOT x.synthetic)
+           UNION ALL
+           SELECT 'endpoint-listener', l.id, l.endpoint_id, a.hostname, coalesce(l.server_name,l.process_name,l.address),
+                  l.source, l.address || coalesce(':' || l.port, '')
+             FROM endpoint_listeners l JOIN endpoint_agents a USING (endpoint_id)
+            WHERE l.classification='shadow' AND l.mcp_evidence='confirmed' AND l.observed_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp'
+                              AND x.origin='endpoint-listener' AND x.origin_id=l.id::text AND NOT x.synthetic)
+           UNION ALL
+           SELECT DISTINCT ON (t.endpoint_id, t.server) 'endpoint-tool', t.id, t.endpoint_id, a.hostname, t.server,
+                  t.harness, t.tool
+             FROM endpoint_tool_events t JOIN endpoint_agents a USING (endpoint_id)
+            WHERE t.path='local' AND t.called_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='unapproved-endpoint-mcp' AND x.origin='endpoint-tool'
+                              AND x.evidence->>'endpoint_id'=t.endpoint_id AND x.evidence->>'label'=t.server AND NOT x.synthetic)
+           ORDER BY 2 LIMIT 1000""")
+    for row in rows:
+        await emit_alert("unapproved-endpoint-mcp", row["origin"], row["id"],
+                         {"endpoint_id": row["endpoint_id"], "hostname": row["hostname"], "label": row["label"],
+                          "channel": row["channel"], "place": row["place"], "policy_id": "MCP-SHADOW-001"})
+    # A PC the Gateway quarantined (managed files changed, a check failed) is cut off from every approved server;
+    # an administrator who is not told keeps wondering why the employee cannot work. One alert per transition.
+    quarantined = await db.fetch_all(
+        """SELECT e.id, e.endpoint_id, a.hostname, e.detail
+             FROM (SELECT id, endpoint_id, kind, detail, observed_at,
+                          lag(kind) OVER (PARTITION BY endpoint_id ORDER BY id) AS previous
+                     FROM endpoint_managed_events) e JOIN endpoint_agents a USING (endpoint_id)
+            WHERE e.kind='quarantined' AND e.previous IS DISTINCT FROM 'quarantined' AND e.observed_at>now()-interval '1 day'
+              AND NOT EXISTS (SELECT 1 FROM ops_alerts x WHERE x.kind='endpoint-quarantined' AND x.origin='endpoint-managed'
+                              AND x.origin_id=e.id::text AND NOT x.synthetic)
+            ORDER BY e.id LIMIT 200""")
+    for row in quarantined:
+        detail = row["detail"] or {}
+        failed = sorted(name for name, ok in (detail.get("checks") or {}).items() if ok is not True)
+        await emit_alert("endpoint-quarantined", "endpoint-managed", row["id"],
+                         {"endpoint_id": row["endpoint_id"], "hostname": row["hostname"],
+                          "files": detail.get("mismatched_files") or [], "checks": failed})
 
 
 def selected(server_id, source):
@@ -84,10 +142,7 @@ async def suspend(server_id, source, reason, evidence, batch=None):
             return False
         await connection.execute(
             "UPDATE mcp_servers SET status='DISABLED',status_reason=%s WHERE id=%s", (reason, server_id))
-        await connection.execute(
-            """UPDATE mcp_runtimes SET status='STOPPING',error=%s,updated_at=now()
-               WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
-                 AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (reason, server_id))
+
         scope = {"source": source, **evidence}
         if batch:
             scope["batch"] = batch
@@ -236,6 +291,7 @@ async def tick(opa_url):
             except Exception:
                 LOG.exception("Incident deadline check failed")
             await observed_alerts()
+            await endpoint_alerts()
             await contain_repeated()
             await self_test(opa_url)
         finally:

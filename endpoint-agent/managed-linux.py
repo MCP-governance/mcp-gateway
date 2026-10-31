@@ -45,7 +45,7 @@ TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
 # (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
-                 "offline_buffer.py", "local-runner.py", "kit_screen.py", "kit_access.py")
+                 "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py", "kit_screen.py", "kit_access.py")
 STATUS_SHIM = Path("/usr/local/bin/mint")
 OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")  # 10-28 이전 이름
 SHIM_MARK = "# mcpgw managed status"
@@ -134,7 +134,7 @@ def private_write(path, content):
         temporary.unlink(missing_ok=True)
 
 
-def request(config, path, body=None, *, credential=True):
+def request(config, path, body=None, *, credential=True, download=None, deadline=None):
     context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
@@ -146,7 +146,20 @@ def request(config, path, body=None, *, credential=True):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=context))
-    with opener.open(req, timeout=15) as response:
+    with opener.open(req, timeout=min(15, max(.001, deadline-time.monotonic())) if deadline is not None else 15) as response:
+        if download is not None:
+            total = 0
+            while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('소스 수신 기한이 지났습니다')
+                block = response.read(65536)
+                if not block:
+                    break
+                total += len(block)
+                if total > 128 << 20:
+                    raise ValueError('소스 크기 상한')
+                download.write(block)
+            return response.headers
         return json.loads(response.read(131072))
 
 
@@ -540,6 +553,10 @@ def install(args, prepared=None):
     for name in PROGRAM_FILES:
         private_write(PROGRAMS / name, (source / name).read_text())
         (PROGRAMS / name).chmod(0o755)
+    pip_archive = source / 'pip.zip'
+    if pip_archive.is_file():
+        (PROGRAMS / 'pip.zip').write_bytes(pip_archive.read_bytes())
+        (PROGRAMS / 'pip.zip').chmod(0o644)
     folder = STATE / args.user
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     folder.chmod(0o700)
@@ -757,6 +774,35 @@ def connection_cells(found, servers):
     first = (f"{found['initialized'][0]} 연결 정상" if found.get("initialized")
              else ("실패 · " + ", ".join(f"{k} {v}" for k, v in list(failed.items())[:2])) if failed else "승인 서버 없음")
     return [("도구", tools), ("서버 연결", first)]
+
+
+def mint_subcommand(access, argv):
+    user = pwd.getpwuid(os.getuid()).pw_name
+    path = status_path(user, "json")
+    if not path.exists():
+        found = sorted(PROGRAMS.glob("status-*.json"))
+        path = found[0] if len(found) == 1 else path
+    try:
+        summary = json.loads(path.read_text())
+    except (OSError, ValueError):
+        print("이 PC에는 관리형 연결의 상태가 없습니다")
+        return 1
+
+    def lines():
+        current = model_status(json.loads(path.read_text()))
+        names = current.get("names") or []
+        return [f"연결 상태: {'연결됨' if current.get('connected') else '연결 끊김'}",
+                f"관리 상태: {kit_screen.STATES.get(current.get('state'), current.get('state') or '—')}",
+                f"승인 서버: {len(names)}개" + (" · " + ", ".join(names) if names else ""),
+                f"게이트웨이: {current.get('gateway') or '—'}"]
+
+    def check():
+        try:
+            current = model_status(json.loads(path.read_text()))
+            return connection_cells(check_connection(current), len(current.get("names") or []))
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
+            return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
+    return access.mint_command(argv, summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source", lines, check)
 
 
 def status(args):
@@ -1092,16 +1138,25 @@ def serve(args):
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic",
-                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
+                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", []),
+                 "ENDPOINT_TOOL_EVENT_FILES": str(Path(pwd.getpwnam(config["username"]).pw_dir) / ".mcpgw" / "tool-events.jsonl")}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
     local = None
     if runner.exists():
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
+        source_root = Path('/var/lib/mcpgw-sources')
+        source_root.mkdir(mode=0o755, exist_ok=True)
+        # 승인 MCP는 직원 계정으로 돈다: 지나가기만 허용(목록은 숨김). 서비스 umask로 700이 되면 ImportError(PJ1 10-28).
+        source_root.chmod(0o711)
+        def source_protected(path):
+            return all(not p.is_symlink() and p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
+                       for p in [path, *path.parents])
+        runner_config={**config, "source_root":str(source_root), "source_protected":source_protected}
         local = load_module("local_runner", runner)
         # Separate threads: an image pull that takes minutes must not hold the job loop, and the reverse.
         for target in (local.run, local.prepare):
-            threading.Thread(target=target, daemon=True, args=(config, request, log)).start()
+            threading.Thread(target=target, daemon=True, args=(runner_config, request, log)).start()
 
     recent_blocks = []
 
@@ -1313,7 +1368,7 @@ def rollback(args):
         edit_environment(ca_environment(others[0]) if others else {})
     if not remaining:
         # 마지막 설치를 지우면 키트 사본도 남기지 않는다(bootstrap은 키트 폴더의 파일로 돌므로 재설치에 영향 없다).
-        for name in PROGRAM_FILES:
+        for name in (*PROGRAM_FILES, "pip.zip"):
             (PROGRAMS / name).unlink(missing_ok=True)
         shutil.rmtree(PROGRAMS / "__pycache__", ignore_errors=True)
         for folder_ in (PROGRAMS, ENFORCEMENT):
@@ -1373,6 +1428,9 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+    if len(sys.argv) > 2 and sys.argv[1] == "status" and sys.argv[2] in access.SUBCOMMANDS:
+        sys.exit(mint_subcommand(access, sys.argv[2:]))
     args, extra = parser.parse_known_args()
     if extra:
         # `mint <틀린 인자>`의 오류도 `mint` 사용법으로 보인다(내부 파일·명령 이름을 내보이지 않는다).

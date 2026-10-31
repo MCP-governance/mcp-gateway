@@ -74,28 +74,34 @@ class OneClickMarkers(lab.RegisterServerRoute):
 
     async def test_two_approver_flow_marks_each_click_and_the_final_record_by_the_finishing_administrator(self):
         for tier, reason in (("high", ""), ("very_high", lab.REASON)):
-            seen = {}
-            for mode, expected_first, expected_final in (("1", (True, True), (True, False)), (None, (False, False), (False, False))):
+            # D-306: with the mode on root would finish alone, so another administrator clicks first there.
+            for mode, first, second, expected_first, expected_final in (
+                    ("1", "tok-b", "tok-root", (True, False), (True, True)),
+                    (None, "tok-root", "tok-b", (False, False), (False, False))):
                 with self.subTest(tier=tier, mode=mode):
                     await self.run_mode(mode)
                     shown = await self.open_review(tier)
-                    self.assertIs((await self.click("tok-root", shown, reason))["pending"], True)
+                    self.assertIs((await self.click(first, shown, reason))["pending"], True)
                     (recorded,) = self.ledger.kinds("intake-one-click", "recorded")
                     self.assert_marks(recorded["scope"], expected_first, "1차 사건")
                     self.assertEqual(self.registered, [])
-                    await self.click("tok-b", shown, reason)
+                    await self.click(second, shown, reason)
                     (event,) = self.ledger.kinds("intake-one-click", "approved")
                     self.assert_marks(event["scope"], expected_final, "최종 사건")
                     record = self.ledger.intake()["evidence"]["risk_assessment"]
                     self.assert_marks(record, expected_final, "증거")
                     self.assert_marks(await self.registered_marks(), expected_final, "등록 서버")
-                    seen[mode] = (record["approvers"], len(self.registered))
-            # 표식은 기록값일 뿐이다: 모드가 켜져 있든 꺼져 있든 승인자와 완료 조건은 같다.
-            self.assertEqual(seen["1"], seen[None], tier)
-            self.assertEqual(seen["1"][0], ["tok-root", "tok-b"])
+                    self.assertEqual((record["approvers"], len(self.registered)), ([first, second], 1))
 
     async def test_solo_root_alone_still_waits_for_a_second_person_and_marks_do_not_count_as_one(self):
-        for mode in ("1", None):
+        # D-306: with the mode on, root carries the high tier out alone and the record says so.
+        await self.run_mode("1")
+        shown = await self.open_review("high")
+        await self.click("tok-root", shown)
+        self.assertEqual(len(self.registered), 1)
+        (event,) = self.ledger.kinds("intake-one-click", "approved")
+        self.assert_marks(event["scope"], (True, True), "단독 집행")
+        for mode in (None,):
             with self.subTest(mode=mode):
                 await self.run_mode(mode)
                 shown = await self.open_review("high")
@@ -132,6 +138,7 @@ class OneClickProvenance(lab.OneClickLab):
     async def open_repository(self, tier, envelope=None):
         """tier가 low(공개 자료·읽기) 또는 high(중요 자료·실행)인 저장소 신청의 검토 화면."""
         row = base.row("repository", grade="important" if tier == "high" else "public")
+        row["evidence"]["local_run"] = lab.source_run(row)
         if envelope is not None:
             row["provenance"]["verification"] = {"attestation": envelope}
         self.ledger.add_intake(row)
@@ -142,8 +149,8 @@ class OneClickProvenance(lab.OneClickLab):
         return shown
 
     async def finish(self, shown, tier):
-        """등급이 요구하는 만큼 서로 다른 관리자가 승인한다."""
-        for token in ("tok-root", "tok-b")[:2 if tier == "high" else 1]:
+        """등급이 요구하는 만큼 서로 다른 관리자가 승인한다(단독 모드의 root는 혼자 끝낸다, D-306)."""
+        for token in ("tok-root", "tok-b")[:2 if tier == "high" and not self.forced else 1]:
             await self.click(token, shown)
 
     def assert_nothing_went_out(self):

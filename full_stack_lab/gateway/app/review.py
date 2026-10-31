@@ -73,6 +73,12 @@ async def require_independent(kind: str, target_kind: str, target_id: Any, actor
         same = actor_user == applicant_user
     else:
         same = await same_person(actor, applicant, connection=connection)
+    if same and solo_mode_enabled() and await is_root(actor, connection=connection):
+        # root is the top administrator of a single-operator deployment: it may carry out what it asked for itself.
+        # The ledger says so in its own words instead of counting it as an independent approval.
+        await record_event(kind, "forced", target_kind, target_id, actor, applicant=applicant,
+                           reason="root 강제 집행", scope=scope, connection=connection)
+        return
     if same:
         # A refused approval must remain visible after the caller rolls back.
         await record_event(kind, "refused", target_kind, target_id, actor, applicant=applicant,
@@ -86,6 +92,14 @@ SOLO_MODE_SETTING = "ROOT_SOLO_APPROVAL"  # the variable's name only; its value 
 def solo_mode_enabled() -> bool:
     """Whether this deployment is configured for a single root operator."""
     return os.getenv("ROOT_SOLO_APPROVAL") == "1"
+
+
+async def is_root(token: str | None, *, connection=None) -> bool:
+    if not token:
+        return False
+    row = await db.fetch_one("SELECT 1 AS found FROM principals WHERE token=%s AND user_id='root' AND role='admin' AND status='active'",
+                             (token,), connection=connection)
+    return bool(row)
 
 
 def solo_operator(user: dict) -> bool:

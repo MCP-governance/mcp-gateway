@@ -50,6 +50,9 @@ function build(admin = true, extra = {}) {
       if (value === undefined && url.startsWith("/gw/activity/analysis?")) value = { total: 0 };
       if (value === undefined && url.startsWith("/gw/activity?")) value = { rows: [], total: 0, cursor: 0 };
       if (value === undefined && url.startsWith("/gw/audit/events?")) value = { events: [], has_more: false };
+      if (value === undefined && url.startsWith("/gw/audit/alerts?")) value = { alerts: [], last_24h: 0 };
+      if (value === undefined && url.startsWith("/gw/endpoint/tool-events?")) value = { rows: [], total: 0 };
+      if (value === undefined && url === "/gw/endpoint/requests") value = { requests: [] };
       assert.notEqual(value, undefined, `unexpected request: ${url}`);
       if (value instanceof Error) throw value;
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => value };
@@ -125,7 +128,7 @@ test("직원에게 감사·동의 관리·공급망 탭과 관리자 조회를 �
 test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유지한다", async () => {
   const ui = build(true, { "/api/supply-chain/impact": { counts: { affected: 1, unaffected: 0, unknown: 0, no_data: 0 } } });
   const activity = await ui.ROUTES.activity("", "events", new URLSearchParams("t=events&principal=alice&before=12"));
-  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "events", "incidents", "siem"]);
+  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "events", "alerts", "tools", "incidents", "siem"]);
   assert.match(String(activity.html.tabs[2].body), /audit-verify[^]*audit-export/);
   assert.ok(ui.calls.includes("/gw/audit/events?principal=alice&before=12&limit=100"));
   let rendered = 0, live = 0;
@@ -135,7 +138,8 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.deepEqual(Array.from(approvals.html.tabs, (item) => item.key), ["queue", "unsent", "history", "consent"]);
   assert.match(String(approvals.html.tabs[3].body), /확인할 요청 없음[^]*동의 기록/);
   const servers = await ui.ROUTES.servers("", "shadow", new URLSearchParams());
-  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract", "items", "shadow", "vendor"]);
+  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "vendor", "shadow", "tools", "contract", "items"]);
+  assert.doesNotMatch(String(servers.html.tabs[1].body), /하네스 기능/);
   assert.doesNotMatch(String(servers.html.head), /통제 범위/);
   const people = await ui.ROUTES.people("", "devices");
   const devices = people.html.tabs.find((item) => item.key === "devices");

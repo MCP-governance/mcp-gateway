@@ -131,13 +131,30 @@ class ConnectionReuse(unittest.IsolatedAsyncioTestCase):
             pass
         record = AsyncMock()
         same_person = AsyncMock(return_value=True)
-        review = load('review.py', ['require_independent'], same_person=same_person, record_event=record, NotIndependent=NotIndependent)
+        review = load('review.py', ['require_independent'], same_person=same_person, record_event=record, NotIndependent=NotIndependent,
+                      solo_mode_enabled=lambda: False, is_root=AsyncMock(return_value=False))
         connection = object()
         with self.assertRaises(NotIndependent):
             await review.require_independent('approval', 'intake', 'id', 'alias-a', 'alias-b', connection=connection)
         self.assertIs(same_person.call_args.kwargs['connection'], connection)
         self.assertNotIn('connection', record.call_args.kwargs)
         self.assertEqual(record.call_args.args[1], 'refused')
+
+
+    async def test_root_forced_carry_out_is_recorded_in_the_callers_transaction(self):
+        class NotIndependent(PermissionError):
+            pass
+        record = AsyncMock()
+        review = load('review.py', ['require_independent'], same_person=AsyncMock(return_value=True), record_event=record,
+                      NotIndependent=NotIndependent, solo_mode_enabled=lambda: True, is_root=AsyncMock(return_value=True))
+        connection = object()
+        await review.require_independent('approval', 'intake', 'id', 'root', 'root', connection=connection)
+        self.assertEqual(record.call_args.args[1], 'forced')
+        self.assertIs(record.call_args.kwargs['connection'], connection)
+        review = load('review.py', ['require_independent'], same_person=AsyncMock(return_value=True), record_event=AsyncMock(),
+                      NotIndependent=NotIndependent, solo_mode_enabled=lambda: False, is_root=AsyncMock(return_value=True))
+        with self.assertRaises(NotIndependent):
+            await review.require_independent('approval', 'intake', 'id', 'root', 'root', connection=connection)
 
 
 class SessionExclusion(unittest.IsolatedAsyncioTestCase):
@@ -165,7 +182,7 @@ class SessionExclusion(unittest.IsolatedAsyncioTestCase):
         package.incidents = incidents
         work = AsyncMock(side_effect=work)
         module = load('ops_response.py', ['tick'], db=types.SimpleNamespace(pool=AsyncMock(return_value=types.SimpleNamespace(connection=connection))),
-                      observed_alerts=work, contain_repeated=AsyncMock(), self_test=AsyncMock(), LOG=Mock())
+                      observed_alerts=work, endpoint_alerts=AsyncMock(), contain_repeated=AsyncMock(), self_test=AsyncMock(), LOG=Mock())
         with patch.dict(sys.modules, {'app': package, 'app.incidents': incidents}):
             try:
                 await module.tick('opa')
@@ -231,7 +248,7 @@ class ApprovalOrdering(unittest.IsolatedAsyncioTestCase):
             solo_mode_enabled=lambda: False, solo_operator=lambda _: False, same_person=AsyncMock(return_value=False),
             transition=transition, record_event=AsyncMock(), RISK_ACCEPTANCE_MIN_REASON=10)
         model = lambda **values: types.SimpleNamespace(model_dump=lambda: values)
-        module = load('agent_service.py', ['approve_and_register'], INTAKE_APPROVAL_LOCK=asyncio.Lock(),
+        module = load('agent_service.py', ['approve_and_register', 'local_discover_timeout'], INTAKE_APPROVAL_LOCK=asyncio.Lock(),
             db=types.SimpleNamespace(transaction=transaction), approval_row=AsyncMock(return_value=row),
             intake_proposal=types.SimpleNamespace(digest=lambda _: 'digest', basis=lambda _: 'basis', scan_basis=lambda _: 'scan'),
             datetime=datetime, timedelta=timedelta, UTC=timezone.utc, review=review,

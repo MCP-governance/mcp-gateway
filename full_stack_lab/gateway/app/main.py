@@ -570,6 +570,7 @@ async def _compute_overview() -> dict:
                           WHERE status IN ('HOLD','VALIDATED','REMOTE_REVIEWED','FAILED')
                              OR (status='APPROVED' AND registered_server_id IS NULL)""")
     cases = await decommission.summary(db.admin_fetch_all, db.admin_fetch_one)
+    endpoint_requests = await db.admin_fetch_one("SELECT count(*) AS n FROM endpoint_mcp_requests WHERE status='OPEN'")
     # Charts: calls per hour by decision, and who called what (harness -> server -> decision).
     series = await db.admin_fetch_all(f"""SELECT date_trunc('hour', created_at) AS hour, decision, count(*) AS n FROM decisions d
                           WHERE created_at > now() - interval '24 hours' AND {decommission.REAL_CALL}
@@ -607,7 +608,7 @@ async def _compute_overview() -> dict:
         "today_since": datetime.now(ZoneInfo("Asia/Seoul")).replace(hour=0, minute=0, second=0, microsecond=0).isoformat(),
         "servers": per_server, "workstations": stations, "top_policies": alerts,
         "pending_approvals": int(approvals["n"] or 0),
-        "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
+        "intake_actions": int(intake_actions["n"] or 0), "endpoint_requests": int(endpoint_requests["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
         "enforcement": await enforcement_mode(db.admin_fetch_one), "catalog_version": registry.catalog_version(),
     }
@@ -688,12 +689,12 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
                         execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
                         endpoint: str | None = None, policy: str | None = None,
                         since: datetime | None = None, until: datetime | None = None,
-                        page: int = 1, q: str | None = None,
+                        page: int = 1, q: str | None = None, decision_id: int | None = None,
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.recent(after, limit, own, decision, server, person, event_kind, execution,
-                                 endpoint, policy, since, until, page, q)
+                                 endpoint, policy, since, until, page, q, decision_id)
 
 
 @app.get("/api/activity/analysis")
@@ -1118,6 +1119,17 @@ async def audit_siem(user: dict = Depends(admin_caller)) -> dict:
     return await siem.status()
 
 
+@app.get("/api/audit/alerts")
+async def audit_alerts(limit: int = Query(100, ge=1, le=500), user: dict = Depends(admin_caller)) -> dict:
+    # 운영 경보는 SIEM으로만 나가면 콘솔 사용자가 볼 곳이 없다. 엔드포인트 경보에는 화면에 쓸 호스트 이름을 붙인다.
+    rows = await db.fetch_all(
+        """SELECT a.id, a.kind, a.origin, a.created_at, a.evidence, s.display_name AS server_name
+             FROM ops_alerts a LEFT JOIN mcp_servers s ON s.id = a.evidence->>'server_id'
+            WHERE NOT a.synthetic ORDER BY a.id DESC LIMIT %s""", (limit,))
+    day = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts WHERE NOT synthetic AND created_at > now() - interval '24 hours'")
+    return {"alerts": rows, "last_24h": int(day["n"] or 0)}
+
+
 @app.get("/api/audit/events/{event_id}")
 async def audit_event(event_id: int, user: dict = Depends(admin_caller)) -> dict:
     return await audit.detail(event_id)
@@ -1479,6 +1491,24 @@ class EndpointOSEvent(StrictModel):
     provenance: Provenance | None = None
 
 
+class EndpointToolEvent(StrictModel):
+    event_id: str = Field(min_length=10, max_length=80)
+    called_at: datetime
+    harness: Literal["claude", "codex"]
+    account: str = Field(default="", max_length=120)
+    server: str = Field(min_length=1, max_length=200)
+    tool: str = Field(min_length=1, max_length=200)
+    input_bytes: int = Field(default=0, ge=0)
+    input_sha256: str = Field(default="", max_length=64)
+    output_bytes: int = Field(default=0, ge=0)
+    failed: bool = False
+
+
+class EndpointToolReport(StrictModel):
+    endpoint_id: str = Field(min_length=3, max_length=120)
+    events: list[EndpointToolEvent] = Field(max_length=500)
+
+
 class EndpointOSReport(StrictModel):
     endpoint_id: str = Field(min_length=3, max_length=120)
     events: list[EndpointOSEvent] = Field(max_length=100)
@@ -1762,6 +1792,14 @@ async def endpoint_local_manifests(device: dict = Depends(endpoint_device("enfor
         raise HTTPException(409, str(exc)) from exc
 
 
+@app.get("/api/endpoint/local-sources/{server_id}")
+async def endpoint_local_source(server_id: str, manifest: str,
+                                lock: str | None = None,
+                                device: dict = Depends(endpoint_device("enforcement"))):
+    from . import local_sources
+    return await local_sources.download(device, server_id, manifest, lock)
+
+
 @app.get("/api/endpoint/local-jobs/{job_id}/control")
 async def endpoint_local_control(job_id: UUID, device: dict = Depends(endpoint_device("enforcement"))) -> dict:
     try:
@@ -1949,6 +1987,49 @@ async def endpoint_inventory_entries(classification: ClassQuery = None, cursor: 
 async def endpoint_inventory_listeners(classification: ClassQuery = None, cursor: CursorQuery = None,
                                        limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
     return await endpoint_plane.listeners_page(classification, limit, cursor)
+
+
+@app.post("/api/endpoint/tool-events")
+async def endpoint_tool_report(request: EndpointToolReport,
+                               device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    if request.endpoint_id != device["endpoint_id"]:
+        raise HTTPException(403, "장치 자격과 다른 엔드포인트의 보고는 받지 않습니다.")
+    return await endpoint_plane.ingest_tool_events(request.endpoint_id, [e.model_dump() for e in request.events])
+
+
+class EndpointSelfRequest(StrictModel):
+    server: str = Field(min_length=1, max_length=120)
+    source_url: str = Field(default="", max_length=300, pattern=r"^(https://\S+)?$")
+    purpose: str = Field(min_length=10, max_length=1000)
+
+
+@app.get("/api/endpoint/self")
+async def endpoint_self(limit: int = Query(50, ge=1, le=200), device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    return await endpoint_plane.self_summary(device, limit)
+
+
+@app.post("/api/endpoint/self/requests", status_code=201)
+async def endpoint_self_request(request: EndpointSelfRequest, device: dict = Depends(endpoint_device("inventory"))) -> dict:
+    return await endpoint_plane.self_request(device, request.server, request.source_url, request.purpose)
+
+
+@app.get("/api/endpoint/requests")
+async def endpoint_requests(status: Literal["OPEN", "CLOSED"] = "OPEN", user: dict = Depends(admin_caller)) -> dict:
+    return {"requests": await endpoint_plane.endpoint_requests(status)}
+
+
+@app.post("/api/endpoint/requests/{request_id}/close")
+async def endpoint_request_close(request_id: uuid.UUID, user: dict = Depends(admin_caller)) -> dict:
+    if not await endpoint_plane.close_endpoint_request(str(request_id), user["principal"]):
+        raise HTTPException(404, "열린 요청이 아닙니다.")
+    return {"closed": True}
+
+
+@app.get("/api/endpoint/tool-events")
+async def endpoint_tool_events(path: Literal["gateway", "connector", "local"] | None = None,
+                               cursor: CursorQuery = None, limit: LimitQuery = 100,
+                               user: dict = Depends(admin_caller)) -> dict:
+    return await endpoint_plane.tool_events_page(path, limit, cursor)
 
 
 @app.get("/api/endpoint/inventory/os-events")
