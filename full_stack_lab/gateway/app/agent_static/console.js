@@ -402,7 +402,7 @@ const head = (title, { status = "", actions = "", back = "" } = {}) => html`<div
   ${back}<div class="heading"><h1>${title}</h1>${status ? html`<div class="status">${status}</div>` : ""}</div>
   ${actions ? html`<div class="actions">${actions}</div>` : ""}</div>`;
 // A zero is not news: it stays in ink colour, and only a count that needs attention takes the decision colour.
-const kpiStrip = (items, variant = "") => html`<div class="kpis kpis-${items.length} ${variant}">${items.map(([label, value, tone = "", href = ""]) => [label, value,
+const kpiStrip = (items, variant = "compact") => html`<div class="kpis kpis-${items.length} ${variant}">${items.map(([label, value, tone = "", href = ""]) => [label, value,
   value === 0 || value === "0" ? "" : tone, href]).map(([label, value, tone, href]) => href
   ? html`<a class="kpi ${tone}" href="${href}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></a>`
   : html`<div class="kpi ${tone}"><div class="label">${label}</div><div class="value">${value ?? 0}</div></div>`)}</div>`;
@@ -732,7 +732,7 @@ ROUTES.overview = async (_, tab) => {
         ["실행 미확인", x.unknown, "alert", `#/activity?${todayFilter}&execution=unknown`],
         ["24시간 경보", alertData.last_24h, "block", "#/activity?t=alerts"],
         ["미등록 MCP 엔드포인트", shadowStations, "block", "#/servers?t=shadow"],
-        ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]], "compact"),
+        ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]]),
       active: tab || "summary",
       tabs: [
         { key: "summary", label: "요약", body: html`<div class="stack">

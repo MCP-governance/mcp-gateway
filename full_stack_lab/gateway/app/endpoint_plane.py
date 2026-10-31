@@ -947,6 +947,9 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             "requirements.toml": ('allowed_web_search_modes = ["disabled"]\n' if "web_search" in off else "")
                         + ("allow_browser_and_computer_use = false\n" if {"browser_use", "computer_use"} <= off else "")
                         + 'allow_managed_hooks_only = true\n'
+                        # An absent table leaves Codex unconstrained; present but empty disables every MCP server
+                        # (learn.chatgpt.com managed configuration). A device with no approved server gets the empty table.
+                        + '\n[mcp_servers]\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
                         + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
                         + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps,
