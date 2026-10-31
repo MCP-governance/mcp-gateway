@@ -92,6 +92,19 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 프록시 이전에 설치한 장치는 그대로 동작하지만 모델에 닿지 않습니다. 자격 폐기 → 롤백 → 새 키트로 재설치합니다.
 같은 직원이 같은 PC에 키트를 다시 설치하면(업데이트) 직전 활성 장치를 대체하고 활성화를 이어받습니다(D-217). 격리되거나 중지된 장치는 이어받지 않고 다른 PC는 새 활성화가 필요합니다.
 직원은 `mint`로 장치 상태·게이트웨이 연결·마지막 보고·승인 서버 수·로컬 MCP 준비(n/m)·직원 문서 폴더·키트 판본을 봅니다(제한된 계정은 `cat /usr/local/lib/mcpgw-managed/status-<계정>.txt`). 활성화 대기 중에는 하네스의 401 줄에 대기 사유가 나옵니다.
+같은 기능을 하위 명령과 로컬 화면이 함께 갖습니다(Windows·Linux·macOS 공통, D-302).
+
+| 명령 | 하는 일 |
+| --- | --- |
+| `mint servers` | 이 PC의 승인 MCP 서버·커넥터·하네스 기능·미등록 MCP |
+| `mint logs [-n 30]` | 이 PC의 MCP 호출 기록(중앙 원장 기준)과 전송 대기 건수 |
+| `mint request <이름> [--source https://…] [--purpose …]` | 미등록 MCP 도입 요청 → 콘솔 「도입 신청 > 엔드포인트 요청」 |
+| `mint login claude\|codex` | 하네스 모델 로그인 |
+| `mint ui` | 위 기능을 `127.0.0.1` 임시 포트의 화면으로 연다(경로 토큰, 30분 유휴 시 종료) |
+
+명령과 화면은 `kit_access.py`의 한 명령 표를 쓰고, 장치 키는 서비스만 가진다. 직원 계정은 서비스의 로컬 통로(Windows 파이프·Linux 소켓, 그 계정만 접근)로
+`/api/endpoint/self`·`/api/endpoint/self/requests`만 부른다.
+
 관리 계정의 하네스 모델 로그인은 직원이 한 번 합니다. 설치 끝에 `codex login --device-auth`와 `claude auth login`을
 안내하고(Ctrl+C로 건너뜀), 건너뛰면 첫 실행 때 하네스가 묻습니다.
 
