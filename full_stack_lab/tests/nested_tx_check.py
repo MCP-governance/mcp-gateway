@@ -170,7 +170,10 @@ class Check:
             if module == 'db':
                 continue
             params = function.args.posonlyargs + function.args.args + function.args.kwonlyargs
-            bound = frozenset(p.arg for p in params if p.arg in CONNECTIONS)
+            # A URL query's lock: str is a platform selector, not a held DB connection.
+            bound = frozenset(p.arg for p in params if p.arg in CONNECTIONS
+                              and (p.annotation is None or ast.unparse(p.annotation) not in
+                                   {'str', 'str | None', 'int', 'int | None', 'bool', 'bytes'}))
             if bound:
                 for path in self.effects(key, bound):
                     found.add((key, function.lineno, path))
@@ -220,6 +223,8 @@ def self_test():
         ("async def g(connection):\n await db.fetch_one('x', connection=connection)\nasync def f():\n async with db.transaction() as snapshot:\n  await g(snapshot)\n", False),
         ("async def h():\n await db.fetch_one('x')\nasync def g():\n await h()\nasync def f():\n async with db.transaction() as c:\n  await g()\n", True),
         ("async def page(cursor=None):\n return await db.fetch_all('x')\n", False),
+        ("async def download(lock: str | None = None):\n await db.fetch_one('x')\n", False),
+        ("async def download(lock: str | None = None):\n async with db.transaction() as c:\n  await db.fetch_one('x')\n", True),
     ]
     for source, expected in fixtures:
         assert bool(Check({'sample': source}).violations()) == expected, source

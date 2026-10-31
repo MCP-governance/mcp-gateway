@@ -25,12 +25,14 @@ MCP, LLM, CTL, INT, OBS = "#E8A600", "#B0367C", "#3B7DD8", "#8A94A3", "#7B3FA0"
 C_EMP, C_ADM, C_NET, C_SOL, C_EXT, C_ENT = "#EF7D22", "#C9962B", "#1E9E9A", "#2F6FD6", "#0F9D84", "#66727F"
 C_POL, C_SUP, C_OBS, C_DAT, C_GW, C_MOD = "#D93A3A", "#5E9E2F", "#7B3FA0", "#2E4A6B", "#2F6FD6", "#B0367C"
 TEAL = "#1E9E9A"
+STEP = 165  # 공급망 검증 단계 간격
+GITEA_X = 960 + 4 * STEP
 
 # 상태 표지: 키 → (한국어, 영어, 색)
 STATUS = {"test": ("시험", "Pilot", "#7B3FA0"), "int": ("연동 시험", "Integration pilot", "#7B3FA0"),
           "off": ("기본 꺼짐", "Off by default", "#8A94A3"), "unset": ("미설정", "Not configured", "#C0392B"),
           "os": ("Windows·macOS 시험", "Windows/macOS pilot", "#7B3FA0"),
-          "iso": ("격리 모드", "Isolated mode", "#8A94A3")}
+          "iso": ("격리 모드", "Isolated mode", "#8A94A3"), "dev": ("구현 중", "In progress", "#C0392B")}
 VENDOR = "#0F9D84"  # 기본 기능·계정 커넥터: 게이트웨이 밖 벤더 직접(관리형 설정으로 차단)
 
 
@@ -54,17 +56,16 @@ def build(lang="ko"):
     # ── 영역: 왼쪽에서 오른쪽으로 요청이 지나는 순서 ─────────────────────────
     z("emp", 20, 80, 330, 790, T("직원 PC", "Employee PC"), C_EMP, icon_key="flat-laptop", note=T("엔드포인트", "endpoint"))
     z("usr", 40, 122, 290, 118, T("사용자 계정", "User account"), C_EMP, sub=True, lab_at="tl")
-    z("kit", 40, 258, 290, 596, T("엔드포인트 키트 · 간편 모드(기본)", "Endpoint kit · simple mode (default)"), C_EMP, sub=True, lab_at="tl")
+    z("kit", 40, 258, 290, 600, T("엔드포인트 키트 · 간편 모드(기본)", "Endpoint kit · simple mode (default)"), C_EMP, sub=True, lab_at="tl")
     z("hn", 50, 290, 270, 222, T("하네스 (AI 코딩 에이전트)", "Harness (AI coding agents)"), C_EMP, sub=True, lab_at="tl")
-    z("loc", 50, 662, 270, 180, T("로컬 MCP 격리 실행", "Local MCP isolation"), C_EMP, sub=True, lab_at="tl")
+    z("loc", 50, 648, 270, 204, T("승인 MCP 실행 (엔드포인트)", "Approved MCPs (endpoint)"), C_EMP, sub=True, lab_at="tl")
     z("adm", 20, 890, 330, 160, T("관리자 PC", "Admin PC"), C_ADM, icon_key="flat-desktop")
     z("net", 370, 80, 90, 970, T("사설망", "Network"), C_NET)
     z("sol", 480, 80, 1250, 970, T("MINT 솔루션", "MINT solution"), C_SOL, icon_key="flat-server", lab_at="l")
     z("prx", 495, 300, 110, 98, T("모델 프록시", "Model proxy"), C_MOD, sub=True, lab_at="tl")
     z("ing", 495, 442, 110, 588, T("진입", "Ingress"), C_GW, sub=True, lab_at="tl")
     z("con", 630, 280, 240, 140, T("관리 콘솔·인증", "Console · sign-in"), C_DAT, sub=True, lab_at="tl")
-    z("sup", 890, 280, 440, 140, T("공급망 검증", "Supply-chain review"), C_SUP, sub=True, lab_at="tl")
-    z("run", 1350, 280, 370, 140, T("승인 후 격리 실행 (솔루션)", "Approved runtime (solution)"), C_SUP, sub=True, lab_at="tl")
+    z("sup", 890, 280, 830, 140, T("공급망 검증", "Supply-chain review"), C_SUP, sub=True, lab_at="tl")
     z("gw", 630, 435, 260, 335, T("호출 중계", "Call relay"), C_GW, sub=True, lab_at="tl")
     z("pol", 910, 435, 505, 285, T("입력 검사 · 정책 판정", "Input checks · policy decision"), C_POL, sub=True, lab_at="tl")
     z("led", 630, 800, 260, 150, T("관리 DB·감사 원장", "Admin DB · audit ledger"), C_DAT, sub=True, lab_at="tl")
@@ -80,21 +81,23 @@ def build(lang="ko"):
 
     # ── 직원 PC: 사용자 계정이 위, 키트가 관리하는 관리 계정이 아래 ─────────────
     n("employee", T("직원", "Employee"), "", "flat-employee", 110, 175, 40)
-    n("webcon_e", T("웹 콘솔", "Web console"), T("도입 신청·동의", "Requests · consent"), "flat-web", 250, 175, 40)
+    n("webcon_e", T("브라우저", "Browser"), T("도입 신청·동의", "Requests · consent"), "flat-web", 250, 175, 40)
     n("claude", "Claude Code", "", "logo-claude", 110, 345, 46)
     n("codex", "Codex CLI", "", "logo-codex", 250, 345, 46)
     n("gemini", "Gemini CLI", "", "logo-gemini", 110, 440, 46, "test")
     n("opencode", "OpenCode", "", "logo-opencode", 250, 440, 46, "test")
-    n("apparmor", "AppArmor", T("실행·파일 제한", "Exec & file limits"), "logo-apparmor", 85, 572, 40, "iso")
-    n("nft", "nftables", T("통신 경로 강제", "Forces net path"), "logo-nftables", 175, 572, 40, "iso")
-    n("epprog", T("엔드포인트\n프로그램", "Endpoint\nagent"), T("로그인·관리형 설정·상태", "Sign-in · settings · status"), "logo-ubuntu", 268, 572, 40, "os",
+    n("apparmor", "AppArmor", T("실행·파일 제한", "Exec & file limits"), "logo-apparmor", 85, 552, 40, "iso")
+    n("nft", "nftables", T("통신 경로 강제", "Forces net path"), "logo-nftables", 175, 552, 40, "iso")
+    n("epprog", T("엔드포인트\n프로그램", "Endpoint\nagent"), T("로그인·관리형 설정·상태", "Sign-in · settings · status"), "logo-ubuntu", 268, 552, 40, "os",
       icon2="logo-windows11")
-    n("lrunner", T("로컬 실행기", "Local runner"), T("서명 확인·기동", "Verify · launch"), "flat-container", 95, 725, 38)
-    n("ldocker", "Docker", T("컨테이너 격리", "Container isolation"), "logo-docker", 185, 725, 38)
-    n("lmcp", T("공식 MCP", "Official MCPs"), T("filesystem 등", "filesystem…"), "logo-mcp", 272, 725, 38)
+    n("lrunner", T("로컬 실행기", "Local runner"), T("서명·해시 확인\n호출마다 기동", "Verify · per-call"), "flat-container", 92, 736, 38)
+    n("ldocker", "Docker", T("컨테이너 격리", "Containers"), "logo-docker", 185, 694, 32)
+    n("lmcp", T("공식 MCP", "Official MCPs"), T("filesystem 등", "filesystem…"), "logo-mcp", 272, 694, 32)
+    n("lproc", T("stdio 프로세스", "stdio process"), T("Docker 없이", "No Docker"), "flat-terminal", 185, 778, 32, "dev")
+    n("markitdown", "MarkItDown", T("승인 소스 MCP", "Approved source"), "logo-markitdown", 272, 778, 32, "dev")
     n("admin", T("보안 관리자", "Security admin"), "", "flat-admin", 110, 965, 44)
-    n("webcon_a", T("웹 콘솔", "Web console"), T("승인·현황", "Approve · monitor"), "flat-web", 250, 965, 44)
-    n("tail", "Tailscale", T("WireGuard\n사설망", "WireGuard\nnetwork"), "logo-tailscale", 405, 650, 44)
+    n("webcon_a", T("브라우저", "Browser"), T("승인·현황", "Approve · monitor"), "flat-web", 250, 965, 44)
+    n("tail", "Tailscale", T("WireGuard\n사설망", "WireGuard\nnetwork"), "logo-tailscale", 405, 845, 44)
 
     # ── 솔루션 ─────────────────────────────────────────────────────────
     n("proxy", "tinyproxy", T("모델 목적지 제한", "Model host allow-list"), "flat-proxy", 550, 348, 36)
@@ -107,11 +110,7 @@ def build(lang="ko"):
             ("trivy", "Trivy", T("취약점 검사", "Vuln scan"), "logo-trivy"),
             ("semgrep", "Semgrep", T("코드 검사", "Code scan"), "logo-semgrep"),
             ("gitea", "Gitea", T("내부 저장소\n콘솔·키트로만", "Internal Git\nconsole & kit only"), "logo-gitea")]):
-        n(k, lab, pur, ic, 940 + i * 87, 320, 38)
-    n("runner", T("MCP 실행기", "MCP runner"), T("승인 서버 기동", "Runs approved"), "flat-container", 1398, 320, 38)
-    n("docker", "Docker", T("컨테이너 엔진", "Containers"), "logo-docker", 1482, 320, 38)
-    n("markitdown", "MarkItDown", T("문서 변환 MCP", "Doc conversion"), "logo-markitdown", 1566, 320, 38)
-    n("egress", T("출구 프록시", "Egress proxy"), T("외부 통신 제한", "Egress allow-list"), "flat-proxy", 1660, 320, 38)
+        n(k, lab, pur, ic, 960 + i * STEP, 320, 40)
     n("core", T("요청 처리·중계", "Decide · relay"), "", "flat-gear", 760, 470, 54)
     n("fastapi", "FastAPI", T("웹 API", "Web API"), "logo-fastapi", 678, 640, 38)
     n("mcpsdk", "MCP SDK", T("MCP 프로토콜", "MCP protocol"), "logo-mcp", 762, 640, 38)
@@ -143,11 +142,11 @@ def build(lang="ko"):
     # 직원 PC ⇄ 솔루션: 사설망을 지나 진입(Caddy)으로
     e("mcp_pc", [(320, 470), (733, 470)], MCP, 4, T("MCP 요청 ⇄ 응답", "MCP ⇄"), (400, 454), src="hn", dst="core", both=True)
     e("model_pc", [(320, 345), (495, 345)], LLM, 3, T("모델 요청 ⇄ 응답", "Model ⇄"), (408, 329), src="hn", dst="prx", both=True)
-    e("kit_pc", [(330, 572), (630, 572)], CTL, 2.5, T("정책 ⇄ 장치 보고 · 승인 소스", "Policy ⇄ report · approved source"), (418, 556), src="kit", dst="gw", both=True)
-    e("loc_pc", [(320, 750), (630, 750)], MCP, 3, T("실행 작업 ⇄ 결과", "Job ⇄ result"), (400, 734), src="loc", dst="gw", both=True)
+    e("kit_pc", [(330, 552), (630, 552)], CTL, 2.5, T("정책 ⇄ 장치 보고", "Policy ⇄ device report"), (418, 536), src="kit", dst="gw", both=True)
+    e("loc_pc", [(320, 736), (630, 736)], MCP, 3, T("실행 작업 ⇄ 결과", "Job ⇄ result"), (400, 754), src="loc", dst="gw", both=True)
     e("web_e", [(330, 175), (448, 175), (448, 430)], CTL, 3, src="usr", both=False, arrow=False)
     e("web_a", [(350, 965), (448, 965), (448, 430)], CTL, 3, src="adm", arrow=False)
-    e("web_in", [(448, 430), (617, 430), (617, 395), (630, 395)], CTL, 3, T("웹 콘솔", "Web console"), (471, 414), dst="con", both=True)
+    e("web_in", [(448, 430), (617, 430), (617, 395), (630, 395)], CTL, 3, T("콘솔 접속 (HTTPS)", "Console (HTTPS)"), (480, 414), dst="con", both=True)
     s.dots.append((448, 430, CTL))
     # 진입(Caddy) → 관리 콘솔 / 호출 중계
     # 모델 프록시 ⇄ LLM 제공자(현재 직접), 연동 시 LiteLLM 경유
@@ -168,18 +167,18 @@ def build(lang="ko"):
     # 도입 → 검증 → 승인 → 격리 실행
     e("p_con", [(870, 320), (890, 320)], CTL, 2.5, src="con", dst="sup")
     for i, (a, b) in enumerate([("intake", "syft"), ("syft", "trivy"), ("trivy", "semgrep"), ("semgrep", "gitea")]):
-        x0 = 940 + i * 87
-        e(f"pipe{i}", [(x0 + 22, 320), (x0 + 87 - 22, 320)], MCP, 2, src=a, dst=b)
-    e("p_run", [(1330, 320), (1350, 320)], MCP, 2.5, src="sup", dst="run")
+        x0 = 960 + i * STEP
+        e(f"pipe{i}", [(x0 + 24, 320), (x0 + STEP - 24, 320)], MCP, 2, src=a, dst=b)
     # 호출 중계 ⇄ 검사·판정 ⇄ MCP 서버(직원 토큰은 넘기지 않음)
+    # 승인 소스: 엔드포인트 키트가 장치 인증으로 Gitea의 승인 커밋을 받는다(직원 계정은 Gitea에 직접 닿지 않음)
+    e("src_pc", [(GITEA_X, 388), (GITEA_X, 428), (620, 428), (620, 664), (320, 664)], C_SUP, 2.5,
+      T("승인 소스 받기 · 장치 인증", "Approved source · device auth"), (400, 680), src="gitea", dst="loc", both=True)
     e("lane", [(787, 470), (2015, 470)], MCP, 4, T("MCP 요청 ⇄ 응답 · 직원 토큰 미전달", "MCP request ⇄ response · no employee token"),
       (1640, 454), src="core", dst="mcps", both=True)
     for k, x in (("presidio", 985), ("gitleaks", 1110), ("opa", 1365)):
         e(f"chk_{k}", [(x, 470), (x, 590 - s.nodes[k]["size"] / 2 - 3)], CTL, 2.5, src=None, dst=k, both=True)
         s.dots.append((x, 470, CTL))
     e("rule", [(1262, 590), (1339, 590)], C_POL, 2.5, src="rules", dst="opa")
-    e("lane_run", [(1450, 470), (1450, 420)], MCP, 3, "", None, dst="run", both=True)
-    s.dots.append((1450, 470, MCP))
     # 원장·추적·전달
     e("db", [(760, 770), (760, 800)], CTL, 2.5, T("판정 기록 ⇄ 조회", "Record ⇄ read"), (830, 785), src="gw", dst="led", both=True)
     e("con_db", [(870, 395), (900, 395), (900, 875), (890, 875)], CTL, 2.5, T("가입·신청 저장", "Requests"), (900, 742),
@@ -200,8 +199,8 @@ def roles(lang):
     T = (lambda ko, en: ko) if lang == "ko" else (lambda ko, en: en)
     return [
         ("A", T("직원 PC", "Employee PC"), (14, 74, 342, 802),
-         T("키트는 MINT 계정으로 로그인해 설치되고(간편 모드: 직원 계정·하네스 그대로), 관리형 설정으로 하네스가 승인 MCP만 게이트웨이로 쓰게 한다. mint 명령·트레이로 상태를 보고, 승인 MCP 소스도 키트로 받는다. 격리 모드는 AppArmor·nftables를 더한다. 승인된 로컬 MCP는 서명 확인 뒤 Docker 격리로 띄운다.",
-           "The kit installs after a MINT sign-in (simple mode keeps the employee's account and harness) and uses managed settings so harnesses reach approved MCPs only through the gateway. Status shows in `mint` and the tray; approved MCP sources download through the kit. Isolated mode adds AppArmor and nftables. Approved local MCPs start in Docker isolation after a signature check.")),
+         T("키트는 MINT 계정으로 로그인해 설치되고(간편 모드: 직원 계정·하네스 그대로), 관리형 설정으로 하네스가 승인 MCP만 게이트웨이로 쓰게 한다. mint 명령·트레이로 상태를 보고, 격리 모드는 AppArmor·nftables를 더한다. 승인 MCP는 직원 PC의 로컬 실행기가 서명·해시를 확인한 뒤 호출마다 띄운다: 공식 이미지는 Docker 격리, 승인 소스 stdio MCP는 Docker 없이 프로세스로.",
+           "The kit installs after a MINT sign-in (simple mode keeps the employee's account and harness) and uses managed settings so harnesses reach approved MCPs only through the gateway. Status shows in `mint` and the tray; isolated mode adds AppArmor and nftables. Approved MCPs run on the PC per call after signature and hash checks: official images in Docker, approved stdio sources as plain processes.")),
         ("B", T("관리자 PC", "Admin PC"), (14, 884, 342, 172),
          T("보안 관리자가 웹 콘솔로 도입 승인·도구 분류·계약 검토·장치 활성화·종료 판정을 하고, 하네스 기본 기능·계정 커넥터를 항목별로 차단한다.",
            "Security admins approve intakes, set tool classes, review contracts, activate devices, decide terminations and block harness built-in features or account connectors item by item.")),
@@ -214,9 +213,9 @@ def roles(lang):
         ("E", T("관리 콘솔·인증", "Console · sign-in"), (624, 274, 252, 152),
          T("가입·도입 신청·승인·동의를 처리한다. Authlib로 조직 로그인(OIDC)을 검증한다.",
            "Handles sign-up, intake, approval and consent; Authlib verifies org sign-in (OIDC).")),
-        ("F", T("공급망 검증 · 격리 실행", "Supply chain · runtime"), (884, 274, 842, 152),
-         T("신청한 소스를 반입해 Syft·Trivy·Semgrep으로 검사하고 Gitea에 보관한다(직원은 콘솔·키트로만 받는다). 승인된 서버만 솔루션의 격리 실행으로 띄우고 출구 프록시로 외부 통신을 제한한다.",
-           "Imported sources are scanned by Syft, Trivy and Semgrep and stored in Gitea. Only approved servers run in the solution's isolated runtime behind an egress proxy.")),
+        ("F", T("공급망 검증", "Supply chain"), (884, 274, 842, 152),
+         T("신청한 소스를 반입해 Syft·Trivy·Semgrep으로 검사하고 Gitea에 보관한다. 솔루션은 MCP를 실행하지 않는다. 승인된 판본만 서명해 직원 PC 키트로 내려보낸다.",
+           "Imported sources are scanned by Syft, Trivy and Semgrep and stored in Gitea. The solution runs no MCP itself; only approved, signed versions go down to the PC kit.")),
         ("G", T("호출 중계", "Call relay"), (624, 429, 272, 347),
          T("FastAPI·MCP SDK로 만든 게이트웨이가 모든 도구 호출을 받아 판정을 받은 뒤 MCP 서버로 중계하고 응답을 돌려준다. 직원 토큰은 넘기지 않는다.",
            "The FastAPI/MCP SDK gateway receives every tool call, gets a decision, relays to the MCP server and returns the response. Employee tokens are never forwarded.")),

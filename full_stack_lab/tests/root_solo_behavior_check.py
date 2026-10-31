@@ -23,6 +23,7 @@ from unittest.mock import AsyncMock, patch
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import intake_one_click_check as base  # noqa: E402  (행·카탈로그 상수만 빌려 쓴다)
+from intake_fixture import local_manifest_keys, source_run
 
 service, review, HTTPException = base.service, base.review, base.HTTPException
 if service is not None:
@@ -82,6 +83,8 @@ class FakeLedger:
 
     def run(self, sql, params=()):
         s = " ".join(sql.split())
+        if s.startswith("SELECT signature_generation FROM local_approvals"):
+            return None
         if s.startswith("INSERT INTO approval_events"):
             kind, outcome, target_kind, target_id, actor, applicant, reason, scope = params
             self.events.append({"id": len(self.events) + 1, "kind": kind, "outcome": outcome, "target_kind": target_kind,
@@ -197,6 +200,7 @@ class Lab(unittest.IsolatedAsyncioTestCase):
         environ.start()
         self.addCleanup(environ.stop)
         os.environ.pop("ROOT_SOLO_APPROVAL", None)
+        os.environ.update(local_manifest_keys())
         if env_mode is not None:
             os.environ["ROOT_SOLO_APPROVAL"] = env_mode
 
@@ -422,7 +426,10 @@ class OneClickLab(Lab):
             "high": ("remote-endpoint", "important", "Search public documentation"),
             "very_high": ("remote-endpoint", "public", "Search medical records"),
         }[tier]
-        self.ledger.add_intake(base.row(kind, grade=grade))
+        row = base.row(kind, grade=grade)
+        if kind == "repository":
+            row["evidence"]["local_run"] = source_run(row)
+        self.ledger.add_intake(row)
         self.ledger.tokens["employee"] = "employee"
         self.catalog["tools"][0]["description"] = description
         shown = await service.preview_intake_approval(REQUEST_ID, service.ApprovalPreview(), USERS["tok-root"], "tok-root")
@@ -544,6 +551,9 @@ class RegisterServerRoute(OneClickLab):
                     "protocol_version": self.catalog["protocol_version"], "tools": copy.deepcopy(self.upstream_tools)}
 
         for item in (patch.object(core.upstream, "discover", discover),
+                     patch.object(core.local_jobs, "applicant_device", AsyncMock(return_value="synthetic-device")),
+                     patch.object(core.local_jobs, "_device", AsyncMock(return_value={"local_uid": 1001})),
+                     patch.object(core.local_jobs, "approve_manifest", AsyncMock()),
                      patch.object(core.upstream, "release_pool", AsyncMock()),
                      patch.object(core.registry, "catalog", lambda: {}),
                      patch.object(core.registry, "reviewed_servers", lambda: {}),

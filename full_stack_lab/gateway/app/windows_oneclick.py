@@ -20,8 +20,8 @@ def launcher(archive: bytes, bootstrap: str) -> bytes:
         "& ([scriptblock]::Create($payload.bootstrap)) $context $payload.archive"
         "} catch { Add-Type -AssemblyName System.Windows.Forms;"
         "[void][Windows.Forms.MessageBox]::Show([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
-        + base64.b64encode('설치 실패 · 새 설치 파일 또는 조직 IT 확인 필요'.encode()).decode()
-        + "')),'MCP'); exit 1"
+        + base64.b64encode('설치 실패 · 콘솔에서 설치 파일을 다시 받아 실행하세요'.encode()).decode()
+        + "'))+[Environment]::NewLine+$_.Exception.Message,'MCP'); exit 1"
         "} finally { if ($stream) { $stream.Dispose() } }"
     )
     encoded_seed = base64.b64encode(seed.encode()).decode("ascii")

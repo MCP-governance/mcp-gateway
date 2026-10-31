@@ -27,6 +27,7 @@ from exit_terms import conclude, investigate, readme
 from provenance import tree_digest
 from supplier_metadata import collect as supplier_metadata
 from trivy_scan import database_time, trivy_counts
+from dependency_locks import generate as dependency_locks, verify_sbom
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mcp:demo-only-change-me@db:5432/mcp_governance")
 WORK_DIR = Path(os.getenv("INTAKE_WORK_DIR", "/work"))
@@ -36,7 +37,7 @@ POLL_SECONDS = int(os.getenv("INTAKE_POLL_SECONDS", "5"))
 CLONE_TIMEOUT = int(os.getenv("INTAKE_CLONE_TIMEOUT", "120"))
 SCAN_TIMEOUT = int(os.getenv("INTAKE_SCAN_TIMEOUT", "600"))
 MAX_CHECKOUT_MB = int(os.getenv("INTAKE_MAX_CHECKOUT_MB", "512"))
-VALIDATION_LEASE_SECONDS = CLONE_TIMEOUT + SCAN_TIMEOUT * 4 + 300
+VALIDATION_LEASE_SECONDS = CLONE_TIMEOUT + SCAN_TIMEOUT * 4 + 2700
 VALIDATION_MAX_ATTEMPTS = 3
 
 SEVERITY_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW")
@@ -196,8 +197,11 @@ def trivy_database() -> datetime | None:
         return None
 
 
-def repository_license(report: Path) -> dict | None:
-    """The licence files at the repository root, as Trivy's licence classifier names them."""
+def repository_license(report: Path, prefix: str = "") -> dict | None:
+    """The licence files at the repository root, as Trivy's licence classifier names them.
+
+    prefix: the checkout's folder inside the scan root when the scan also holds the locked wheels (source/).
+    """
     try:
         results = json.loads(report.read_text(encoding="utf-8")).get("Results") or []
     except (OSError, ValueError, AttributeError):
@@ -208,6 +212,10 @@ def repository_license(report: Path) -> dict | None:
             continue
         for item in result.get("Licenses") or []:
             path = str(item.get("FilePath") or "")
+            if prefix:
+                if not path.startswith(prefix):
+                    continue
+                path = path[len(prefix):]
             if item.get("Name") and not item.get("PkgName") and "/" not in path:
                 found.setdefault(str(item["Name"]), path)
     return {"spdx": " AND ".join(sorted(found)), "files": sorted(set(found.values())), "source": "trivy"} if found else None
@@ -220,9 +228,13 @@ def validate(connection, request: dict) -> None:
     checkout = WORK_DIR / request_id
     shutil.rmtree(checkout, ignore_errors=True)
     log(f"{request_id} 검증 시작: {url}")
-    commit = clone(url, checkout)
+    pinned = (request.get('evidence') or {}).get('revalidation_commit')
+    commit = clone(url, checkout, pinned)
     source_ref = f"intake:{owner_repo}@{commit[:12]}"
     artifact = {"applicable": True, "kind": "source-tree", **tree_digest(checkout)}
+    endpoint_source, scan_root = dependency_locks(checkout, request, commit, REPORT_DIR, run)
+    if endpoint_source:
+        endpoint_source['sha256'] = artifact['sha256']
     sbom = REPORT_DIR / f"intake-{request_id}-sbom.cdx.json"
     trivy = REPORT_DIR / f"intake-{request_id}-trivy.json"
     semgrep = REPORT_DIR / f"intake-{request_id}-semgrep.json"
@@ -237,6 +249,10 @@ def validate(connection, request: dict) -> None:
     terms_report.write_text(json.dumps(discovery, ensure_ascii=False, indent=2), encoding="utf-8")
     evidence = {"exit_terms_discovery": discovery, "exit_terms_conclusion": conclusion,
                 "reports": [terms_report.name], "scanners": {}}
+    if pinned:
+        evidence['revalidation_commit'] = pinned
+    if endpoint_source:
+        evidence['endpoint_source'] = endpoint_source
     # Persist source and investigation before long scanner runs. Failures must
     # not discard evidence already collected by successful stages.
     connection.execute(
@@ -245,10 +261,10 @@ def validate(connection, request: dict) -> None:
         (commit, source_ref, Jsonb(evidence), request["id"]))
     connection.commit()
     scans = {
-        "syft": (sbom, ["syft", f"dir:{checkout}", "--source-name", owner_repo,
+        "syft": (sbom, ["syft", f"dir:{scan_root}", "--source-name", owner_repo,
                         "--source-version", commit[:12], "-o", f"cyclonedx-json={sbom}"]),
         "trivy": (trivy, ["trivy", "fs", "--scanners", "vuln,misconfig,secret,license",
-                          "--license-full", "--format", "json", "--output", str(trivy), "--exit-code", "0", str(checkout)]),
+                          "--license-full", "--format", "json", "--output", str(trivy), "--exit-code", "0", str(scan_root)]),
         "semgrep": (semgrep, ["semgrep", "scan", "--config", str(RULES), "--json",
                               "--output", str(semgrep), "--metrics", "off", "--quiet", str(checkout)]),
         "gitleaks": (gitleaks, ["gitleaks", "dir", str(checkout), "--no-banner", "--redact=100", "--exit-code=0",
@@ -270,6 +286,8 @@ def validate(connection, request: dict) -> None:
             levels = {level: 0 for level in SEVERITY_ORDER}
             if name == "syft":
                 summary = sbom_inventory(path)
+                if endpoint_source:
+                    verify_sbom(path, endpoint_source, REPORT_DIR)
                 components = summary["components"]
             else:
                 document = json.loads(path.read_text(encoding="utf-8"))
@@ -309,7 +327,7 @@ def validate(connection, request: dict) -> None:
     connection.execute(
         "UPDATE mcp_intake_requests SET provenance=%s WHERE id=%s AND status='VALIDATING'",
         (Jsonb({"kind": "source", "source_url": url, "version": commit, "version_immutable": True,
-                "license": repository_license(trivy), "artifact": artifact,
+                "license": repository_license(trivy, "" if scan_root == checkout else "source/"), "artifact": artifact,
                 "supplier_metadata": supplier_metadata(checkout, url, commit),
                 "recorded_at": datetime.now(UTC).isoformat(timespec="seconds")}), request["id"]))
     note = (f"격리 검증 완료 · SBOM 구성요소 {components}개 · "
@@ -326,6 +344,7 @@ def validate(connection, request: dict) -> None:
            WHERE id=%s AND status='VALIDATING'""",
         (status, risk, note, commit, source_ref, Jsonb(evidence), bool(failures), request["id"]))
     shutil.rmtree(checkout, ignore_errors=True)
+    shutil.rmtree(checkout.parent / (checkout.name + '-dependencies'), ignore_errors=True)
     log(f"{request_id} -> {status} ({risk})")
 
 
@@ -346,7 +365,7 @@ def claim(connection) -> dict | None:
                   validation_lease_expires_at=now() + make_interval(secs => %s)
            WHERE id = (SELECT id FROM mcp_intake_requests WHERE status='VALIDATION_QUEUED'
                        ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-           RETURNING id, repository_url, display_name, requested_transport""", (VALIDATION_LEASE_SECONDS,))
+           RETURNING id, repository_url, repository_path, display_name, requested_transport, evidence""", (VALIDATION_LEASE_SECONDS,))
     return cursor.fetchone()
 
 
@@ -356,7 +375,9 @@ def reclaim_intake(connection) -> None:
         """UPDATE mcp_intake_requests
            SET status=CASE WHEN validation_attempts >= %s THEN 'FAILED' ELSE 'VALIDATION_QUEUED' END,
                validation_lease_expires_at=NULL, updated_at=now(),
-               commit_sha=NULL, source_ref=NULL, evidence='{}', validated_at=NULL,
+               commit_sha=NULL, source_ref=NULL,
+               evidence=jsonb_strip_nulls(jsonb_build_object('revalidation_commit',evidence->>'revalidation_commit')),
+               validated_at=NULL,
                risk_level='UNASSESSED', provenance='{}',
                review_note='검증 워커 lease가 만료되었습니다. 자동 재예약 또는 수동 재검증이 필요합니다.'
            WHERE status='VALIDATING' AND
@@ -400,6 +421,7 @@ def main() -> int:
                             )
                             connection.commit()
                             shutil.rmtree(WORK_DIR / str(request["id"]), ignore_errors=True)
+                            shutil.rmtree(WORK_DIR / (str(request["id"]) + '-dependencies'), ignore_errors=True)
 
                     time.sleep(POLL_SECONDS)
         except psycopg.Error as exc:

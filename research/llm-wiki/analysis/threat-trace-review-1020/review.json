@@ -288,22 +288,6 @@
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd"
         },
         {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "fetch_source",
-          "anchor": "",
-          "line": 381,
-          "end_line": 411,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "build",
-          "anchor": "",
-          "line": 445,
-          "end_line": 463,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
           "path": "full_stack_lab/gateway/app/artifact_provenance.py",
           "symbol": "verify_source_attestation",
           "anchor": "",
@@ -318,14 +302,6 @@
           "line": 1960,
           "end_line": 1987,
           "normalized_sha256": "59787615f501712bef10ad5a9f6637eccfd33ccdbb7e0ab8a9a785bb9c3634e4"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "verify_rollback_provenance",
-          "anchor": "",
-          "line": 441,
-          "end_line": 442,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
         }
       ],
       "regression_tests": [
@@ -583,36 +559,9 @@
           "line": 185,
           "end_line": 324,
           "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "mcp_run_args",
-          "anchor": "",
-          "line": 120,
-          "end_line": 131,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "egress_run_args",
-          "anchor": "",
-          "line": 134,
-          "end_line": 140,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
         }
       ],
-      "regression_tests": [
-        {
-          "path": "full_stack_lab/tests/runtime_worker_check.py",
-          "symbol": "",
-          "anchor": "",
-          "line": 1,
-          "end_line": 102,
-          "normalized_sha256": "40076e9dc348e414fd874cf6d7fe839f24998a2a43a2d8fc0ee9ee93e6b12b56",
-          "coverage": "읽기 전용/권한/자원·egress 실행 인자 단위",
-          "execution_in_this_review": "미실행"
-        }
-      ],
+      "regression_tests": [],
       "evidence_ids": [
         "E01"
       ],
@@ -2328,14 +2277,6 @@
           "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
         },
         {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "reconcile",
-          "anchor": "",
-          "line": 641,
-          "end_line": 753,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
           "path": "full_stack_lab/gateway/app/core.py",
           "symbol": "deregister_server",
           "anchor": "",
@@ -2560,22 +2501,6 @@
           "line": 216,
           "end_line": 329,
           "normalized_sha256": "0f583486cf9cfb201530efe259abdbcaf887c9ef4da54ed0dfa46127ceb13dcd"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "fetch_source",
-          "anchor": "",
-          "line": 381,
-          "end_line": 411,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "build",
-          "anchor": "",
-          "line": 445,
-          "end_line": 463,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
         }
       ],
       "original_mapping": [
@@ -2667,22 +2592,6 @@
           "line": 185,
           "end_line": 324,
           "normalized_sha256": "aeaea0c0d6b3c7081f52ab0d8a617f9f857c42299deb75c533ad143b0c2f4393"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "mcp_run_args",
-          "anchor": "",
-          "line": 120,
-          "end_line": 131,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "egress_run_args",
-          "anchor": "",
-          "line": 134,
-          "end_line": 140,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
         }
       ],
       "original_mapping": [
@@ -3488,14 +3397,6 @@
           "line": 50,
           "end_line": 67,
           "normalized_sha256": "362036548a92a7d90e3a09be3d3661216c0b5d58029755e856ce249a2e6c095d"
-        },
-        {
-          "path": "full_stack_lab/runtime/worker.py",
-          "symbol": "reconcile",
-          "anchor": "",
-          "line": 641,
-          "end_line": 753,
-          "normalized_sha256": "9e427327614fc875406d033db2642452242e9c08921a6e27ada255ca563087ea"
         },
         {
           "path": "full_stack_lab/gateway/app/core.py",
