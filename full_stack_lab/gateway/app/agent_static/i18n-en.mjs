@@ -1,8 +1,14 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "측정": "Measurement",
+  "횟수": "Count",
+  "최근 시각": "Latest at",
+  "연결 시간": "Connection time",
+  "변동": "Variation",
   "엔드포인트 → 게이트웨이 통신": "Endpoint to gateway communication",
-  "연결 시간 95백분위": "95th percentile connection time",
+  "연결 시간 P95": "Connection time P95",
+  "연결 시간의 95백분위수(P95)로, 측정된 연결 시간의 약 95%가 이 값 이하입니다.": "The 95th percentile (P95) of connection time: approximately 95% of measured connection times are at or below this value.",
   "최근 측정 시각": "Last measured at",
   "최근": "Recent",
   "연결 점검과 게이트웨이 상태 확인 요청 횟수의 합계입니다.": "Total number of connection probes and gateway health requests.",

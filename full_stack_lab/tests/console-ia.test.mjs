@@ -343,7 +343,9 @@ test("성능 탭은 호출 시간과 엔드포인트 연결 측정을 분리하�
   assert.match(body, /정책 판정<\/td><td class="num">10/);
   assert.match(body, /95백분위 높은 순, 최대 12개/);
   assert.doesNotMatch(body, /99999|MCP 서버 응답|엔드포인트 왕복/);
-  assert.match(body, /엔드포인트 → 게이트웨이 통신[^]*연결 시간 중앙값[^]*연결 시간 95백분위[^]*점검 실패율[^]*점검 횟수/);
+  assert.match(body, /엔드포인트 → 게이트웨이 통신[^]*scope="colgroup" colspan="3">연결 시간/);
+  assert.match(body, /scope="colgroup" colspan="2">점검<\/th><th scope="colgroup" colspan="2">측정/);
+  assert.match(body, />중앙값<\/span>[^]*>P95<\/span>[^]*>변동<\/span>/);
   const stale = body.split("<tr>").find((row) => row.includes('title="stale"'));
   assert.match(stale, /오래됨/); assert.doesNotMatch(stale, /8888|8\.9 s|9999/);
   assert.match(body, /미측정/); assert.match(body, /100%[^]*측정 실패/);
