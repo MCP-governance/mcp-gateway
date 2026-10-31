@@ -226,7 +226,12 @@ def unsent_calls():
 
 
 def short_time(value):
-    return str(value or "")[:19].replace("T", " ") or "—"
+    """The Gateway's UTC time in this PC's local time, as the console shows it."""
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(str(value)).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return str(value or "")[:19].replace("T", " ") or "—"
 
 
 def sections(summary):
