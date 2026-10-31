@@ -11,7 +11,7 @@ const employeePages = ["activity", "consent", "intake", "connections"];
 const code = source.slice(0, source.indexOf("// ── wiring")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 
 function build(admin = true, extra = {}) {
-  const calls = [], timers = new Map(), elements = new Map();
+  const calls = [], requests = [], timers = new Map(), elements = new Map();
   const inventory = { agents: [], entries: [], listeners: [], os_events: [], managed_events: [],
     coverage: { reporting_recently: 0 }, settings: {},
     pages: Object.fromEntries(["entries", "listeners", "os_events"].map((key) => [key, { total: 0, limit: 50, next_cursor: null }])) };
@@ -21,7 +21,7 @@ function build(admin = true, extra = {}) {
     "/gw/policy/matrix": { capabilities: [], runtime_envelopes: [] },
     "/gw/enforcement": { enforcement: "enforce" },
     "/gw/policy/ledger": { policies: [] },
-    "/gw/overview": { servers: [], workstations: [], pending_approvals: 2, termination: {}, execution: {}, series: [], flows: [], top_policies: [] },
+    "/gw/overview": { servers: [], workstations: [], pending_approvals: 2, unresolved_execution: 0, termination: {}, execution: {}, series: [], flows: [], top_policies: [] },
     "/gw/latency": {}, "/gw/endpoint/network-quality": {}, "/gw/health": {},
     "/api/integrations": { items: [], devices: [], summary: { devices: { bypass_possible: 0 } } },
     "/api/connectors": { items: [], summary: { pending: 3, expired: 1 } },
@@ -37,24 +37,27 @@ function build(admin = true, extra = {}) {
   };
   const node = (key) => {
     if (!elements.has(key)) elements.set(key, { innerHTML: "", textContent: "", dataset: {},
-      classList: { contains: () => false }, querySelector: () => null, querySelectorAll: () => [], focus() {} });
+      classList: { contains: () => false, toggle() {} }, querySelector: () => null, querySelectorAll: () => [], focus() {} });
     return elements.get(key);
   };
-  const context = vm.createContext({ ...state, URLSearchParams, FormData, encodeURIComponent, decodeURIComponent,
+  const context = vm.createContext({ ...state, URLSearchParams, FormData, AbortController, setTimeout, clearTimeout, encodeURIComponent, decodeURIComponent,
     lang: () => "ko", locale: () => "ko-KR", t: (v) => v,
     clockText: () => "12:00", dateTimeText: () => "10-27 12:00",
     localStorage: { getItem: () => "fixture-token" }, location: { hash: "#/activity", replace() {} },
+    history: { replaceState() {} },
     document: { hidden: false, querySelector: node },
     charts: { DECISION_LABEL: {}, register() {}, mountVisible() {}, disposeAll() {} },
     setInterval(fn) { const id = timers.size + 1; timers.set(id, fn); return id; },
     clearInterval(id) { timers.delete(id); },
-    fetch: async (url) => {
+    fetch: async (url, options) => {
       calls.push(url);
+      requests.push({ url, ...options });
       let value = responses[url];
       if (value === undefined && url.startsWith("/gw/activity/analysis?")) value = { total: 0 };
       if (value === undefined && url.startsWith("/gw/activity?")) value = { rows: [], total: 0, cursor: 0 };
       if (value === undefined && url.startsWith("/gw/audit/events?")) value = { events: [], has_more: false };
       assert.notEqual(value, undefined, `unexpected request: ${url}`);
+      if (typeof value === "function") value = await value();
       if (value instanceof Error) throw value;
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => value };
     },
@@ -62,10 +65,15 @@ function build(admin = true, extra = {}) {
   vm.runInContext(`${code}\nviewer = ${JSON.stringify({ admin, pages: admin ? adminPages : employeePages })};
     globalThis.ui = { ROUTES, canonicalRoute, renderNav, refreshBadges, covPage, covPaging, badges, ACTIONS,
       stopLive, stopIntake, setCurrent(value) { current = value; }, pageModel(fn) { page = fn; },
+      refreshApprovalLists, startApprovalRefresh, stopApprovalRefresh,
+      analysisState() { return feed; },
+      analysisHooks() { route = () => {}; },
+      approvalState() { return { ...approvalPaging, failed: approvalFailed }; },
+      approvalActions(askFn) { ask = askFn; route = () => {}; refreshBadges = () => {}; toast = () => {}; },
       activityHooks(render, start) { renderFeed = render; startLive = start; },
       refreshHook(fn) { refreshIntake = fn; }, policyDrawer(fn) { openDrawer = fn; } };`, context);
   context.ui.pageModel((value) => value);
-  return { ...context.ui, context, calls, timers, responses, inventory, node };
+  return { ...context.ui, context, calls, requests, timers, responses, inventory, node };
 }
 
 test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사는 기존 4개를 본다", () => {
@@ -97,6 +105,8 @@ test("대시보드 호출 승인과 내 계정 이용 동의 배지를 분리한
 test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", () => {
   const ui = build();
   for (const [page, tab, target, nextTab] of [
+    ["overview", "planes", "servers", "items"],
+    ["overview", "traffic", "activity", "stats"],
     ["audit", "", "activity", "events"], ["audit", "incidents", "activity", "incidents"],
     ["audit", "siem", "activity", "siem"], ["coverage", "", "servers", "items"],
     ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
@@ -169,20 +179,290 @@ test("대시보드는 승인 미리보기와 전체 목록, 각 관리 작업으
     "/api/signup-requests": { requests: [{ status: "pending" }, { status: "approved" }] } });
   ui.inventory.agents.push({ managed_state: "pending", policy_hash: "hash" },
     { managed_state: "quarantined" }, { managed_state: "pending", status: "revoked", policy_hash: "hash" });
+  Object.assign(ui.responses["/gw/overview"], { unresolved_execution: 305,
+    termination: { action_required: 9, overdue: 3 },
+    execution: { tool_calls: 20, executed: 12, blocked: 6, unknown: 2 } });
   const out = await ui.ROUTES.overview("", "approvals");
   assert.equal(out.html.active, "approvals");
   const summary = String(out.html.tabs.find((t) => t.key === "summary").body);
   const queue = String(out.html.tabs.find((t) => t.key === "approvals").body);
-  assert.equal((summary.match(/data-act="approval"/g) || []).length, 5);
-  assert.equal((queue.match(/data-act="approval"/g) || []).length, 7);
+  assert.match(String(out.html.kpis), /오늘 도구 호출/);
+  assert.match(String(out.html.kpis), /전체 호출<\/div><div class="value">20/);
+  assert.match(String(out.html.kpis), /차단된 호출<\/div><div class="value">6/);
+  assert.doesNotMatch(String(out.html.kpis), /오늘 운영 현황|현재 상태|통제 적용 엔드포인트|실행된 호출/);
+  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 확인 필요<\/div><div class="value">305/);
+  assert.match(String(out.html.kpis), /종료 조치 필요<\/div><div class="value">9/);
+  assert.match(String(out.html.kpis), /attention=overdue"><span>기한 초과<\/span><b>3/);
+  assert.doesNotMatch(summary, /실행 확인 필요|종료 기한 초과/);
+  assert.equal((summary.match(/<tr[^>]+data-act="approval"/g) || []).length, 5);
+  assert.equal((queue.match(/<tr[^>]+data-act="approval"/g) || []).length, 7);
   assert.match(summary, /href="#\/overview\?t=approvals"/);
   assert.match(summary, /href="#\/people\?t=signups"[^]*?가입 승인<\/span><b class="n">1<\/b>/);
   assert.match(summary, /엔드포인트 활성화<\/span><b class="n">1<\/b>/);
   assert.match(queue, /&lt;img/);
   assert.doesNotMatch(queue, /data-act="approve" data-id="call-0"/);
-  assert.match(queue, /data-act="approve" data-id="call-1"/);
-  assert.match(queue, /data-act="reject"/);
+  assert.doesNotMatch(queue, /data-act="approve"|data-act="reject"/);
+  assert.match(queue, /data-act="approval" data-id="call-1">검토/);
   assert.doesNotMatch(queue, /intent-resolve|consent-decide/);
+});
+
+test("MCP 점검 목록은 대시보드와 같은 세 상태만 표시한다", async () => {
+  const servers = ["READY", "DISABLED", "ERROR", "DRIFT", "PENDING"].map((status) => ({ id: status, display_name: status, status }));
+  const ui = build(true, { "/gw/registry": { servers, tools: [], registrations: {} } });
+  ui.responses["/gw/overview"].servers = servers;
+  const overview = await ui.ROUTES.overview("", "summary");
+  assert.match(String(overview.html.kpis), /attention=required"><div class="label">MCP 점검 필요<\/div><div class="value">3/);
+  const result = await ui.ROUTES.servers("", "servers", new URLSearchParams("attention=required"));
+  const body = String(result.html.tabs[0].body);
+  assert.equal(result.html.tabs[0].n, 3);
+  for (const status of ["ERROR", "DRIFT", "PENDING"]) assert.ok(body.includes(`#/servers/${status}`));
+  for (const status of ["READY", "DISABLED"]) assert.ok(!body.includes(`#/servers/${status}`));
+  assert.match(body, /href="#\/servers\?t=servers">전체 보기/);
+});
+
+test("통제 분포는 AI 연결 관리에서만 표시하고 그래프 선택을 연결 필터로 전달한다", async () => {
+  const ui = build(true, { "/api/integrations": { devices: [], items: [
+    { key: "gateway:docs", class: "gateway_mcp", name: "Docs", state: "gateway_enforced" },
+    { key: "vendor:a", item_key: "vendor", class: "vendor_native_connector", name: "Vendor", state: "observed_only" },
+    { key: "vendor:b", item_key: "vendor", class: "vendor_native_connector", name: "Vendor", state: "bypass_possible" },
+  ] } });
+  const overview = await ui.ROUTES.overview("", "summary");
+  assert.deepEqual(Array.from(overview.html.tabs, (t) => t.key), ["summary", "approvals", "latency"]);
+  assert.doesNotMatch(String(overview.html.tabs[0].body), /조직 통제 의존 경로|c-connections-matrix/);
+  assert.equal(overview.charts["c-ov-matrix"], undefined);
+  assert.match(String(overview.html.kpis), /href="#\/servers\?t=items&state=bypass_possible"/);
+  const result = await ui.ROUTES.servers("", "items", new URLSearchParams());
+  const body = String(result.html.tabs.find((t) => t.key === "items").body);
+  assert.match(body, /연결 유형별 통제 현황[^]*연결 항목 수[^]*MCP·커넥터·플러그인/);
+  assert.match(body, /id="c-connections-matrix"/);
+  let captured;
+  ui.context.charts.color = (tone) => tone;
+  ui.context.charts.stacked = (labels, series, options) => { captured = { labels, series, options }; };
+  result.charts["c-connections-matrix"]();
+  assert.equal(captured.series[5].data[2], 1);
+  assert.equal(captured.series.reduce((sum, s) => sum + s.data.reduce((a, b) => a + b, 0), 0), 2);
+  captured.options.onClick({ dataIndex: 2, seriesIndex: 5 });
+  assert.equal(ui.context.location.hash, "#/servers?t=items&class=vendor_native_connector&state=bypass_possible");
+});
+
+test("호출 승인 전체 건수와 페이지는 요약의 첫 5건과 독립적이다", async () => {
+  const row = (id) => ({ id, server_id: "docs", tool: "read", summary: "<img src=x>", reason: "검토 필요" });
+  const ui = build(true, {
+    "/approvals": { approvals: Array.from({ length: 30 }, (_, i) => row(`first-${i}`)), history: [], total: 65, page: 1, page_size: 30 },
+    "/approvals?page=3": { approvals: Array.from({ length: 5 }, (_, i) => row(`last-${i}`)), history: [], total: 65, page: 3, page_size: 30 },
+  });
+  const out = await ui.ROUTES.overview("", "approvals", new URLSearchParams("t=approvals&approval_page=3"));
+  const full = out.html.tabs.find((t) => t.key === "approvals");
+  const preview = String(out.html.tabs.find((t) => t.key === "summary").body);
+  assert.equal(full.n, 65);
+  assert.match(String(full.body), /approval_page=2/);
+  assert.doesNotMatch(String(full.body), /approval_page=4|first-0/);
+  assert.match(String(full.body), /last-4/);
+  assert.match(preview, /first-4/); assert.doesNotMatch(preview, /first-5|last-0/);
+  assert.match(String(full.body), /&lt;img/);
+  assert.match(String(full.body), /승인 사유/);
+  assert.doesNotMatch(preview, /<th>승인 사유<\/th>|<th>하네스<\/th>/);
+});
+
+test("통합 호출 분석은 목록과 같은 기간 및 필터를 쓰고 과거 엔드포인트도 표시한다", async () => {
+  const ui = build();
+  const query = new URLSearchParams({ t: "stats", since: "2026-10-30T00:00:00Z", until: "2026-10-31T00:00:00Z", event_kind: "tools/call", server: "docs" });
+  const suffix = new URLSearchParams({ server: "docs", since: "2026-10-30T00:00:00.000Z", until: "2026-10-31T00:00:00.000Z", event_kind: "tools/call" }).toString();
+  ui.responses[`/gw/activity/analysis?${suffix}`] = { total: 2, series: [], servers: [], people: [], responses: [],
+    policies: [{ key: "P-1", Block: 1, Alert: 0 }],
+    endpoints: [{ key: "<retired>", total: 1, Block: 1 }, { key: "", total: 1, Allow: 1 }],
+    flows: [{ harness: "codex", server: "docs", decision: "Block", n: 1 }] };
+  const out = await ui.ROUTES.activity("", "stats", query);
+  const stats = String(out.html.tabs.find((t) => t.key === "stats").body);
+  assert.match(stats, /data-filter="since"/);
+  assert.match(stats, /data-filter="event_kind"/);
+  assert.match(stats, /정책별 차단 및 경보/);
+  assert.match(stats, /&lt;retired&gt;/); assert.match(stats, /엔드포인트 미확인/);
+  assert.doesNotMatch(stats, /통제 상태|최근 하네스/);
+  assert.match(stats, /하네스별 호출 판정/);
+  const listRequest = new URL(ui.calls.find((p) => p.startsWith("/gw/activity?")), "http://test");
+  const analysisRequest = new URL(ui.calls.find((p) => p.startsWith("/gw/activity/analysis?")), "http://test");
+  for (const key of ["since", "until", "event_kind", "server"]) assert.equal(listRequest.searchParams.get(key), analysisRequest.searchParams.get(key));
+  assert.equal(ui.analysisState().analysis.total, 2);
+});
+
+test("호출 분석 기본 범위와 기간 전환은 목록과 공유하고 주소에 보존한다", async () => {
+  const ui = build(false);
+  const query = new URLSearchParams("t=stats");
+  ui.setCurrent({ page: "activity", query });
+  await ui.ROUTES.activity("", "stats", query);
+  assert.equal(ui.analysisState().filters.event_kind, "tools/call");
+  assert.ok(Date.now() - new Date(ui.analysisState().filters.since).getTime() >= 86400000);
+  ui.analysisHooks();
+  ui.ACTIONS["feed-window"]({ dataset: { hours: "0" } });
+  assert.equal(ui.analysisState().filters.since, "");
+  assert.equal(ui.analysisState().filters.event_kind, "tools/call");
+  ui.calls.length = 0;
+  await ui.ROUTES.activity("", "stats", new URLSearchParams("t=stats&since=&event_kind=tools%2Fcall"));
+  assert.ok(!new URL(ui.calls.find((p) => p.startsWith("/gw/activity?")), "http://test").searchParams.has("since"));
+  ui.ACTIONS["feed-reset"]();
+  assert.ok(ui.analysisState().filters.since);
+  assert.equal(ui.analysisState().page, 1);
+});
+
+test("통합 분석 새로고침은 표도 갱신하고 이전 필터의 늦은 응답은 적용하지 않는다", async () => {
+  const ui = build();
+  const query = new URLSearchParams("t=stats&since=&event_kind=tools%2Fcall");
+  ui.setCurrent({ page: "activity", query });
+  await ui.ROUTES.activity("", "stats", query);
+  ui.context.charts.redraw = () => {};
+  const url = "/gw/activity/analysis?event_kind=tools%2Fcall";
+  ui.responses[url] = { total: 1, endpoints: [{ key: "historic", total: 1, Block: 1 }] };
+  await ui.ACTIONS["analysis-refresh"]();
+  assert.match(ui.node("#analysis-endpoints").innerHTML, /historic/);
+  assert.equal(ui.analysisState().analysis.total, 1);
+  ui.responses[url] = () => {
+    ui.analysisState().filters.server = "new-filter";
+    return { total: 999, endpoints: [] };
+  };
+  await ui.ACTIONS["analysis-refresh"]();
+  assert.equal(ui.analysisState().analysis.total, 1);
+  assert.match(ui.node("#analysis-endpoints").innerHTML, /historic/);
+});
+
+test("성능 탭은 호출 시간과 엔드포인트 연결 측정을 분리하고 표본과 기간을 표시한다", async () => {
+  const lat = { calls: 10, dispatched: 6, total: { p50: 100, p95: 200 }, gateway: { p50: 20, p95: 40 }, upstream: { p50: 80, p95: 160 },
+    checked_at: "2026-10-31T00:00:00Z", window_start: "2026-10-30T00:00:00Z", window_end: "2026-10-31T00:00:00Z",
+    stages: [{ stage: "policy", n: 10, p50: 2, p95: 5 }], servers: [{ server_id: "docs", n: 6, p50: 80, p95: 160, failed: 1 }] };
+  const ui = build(true, { "/gw/latency": lat, "/gw/endpoint/network-quality": {
+    summary: { p50_ms: 99999, p95_ms: 999999 }, devices: [
+      { endpoint_id: "fresh", state: "fresh", rtt_p50_ms: 12, rtt_p95_ms: 18, jitter_ms: 2, failure_pct: 0, probes: 6 },
+      { endpoint_id: "stale", state: "stale", rtt_p50_ms: 8888, rtt_p95_ms: 9999, probes: 6 },
+      { endpoint_id: "unmeasured", state: "unknown" },
+      { endpoint_id: "failed", state: "fresh", rtt_p50_ms: null, rtt_p95_ms: null, failure_pct: 100, probes: 6 },
+    ] } });
+  const out = await ui.ROUTES.overview("", "latency");
+  const tab = out.html.tabs.find((t) => t.key === "latency"), body = String(tab.body);
+  assert.equal(tab.label, "성능");
+  assert.match(body, /호출 처리 성능[^]*전체 처리[^]*100 ms[^]*200 ms/);
+  assert.match(body, /정책 판정<\/td><td class="num">10/);
+  assert.match(body, /95백분위 높은 순, 최대 12개/);
+  assert.doesNotMatch(body, /99999|MCP 서버 응답|엔드포인트 왕복/);
+  assert.match(body, /엔드포인트 통신 상태[^]*연결 시간 중앙값[^]*점검 실패율[^]*점검 횟수/);
+  const stale = body.split("<tr>").find((row) => row.includes('title="stale"'));
+  assert.match(stale, /측정 만료/); assert.doesNotMatch(stale, /8888|8\.9 s|9999/);
+  assert.match(body, /미측정/); assert.match(body, /100%[^]*측정 실패/);
+  const href = body.match(/data-href="([^"]+)"/)[1].replaceAll("&amp;", "&");
+  const query = new URL(href.slice(1), "http://test").searchParams;
+  assert.equal(query.get("since"), lat.window_start); assert.equal(query.get("until"), lat.window_end);
+  assert.equal(query.get("event_kind"), "tools/call");
+});
+
+test("성능 조회 실패는 측정 없음으로 표시하지 않고 두 데이터 조회는 독립적이다", async () => {
+  const failed = build(true, { "/gw/latency": new Error("unavailable"), "/gw/endpoint/network-quality": { devices: [{ endpoint_id: "available", state: "fresh", rtt_p50_ms: 0, rtt_p95_ms: 0, failure_pct: 0 }] } });
+  const out = await failed.ROUTES.overview("", "latency");
+  const body = String(out.html.tabs.find((t) => t.key === "latency").body);
+  assert.match(body, /note bad">조회 실패/); assert.doesNotMatch(body, /측정된 호출 없음/);
+  assert.match(body, /available/); assert.match(body, /0 ms/);
+  const empty = build(true, { "/gw/latency": { calls: 0 }, "/gw/endpoint/network-quality": new Error("unavailable") });
+  const result = await empty.ROUTES.overview("", "latency");
+  const emptyBody = String(result.html.tabs.find((t) => t.key === "latency").body);
+  assert.match(emptyBody, /측정된 호출 없음/); assert.match(emptyBody, /엔드포인트 통신 상태[^]*조회 실패/);
+  assert.doesNotMatch(emptyBody, /측정 대상 엔드포인트 없음/);
+});
+
+test("승인 상세에서만 실행 버튼을 제공하고 본인 요청과 취소는 실행하지 않는다", async () => {
+  const ui = build(true, { "/approvals": { approvals: [
+    { id: "own", server_id: "docs", tool: "read", own: true },
+    { id: "other", server_id: "docs", tool: "read", reason: "범위 확인" },
+  ], history: [] }, "/approvals/other/approve": { decision: "Allow" } });
+  await ui.ROUTES.overview("", "approvals");
+  let detail, asked;
+  ui.policyDrawer((title, controls, tabs) => { detail = { controls: String(controls), tabs }; });
+  await ui.ACTIONS.approval({ dataset: { id: "own" } });
+  assert.match(detail.controls, /본인 요청/); assert.doesNotMatch(detail.controls, /data-act="approve"/);
+  await ui.ACTIONS.approval({ dataset: { id: "other" } });
+  assert.match(detail.controls, /data-act="approve"/);
+  assert.deepEqual(Array.from(detail.tabs, (t) => t.key), ["request", "args", "policy"]);
+  ui.approvalActions(async (options) => { asked = options; return null; });
+  await ui.ACTIONS.approve({ dataset: { id: "other" } });
+  assert.equal(asked.confirm, "승인·실행");
+  assert.ok(!ui.calls.includes("/approvals/other/approve"));
+  ui.approvalActions(async () => new Map());
+  await ui.ACTIONS.approve({ dataset: { id: "own" } });
+  assert.ok(!ui.calls.includes("/approvals/own/approve"));
+  await ui.ACTIONS.approve({ dataset: { id: "other" } });
+  assert.equal(ui.calls.filter((url) => url === "/approvals/other/approve").length, 1);
+});
+
+test("승인 목록 자동 갱신은 검토와 확인창 및 화면 이동을 방해하지 않는다", async () => {
+  const ui = build();
+  await ui.ROUTES.overview("", "approvals");
+  ui.setCurrent({ page: "overview", query: new URLSearchParams("t=approvals") });
+  ui.responses["/approvals"] = { approvals: [{ id: "new", server_id: "docs", tool: "read" }], history: [], total: 1 };
+  ui.startApprovalRefresh(); assert.equal(ui.timers.size, 1);
+  await ui.refreshApprovalLists();
+  assert.equal(ui.approvalState().total, 1);
+  assert.match(ui.node("#approval-queue").innerHTML, /data-id="new"/);
+  const reads = ui.calls.length;
+  ui.node("#drawer").classList.contains = () => true;
+  await ui.refreshApprovalLists(); assert.equal(ui.calls.length, reads);
+  ui.node("#drawer").classList.contains = () => false;
+  ui.node("#dialog").open = true;
+  await ui.refreshApprovalLists(); assert.equal(ui.calls.length, reads);
+  ui.node("#dialog").open = false;
+  ui.responses["/approvals"] = () => { ui.node("#drawer").classList.contains = () => true; return { approvals: [], history: [], total: 0 }; };
+  await ui.refreshApprovalLists(); assert.equal(ui.approvalState().total, 1);
+  ui.node("#drawer").classList.contains = () => false;
+  ui.responses["/approvals"] = () => { ui.stopApprovalRefresh(); return { approvals: [], history: [], total: 0 }; };
+  await ui.refreshApprovalLists();
+  assert.equal(ui.approvalState().total, 1); assert.equal(ui.timers.size, 0);
+});
+
+test("중대 영향 호출은 상세 검토와 기존 증빙 확인을 거쳐 승인한다", async () => {
+  const explanation = { impact_domains: [], arguments: { string: 1 }, summary: "범위 검토" };
+  const ui = build(true, { "/approvals": { approvals: [{ id: "impact", explanation, own: false }], history: [] },
+    "/gw/approvals/impact/evidence": { explanation, events: [], evidence_sha256: "evidence-proof" },
+    "/gw/approvals/impact/approve": { decision: "Allow" } });
+  await ui.ROUTES.overview("", "approvals");
+  let controls, asked;
+  ui.policyDrawer((title, body) => { controls = String(body); });
+  await ui.ACTIONS.approval({ dataset: { id: "impact" } });
+  assert.match(controls, /data-act="approve"/);
+  ui.approvalActions(async (options) => { asked = options; return new Map([["confirmed", "on"]]); });
+  await ui.ACTIONS.approve({ dataset: { id: "impact" } });
+  assert.match(String(asked.fields), /name="confirmed" required/);
+  const request = ui.requests.find((r) => r.url === "/gw/approvals/impact/approve");
+  assert.equal(request.method, "POST");
+  assert.deepEqual(JSON.parse(request.body), { evidence_sha256: "evidence-proof", reason: "scope_confirmed" });
+});
+
+test("승인 목록 갱신 실패를 빈 목록으로 숨기지 않고 복구하며 빈 마지막 페이지를 되돌린다", async () => {
+  const ui = build(true, { "/approvals": { approvals: [], history: [], total: 31, page: 1 },
+    "/approvals?page=2": { approvals: [{ id: "last", server_id: "docs", tool: "read" }], history: [], total: 31, page: 2 } });
+  await ui.ROUTES.overview("", "approvals", new URLSearchParams("approval_page=2"));
+  const query = new URLSearchParams("t=approvals&approval_page=2");
+  ui.setCurrent({ page: "overview", query });
+  ui.responses["/approvals"] = new Error("offline");
+  await ui.refreshApprovalLists();
+  assert.equal(ui.approvalState().failed, true);
+  assert.match(ui.node("#approval-queue").innerHTML, /갱신 실패[^]*data-id="last"/);
+  ui.responses["/approvals"] = { approvals: [], history: [], total: 0, page: 1 };
+  ui.responses["/approvals?page=2"] = { approvals: [], history: [], total: 0, page: 2 };
+  await ui.refreshApprovalLists();
+  assert.equal(ui.approvalState().failed, false);
+  assert.equal(ui.approvalState().page, 1);
+  assert.equal(query.get("approval_page"), "1");
+});
+
+test("종료 조치 필터와 페이지 이동을 서버에 전달하고 기한 초과 필터를 제공한다", async () => {
+  const ui = build(true, { "/gw/termination/relationships": { relationships: [] },
+    "/gw/termination/cases?attention=required&page=2": { cases: [], summary: {}, page: 2, page_size: 50, total: 101 },
+    "/gw/termination/cases?attention=overdue": { cases: [], summary: {}, page: 1, page_size: 50, total: 0 } });
+  const result = await ui.ROUTES.termination("", "cases", new URLSearchParams("attention=required&page=2"));
+  const cases = result.html.tabs.find((t) => t.key === "cases");
+  assert.equal(cases.n, 101);
+  assert.match(String(cases.body), /종료 조치 필요/);
+  assert.match(String(cases.body), /attention=required&amp;page=1/);
+  assert.match(String(cases.body), /attention=required&amp;page=3/);
+  const overdue = await ui.ROUTES.termination("", "cases", new URLSearchParams("attention=overdue"));
+  assert.match(String(overdue.html.tabs.find((t) => t.key === "cases").body), /종료 기한 초과/);
+  assert.ok(ui.calls.includes("/gw/termination/cases?attention=overdue"));
 });
 
 test("실행 확인과 승인 번복 버튼은 감사 기록의 해당 탭에 유지한다", async () => {

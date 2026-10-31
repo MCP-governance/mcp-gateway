@@ -610,6 +610,7 @@ async def _compute_overview() -> dict:
         "pending_approvals": int(approvals["n"] or 0),
         "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
+        "unresolved_execution": await dispatch.uncertain_count(),
         "enforcement": await enforcement_mode(db.admin_fetch_one), "catalog_version": registry.catalog_version(),
     }
 
@@ -631,9 +632,13 @@ async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(adm
 
 
 async def _compute_latency(hours: int) -> dict:
+    checked_at = datetime.now(UTC)
+    window_start = checked_at - timedelta(hours=hours)
+    window_params = (window_start, checked_at)
     upstream_ms = " + ".join(f"COALESCE((d.timings->>'{stage}')::float8, 0)" for stage in UPSTREAM_STAGES)
-    window = f"""FROM decisions d WHERE d.created_at > now() - make_interval(hours => %s)
-                   AND d.timings IS NOT NULL AND d.action <> 'connect' AND {decommission.REAL_CALL}"""
+    window = f"""FROM decisions d WHERE d.created_at >= %s AND d.created_at <= %s
+                   AND d.timings IS NOT NULL AND d.action <> 'connect'
+                   AND COALESCE(d.client->>'event_kind','tools/call')='tools/call' AND {decommission.REAL_CALL}"""
     summary = await db.admin_fetch_one(f"""WITH t AS (SELECT (d.timings->>'total')::float8 AS total, {upstream_ms} AS upstream,
                                           d.timings ? 'call' AS dispatched {window})
                          SELECT count(*) AS calls, count(*) FILTER (WHERE dispatched) AS dispatched,
@@ -644,29 +649,32 @@ async def _compute_latency(hours: int) -> dict:
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY total) AS total_p95,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p95
-                           FROM t""", (hours,))
+                           FROM t""", window_params)
     stages = await db.admin_fetch_all(f"""SELECT s.key AS stage, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY s.value::float8) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY s.value::float8) AS p95
                            {window.replace("FROM decisions d", "FROM decisions d, jsonb_each_text(d.timings) s")}
-                            AND s.key <> 'total' GROUP BY s.key""", (hours,))
+                            AND s.key <> 'total' GROUP BY s.key""", window_params)
     servers = await db.admin_fetch_all(f"""SELECT d.server_id, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY {upstream_ms}) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY {upstream_ms}) AS p95,
                                 count(*) FILTER (WHERE d.policy_id = 'MCP-UPSTREAM-001') AS failed
-                           {window} AND d.timings ? 'connect' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,))
+                           {window} AND d.timings ? 'connect' GROUP BY d.server_id
+                           ORDER BY p95 DESC NULLS LAST, n DESC, d.server_id LIMIT 12""", window_params)
     series = await db.admin_fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
                                           (d.timings->>'total')::float8 - ({upstream_ms}) AS gateway {window})
                          SELECT hour, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY gateway) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY gateway) AS p95
-                           FROM t GROUP BY hour ORDER BY hour""", (hours,))
+                           FROM t GROUP BY hour ORDER BY hour""", window_params)
     order = {stage: index for index, stage in enumerate(LATENCY_STAGES)}
 
     def ms(value):
         return None if value is None else round(float(value), 2)
     return {
         "window_hours": hours,
+        "checked_at": checked_at.isoformat(), "window_start": window_start.isoformat(), "window_end": checked_at.isoformat(),
+        "server_sort": "p95_desc", "server_limit": 12,
         "calls": int(summary["calls"] or 0), "dispatched": int(summary["dispatched"] or 0),
         "gateway": {key: ms(summary[f"gateway_{key}"]) for key in ("p50", "p95", "p99")},
         "total": {key: ms(summary[f"total_{key}"]) for key in ("p50", "p95")},
@@ -1303,8 +1311,13 @@ async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dic
 
 
 @app.get("/api/termination/cases")
-async def termination_cases(user: dict = Depends(admin_caller)) -> dict:
-    return {"cases": await decommission.list_cases(), "summary": await decommission.summary()}
+async def termination_cases(user: dict = Depends(admin_caller),
+                            attention: Literal["required", "overdue"] | None = None,
+                            page: int = Query(default=1, ge=1)) -> dict:
+    summary = await decommission.summary()
+    return {"cases": await decommission.list_cases(attention=attention, offset=(page - 1) * 50),
+            "summary": summary, "page": page, "page_size": 50,
+            "total": summary["action_required" if attention == "required" else "overdue" if attention == "overdue" else "total_cases"]}
 
 
 @app.post("/api/termination/cases", status_code=201)

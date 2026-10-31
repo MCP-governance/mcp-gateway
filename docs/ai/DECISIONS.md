@@ -16,4 +16,4 @@
 | 151~200 | [decisions/D-151-200.md](decisions/D-151-200.md) | 38 |
 | 201~250 | [decisions/D-201-250.md](decisions/D-201-250.md) | 50 |
 | 251~300 | [decisions/D-251-300.md](decisions/D-251-300.md) | 9 |
-| 301~350 | [decisions/D-301-350.md](decisions/D-301-350.md) | 3 |
+| 301~350 | [decisions/D-301-350.md](decisions/D-301-350.md) | 9 |

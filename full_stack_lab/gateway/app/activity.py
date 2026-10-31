@@ -219,7 +219,8 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
     total = int(bounds["n"] or 0)
     if not total:
         return {"total": 0, "bucket": "hour", "series": [], "responses": [],
-                "hours": [], "harnesses": [], "servers": [], "people": []}
+                "hours": [], "harnesses": [], "servers": [], "people": [],
+                "policies": [], "endpoints": [], "flows": []}
     span = (bounds["last"] - bounds["first"]).total_seconds()
     unit = "hour" if span <= 172800 else "day" if span <= 10368000 else "month"
     series_rows = await db.fetch_all(
@@ -248,6 +249,19 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
             f"""SELECT {expression} AS key, d.decision, count(*) AS n
                    {joins} WHERE {where} GROUP BY 1, 2""", args)
 
+    policy_rows = await db.fetch_all(
+        f"""SELECT COALESCE(d.policy_id, '') AS key, d.decision, count(*) AS n
+              {joins} WHERE {where} AND d.decision IN ('Block', 'Alert') GROUP BY 1, 2""", args)
+    endpoint_rows = await db.fetch_all(
+        f"""SELECT COALESCE(NULLIF(d.client->>'workstation', ''), NULLIF(d.client->>'endpoint_id', ''),
+                            NULLIF(d.client->>'device_id', ''), '') AS key,
+                   d.decision, count(*) AS n, max(d.created_at) AS last_call
+              {joins} WHERE {where} GROUP BY 1, 2""", args)
+    flow_rows = await db.fetch_all(
+        f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), '') AS harness,
+                   COALESCE(d.server_id, '') AS server, d.decision, count(*) AS n
+              {joins} WHERE {where} GROUP BY 1, 2, 3""", args)
+
     decisions = ("Allow", "Alert", "Restrict", "Approval", "Block")
     def grouped(rows: list, cap: int = 12) -> list[dict]:
         groups = {}
@@ -256,13 +270,17 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
             count = int(row["n"] or 0)
             item[row["decision"]] = count
             item["total"] += count
+            if row.get("last_call") and (not item.get("last_call") or row["last_call"] > item["last_call"]):
+                item["last_call"] = row["last_call"]
         ordered = sorted(groups.values(), key=lambda item: item["total"], reverse=True)
         if len(ordered) <= cap:
             return ordered
-        other = {"key": "기타", "total": 0, **{key: 0 for key in decisions}}
+        other = {"key": "기타", "other": True, "total": 0, **{key: 0 for key in decisions}}
         for item in ordered[cap:]:
             for key in ("total", *decisions):
                 other[key] += item[key]
+            if item.get("last_call") and (not other.get("last_call") or item["last_call"] > other["last_call"]):
+                other["last_call"] = item["last_call"]
         return ordered[:cap] + [other]
 
     return {
@@ -273,4 +291,8 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
         "harnesses": grouped(dimension_rows["harnesses"]),
         "servers": grouped(dimension_rows["servers"]),
         "people": grouped(dimension_rows["people"]),
+        "policies": grouped(policy_rows),
+        "endpoints": grouped(endpoint_rows),
+        "flows": [{"harness": row["harness"], "server": row["server"], "decision": row["decision"],
+                   "n": int(row["n"] or 0)} for row in flow_rows],
     }

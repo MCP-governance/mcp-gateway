@@ -1122,7 +1122,7 @@ async def network_quality() -> dict:
     """엔드포인트에서 게이트웨이까지의 측정값. 오래된 값은 지연으로 보이지 않고 stale로 남는다."""
     rows = await db.fetch_all(
         """SELECT DISTINCT ON (a.endpoint_id) a.endpoint_id, a.hostname, s.measured_at, s.rtt_p50_ms,
-                  s.rtt_p95_ms, s.jitter_ms, s.failure_pct
+                  s.rtt_p95_ms, s.jitter_ms, s.failure_pct, s.probes
              FROM endpoint_agents a LEFT JOIN endpoint_network_samples s ON s.endpoint_id = a.endpoint_id
             WHERE a.status='active' AND a.agent_version<>'unregistered'
               AND (a.device_epoch IS NOT NULL OR s.endpoint_id IS NOT NULL)
@@ -1139,14 +1139,15 @@ async def network_quality() -> dict:
             "endpoint_id": row["endpoint_id"], "hostname": row["hostname"],
             "measured_at": measured.isoformat() if measured else None,
             "rtt_p50_ms": _round(row["rtt_p50_ms"]), "rtt_p95_ms": _round(row["rtt_p95_ms"]),
-            "jitter_ms": _round(row["jitter_ms"]), "failure_pct": _round(row["failure_pct"]), "state": state})
+            "jitter_ms": _round(row["jitter_ms"]), "failure_pct": _round(row["failure_pct"]),
+            "probes": row.get("probes"), "state": state})
     total = await db.fetch_one(
         """SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY rtt_p50_ms) AS p50,
                   percentile_disc(0.95) WITHIN GROUP (ORDER BY rtt_p95_ms) AS p95,
                   sum(failure_pct * probes) / NULLIF(sum(probes), 0) AS failure
              FROM endpoint_network_samples
             WHERE endpoint_id = ANY(%s::text[]) AND measured_at > now() - interval '24 hours'""", (fresh,)) or {}
-    return {"devices": devices,
+    return {"devices": devices, "checked_at": now.isoformat(),
             "summary": {"p50_ms": _round(total.get("p50")), "p95_ms": _round(total.get("p95")),
                         "failure_pct": _round(total.get("failure")), "devices": len(fresh)}}
 

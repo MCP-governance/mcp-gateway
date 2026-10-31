@@ -900,7 +900,7 @@ async def case_detail(case_id: str) -> dict:
     })
 
 
-async def list_cases(limit: int = 50) -> list[dict]:
+async def list_cases(limit: int = 50, attention: str | None = None, offset: int = 0) -> list[dict]:
     rows = await db.fetch_all(
         """SELECT c.id, c.server_id, c.relationship_id, c.engagement_label, c.provider, c.reason, c.status, c.grade,
                   c.cutover_at, c.opened_by, c.opened_at, c.assessed_at, c.closed_at, c.criteria,
@@ -911,7 +911,10 @@ async def list_cases(limit: int = 50) -> list[dict]:
                   (c.status <> 'CLOSED' AND c.opened_at < now() - make_interval(days => %s)) AS overdue,
                   c.opened_at + make_interval(days => %s) AS due_at
              FROM termination_cases c JOIN mcp_servers s ON s.id=c.server_id
-            ORDER BY c.opened_at DESC LIMIT %s""", (SLA_DAYS, SLA_DAYS, limit))
+            WHERE (%s::text IS NULL OR (c.status <> 'CLOSED'
+              AND (%s = 'required' OR c.opened_at < now() - make_interval(days => %s))))
+            ORDER BY c.opened_at DESC, c.id DESC LIMIT %s OFFSET %s""",
+        (SLA_DAYS, SLA_DAYS, attention, attention, SLA_DAYS, limit, offset))
     return [_row(dict(row)) for row in rows]
 
 
@@ -958,6 +961,8 @@ async def summary(fetch_all=db.fetch_all, fetch_one=db.fetch_one) -> dict:
     residue = await fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='retired-residue'")
     shadow = await fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE classification='shadow'")
     return {"open_cases": sum(int(r["n"]) for r in rows if r["status"] in {"OPEN", "REVOKING", "REOPENED"}),
+            "total_cases": sum(int(r["n"]) for r in rows),
+            "action_required": sum(int(r["n"]) for r in rows if r["status"] != "CLOSED"),
             "awaiting_close": sum(int(r["n"]) for r in rows if r["status"] == "ASSESSED"),
             "unresolved_grades": sum(int(r["n"]) for r in rows if r["status"] != "CLOSED" and r["grade"] in {"T2", "T3"}),
             "overdue": int(overdue["n"] or 0), "sla_days": SLA_DAYS,
