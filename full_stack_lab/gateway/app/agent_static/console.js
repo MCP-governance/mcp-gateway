@@ -417,8 +417,7 @@ const PAGES = [
   { id: "overview", label: "대시보드", group: "운영" },
   { id: "approvals", label: "승인 대기", group: "운영", badge: "approvals" },
   { id: "activity", label: "호출·감사 기록", group: "운영" },
-  { id: "servers", label: "MCP 서버", group: "접근 통제" },
-  { id: "coverage", label: "통제 현황", group: "접근 통제", badge: "coverage" },
+  { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
   { id: "policy", label: "정책", group: "접근 통제" },
@@ -468,12 +467,13 @@ function canonicalRoute(at) {
   const destinations = {
     audit: ["activity", ["incidents", "siem"].includes(at.query.get("t")) ? at.query.get("t") : "events"],
     people: ["endpoints", at.query.get("t")],
-    servers: ["coverage", at.query.get("t")],
+    coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
+    servers: ["endpoints", "shadow"],
     "sbom-impact": ["intake", "impact"],
     consent: ["approvals", "consent"],
   };
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
-  if (at.page === "servers" && !["items", "shadow", "vendor"].includes(at.query.get("t"))) return at;
+  if (at.page === "servers" && at.query.get("t") !== "shadow") return at;
   if (!Object.hasOwn(destinations, at.page)) return at;
   const target = destinations[at.page];
   const query = new URLSearchParams(at.query);
@@ -503,7 +503,7 @@ async function route() {
   if (view.dataset.page !== id) view.innerHTML = '<p class="skeleton">불러오는 중…</p>';
   view.dataset.page = id;
   const moved = view.dataset.at !== `${id}/${at.arg}`;
-  if (moved && ["coverage", "endpoints"].includes(id)) resetCoveragePaging();
+  if (moved && ["servers", "endpoints"].includes(id)) resetCoveragePaging();
   view.dataset.at = `${id}/${at.arg}`;
   try {
     const out = await ROUTES[id](at.arg, at.query.get("t") || "", at.query);
@@ -694,8 +694,8 @@ ROUTES.overview = async (_, tab) => {
           ["차단된 요청", x.blocked, "block", `#/activity?${todayFilter}&decision=Block`],
           ["실행 미확인", x.unknown, "alert", `#/activity?${todayFilter}&execution=unknown`]])}</section>
         <section><h2>현재 상태</h2>${kpiStrip([
-        ["통제 적용 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/people?t=devices"],
-        ["조직 통제 의존", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"],
+        ["통제 적용 엔드포인트", devices.filter((d) => d.account_state === "endpoint_enforced").length, "", "#/endpoints?t=devices"],
+        ["조직 통제 의존", count("bypass_possible"), "block", "#/servers?t=items&state=bypass_possible"],
           ["종료 조치 필요", term.unresolved_grades, "alert", "#/termination"],
           ["운영 이상 MCP", abnormalServers, "alert", "#/servers"]])}</section>
       </div>`,
@@ -712,10 +712,10 @@ ROUTES.overview = async (_, tab) => {
         </div>` },
         { key: "planes", label: "통제 적용 현황", body: html`<div class="stack">
           ${panel("조직 통제 의존 경로 (최대 8건)", bypass.length ? html`<table class="data"><thead><tr><th>항목</th><th>연동 유형</th><th>영향 범위</th><th>우회 경로</th></tr></thead><tbody>
-            ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/coverage?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
+            ${bypass.map((i) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/servers?t=items&state=bypass_possible&q=${encodeURIComponent(i.name)}">
               <td><b>${i.name}</b><span class="sub mono">${short(i.target || "", 50)}</span></td><td class="small">${INTEGRATION_CLASS[i.class] || i.class}</td>
               <td class="small">${bypassImpact(i)}</td><td>${bypassPaths(i)}</td></tr>`)}</tbody></table>` : empty("조직 통제 의존 경로 없음"),
-            { flush: true, end: html`<a class="btn sm" href="#/coverage?t=items&state=bypass_possible">전체</a>` })}
+            { flush: true, end: html`<a class="btn sm" href="#/servers?t=items&state=bypass_possible">전체</a>` })}
           ${panel("연동 유형별 통제 상태", items.length ? chartBox("c-ov-matrix", "연동 유형별 통제 항목 수", "lg") : empty("항목 없음"), { sub: "항목 수" })}</div>` },
         { key: "traffic", label: "호출 분석", body: html`<div class="stack">
           ${panel("시간대별 판정", chartBox("c-traffic", "최근 24시간 시간대별 판정 건수", "lg"), { sub: "최근 24시간" })}
@@ -749,7 +749,7 @@ ROUTES.overview = async (_, tab) => {
         Object.entries(CONTROL_STATE).map(([k, [, label]]) => ({ name: label, color: charts.color(STATE_DECISION[k]),
           data: Object.keys(INTEGRATION_CLASS).map((c) => items.filter((i) => i.class === c && i.state === k).length) })),
         { horizontal: true, onClick: (e) => { const c = Object.keys(INTEGRATION_CLASS)[e.dataIndex]; const st = Object.keys(CONTROL_STATE)[e.seriesIndex];
-          if (c && st) location.hash = `#/coverage?t=items&class=${c}&state=${st}`; } }),
+          if (c && st) location.hash = `#/servers?t=items&class=${c}&state=${st}`; } }),
       "c-traffic": () => charts.decisionColumns(buckets.map((b) => b.label), buckets),
       "c-lat-stages": () => charts.stacked(stages.map((r) => LATENCY_STAGE[r.stage] || r.stage), [
         { name: "중앙값", color: charts.color("Allow"), data: stages.map((r) => r.p50) },
@@ -1099,7 +1099,7 @@ async function showApproval(id) {
 
 let registry = null;
 ROUTES.servers = async (id, tab, query) => {
-  const [reg, o, pl] = await Promise.all([gw("registry"), gw("overview"), planes()]);
+  const [reg, o, pl, controls] = await Promise.all([gw("registry"), gw("overview"), planes(), serverControlTabs(query)]);
   registry = reg;
   const counts = Object.fromEntries(o.servers.map((s) => [s.id, s]));
   const plane = Object.fromEntries((pl?.items || []).filter((i) => i.key.startsWith("gateway:")).map((i) => [i.key.slice(8), i]));
@@ -1111,7 +1111,7 @@ ROUTES.servers = async (id, tab, query) => {
   const option = (value, label) => html`<option value="${value}" ${value === toolFilter ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
-      head: head("MCP 서버", { actions: html`<button class="btn" data-act="registry-export" data-format="csv">등록부 CSV</button>
+      head: head("AI 연결 관리", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button><button class="btn" data-act="registry-export" data-format="csv">등록부 CSV</button>
         <button class="btn" data-act="registry-export" data-format="json">등록부 JSON</button>
         <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>
         <button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
@@ -1147,6 +1147,7 @@ ROUTES.servers = async (id, tab, query) => {
               <td class="small clip">${s.status_reason || "—"}</td><td class="small">${ago(s.last_seen_at)}</td>
               <td class="num">${s.status === "DRIFT" && !s.registration ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</td></tr>`)}
             </tbody></table>`, { flush: true }) },
+        ...controls,
       ],
     }),
     after: () => id && showServer(id),
@@ -1278,11 +1279,12 @@ let connectorGroups = [], connectorItems = [];
 // Which control governs each integration and endpoint, with what evidence.
 const STATE_DECISION = { gateway_enforced: "Allow", endpoint_enforced: "Allow", vendor_enforced: "",
   observed_only: "Alert", unknown_not_enrolled: "", bypass_possible: "Block" };
-const COV_LISTS = { entries: "entries", listeners: "listeners", os_events: "os-events" };
+const COV_LISTS = { full_entries: "entries", entries: "entries", listeners: "listeners", os_events: "os-events" };
 const covPaging = Object.fromEntries(Object.keys(COV_LISTS).map((key) => [key, { cursors: [null], index: 0, next: null }]));
 const resetCoveragePaging = () => Object.values(covPaging).forEach((state) => Object.assign(state, { cursors: [null], index: 0, next: null }));
 async function covPage(inv, list, classification = "shadow,retired-residue") {
-  const state = covPaging[list], first = { ...inv.pages[list], rows: inv[list] };
+  const source = list === "full_entries" ? "entries" : list;
+  const state = covPaging[list], first = { ...inv.pages[source], rows: inv[source] };
   const page = !state.index ? first : await gw(`endpoint/inventory/${COV_LISTS[list]}?${new URLSearchParams({
     limit: first.limit, cursor: state.cursors[state.index], ...(list === "os_events" || !classification ? {} : { classification }) })}`);
   state.next = page.next_cursor;
@@ -1297,18 +1299,17 @@ const covPager = (list, page) => {
 const covCount = (page, shown) => { const c = countView(page, shown); return { sub: c.label, end: c.truncated ? chip("alert", `일부 표시 ${c.shown}건`) : "" }; };
 const evidenceChip = (state) => { const v = provenanceView({ state }); return v.state === "unreported" ? NONE : chip(v.tone, v.label); };
 const recordRow = (kind, id, cells) => html`<tr class="clickable" tabindex="0" data-act="endpoint-record" data-kind="${kind}" data-id="${id}">${cells}</tr>`;
-const endpointSettings = (entriesPage) => {
+const endpointSettings = (entriesPage, list = "entries") => {
   const rows = entriesPage.rows;
   return panel("엔드포인트 MCP 설정", html`<table class="data"><thead><tr><th>엔드포인트</th><th>설정 파일</th><th>서버</th><th>연결</th><th>분류</th><th>출처</th><th>증거</th></tr></thead><tbody>
             ${rows.map((e) => recordRow("config", e.id, html`<td>${entityRef(e.endpoint_id)}</td><td class="small mono">${e.config_path}</td>
               <td><b>${e.server_label}</b>${e.registry_name ? html`<span class="sub">${e.registry_name}</span>` : ""}</td>
               <td class="small mono clip">${e.transport} ${short(e.endpoint_ref, 60)}</td><td>${chip(...(ENDPOINT_CLASS[e.classification] || ["outline", "확인 불가"]))}</td>
               <td class="small">${originLabel(e.origin)}</td><td>${evidenceChip(e.provenance_state)}</td>`))}
-            </tbody></table>${rows.length ? "" : empty("MCP 설정 없음")}${covPager("entries", entriesPage)}`, { flush: true, ...covCount(entriesPage, rows.length) });
+            </tbody></table>${rows.length ? "" : empty("MCP 설정 없음")}${covPager(list, entriesPage)}`, { flush: true, ...covCount(entriesPage, rows.length) });
 };
 async function serverControlTabs(query) {
-  const [p, inv, conn] = await Promise.all([planes(), gw("endpoint/inventory?classification=shadow,retired-residue"), api("/api/connectors")]);
-  const [entriesPage, listenersPage, eventsPage] = await Promise.all([covPage(inv, "entries"), covPage(inv, "listeners"), covPage(inv, "os_events")]);
+  const [p, conn] = await Promise.all([planes(), api("/api/connectors")]);
   connectorGroups = conn.items;
   connectorItems = p.items;
   const items = dedupeItems(p.items);
@@ -1320,18 +1321,13 @@ async function serverControlTabs(query) {
   const review = conn.summary.pending + conn.summary.expired;
   const coverageSelect = (key, label, choices, cur) => html`<label class="list-search">${label}<select data-coverage-filter="${key}" aria-label="${label}">
     <option value="">전체</option>${Object.entries(choices).map(([k,v]) => html`<option value="${k}" ${k === cur ? raw("selected") : ""}>${Array.isArray(v) ? v[1] : v}</option>`)}</select></label>`;
-  const shadowRows = entriesPage.rows.filter((e) => e.classification !== "registered");
-  const listenerView = listenerCoverage(listenersPage.rows);
-  const observations = observationRows(inv.agents);
-  const osEvents = eventsPage.rows;
-  const shadowTotal = entriesPage.total + listenersPage.total + eventsPage.total;
   return [
     { key: "items", label: "연결 목록", n: items.length, body: html`<div class="stack">
-      ${kpiStrip([["게이트웨이 통제", count("gateway_enforced"), "allow", "#/coverage?t=items&state=gateway_enforced"],
-        ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/coverage?t=items&state=endpoint_enforced"],
-        ["벤더 통제", count("vendor_enforced"), "restrict", "#/coverage?t=items&state=vendor_enforced"],
-        ["관찰 및 미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/coverage?t=items&state=observed_only"],
-        ["조직 통제 의존", count("bypass_possible"), "block", "#/coverage?t=items&state=bypass_possible"]])}
+      ${kpiStrip([["게이트웨이 통제", count("gateway_enforced"), "allow", "#/servers?t=items&state=gateway_enforced"],
+        ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/servers?t=items&state=endpoint_enforced"],
+        ["벤더 통제", count("vendor_enforced"), "restrict", "#/servers?t=items&state=vendor_enforced"],
+        ["관찰 및 미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/servers?t=items&state=observed_only"],
+        ["조직 통제 의존", count("bypass_possible"), "block", "#/servers?t=items&state=bypass_possible"]])}
       ${panel("MCP·커넥터·플러그인", html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th>승인</th><th class="num">우회 경로</th><th>발견</th></tr></thead><tbody>
         ${rows.map((i) => html`<tr class="clickable" tabindex="0" data-act="integration" data-key="${i.key}">
           <td><b>${i.name}</b><span class="sub">${entityRef(i.target || "", 48)}</span>${i.pcs > 1 ? html`<span class="sub">엔드포인트 ${i.pcs}대</span>` : ""}</td>
@@ -1344,7 +1340,19 @@ async function serverControlTabs(query) {
         tools: html`<input type="search" data-coverage-search maxlength="80" value="${query.get("q") || ""}" placeholder="이름·대상·사용자" aria-label="항목 검색" />
           ${coverageSelect("state", "상태", CONTROL_STATE, state)}
           ${coverageSelect("class", "연동 유형", INTEGRATION_CLASS, cls)}<span class="small muted">${rows.length}/${items.length}건</span>` })}</div>` },
-    { key: "shadow", label: "미등록 및 잔존", n: shadowTotal,
+    { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: builtinTabs(conn, items) },
+  ];
+}
+
+async function discoveryTab() {
+  const inv = await gw("endpoint/inventory?classification=shadow,retired-residue");
+  const [entriesPage, listenersPage, eventsPage] = await Promise.all([covPage(inv, "entries"), covPage(inv, "listeners"), covPage(inv, "os_events")]);
+  const shadowRows = entriesPage.rows.filter((e) => e.classification !== "registered");
+  const listenerView = listenerCoverage(listenersPage.rows);
+  const observations = observationRows(inv.agents);
+  const osEvents = eventsPage.rows;
+  const shadowTotal = entriesPage.total + listenersPage.total + eventsPage.total;
+  return { key: "shadow", label: "발견 항목", n: shadowTotal,
       hot: entriesPage.total + listenersPage.total > 0, body: html`<div class="stack">
       ${endpointSettings({ ...entriesPage, rows: shadowRows })}
       ${panel("엔드포인트 수신기", html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>출처</th><th>주소·프로세스</th><th>MCP 여부</th><th>분류</th><th>신선도</th><th>증거</th></tr></thead><tbody>
@@ -1368,27 +1376,8 @@ async function serverControlTabs(query) {
           <td>${chip(...denialClass(e.denial_class))}</td>
           <td class="mono small">${osEventTarget(e)}${e.details?.parent_executable ? html`<span class="sub">${e.details.parent_executable}</span>` : ""}</td>
           <td>${evidenceChip(e.provenance_state)}</td>`))}
-        </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` },
-    { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: builtinTabs(conn, items) },
-  ];
+        </tbody></table>${osEvents.length ? "" : empty("수신된 차단 기록 없음")}${covPager("os_events", eventsPage)}`, { flush: true, ...covCount(eventsPage, osEvents.length) })}</div>` };
 }
-
-ROUTES.coverage = async (_, tab, query) => {
-  const [controls, p] = await Promise.all([serverControlTabs(query), planes()]);
-  return { html: page({
-    head: head("통제 현황", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
-    active: ["items", "devices", "shadow", "vendor"].includes(tab) ? tab : "items",
-    tabs: [controls[0], { key: "devices", label: "엔드포인트", n: p.devices.length, hot: p.summary.devices.bypass_possible > 0, body: panel("엔드포인트",
-          html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>플랫폼</th><th>상태</th><th>관리 계정</th><th>점검</th><th>우회 경로</th></tr></thead><tbody>
-            ${p.devices.map((d) => html`<tr><td>${d.endpoint_id ? entityRef(d.endpoint_id) : NONE}<span class="sub">${d.hostname || ""}${d.account ? ` · ${d.account}` : ""}</span></td>
-              <td>${d.owner || "—"}</td><td>${PLATFORM[d.platform] || d.platform || "—"}</td><td>${statusPair(d)}</td>
-              <td>${d.account_state ? controlChip(d.account_state) : NONE}</td>
-              <td>${checksChip(d.checks)}</td>
-              <td class="small">${(d.bypass || []).length ? html`<div class="pill-list">${d.bypass.map((b) => chip("block", b))}</div>` : NONE}
-                ${denialCount(d) ? html`<span class="sub">엔드포인트 차단 24시간 ${denialCount(d)}</span>` : ""}</td></tr>`)}
-            </tbody></table>${p.devices.length ? "" : empty("엔드포인트 없음")}`, { flush: true }) }, ...controls.slice(1)],
-  }) };
-};
 
 const VENDOR_CONSOLE = { blocked: "차단", limited: "제한 허용", allowed: "허용", unknown: "확인 불가" };
 const CHECK_LABEL = { apparmor_enforcing: "실행 통제", nftables_active: "네트워크 통제", firewall_enforcing: "네트워크 통제", pf_enforcing: "네트워크 통제", protected_configs: "설정 보호", ordinary_account: "일반 계정", user_command_helpers: "사용자 명령 헬퍼 없음" };
@@ -1472,7 +1461,7 @@ ROUTES.endpoints = async (_, tab) => {
   const [{ accounts }, inv, o, p] = await Promise.all([
     api("/api/accounts"), gw("endpoint/inventory"), gw("overview"), planes()]);
   peopleAccounts = accounts;
-  const entriesPage = await covPage(inv, "entries", "");
+  const [entriesPage, discovery] = await Promise.all([covPage(inv, "full_entries", ""), discoveryTab()]);
   const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const deviceState = Object.fromEntries(p.devices.filter((d) => d.endpoint_id).map((d) => [d.endpoint_id, d]));
   const harnessOf = Object.fromEntries(o.workstations.map((w) => [w.endpoint_id, w]));
@@ -1483,7 +1472,7 @@ ROUTES.endpoints = async (_, tab) => {
       kpis: kpiStrip([["최근 15분 보고", inv.coverage.reporting_recently],
         ["격리", managed.filter((a) => a.managed_state === "quarantined").length, "block"],
         ["활성화 대기", managed.filter((a) => a.managed_state === "pending").length, "approval"]]),
-      active: ["devices", "managed"].includes(tab) ? tab : "devices",
+      active: ["devices", "managed", "shadow"].includes(tab) ? tab : "devices",
       tabs: [
         { key: "devices", label: "엔드포인트", n: inv.agents.length, body: html`<div class="stack">
           ${panel("엔드포인트", html`<table class="data"><thead><tr><th>엔드포인트</th><th>사용자</th><th>하네스</th><th>상태</th><th>마지막 보고</th><th></th></tr></thead><tbody>
@@ -1505,7 +1494,8 @@ ROUTES.endpoints = async (_, tab) => {
               <td class="small">${(d.bypass || []).length ? html`<div class="pill-list">${d.bypass.map((b) => chip("block", b))}</div>` : NONE}
                 ${denialCount(d) ? html`<span class="sub">엔드포인트 차단 24시간 ${denialCount(d)}</span>` : ""}</td></tr>`)}
             </tbody></table>${p.devices.length ? "" : empty("엔드포인트 없음")}`, { flush: true })}
-          ${endpointSettings(entriesPage)}</div>` },
+          ${endpointSettings(entriesPage, "full_entries")}</div>` },
+        discovery,
         { key: "managed", label: "연결 이력", n: (inv.managed_events || []).length,
           body: panel("연결 이력", html`<table class="data"><thead><tr><th>시각</th><th>사용자·엔드포인트</th><th>내용</th><th>사유</th></tr></thead><tbody>
             ${(inv.managed_events || []).map((e) => html`<tr><td>${when(e.observed_at)}</td><td>${e.owner_name || "사용자 확인 불가"}<span class="sub mono">${e.endpoint_id || "—"}</span></td>
@@ -2579,7 +2569,7 @@ const ACTIONS = {
     const q = new URLSearchParams(current.query);
     if (el.dataset.value) q.set(el.dataset.key, el.dataset.value); else q.delete(el.dataset.key);
     q.set("t", "items");
-    location.hash = `#/coverage?${q}`;
+    location.hash = `#/servers?${q}`;
   },
   async integration(el) {
     const i = integrationItems.find((x) => x.key === el.dataset.key);
@@ -3315,7 +3305,7 @@ document.addEventListener("input", (event) => {
       const q = new URLSearchParams(current.query);
       if (input.value.trim()) q.set("q", input.value.trim()); else q.delete("q");
       q.set("t", "items");
-      history.replaceState(null, "", `#/coverage?${q}`);
+      history.replaceState(null, "", `#/servers?${q}`);
       route().then(() => { const again = $("[data-coverage-search]"); again?.focus(); again?.setSelectionRange(again.value.length, again.value.length); });
     }, 400);
     return;

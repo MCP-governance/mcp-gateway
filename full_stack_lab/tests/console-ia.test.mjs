@@ -6,7 +6,7 @@ import * as state from "../gateway/app/agent_static/console-state.mjs";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
 const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
-const adminPages = ["overview", "approvals", "activity", "servers", "coverage", "people", "endpoints", "policy", "intake", "termination", "connections"];
+const adminPages = ["overview", "approvals", "activity", "servers", "people", "endpoints", "policy", "intake", "termination", "connections"];
 const employeePages = ["activity", "consent", "intake", "connections"];
 const code = source.slice(0, source.indexOf("// ── wiring")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 
@@ -77,14 +77,15 @@ test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사�
   }
 });
 
-test("승인 배지는 승인과 동의 합계, 통제 현황 배지는 커넥터 검토 건수", async () => {
+test("승인 배지는 승인과 동의 합계, AI 연결 관리 배지는 커넥터 검토 건수", async () => {
   const ui = build(true, { "/api/consents": { consents: [
     { status: "PENDING", server_id: "a" }, { status: "PENDING", server_id: "a" },
     { status: "PENDING", server_id: "b" }, { status: "GRANTED", server_id: "c" }] } });
   await ui.refreshBadges();
   const nav = ui.node("#nav").innerHTML;
   assert.match(nav, /href="#\/approvals"[^]*?<span class="count">4<\/span>/);
-  assert.match(nav, /href="#\/coverage"[^]*?<span class="count">4<\/span>/);
+  assert.match(nav, /href="#\/servers"[^]*?<span class="count">4<\/span>/);
+  assert.doesNotMatch(nav, /href="#\/coverage"/);
   assert.doesNotMatch(nav, /href="#\/consent"/);
 });
 
@@ -92,9 +93,10 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
   const ui = build();
   for (const [page, tab, target, nextTab] of [
     ["audit", "", "activity", "events"], ["audit", "incidents", "activity", "incidents"],
-    ["audit", "siem", "activity", "siem"], ["coverage", "", "coverage", ""],
-    ["coverage", "devices", "coverage", "devices"], ["coverage", "shadow", "coverage", "shadow"],
-    ["servers", "vendor", "coverage", "vendor"], ["sbom-impact", "", "intake", "impact"],
+    ["audit", "siem", "activity", "siem"], ["coverage", "", "servers", "items"],
+    ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
+    ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "intake", "impact"],
+    ["servers", "shadow", "endpoints", "shadow"],
     ["people", "devices", "endpoints", "devices"], ["people", "managed", "endpoints", "managed"],
     ["consent", "history", "approvals", "consent"],
   ]) {
@@ -136,13 +138,14 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.deepEqual(Array.from(approvals.html.tabs, (item) => item.key), ["queue", "unsent", "history", "consent"]);
   assert.match(String(approvals.html.tabs[3].body), /확인할 요청 없음[^]*동의 기록/);
   const servers = await ui.ROUTES.servers("", "servers", new URLSearchParams());
-  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract"]);
+  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract", "items", "vendor"]);
   assert.doesNotMatch(String(servers.html.head), /통제 범위/);
-  const coverage = await ui.ROUTES.coverage("", "items", new URLSearchParams());
-  assert.deepEqual(Array.from(coverage.html.tabs, (item) => item.key), ["items", "devices", "shadow", "vendor"]);
-  assert.match(String(coverage.html.head), /통제 현황/);
+  assert.match(String(servers.html.head), /AI 연결 관리/);
+  assert.equal(ui.ROUTES.coverage, undefined);
   const people = await ui.ROUTES.endpoints("", "devices");
   const devices = people.html.tabs.find((item) => item.key === "devices");
+  assert.deepEqual(Array.from(people.html.tabs, (item) => item.key), ["devices", "shadow", "managed"]);
+  assert.match(String(people.html.tabs[1].body), /엔드포인트 MCP 설정[^]*엔드포인트 수신기[^]*관측 수집 상태[^]*엔드포인트 차단/);
   assert.match(String(devices.body), /새 PC 활성화[^]*통제 점검[^]*엔드포인트 MCP 설정/);
   const intake = await ui.ROUTES.intake("", "impact", new URLSearchParams("package=alpha&range=%3E%3D1.0.0"));
   assert.equal(intake.html.tabs.at(-1).key, "impact");
@@ -157,6 +160,17 @@ test("MCP 설정 다음 페이지는 사용자 화면의 전체 범위와 서버
   await ui.covPage(ui.inventory, "entries", ""); await ui.covPage(ui.inventory, "entries");
   assert.equal(ui.calls.length, 2);
   assert.ok(!ui.calls[0].includes("classification")); assert.match(ui.calls[1], /classification=shadow%2Cretired-residue/);
+});
+
+test("전체 설정과 발견 항목의 페이지 커서는 독립적이다", async () => {
+  const ui = build();
+  ui.covPaging.full_entries.index = 1; ui.covPaging.full_entries.cursors.push("all-2");
+  ui.covPaging.entries.index = 1; ui.covPaging.entries.cursors.push("shadow-2");
+  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=all-2"] = { rows: [], next_cursor: "all-3" };
+  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=shadow-2&classification=shadow%2Cretired-residue"] = { rows: [], next_cursor: "shadow-3" };
+  await ui.ROUTES.endpoints("", "shadow");
+  assert.equal(ui.covPaging.full_entries.next, "all-3");
+  assert.equal(ui.covPaging.entries.next, "shadow-3");
 });
 
 test("도입 신청 타이머는 기존 탭에서 갱신하고 공급망 폼·새 신청은 보존한다", async () => {

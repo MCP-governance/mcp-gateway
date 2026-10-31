@@ -22,6 +22,7 @@ function routes(provider = 'local') {
     },
     planes: async () => ({ devices: [] }),
     covPage: async () => ({ rows: [], total: 0 }), endpointSettings: () => '',
+    discoveryTab: async () => ({ key: 'shadow', label: '발견 항목' }),
     html: () => '', raw: (v) => v, panel: () => '', empty: () => '', kv: () => '',
     listToolbar: () => '', kpiStrip: (v) => v,
     head: (title) => title, page: (value) => value,
@@ -46,7 +47,7 @@ test('endpoint management retains device and connection history tabs without sig
   const { html: page } = await context.ROUTES.endpoints('', 'managed');
   assert.equal(page.head, '엔드포인트 관리');
   assert.equal(page.active, 'managed');
-  assert.deepEqual(Array.from(page.tabs, (t) => t.key), ['devices', 'managed']);
+  assert.deepEqual(Array.from(page.tabs, (t) => t.key), ['devices', 'shadow', 'managed']);
   assert.ok(!calls.includes('/api/signup-requests'));
   assert.ok(!calls.includes('/api/identity'));
 });
