@@ -653,6 +653,7 @@ function performancePanels(lat, net, serverName) {
       ${devices.map((d) => html`<tr><td>${entityRef(d.endpoint_id)}<span class="sub">${d.hostname || ""}</span></td>
         <td class="num">${d.state === "fresh" ? msText(d.rtt_p50_ms) : "—"}</td><td class="num">${d.state === "fresh" ? msText(d.rtt_p95_ms) : "—"}</td><td class="num">${d.state === "fresh" ? msText(d.jitter_ms) : "—"}</td><td class="num">${d.state === "fresh" ? pctText(d.failure_pct) : "—"}</td>
         <td class="num">${d.probes ?? "—"}</td><td class="small">${when(d.measured_at)}</td><td>${d.state === "fresh" ? d.rtt_p50_ms == null ? chip("alert", "측정 실패") : chip("outline", "최근 측정") : d.state === "stale" ? chip("alert", "측정 만료") : chip("outline", "미측정")}</td></tr>`)}</tbody></table>` : empty("측정 대상 엔드포인트 없음"), { flush: true, sub: html`<span>엔드포인트별 최근 측정</span> <span>조회 시각</span> ${when(net?.checked_at)}` })}
+    ${panel("시스템 자원", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
   </div>`;
 }
 function startSystemMetrics() {
@@ -709,12 +710,12 @@ ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
     html: page({
       head: head("대시보드", { status: html`${modeChip(o.enforcement)}${componentHealth(health)}` }),
       kpis: html`<div class="dashboard-kpi-groups">
-        <section><h2>조치 필요</h2><div class="kpis kpis-4">
-          <a class="kpi ${o.unresolved_execution > 0 ? "alert" : ""}" href="#/activity?t=unsent"><div class="label">실행 확인 필요</div><div class="value">${o.unresolved_execution ?? "—"}</div></a>
-          <a class="kpi ${count("bypass_possible") > 0 ? "alert" : ""}" href="#/servers?t=items&state=bypass_possible"><div class="label">통제 점검 필요 연결</div><div class="value">${count("bypass_possible")}</div></a>
-          <a class="kpi ${abnormalServers > 0 ? "alert" : ""}" href="#/servers?t=servers&attention=required"><div class="label">MCP 점검 필요</div><div class="value">${abnormalServers}</div></a>
-          <div class="kpi ${term.action_required > 0 ? "alert" : ""}"><a class="kpi-main" href="#/termination?t=cases&attention=required"><div class="label">종료 조치 필요</div><div class="value">${term.action_required ?? "—"}</div></a>
-            <a class="kpi-detail" href="#/termination?t=cases&attention=overdue"><span>기한 초과</span><b>${term.overdue ?? "—"}</b></a></div>
+        <section><h2>확인 및 조치</h2><div class="kpis kpis-4">
+          <a class="kpi ${o.unresolved_execution > 0 ? "alert" : ""}" href="#/activity?t=unsent"><div class="label">실행 여부 확인</div><div class="value">${o.unresolved_execution ?? "—"}${o.unresolved_execution == null ? "" : html`<small>건</small>`}</div></a>
+          <a class="kpi ${count("bypass_possible") > 0 ? "alert" : ""}" href="#/servers?t=items&state=bypass_possible"><div class="label">연결 통제 점검</div><div class="value">${count("bypass_possible")}<small>개</small></div></a>
+          <a class="kpi ${abnormalServers > 0 ? "alert" : ""}" href="#/servers?t=servers&attention=required"><div class="label">MCP 서버 점검</div><div class="value">${abnormalServers}<small>개</small></div></a>
+          <div class="kpi ${term.action_required > 0 ? "alert" : ""}"><a class="kpi-main" href="#/termination?t=cases&attention=required"><div class="label">종료 처리</div><div class="value">${term.action_required ?? "—"}${term.action_required == null ? "" : html`<small>건</small>`}</div></a>
+            <a class="kpi-detail" href="#/termination?t=cases&attention=overdue"><span>기한 초과</span><b>${term.overdue ?? "—"}${term.overdue == null ? "" : html`<small>건</small>`}</b></a></div>
         </div></section>
         <section><h2>오늘 도구 호출</h2><div class="kpis kpis-2">
           <a class="kpi" href="#/activity?${todayFilter}"><div class="label">전체 호출</div><div class="value">${x.tool_calls ?? "—"}</div></a>
@@ -729,9 +730,7 @@ ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
             <a class="action-link" href="#/endpoints?t=devices"><span>엔드포인트 활성화</span><b class="n">${activationCount}</b></a>
             <a class="action-link" href="#/intake"><span>도입 조치 필요</span><b class="n">${o.intake_actions || 0}</b></a>
           </div>`)}
-          <div id="approval-preview">${approvalQueue(approvalPreview, true)}</div>
           ${panel("최근 차단 10건", feed.rows.length ? decisionTable(feed.rows) : empty("차단된 호출 없음"), { flush: true, end: html`<a class="btn sm" href="#/activity?decision=Block">차단 로그 <span aria-hidden="true">↗</span></a>` })}
-          ${panel("시스템 자원", html`<div id="system-metrics" aria-live="polite">${metricsCards(null)}</div>`)}
         </div>` },
         { key: "approvals", label: "호출 승인", n: approvalPaging.total, hot: approvalPaging.total > 0, body: html`<div id="approval-queue">${approvalQueue(approvalPending)}</div>` },
         { key: "latency", label: "성능", body: performancePanels(lat, net, serverName) },
@@ -1039,14 +1038,14 @@ async function showDecision(id) {
 }
 
 let approvalRows = [];
-let approvalPreview = [], approvalPending = [];
+let approvalPending = [];
 let approvalPaging = { page: 1, pageSize: 30, total: 0, oldest: null };
 let approvalTimer = null, approvalBusy = false, approvalGeneration = 0, approvalFailed = false;
 const approvalPageNumber = (query) => Math.max(1, Math.floor(Number(query.get("approval_page")) || 1));
 function setApprovalLists(first, selected) {
-  approvalPreview = first.approvals.map((a) => ({ ...a, pending: true }));
+  const firstPage = first.approvals.map((a) => ({ ...a, pending: true }));
   approvalPending = selected.approvals.map((a) => ({ ...a, pending: true }));
-  approvalRows = [...approvalPending, ...approvalPreview, ...first.history];
+  approvalRows = [...approvalPending, ...firstPage, ...first.history];
   approvalPaging = { page: selected.page || 1, pageSize: selected.page_size || 30,
     total: selected.total ?? selected.approvals.length, oldest: first.oldest };
   approvalFailed = false;
@@ -1062,7 +1061,7 @@ async function refreshApprovalLists(manual = false) {
   if (approvalBusy || current.page !== "overview" || document.hidden
     || !["", "summary", "approvals"].includes(current.query.get("t") || "")
     || $("#drawer")?.classList.contains("open") || $("#dialog")?.open
-    || (!manual && document.activeElement?.closest?.("#approval-preview, #approval-queue"))) return;
+    || (!manual && document.activeElement?.closest?.("#approval-queue"))) return;
   const generation = approvalGeneration, seq = routeSeq;
   approvalBusy = true;
   const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 10000);
@@ -1074,7 +1073,7 @@ async function refreshApprovalLists(manual = false) {
     const pageData = p > lastPage ? lastPage === 1 ? first : await api(`/approvals?page=${lastPage}`, { signal: controller.signal }) : selected || first;
     if (generation !== approvalGeneration || seq !== routeSeq) return;
     if ($("#drawer")?.classList.contains("open") || $("#dialog")?.open
-      || (!manual && document.activeElement?.closest?.("#approval-preview, #approval-queue"))) return;
+      || (!manual && document.activeElement?.closest?.("#approval-queue"))) return;
     setApprovalLists(first, pageData);
     if (p > lastPage) {
       current.query.set("approval_page", lastPage);
@@ -1089,28 +1088,26 @@ async function refreshApprovalLists(manual = false) {
     if (generation === approvalGeneration) approvalBusy = false;
   }
   if (generation !== approvalGeneration || seq !== routeSeq) return;
-  const preview = $("#approval-preview"), queue = $("#approval-queue"), count = $("#p-tab-approvals .n");
-  if (preview) preview.innerHTML = String(approvalQueue(approvalPreview, true));
+  const queue = $("#approval-queue"), count = $("#p-tab-approvals .n");
   if (queue) queue.innerHTML = String(approvalQueue(approvalPending));
   if (count) { count.textContent = approvalPaging.total; count.classList.toggle("hot", approvalPaging.total > 0); }
   if (manual) $("#approval-queue [data-act='approval-refresh']")?.focus();
 }
-function approvalQueue(approvals, preview = false) {
-  const rows = preview ? approvals.slice(0, 5) : approvals;
+function approvalQueue(approvals) {
   const oldest = approvalPaging.oldest || approvals.reduce((m, a) => Math.min(m, new Date(a.created_at).getTime()), Date.now());
   const totalPages = Math.max(1, Math.ceil(approvalPaging.total / approvalPaging.pageSize));
   const href = (p) => `#/overview?t=approvals&approval_page=${p}`;
-  const paging = !preview && totalPages > 1 ? html`<div class="row-actions">${approvalPaging.page > 1 ? html`<a class="btn sm" href="${href(approvalPaging.page - 1)}">이전</a>` : ""}<span>${approvalPaging.page} / ${totalPages}</span>${approvalPaging.page < totalPages ? html`<a class="btn sm" href="${href(approvalPaging.page + 1)}">다음</a>` : ""}</div>` : "";
+  const paging = totalPages > 1 ? html`<div class="row-actions">${approvalPaging.page > 1 ? html`<a class="btn sm" href="${href(approvalPaging.page - 1)}">이전</a>` : ""}<span>${approvalPaging.page} / ${totalPages}</span>${approvalPaging.page < totalPages ? html`<a class="btn sm" href="${href(approvalPaging.page + 1)}">다음</a>` : ""}</div>` : "";
   return panel("호출 승인 요청", approvals.length ? html`<table class="data">
-          <thead><tr><th>요청자</th><th>도구 및 대상</th>${preview ? "" : html`<th>승인 사유</th><th>행위 및 데이터 등급</th><th>요청 시각</th>`}<th>만료 시각</th><th></th></tr></thead><tbody>
-          ${rows.map((a) => html`<tr class="clickable" tabindex="0" data-act="approval" data-id="${a.id}">
+          <thead><tr><th>요청자</th><th>도구 및 대상</th><th>승인 사유</th><th>행위 및 데이터 등급</th><th>요청 시각</th><th>만료 시각</th><th></th></tr></thead><tbody>
+          ${approvals.map((a) => html`<tr class="clickable" tabindex="0" data-act="approval" data-id="${a.id}">
             <td class="who-cell"><b>${a.display_name || a.requested_by}</b><span class="sub">${a.department || ""}</span></td>
             <td><code>${a.server_id}.${a.tool}</code><span class="sub">${short(a.summary || a.explanation?.summary || "—", 100)}</span>${a.explanation ? chip("approval", "중대 영향") : ""}</td>
-            ${preview ? "" : html`<td class="small">${short(a.reason || "—", 100)}</td><td>${ACTION[a.action] || a.action || "—"} / ${DATA_CLASS[a.data_class] || a.data_class || "—"}</td><td class="small">${ago(a.created_at)}</td>`}
+            <td class="small">${short(a.reason || "—", 100)}</td><td>${ACTION[a.action] || a.action || "—"} / ${DATA_CLASS[a.data_class] || a.data_class || "—"}</td><td class="small">${ago(a.created_at)}</td>
             <td class="small">${when(a.expires_at)}</td>
             <td class="num nowrap">${a.own ? chip("outline", "본인 요청") : ""}<button class="btn sm" data-act="approval" data-id="${a.id}">검토</button></td></tr>`)}
           </tbody></table>` : empty("대기 중인 요청 없음"), { flush: true, status: approvalFailed ? chip("alert", "갱신 실패") : "",
-            end: preview ? html`<a class="btn sm" href="#/overview?t=approvals">전체 보기</a>` : html`<button class="btn sm" data-act="approval-refresh">새로고침</button>${paging}`,
+            end: html`<button class="btn sm" data-act="approval-refresh">새로고침</button>${paging}`,
             sub: approvalPaging.total > 0 ? `가장 오래된 요청 ${ago(oldest)}` : "" });
 }
 

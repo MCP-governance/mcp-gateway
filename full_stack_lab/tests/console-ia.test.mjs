@@ -172,7 +172,7 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.match(String(intake.html.tabs.at(-1).body), /value="alpha"[^]*sbom-impact-stop/);
 });
 
-test("대시보드는 승인 미리보기와 전체 목록, 각 관리 작업으로의 이동을 제공한다", async () => {
+test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관리 작업으로의 이동을 제공한다", async () => {
   const approvals = Array.from({ length: 7 }, (_, i) => ({ id: `call-${i}`, server_id: "docs", tool: "read",
     requested_by: "<img src=x>", created_at: "2026-10-31T00:00:00Z", expires_at: "2026-11-01T00:00:00Z", own: i === 0 }));
   const ui = build(true, { "/approvals": { approvals, history: [] },
@@ -190,13 +190,13 @@ test("대시보드는 승인 미리보기와 전체 목록, 각 관리 작업으
   assert.match(String(out.html.kpis), /전체 호출<\/div><div class="value">20/);
   assert.match(String(out.html.kpis), /차단된 호출<\/div><div class="value">6/);
   assert.doesNotMatch(String(out.html.kpis), /오늘 운영 현황|현재 상태|통제 적용 엔드포인트|실행된 호출/);
-  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 확인 필요<\/div><div class="value">305/);
-  assert.match(String(out.html.kpis), /종료 조치 필요<\/div><div class="value">9/);
+  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 여부 확인<\/div><div class="value">305<small>건<\/small>/);
+  assert.match(String(out.html.kpis), /종료 처리<\/div><div class="value">9<small>건<\/small>/);
   assert.match(String(out.html.kpis), /attention=overdue"><span>기한 초과<\/span><b>3/);
   assert.doesNotMatch(summary, /실행 확인 필요|종료 기한 초과/);
-  assert.equal((summary.match(/<tr[^>]+data-act="approval"/g) || []).length, 5);
+  assert.equal((summary.match(/<tr[^>]+data-act="approval"/g) || []).length, 0);
   assert.equal((queue.match(/<tr[^>]+data-act="approval"/g) || []).length, 7);
-  assert.match(summary, /href="#\/overview\?t=approvals"/);
+  assert.doesNotMatch(summary, /호출 승인 요청|approval-preview/);
   assert.match(summary, /href="#\/people\?t=signups"[^]*?가입 승인<\/span><b class="n">1<\/b>/);
   assert.match(summary, /엔드포인트 활성화<\/span><b class="n">1<\/b>/);
   assert.match(queue, /&lt;img/);
@@ -211,7 +211,7 @@ test("MCP 점검 목록은 대시보드와 같은 세 상태만 표시한다", a
   const ui = build(true, { "/gw/registry": { servers, tools: [], registrations: {} } });
   ui.responses["/gw/overview"].servers = servers;
   const overview = await ui.ROUTES.overview("", "summary");
-  assert.match(String(overview.html.kpis), /attention=required"><div class="label">MCP 점검 필요<\/div><div class="value">3/);
+  assert.match(String(overview.html.kpis), /attention=required"><div class="label">MCP 서버 점검<\/div><div class="value">3<small>개<\/small>/);
   const result = await ui.ROUTES.servers("", "servers", new URLSearchParams("attention=required"));
   const body = String(result.html.tabs[0].body);
   assert.equal(result.html.tabs[0].n, 3);
@@ -245,7 +245,7 @@ test("통제 분포는 AI 연결 관리에서만 표시하고 그래프 선택�
   assert.equal(ui.context.location.hash, "#/servers?t=items&class=vendor_native_connector&state=bypass_possible");
 });
 
-test("호출 승인 전체 건수와 페이지는 요약의 첫 5건과 독립적이다", async () => {
+test("호출 승인 전체 건수와 페이지는 요약에 목록을 중복 표시하지 않는다", async () => {
   const row = (id) => ({ id, server_id: "docs", tool: "read", summary: "<img src=x>", reason: "검토 필요" });
   const ui = build(true, {
     "/approvals": { approvals: Array.from({ length: 30 }, (_, i) => row(`first-${i}`)), history: [], total: 65, page: 1, page_size: 30 },
@@ -258,7 +258,7 @@ test("호출 승인 전체 건수와 페이지는 요약의 첫 5건과 독립�
   assert.match(String(full.body), /approval_page=2/);
   assert.doesNotMatch(String(full.body), /approval_page=4|first-0/);
   assert.match(String(full.body), /last-4/);
-  assert.match(preview, /first-4/); assert.doesNotMatch(preview, /first-5|last-0/);
+  assert.doesNotMatch(preview, /first-4|first-5|last-0|호출 승인 요청/);
   assert.match(String(full.body), /&lt;img/);
   assert.match(String(full.body), /승인 사유/);
   assert.doesNotMatch(preview, /<th>승인 사유<\/th>|<th>하네스<\/th>/);

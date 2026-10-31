@@ -1,6 +1,13 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "확인 및 조치": "Review and action",
+  "실행 여부 확인": "Execution verification",
+  "연결 통제 점검": "Connection control checks",
+  "MCP 서버 점검": "MCP server checks",
+  "종료 처리": "Termination processing",
+  "건": "items",
+  "개": "items",
   "성능": "Performance",
   "콘솔 서버 → 게이트웨이 연결 시간": "Console server to gateway connection time",
   "전체 처리": "Total processing",
