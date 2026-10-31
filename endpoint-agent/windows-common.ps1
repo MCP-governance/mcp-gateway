@@ -413,7 +413,7 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
 
 # Screen text of the wizard and the tray, Korean first with an English switch (D-239). Labels only.
 $script:EndpointText = @{
-    ko = @{ product = 'MINT'; mint_account = 'MINT 아이디'; mint_password = '비밀번호';
+    ko = @{ product = 'MINT'; mint_account = 'MINT 아이디'; mint_password = '비밀번호'; sign_in = '로그인';
         mint_invalid = '로그인: 아이디·비밀번호 확인 필요'; mint_locked = '로그인: 계정 잠김·승인 확인 필요';
         mint_limited = '로그인: 시도 제한'; mint_network = '로그인: 네트워크 연결 실패';
         approved = '승인된 MCP'; source = '소스 받기'; settings = '설정'; mint_login = '로그인 / 계정';
@@ -442,7 +442,7 @@ $script:EndpointText = @{
         isolated = '고급: 격리 계정 (관리자 활성화)'; permission_simple = '관리자 권한 확인 1회 · 지금 계정 그대로';
         permission_isolated = '관리자 권한 · 격리 계정 로그아웃 필요'; title_install = '엔드포인트 설치'; title_remove = '엔드포인트 제거';
         done_install = '설치 완료'; done_remove = '제거 완료'; checking_gateway = '게이트웨이 연결 확인'; confirm = '설치 위치 · 관측 범위 확인' }
-    en = @{ product = 'MINT'; mint_account = 'MINT ID'; mint_password = 'Password';
+    en = @{ product = 'MINT'; mint_account = 'MINT ID'; mint_password = 'Password'; sign_in = 'Sign in';
         mint_invalid = 'Sign in: check ID and password'; mint_locked = 'Sign in: account locked or pending approval';
         mint_limited = 'Sign in: rate limited'; mint_network = 'Sign in: network unavailable';
         approved = 'Approved MCP'; source = 'Download source'; settings = 'Settings'; mint_login = 'Sign in / account';
@@ -471,6 +471,69 @@ $script:EndpointText = @{
         isolated = 'Advanced: isolated account (administrator activation)'; permission_simple = 'One administrator approval · this account as it is';
         permission_isolated = 'Administrator · isolated account signed out'; title_install = 'Endpoint setup'; title_remove = 'Endpoint removal';
         done_install = 'Installed'; done_remove = 'Removed'; checking_gateway = 'Checking the gateway'; confirm = 'Location and scope' }
+}
+
+# The kit carries no enrollment token (D-290): the employee's MINT sign-in issues one. Returns @{ token } or @{ error = <label key> }.
+function Request-EndpointKitToken([string]$Gateway, [string]$Certificate, [string]$Fingerprint, [string]$User, [string]$Password) {
+    $body = $null
+    try {
+        $request = New-EndpointGatewayRequest ($Gateway.TrimEnd('/') + '/auth/kit-enrollment') $Certificate $Fingerprint
+        $request.Method = 'POST'
+        $request.ContentType = 'application/json'
+        $body = [Text.Encoding]::UTF8.GetBytes((@{ email = $User; password = $Password } | ConvertTo-Json -Compress))
+        $request.ContentLength = $body.Length
+        $stream = $request.GetRequestStream()
+        try { $stream.Write($body, 0, $body.Length) } finally { $stream.Dispose() }
+        $response = $request.GetResponse()
+        try {
+            $reader = New-Object IO.StreamReader($response.GetResponseStream())
+            try { $grant = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
+        } finally { $response.Dispose() }
+        if ($grant.enrollment_token -notmatch '^[A-Za-z0-9_-]{43}$') { throw 'login response' }
+        return @{ token = $grant.enrollment_token }
+    } catch {
+        $code = if ($_.Exception.InnerException.Response) { [int]$_.Exception.InnerException.Response.StatusCode }
+            elseif ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+        return @{ error = $(switch ($code) { 401 { 'mint_invalid' }; 403 { 'mint_locked' }; 429 { 'mint_limited' }; default { 'mint_network' } }) }
+    } finally {
+        if ($body) { [Array]::Clear($body, 0, $body.Length) }
+    }
+}
+
+# The one-click file has no wizard: this small window asks for the MINT sign-in. $null when the employee closes it.
+function Read-EndpointKitLogin([string]$Gateway, [string]$Certificate, [string]$Fingerprint, [string]$Language = 'ko') {
+    Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+    $form = New-Object Windows.Forms.Form -Property @{ Text = 'MINT'; TopMost = $true; StartPosition = 'CenterScreen';
+        FormBorderStyle = 'FixedDialog'; MaximizeBox = $false; MinimizeBox = $false; AutoSize = $true; AutoSizeMode = 'GrowAndShrink';
+        Font = New-Object Drawing.Font('Segoe UI', 10); BackColor = [Drawing.ColorTranslator]::FromHtml('#edf5f4') }
+    $grid = New-Object Windows.Forms.TableLayoutPanel -Property @{ AutoSize = $true; ColumnCount = 2; Padding = New-Object Windows.Forms.Padding(18) }
+    $user = New-Object Windows.Forms.TextBox -Property @{ Width = 240 }
+    $password = New-Object Windows.Forms.TextBox -Property @{ Width = 240; UseSystemPasswordChar = $true }
+    $message = New-Object Windows.Forms.Label -Property @{ AutoSize = $true; ForeColor = [Drawing.ColorTranslator]::FromHtml('#b42318') }
+    $signIn = New-Object Windows.Forms.Button -Property @{ Text = (Get-EndpointText 'sign_in' $Language); AutoSize = $true }
+    $close = New-Object Windows.Forms.Button -Property @{ Text = (Get-EndpointText 'close' $Language); AutoSize = $true; DialogResult = 'Cancel' }
+    foreach ($row in @(@('mint_account', $user), @('mint_password', $password))) {
+        $grid.Controls.Add((New-Object Windows.Forms.Label -Property @{ Text = (Get-EndpointText $row[0] $Language); AutoSize = $true; Anchor = 'Left' }))
+        $grid.Controls.Add($row[1])
+    }
+    $grid.Controls.Add($message); $grid.SetColumnSpan($message, 2)
+    $buttons = New-Object Windows.Forms.FlowLayoutPanel -Property @{ AutoSize = $true; FlowDirection = 'RightToLeft'; Dock = 'Fill' }
+    $buttons.Controls.AddRange(@($close, $signIn))
+    $grid.Controls.Add($buttons); $grid.SetColumnSpan($buttons, 2)
+    $form.Controls.Add($grid)
+    $form.AcceptButton = $signIn; $form.CancelButton = $close
+    $script:kitToken = $null
+    $signIn.Add_Click({
+        $message.Text = ''
+        $form.UseWaitCursor = $true; $signIn.Enabled = $false
+        try { $answer = Request-EndpointKitToken $Gateway $Certificate $Fingerprint $user.Text $password.Text }
+        finally { $form.UseWaitCursor = $false; $signIn.Enabled = $true; $password.Clear() }
+        if ($answer.token) { $script:kitToken = $answer.token; $form.DialogResult = 'OK'; $form.Close() }
+        else { $message.Text = Get-EndpointText $answer.error $Language; $password.Focus() }
+    })
+    $form.Add_Shown({ $form.Activate(); $user.Focus() })
+    try { [void]$form.ShowDialog() } finally { $form.Dispose() }
+    return $script:kitToken
 }
 
 function Get-EndpointText([string]$Key, [string]$Language = 'ko') {

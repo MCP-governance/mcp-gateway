@@ -66,7 +66,7 @@ if ($administrator) {
         $resultDirectory = $request.result_directory
     } catch {
         Remove-EndpointCompilerTemp $compilerTemp
-        throw '조직 승인 설치 요청 확인 실패'
+        throw ('설치 요청 확인 실패: ' + $_.Exception.Message)
     }
 } else {
     $request = Get-Content -LiteralPath $RequestPath -Raw -Encoding UTF8 | ConvertFrom-Json

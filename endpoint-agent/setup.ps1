@@ -203,28 +203,10 @@ $form.AcceptButton = $next
 function Start-EndpointJob([string]$Action) {
     $grant = $null
     if ($Action -eq 'install' -and $mode -eq 'managed') {
-        try {
-            $loginRequest = New-EndpointGatewayRequest ($url.Text.TrimEnd('/') + '/auth/kit-enrollment') $bundle.ca_certificate $bundle.ca_sha256
-            $loginRequest.Method = 'POST'
-            $loginRequest.ContentType = 'application/json'
-            $body = [Text.Encoding]::UTF8.GetBytes((@{ email = $mintUser.Text; password = $mintPassword.Text } | ConvertTo-Json -Compress))
-            $loginRequest.ContentLength = $body.Length
-            $stream = $loginRequest.GetRequestStream()
-            try { $stream.Write($body, 0, $body.Length) } finally { $stream.Dispose() }
-            $response = $loginRequest.GetResponse()
-            try {
-                $reader = New-Object IO.StreamReader($response.GetResponseStream())
-                try { $grant = $reader.ReadToEnd() | ConvertFrom-Json } finally { $reader.Dispose() }
-            } finally { $response.Dispose() }
-            if ($grant.enrollment_token -notmatch '^[A-Za-z0-9_-]{43}$') { throw 'login response' }
-        } catch {
-            $code = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
-            $results.Text = T $(switch ($code) { 401 { 'mint_invalid' }; 403 { 'mint_locked' }; 429 { 'mint_limited' }; default { 'mint_network' } })
-            return
-        } finally {
-            $mintPassword.Clear()
-            if ($body) { [Array]::Clear($body, 0, $body.Length); $body = $null }
-        }
+        try { $answer = Request-EndpointKitToken $url.Text $bundle.ca_certificate $bundle.ca_sha256 $mintUser.Text $mintPassword.Text }
+        finally { $mintPassword.Clear() }
+        if (-not $answer.token) { $results.Text = T $answer.error; return }
+        $grant = @{ enrollment_token = $answer.token }
     }
     $script:jobAction = $Action
     $requestPath = Join-Path $work 'request.json'

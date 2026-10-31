@@ -342,7 +342,9 @@ Write-Output 'Per-request CA verification OK'
         enroll = dict(sent)['/oauth/device-enroll']
         self.assertEqual((enroll['mode'], enroll['local_sid'], enroll['local_username']), ('simple', person['sid'], 'fixture'))
         values = environment.call_args.args[1]
-        self.assertEqual(set(values), {'NODE_EXTRA_CA_CERTS', 'CODEX_CA_CERTIFICATE'})
+        self.assertEqual(set(values), {'NODE_EXTRA_CA_CERTS', 'CODEX_CA_CERTIFICATE', 'PATH_APPEND'})
+        # `mint` in a new terminal
+        self.assertIn('windows_status.py', (Path(values['PATH_APPEND']) / 'mint.cmd').read_text(encoding='utf-8'))
         self.assertEqual(Path(values['NODE_EXTRA_CA_CERTS']).read_text(encoding='utf-8'), ca['ca_certificate'])
         broadcast.assert_called_once()
         summary = json.loads(out.getvalue().splitlines()[0])

@@ -120,14 +120,22 @@ try {
     $requestPath = Join-Path $private 'request.json'
     # The signed-in employee's own account (D-239); a kit downloaded with the advanced option asks for the companion.
     $isolated = ([Text.Encoding]::UTF8.GetString($files['enrollment.json']) | ConvertFrom-Json).isolated -eq $true
+    # The kit carries no enrollment token (D-290): without this sign-in every one-click install stopped in the worker.
+    $token = Read-EndpointKitLogin $manifest.gateway_url ([Text.Encoding]::UTF8.GetString($files['root.crt'])) ([Text.Encoding]::UTF8.GetString($files['root.sha256']).Trim())
+    if (-not $token) { exit 1 }
     $request = @{ action='install'; mode='managed'; user=$Context.user; requester_sid=$Context.sid;
-        isolated_account=$isolated; enrollment=$enrollment }
+        isolated_account=$isolated; enrollment=$enrollment; kit_enrollment_token=$token }
     [IO.File]::WriteAllText($requestPath, ($request | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     $exe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $arguments = '-NoProfile -NonInteractive -ExecutionPolicy RemoteSigned -WindowStyle Hidden -File "' + (Join-Path $paths.code 'windows-worker.ps1') +
         '" -RequestPath "' + $requestPath + '" -RequesterSid "' + $Context.sid + '"'
-    $process = Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
+    # A worker that stops before its first result line only says why on stderr.
+    $errorPath = Join-Path $paths.state ('worker-' + (Split-Path $private -Leaf) + '.err')
+    $process = Start-Process -FilePath $exe -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait -RedirectStandardError $errorPath
     $resultPath = Join-Path $paths.state ('results\' + (Split-Path $private -Leaf) + '\result.json')
+    $why = @(Get-Content -LiteralPath $errorPath -Encoding UTF8 -ErrorAction SilentlyContinue | Where-Object { $_.Trim() })
+    Remove-Item -LiteralPath $errorPath -Force -ErrorAction SilentlyContinue
+    if (-not (Test-Path -LiteralPath $resultPath)) { throw $(if ($why) { $why[0] } else { 'Installer stopped' }) }
     $result = Get-Content -LiteralPath $resultPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $message = if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') {
         $result.detail + "`r`n" + (Get-EndpointNextAction $result.detail)
@@ -136,8 +144,8 @@ try {
     Show-EndpointResult $message
     if ($process.ExitCode -ne 0 -or $result.state -ne 'completed') { exit 1 }
 } catch {
-    $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ISk7LmYIO2MjOydvCDrmJDripQg7Iuk7ZaJIOq2jO2VnOydhCDtmZXsnbjtlaAg7IiYIOyXhuyKteuLiOuLpA=='))
-    $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7L2Y7IaU7JeQ7IScIOyDiCDshKTsuZgg7YyM7J287J2EIOuwm+yVhCDsi6TtlontlZjqs6AsIOuwmOuzteuQmOuptCDsobDsp4EgSVTsl5Ag66y47J2Y7ZWY7IS47JqU'))
+    $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ISk7LmY66W8IOuBneuCtOyngCDrqrvtlojsirXri4jri6Q='))
+    $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7L2Y7IaU7JeQ7IScIOyEpOy5mCDtjIzsnbzsnYQg64uk7IucIOuwm+yVhCDsi6TtlontlZjshLjsmpQ='))
     if ($_.Exception.Message -eq 'Another installation is running') {
         $reason = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('64uk66W4IOyEpOy5mCDsnpHsl4XsnbQg7KeE7ZaJIOykkeyeheuLiOuLpA=='))
         $next = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('7ZiE7J6sIOyEpOy5mOqwgCDrgZ3rgpwg65KkIOuLpOyLnCDsi6TtlontlZjshLjsmpQ='))
