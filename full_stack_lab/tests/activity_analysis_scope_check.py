@@ -54,10 +54,10 @@ class AnalysisScopeTests(unittest.IsolatedAsyncioTestCase):
             return (await fetch_all(sql, params))[0]
 
         path = Path(__file__).resolve().parents[1] / "gateway/app/activity.py"
-        node = next(n for n in ast.parse(path.read_text(encoding="utf-8")).body
-                    if isinstance(n, ast.AsyncFunctionDef) and n.name == "analysis")
+        nodes = [n for n in ast.parse(path.read_text(encoding="utf-8")).body
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name in {"analysis", "filter_predicates"}]
         self.scope = {"datetime": datetime, "db": SimpleNamespace(fetch_all=fetch_all, fetch_one=fetch_one)}
-        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), self.scope)
+        exec(compile(ast.Module(body=nodes, type_ignores=[]), str(path), "exec"), self.scope)
 
     def insert(self, owner="alice", decision="Block", endpoint="retired-endpoint", hour=1,
                server="docs", kind="tools/call", policy="P-1", reason="needle"):

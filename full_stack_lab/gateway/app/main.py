@@ -698,11 +698,13 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
                         endpoint: str | None = None, policy: str | None = None,
                         since: datetime | None = None, until: datetime | None = None,
                         page: int = 1, q: str | None = None,
+                        principal: str | None = Query(None, max_length=150), trace_id: str | None = Query(None, max_length=128),
+                        before: int = Query(0, ge=0),
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.recent(after, limit, own, decision, server, person, event_kind, execution,
-                                 endpoint, policy, since, until, page, q)
+                                 endpoint, policy, since, until, page, q, principal, trace_id, before)
 
 
 @app.get("/api/activity/analysis")
@@ -712,10 +714,12 @@ async def activity_analysis(decision: str | None = None, server: str | None = No
                             execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
                             endpoint: str | None = None, policy: str | None = None,
                             since: datetime | None = None, until: datetime | None = None,
-                            q: str | None = None, user: dict = Depends(caller)) -> dict:
+                            q: str | None = None, user: dict = Depends(caller),
+                            principal: str | None = Query(None, max_length=150), trace_id: str | None = Query(None, max_length=128),
+                            before: int = Query(0, ge=0)) -> dict:
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.analysis(own, decision, server, person, event_kind, execution,
-                                   endpoint, policy, since, until, q)
+                                   endpoint, policy, since, until, q, principal, trace_id, before)
 
 
 @app.get("/.well-known/oauth-protected-resource")
@@ -1133,9 +1137,12 @@ def audit_filters(before: int = Query(0, ge=0), decision: str | None = Query(Non
                   server: str | None = Query(None, max_length=150), principal: str | None = Query(None, max_length=150),
                   policy: str | None = Query(None, max_length=150), event_kind: str | None = Query(None, max_length=30),
                   execution: str | None = Query(None, max_length=30), since: datetime | None = None,
-                  until: datetime | None = None, trace_id: str | None = Query(None, max_length=128)) -> dict:
+                  until: datetime | None = None, trace_id: str | None = Query(None, max_length=128),
+                  person: str | None = Query(None, max_length=150), endpoint: str | None = Query(None, max_length=200),
+                  q: str | None = Query(None, max_length=120), view: Literal["ledger", "calls"] = "ledger") -> dict:
     return dict(before=before, decision=decision, server=server, principal=principal, policy=policy,
-                event_kind=event_kind, execution=execution, since=since, until=until, trace_id=trace_id)
+                event_kind=event_kind, execution=execution, since=since, until=until, trace_id=trace_id,
+                person=person, endpoint=endpoint, query=q, view=view)
 
 
 @app.get("/api/audit/events")

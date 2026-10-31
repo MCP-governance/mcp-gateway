@@ -6,11 +6,11 @@ import json
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
-from . import db, review
+from . import activity, db, review
 from .outcomes import recorded_outcome
 
 DECISIONS = {"Allow", "Alert", "Restrict", "Approval", "Block"}
-EXECUTIONS = {"executed", "not-sent", "unknown", "withheld"}
+EXECUTIONS = {"executed", "not-sent", "unknown", "withheld", "connection-denied"}
 KINDS = {"tools/call", "mcp-connection"}
 # Deliberately exclude request_payload, result, policy_input and client-reported data.
 PROJECTION = """id,created_at,request_id,trace_id,user_token,role,server_id,tool_name,action,
@@ -23,7 +23,8 @@ PROJECTION = """id,created_at,request_id,trace_id,user_token,role,server_id,tool
 
 
 def predicates(*, before=0, decision=None, server=None, principal=None, policy=None,
-               event_kind=None, execution=None, since=None, until=None, trace_id=None):
+               event_kind=None, execution=None, since=None, until=None, trace_id=None,
+               person=None, endpoint=None, query=None, view="ledger"):
     clauses, params = [], []
     for name, value, allowed in (("decision", decision, DECISIONS), ("execution", execution, EXECUTIONS),
                                  ("event_kind", event_kind, KINDS)):
@@ -33,6 +34,16 @@ def predicates(*, before=0, decision=None, server=None, principal=None, policy=N
         raise HTTPException(422, "조회 시각에는 시간대가 필요합니다.")
     if since and until and since > until:
         raise HTTPException(422, "조회 시작 시각이 종료 시각보다 늦습니다.")
+    if view not in {"ledger", "calls"}:
+        raise HTTPException(422, "지원하지 않는 조회 방식입니다.")
+    if view == "calls":
+        selected, params = activity.filter_predicates(decision=decision, server=server, principal=principal,
+            person=person, policy=policy, event_kind=event_kind, execution=execution, endpoint=endpoint,
+            since=since, until=until, query=query, trace_id=trace_id, before=before)
+        where = " AND ".join(selected) or "true"
+        return f"id IN (SELECT d.id FROM decisions d LEFT JOIN principals p ON p.token=d.user_token WHERE {where})", params
+    if person or endpoint or query:
+        raise HTTPException(422, "검색 필터에는 호출 조회 방식이 필요합니다.")
     for column, value, operator in (("id", before, "<"), ("decision", decision, "="),
                                   ("server_id", server, "="), ("user_token", principal, "="),
                                   ("policy_id", policy, "="), ("trace_id", trace_id, "="),
@@ -47,7 +58,8 @@ def predicates(*, before=0, decision=None, server=None, principal=None, policy=N
         clauses.append({"executed": "upstream_executed=true",
             "not-sent": "upstream_attempted=false AND upstream_executed=false",
             "unknown": "upstream_attempted=true AND upstream_executed=false",
-            "withheld": "upstream_executed=true AND (result_preview->>'disposition'='withheld' OR policy_id='MCP-OUTPUT-001')"}[execution])
+            "withheld": "upstream_executed=true AND (result_preview->>'disposition'='withheld' OR policy_id='MCP-OUTPUT-001')",
+            "connection-denied": "COALESCE(client->>'event_kind','tools/call')='mcp-connection'"}[execution])
     return " AND ".join(clauses) or "true", params
 
 

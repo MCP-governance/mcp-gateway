@@ -415,7 +415,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
   { id: "overview", label: "대시보드", group: "운영", badge: "approvals" },
-  { id: "activity", label: "호출·감사 기록", group: "운영" },
+  { id: "activity", label: "호출 및 감사 기록", group: "운영" },
   { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
@@ -465,7 +465,8 @@ function canonicalRoute(at) {
   if (!viewer.admin) return at;
   const destinations = {
     overview: at.query.get("t") === "traffic" ? ["activity", "stats"] : ["servers", "items"],
-    audit: ["activity", ["incidents", "siem"].includes(at.query.get("t")) ? at.query.get("t") : "events"],
+    audit: ["activity", at.query.get("t") === "incidents" ? "incidents" : "live"],
+    activity: ["activity", "live"],
     people: ["endpoints", at.query.get("t")],
     coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
     servers: ["endpoints", "shadow"],
@@ -475,6 +476,7 @@ function canonicalRoute(at) {
         : at.query.get("t") === "history" ? ["activity", "approval-history"] : ["overview", "approvals"],
     policy: ["servers", "capabilities"],
   };
+  if (at.page === "activity" && !["events", "siem"].includes(at.query.get("t"))) return at;
   if (at.page === "overview" && !["planes", "traffic"].includes(at.query.get("t"))) return at;
   if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
@@ -483,6 +485,10 @@ function canonicalRoute(at) {
   const target = destinations[at.page];
   const query = new URLSearchParams(at.query);
   query.set("t", target[1]);
+  if ((at.page === "audit" && target[1] === "live") || (at.page === "activity" && at.query.get("t") === "events")) {
+    if (!query.has("since")) query.set("since", "");
+    if (!query.has("event_kind")) query.set("event_kind", "");
+  }
   if (at.page === "overview" && at.query.get("t") === "traffic") {
     if (!query.has("since")) query.set("since", new Date(Date.now() - 86400000).toISOString());
     if (!query.has("event_kind")) query.set("event_kind", "tools/call");
@@ -808,7 +814,25 @@ ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
 // Activity keeps its rows between renders so live updates and the detail drawer
 // read from the same list. Paused, it keeps polling but holds new rows back and
 // counts them, so the list stops moving without going stale.
-const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy", "event_kind"];
+const FEED_FILTERS = ["decision", "server", "since", "until", "execution", "person", "endpoint", "policy", "event_kind", "principal", "trace_id", "before"];
+let auditExportPage = null;
+async function exportCallEvidence(next = false) {
+  if (!viewer.admin) return;
+  const key = feedQuery().toString();
+  if (next && (!auditExportPage || auditExportPage.key !== key)) return;
+  const q = feedQuery({ view: "calls", limit: 500 });
+  if (next) q.set("before", auditExportPage.before);
+  const result = await gw(`audit/export?${q}`);
+  lastDocument = result;
+  ACTIONS["save-json"]({ dataset: { name: "mcp-audit-evidence.json" } });
+  auditExportPage = result.payload.has_more ? { key, before: result.payload.next_before } : null;
+  if (current.page === "activity" && key === feedQuery().toString()) {
+    const button = $("#audit-export-next");
+    if (button) button.hidden = !auditExportPage;
+  }
+  const intact = result.payload.verification.intact;
+  toast([`${result.manifest.count}건 내보냄`, result.payload.has_more ? "다음 페이지 있음" : "", intact ? "무결성 정상" : "무결성 손상"].filter(Boolean).join(" / "), !intact);
+}
 const FEED_PAGE_SIZE = 50;
 const defaultFeedFilters = () => ({ ...Object.fromEntries(FEED_FILTERS.map((key) => [key, ""])),
   since: new Date(Date.now() - 86400000).toISOString(), event_kind: "tools/call" });
@@ -979,7 +1003,7 @@ ROUTES.activity = async (arg, tab, query) => {
   const servers = viewer.admin ? feed.servers : [...new Set(feed.rows.map((r) => r.server))].sort();
   const option = (value, label, cur) => html`<option value="${value}" ${value === cur ? raw("selected") : ""}>${label}</option>`;
   const f = feed.filters;
-  const advancedOpen = ["execution", "person", "endpoint", "policy"].some((key) => f[key]);
+  const advancedOpen = ["execution", "person", "endpoint", "policy", "principal", "trace_id", "before"].some((key) => f[key]);
   const filters = html`<div class="filters">
             <div class="row-actions"><button class="btn sm" data-act="feed-window" data-hours="24">최근 24시간</button><button class="btn sm" data-act="feed-window" data-hours="0">전체 기간</button></div>
             <label class="grow">검색<input data-feed-search type="search" maxlength="120" value="${feed.query}" placeholder="사용자, 엔드포인트, 도구, 정책" aria-label="호출 검색" /></label>
@@ -991,24 +1015,27 @@ ROUTES.activity = async (arg, tab, query) => {
             <label>MCP 서버<select data-filter="server" aria-label="서버">${option("", "모든 서버", f.server)}${servers.map((s) => option(s, s, f.server))}</select></label>
             <details class="feed-advanced" ${advancedOpen ? raw("open") : ""}><summary>상세 필터</summary><div class="advanced-filters">
               <label>실행 결과<select data-filter="execution" aria-label="실행 결과">${option("", "모든 실행 결과", f.execution)}${option("executed", "실행됨", f.execution)}${option("not-sent", "실행 안 함", f.execution)}${option("unknown", "실행 미확인", f.execution)}${option("withheld", "응답 보류", f.execution)}${option("connection-denied", "연결 거부", f.execution)}</select></label>
-              ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label>` : ""}
-              <label>엔드포인트<input data-filter="endpoint" type="search" placeholder="엔드포인트 ID" value="${f.endpoint}" aria-label="엔드포인트" /></label>
-              <label>정책<input data-filter="policy" type="search" placeholder="정책 ID" value="${f.policy}" aria-label="정책" /></label>
+              ${viewer.admin ? html`<label>사용자<input data-filter="person" type="search" maxlength="150" placeholder="이름 또는 계정" value="${f.person}" aria-label="사용자" /></label><label>사용자 ID<input data-filter="principal" type="search" maxlength="150" value="${f.principal}" aria-label="사용자 ID" /></label>` : ""}
+              <label>엔드포인트<input data-filter="endpoint" type="search" maxlength="200" placeholder="엔드포인트 ID" value="${f.endpoint}" aria-label="엔드포인트" /></label>
+              <label>정책<input data-filter="policy" type="search" maxlength="150" placeholder="정책 ID" value="${f.policy}" aria-label="정책" /></label>
+              <label>추적 ID<input data-filter="trace_id" type="search" maxlength="128" value="${f.trace_id}" aria-label="추적 ID" /></label>
+              ${f.before ? html`<label>기록 번호 상한<input data-filter="before" type="number" min="0" step="1" value="${f.before}" aria-label="기록 번호 상한" /></label>` : ""}
             </div></details>
           </div>`;
-  const [audit, approvalRecords] = viewer.admin ? await Promise.all([auditTabs(query), approvalRecordTabs(query)]) : [[], []];
+  const [audit, approvalRecords] = viewer.admin ? await Promise.all([recordAudit(), approvalRecordTabs(query)]) : [{ tools: "", delivery: "", tabs: [] }, []];
   return {
     html: page({
-      head: head(viewer.admin ? "호출·감사 기록" : "호출 기록"),
+      head: head(viewer.admin ? "호출 및 감사 기록" : "호출 기록"),
       active: tab || "live",
       tabs: [
-        { key: "live", label: "목록", body: html`<div class="feed-toolbar">
+        { key: "live", label: "호출 기록", body: html`<div class="feed-toolbar">
           <span class="live"><span class="dot" id="feed-dot"></span><span id="feed-live-state"></span><span aria-hidden="true">|</span><span id="feed-live-time"></span>
             <button class="feed-live-toggle" type="button" data-act="live" aria-pressed="${String(!feed.live)}" aria-label="${feed.live ? "일시정지" : "실시간 재개"}" title="${feed.live ? "일시정지" : "실시간 재개"}">${icon(feed.live ? "pause" : "play")}</button></span>
           <span class="feed-count" id="feed-status"></span>
+          ${audit.tools}
         </div><section class="panel feed-panels">
           ${filters}
-          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
+          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div>${audit.delivery}</section>` },
         { key: "stats", label: "분석", body: html`<section class="panel feed-panels">${filters}</section><div class="feed-toolbar analysis-toolbar">
           <span class="analysis-total" id="analysis-total">전체 ${analysis.total ?? 0}건</span>
           <span class="analysis-updated">갱신 시각 <span id="analysis-updated-time">${clockText(new Date(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></span>
@@ -1022,7 +1049,7 @@ ROUTES.activity = async (arg, tab, query) => {
             ${panel("엔드포인트별 호출", html`<div id="analysis-endpoints">${analysisEndpoints(analysis)}</div>`, { flush: true })}
             ${panel("하네스별 호출 판정", chartBox("c-harness-outcomes", "하네스와 서버별 호출 판정 건수", "xl"))}` : ""}</div>` },
         ...approvalRecords,
-        ...audit,
+        ...audit.tabs,
       ],
     }),
     charts: feedCharts(),
@@ -1067,7 +1094,7 @@ async function showDecision(id) {
     r.device_id ? planes().then((p) => p?.devices.find((d) => d.endpoint_id === r.device_id)).catch(() => null) : null]) : [null, null];
   const conflictChip = (c) => chip((DECISION[c.decision] || [""])[0], `${(DECISION[c.decision] || [, c.decision])[1]} ${c.policy_id}`);
   openDrawer(`호출 #${r.id}`, html`<div class="drawer-summary"><span class="tool">${r.server}.${r.tool}</span>
-    ${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}<span class="muted small">${dateTimeText(new Date(r.at))}</span></div>`, [
+    ${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}<span class="muted small">${dateTimeText(new Date(r.at))}</span>${viewer.admin ? html`<button class="btn" data-act="audit-event" data-id="${r.id}">감사 증빙</button>` : ""}</div>`, [
     { key: "flow", label: "요약", body: pipeline(r, device) },
     { key: "call", label: "요청 정보", body: kv([
       ["사용자", r.who], ["부서", r.department],
@@ -2444,30 +2471,14 @@ const policySourceLabel = (ledger) => ledger.source_state === "loaded" ? "조회
 const policyDeployLabel = (ledger, key) => typeof ledger.deployment?.[key] !== "boolean" ? "미확인"
   : ledger.deployment[key] ? "일치" : "불일치";
 
-async function auditTabs(query) {
-  const q = new URLSearchParams(query);
-  const filters = ["decision", "server", "principal", "policy", "event_kind", "execution", "trace_id", "since", "until"];
-  const params = new URLSearchParams([...q].filter(([k, v]) => [...filters, "before"].includes(k) && v));
-  const [data, delivery, incidentData] = await Promise.all([gw(`audit/events?${params}&limit=100`), gw("audit/siem"), gw("audit/incidents")]);
-  const options = (values, selected) => values.map(([value, label]) => html`<option value="${value}" ${value === selected ? "selected" : ""}>${label}</option>`);
-  const local = (iso) => { const d = new Date(iso || NaN); return Number.isNaN(d.getTime()) ? "" : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
-  return [{ key: "events", label: "감사 원장", n: data.events.length, body: html`<div class="stack">
-      <div class="row-actions"><button class="btn" data-act="audit-verify">무결성 검증</button><button class="btn primary" data-act="audit-export">내보내기</button></div>
-      ${panel("조회 조건", html`<form class="form stack" data-form="audit"><div class="grid c3">
-        <label>판정<select name="decision">${options([["", "전체"], ...Object.entries(DECISION).map(([k,v]) => [k,v[1]])], q.get("decision") || "")}</select></label>
-        <label>실행 결과<select name="execution">${options([["", "전체"], ["executed", "실행됨"], ["not-sent", "실행 안 함"], ["unknown", "실행 미확인"], ["withheld", "응답 보류"]], q.get("execution") || "")}</select></label>
-        <label>이벤트<select name="event_kind">${options([["", "전체"], ["tools/call", "도구 호출"], ["mcp-connection", "연결 거부"]], q.get("event_kind") || "")}</select></label>
-        ${["server", "principal", "policy", "trace_id"].map((k) => field.text(k, {server:"서버", principal:"사용자", policy:"정책", trace_id:"추적 ID"}[k], 'maxlength="150"', q.get(k) || ""))}
-        ${["since", "until"].map((k) => field.text(k, k === "since" ? "시작" : "종료", 'type="datetime-local"', local(q.get(k))))}
-      </div><div class="row-actions"><button class="btn primary" type="submit">조회</button><a class="btn" href="#/activity?t=events">초기화</a></div></form>`)}
-      ${panel("감사 원장", html`${data.events.length ? html`<table class="data"><thead><tr><th>번호·시각</th><th>판정·정책</th><th>사용자·도구</th><th>실행 결과</th></tr></thead><tbody>${data.events.map((e) => html`<tr class="clickable" tabindex="0" data-act="audit-event" data-id="${e.id}">
-          <td>#${e.id}<span class="sub">${when(e.created_at)} · ${EVENT_KIND[e.event_kind] || e.event_kind}</span></td><td>${decisionChip(e.decision)}${e.invalid ? chip("outline", "무효 처리") : ""}<span class="sub mono">${e.policy_id}</span></td><td>${e.user_token}<span class="sub mono">${e.server_id}.${e.tool_name}</span></td>
-          <td>${outcomeChips(e.outcome_axes)}</td></tr>`)}</tbody></table>` : empty("감사 이벤트 없음")}
-          ${data.has_more ? html`<div class="row-actions center"><a class="btn" href="#/activity?t=events&${new URLSearchParams({...Object.fromEntries(params), before: data.next_before})}">더 보기</a></div>` : ""}`, {flush:true})}</div>` },
-    { key: "incidents", label: "사고 보고 기한", body: panel("사고 보고 기한", html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
-        <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub:`타이머 ${incidentData.timer_status}`}) },
-    { key: "siem", label: "보안 관제 전달", body: panel("보안 관제 전달", kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]])) },
-  ];
+async function recordAudit() {
+  const [delivery, incidentData] = await Promise.all([gw("audit/siem").catch(() => null), gw("audit/incidents").catch(() => null)]);
+  return {
+    tools: html`<div class="row-actions"><button class="btn" data-act="audit-verify" title="전체 원장의 해시 사슬을 검증합니다.">무결성 검증</button><button class="btn primary" data-act="audit-export" title="현재 조회 조건의 감사 필드를 최대 500건씩 내보냅니다.">증빙 내보내기</button><button class="btn" id="audit-export-next" data-act="audit-export-next" hidden>다음 증빙 내보내기</button></div>`,
+    delivery: html`<details class="record-delivery"><summary>보안 관제 전달 ${delivery ? chip(delivery.retrying > 0 ? "alert" : "outline", html`<span>대기</span> ${delivery.pending} / <span>재시도</span> ${delivery.retrying}`) : chip("alert", "조회 실패")}</summary>${delivery ? kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]]) : ""}</details>`,
+    tabs: [{ key: "incidents", label: "사고 보고 기한", body: panel("사고 보고 기한", incidentData === null ? html`<div class="note bad">조회 실패</div>` : html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
+        <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub: incidentData ? `타이머 ${incidentData.timer_status}` : ""}) }],
+  };
 }
 
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
@@ -2604,6 +2615,7 @@ const ACTIONS = {
     openDrawer(`감사 이벤트 #${event.id}`, html`<div class="row-actions">${decisionChip(event.decision)}${event.invalid ? chip("outline", "무효 처리") : ""}<code>${event.policy_id}</code></div>`,
       [{key:"record", label:"기록", body:html`${outcomeChips(event.outcome_axes)}${kv([
         ["시각", when(event.created_at)], ["사용자", event.user_token], ["서버", event.server_id], ["도구", event.tool_name],
+        ["호출 유형", EVENT_KIND[event.event_kind] || "—"], ["추적 ID", event.trace_id],
         ["행위", ACTION[event.action] || "—"], ["데이터 등급", DATA_CLASS[event.data_class] || "—"],
         ["승인 요청", event.approval_id], ["응답 해시", event.response_sha256], ["감사 해시", event.entry_sha256],
         ["무효 처리", event.invalid ? `${event.invalid.reason} · ${event.invalid.by} · ${when(event.invalid.at)}` : "—"]])}`}]);
@@ -2618,13 +2630,10 @@ const ACTIONS = {
       ["패키지 검증", result.package_hash_valid ? "정상" : "실패"]])}]);
   },
   async "audit-export"() {
-    const q = new URLSearchParams(current.query);
-    q.delete("t"); q.set("limit", "500");
-    lastDocument = await gw(`audit/export?${q}`);
-    ACTIONS["save-json"]({dataset:{name:"mcp-audit-evidence.json"}});
-    const intact = lastDocument.payload.verification.intact;
-    toast([`${lastDocument.manifest.count}건 내보냄`, lastDocument.payload.has_more ? "다음 페이지 있음" : "", intact ? "무결성 정상" : "무결성 손상"]
-      .filter(Boolean).join(" · "), !intact);
+    await exportCallEvidence();
+  },
+  async "audit-export-next"() {
+    await exportCallEvidence(true);
   },
   async "identity-bind"() {
     const fd = await ask({title:"SSO 계정 연결", fields:html`${field.text("principal", "사용자 ID", "required maxlength=150")}${field.text("subject", "SSO 사용자 ID (sub)", "required maxlength=255")}`, confirm:"연결"});
@@ -3423,13 +3432,7 @@ const FORMS = {
     location.hash = `#/intake?t=impact&${q}`;
     route();
   },
-  audit(form) {
-    // datetime-local carries no zone; the server needs one, so send UTC.
-    const q = new URLSearchParams([...new FormData(form)].filter(([,v]) => String(v).trim())
-      .map(([k, v]) => [k, ["since", "until"].includes(k) ? new Date(v).toISOString() : v]));
-    location.hash = `#/activity?t=events&${q}`;
-    reload();
-  },
+
   async intake(form) {
     const fd = new FormData(form);
     const body = Object.fromEntries(["display_name", "repository_url", "endpoint_url", "intake_kind", "requested_transport", "purpose"].map((k) => [k, String(fd.get(k) || "").trim()]));

@@ -69,6 +69,7 @@ function build(admin = true, extra = {}) {
       refreshApprovalLists, startApprovalRefresh, stopApprovalRefresh,
       refreshDashboard, startDashboardRefresh, stopDashboardRefresh,
       analysisState() { return feed; },
+      evidenceSaver(fn) { ACTIONS["save-json"] = fn; toast = () => {}; },
       analysisHooks() { route = () => {}; },
       approvalState() { return { ...approvalPaging, failed: approvalFailed }; },
       approvalActions(askFn) { ask = askFn; route = () => {}; refreshBadges = () => {}; toast = () => {}; },
@@ -87,7 +88,7 @@ test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사�
     const ui = build(admin); ui.renderNav("activity");
     const markup = ui.node("#nav").innerHTML;
     assert.deepEqual([...markup.matchAll(/href="#\/([\w-]+)"/g)].map((m) => m[1]), admin ? adminPages : ["activity", "intake", "consent", "connections"]);
-    assert.match(markup, admin ? /호출·감사 기록/ : /호출 기록/);
+    assert.match(markup, admin ? /호출 및 감사 기록/ : /호출 기록/);
   }
 });
 
@@ -109,8 +110,8 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
   for (const [page, tab, target, nextTab] of [
     ["overview", "planes", "servers", "items"],
     ["overview", "traffic", "activity", "stats"],
-    ["audit", "", "activity", "events"], ["audit", "incidents", "activity", "incidents"],
-    ["audit", "siem", "activity", "siem"], ["coverage", "", "servers", "items"],
+    ["audit", "", "activity", "live"], ["audit", "incidents", "activity", "incidents"],
+    ["audit", "siem", "activity", "live"], ["activity", "events", "activity", "live"], ["activity", "siem", "activity", "live"], ["coverage", "", "servers", "items"],
     ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
     ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "intake", "impact"],
     ["servers", "shadow", "endpoints", "shadow"],
@@ -149,9 +150,12 @@ test("직원에게 감사·동의 관리·공급망 탭과 관리자 조회를 �
 test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유지한다", async () => {
   const ui = build(true, { "/api/supply-chain/impact": { counts: { affected: 1, unaffected: 0, unknown: 0, no_data: 0 } } });
   const activity = await ui.ROUTES.activity("", "events", new URLSearchParams("t=events&principal=alice&before=12"));
-  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "unsent", "approval-history", "events", "incidents", "siem"]);
-  assert.match(String(activity.html.tabs[4].body), /audit-verify[^]*audit-export/);
-  assert.ok(ui.calls.includes("/gw/audit/events?principal=alice&before=12&limit=100"));
+  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "unsent", "approval-history", "incidents"]);
+  assert.match(String(activity.html.tabs[0].body), /audit-verify[^]*audit-export/);
+  assert.match(String(activity.html.tabs[0].body), /<details class="record-delivery"[^]*보안 관제 전달/);
+  assert.ok(ui.calls.every((url) => !url.startsWith("/gw/audit/events?")));
+  const selected = new URL(ui.calls.find((url) => url.startsWith("/gw/activity?")), "https://console.invalid").searchParams;
+  assert.equal(selected.get("principal"), "alice"); assert.equal(selected.get("before"), "12");
   let rendered = 0, live = 0;
   ui.activityHooks(() => rendered++, () => live++); activity.after();
   assert.equal(rendered, 1); assert.equal(live, 1);
@@ -692,5 +696,37 @@ test("도입 신청 타이머는 기존 탭에서 갱신하고 공급망 폼·�
 
 test("감사 데이터 조회 실패를 정상 빈 목록으로 숨기지 않는다", async () => {
   const ui = build(true, { "/gw/audit/siem": new Error("관제 조회 실패") });
-  await assert.rejects(ui.ROUTES.activity("", "siem", new URLSearchParams()), /관제 조회 실패/);
+  const result = await ui.ROUTES.activity("", "live", new URLSearchParams());
+  assert.match(String(result.html.tabs[0].body), /보안 관제 전달[^]*조회 실패/);
+  ui.responses["/gw/audit/incidents"] = new Error("사고 조회 실패");
+  const failed = await ui.ROUTES.activity("", "incidents", new URLSearchParams());
+  assert.match(String(failed.html.tabs.at(-1).body), /조회 실패/);
+  assert.doesNotMatch(String(failed.html.tabs.at(-1).body), /사고 기록 없음/);
+});
+
+test("호출 증빙은 현재 필터와 다음 페이지를 유지하고 직원에게 제공하지 않는다", async () => {
+  const ui = build();
+  const query = new URLSearchParams({t:"live", person:"Alice", principal:"alice", endpoint:"pc-1", policy:"POL-", q:"needle", trace_id:"trace", before:"99", since:"2026-10-30T00:00:00Z", until:"2026-10-31T00:00:00Z", event_kind:"tools/call"});
+  ui.setCurrent({page:"activity", query});
+  await ui.ROUTES.activity("", "live", query);
+  let saved = 0;
+  ui.evidenceSaver(() => saved++);
+  const first = new URLSearchParams(ui.calls.find((url) => url.startsWith("/gw/activity?")).split("?")[1]);
+  for (const key of ["limit", "page", "after"]) first.delete(key);
+  first.set("view", "calls"); first.set("limit", "500");
+  ui.responses["/gw/audit/export?" + first] = {manifest:{count:500}, payload:{has_more:true,next_before:42,verification:{intact:true}}};
+  await ui.ACTIONS["audit-export"]();
+  assert.equal(saved, 1); assert.equal(ui.node("#audit-export-next").hidden, false);
+  first.set("before", "42");
+  ui.responses["/gw/audit/export?" + first] = {manifest:{count:2}, payload:{has_more:false,next_before:null,verification:{intact:true}}};
+  await ui.ACTIONS["audit-export-next"]();
+  assert.equal(saved, 2); assert.equal(ui.node("#audit-export-next").hidden, true);
+  ui.analysisState().filters.policy = "different";
+  await ui.ACTIONS["audit-export-next"]();
+  assert.equal(saved, 2);
+  const employee = build(false);
+  const result = await employee.ROUTES.activity("", "live", new URLSearchParams());
+  assert.doesNotMatch(String(result.html.tabs[0].body), /audit-export|audit-verify|보안 관제 전달/);
+  await employee.ACTIONS["audit-export"]();
+  assert.ok(employee.calls.every((url) => !url.includes("audit/")));
 });

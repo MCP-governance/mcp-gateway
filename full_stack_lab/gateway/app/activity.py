@@ -84,22 +84,19 @@ def describe(row: dict) -> dict:
     }
 
 
-async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
-                 decision: str | None = None, server: str | None = None, person: str | None = None,
-                 event_kind: str | None = None, execution: str | None = None,
-                 endpoint: str | None = None, policy: str | None = None,
-                 since: datetime | None = None, until: datetime | None = None,
-                 page: int = 1, query: str | None = None) -> dict:
-    base_clauses, base_params = [], []
+def filter_predicates(user_token=None, decision=None, server=None, person=None,
+                      event_kind=None, execution=None, endpoint=None, policy=None,
+                      since=None, until=None, query=None, principal=None, trace_id=None, before=0):
+    clauses, params = [], []
     if user_token:
-        base_clauses.append("d.user_token = %s"); base_params.append(user_token)
-    clauses, params = list(base_clauses), list(base_params)
+        clauses.append("d.user_token = %s"); params.append(user_token)
     if decision:
         clauses.append("d.decision = %s"); params.append(decision)
     if server:
         clauses.append("d.server_id = %s"); params.append(server)
     if person:
-        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)"); params += [f"%{person}%", f"%{person}%"]
+        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
+        params += [f"%{person}%", f"%{person}%"]
     if endpoint:
         clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
         params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
@@ -129,6 +126,27 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
             OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
             OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
         params.extend([term] * 13)
+    if principal:
+        clauses.append("d.user_token = %s"); params.append(principal)
+    if trace_id:
+        clauses.append("d.trace_id = %s"); params.append(trace_id)
+    if before:
+        clauses.append("d.id < %s"); params.append(before)
+    return clauses, params
+
+
+async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
+                 decision: str | None = None, server: str | None = None, person: str | None = None,
+                 event_kind: str | None = None, execution: str | None = None,
+                 endpoint: str | None = None, policy: str | None = None,
+                 since: datetime | None = None, until: datetime | None = None,
+                 page: int = 1, query: str | None = None, principal: str | None = None,
+                 trace_id: str | None = None, before: int = 0) -> dict:
+    base_clauses, base_params = [], []
+    if user_token:
+        base_clauses.append("d.user_token = %s"); base_params.append(user_token)
+    clauses, params = filter_predicates(user_token, decision, server, person, event_kind, execution,
+                                        endpoint, policy, since, until, query, principal, trace_id, before)
     filtered_where = " AND ".join(clauses) or "true"
     filtered_params = tuple(params)
     page_size = min(max(limit, 1), 100)
@@ -171,46 +189,10 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
                    event_kind: str | None = None, execution: str | None = None,
                    endpoint: str | None = None, policy: str | None = None,
                    since: datetime | None = None, until: datetime | None = None,
-                   query: str | None = None) -> dict:
-    clauses, params = [], []
-    if user_token:
-        clauses.append("d.user_token = %s"); params.append(user_token)
-    if decision:
-        clauses.append("d.decision = %s"); params.append(decision)
-    if server:
-        clauses.append("d.server_id = %s"); params.append(server)
-    if person:
-        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
-        params += [f"%{person}%", f"%{person}%"]
-    if endpoint:
-        clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
-        params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
-    if policy:
-        clauses.append("d.policy_id ILIKE %s"); params.append(f"%{policy}%")
-    if since:
-        clauses.append("d.created_at >= %s"); params.append(since)
-    if until:
-        clauses.append("d.created_at <= %s"); params.append(until)
-    if event_kind:
-        clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
-    if execution == "executed":
-        clauses.append("d.upstream_executed=true")
-    elif execution == "not-sent":
-        clauses.append("d.upstream_attempted=false AND d.upstream_executed=false")
-    elif execution == "unknown":
-        clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
-    elif execution == "withheld":
-        clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
-    elif execution == "connection-denied":
-        clauses.append("COALESCE(d.client->>'event_kind','tools/call')='mcp-connection'")
-    if query and query.strip():
-        term = f"%{query.strip()}%"
-        clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s
-            OR COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s
-            OR COALESCE(d.client->>'harness','') ILIKE %s OR COALESCE(d.client->>'agent','') ILIKE %s
-            OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
-            OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
-        params.extend([term] * 13)
+                   query: str | None = None, principal: str | None = None,
+                   trace_id: str | None = None, before: int = 0) -> dict:
+    clauses, params = filter_predicates(user_token, decision, server, person, event_kind, execution,
+                                        endpoint, policy, since, until, query, principal, trace_id, before)
     where = " AND ".join(clauses) or "true"
     joins = "FROM decisions d LEFT JOIN principals p ON p.token = d.user_token"
     args = tuple(params)

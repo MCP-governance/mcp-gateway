@@ -1,6 +1,12 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "증빙 내보내기": "Export evidence",
+  "다음 증빙 내보내기": "Export next evidence page",
+  "전체 원장의 해시 사슬을 검증합니다.": "Verify the hash chain of the entire ledger.",
+  "현재 조회 조건의 감사 필드를 최대 500건씩 내보냅니다.": "Export up to 500 audit records per page using the current filters.",
+  "감사 증빙": "Audit evidence",
+  "기록 번호 상한": "Record ID upper bound",
   "측정": "Measurement",
   "횟수": "Count",
   "최근 시각": "Latest at",
@@ -86,7 +92,7 @@ export const EN = {
   "엔드포인트 활성화": "Endpoint activation",
   "승인 처리 이력": "Approval history",
   "전체 보기": "View all",
-  "호출·감사 기록": "Call and audit logs",
+  "호출 및 감사 기록": "Call and audit logs",
   "호출 기록": "Call logs",
   "통제 점검": "Control checks",
   "MCP 설정 없음": "No MCP settings",
