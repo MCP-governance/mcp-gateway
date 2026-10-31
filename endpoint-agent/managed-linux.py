@@ -776,6 +776,35 @@ def connection_cells(found, servers):
     return [("도구", tools), ("서버 연결", first)]
 
 
+def mint_subcommand(access, argv):
+    user = pwd.getpwuid(os.getuid()).pw_name
+    path = status_path(user, "json")
+    if not path.exists():
+        found = sorted(PROGRAMS.glob("status-*.json"))
+        path = found[0] if len(found) == 1 else path
+    try:
+        summary = json.loads(path.read_text())
+    except (OSError, ValueError):
+        print("이 PC에는 관리형 연결의 상태가 없습니다")
+        return 1
+
+    def lines():
+        current = model_status(json.loads(path.read_text()))
+        names = current.get("names") or []
+        return [f"연결 상태: {'연결됨' if current.get('connected') else '연결 끊김'}",
+                f"관리 상태: {kit_screen.STATES.get(current.get('state'), current.get('state') or '—')}",
+                f"승인 서버: {len(names)}개" + (" · " + ", ".join(names) if names else ""),
+                f"게이트웨이: {current.get('gateway') or '—'}"]
+
+    def check():
+        try:
+            current = model_status(json.loads(path.read_text()))
+            return connection_cells(check_connection(current), len(current.get("names") or []))
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
+            return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
+    return access.mint_command(argv, summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source", lines, check)
+
+
 def status(args):
     user = args.user or pwd.getpwuid(os.getuid()).pw_name
     path = status_path(user, "json")
@@ -1399,6 +1428,9 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+    if len(sys.argv) > 2 and sys.argv[1] == "status" and sys.argv[2] in access.SUBCOMMANDS:
+        sys.exit(mint_subcommand(access, sys.argv[2:]))
     args, extra = parser.parse_known_args()
     if extra:
         # `mint <틀린 인자>`의 오류도 `mint` 사용법으로 보인다(내부 파일·명령 이름을 내보이지 않는다).

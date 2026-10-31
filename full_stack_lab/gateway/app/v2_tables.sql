@@ -152,6 +152,22 @@ CREATE TABLE IF NOT EXISTS endpoint_tool_events (
 );
 CREATE INDEX IF NOT EXISTS endpoint_tool_events_called_idx ON endpoint_tool_events(called_at DESC);
 
+-- An employee asking from their own PC (`mint request`, local screen) for an MCP the organisation has not registered.
+-- The administrator turns it into an intake request or closes it; the endpoint never registers anything itself.
+CREATE TABLE IF NOT EXISTS endpoint_mcp_requests (
+  id uuid PRIMARY KEY,
+  endpoint_id text NOT NULL REFERENCES endpoint_agents(endpoint_id) ON DELETE CASCADE,
+  owner_token text,
+  server_label text NOT NULL,
+  source_url text NOT NULL DEFAULT '',
+  purpose text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  status text NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','CLOSED')),
+  closed_by text,
+  closed_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS endpoint_mcp_requests_open_idx ON endpoint_mcp_requests(status, created_at DESC);
+
 -- Endpoint evidence: where a stored observation came from and whether the stored form
 -- is the form the agent said it sent. NULL origin/provenance = written before this.
 ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));

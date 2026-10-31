@@ -705,6 +705,7 @@ ROUTES.overview = async (_, tab) => {
   const abnormalServers = (o.servers || []).filter((s) => !["READY", "DISABLED"].includes(s.status)).length;
   const busyServers = (o.servers || []).filter((s) => Number(s.calls) > 0).sort((a, b) => Number(b.calls) - Number(a.calls)).slice(0, 8);
   const todo = [["승인 요청", o.pending_approvals || 0, "#/approvals"], ["도입 조치", o.intake_actions || 0, "#/intake"],
+    ["엔드포인트 도입 요청", o.endpoint_requests || 0, "#/intake?t=requests"],
     ["미등록 MCP 엔드포인트", shadowStations, "#/servers?t=shadow"], ["종료 기한 초과", term.overdue || 0, "#/termination?t=cases"],
     ["종료 판정 미해결", term.unresolved_grades || 0, "#/termination?t=cases"]];
   const items = dedupeItems(pl?.items || []);
@@ -1687,8 +1688,13 @@ function approvedMcpTable(servers) {
 }
 
 ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
-  const [{ requests }, { servers }, catalog] = await Promise.all([api("/api/mcp-requests"), api("/api/approved-mcp"),
-    tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
+  const [{ requests }, { servers }, catalog, asked] = await Promise.all([api("/api/mcp-requests"), api("/api/approved-mcp"),
+    tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null),
+    viewer.admin ? gw("endpoint/requests") : Promise.resolve({ requests: [] })]);
+  // An endpoint request opens the new-request form already filled in; the administrator reads and submits it.
+  const pre = { name: query.get("name") || "", purpose: query.get("purpose") || "", repository: query.get("repository") || "" };
+  const fromRepo = Boolean(pre.repository);
+  const opt = (value, label, on) => html`<option value="${value}" ${on ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
       head: head("도입 신청"),
@@ -1715,6 +1721,12 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
               ${!r.own && ["HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"].includes(r.status) && (!r.registered_server_id || r.endpoint_reapproval_required)
                 ? html`<button class="btn sm primary" data-act="intake-one-click" data-id="${r.id}">검토</button>` : ""}</div></td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
+        ...(viewer.admin ? [{ key: "requests", label: "엔드포인트 요청", n: asked.requests.length, hot: asked.requests.length > 0,
+          body: panel("엔드포인트 요청", asked.requests.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>서버</th><th>사용 목적</th><th></th></tr></thead><tbody>
+            ${asked.requests.map((r) => html`<tr><td class="small nowrap">${when(r.created_at)}</td><td>${r.hostname}<span class="sub">${r.owner_name || ""}</span></td>
+              <td><b>${r.server_label}</b>${r.source_url ? html`<span class="sub mono">${short(r.source_url, 60)}</span>` : ""}</td><td class="small">${short(r.purpose, 120)}</td>
+              <td class="num nowrap"><a class="btn sm primary" href="#/intake?t=new&${new URLSearchParams({ name: r.server_label, purpose: r.purpose, repository: r.source_url || "" })}">신청서 작성</a>
+                <button class="btn sm" data-act="endpoint-request-close" data-id="${r.id}">닫기</button></td></tr>`)}</tbody></table>` : empty("요청 없음"), { flush: true }) }] : []),
         { key: "approved", label: "승인된 MCP", body: panel("승인된 MCP", approvedMcpTable(servers), { flush: true }) },
         { key: "new", label: "새 신청", body: html`<div class="stack">
           ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
@@ -1722,14 +1734,14 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
             <div id="catalog-results" aria-live="polite">${catalogResults(catalog || { requests: [], registry: [] })}</div>`, { flush: true })}
           ${panel("새 신청", html`<form class="stack form" data-form="intake">
           <fieldset><legend>서비스</legend>
-            <label>서비스 이름<input name="display_name" required minlength="2" maxlength="80" placeholder="GitHub MCP" /></label>
-            <label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>
+            <label>서비스 이름<input name="display_name" required minlength="2" maxlength="80" placeholder="GitHub MCP" value="${pre.name}" /></label>
+            <label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000">${pre.purpose}</textarea></label>
           </fieldset>
           <fieldset><legend>연결</legend><div class="grid c2">
-            <label>유형<select name="intake_kind" data-intake-kind><option value="remote-endpoint">원격 MCP</option><option value="repository">소스 코드</option></select></label>
-            <label>연결 방식<select name="requested_transport"><option value="streamable-http">Streamable HTTP</option><option value="stdio">stdio</option><option value="sse">SSE</option></select></label>
-            <label data-intake-field="remote-endpoint">MCP 주소<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /></label>
-            <label data-intake-field="repository" hidden>저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" /></label>
+            <label>유형<select name="intake_kind" data-intake-kind>${opt("remote-endpoint", "원격 MCP", !fromRepo)}${opt("repository", "소스 코드", fromRepo)}</select></label>
+            <label>연결 방식<select name="requested_transport">${opt("streamable-http", "Streamable HTTP", !fromRepo)}${opt("stdio", "stdio", fromRepo)}${opt("sse", "SSE", false)}</select></label>
+            <label data-intake-field="remote-endpoint" ${fromRepo ? raw("hidden") : ""}>MCP 주소<input name="endpoint_url" type="url" maxlength="500" placeholder="https://…/mcp" /></label>
+            <label data-intake-field="repository" ${fromRepo ? "" : raw("hidden")}>저장소<input name="repository_url" type="url" maxlength="300" placeholder="https://github.com/org/repo" value="${pre.repository}" /></label>
           </div></fieldset>
           ${field.select("data_class", "데이터 등급", DATA_CLASS, "nonimportant")}
           <fieldset data-intake-field="remote-endpoint"><legend>필요한 도구</legend>
@@ -2981,6 +2993,10 @@ const ACTIONS = {
     await gw(`registry/servers/${encodeURIComponent(el.dataset.id)}/audience`, { method: "POST",
       body: (({ audience, audience_users }) => ({ audience, users: audience_users }))(audienceBody(fd)) });
     closeDrawer(); toast("사용 대상을 변경했습니다."); reload();
+  },
+  async "endpoint-request-close"(el) {
+    await gw(`endpoint/requests/${encodeURIComponent(el.dataset.id)}/close`, { method: "POST" });
+    toast("요청을 닫았습니다."); reload(); refreshBadges();
   },
   async "intake-accept-risk"(el) {
     const fd = await ask({ title: `위험 수용 · ${el.dataset.name}`,

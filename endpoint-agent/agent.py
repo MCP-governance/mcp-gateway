@@ -461,6 +461,18 @@ def describe(name: str, config: dict) -> dict | None:
     return None
 
 
+# The Codex desktop app writes its own computer-use runtimes (cua_repl, node_repl) into config.toml. They are part of the
+# app, not an MCP server someone added, and the managed allow-list disables them like any other unlisted server.
+VENDOR_BUNDLED = re.compile(r"/windowsapps/openai\.codex_[^/]+/|/openai/codex/runtimes/|/applications/codex\.app/")
+
+
+def vendor_bundled(path: Path, config: dict) -> bool:
+    command = config.get("command")
+    if path.name != "config.toml" or path.parent.name != ".codex" or not isinstance(command, str):
+        return False
+    return bool(VENDOR_BUNDLED.search(command.replace("\\", "/").lower()))
+
+
 def collect_configs() -> list[dict]:
     entries: list[dict] = []
     for path in candidate_files():
@@ -473,7 +485,7 @@ def collect_configs() -> list[dict]:
             SCAN_ERRORS.add("config_unreadable")
             continue
         for name, config in all_server_entries(document).items():
-            if not isinstance(config, dict):
+            if not isinstance(config, dict) or vendor_bundled(path, config):
                 continue
             described = describe(str(name), config)
             if described:
@@ -1321,6 +1333,12 @@ def demo() -> None:
     private = scan_targets({"allowed_cidrs": ["192.0.2.0/30"], "max_hosts": 8})
     assert "192.0.2.1" in private and "8.8.8.1" not in private
     assert len(scan_targets({"allowed_cidrs": ["10.0.0.0/20"], "max_hosts": 5})) == 5
+    codex = Path("C:/Users/a/.codex/config.toml")
+    assert vendor_bundled(codex, {"command": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.1027.3384.0_x64__2p2nqsd0c76g0\\app\\ChatGPT.exe"})
+    assert vendor_bundled(codex, {"command": "C:\\Users\\a\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\x\\bin\\node_repl.exe"})
+    assert not vendor_bundled(codex, {"command": "C:\\Tools\\venv\\Scripts\\pyghidra-mcp.exe"})
+    assert not vendor_bundled(Path("C:/Users/a/.claude.json"), {"command": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_1\\app\\ChatGPT.exe"})
+
     # 훅 기록 줄: 알려진 필드와 형식만 보내고, 형식이 다른 줄은 버린다.
     good = {"event_id": "e" * 32, "called_at": "2026-10-31T00:00:00+00:00", "harness": "codex", "account": "a", "server": "ghidra",
             "tool": "decompile_function", "input_bytes": 3, "input_sha256": "0" * 64, "output_bytes": 9, "failed": False, "extra": 1}

@@ -1450,4 +1450,9 @@ export const EN = {
   "엔드포인트 호출 기록 없음": "No endpoint calls",
   "입력": "Input",
   "전체 {}건": "{1} total",
+  "엔드포인트 요청": "Endpoint requests",
+  "신청서 작성": "Fill in request",
+  "요청 없음": "No requests",
+  "요청을 닫았습니다.": "Request closed.",
+  "엔드포인트 도입 요청": "Endpoint intake requests",
 };

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 
-from app import db, ops_response
+from app import db, endpoint_plane, ops_response
 from termination_lab_support import Checks, apply_schema, run
 
 CHECKS = Checks("엔드포인트 미등록 MCP 경보")
@@ -51,6 +51,14 @@ async def main() -> int:
               len(await alerts()) == before + 1 and [a["evidence"]["label"] for a in tool_alerts] == ["ghidra"])
     await ops_response.endpoint_alerts()
     CHECKS.ok("같은 서버의 다음 호출은 경보를 늘리지 않는다", len(await alerts()) == before + 1)
+    device = {"endpoint_id": ENDPOINT, "owner_token": None}
+    first_request = await endpoint_plane.self_request(device, "ghidra", "https://github.com/clearbluejar/pyghidra-mcp", "바이너리 분석에 필요합니다")
+    again = await endpoint_plane.self_request(device, "ghidra", "", "다시 요청합니다 열 글자")
+    listed = await endpoint_plane.endpoint_requests()
+    CHECKS.ok("엔드포인트 요청은 같은 서버에 하나만 열린다", not first_request["duplicate"] and again["duplicate"]
+              and [r["server_label"] for r in listed] == ["ghidra"] and listed[0]["hostname"] == "lab-pc")
+    CHECKS.ok("관리자가 닫으면 열린 목록에서 빠진다", await endpoint_plane.close_endpoint_request(first_request["id"], "admin-lab")
+              and not await endpoint_plane.endpoint_requests() and not await endpoint_plane.close_endpoint_request(first_request["id"], "admin-lab"))
     return CHECKS.finish()
 
 

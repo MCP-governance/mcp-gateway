@@ -591,6 +591,72 @@ async def ingest_tool_events(endpoint_id: str, events: list[dict]) -> dict:
     return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
 
 
+async def self_summary(device: dict, limit: int = 50) -> dict:
+    """What the employee sees on their own PC (`mint`, local screen): the same facts the console holds for this device."""
+    from . import connectors, pac
+    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],)) if device.get("owner_token") else None
+    usable = set(pac.servers_for(owner)) if owner else set()
+    rows = await db.fetch_all("SELECT id, display_name, deployment FROM mcp_servers"
+                              " WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
+    servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway"}
+               for r in rows if r["id"] in usable]
+    decided = {d["item_key"]: d["decision"] for d in await db.fetch_all("SELECT item_key, decision FROM harness_decisions")}
+    now = datetime.now(UTC)
+    items = await db.fetch_all(
+        """SELECT item_key, harness, kind, name, min(first_seen) AS first_seen FROM harness_items
+            WHERE workstation=%s AND active GROUP BY item_key, harness, kind, name ORDER BY name""",
+        (connectors.DEVICE_PREFIX + device["endpoint_id"],))
+    labels = {k: v["label"] for k, v in connectors.CATALOG.items()}
+    connected, features = [], []
+    for item in items:
+        state = connectors.state_of(decided.get(item["item_key"]), item["kind"] in connectors.DEFAULT_KINDS, item["first_seen"], now)
+        entry = {"name": labels.get(item["item_key"], item["name"]), "harness": item["harness"], "state": state}
+        (features if item["kind"] == "feature" else connected).append(entry)
+    unregistered = await db.fetch_all(
+        """SELECT server_label AS name, transport, config_path AS place, max(reported_at) AS seen FROM endpoint_inventory
+            WHERE endpoint_id=%s AND classification='shadow' GROUP BY server_label, transport, config_path ORDER BY 4 DESC""",
+        (device["endpoint_id"],))
+    calls = await db.fetch_all(
+        """SELECT called_at, harness, server, tool, path, failed FROM endpoint_tool_events WHERE endpoint_id=%s
+            ORDER BY id DESC LIMIT %s""", (device["endpoint_id"], max(1, min(limit, 200))))
+    requests = await db.fetch_all(
+        """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=%s
+            ORDER BY created_at DESC LIMIT 10""", (device["endpoint_id"],))
+    return {"endpoint": {"id": device["endpoint_id"], "hostname": device.get("hostname"), "managed_state": device.get("managed_state"),
+                         "owner": (owner or {}).get("display_name") or (owner or {}).get("user_id")},
+            "servers": servers, "connectors": connected, "features": features, "unregistered": unregistered,
+            "calls": calls, "requests": requests}
+
+
+async def self_request(device: dict, server_label: str, source_url: str, purpose: str) -> dict:
+    existing = await db.fetch_one(
+        "SELECT id FROM endpoint_mcp_requests WHERE endpoint_id=%s AND server_label=%s AND status='OPEN'",
+        (device["endpoint_id"], server_label))
+    if existing:
+        return {"id": str(existing["id"]), "status": "OPEN", "duplicate": True}
+    row = await db.fetch_one(
+        """INSERT INTO endpoint_mcp_requests(id,endpoint_id,owner_token,server_label,source_url,purpose)
+           VALUES (%s,%s,%s,%s,%s,%s) RETURNING id, status""",
+        (str(uuid.uuid4()), device["endpoint_id"], device.get("owner_token"), server_label, source_url, purpose))
+    return {"id": str(row["id"]), "status": row["status"], "duplicate": False}
+
+
+async def endpoint_requests(status: str = "OPEN") -> list[dict]:
+    return await db.fetch_all(
+        """SELECT r.id, r.server_label, r.source_url, r.purpose, r.created_at, r.status, r.closed_by, r.closed_at,
+                  a.hostname, p.display_name AS owner_name
+             FROM endpoint_mcp_requests r JOIN endpoint_agents a USING (endpoint_id)
+             LEFT JOIN principals p ON p.token = r.owner_token
+            WHERE r.status=%s ORDER BY r.created_at DESC LIMIT 200""", (status,))
+
+
+async def close_endpoint_request(request_id: str, actor: str) -> bool:
+    row = await db.fetch_one(
+        "UPDATE endpoint_mcp_requests SET status='CLOSED', closed_by=%s, closed_at=now() WHERE id=%s AND status='OPEN' RETURNING id",
+        (actor, request_id))
+    return bool(row)
+
+
 async def tool_events_page(path: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
     limit, after = _bounds(limit, cursor)
     base, params = ("e.path=%s", [path]) if path else ("TRUE", [])

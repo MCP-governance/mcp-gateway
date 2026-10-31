@@ -52,6 +52,7 @@ function build(admin = true, extra = {}) {
       if (value === undefined && url.startsWith("/gw/audit/events?")) value = { events: [], has_more: false };
       if (value === undefined && url.startsWith("/gw/audit/alerts?")) value = { alerts: [], last_24h: 0 };
       if (value === undefined && url.startsWith("/gw/endpoint/tool-events?")) value = { rows: [], total: 0 };
+      if (value === undefined && url === "/gw/endpoint/requests") value = { requests: [] };
       assert.notEqual(value, undefined, `unexpected request: ${url}`);
       if (value instanceof Error) throw value;
       return { ok: true, status: 200, headers: { get: () => null }, json: async () => value };
