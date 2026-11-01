@@ -144,7 +144,11 @@ class Commands(unittest.TestCase):
         out = io.StringIO()
         with patch.object(access, "terminal_columns", lambda: 40), contextlib.redirect_stdout(out):
             access.print_table("MCP 호출", access.CALL_COLUMNS, [("2026-11-01 09:00:00", "Codex", "게이트웨이", "Hugging Face · hub_repo_search", "경보", "완료")])
-        self.assertIn("  2026-11-01 09:00:00 · Codex · 게이트웨이 · Hugging Face · hub_repo_search · 경보 · 완료", out.getvalue())
+        lines = out.getvalue().splitlines()[1:]
+        self.assertTrue(all(access.cells(line) <= 39 for line in lines), lines)
+        # Lines break between cells: every cell is whole on one line.
+        for value in ("2026-11-01 09:00:00", "Hugging Face · hub_repo_search", "게이트웨이"):
+            self.assertTrue(any(value in line for line in lines), (value, lines))
 
     def test_json_output_for_scripts(self):
         import json

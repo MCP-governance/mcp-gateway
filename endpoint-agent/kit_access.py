@@ -366,8 +366,17 @@ def print_table(title, columns, rows):
     widths = [max(cells(col), *(cells(r[i]) for r in rows)) for i, col in enumerate(columns)]
     if 2 + sum(widths) + 2 * (len(widths) - 1) > terminal_columns():
         # Narrower than the table (an 80-column console, a phone over SSH): one line per row instead of columns that wrap.
+        room = terminal_columns() - 1
         for row in rows:
-            print("  " + " · ".join(str(cell) for cell in row))
+            # Break between cells, never inside one; continuation lines are indented under the first.
+            line = "  " + str(row[0])
+            for cell in row[1:]:
+                piece = " · " + str(cell)
+                if cells(line) + cells(piece) > room:
+                    print(line)
+                    line, piece = "      ", str(cell)
+                line += piece
+            print(line)
         return
     for row in (columns, *rows):
         print(("  " + "  ".join(pad(cell, widths[i]) for i, cell in enumerate(row))).rstrip())
