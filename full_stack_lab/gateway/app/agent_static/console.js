@@ -1341,7 +1341,10 @@ ROUTES.servers = async (id, tab, query) => {
       ],
     }),
     charts: connectionStateCharts(dedupeItems(pl?.items || [])),
-    after: () => id && showServer(id),
+    after: () => {
+      if (id) showServer(id);
+      else if (tab === "vendor" && query.get("connector")) ACTIONS.connector({ dataset: { key: query.get("connector") } });
+    },
   };
 };
 
@@ -1462,7 +1465,7 @@ function builtinTabs(conn, items) {
       ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`, { flush: true })}
     ${panel("커넥터 전체 사용 설정", switches.length ? html`<table class="data">${BUILTIN_HEAD("커넥터")}<tbody>${switches.map(builtinRow)}</tbody></table>` : empty("항목 없음"), { flush: true })}
     ${panel("개별 커넥터", connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items, off.has(g.harness)))}</tbody></table>` : empty("보고된 항목 없음"), { flush: true })}
-    ${panel("플러그인·직접 추가", review.length ? html`<table class="data">${GROUP_HEAD}<tbody>${review.map((g) => groupRow(g, items))}</tbody></table>`
+    ${panel("추가 연결 승인 관리", review.length ? html`<table class="data">${GROUP_HEAD}<tbody>${review.map((g) => groupRow(g, items))}</tbody></table>`
       : empty("보고된 항목 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" })}</div>`;
 }
 let connectorGroups = [], connectorItems = [];
@@ -1529,7 +1532,7 @@ async function serverControlTabs(query, snapshot = planes()) {
         ["벤더 통제", count("vendor_enforced"), "restrict", "#/servers?t=items&state=vendor_enforced"],
         ["관찰 및 미등록", count("observed_only") + count("unknown_not_enrolled"), "alert", "#/servers?t=items&state=observed_only"],
         ["조직 통제 의존", count("bypass_possible"), "block", "#/servers?t=items&state=bypass_possible"]])}
-      ${panel("MCP·커넥터·플러그인", html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th>승인</th><th class="num">우회 경로</th><th>발견</th></tr></thead><tbody>
+      ${panel("연결별 통제 상태", html`<table class="data"><thead><tr><th>항목</th><th>분류</th><th>상태</th><th>승인</th><th class="num">우회 경로</th><th>발견</th></tr></thead><tbody>
         ${rows.map((i) => html`<tr class="clickable" tabindex="0" data-act="integration" data-key="${i.key}">
           <td><b>${i.name}</b><span class="sub">${entityRef(i.target || "", 48)}</span>${i.pcs > 1 ? html`<span class="sub">엔드포인트 ${i.pcs}대</span>` : ""}</td>
           <td class="small">${INTEGRATION_CLASS[i.class] || i.class}${i.harness ? html`<span class="sub">${i.harness === "claude" ? "Claude Code" : "Codex"}</span>` : ""}</td>
@@ -2829,12 +2832,14 @@ const ACTIONS = {
     const i = integrationItems.find((x) => x.key === el.dataset.key);
     if (!i) return;
     const v = i.vendor_control;
+    const connector = connectorGroups.find((g) => g.key === i.item_key);
     const gatewayId = i.key.startsWith("gateway:") ? i.key.slice(8) : "";
     // The termination view of a registered server: what would remain if it ended now.
     const rel = gatewayId ? (await gw("termination/relationships").catch(() => ({ relationships: [] })))
       .relationships?.find((r) => r.server_id === gatewayId) : null;
     const plane = (name, applies, body) => html`<tr><th>${name}</th><td>${applies ? body : NONE}</td></tr>`;
     openDrawer(i.name, html`<div class="row-actions">${statusPair(i)}${chip("outline", INTEGRATION_CLASS[i.class] || i.class)}
+      ${connector ? html`<a class="btn sm primary" href="#/servers?${new URLSearchParams({ t: "vendor", connector: connector.key })}">승인 관리</a>` : ""}
       ${i.class === "vendor_native_connector" ? html`<button class="btn sm" type="button" data-act="vendor-control" data-key="${i.item_key}" data-name="${i.name}">벤더 콘솔 확인 기록</button>` : ""}</div>`, [
       { key: "planes", label: "통제", body: html`<table class="data"><tbody>
         ${plane("게이트웨이", i.managed_by === "gateway", html`${chip(i.state === "bypass_possible" ? "block" : "allow", i.state === "bypass_possible" ? "게이트웨이 경로만 통제" : "게이트웨이 통제")}<span class="sub">${i.evidence}</span>`)}

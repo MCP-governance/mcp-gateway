@@ -259,7 +259,7 @@ test("통제 분포는 AI 연결 관리에서만 표시하고 그래프 선택�
   assert.match(String(overview.html.kpis), /href="#\/servers\?t=items&state=bypass_possible"/);
   const result = await ui.ROUTES.servers("", "items", new URLSearchParams());
   const body = String(result.html.tabs.find((t) => t.key === "items").body);
-  assert.match(body, /연결 유형별 통제 현황[^]*연결 항목 수[^]*MCP·커넥터·플러그인/);
+  assert.match(body, /연결 유형별 통제 현황[^]*연결 항목 수[^]*연결별 통제 상태/);
   assert.match(body, /id="c-connections-matrix"/);
   let captured;
   ui.context.charts.color = (tone) => tone;
@@ -641,6 +641,29 @@ test("커넥터 전체 설정과 개별 항목을 분리하고 전체 차단 표
   assert.match(body, /전체 차단/);
   assert.match(body, /data-key="all" data-decision="reset"/);
   assert.match(body, /data-key="claude:connector:docs"/);
+});
+
+test("연결 통제 상세에서 해당 추가 연결의 승인 관리로 이동한다", async () => {
+  const key = "claude:host:docs.example";
+  const ui = build(true, {
+    "/api/integrations": {items:[{key:"reported",item_key:key,name:"Docs",class:"vendor_native_connector",state:"observed_only"},
+      {key:"unknown",name:"Unknown",class:"shadow_or_unknown",state:"unknown_not_enrolled"}],devices:[],summary:{devices:{bypass_possible:0}}},
+    "/api/connectors": {items:[{key,names:["Docs"],kinds:["plugin"],harness:"claude",builtin:false,state:"pending",holders:[]}],summary:{pending:1,expired:0}}
+  });
+  const out = await ui.ROUTES.servers("", "items", new URLSearchParams());
+  assert.match(String(out.html.tabs.find((t) => t.key === "items").body), /연결별 통제 상태/);
+  assert.match(String(out.html.tabs.find((t) => t.key === "vendor").body), /추가 연결 승인 관리/);
+  let controls;
+  ui.policyDrawer((title, content) => { controls = String(content); });
+  await ui.ACTIONS.integration({dataset:{key}});
+  const query = new URLSearchParams({t:"vendor",connector:key});
+  assert.ok(controls.includes(("#/servers?" + query).replaceAll("&", "&amp;")));
+  const target = await ui.ROUTES.servers("", "vendor", query);
+  target.after();
+  assert.match(controls, /connector-decide[^]*data-key="claude:host:docs.example"/);
+  await ui.ACTIONS.integration({dataset:{key:"unknown"}});
+  assert.doesNotMatch(controls, /승인 관리/);
+  assert.ok(ui.requests.every((r) => !r.method || r.method === "GET"));
 });
 
 test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 POL 연결만 표시한다", async () => {
