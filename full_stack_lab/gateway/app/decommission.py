@@ -31,7 +31,7 @@ import json
 import logging
 import os
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -880,6 +880,28 @@ async def restore_server(server_id: str, actor: str) -> dict:
 
 
 # ── views ────────────────────────────────────────────────────────────────────
+def case_timeline(case: dict, targets: list[dict], evidence: list[dict]) -> list[dict]:
+    """Project retained facts; do not invent overwritten assessments or reopen times."""
+    events = []
+    def add(kind, at, actor=None, detail=None, target_id=None):
+        if at:
+            events.append({"kind": kind, "at": at, "actor": actor, "detail": detail,
+                           "target_id": str(target_id) if target_id else None})
+    add("opened", case.get("opened_at"), case.get("opened_by"), case.get("reason"))
+    add("cutover", case.get("cutover_at"), case.get("opened_by"))
+    for target in targets:
+        if target.get("status") in {"REVOKED", "EXPIRED"}:
+            add("target-state", target.get("revoked_at"), target.get("revoked_by"),
+                target.get("label"), target.get("id"))
+    for item in evidence:
+        add("evidence", item.get("recorded_at"), item.get("recorded_by"),
+            EVIDENCE_KINDS.get(item.get("kind"), {}).get("label"), item.get("target_id"))
+    add("assessed", case.get("assessed_at"), case.get("assessed_by"), GRADE_LABEL.get(case.get("grade")))
+    add("risk-accepted", case.get("risk_accepted_at"), case.get("risk_accepted_by"), case.get("risk_acceptance_note"))
+    add("closed", case.get("closed_at"), case.get("closed_by"), case.get("close_note"))
+    return sorted(events, key=lambda event: event["at"])
+
+
 async def case_detail(case_id: str) -> dict:
     case = await db.fetch_one(
         """SELECT c.*, s.display_name, s.deployment, s.endpoint, s.lifecycle, s.source_ref, s.supplier,
@@ -892,11 +914,14 @@ async def case_detail(case_id: str) -> dict:
     targets = await db.fetch_all("SELECT * FROM revocation_targets WHERE case_id=%s ORDER BY created_at", (case_id,))
     evidence = await db.fetch_all("SELECT * FROM termination_evidence WHERE case_id=%s ORDER BY observed_at DESC", (case_id,))
     residue = await db.fetch_one("SELECT count(*) AS n FROM endpoint_inventory WHERE registry_match=%s", (case["server_id"],))
+    due_at = case["opened_at"] + timedelta(days=SLA_DAYS)
     return _row({
-        "case": dict(case), "targets": [dict(t) for t in targets],
+        "case": {**dict(case), "due_at": due_at,
+                 "overdue": case["status"] != "CLOSED" and _now() > due_at}, "targets": [dict(t) for t in targets],
         "evidence": [{**dict(e), "meaning": EVIDENCE_KINDS.get(e["kind"], {})} for e in evidence],
         "activity": await _post_cutover(dict(case)), "endpoint_residue": int(residue["n"] or 0),
         "evidence_kinds": EVIDENCE_KINDS, "criteria_labels": CRITERION_LABEL,
+        "timeline": case_timeline(dict(case), targets, evidence),
     })
 
 

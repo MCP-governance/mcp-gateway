@@ -45,7 +45,7 @@ test("usage details expose only the gateway address and retain approved tools an
   assert.equal(ui.address({...row,connection_url:"javascript:alert(1)"}), "");
 });
 
-test("available MCP values are escaped, missing values use a dash and empty state links to an application", () => {
+test("available MCP values are escaped, missing values use a dash and empty state remains compact", () => {
   const attack = '<img src=x onerror="attack()">';
   const result = String(render([{...row,display_name:attack,purpose:attack,server_id:attack}]));
   assert.ok(!result.includes("<img")); assert.ok(result.includes("&lt;img"));
@@ -53,7 +53,8 @@ test("available MCP values are escaped, missing values use a dash and empty stat
   const detail = ui.show({...row,source_url:attack,tools:[{name:attack,purpose:attack}]});
   assert.ok(!String(detail.tabs.map((t) => t.body)).includes("<img"));
   assert.ok(String(render([{}])).includes("—"));
-  assert.match(String(render([])), /사용 가능한 MCP 없음[^]*href="#\/intake\?t=new"/);
+  assert.match(String(render([])), /사용 가능한 MCP 없음/);
+  assert.doesNotMatch(String(render([])), /href=/);
 });
 
 test("available MCP labels translate into English", () => {

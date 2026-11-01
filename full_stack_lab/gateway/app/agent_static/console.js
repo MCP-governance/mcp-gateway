@@ -1843,7 +1843,7 @@ ROUTES.connections = async () => {
 
 let approvedMcpSearch = "";
 function approvedMcpTable(servers, query = "") {
-  if (!servers.length) return html`${empty("사용 가능한 MCP 없음")}<div class="row-actions center"><a class="panel-shortcut" href="#/intake?t=new"><span>새 신청</span><span aria-hidden="true">↗</span></a></div>`;
+  if (!servers.length) return empty("사용 가능한 MCP 없음");
   const searchText = (s) => [s.display_name, s.server_id, s.purpose, ...(s.tools || []).flatMap((tool) => [tool.name, tool.purpose])].filter(Boolean).join(" ");
   const term = query.trim().toLocaleLowerCase();
   return html`<table class="data"><thead><tr><th>MCP</th><th>사용 목적</th><th>제공 도구</th><th>사용 기한</th><th></th></tr></thead>
@@ -1907,6 +1907,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
                 ? html`<button class="btn sm primary" data-act="intake-one-click" data-id="${r.id}">검토</button>` : ""}</div></td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
         { key: "approved", label: "사용 가능한 MCP", body: panel("사용 가능한 MCP", approvedMcpTable(servers, approvedMcpSearch), { flush: true,
+          end: html`<a class="panel-shortcut" href="#/intake?t=new"><span>새 신청</span><span aria-hidden="true">↗</span></a>`,
           tools: servers.length ? listToolbar("available-mcp", "이름 또는 기능 검색", approvedMcpSearch) : "" }) },
         { key: "new", label: "새 신청", body: html`<div class="stack">
           ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
@@ -1928,7 +1929,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
             <button class="btn" type="button" data-act="intake-discover">도구 불러오기</button>
             <div data-requested-tools></div>
           </fieldset>
-          <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
+          <div class="row-actions center"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
       ].sort((a, b) => tabOrder.indexOf(a.key) - tabOrder.indexOf(b.key)),
     }),
     after: () => {
@@ -2340,15 +2341,15 @@ ROUTES.termination = async (caseId, tab, query = new URLSearchParams()) => {
         ["폐기 잔존", summary.retired_residue, summary.retired_residue ? "alert" : ""]]),
       active: tab || "relationships",
       tabs: [
-        { key: "relationships", label: "이용 관계", n: relationships.length, body: html`${panel("이용 관계", relationships.length ? html`<table class="data"><thead><tr><th>이용 관계</th><th>운영</th><th class="num">이용자</th><th class="num">호출</th><th class="num">회수 대상</th><th>예상 등급</th><th></th></tr></thead><tbody>
+        { key: "relationships", label: "종료 대상", n: relationships.length, body: html`${panel("종료 대상", relationships.length ? html`<table class="data"><thead><tr><th>이용 관계</th><th>운영</th><th class="num">이용자</th><th class="num">호출</th><th class="num">회수 대상</th><th>예상 등급</th><th></th></tr></thead><tbody>
             ${relationships.map(relationshipRow)}</tbody></table>` : empty("이용 관계 없음"), { flush: true })}` },
-        { key: "cases", label: "케이스", n: caseTotal, body: html`${panel(attention === "required" ? "종료 조치 필요" : attention === "overdue" ? "종료 기한 초과" : "케이스", html`<table class="data"><thead><tr><th>이용 관계</th><th>상태</th><th>등급</th><th class="num">회수 대상</th><th class="num">미회수</th><th class="num">증거</th><th>시작</th></tr></thead><tbody>
+        { key: "cases", label: "종료 처리", n: caseTotal, body: html`${panel(attention === "required" ? "종료 조치 필요" : attention === "overdue" ? "종료 기한 초과" : "종료 처리", html`<table class="data"><thead><tr><th>이용 관계</th><th>상태</th><th>등급</th><th class="num">회수 대상</th><th class="num">미회수</th><th class="num">증거</th><th>시작</th></tr></thead><tbody>
             ${cases.map((c) => html`<tr class="clickable" tabindex="0" data-act="open-case" data-id="${c.id}">
               <td><b>${c.display_name}</b><span class="sub mono">${c.relationship_id || c.server_id}</span></td>
               <td>${chip(c.status === "CLOSED" ? "outline" : "approval", CASE_STATUS[c.status] || c.status)}${c.overdue ? chip("block", "기한 초과") : ""}</td>
               <td>${gradeChip(c.grade)}</td><td class="num">${c.targets}</td><td class="num">${c.outstanding}</td><td class="num">${c.evidence}</td>
               <td class="small">${when(c.opened_at)}</td></tr>`)}
-            </tbody></table>${cases.length ? "" : empty("케이스 없음")}`, { flush: true,
+            </tbody></table>${cases.length ? "" : empty("종료 처리 없음")}`, { flush: true,
               tools: html`<div class="row-actions"><a class="btn sm ${!attention ? "primary" : ""}" href="#/termination?t=cases">전체</a><a class="btn sm ${attention === "required" ? "primary" : ""}" href="#/termination?t=cases&attention=required">조치 필요</a><a class="btn sm ${attention === "overdue" ? "primary" : ""}" href="#/termination?t=cases&attention=overdue">기한 초과</a></div>`,
               end: totalPages > 1 ? html`<div class="row-actions">${casePage > 1 ? html`<a class="btn sm" href="${caseHref(casePage - 1)}">이전</a>` : ""}<span>${casePage} / ${totalPages}</span>${casePage < totalPages ? html`<a class="btn sm" href="${caseHref(casePage + 1)}">다음</a>` : ""}</div>` : "" })}` },
       ],
@@ -2369,7 +2370,7 @@ function relationshipRow(r) {
     <td class="num">${r.users ?? 0}</td><td class="num">${r.calls ?? 0}</td><td class="num">${revokeTotal(ready.would_revoke)}</td>
     <td>${gradeChip(ready.best_attainable_grade, "예상 ")}</td>
     <td class="num nowrap">${startable ? html`<button class="btn sm danger" data-act="open-termination" data-id="${r.id}" data-name="${r.purpose}" data-grade="${ready.best_attainable_grade || ""}">종료 시작</button>`
-      : r.latest_case ? html`<a class="btn sm" href="#/termination/${r.latest_case}">케이스</a>` : ""}</td></tr>`;
+      : r.latest_case ? html`<a class="btn sm" href="#/termination/${r.latest_case}">처리 내역</a>` : ""}</td></tr>`;
 }
 function showRelationship(id) {
   const r = termRelationships.find((row) => row.id === id);
@@ -2377,7 +2378,7 @@ function showRelationship(id) {
   const ready = r.readiness || {};
   const terms = r.exit_terms || {};
   openDrawer(r.purpose, html`<div class="row-actions">${gradeChip(ready.best_attainable_grade, "예상 ")}${chip(...(REL_STATUS[r.status] || ["", r.status]))}
-    ${r.latest_case ? html`<a class="btn sm" href="#/termination/${r.latest_case}">최근 케이스</a>` : ""}</div>`, [
+    ${r.latest_case ? html`<a class="btn sm" href="#/termination/${r.latest_case}">최근 종료 처리</a>` : ""}</div>`, [
     { key: "info", label: "개요", body: kv([["ID", html`<code>${r.id}</code>`], ["서버", r.display_name], ["운영", operatorLabel(r)],
       ["이용자", r.users ?? 0], ["호출", r.calls ?? 0],
       ["허용 자원", (r.allowed_resources || []).map(resourceName).join(", ")]]) },
@@ -2390,18 +2391,54 @@ function showRelationship(id) {
 let currentCase = null;
 const PROCEDURE = ["이용 관계 확정", "강제 경로 차단", "모집단 열거", "회수 조치", "상태 증거", "판정", "종결"];
 
-/** Steps complete in order: a step counts as done only when every earlier step is done,
- * so the bar never shows a later step finished while an earlier one is still open. */
+/** Open cases progress in order; closure must not paint unresolved work as complete. */
 function procedureState(d) {
   const c = d.case;
   const closed = c.status === "CLOSED";
   const stateEvidence = d.evidence.some((e) => e.meaning?.state);
   const unverifiable = d.targets.some((t) => t.status === "UNVERIFIABLE");
   const flags = [true, Boolean(c.cutover_at), d.targets.length > 0 && !unverifiable,
-    d.targets.length > 0 && d.targets.every((t) => t.status !== "OUTSTANDING"), stateEvidence,
+    d.targets.length > 0 && d.targets.every((t) => ["REVOKED", "EXPIRED"].includes(t.status)), stateEvidence,
     Boolean(c.grade) && ["ASSESSED", "CLOSED"].includes(c.status), closed];
   const now = closed ? -1 : flags.indexOf(false);
-  return PROCEDURE.map((title, i) => ({ title, done: closed || i < now, now: i === now, gap: i === now && i === 2 && unverifiable }));
+  return PROCEDURE.map((title, i) => ({ title, done: closed ? flags[i] : i < now, now: !closed && i === now,
+    gap: closed ? !flags[i] : i === now && i === 2 && unverifiable }));
+}
+
+function terminationOverview(d) {
+  const c = d.case, act = d.activity || {}, closed = c.status === "CLOSED";
+  return html`${panel("종료 개요", html`${kv([["종료 사유", c.reason || "—"], ["제공자", c.provider || "—"],
+    ["시작", when(c.opened_at)], ["차단", when(c.cutover_at, { seconds: true })],
+    ["처리 기한", c.due_at ? html`${when(c.due_at)} ${chip(closed ? "outline" : c.overdue ? "block" : "outline", closed ? "종결" : c.overdue ? "기한 초과" : "기한 내")}` : "—"],
+    ["마지막 시도", when(act.last_attempt, { seconds: true })], ["실행 미확인", act.unknown ?? "—"],
+    ["재판정 사유", c.criteria?.stale_note || "—"]])}
+    <h3>허용 자원</h3>${(c.allowed_resources || []).length ? html`<div class="pill-list">${c.allowed_resources.map((a) => html`<span class="chip outline mono">${resourceName(a)}${typeof a === "object" && a.action ? ` / ${ACTION[a.action] || "—"}` : ""}</span>`)}</div>` : empty("기록 없음")}`)}
+    ${closed ? panel("종결 후 잔여 상태", kv([["종결", when(c.closed_at)], ["판정 결과", c.grade ? gradeChip(c.grade) : "—"],
+      ["미회수", d.targets.filter((t) => t.status === "OUTSTANDING").length], ["확인 불가", d.targets.filter((t) => t.status === "UNVERIFIABLE").length],
+      ["엔드포인트 잔존", d.endpoint_residue ?? "—"], ["위험 수용 근거", c.risk_acceptance_note || "—"], ["위험 수용자", c.risk_accepted_by || "—"]])) : ""}`;
+}
+
+function terminationFollowup(d) {
+  const closed = d.case.status === "CLOSED";
+  const rows = d.targets.map((target) => {
+    const gaps = ["C1", "C2", "C3", "C4"].flatMap((key) => target.criteria?.[key]?.met === false ? target.criteria[key].gaps?.length ? target.criteria[key].gaps : [CRITERIA[key]] : []);
+    const task = target.status === "UNVERIFIABLE" ? "대상 범위 확인" : target.status === "OUTSTANDING" ? "회수 상태 확인"
+      : target.criteria?.C4?.met === false ? "상태 증거 확인" : gaps.length ? "미충족 기준 확인" : !target.criteria ? "판정 자료 확인" : "";
+    return { target, gaps, task };
+  }).filter((row) => row.task);
+  return panel(closed ? "종결 후 확인 항목" : "확인 및 조치", html`${rows.length ? html`<table class="data"><thead><tr><th>대상</th><th>확인 사항</th><th>다음 조치</th></tr></thead><tbody>
+    ${rows.map(({ target, gaps, task }) => html`<tr><td>${target.label}</td><td>${gaps.length ? gaps.map((gap) => html`<span class="sub">${gap}</span>`) : TARGET_STATUS[target.status]?.[1] || "—"}</td>
+      <td><button class="btn sm" data-act="target" data-id="${target.id}">${task}</button></td></tr>`)}</tbody></table>` : empty("확인할 항목 없음")}
+    ${!closed ? html`<div class="row-actions">${!d.targets.length ? html`<button class="btn" data-act="add-target">회수 대상 추가</button>` : ""}<button class="btn" data-act="collect">증거 수집</button>
+      ${d.case.status === "ASSESSED" ? html`<button class="btn" data-act="close-case">종결 검토</button>` : html`<button class="btn" data-act="assess">판정</button>`}</div>` : ""}`, { flush: rows.length > 0 });
+}
+
+function terminationHistory(d) {
+  const labels = { opened: "종료 시작", cutover: "경로 차단", "target-state": "회수 상태 확인", evidence: "증거 등록", assessed: "판정", "risk-accepted": "위험 수용", closed: "종결" };
+  return html`<details class="termination-history"><summary>처리 이력</summary>${kv([["기록 범위", "현재 보존된 기록"]])}
+    ${(d.timeline || []).length ? html`<table class="data"><thead><tr><th>시각</th><th>처리</th><th>처리자</th><th>대상 및 내용</th></tr></thead><tbody>
+      ${d.timeline.map((event) => html`<tr><td>${when(event.at, { seconds: true })}</td><td>${labels[event.kind] || "—"}</td><td>${event.actor || "—"}</td>
+        <td>${event.target_id ? html`<button class="btn sm" data-act="target" data-id="${event.target_id}">${event.detail || "상세 확인"}</button>` : event.detail || "—"}</td></tr>`)}</tbody></table>` : empty("기록 없음")}</details>`;
 }
 
 async function caseView(caseId, tab) {
@@ -2420,16 +2457,16 @@ async function caseView(caseId, tab) {
         status: html`${chip(closed ? "outline" : "approval", CASE_STATUS[c.status] || c.status)}${gradeChip(c.grade)}`,
         actions: html`${c.grade ? html`<button class="btn" data-act="report">판정서</button>` : ""}
           ${c.deployment === "provider" ? html`<button class="btn" data-act="disclosure">고지 요청서</button>` : ""}
-          ${closed ? html`<button class="btn" data-act="reopen-case">케이스 재개</button>` : ""}
+          ${closed ? html`<button class="btn" data-act="reopen-case">종료 처리 재개</button>` : ""}
           ${!closed ? html`<button class="btn" data-act="collect">증거 수집</button><button class="btn primary" data-act="assess">판정</button>` : ""}
           ${c.status === "ASSESSED" ? html`<button class="btn danger solid" data-act="close-case">종결</button>` : ""}` })}
         <ol class="stepper" aria-label="종료 판정 절차">${procedureState(d).map((s, i) => html`
           <li class="step ${s.done ? "done" : ""} ${s.now ? "now" : ""} ${s.gap ? "gap" : ""}"><span class="n">${s.done ? "✓" : i + 1}</span><b>${s.title}</b></li>`)}</ol>`,
-      kpis: kpiStrip([["미회수", outstanding, "alert"], ["차단 후 실행", act.executed || 0, "block"], ["차단 후 거부", act.blocked || 0],
+      kpis: kpiStrip([["미회수", outstanding, "alert"], ["확인 불가", d.targets.filter((t) => t.status === "UNVERIFIABLE").length, "alert"], ["차단 후 실행", act.executed || 0, "block"], ["차단 후 거부", act.blocked || 0],
         ["엔드포인트 잔존", d.endpoint_residue || 0, "alert"]]),
-      active: tab || "verdict",
+      active: tab === "scope" ? "verdict" : tab || "verdict",
       tabs: [
-        { key: "verdict", label: "판정", body: html`<div class="grid c12">
+        { key: "verdict", label: "종료 현황", body: html`<div class="stack">${terminationOverview(d)}${terminationFollowup(d)}<div class="grid c12">
           ${panel("등급", html`${c.grade ? html`<div class="grade-big ${c.grade}">${c.grade} · ${GRADE[c.grade]}</div>` : html`<div class="grade-big">—</div>`}
             ${criteria.assessed_at ? html`<p class="muted small">${when(criteria.assessed_at)}</p>` : ""}
             ${c.grade && c.grade !== "T1" && (criteria.determined_by || []).length ? kv([["결정 대상", criteria.determined_by.join(", ")]]) : ""}
@@ -2439,7 +2476,7 @@ async function caseView(caseId, tab) {
           ${panel("기준별 충족 대상", html`<div class="crit">${["C1", "C2", "C3", "C4"].map((k) => { const cr = criteria[k]; return html`<div class="c">
               <h4>${k} ${CRITERIA[k]} ${cr ? chip(cr.met ? "allow" : "block", cr.met ? "충족" : "미충족") : chip("outline", "미판정")}</h4>
               ${cr?.gaps?.length ? html`<ul>${cr.gaps.slice(0, 3).map((g) => html`<li>${g}</li>`)}${cr.gaps.length > 3 ? html`<li>+${cr.gaps.length - 3}</li>` : ""}</ul>` : ""}</div>`; })}</div>`,
-            { sub: `대상 ${d.targets.length}개` })}</div>` },
+            { sub: `대상 ${d.targets.length}개` })}</div>${terminationHistory(d)}</div>` },
         { key: "targets", label: "회수 대상", n: d.targets.length, hot: outstanding > 0, body: panel("회수 대상", html`<table class="data">
           <thead><tr><th>대상</th><th>상태</th><th>기준</th><th>등급</th><th></th></tr></thead><tbody>
           ${d.targets.map((t) => html`<tr class="clickable" tabindex="0" data-act="target" data-id="${t.id}">
@@ -2453,9 +2490,7 @@ async function caseView(caseId, tab) {
           </tbody></table>`, { flush: true, tools: closed ? "" : html`<button class="btn sm" data-act="add-target">대상 추가</button>` }) },
         { key: "evidence", label: "증거", n: d.evidence.length, body: panel("증거", html`<div class="evidence">${d.evidence.map(evidenceItem)}</div>
           ${d.evidence.length ? "" : empty("증거 없음")}`, { sub: `상태 증거 ${stateEvidence}`, tools: closed ? "" : html`<button class="btn sm" data-act="add-evidence">증거 등록</button>` }) },
-        { key: "scope", label: "허용 자원", body: panel("허용 자원", html`<div class="pill-list">${(c.allowed_resources || []).map((a) => (typeof a === "string"
-          ? html`<span class="chip outline mono">${a}</span>` : html`<span class="chip outline mono">${a.name || JSON.stringify(a)}${a.action ? ` · ${ACTION[a.action] || a.action}` : ""}</span>`))}</div>
-          ${kv([["시작", when(c.opened_at)], ["차단", when(c.cutover_at, { seconds: true })], ["마지막 시도", when(act.last_attempt, { seconds: true })], ["실행 미확인", act.unknown]])}`) },
+
       ],
     }),
   };

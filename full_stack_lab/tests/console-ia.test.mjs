@@ -572,12 +572,41 @@ test("종료 조치 필터와 페이지 이동을 서버에 전달하고 기한 
   const result = await ui.ROUTES.termination("", "cases", new URLSearchParams("attention=required&page=2"));
   const cases = result.html.tabs.find((t) => t.key === "cases");
   assert.equal(cases.n, 101);
+  assert.deepEqual(Array.from(result.html.tabs, (t) => t.label), ["종료 대상", "종료 처리"]);
   assert.match(String(cases.body), /종료 조치 필요/);
   assert.match(String(cases.body), /attention=required&amp;page=1/);
   assert.match(String(cases.body), /attention=required&amp;page=3/);
   const overdue = await ui.ROUTES.termination("", "cases", new URLSearchParams("attention=overdue"));
   assert.match(String(overdue.html.tabs.find((t) => t.key === "cases").body), /종료 기한 초과/);
   assert.ok(ui.calls.includes("/gw/termination/cases?attention=overdue"));
+});
+
+test("종료 현황은 사유와 기한 및 자원과 다음 조치를 모으고 이전 자원 탭을 연결한다", async () => {
+  const criteria = Object.fromEntries(["C1","C2","C3","C4"].map((key) => [key,{met:false,gaps:["제공자 확인 필요"]}]));
+  const data = {case:{id:"case",engagement_label:"Docs 종료",status:"ASSESSED",grade:"T3",reason:"계약 종료",provider:"Provider",opened_at:"2026-11-01T00:00:00Z",cutover_at:"2026-11-01T00:00:00Z",due_at:"2026-11-15T00:00:00Z",overdue:true,allowed_resources:["/docs"],criteria},
+    targets:[{id:"target",label:"제공자 자격",status:"UNVERIFIABLE",kind:"server-held-credential",holder:"provider",discovered_by:"provider-disclosure",criteria}],evidence:[],activity:{unknown:1},endpoint_residue:1,
+    timeline:[{kind:"opened",at:"2026-11-01T00:00:00Z",actor:"Admin",detail:"계약 종료"}]};
+  const ui = build(true,{"/gw/termination/cases/case":data});
+  const out = await ui.ROUTES.termination("case", "scope");
+  assert.equal(out.html.active,"verdict");
+  assert.deepEqual(Array.from(out.html.tabs, (t) => t.label),["종료 현황","회수 대상","증거"]);
+  const overview = String(out.html.tabs[0].body);
+  assert.match(overview,/종료 사유[^]*계약 종료[^]*처리 기한[^]*기한 초과[^]*허용 자원[^]*\/docs/);
+  assert.match(overview,/data-act="target" data-id="target">대상 범위 확인/);
+  assert.match(overview,/처리 이력[^]*현재 보존된 기록[^]*Admin/);
+  assert.ok(ui.requests.every((r) => !r.method || r.method === "GET"));
+});
+
+test("판단 불가 종결은 잔여 상태와 미완료 절차를 유지하고 자동 조치를 제공하지 않는다", async () => {
+  const ui = build(true,{"/gw/termination/cases/closed":{case:{id:"closed",engagement_label:"종결",status:"CLOSED",grade:"T3",criteria:{},risk_acceptance_note:"제공자 확인 대기",risk_accepted_by:"Admin",closed_at:"2026-11-01T00:00:00Z"},
+    targets:[{id:"pending",label:"미회수 자격",status:"OUTSTANDING"},{id:"unknown",label:"미확인 자격",status:"UNVERIFIABLE"}],evidence:[],activity:{},endpoint_residue:2,timeline:[]}});
+  const out = await ui.ROUTES.termination("closed", "");
+  const body = String(out.html.tabs[0].body), head = String(out.html.head);
+  assert.match(body,/종결 후 잔여 상태[^]*미회수[^]*확인 불가[^]*제공자 확인 대기/);
+  assert.match(body,/종결 후 확인 항목/);
+  assert.doesNotMatch(body,/data-act="collect"|data-act="assess"|data-act="close-case"/);
+  assert.match(head,/class="step\s+gap"/);
+  assert.ok((head.match(/class="step done/g)||[]).length<7);
 });
 
 test("실행 확인과 승인 처리 이력은 대시보드에 모으고 상세와 번복을 유지한다", async () => {
@@ -805,6 +834,7 @@ test("사용 가능한 MCP 상세와 주소 복사는 현재 이용 가능 여�
   const out = await ui.ROUTES.intake("", "approved");
   const tab = out.html.tabs.find((t) => t.key === "approved");
   assert.equal(tab.label, "사용 가능한 MCP");
+  assert.match(String(tab.body), /<header>[^]*class="panel-shortcut" href="#\/intake\?t=new"[^]*<\/header>/);
   assert.match(String(tab.body), /data-list-search="available-mcp"[^]*이름 또는 기능 검색/);
   await ui.ACTIONS["available-mcp"]({dataset:{id:"docs"}});
   assert.equal(detail.title, "Docs");
