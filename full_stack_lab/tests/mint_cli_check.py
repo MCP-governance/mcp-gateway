@@ -1,0 +1,123 @@
+"""`mint` terminal commands against a fake service broker: every local-screen feature has a command (a server without
+a desktop has only the terminal), and the console opens from the terminal without a text browser taking it over."""
+import contextlib
+import importlib.util
+import io
+import os
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+KIT = Path(__file__).resolve().parents[2] / "endpoint-agent"
+spec = importlib.util.spec_from_file_location("kit_access_cli", KIT / "kit_access.py")
+access = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(access)
+
+CONSOLE = "https://gateway.example/workspace"
+SUMMARY = {
+    "servers": [{"name": "Hugging Face", "path": "gateway", "available": True}],
+    "calls": [{"called_at": "2026-11-01T03:00:00+00:00", "harness": "codex", "account": "pj3", "server": "hf", "server_name": "Hugging Face",
+               "tool": "hub_repo_search", "path": "gateway", "failed": False, "input_bytes": 120, "output_bytes": 37000,
+               "decision_id": 912, "decision": "Block", "policy_id": "P-CONSENT-001", "reason": "이용 동의 필요"},
+              {"called_at": "2026-11-01T02:59:00+00:00", "harness": "claude", "server": "memory", "tool": "read_graph",
+               "path": "local", "failed": False}],
+    "requests": [{"name": "ghidra", "status": "OPEN", "created_at": "2026-11-01T01:00:00+00:00"}],
+    "applications": [{"name": "Hugging Face", "status": "APPROVED", "registered_server_id": "hf", "created_at": "2026-10-31T01:00:00+00:00"},
+                     {"name": "Fetch", "status": "HOLD", "registered_server_id": None, "created_at": "2026-10-31T02:00:00+00:00"}],
+    "consents": [], "console_url": CONSOLE,
+}
+SOURCES = [{"server_id": "memory", "display_name": "Memory", "commit_sha": "a" * 40, "source_available": True},
+           {"server_id": "hf", "display_name": "Hugging Face", "commit_sha": None, "source_available": False,
+            "connection_url": "https://gateway.example/mcp/hf/"}]
+
+
+def run(*argv, env=None):
+    sent = []
+
+    def receive(address, command, folder=None):
+        sent.append((command, folder))
+        if command["action"] == "self":
+            return SUMMARY
+        if command["action"] == "list":
+            return SOURCES
+        if command["action"] == "download":
+            return str(Path(folder or "MINT") / "memory.zip")
+        raise AssertionError(command)
+    out = io.StringIO()
+    with patch.object(access, "receive", receive), patch.dict(os.environ, env or {}, clear=env is not None), \
+            patch("webbrowser.open") as opened, contextlib.redirect_stdout(out):
+        code = access.mint_command(list(argv), "pipe", lambda: ["연결 상태: 연결됨"], lambda: [])
+    return code, out.getvalue(), sent, opened
+
+
+class Commands(unittest.TestCase):
+    def test_every_command_is_dispatched_and_named_in_help(self):
+        # managed-linux.py hands `mint <x>` to mint_command only when x is in SUBCOMMANDS.
+        for name in access.SUBCOMMANDS:
+            with self.assertRaises(SystemExit) as done, contextlib.redirect_stdout(io.StringIO()):
+                access.mint_command([name, "-h"], "pipe", list, list)
+            self.assertEqual(done.exception.code, 0, name)
+            self.assertIn(name, access.HELP)
+        with self.assertRaises(SystemExit) as done, contextlib.redirect_stderr(io.StringIO()):
+            access.mint_command(["nothing"], "pipe", list, list)
+        self.assertEqual(done.exception.code, 2)
+
+    def test_logs_are_numbered_and_a_number_shows_the_gateway_decision(self):
+        code, out, *_ = run("logs")
+        self.assertEqual(code, 0)
+        self.assertIn("번호", out)
+        self.assertIn("Hugging Face · hub_repo_search", out)
+        self.assertIn("mint logs <번호>", out)
+        code, out, *_ = run("logs", "1")
+        self.assertEqual(code, 0)
+        for value in ("차단", "P-CONSENT-001", "이용 동의 필요", "36.1 KB", "120 B", "pj3", f"{CONSOLE}#/activity?d=912"):
+            self.assertIn(value, out)
+        code, out, *_ = run("logs", "2")
+        self.assertIn("로컬", out)
+        self.assertNotIn("#/activity", out)
+        code, out, *_ = run("logs", "3")
+        self.assertEqual((code, out.strip()), (1, "호출 번호 확인 필요 · 1~2"))
+
+    def test_requests_shows_pc_requests_and_applications_in_console_words(self):
+        code, out, *_ = run("requests")
+        self.assertEqual(code, 0)
+        self.assertIn("내 요청 · 1", out)
+        self.assertIn("검토 대기", out)
+        self.assertIn("도입 신청 · 2", out)
+        self.assertIn("게이트웨이 등록", out)
+        self.assertNotIn("HOLD", out)
+
+    def test_sources_lists_and_downloads_only_an_available_source(self):
+        code, out, sent, _ = run("sources")
+        self.assertEqual(code, 0)
+        self.assertIn("받기 가능", out)
+        self.assertIn("https://gateway.example/mcp/hf/", out)
+        code, out, sent, _ = run("sources", "Memory", "--to", "inbox")
+        self.assertEqual(code, 0)
+        self.assertEqual(sent[-1], ({"action": "download", "server": "memory", "commit": "a" * 40}, "inbox"))
+        code, out, sent, _ = run("sources", "hf")
+        self.assertEqual(code, 1)
+        self.assertFalse([c for c, _ in sent if c["action"] == "download"])
+
+    def test_console_prints_the_page_and_opens_a_browser_only_on_a_desktop(self):
+        code, out, _, opened = run("console", "consent", env={"DISPLAY": ":0"} if os.name != "nt" else {"SystemRoot": "C:\\Windows"})
+        self.assertEqual((code, out.strip()), (0, f"{CONSOLE}#/consent"))
+        opened.assert_called_once_with(f"{CONSOLE}#/consent")
+        code, out, _, opened = run("console", env={"SSH_CONNECTION": "10.0.0.1 1 10.0.0.2 22", "DISPLAY": ":0"})
+        self.assertEqual(out.strip(), CONSOLE)
+        opened.assert_not_called()
+
+    def test_headless_linux_never_opens_a_text_browser(self):
+        with patch.object(access.os, "name", "posix"), patch("sys.platform", "linux"), patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(access.can_open_browser())
+        with patch.object(access.os, "name", "posix"), patch("sys.platform", "linux"), patch.dict(os.environ, {"WAYLAND_DISPLAY": "w"}, clear=True):
+            self.assertTrue(access.can_open_browser())
+
+    def test_console_without_address_is_a_label(self):
+        with patch.dict(SUMMARY, console_url=""):
+            code, out, *_ = run("console")
+        self.assertEqual((code, out.strip()), (1, "콘솔 주소 확인 실패 · mint --check"))
+
+
+if __name__ == "__main__":
+    unittest.main()

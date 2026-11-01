@@ -1419,7 +1419,8 @@ def main():
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
     # 직원이 치는 `mint`는 이 하위 명령이다. 도움말은 직원이 쓰는 옵션만 직원의 말로 보인다.
-    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False)
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False, epilog=access.HELP)
     show.add_argument("-h", "--help", action="help", help="도움말")
     show.add_argument("--user", help=argparse.SUPPRESS)
     show.add_argument("--check", action="store_true", help="게이트웨이 연결을 지금 점검")
@@ -1428,7 +1429,6 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
-    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
     if len(sys.argv) > 2 and sys.argv[1] == "status" and sys.argv[2] in access.SUBCOMMANDS:
         sys.exit(mint_subcommand(access, sys.argv[2:]))
     args, extra = parser.parse_known_args()

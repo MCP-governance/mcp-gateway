@@ -212,8 +212,14 @@ PATHS = {"gateway": "게이트웨이", "connector": "커넥터", "local": "로�
 STATES = {"default": "기본 승인", "approved": "승인", "denied": "차단", "pending": "검토 중", "expired": "검토 기한 만료"}
 HARNESSES = {"claude": "Claude Code", "codex": "Codex"}
 REQUEST_STATES = {"OPEN": "검토 대기", "CLOSED": "처리됨"}
+# The console's labels for an application (INTAKE_STATUS in console.js).
+APPLICATION_STATES = {"HOLD": "검토 대기", "REMOTE_REVIEWED": "계약 검토 완료", "VALIDATION_QUEUED": "검증 대기", "VALIDATING": "검증 중",
+                      "VALIDATED": "검증 완료", "APPROVED": "승인", "REJECTED": "거부", "FAILED": "검증 실패"}
 LOGINS = {"claude": ["claude", "auth", "login"], "codex": ["codex", "login", "--device-auth"]}
-SUBCOMMANDS = ("servers", "logs", "request", "login", "ui")
+# Console pages the terminal can open; consent and account connections are given only there, signed in (D-301).
+CONSOLE_PAGES = {"logs": "activity", "consent": "consent", "requests": "intake", "connections": "connections"}
+SUBCOMMANDS = ("servers", "logs", "requests", "request", "sources", "login", "ui", "console")
+HELP = "명령: servers · logs [번호] · requests · request · sources [서버] · login · ui · console [페이지]  (mint <명령> -h)"
 
 
 def unsent_calls():
@@ -262,6 +268,54 @@ def call_rows(summary, limit=None):
              f'{c.get("server_name") or c["server"]} · {c["tool"]}', call_result(c)) for c in summary.get("calls", [])[:limit]]
 
 
+def size_text(value):
+    value = int(value or 0)
+    return f"{value:,} B" if value < 10240 else f"{value / 1024:,.1f} KB"
+
+
+def call_detail(call, console_url=""):
+    """One call as the console's detail drawer lists it: the PC's report beside the Gateway's decision."""
+    pairs = [("시각", short_time(call["called_at"])), ("하네스", HARNESSES.get(call["harness"], call["harness"])),
+             ("PC 계정", call.get("account") or "—"), ("경로", PATHS.get(call["path"], call["path"])),
+             ("서버", call.get("server_name") or call["server"]), ("도구", call["tool"]), ("결과", call_result(call)),
+             ("정책", call.get("policy_id") or "—"), ("사유", call.get("reason") or "—"),
+             ("입력", size_text(call.get("input_bytes"))), ("출력", size_text(call.get("output_bytes"))),
+             ("판정 번호", str(call.get("decision_id") or "—"))]
+    if call.get("decision_id") and console_url:
+        pairs.append(("콘솔", f'{console_url}#/activity?d={call["decision_id"]}'))
+    return pairs
+
+
+def request_rows(summary):
+    return [(r["name"], REQUEST_STATES.get(r["status"], r["status"]), short_time(r["created_at"])) for r in summary.get("requests", [])]
+
+
+def application_rows(summary):
+    return [(a["name"], "게이트웨이 등록" if a.get("registered_server_id") else APPLICATION_STATES.get(a["status"], a["status"]),
+             short_time(a["created_at"])) for a in summary.get("applications", [])]
+
+
+def source_rows(servers):
+    return [(s.get("display_name") or s["server_id"], (s.get("commit_sha") or "—")[:12],
+             "받기 가능" if s.get("source_available") else s.get("connection_url") or "—") for s in servers]
+
+
+def can_open_browser():
+    """A browser only where one can show: never over SSH, and on Linux only inside a desktop session (otherwise
+    webbrowser falls back to a text browser that takes over the terminal)."""
+    import sys
+    if os.environ.get("SSH_CONNECTION") or os.environ.get("SSH_TTY"):
+        return False
+    return os.name == "nt" or sys.platform == "darwin" or bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def print_pairs(title, pairs):
+    print(f"\n{title}")
+    width = max(len(a) for a, _ in pairs)
+    for label, value in pairs:
+        print(f"  {label.ljust(width)}  {value}")
+
+
 def print_table(title, columns, rows):
     print(f"\n{title} · {len(rows)}")
     if not rows:
@@ -287,7 +341,12 @@ def mint_command(argv, address, status_lines, check):
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP")
     logs = commands.add_parser("logs", help="MCP 호출 기록")
+    logs.add_argument("number", nargs="?", type=int, help="호출 상세 (목록의 번호)")
     logs.add_argument("-n", type=int, default=30, help="표시할 건수")
+    commands.add_parser("requests", help="내 도입 요청·신청")
+    sources = commands.add_parser("sources", help="승인된 MCP 소스")
+    sources.add_argument("server", nargs="?", help="받을 서버")
+    sources.add_argument("--to", help="받을 폴더")
     request = commands.add_parser("request", help="MCP 도입 요청")
     request.add_argument("server", help="서버 이름")
     request.add_argument("--source", default="", help="소스 주소 (https://)")
@@ -295,6 +354,8 @@ def mint_command(argv, address, status_lines, check):
     login = commands.add_parser("login", help="모델 로그인")
     login.add_argument("harness", choices=sorted(LOGINS))
     commands.add_parser("ui", help="화면 열기")
+    console = commands.add_parser("console", help="웹 콘솔 열기")
+    console.add_argument("page", nargs="?", choices=sorted(CONSOLE_PAGES), help="호출 기록·동의·신청·연결")
     args = parser.parse_args(argv)
     try:
         if args.command == "login":
@@ -306,7 +367,33 @@ def mint_command(argv, address, status_lines, check):
             purpose = args.purpose or input("사용 목적: ")
             print(mint_request(address, args.server, args.source, purpose))
             return 0
+        if args.command == "sources":
+            servers = receive(address, {"action": "list"})
+            if not args.server:
+                print_table("승인된 MCP", ("서버", "커밋", "소스"), source_rows(servers))
+                return 0
+            found = [s for s in servers if args.server in (s["server_id"], s.get("display_name"))]
+            if not found or not found[0].get("source_available"):
+                print(f"받을 수 있는 소스 없음 · {args.server} · mint sources")
+                return 1
+            print("받음 · " + receive(address, {"action": "download", "server": found[0]["server_id"],
+                                              "commit": found[0]["commit_sha"]}, args.to))
+            return 0
         summary = receive(address, {"action": "self"})
+        if args.command == "console":
+            if not summary.get("console_url"):
+                print("콘솔 주소 확인 실패 · mint --check")
+                return 1
+            url = summary["console_url"] + (f"#/{CONSOLE_PAGES[args.page]}" if args.page else "")
+            print(url)
+            if can_open_browser():
+                import webbrowser
+                webbrowser.open(url)
+            return 0
+        if args.command == "requests":
+            print_table("내 요청", ("서버", "상태", "시각"), request_rows(summary))
+            print_table("도입 신청", ("서버", "상태", "시각"), application_rows(summary))
+            return 0
         if args.command == "servers":
             for title, columns, rows in sections(summary):
                 print_table(title, columns, rows)
@@ -314,9 +401,16 @@ def mint_command(argv, address, status_lines, check):
                 print_table("동의 대기", ("서버", "도구"), [(c["name"], c["tools"]) for c in summary["consents"]])
                 if summary.get("consent_url"):
                     print(f"  콘솔에서 동의: {summary['consent_url']}")
+        elif args.number is not None:
+            calls = summary.get("calls", [])
+            if not 1 <= args.number <= len(calls):
+                print(f"호출 번호 확인 필요 · 1~{len(calls)}")
+                return 1
+            print_pairs("MCP 호출", call_detail(calls[args.number - 1], summary.get("console_url", "")))
         else:
-            print_table("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary, max(1, args.n)))
-            print(f"\n전송 대기 {unsent_calls()}건")
+            rows = [(n, *row) for n, row in enumerate(call_rows(summary, max(1, args.n)), 1)]
+            print_table("MCP 호출", ("번호", "시각", "하네스", "경로", "서버 · 도구", "결과"), rows)
+            print(f"\n전송 대기 {unsent_calls()}건 · 상세: mint logs <번호>")
         return 0
     except (OSError, ValueError, KeyError, TypeError):
         print("엔드포인트 서비스 연결 실패 · mint --check")
@@ -400,7 +494,8 @@ TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("
 # Values coloured as the console colours them.
 CHIPS = {"경보": "alert", "사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
          "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
-         "검토 기한 만료": "alert", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
+         "검토 기한 만료": "alert", "게이트웨이 등록": "allow", "검증 실패": "alert", "거부": "block", "검증 대기": "approval",
+         "검증 중": "approval", "검증 완료": "restrict", "계약 검토 완료": "approval", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
 CHIP_COLUMNS = {"상태", "결과", "경로"}
 
 
@@ -414,7 +509,7 @@ def chip(value):
     return f'<span class="chip {CHIPS.get(value, "")}">{html.escape(str(value))}</span>'
 
 
-def page(title, active, body, token, identity="", counts=None, refresh=0):
+def page(title, active, body, token, identity="", counts=None, refresh=0, console=""):
     import html
     counts = counts or {}
     nav = "".join(f'<a href="/{token}/{key}"{" aria-current=page" if key == active else ""}>{svg(key)}<span>{html.escape(label)}</span>'
@@ -424,7 +519,9 @@ def page(title, active, body, token, identity="", counts=None, refresh=0):
             + (f'<meta http-equiv="refresh" content="{int(refresh)}">' if refresh else "") +
             f'<link rel="stylesheet" href="/{token}/style.css"></head><body>'
             f'<header class="app-bar"><a class="app-title" href="/{token}/"><span class="mark">{svg("mark")}</span><strong>MINT</strong></a>'
-            f'<span class="app-identity">{html.escape(identity)}</span></header>'
+            f'<span class="app-identity">{html.escape(identity)}</span>'
+            + (f'<a class="btn sm" href="{html.escape(console)}" target="_blank" rel="noopener">웹 콘솔</a>' if console.startswith("https://") else "")
+            + '</header>'
             f'<div class="shell"><aside class="side"><nav class="nav" aria-label="메뉴">{nav}</nav></aside>'
             f'<main class="main"><div class="page-head"><h1>{html.escape(title)}</h1></div>{body}</main></div></body></html>')
 
@@ -511,7 +608,8 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 note = f'<p class="note">{html.escape(notice)}</p>' if notice else ""
                 # Read-only pages follow the PC without a reload button; a page with a form or a check result does not.
                 refresh = 60 if name in ("", "servers", "logs") and "check" not in self.path else 0
-                self.reply(status, page(title, name, banner + note + body, token, socket.gethostname(), counts, refresh))
+                self.reply(status, page(title, name, banner + note + body, token, socket.gethostname(), counts, refresh,
+                                        known.get("console_url", "")))
 
             if name == "":
                 pairs = [(a, b) for a, _, b in (line.partition(": ") for line in status_lines())]
@@ -569,10 +667,9 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                         f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300"></label>'
                         f'<label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>'
                         f'<div class="row"><button class="btn primary">요청</button></div></form></div></section>')
-                mine = table_html("내 요청", ("서버", "상태", "시각"),
-                                  [(r["name"], REQUEST_STATES.get(r["status"], r["status"]), short_time(r["created_at"]))
-                                   for r in summary.get("requests", [])])
-                return show("도입 요청", f'<div class="stack">{form}{mine}</div>')
+                mine = table_html("내 요청", ("서버", "상태", "시각"), request_rows(summary))
+                applied = table_html("도입 신청", ("서버", "상태", "시각"), application_rows(summary))
+                return show("도입 요청", f'<div class="stack">{form}{mine}{applied}</div>')
             self.reply(404, "")
 
         def do_POST(self):
@@ -608,7 +705,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_address[1]}/{token}/"
     print(url, flush=True)
-    if open_browser:
+    if open_browser and can_open_browser():
         webbrowser.open(url)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:

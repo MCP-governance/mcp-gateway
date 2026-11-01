@@ -73,11 +73,10 @@ def main():
     import argparse
     import subprocess
     import sys
-    access = None
+    spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
+    access = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(access)
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and not sys.argv[1].lower().endswith(".json"):
-        spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
-        access = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(access)
         if hasattr(sys.stdout, "reconfigure"):
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sid = subprocess.run(["whoami", "/user", "/fo", "csv", "/nh"], capture_output=True, text=True).stdout.strip().split(",")[-1].strip('"')
@@ -101,7 +100,7 @@ def main():
             sys.argv[1:], "\\\\.\\pipe\\mcpgw-" + str(settings.get("user", "")).lower() + "-source",
             lambda: render(json.loads(status_path.read_text(encoding="utf-8"))).splitlines(), probe))
     parser = argparse.ArgumentParser(prog="mint", description="MINT 엔드포인트 상태 화면",
-                                     epilog="명령: servers · logs · request · login · ui  (mint <명령> -h)")
+                                     epilog=access.HELP)
     parser.add_argument("status", type=Path, nargs="?", help=argparse.SUPPRESS)
     parser.add_argument("--settings", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--probe", type=Path, help=argparse.SUPPRESS)
