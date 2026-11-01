@@ -309,11 +309,21 @@ def can_open_browser():
     return os.name == "nt" or sys.platform == "darwin" or bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
+def cells(text):
+    """Terminal columns: Hangul and other wide characters take two (kit_screen.width)."""
+    import unicodedata
+    return sum(0 if unicodedata.combining(c) else 2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in str(text))
+
+
+def pad(text, room):
+    return str(text) + " " * (room - cells(text))
+
+
 def print_pairs(title, pairs):
     print(f"\n{title}")
-    width = max(len(a) for a, _ in pairs)
+    width = max(cells(a) for a, _ in pairs)
     for label, value in pairs:
-        print(f"  {label.ljust(width)}  {value}")
+        print(f"  {pad(label, width)}  {value}")
 
 
 def print_table(title, columns, rows):
@@ -321,10 +331,9 @@ def print_table(title, columns, rows):
     if not rows:
         print("  —")
         return
-    widths = [max(len(str(col)), *(len(str(r[i])) for r in rows)) for i, col in enumerate(columns)]
-    print("  " + "  ".join(str(col).ljust(widths[i]) for i, col in enumerate(columns)))
-    for row in rows:
-        print("  " + "  ".join(str(cell).ljust(widths[i]) for i, cell in enumerate(row)))
+    widths = [max(cells(col), *(cells(r[i]) for r in rows)) for i, col in enumerate(columns)]
+    for row in (columns, *rows):
+        print(("  " + "  ".join(pad(cell, widths[i]) for i, cell in enumerate(row))).rstrip())
 
 
 def mint_request(address, server, source_url, purpose):
@@ -336,7 +345,7 @@ def mint_request(address, server, source_url, purpose):
 def mint_command(argv, address, status_lines, check):
     """Returns the exit code. status_lines() -> [str]; check() -> [(label, value)]."""
     import argparse
-    parser = argparse.ArgumentParser(prog="mint", add_help=False)
+    parser = argparse.ArgumentParser(prog="mint", add_help=False, epilog=HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-h", "--help", action="help", help="도움말")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP")
@@ -404,7 +413,7 @@ def mint_command(argv, address, status_lines, check):
         elif args.number is not None:
             calls = summary.get("calls", [])
             if not 1 <= args.number <= len(calls):
-                print(f"호출 번호 확인 필요 · 1~{len(calls)}")
+                print(f"호출 번호 확인 필요 · 1~{len(calls)}" if calls else "MCP 호출 기록 없음")
                 return 1
             print_pairs("MCP 호출", call_detail(calls[args.number - 1], summary.get("console_url", "")))
         else:

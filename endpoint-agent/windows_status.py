@@ -100,7 +100,7 @@ def main():
             sys.argv[1:], "\\\\.\\pipe\\mcpgw-" + str(settings.get("user", "")).lower() + "-source",
             lambda: render(json.loads(status_path.read_text(encoding="utf-8"))).splitlines(), probe))
     parser = argparse.ArgumentParser(prog="mint", description="MINT 엔드포인트 상태 화면",
-                                     epilog=access.HELP)
+                                     epilog=access.HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("status", type=Path, nargs="?", help=argparse.SUPPRESS)
     parser.add_argument("--settings", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--probe", type=Path, help=argparse.SUPPRESS)

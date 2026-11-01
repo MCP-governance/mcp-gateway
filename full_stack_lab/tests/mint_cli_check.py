@@ -113,6 +113,19 @@ class Commands(unittest.TestCase):
         with patch.object(access.os, "name", "posix"), patch("sys.platform", "linux"), patch.dict(os.environ, {"WAYLAND_DISPLAY": "w"}, clear=True):
             self.assertTrue(access.can_open_browser())
 
+    def test_tables_align_by_terminal_columns_with_hangul(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            access.print_table("t", ("서버", "상태"), [("Hugging Face", "검토 대기"), ("메모리", "승인")])
+        lines = out.getvalue().splitlines()[2:]
+        # The second column starts at the same terminal column on every line.
+        starts = {access.cells(line[:line.rindex("  ") + 2]) for line in lines}
+        self.assertEqual(len(starts), 1, lines)
+        code, out, *_ = run("logs", "1")
+        with patch.dict(SUMMARY, calls=[]):
+            code, out, *_ = run("logs", "1")
+        self.assertEqual((code, out.strip()), (1, "MCP 호출 기록 없음"))
+
     def test_console_without_address_is_a_label(self):
         with patch.dict(SUMMARY, console_url=""):
             code, out, *_ = run("console")
