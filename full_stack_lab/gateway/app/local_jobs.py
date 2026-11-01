@@ -36,7 +36,9 @@ ACTIVE_TOTAL_LIMIT = int(os.getenv("LOCAL_JOBS_PENDING_MAX", "64"))
 ROW_LIMIT = int(os.getenv("LOCAL_JOBS_ROWS_MAX", "10000"))
 RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 1024 * 1024)))
 CLAIM_SECONDS = 5
-RUN_SECONDS = 20
+# 호출마다 프로세스를 새로 띄운다: JVM 서버(Ghidra)는 기동만 11~14초라 20초로는 도구가 돌 시간이 없었다(D-333).
+# 철회·정지는 실행기가 0.2초마다 제어를 확인해 끊으므로 이 값은 정지 지연이 아니라 한 호출의 상한이다.
+RUN_SECONDS = 60
 PREPARE_SECONDS = 180
 SOURCE_PREPARE_SECONDS = 1800
 QUEUE_LIMIT = 8
