@@ -1,6 +1,9 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "도구 정의 다시 확인": "Recheck tool definitions",
+  "도입 승인 등록부 내보내기": "Export approved adoption registry",
+  "커넥터 설정 내보내기": "Export connector settings",
   "연결별 통제 상태": "Control status by connection",
   "추가 연결 승인 관리": "Additional connection approvals",
   "승인 관리": "Manage approval",

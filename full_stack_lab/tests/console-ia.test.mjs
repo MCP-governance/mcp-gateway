@@ -195,7 +195,10 @@ test("MCP 서버에 계약 상태와 확인 시각을 통합하고 상세의 승
   assert.match(detail.controls, /approve-contract[^]*승인본 갱신/);
   assert.match(detail.controls, /도구 정의 변경/);
   assert.match(String(detail.tabs[0].body), /마지막 확인/);
-  assert.match(String(result.html.head), /catalog-refresh/);
+  assert.doesNotMatch(String(result.html.head), /catalog-refresh|registry-export|connector-policy/);
+  assert.match(String(result.html.tabs[0].body), /catalog-refresh[^]*도구 정의 다시 확인[^]*data-registry-export[^]*도입 승인 등록부 내보내기[^]*value="csv"[^]*value="json"/);
+  assert.doesNotMatch(String(result.html.tabs[0].body), /connector-policy/);
+  assert.match(String(result.html.tabs.find((t) => t.key === "vendor").body), /connector-policy[^]*커넥터 설정 내보내기/);
 });
 
 test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관리 작업으로의 이동을 제공한다", async () => {

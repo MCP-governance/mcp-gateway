@@ -74,6 +74,9 @@ h1,h2,h3{letter-spacing:-.025em}p{overflow-wrap:anywhere}
 .panel>header h2{margin:0;font-size:16.92px;font-weight:700}
 .panel>header .sub{font-size:13.5px;color:var(--ink-3)}
 .panel>header .tools-end{margin-left:auto;display:flex;gap:8px}
+.panel-shortcut{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:14.58px;font-weight:600}
+.server-list-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.connector-tab-actions{justify-content:flex-end}
 .policy-load-title{display:inline-flex;align-items:flex-end;gap:12px;flex-wrap:wrap;line-height:1}
 .policy-load-title .sub{line-height:1}
 .policy-load-details .kv dt:last-of-type,.policy-load-details .kv dd:last-of-type{border-bottom:0}

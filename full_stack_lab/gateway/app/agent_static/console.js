@@ -1298,9 +1298,7 @@ ROUTES.servers = async (id, tab, query) => {
   const option = (value, label) => html`<option value="${value}" ${value === toolFilter ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
-      head: head("AI 연결 관리", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button><button class="btn" data-act="registry-export" data-format="csv">등록부 CSV</button>
-        <button class="btn" data-act="registry-export" data-format="json">등록부 JSON</button>
-        <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
+      head: head("AI 연결 관리"),
       active: tab || "servers",
       tabs: [
         { key: "servers", label: "MCP 서버", n: serverRows.length, body: html`<div class="stack">
@@ -1319,8 +1317,10 @@ ROUTES.servers = async (id, tab, query) => {
               <td>${validityChip(s.registration) || NONE}</td>
               <td class="small">${s.last_seen_at ? when(s.last_seen_at) : "—"}</td>
               <td class="num">${s.tools ?? reg.tools.filter((t) => t.server_id === s.id && t.enabled).length}</td><td class="num">${s.calls || 0}</td></tr>`)}</tbody></table><p class="empty" data-list-empty="server-list" hidden>검색 결과 없음</p>`
-            : attention ? empty("점검할 MCP 서버 없음") : html`${empty("등록된 MCP 서버 없음")}<div class="row-actions center"><a class="btn primary" href="#/intake">도입 신청</a></div>`,
-            { flush: true, end: attention ? html`<a class="btn sm" href="#/servers?t=servers">전체 보기</a>` : "", tools: listToolbar("server-list", "서버 검색") })}
+            : attention ? empty("점검할 MCP 서버 없음") : empty("등록된 MCP 서버 없음"),
+            { flush: true, end: html`${attention ? html`<a class="btn sm" href="#/servers?t=servers">전체 보기</a>` : ""}<a class="panel-shortcut" href="#/intake"><span>도입 신청</span><span aria-hidden="true">↗</span></a>`,
+              tools: html`${listToolbar("server-list", "서버 검색")}<div class="server-list-actions"><button class="btn" type="button" data-act="catalog-refresh">도구 정의 다시 확인</button>
+                <select data-registry-export aria-label="도입 승인 등록부 내보내기"><option value="">도입 승인 등록부 내보내기</option><option value="csv">CSV</option><option value="json">JSON</option></select></div>` })}
         </div>` },
         { key: "tools", label: "도구", n: reg.tools.length, body: html`<div class="stack">
           ${panel("등록된 도구", html`<table class="data"><thead><tr><th>서버</th><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
@@ -1461,6 +1461,7 @@ function builtinTabs(conn, items) {
   const connectors = reported.filter((g) => g.builtin && !g.kinds.includes("feature"));
   const review = reported.filter((g) => !g.builtin);
   return html`<div class="stack">
+    <div class="row-actions connector-tab-actions"><button class="btn" type="button" data-act="connector-policy">커넥터 설정 내보내기</button></div>
     ${panel("기본 기능", html`<table class="data">${BUILTIN_HEAD("기능")}<tbody>${features.map(builtinRow)}</tbody></table>
       ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`, { flush: true })}
     ${panel("커넥터 전체 사용 설정", switches.length ? html`<table class="data">${BUILTIN_HEAD("커넥터")}<tbody>${switches.map(builtinRow)}</tbody></table>` : empty("항목 없음"), { flush: true })}
@@ -3511,6 +3512,14 @@ document.addEventListener("toggle", (event) => {
   if (event.target.matches("details[open]")) charts.mountVisible(event.target);
 }, true);
 document.addEventListener("change", (event) => {
+  if (event.target.matches("[data-registry-export]")) {
+    const select = event.target, format = select.value;
+    if (!["csv", "json"].includes(format)) return;
+    select.disabled = true;
+    ACTIONS["registry-export"]({ dataset: { format } }).catch((error) => toast(error.message, true))
+      .finally(() => { select.value = ""; select.disabled = false; });
+    return;
+  }
   if (event.target.matches("[data-audience]")) {
     const users = event.target.form.querySelector("[data-audience-users]");
     users.hidden = event.target.value !== "selected";
