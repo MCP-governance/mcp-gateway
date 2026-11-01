@@ -422,8 +422,8 @@ const PAGES = [
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
   { id: "policy", label: "보안 관리 정책", group: "접근 통제" },
-  { id: "intake", label: "도입 신청", group: "도입 및 종료" },
-  { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
+  { id: "intake", label: "도입 관리", group: "도입 및 종료" },
+  { id: "termination", label: "종료 및 폐기", group: "도입 및 종료", badge: "termination" },
   { id: "consent", label: "이용 동의", group: "내 계정", badge: "consent" },
   { id: "connections", label: "내 연결", group: "내 계정" },
 ];
@@ -436,7 +436,7 @@ function renderNav(active) {
   const groups = new Map();
   for (const p of PAGES.filter((x) => viewer.pages.includes(x.id))) {
     if (!groups.has(p.group)) groups.set(p.group, []);
-    groups.get(p.group).push({ ...p, label: p.id === "activity" && !viewer.admin ? "호출 기록" : p.label,
+    groups.get(p.group).push({ ...p, label: p.id === "intake" && !viewer.admin ? "도입 신청" : p.label,
       count: badges[p.badge] });
   }
   const shortcuts = [
@@ -1403,7 +1403,7 @@ function showServer(id) {
       ${creds.length ? kv([["보유 자격", html`${creds.map((c) => html`<code>${c.id}</code> `)}`]]) : ""}
       ${rels.length ? html`<h3>이용 관계</h3>${kv(rels.map((u) => [u.purpose, html`${u.organization} · ${(REL_STATUS[u.status] || [, u.status])[1]}
         <span class="sub">허용 자원 ${(u.allowed_resources || []).map(resourceName).join(", ") || "—"}</span>`]))}
-        <div class="row-actions"><a class="btn sm" href="#/termination">종료·폐기</a></div>` : ""}` },
+        <div class="row-actions"><a class="btn sm" href="#/termination">종료 및 폐기</a></div>` : ""}` },
   ]);
 }
 const resourceName = (a) => (typeof a === "string" ? a : a?.name || JSON.stringify(a));
@@ -1881,7 +1881,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
   return {
     html: page({
-      head: head("도입 신청"),
+      head: head(viewer.admin ? "도입 관리" : "도입 신청"),
       active: tabOrder.includes(tab) ? tab : tabOrder[0],
       tabs: [
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
@@ -2334,7 +2334,7 @@ ROUTES.termination = async (caseId, tab, query = new URLSearchParams()) => {
   termRelationships = relationships;
   return {
     html: page({
-      head: head("종료·폐기"),
+      head: head("종료 및 폐기"),
       kpis: kpiStrip([["진행 중", summary.open_cases], ["종결 대기", summary.awaiting_close, "approval"],
         ["미해결 T2·T3", summary.unresolved_grades, summary.unresolved_grades ? "alert" : ""],
         [`기한 ${summary.sla_days}일 초과`, summary.overdue, summary.overdue ? "block" : ""],
@@ -2453,7 +2453,7 @@ async function caseView(caseId, tab) {
   return {
     html: page({
       head: html`${head(c.engagement_label, {
-        back: html`<a class="back" href="#/termination?t=cases">← 종료·폐기</a>`,
+        back: html`<a class="back" href="#/termination?t=cases">← 종료 및 폐기</a>`,
         status: html`${chip(closed ? "outline" : "approval", CASE_STATUS[c.status] || c.status)}${gradeChip(c.grade)}`,
         actions: html`${c.grade ? html`<button class="btn" data-act="report">판정서</button>` : ""}
           ${c.deployment === "provider" ? html`<button class="btn" data-act="disclosure">고지 요청서</button>` : ""}
