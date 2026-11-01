@@ -1,6 +1,20 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "사용 가능한 MCP": "Available MCP servers",
+  "사용 가능한 MCP 없음": "No MCP servers available",
+  "이용 방법": "How to use",
+  "제공 도구": "Available tools",
+  "제공 도구 없음": "No tools available",
+  "MCP 주소 복사": "Copy MCP address",
+  "MCP 주소를 복사했습니다.": "MCP address copied.",
+  "현재 사용할 수 없는 MCP입니다.": "This MCP server is no longer available.",
+  "이름 또는 기능 검색": "Search by name or function",
+  "연결 경로": "Connection path",
+  "계정 연결 확인": "Check account connections",
+  "엔드포인트 격리": "Endpoint isolation",
+  "솔루션 실행 환경": "Solution runtime",
+  "심사 완료": "Reviewed",
   "공급망 영향 조회": "Supply chain impact lookup",
   "보안 관리 정책": "Security management policies",
   "도구 정의 다시 확인": "Recheck tool definitions",

@@ -2122,7 +2122,7 @@ async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[di
                  AND a.managed_state='active' AND p.status='active'""", (user["endpoint_id"], user["principal"])):
         raise HTTPException(403, "장치·계정 확인 필요")
     rows = await db.fetch_all(
-        """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.repository_url,
+        """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.purpose, r.repository_url,
                   r.endpoint_url, r.intake_kind, r.commit_sha, r.internal_repo_url,
                   s.id AS server_id, s.status AS server_status, s.lifecycle, s.source_ref
              FROM mcp_intake_requests r JOIN mcp_servers s ON s.id=r.registered_server_id
@@ -2151,7 +2151,11 @@ async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[di
         commit = row["commit_sha"] or ""
         if not remote and (not re.fullmatch(r"[0-9a-f]{40}", commit) or spec.get("version") != commit):
             continue
-        approved.append({**row, "valid_until": until.isoformat(),
+        approved_tools = [{"name": name, "action": action if action in {"r", "w", "x"} else None,
+                           "purpose": ((spec.get("tool_reviews") or {}).get(name) or {}).get("purpose", ""),
+                           "scope_reviewed": bool((spec.get("tool_reviews") or {}).get(name))}
+                          for name, action in (spec.get("tools") or {}).items()]
+        approved.append({**row, "valid_until": until.isoformat(), "tools": approved_tools,
                          "execution": "remote" if remote else "pc" if spec.get("local") else
                                       "runtime" if spec.get("runtime") else "remote"})
     return approved
@@ -2181,7 +2185,8 @@ async def list_approved_mcp(user: dict = Depends(caller)):
                 pass
         servers.append({key: row[key] for key in ("server_id", "display_name", "commit_sha", "valid_until", "execution")}
                        | {"source_url": row["endpoint_url"] if row["intake_kind"] == "remote-endpoint" else row["repository_url"],
-                          "connection_url": f"/mcp/{row['server_id']}/", "source_available": source_available})
+                          "connection_url": f"/mcp/{row['server_id']}/", "source_available": source_available,
+                          "purpose": row.get("purpose") or "", "tools": row["tools"]})
     return {"servers": servers}
 
 

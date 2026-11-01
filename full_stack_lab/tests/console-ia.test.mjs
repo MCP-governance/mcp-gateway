@@ -793,6 +793,30 @@ test("도입 신청은 역할별 탭 순서와 기본 탭을 적용하고 직접
   }
 });
 
+test("사용 가능한 MCP 상세와 주소 복사는 현재 이용 가능 여부를 다시 확인한다", async () => {
+  const server = {server_id:"docs",display_name:"Docs",purpose:"문서 검색",connection_url:"/mcp/docs/",tools:[{name:"search",action:"r",purpose:"문서 조회",scope_reviewed:true}]};
+  const ui = build(false, {"/api/approved-mcp":{servers:[server]}});
+  ui.context.URL = URL; ui.context.location.origin = "https://console.example";
+  const copied = [];
+  ui.context.navigator = {clipboard:{writeText:async (value) => copied.push(value)}};
+  ui.approvalActions(async () => null);
+  let detail;
+  ui.policyDrawer((title, controls, tabs) => {detail={title,controls:String(controls),tabs};});
+  const out = await ui.ROUTES.intake("", "approved");
+  const tab = out.html.tabs.find((t) => t.key === "approved");
+  assert.equal(tab.label, "사용 가능한 MCP");
+  assert.match(String(tab.body), /data-list-search="available-mcp"[^]*이름 또는 기능 검색/);
+  await ui.ACTIONS["available-mcp"]({dataset:{id:"docs"}});
+  assert.equal(detail.title, "Docs");
+  assert.match(String(detail.tabs.find((t) => t.key === "tools").body), /search[^]*읽기/);
+  await ui.ACTIONS["available-mcp-copy"]({dataset:{id:"docs"}});
+  assert.deepEqual(copied,["https://console.example/mcp/docs/"]);
+  ui.responses["/api/approved-mcp"] = {servers:[]};
+  await ui.ACTIONS["available-mcp-copy"]({dataset:{id:"docs"}});
+  assert.equal(copied.length,1);
+  assert.ok(ui.requests.every((r) => !r.method || r.method === "GET"));
+});
+
 test("감사 데이터 조회 실패를 정상 빈 목록으로 숨기지 않는다", async () => {
   const ui = build(true, { "/gw/audit/siem": new Error("관제 조회 실패") });
   const result = await ui.ROUTES.security("", "integration");

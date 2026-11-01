@@ -50,7 +50,7 @@ function html(strings, ...values) {
 const short = (text, n = 120) => { const s = String(text ?? ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 
 const entityRef = (value, n = 24) => html`<span class="entity-ref mono" title="${value || ""}">${short(value || "—", n)}</span>`;
-const listToolbar = (id, placeholder) => html`<label class="list-search"><input type="search" data-list-search="${id}" placeholder="${placeholder}" aria-label="${placeholder}" maxlength="120" /><span class="result-count" data-list-count="${id}" role="status"></span></label>`;
+const listToolbar = (id, placeholder, value = "") => html`<label class="list-search"><input type="search" data-list-search="${id}" placeholder="${placeholder}" aria-label="${placeholder}" maxlength="120" value="${value}" /><span class="result-count" data-list-count="${id}" role="status"></span></label>`;
 
 // ── API ──────────────────────────────────────────────────────────────────────
 function detailText(detail) {
@@ -1841,13 +1841,38 @@ ROUTES.connections = async () => {
     body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
 };
 
-function approvedMcpTable(servers) {
-  const execution = { remote: "원격", pc: "PC 격리", runtime: "솔루션 런타임" };
-  return servers.length ? html`<table class="data"><thead><tr><th>서버</th><th>출처</th><th>고정 커밋</th><th>승인 기한</th><th>실행 방식</th><th></th></tr></thead>
-    <tbody>${servers.map((s) => html`<tr><td><b>${s.display_name || s.server_id}</b></td><td class="mono small">${s.source_url || "—"}</td>
-      <td><code>${s.commit_sha || "—"}</code></td><td class="nowrap">${when(s.valid_until)}</td><td>${execution[s.execution] || "—"}</td>
-      <td>${s.source_available ? html`<button class="btn sm" data-act="mcp-source-download" data-id="${s.server_id}" data-commit="${s.commit_sha}">소스 받기</button>`
-        : html`<dl><dt>MCP 주소</dt><dd><code>${s.connection_url || "—"}</code></dd></dl>`}</td></tr>`)}</tbody></table>` : empty("승인된 MCP 없음");
+let approvedMcpSearch = "";
+function approvedMcpTable(servers, query = "") {
+  if (!servers.length) return html`${empty("사용 가능한 MCP 없음")}<div class="row-actions center"><a class="panel-shortcut" href="#/intake?t=new"><span>새 신청</span><span aria-hidden="true">↗</span></a></div>`;
+  const searchText = (s) => [s.display_name, s.server_id, s.purpose, ...(s.tools || []).flatMap((tool) => [tool.name, tool.purpose])].filter(Boolean).join(" ");
+  const term = query.trim().toLocaleLowerCase();
+  return html`<table class="data"><thead><tr><th>MCP</th><th>사용 목적</th><th>제공 도구</th><th>사용 기한</th><th></th></tr></thead>
+    <tbody id="available-mcp">${servers.map((s) => html`<tr data-search="${searchText(s)}" ${searchText(s).toLocaleLowerCase().includes(term) ? "" : raw("hidden")}>
+      <td><b>${s.display_name || s.server_id || "—"}</b></td><td>${s.purpose || "—"}</td><td class="num">${(s.tools || []).length}</td><td class="nowrap">${when(s.valid_until)}</td>
+      <td><button class="btn sm" data-act="available-mcp" data-id="${s.server_id}">이용 방법</button></td></tr>`)}</tbody></table>
+      <p class="empty" data-list-empty="available-mcp" ${servers.some((s) => searchText(s).toLocaleLowerCase().includes(term)) ? raw("hidden") : ""}>검색 결과 없음</p>`;
+}
+
+function approvedMcpAddress(server) {
+  if (!server.connection_url) return "";
+  try {
+    const url = new URL(server.connection_url, location.origin);
+    return url.origin === location.origin && url.pathname.startsWith("/mcp/") && !url.search && !url.hash && !url.username && !url.password ? url.href : "";
+  } catch { return ""; }
+}
+
+function showAvailableMcp(server) {
+  const address = approvedMcpAddress(server), tools = server.tools || [];
+  const execution = { remote: "원격", pc: "엔드포인트 격리", runtime: "솔루션 실행 환경" };
+  openDrawer(server.display_name || server.server_id, html`<div class="row-actions">${address ? html`<button class="btn primary" data-act="available-mcp-copy" data-id="${server.server_id}">MCP 주소 복사</button>` : ""}
+    <a class="btn" href="#/connections">계정 연결 확인</a>${viewer.kit ? html`<button class="btn" data-act="pc-kit">PC 연결 설정</button>` : ""}</div>`, [
+    { key: "usage", label: "이용 방법", body: html`${kv([["사용 목적", server.purpose || "—"], ["연결 경로", "게이트웨이"],
+      ["MCP 주소", address ? html`<code>${address}</code>` : "—"], ["실행 방식", execution[server.execution] || "—"], ["사용 기한", when(server.valid_until)]])}` },
+    { key: "tools", label: "제공 도구", n: tools.length, body: tools.length ? html`<table class="data"><thead><tr><th>도구</th><th>허용 행위</th><th>사용 목적</th><th>범위 심사</th></tr></thead><tbody>
+      ${tools.map((tool) => html`<tr><td><code>${tool.name}</code></td><td>${ACTION[tool.action] || "—"}</td><td>${tool.purpose || "—"}</td><td>${tool.scope_reviewed ? "심사 완료" : "범위 미심사"}</td></tr>`)}</tbody></table>` : empty("제공 도구 없음") },
+    { key: "source", label: "출처", body: html`${kv([["출처", server.source_url || "—"], ["고정 커밋", server.commit_sha ? html`<code>${server.commit_sha}</code>` : "—"]])}
+      ${server.source_available ? html`<div class="row-actions"><button class="btn" data-act="mcp-source-download" data-id="${server.server_id}" data-commit="${server.commit_sha}">소스 받기</button></div>` : ""}` },
+  ]);
 }
 
 ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
@@ -1881,7 +1906,8 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
               ${!r.own && ["HOLD", "VALIDATED", "REMOTE_REVIEWED", "APPROVED"].includes(r.status) && !r.registered_server_id
                 ? html`<button class="btn sm primary" data-act="intake-one-click" data-id="${r.id}">검토</button>` : ""}</div></td>` : ""}</tr>`;
           })}</tbody></table>${requests.length ? "" : empty("신청 없음")}`, { flush: true })}</div>` },
-        { key: "approved", label: "승인된 MCP", body: panel("승인된 MCP", approvedMcpTable(servers), { flush: true }) },
+        { key: "approved", label: "사용 가능한 MCP", body: panel("사용 가능한 MCP", approvedMcpTable(servers, approvedMcpSearch), { flush: true,
+          tools: servers.length ? listToolbar("available-mcp", "이름 또는 기능 검색", approvedMcpSearch) : "" }) },
         { key: "new", label: "새 신청", body: html`<div class="stack">
           ${panel("기존 신청 검색", html`<div class="filters"><input class="grow" type="search" data-catalog-search
             aria-label="MCP 이름 또는 저장소 검색" placeholder="MCP 이름 또는 저장소" /></div>
@@ -1909,7 +1935,7 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
       intakeTimer = setInterval(() => {
         // Do not close a report drawer, reset an unfinished form or interrupt a review.
         if (!document.hidden && parseHash().page === "intake" && parseHash().query.get("t") !== "new"
-          && !$("#drawer").classList.contains("open") && !$("#dialog").open)
+          && !$("#drawer").classList.contains("open") && !$("#dialog").open && !document.activeElement?.closest?.('[data-list-search="available-mcp"]'))
           refreshIntake().catch((error) => toast(error.message, true));
       }, 5000);
     },
@@ -3132,6 +3158,20 @@ const ACTIONS = {
     });
     toast(r.message); reload();
   },
+  async "available-mcp"(el) {
+    const { servers } = await api("/api/approved-mcp");
+    const server = servers.find((s) => s.server_id === el.dataset.id);
+    if (!server) { toast("현재 사용할 수 없는 MCP입니다.", true); return; }
+    showAvailableMcp(server);
+  },
+  async "available-mcp-copy"(el) {
+    const { servers } = await api("/api/approved-mcp");
+    const server = servers.find((s) => s.server_id === el.dataset.id);
+    const address = server ? approvedMcpAddress(server) : "";
+    if (!address) { toast("현재 사용할 수 없는 MCP입니다.", true); return; }
+    await navigator.clipboard.writeText(address);
+    toast("MCP 주소를 복사했습니다.");
+  },
   async "mcp-source-download"(el) {
     const response = await fetch(`/api/approved-mcp/${encodeURIComponent(el.dataset.id)}/source?commit=${encodeURIComponent(el.dataset.commit)}`,
       { headers: { authorization: `Bearer ${token}` } });
@@ -3582,11 +3622,12 @@ document.addEventListener("input", (event) => {
   }
   const input = event.target.closest("[data-list-search]");
   if (input) {
+    if (input.dataset.listSearch === "available-mcp") approvedMcpSearch = input.value;
     const rows = [...(document.getElementById(input.dataset.listSearch)?.children || [])];
     const term = input.value.trim().toLocaleLowerCase();
     let shown = 0;
     for (const row of rows) {
-      row.hidden = !row.textContent.toLocaleLowerCase().includes(term);
+      row.hidden = !(row.dataset.search ?? row.textContent).toLocaleLowerCase().includes(term);
       if (!row.hidden) shown += 1;
     }
     const count = document.querySelector(`[data-list-count="${input.dataset.listSearch}"]`);
