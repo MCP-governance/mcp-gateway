@@ -621,6 +621,13 @@ async def ingest_tool_events(endpoint_id: str, events: list[dict]) -> dict:
     return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
 
 
+def runs_on(windows: bool, server_id: str) -> bool:
+    """Windows runs a local server as a process from approved source (D-332); it has no container engine mapping."""
+    from . import registry
+    spec = registry.server(server_id) or {}
+    return not windows or spec.get("deployment") != "local" or "source" in ((spec.get("local") or {}).get("manifest") or {})
+
+
 async def self_summary(device: dict, limit: int = 50) -> dict:
     """What the employee sees on their own PC (`mint`, local screen): the same facts the console holds for this device."""
     from . import connectors, pac
@@ -628,11 +635,11 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     rows = await db.fetch_all("SELECT id, display_name, deployment FROM mcp_servers"
                               " WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
-    # Windows has no PC-isolated runner for local-run servers, so the managed policy leaves them out there; the employee
-    # still sees them as approved but not usable on this PC.
+    # A container-run local server cannot run on Windows, so the managed policy leaves it out there; the employee
+    # still sees it as approved but not usable on this PC.
     windows = managed_platform(device) == "windows"
     servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway",
-                "available": not (windows and r["deployment"] == "local")} for r in rows if r["id"] in usable]
+                "available": runs_on(windows, r["id"])} for r in rows if r["id"] in usable]
     # A reinstall on the same PC replaces the device record (superseded_by); its calls and requests stay this PC's history.
     lineage = [r["id"] for r in await db.fetch_all(
         """WITH RECURSIVE chain(id) AS (SELECT %s::text UNION
@@ -1106,9 +1113,8 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     usable = set(pac.servers_for(owner)) if owner else set()
     servers = [r["id"] for r in rows if r["id"] in usable]
     windows = managed_platform(device) == "windows"
-    if windows:
-        # Windows has no PC-isolated local runner: a local-run server would be listed but fail every call (MCP-CATALOG-001).
-        servers = [s for s in servers if (registry.server(s) or {}).get("deployment") != "local"]
+    # A container-run local server would be listed on Windows but fail every call (MCP-CATALOG-001).
+    servers = [s for s in servers if runs_on(windows, s)]
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.

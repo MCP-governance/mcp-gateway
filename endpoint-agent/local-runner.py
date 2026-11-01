@@ -813,8 +813,13 @@ def prepare_once(config, request, log, account, done, folders, failed):
             if iso(manifest['approval']['expires_at']).timestamp()<=time.time():
                 raise ValueError('승인 기한이 지났습니다')
             folders[key]=ensure_mounts(manifest,account,documents)
-            preparation.update(note='이미지 받는 중: '+name,documents=sorted({d for k in folders for d in folders[k]}))
-            engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
+            # 소스 실행 서버는 이미지가 없다. 첫 호출과 같은 준비(잠금 wheel 설치)를 미리 해 둔다.
+            source='source' in manifest
+            preparation.update(note=('설치 중: ' if source else '이미지 받는 중: ')+name,documents=sorted({d for k in folders for d in folders[k]}))
+            if source:
+                helper('stdio_source').prepare(config,manifest,request,seconds=PREFETCH_SECONDS)
+            else:
+                engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
             done.add(key)
             failed.pop(key,None)
             preparation.update(ready=len(done),note='')
