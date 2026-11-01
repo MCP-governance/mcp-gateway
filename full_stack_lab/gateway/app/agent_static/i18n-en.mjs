@@ -1,6 +1,20 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "조회 실패": "Load failed",
+  "조건에 맞는 결과 없음": "No matching results",
+  "{n}일 남음": "{1} {1?day:days} left",
+  "표시 서버 {n}개": "{1} {1?server:servers} shown",
+  "설정 기록": "Setting records",
+  "수신기 관측": "Listener observations",
+  "검토 종료": "Close review",
+  "웹 연결": "Web connection",
+  "이벤트 스트림": "Event stream",
+  "프로세스 연결": "Process connection",
+  "최근 기록 · 표시 {n}건": "Recent records · {1} shown",
+  "출력 크기": "Output size",
+  "도입 요청 검토 종료": "Adoption request review closed",
+  "검토를 종료했습니다.": "Review closed.",
   "호출·감사 기록": "Call and audit logs",
   "호출 기록": "Call logs",
   "통제 점검": "Control checks",

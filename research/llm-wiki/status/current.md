@@ -1,6 +1,10 @@
-# 개발 현황 — 2026-10-28
+# 개발 현황 — 2026-11-01
 
 지금 상태만 담는다. 열린 일의 담당·완료 조건·근거는 [백로그](backlog.md) 한 곳, 진척률·상태·담당의 정본은 구글 [MINT 개발 통합 시트](https://docs.google.com/spreadsheets/d/1bfD-wfPn_ldwB-AV2o1RAr6DbAtLnQV6JJQd-exJpLI/edit) 「WBS」·「백로그」 탭이다. 같은 사실을 여기와 백로그 두 곳에 쓰지 않는다. 10-23 판 원본은 [이력](history/2026-10-23-current.md), 처음 오는 에이전트의 읽기 순서는 [START_HERE](../START_HERE.md).
+
+## 11-01 콘솔 편의 개선
+
+- `11/01-console-ux`, 기준 `116772e8806cf09aee5b2b4f465478425743d65a`: 지정한 화면 범위 8개를 구현했다. Node 97건·구문 검사·화면 문구 검사·Python 76파일 pyflakes(Windows 파일 목록 확장) 통과다. 커밋·푸시·배포·실기기·브라우저 검수는 하지 않았다. [변경·검증·한계](reports/2026-11-01-console-ux.md), 남은 검수는 백로그 DEV-93 후속을 따른다.
 
 ## 10-31 PR #69 D-299 CI 정합 수정
 

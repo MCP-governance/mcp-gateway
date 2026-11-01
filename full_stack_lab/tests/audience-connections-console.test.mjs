@@ -26,6 +26,7 @@ function build(overrides = {}) {
     toast: (message, error = false) => toasts.push([message, error]),
   });
   vm.runInContext(`${safeHTML}
+    ${cut("const kv = ", "const empty = ")}
     const chip = (tone, label) => html\`<span class="chip \${tone}">\${label}</span>\`;
     const empty = (text) => html\`<p class="empty">\${text}</p>\`;
     const panel = (title, body, { sub = "", end = "" } = {}) => html\`<section><h2>\${title}</h2><p>\${sub}</p>\${end}\${body}</section>\`;
@@ -118,7 +119,7 @@ test("내 연결: 보관 키가 없으면 연결 불가, 서버가 없으면 빈
 
 test("연결·해제 후 목록이 다시 그려지고 안내는 한국어", async () => {
   let reloaded = 0;
-  const { context, calls, toasts } = build({ api: async () => ({ account: "octo" }) });
+  const { context, calls, toasts } = build({ api: async () => ({ account: "octo" }), form: new FormData() });
   context.reload = () => { reloaded += 1; };
   const form = { dataset: { id: "git-1" }, reset() {} };
   const data = new FormData(); data.set("token", "  ghp_example1234  ");
