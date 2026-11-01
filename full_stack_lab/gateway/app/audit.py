@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from fastapi.encoders import jsonable_encoder
 
@@ -10,6 +12,63 @@ from . import db, review
 from .outcomes import recorded_outcome
 
 DECISIONS = {"Allow", "Alert", "Restrict", "Approval", "Block"}
+
+
+async def alerts(limit=100, *, since=None, until=None, hours=None, before=0, seen=0, read_ranges=None, alert_id=None):
+    predicates(since=since, until=until)
+    if hours is not None and (since or until):
+        raise HTTPException(422, "기간과 시간 수는 함께 지정할 수 없습니다.")
+    now = datetime.now(timezone.utc)
+    if hours is not None:
+        until, since = now, now - timedelta(hours=hours)
+    where, params = ["NOT a.synthetic"], []
+    if alert_id:
+        where.append("a.id=%s")
+        params.append(alert_id)
+    for value, op in ((since, ">="), (until, "<=")):
+        if value:
+            where.append(f"a.created_at {op} %s")
+            params.append(value)
+    base = " AND ".join(where)
+    count = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts a WHERE " + base, tuple(params))
+    rows = await db.fetch_all(
+        "SELECT a.id,a.kind,a.origin,a.origin_id,a.created_at,a.evidence,s.display_name AS server_name, "
+        "d.client->>'device_id' AS decision_endpoint, d.reason, d.upstream_attempted, d.upstream_executed "
+        "FROM ops_alerts a LEFT JOIN mcp_servers s ON s.id=a.evidence->>'server_id' "
+        "LEFT JOIN decisions d ON a.origin='decision' AND d.id::text=a.origin_id WHERE "
+        + base + (" AND a.id < %s" if before else "") + " ORDER BY a.id DESC LIMIT %s",
+        (*params, *([before] if before else []), limit + 1))
+    for row in rows:
+        row["evidence"] = dict(row.get("evidence") or {})
+        kind = {"endpoint-inventory": "config", "endpoint-listener": "listener"}.get(row.get("origin"))
+        if kind:
+            row["evidence"].update(record_kind=kind, record_id=row.get("origin_id"))
+        if row.get("decision_endpoint"):
+            row["evidence"]["endpoint_id"] = row["decision_endpoint"]
+        row["execution"] = ("실행됨" if row.get("upstream_executed") else "실행 미확인"
+                            if row.get("upstream_attempted") else "실행 안 함"
+                            if row.get("upstream_attempted") is False else "미확인")
+    day_since = now - timedelta(hours=24)
+    day = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts WHERE NOT synthetic AND created_at >= %s AND created_at <= %s", (day_since, now))
+    ranges = []
+    for item in (read_ranges or "").split(","):
+        if not item:
+            continue
+        if not re.fullmatch(r"\d{1,18}(-\d{1,18})?", item) or len(ranges) >= 1000:
+            raise HTTPException(422, "읽음 범위 확인 필요")
+        parts = list(map(int, item.split("-")))
+        low, high = parts[0], parts[-1]
+        if low > high:
+            raise HTTPException(422, "읽음 범위 확인 필요")
+        ranges.append((low, high))
+    unread = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts WHERE NOT synthetic AND id > %s"
+        + (" AND NOT (" + " OR ".join("id BETWEEN %s AND %s" for _ in ranges) + ")" if ranges else ""),
+        (seen, *(value for pair in ranges for value in pair)))
+    more = len(rows) > limit
+    return {"alerts": rows[:limit], "total": int(count["n"] or 0), "last_24h": int(day["n"] or 0),
+            "unread_count": int(unread["n"] or 0), "has_more": more,
+            "next_before": rows[limit-1]["id"] if more else None,
+            "since": since, "until": until, "day_since": day_since, "day_until": now}
 EXECUTIONS = {"executed", "not-sent", "unknown", "withheld"}
 KINDS = {"tools/call", "mcp-connection"}
 # Deliberately exclude request_payload, result, policy_input and client-reported data.
@@ -77,6 +136,9 @@ def with_outcome(row: dict) -> dict:
     row = dict(row)
     error = row.pop("outcome_error", None)
     row["outcome_axes"] = recorded_outcome({**row, "error": error})
+    row["outcome_axes"] = {**row["outcome_axes"], "route": "게이트웨이",
+                           "execution": "실행됨" if row.get("upstream_executed") else "실행 미확인"
+                           if row.get("upstream_attempted") else "실행 안 함"}
     row.pop("intent_state", None)
     return row
 

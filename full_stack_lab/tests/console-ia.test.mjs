@@ -8,7 +8,7 @@ const source = readFileSync(new URL("../gateway/app/agent_static/console.js", im
 const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
 const adminPages = ["overview", "approvals", "activity", "servers", "people", "policy", "intake", "termination", "connections"];
 const employeePages = ["activity", "consent", "intake", "connections"];
-const code = source.slice(0, source.indexOf("// ── wiring")).replace(/^import[\s\S]*?;\r?\n/gm, "");
+const code = source.slice(0, source.indexOf("document.addEventListener(\"click\", (event) => {")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 
 function build(admin = true, extra = {}) {
   const calls = [], timers = new Map(), elements = new Map();
@@ -34,13 +34,15 @@ function build(admin = true, extra = {}) {
   };
   const node = (key) => {
     if (!elements.has(key)) elements.set(key, { innerHTML: "", textContent: "", dataset: {},
-      classList: { contains: () => false }, querySelector: () => null, querySelectorAll: () => [], focus() {} });
+      classList: { contains: () => false, toggle() {} }, querySelector: () => null, querySelectorAll: () => [], focus() {},
+      setAttribute(key, value) { this[key] = value; }, showModal() { this.open = true; }, close() { this.open = false; } });
     return elements.get(key);
   };
   const context = vm.createContext({ ...state, URLSearchParams, FormData, encodeURIComponent, decodeURIComponent,
     lang: () => "ko", locale: () => "ko-KR", t: (v) => v,
     clockText: () => "12:00", dateTimeText: () => "10-27 12:00",
     localStorage: { getItem: () => "fixture-token" }, location: { hash: "#/activity", replace() {} },
+    history: { state: null, replaceState() {}, pushState() {}, back() {} },
     document: { hidden: false, querySelector: node, querySelectorAll: () => [] },
     charts: { DECISION_LABEL: {}, register() {}, mountVisible() {}, disposeAll() {}, redraw() {} },
     setInterval(fn) { const id = timers.size + 1; timers.set(id, fn); return id; },
@@ -62,6 +64,8 @@ function build(admin = true, extra = {}) {
   vm.runInContext(`${code}\nviewer = ${JSON.stringify({ admin, pages: admin ? adminPages : employeePages })};
     globalThis.ui = { ROUTES, canonicalRoute, renderNav, refreshBadges, covPage, covPaging, badges, ACTIONS,
       validityChip, empty, renderFeed, renderFeedStatus, policyLabel, catalogResults,
+      rememberDetail, closeDrawer, openDrawer, decisionAction, shadowLink, alertGroups, markAlertsSeen, alertsSeen,
+      refreshAlertBell, resetIntakeTools, FORMS, intakeStatus, rememberFeed, showDecision, route,
       setFeed(value) { Object.assign(feed, value); },
       stopLive, stopIntake, setCurrent(value) { current = value; }, pageModel(fn) { page = fn; },
       activityHooks(render, start) { renderFeed = render; startLive = start; },
@@ -69,6 +73,203 @@ function build(admin = true, extra = {}) {
   context.ui.pageModel((value) => value);
   return { ...context.ui, context, calls, timers, responses, inventory, node };
 }
+
+test("상세는 최초 1회 push, 전환·탭은 replace, 닫기는 목록 기록으로 돌아간다", async () => {
+  const ui = build(false), writes = [];
+  ui.setCurrent({ page: "activity", arg: "", query: new URLSearchParams("q=lookup&page=3&decision=Block") });
+  Object.assign(ui.context.history, {
+    pushState(state, _, url) { this.state = state; writes.push(["push", url]); },
+    replaceState(state, _, url) { this.state = state; writes.push(["replace", url]); },
+    back() { writes.push(["back"]); },
+  });
+  ui.rememberDetail(41); ui.rememberDetail(42); ui.rememberDetail(42);
+  assert.deepEqual(writes.map((x) => x[0]), ["push", "replace"]);
+  assert.match(writes[0][1], /q=lookup&page=3&decision=Block&d=41/);
+  const scope = { querySelectorAll: () => [] };
+  const bar = { parentElement: scope, querySelectorAll: () => [] };
+  await ui.ACTIONS.tab({ dataset: { tab: "execution" }, closest: (selector) => selector === ".tabs" ? bar : {} });
+  assert.match(writes.at(-1)[1], /dt=execution/);
+  ui.closeDrawer(); assert.equal(writes.at(-1)[0], "back");
+  ui.context.history.state = null;
+  ui.rememberDetail(42); ui.closeDrawer(); assert.equal(writes.at(-1)[0], "replace");
+  assert.doesNotMatch(writes.at(-1)[1], /[?&](d|dt)=/);
+});
+
+test("새로고침 목록의 검색·필터·페이지는 URL이 정본이며 이전 조건을 남기지 않는다", async () => {
+  const ui = build(false);
+  await ui.ROUTES.activity("", "live", new URLSearchParams("q=lookup&page=3&decision=Block&endpoint=ep1"));
+  let request = new URL(ui.calls.find((url) => url.startsWith("/gw/activity?")), "https://unit.test");
+  assert.equal(request.searchParams.get("page"), "3");
+  assert.equal(request.searchParams.get("q"), "lookup");
+  assert.equal(request.searchParams.get("decision"), "Block");
+  ui.calls.length = 0;
+  await ui.ROUTES.activity("", "live", new URLSearchParams());
+  request = new URL(ui.calls.find((url) => url.startsWith("/gw/activity?")), "https://unit.test");
+  assert.equal(request.searchParams.get("page"), "1");
+  assert.equal(request.searchParams.has("q"), false);
+  assert.equal(request.searchParams.has("decision"), false);
+});
+
+test("늦은 첫 상세 응답은 나중에 연 호출의 상세와 기록을 덮지 않는다", async () => {
+  const ui = build(false), pending = new Map(), writes = [];
+  ui.setCurrent({ page: "activity", arg: "", query: new URLSearchParams() });
+  ui.context.history.pushState = (_, __, url) => writes.push(url);
+  ui.context.history.replaceState = (_, __, url) => writes.push(url);
+  ui.context.fetch = (url) => new Promise((resolve) => pending.set(new URL(url, "https://unit.test").searchParams.get("decision_id"), resolve));
+  const first = ui.showDecision(1), second = ui.showDecision(2);
+  const response = (id) => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ rows: [{
+    id, decision: "Allow", server: "files", tool: "read", planes: ["gateway"], outcome_axes: { task: "업무 성공" },
+  }] }) });
+  pending.get("2")(response(2)); await second;
+  pending.get("1")(response(1)); await first;
+  assert.equal(ui.node("#drawer-title").textContent, "호출 #2");
+  assert.equal(writes.length, 1); assert.match(writes[0], /d=2/);
+});
+
+test("미등록 MCP 조치는 엔드포인트·근거 기록을 보존하고 동의는 역할별 도구로 좁힌다", () => {
+  const ui = build(true);
+  const shadow = String(ui.decisionAction({ decision: "Block", policy_id: "MCP-SHADOW-001", device_id: "pc/<1>",
+    evidence: { record_kind: "listener", record_id: 73 }, reason: '<script>x</script>' }));
+  assert.match(shadow, /endpoint=pc%2F%3C1%3E/); assert.match(shadow, /record_kind=listener/); assert.match(shadow, /record_id=73/);
+  assert.doesNotMatch(shadow, /<script>/); assert.match(shadow, /사유/); assert.match(shadow, /실행 안 함/);
+  for (const admin of [true, false]) {
+    const part = String(build(admin).decisionAction({ decision: "Block", policy_id: "PAC-CONSENT-001", server: "files/a", tool: "read x" }));
+    assert.match(part, admin ? /#\/approvals\?t=consent/ : /#\/consent\?/);
+    assert.match(part, /server=files%2Fa/); assert.match(part, /tool=read\+x/);
+  }
+});
+
+test("경보는 종류·대상·사유로 묶고 모든 원본과 최초·최근 시각을 유지한다", () => {
+  const ui = build(), row = { kind: "unapproved-endpoint-mcp", evidence: { endpoint_id: "ep1", label: "files", reason: "미등록" } };
+  const alerts = [{ ...row, id: 3, created_at: "2026-11-01T10:00:00Z" }, { ...row, id: 1, created_at: "2026-11-01T09:00:00Z" },
+    { ...row, id: 4, created_at: "2026-11-01T11:00:00Z", evidence: { ...row.evidence, label: "other" } }];
+  const groups = ui.alertGroups(alerts);
+  assert.equal(groups.length, 2); assert.equal(groups[0].rows.length, 2);
+  assert.equal(groups[0].first, alerts[1].created_at); assert.equal(groups[0].last, alerts[0].created_at);
+  assert.deepEqual(Array.from(groups.flatMap((g) => g.rows), (r) => r.id).sort(), [1, 3, 4]);
+});
+
+test("필터된 경보만 읽음으로 기록하고 종은 전체 미열람 수를 서버에서 받는다", async () => {
+  const ui = build(), storage = new Map();
+  Object.assign(ui.context.localStorage, { getItem: (k) => storage.get(k) || null, setItem: (k,v) => storage.set(k,v) });
+  ui.responses["/gw/audit/alerts?limit=1&read_ranges=1%2C3"] = { unread_count: 1200 };
+  ui.markAlertsSeen([{ id: 1 }, { id: 3 }]);
+  await ui.refreshAlertBell();
+  assert.deepEqual(JSON.parse(JSON.stringify(ui.alertsSeen())), [[1, 1], [3, 3]]);
+  assert.equal(ui.node("#alert-count").textContent, "99+");
+  assert.equal(ui.node("#alert-bell")["aria-label"], "읽지 않음 1200건");
+});
+
+test("경보 기간 API와 감사 표시 건수는 URL 및 응답 범위에 맞는다", async () => {
+  const ui = build();
+  const out = (await ui.ROUTES.activity("", "events", new URLSearchParams("hours=24"))).html;
+  assert.ok(ui.calls.includes("/gw/audit/alerts?limit=200&hours=24"));
+  const events = out.tabs.find((x) => x.key === "events");
+  assert.equal(events.n, undefined); assert.match(String(events.body), /표시 0건/);
+  assert.match(String(out.tabs.find((x) => x.key === "alerts").body), /최근 24시간/);
+});
+
+test("동의 직행 필터와 도구별 조작·일괄 확인 취소는 범위를 보존한다", async () => {
+  const ui = build(false, { "/api/consents": { consents: [
+    { id: 1, server_id: "files", tool_name: "read", status: "PENDING", grade: "important", terms: { destinations: ["docs.example.test"] } },
+    { id: 2, server_id: "files", tool_name: "write", status: "PENDING" },
+  ] } });
+  const page = await ui.ROUTES.consent("", "pending", new URLSearchParams("server=files&tool=read"));
+  const body = String(page.tabs[0].body);
+  assert.match(body, /data-id="1" data-decision="grant"/); assert.match(body, /data-id="1" data-decision="deny"/);
+  assert.doesNotMatch(body, /files.write/);
+  let confirmation;
+  vm.runInContext("ask = globalThis.confirmation;", Object.assign(ui.context, { confirmation: async (v) => { confirmation = v; return null; } }));
+  await ui.ACTIONS["consent-server"]({ dataset: { id: "files", consents: "1", decision: "grant" } });
+  assert.match(String(confirmation.fields), /도구 수/); assert.match(String(confirmation.fields), /docs.example.test/); assert.match(String(confirmation.fields), /중요/);
+  assert.equal(ui.calls.filter((url) => url.startsWith("/api/consents/server")).length, 0);
+});
+
+test("도구 조회 중복·이전 주소의 늦은 응답·실패 뒤 재시도를 처리한다", async () => {
+  const ui = build(false), status = { textContent: "", setAttribute() {} }, tools = { innerHTML: "", replaceChildren() { this.innerHTML = ""; } };
+  const endpoint = { value: "https://one.example/mcp", setAttribute() {} };
+  const form = { dataset: {}, elements: { endpoint_url: endpoint, namedItem: () => endpoint }, querySelector: (s) => s === "[data-requested-tools]" ? tools : status };
+  const button = { disabled: false, closest: () => form };
+  let resolve, requests = 0;
+  ui.context.fetch = () => { requests++; return new Promise((done) => { resolve = done; }); };
+  const first = ui.ACTIONS["intake-discover"](button);
+  await ui.ACTIONS["intake-discover"](button); assert.equal(requests, 1); assert.equal(button.disabled, true);
+  endpoint.value = "https://two.example/mcp"; ui.resetIntakeTools(form);
+  resolve({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ tools: [{ name: "stale" }] }) });
+  await first; assert.equal(tools.innerHTML, ""); assert.equal(button.disabled, false); assert.equal(form.dataset.discoveredEndpoint, undefined);
+  ui.context.fetch = async () => { throw new Error("offline"); };
+  await ui.ACTIONS["intake-discover"](button); assert.equal(status.textContent, "도구 조회 실패");
+  ui.context.fetch = async () => ({ ok: true, status: 200, headers: { get: () => null }, json: async () => ({ tools: [{ name: "fresh" }] }) });
+  await ui.ACTIONS["intake-discover"](button);
+  assert.match(String(tools.innerHTML), /fresh/); assert.equal(form.dataset.discoveredEndpoint, endpoint.value);
+});
+
+test("신청 실패는 입력과 도구 선택을 남기고 해당 필드를 접근성 오류로 표시한다", async () => {
+  const ui = build(false), values = { intake_kind: "remote-endpoint", endpoint_url: "https://one.example/mcp", display_name: "원래 이름", purpose: "원래 목적", requested_tool: "read" };
+  class Data { get(k) { return values[k] || null; } getAll(k) { return values[k] ? [values[k]] : []; } }
+  ui.context.FormData = Data;
+  const elements = new Map(), messages = new Map();
+  const item = (m,k) => { if (!m.has(k)) m.set(k, { textContent: "", setAttribute(n,v) { this[n] = v; } }); return m.get(k); };
+  const form = { dataset: { discoveredEndpoint: values.endpoint_url }, elements: { namedItem: (k) => k in values ? item(elements,k) : null }, querySelector: (s) => item(messages,s) };
+  ui.context.fetch = async () => ({ ok: false, status: 422, headers: { get: () => null }, json: async () => ({ detail: [{ loc: ["body", "display_name"], msg: "validation" }] }) });
+  await ui.FORMS.intake(form);
+  assert.equal(values.display_name, "원래 이름"); assert.equal(values.requested_tool, "read");
+  assert.equal(item(elements,"display_name")["aria-invalid"], "true");
+  assert.equal(item(messages,'[data-field-error="display_name"]').textContent, "입력 확인 필요");
+  assert.equal(form.dataset.submitting, "false");
+});
+
+test("엔드포인트 검색·상태·선택은 세 표를 같은 ID로 좁히고 식별값을 분리한다", async () => {
+  const ui = build(), q = new URLSearchParams("t=devices&q=kim&state=pending&endpoint=ep1");
+  ui.setCurrent({ page: "people", arg: "", query: q });
+  const inventory = { ...ui.inventory, agents: [{ endpoint_id: "ep1", hostname: "host-one", owner_name: "직원 이름", managed_state: "pending", local_username: "pc-user", status: "active" }] };
+  ui.responses["/gw/endpoint/inventory?q=kim&state=pending&endpoint=ep1"] = inventory;
+  ui.responses["/api/integrations"] = { items: [], devices: [
+    { endpoint_id: "ep1", hostname: "host-one", account: "pc-user", state: "observed_only", checks: {} },
+    { endpoint_id: "ep2", hostname: "host-other", account: "other-user", state: "observed_only", checks: {} },
+  ] };
+  const out = await ui.ROUTES.people("", "devices", q);
+  const body = String(out.html.tabs.find((tab) => tab.key === "devices").body);
+  assert.match(body, /選択|선택 기기/); assert.match(body, /<dl class="kv">/);
+  assert.match(body, /<dt>호스트<\/dt><dd>host-one/); assert.match(body, /<dt>PC 계정<\/dt><dd>pc-user/);
+  assert.match(body, /직원 이름/); assert.doesNotMatch(body, /host-other|other-user/);
+  assert.match(body, /name="q"[^>]*value="kim"/); assert.match(body, /value="pending" selected/);
+});
+
+test("미등록 근거 직행 URL은 해당 엔드포인트 목록과 기존 기록 상세를 함께 연다", async () => {
+  const ui = build();
+  ui.context.matchMedia = () => ({ matches: false });
+  ui.context.location.hash = "#/servers?t=shadow&endpoint=ep1&record_kind=listener&record_id=73&dt=source";
+  ui.responses["/gw/endpoint/inventory?classification=shadow,retired-residue&endpoint=ep1"] = ui.inventory;
+  ui.responses["/gw/endpoint/records/listener/73"] = { id: 73, record_kind: "listener", endpoint_id: "ep1", address: "127.0.0.1", provenance: {} };
+  ui.responses["/gw/endpoint/correlation?kind=listener&record_id=73"] = { records: [] };
+  await ui.route();
+  assert.ok(ui.calls.includes("/gw/endpoint/records/listener/73"));
+  assert.match(String(ui.node("#drawer-body").innerHTML), /d-panel-source/);
+  assert.match(String(ui.node("#drawer-body").innerHTML), /d-tab-source[^>]*aria-selected="true"/);
+});
+
+test("종료 목록의 예상·실제 결과와 케이스 근거 링크는 별도 열이다", async () => {
+  const ui = build(true, {
+    "/gw/termination/relationships": { relationships: [{ id: "rel1", display_name: "문서 서버", status: "ACTIVE", lifecycle: "OPERATING", latest_case: "case1", readiness: { best_attainable_grade: "T1" } }] },
+    "/gw/termination/cases": { cases: [{ id: "case1", relationship_id: "rel1", display_name: "문서 서버", grade: "T2", status: "ASSESSED" }], summary: {} },
+  });
+  const out = await ui.ROUTES.termination();
+  for (const tab of out.html.tabs) {
+    const body = String(tab.body);
+    assert.match(body, /<th>예상 결과<\/th><th>실제 결과<\/th><th>근거<\/th>/);
+    assert.match(body, /완전 종료/); assert.match(body, /부분 종료/);
+    assert.match(body, /href="#\/termination\/case1\?t=evidence"/);
+  }
+});
+
+test("브라우저 배포 소스는 개발 주석을 포함하지 않고 만료창은 라벨과 값이다", () => {
+  for (const name of ["console.js", "console-state.mjs", "charts.mjs", "i18n-en.mjs", "i18n.mjs", "login.js"]) {
+    const body = readFileSync(new URL(`../gateway/app/agent_static/${name}`, import.meta.url), "utf8");
+    assert.doesNotMatch(body, /^\s*\/\/|^\s*\/\*/m);
+  }
+  assert.match(source, /\["만료 시각",/); assert.match(source, /\["만료 사유",/); assert.match(source, /\["재로그인",/);
+});
 
 test("관리자는 확정된 9개 메뉴를 순서대로, 직원·협력사는 기존 4개를 본다", () => {
   const roles = service.slice(service.indexOf("PAGES_BY_ROLE ="), service.indexOf("ROLE_LABELS ="));
@@ -154,9 +355,9 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
 
 test("MCP 설정 다음 페이지는 사용자 화면의 전체 범위와 서버의 미등록 범위를 보존한다", async () => {
   const ui = build();
-  ui.covPaging.entries.index = 1; ui.covPaging.entries.cursors.push("cursor-2");
-  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=cursor-2"] = { rows: [], next_cursor: null };
-  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=cursor-2&classification=shadow%2Cretired-residue"] = { rows: [], next_cursor: null };
+  ui.setCurrent({ page: "servers", arg: "", query: new URLSearchParams("entries_cursor=&entries_cursor=42&entries_page=1") });
+  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=42"] = { rows: [], next_cursor: null };
+  ui.responses["/gw/endpoint/inventory/entries?limit=50&cursor=42&classification=shadow%2Cretired-residue"] = { rows: [], next_cursor: null };
   await ui.covPage(ui.inventory, "entries", ""); await ui.covPage(ui.inventory, "entries");
   assert.equal(ui.calls.length, 2);
   assert.ok(!ui.calls[0].includes("classification")); assert.match(ui.calls[1], /classification=shadow%2Cretired-residue/);
@@ -192,7 +393,7 @@ test("새 신청이 검색보다 먼저이며 직행 값과 첫 필드 포커스
     assert.match(markup, /공개 문서 검색 목적/);
     assert.match(markup, /name="endpoint_request_id" value="request-1"/);
     const addressField = source.includes("github.com") ? "repository_url" : "endpoint_url";
-    assert.ok(markup.includes(`name="${addressField}" type="url" maxlength="${addressField === "repository_url" ? 300 : 500}" placeholder="${addressField === "repository_url" ? "https://github.com/org/repo" : "https://…/mcp"}" value="${source}"`));
+    assert.ok(markup.includes(`name="${addressField}" aria-invalid="false" aria-describedby="intake-${addressField}-error" type="url" maxlength="${addressField === "repository_url" ? 300 : 500}" placeholder="${addressField === "repository_url" ? "https://github.com/org/repo" : "https://…/mcp"}" value="${source}"`));
     assert.match(markup, /value="streamable-http"[^>]*>웹 연결/);
     assert.match(markup, /value="stdio"[^>]*>프로세스 연결/);
     assert.match(markup, /value="sse"[^>]*>이벤트 스트림/);
@@ -267,7 +468,7 @@ test("도구 출력 크기·정책 판정·업무 결과를 분리하고 경보 
   });
   const out = (await ui.ROUTES.activity("", "tools", new URLSearchParams())).html;
   const tools = String(out.tabs.find((item) => item.key === "tools").body);
-  assert.match(tools, /<th>게이트웨이 판정<\/th><th>도구 업무<\/th>/);
+  assert.match(tools, /<th>게이트웨이 판정<\/th><th>도구 실행<\/th><th>업무 결과<\/th>/);
   assert.match(tools, /<th class="num">출력 크기<\/th>/);
   assert.match(tools, /승인 범위 허용/);
   assert.match(tools, /도구 오류/);
@@ -277,7 +478,7 @@ test("도구 출력 크기·정책 판정·업무 결과를 분리하고 경보 
   assert.match(tools, /&lt;未確認&gt;/);
   const alerts = out.tabs.find((item) => item.key === "alerts");
   assert.equal(alerts.n, undefined);
-  assert.match(String(alerts.body), /최근 기록 · 표시 1건/);
+  assert.match(String(alerts.body), /<dt>표시<\/dt><dd>1건<\/dd>/);
   assert.doesNotMatch(String(alerts.body), /최근 24시간/);
   assert.equal(ui.policyLabel("P-ALLOW"), "승인 범위 허용");
   assert.equal(ui.policyLabel("unknown"), "unknown");

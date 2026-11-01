@@ -79,7 +79,8 @@ def describe(row: dict) -> dict:
         "response_types": evidence.get("content_types") or [], "masked_types": evidence.get("masked_types") or [],
         "conflicts": conflicts, "pac_failures": pac_failures,
         "planes": planes, "device_id": client.get("device_id"), "evidence_sha256": row.get("entry_sha256"),
-        "timings": row.get("timings") or {}, "outcome_axes": recorded_outcome(row),
+        "timings": row.get("timings") or {}, "outcome_axes": {
+            **recorded_outcome(row), "route": "게이트웨이", "execution": outcome},
         "line": line,
     }
 

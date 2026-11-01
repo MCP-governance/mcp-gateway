@@ -441,10 +441,27 @@ def _listed(row: dict, *times: str) -> dict:
     return item
 
 
-async def inventory_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+def device_filter(alias, endpoint=None, q=None, state=None):
+    clauses, params = [], []
+    for column, value in (("a2.endpoint_id", endpoint), ("a2.managed_state", state)):
+        if value:
+            clauses.append(f"{column}=%s")
+            params.append(value)
+    if q:
+        clauses.append("concat_ws(' ',a2.endpoint_id,a2.hostname,a2.owner_token,p2.display_name,a2.local_username) ILIKE %s")
+        params.append("%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
+    return ((f"{alias}.endpoint_id IN (SELECT a2.endpoint_id FROM endpoint_agents a2 LEFT JOIN principals p2 ON p2.token=a2.owner_token WHERE "
+             + " AND ".join(clauses) + ")") if clauses else "TRUE", params)
+
+
+async def inventory_page(classification: str | None = None, limit: int = 100, cursor: str | None = None,
+                         endpoint=None, q=None, state=None) -> dict:
     """전체 건수는 반환 창과 따로 센다. 창이 200건이라고 전체가 200건은 아니다."""
     limit, after = _bounds(limit, cursor)
     where, params = ["a.status='active'", "a.agent_version<>'unregistered'"], []
+    device_where, device_params = device_filter("i", endpoint, q, state)
+    where.append(device_where)
+    params.extend(device_params)
     if classes := _classes(classification):
         where.append("i.classification = ANY(%s::text[])")
         params.append(classes)
@@ -465,14 +482,16 @@ async def inventory_page(classification: str | None = None, limit: int = 100, cu
             "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
 
 
-async def agents() -> list[dict]:
+async def agents(endpoint=None, q=None, state=None) -> list[dict]:
+    where, params = device_filter("a", endpoint, q, state)
     rows = await db.fetch_all(
-        """SELECT a.*, count(i.id) AS entries,
+        """SELECT a.*, p.display_name AS owner_name, count(i.id) AS entries,
                   count(i.id) FILTER (WHERE i.classification='shadow') AS shadow,
                   count(i.id) FILTER (WHERE i.classification='retired-residue') AS residue
              FROM endpoint_agents a LEFT JOIN endpoint_inventory i USING (endpoint_id)
+             LEFT JOIN principals p ON p.token=a.owner_token
             WHERE a.status='active' AND a.agent_version<>'unregistered'
-            GROUP BY a.endpoint_id ORDER BY a.last_seen_at DESC"""
+             AND """ + where + " GROUP BY a.endpoint_id,p.display_name ORDER BY a.last_seen_at DESC", tuple(params)
     )
     result = []
     for row in rows:
@@ -715,9 +734,12 @@ async def close_endpoint_request(request_id: str, actor: str) -> bool:
 # the Gateway knows whether it was blocked, alerted or run (pj3 10-31: blocked calls read "완료" on the PC).
 # Matched by person, server, tool and time; the closest decision within the hook's delay.
 GATEWAY_DECISION = """LEFT JOIN LATERAL (
-       SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at FROM decisions d
+       SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at,
+              d.outcome, d.upstream_attempted, d.upstream_executed, d.result_preview, d.error,
+              count(*) OVER () AS candidate_count FROM decisions d
         WHERE e.path='gateway' AND d.server_id=e.server AND d.tool_name=e.tool AND d.user_token=a.owner_token
-          AND d.created_at BETWEEN e.called_at - interval '30 seconds' AND e.called_at + interval '5 seconds'
+           AND (d.client->>'device_id' IS NULL OR d.client->>'device_id'=e.endpoint_id)
+           AND d.created_at BETWEEN e.called_at - interval '30 seconds' AND e.called_at + interval '5 seconds'
         ORDER BY abs(extract(epoch FROM d.created_at - e.called_at)) LIMIT 1) g ON TRUE
      LEFT JOIN mcp_servers s ON s.id = e.server"""
 
@@ -727,19 +749,31 @@ async def tool_events_page(path: str | None = None, limit: int = 100, cursor: st
     base, params = ("e.path=%s", [path]) if path else ("TRUE", [])
     total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_tool_events e WHERE " + base, tuple(params))
     rows = await db.fetch_all(
-        """SELECT e.*, a.hostname, p.display_name AS owner_name, g.decision_id, g.decision, g.policy_id, s.display_name AS server_name
+        """SELECT e.*, a.hostname, p.display_name AS owner_name, g.decision_id, g.decision, g.policy_id,
+                  g.reason, g.outcome, g.upstream_attempted, g.upstream_executed, g.result_preview, g.error,
+                  g.candidate_count, s.display_name AS server_name
              FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) LEFT JOIN principals p ON p.token = a.owner_token
              """ + GATEWAY_DECISION + """ WHERE """
         + base + (" AND e.id < %s" if after else "") + " ORDER BY e.id DESC LIMIT %s",
         (*params, *([after] if after else []), limit + 1))
     rows, next_cursor = _window(rows, limit)
+    from .outcomes import endpoint_outcome
+    for row in rows:
+        if row.get("candidate_count", 1) != 1:
+            for key in ("decision_id", "decision", "policy_id", "reason", "outcome", "upstream_attempted", "upstream_executed", "result_preview", "error"):
+                row[key] = None
+        row["outcome_axes"] = endpoint_outcome(row)
+        row["link_strength"] = "supporting" if row.get("decision_id") else "none"
+        for key in ("outcome", "result_preview", "error"):
+            row.pop(key, None)
     return {"rows": rows, "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
 
 
 async def os_events_page(kind: str | None = None, denial_class: str | None = None,
-                         limit: int = 100, cursor: str | None = None) -> dict:
+                         limit: int = 100, cursor: str | None = None, endpoint=None, q=None, state=None) -> dict:
     limit, after = _bounds(limit, cursor)
-    where, params = [], []
+    device_where, params = device_filter("e", endpoint, q, state)
+    where = [device_where]
     for column, value in (("kind", kind), ("denial_class", denial_class)):
         if value:
             where.append(f"e.{column}=%s")
@@ -1586,9 +1620,11 @@ async def _ingest_listeners(connection, endpoint_id: str, findings: list, comple
             "counts": counts, "evidence": evidence, "complete": complete, "sources": sources}
 
 
-async def listeners_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+async def listeners_page(classification: str | None = None, limit: int = 100, cursor: str | None = None,
+                         endpoint=None, q=None, state=None) -> dict:
     limit, after = _bounds(limit, cursor)
-    where, params = [], []
+    device_where, params = device_filter("l", endpoint, q, state)
+    where = [device_where]
     if classes := _classes(classification):
         where.append("l.classification = ANY(%s::text[])")
         params.append(classes)

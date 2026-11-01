@@ -1120,14 +1120,13 @@ async def audit_siem(user: dict = Depends(admin_caller)) -> dict:
 
 
 @app.get("/api/audit/alerts")
-async def audit_alerts(limit: int = Query(100, ge=1, le=500), user: dict = Depends(admin_caller)) -> dict:
-    # 운영 경보는 SIEM으로만 나가면 콘솔 사용자가 볼 곳이 없다. 엔드포인트 경보에는 화면에 쓸 호스트 이름을 붙인다.
-    rows = await db.fetch_all(
-        """SELECT a.id, a.kind, a.origin, a.created_at, a.evidence, s.display_name AS server_name
-             FROM ops_alerts a LEFT JOIN mcp_servers s ON s.id = a.evidence->>'server_id'
-            WHERE NOT a.synthetic ORDER BY a.id DESC LIMIT %s""", (limit,))
-    day = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts WHERE NOT synthetic AND created_at > now() - interval '24 hours'")
-    return {"alerts": rows, "last_24h": int(day["n"] or 0)}
+async def audit_alerts(limit: int = Query(100, ge=1, le=500), since: datetime | None = None,
+                       until: datetime | None = None, hours: int | None = Query(None, ge=1, le=8760),
+                       before: int = Query(0, ge=0), seen: int = Query(0, ge=0),
+                       read_ranges: str | None = Query(None, max_length=20000),
+                       alert_id: int | None = Query(None, ge=1),
+                       user: dict = Depends(admin_caller)) -> dict:
+    return await audit.alerts(limit, since=since, until=until, hours=hours, before=before, seen=seen, read_ranges=read_ranges, alert_id=alert_id)
 
 
 @app.get("/api/audit/events/{event_id}")
@@ -1943,22 +1942,29 @@ async def endpoint_observation_status(request: ObservationReport,
         buffer_reason=request.buffer_reason)
 
 
+def device_filters(endpoint: str | None = Query(None, max_length=200),
+                   q: str | None = Query(None, max_length=120),
+                   state: Literal["active", "pending", "quarantined", "unmanaged"] | None = None):
+    return {"endpoint": endpoint, "q": q, "state": state}
+
+
 @app.get("/api/endpoint/inventory")
 async def endpoint_inventory(classification: str | None = None,
+                             filters: dict = Depends(device_filters),
                              user: dict = Depends(admin_caller)) -> dict:
     try:
         endpoint_plane._classes(classification)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     window = endpoint_plane.PAGE_MAX
-    entries = await endpoint_plane.inventory_page(classification, window)
-    listeners = await endpoint_plane.listeners_page(classification, window)
-    events = await endpoint_plane.os_events_page(limit=window)
+    entries = await endpoint_plane.inventory_page(classification, window, **filters)
+    listeners = await endpoint_plane.listeners_page(classification, window, **filters)
+    events = await endpoint_plane.os_events_page(limit=window, **filters)
     managed = await db.fetch_all("SELECT * FROM endpoint_managed_events ORDER BY id DESC LIMIT 200")
     managed_total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_managed_events")
     return {
         "coverage": await endpoint_plane.coverage(),
-        "agents": await endpoint_plane.agents(),
+        "agents": await endpoint_plane.agents(**filters),
         "devices": await endpoint_plane.devices(),
         "entries": entries["rows"],
         "listeners": listeners["rows"],
@@ -1979,14 +1985,16 @@ ClassQuery = Annotated[str | None, Query(pattern=r"^(registered|shadow|retired-r
 
 @app.get("/api/endpoint/inventory/entries")
 async def endpoint_inventory_entries(classification: ClassQuery = None, cursor: CursorQuery = None,
+                                     filters: dict = Depends(device_filters),
                                      limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
-    return await endpoint_plane.inventory_page(classification, limit, cursor)
+    return await endpoint_plane.inventory_page(classification, limit, cursor, **filters)
 
 
 @app.get("/api/endpoint/inventory/listeners")
 async def endpoint_inventory_listeners(classification: ClassQuery = None, cursor: CursorQuery = None,
+                                       filters: dict = Depends(device_filters),
                                        limit: LimitQuery = 100, user: dict = Depends(admin_caller)) -> dict:
-    return await endpoint_plane.listeners_page(classification, limit, cursor)
+    return await endpoint_plane.listeners_page(classification, limit, cursor, **filters)
 
 
 @app.post("/api/endpoint/tool-events")
@@ -2036,8 +2044,9 @@ async def endpoint_tool_events(path: Literal["gateway", "connector", "local"] | 
 async def endpoint_inventory_os_events(kind: Literal["execution-denied", "network-denied"] | None = None,
                                        denial_class: Literal["harness_startup", "blocked_attempt", "listener_reply", "unknown"] | None = None,
                                        cursor: CursorQuery = None, limit: LimitQuery = 100,
+                                        filters: dict = Depends(device_filters),
                                        user: dict = Depends(admin_caller)) -> dict:
-    return await endpoint_plane.os_events_page(kind, denial_class, limit, cursor)
+    return await endpoint_plane.os_events_page(kind, denial_class, limit, cursor, **filters)
 
 
 @app.get("/api/endpoint/observations")

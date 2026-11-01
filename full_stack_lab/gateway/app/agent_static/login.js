@@ -1,4 +1,3 @@
-/* Sign-in. The server issues the token; this page only stores it. */
 import "./i18n.mjs";
 
 const TOKEN_KEY = "mcp-console-token";
@@ -35,7 +34,6 @@ async function configureLogin() {
   }
 }
 configureLogin();
-// The Console sends a session here when an admin switched the account off or the session ended.
 const REASON = { account: { disabled: "사용이 중지된 계정입니다. 관리자에게 문의하세요.",
   locked: "잠긴 계정입니다. 관리자에게 문의하세요.", deleted: "삭제된 계정입니다. 관리자에게 복구를 요청하세요." },
 session: { idle: "오래 사용하지 않아 로그아웃되었습니다.", maximum: "로그인 유지 시간이 지나 로그아웃되었습니다.",
@@ -57,8 +55,6 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok || !body.access_token) {
-      // 계정 상태(403)와 비밀번호 오류(401)를 한 문장으로 접지 않는다. 계정을 끈
-      // 관리자조차 자기 조치가 먹혔는지 알 수 없게 된다.
       error.textContent = body.detail
         || (response.status === 429 ? "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요."
           : "아이디와 비밀번호를 확인하세요.");
@@ -66,7 +62,6 @@ document.querySelector("#gate-form").addEventListener("submit", async (event) =>
       return;
     }
     localStorage.setItem(TOKEN_KEY, body.access_token);
-    // 내부 Git에서 로그인하러 온 경우만 그리로 돌려보낸다. 다른 주소로 보내는 열린 리다이렉트를 만들지 않는다.
     const next = new URLSearchParams(location.search).get("next") || "";
     location.href = /^\/git\/[^/\\]/.test(next) || next === "/git/" ? next : "/workspace";
   } catch {

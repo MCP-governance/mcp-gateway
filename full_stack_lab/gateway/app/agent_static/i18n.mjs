@@ -1,6 +1,3 @@
-// Screen language. Korean is the source text; English is a dictionary (i18n-en.mjs) applied
-// after each render, so every render path (innerHTML, textContent, dialogs, attributes) is
-// covered without wrapping each string. The dictionary is loaded only in English.
 export const LANG_KEY = "mcp-console-lang";
 const HANGUL = /[가-힣]/;
 const ATTRS = ["placeholder", "title", "aria-label", "alt"];
@@ -12,19 +9,11 @@ export function lang() {
   try { return localStorage.getItem(LANG_KEY) === "en" ? "en" : "ko"; } catch { return "ko"; }
 }
 export const locale = () => (lang() === "en" ? "en-US" : "ko-KR");
-/** Clock and date text in the screen language; English uses a 24-hour clock. */
 export const clockText = (date, options = {}) => date.toLocaleTimeString(locale(), lang() === "en" ? { hourCycle: "h23", ...options } : options);
 export const dateTimeText = (date) => (lang() === "en"
   ? date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "medium", hourCycle: "h23" }) : date.toLocaleString("ko-KR"));
 
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/**
- * Dictionary keys: `{}` captures any text, `{n}` text without Korean (a number, time, id).
- * Values use `{1}`, `{2}`, ... for the captures and `{1?one:many}` to choose by whether capture 1 is "1".
- * A key `[button] 승인` applies only to text inside a button or link, where the same Korean word
- * is a verb rather than a status; `[label]` does the same for form labels.
- */
 export function makeTranslator(dictionary) {
   const exact = new Map();
   const patterns = [];
@@ -35,7 +24,6 @@ export function makeTranslator(dictionary) {
   }
   patterns.sort((a, b) => b.weight - a.weight);
 
-  // A whole phrase: dictionary entry or pattern. Null when the dictionary does not know it.
   function phrase(text, context = "") {
     if (context && exact.has(`[${context}] ${text}`)) return exact.get(`[${context}] ${text}`);
     if (exact.has(text)) return exact.get(text);
@@ -47,15 +35,12 @@ export function makeTranslator(dictionary) {
     }
     return null;
   }
-  // Runtime joins of known phrases ("읽기 · 내부", "예상 T1 종료"). All or nothing, so a
-  // sentence from the server is never half translated.
   function composed(text) {
     for (const separator of SEPARATORS) {
       if (!text.includes(separator)) continue;
       const parts = text.split(separator).map((part) => (HANGUL.test(part) ? phrase(part) ?? composed(part) : part));
       if (parts.every((part) => part !== null)) return parts.join(separator);
     }
-    // Only where a code or number is mixed in ("예상 T1 종료"): a run of plain Korean words is a sentence or a name from the server.
     const words = text.split(" ");
     if (words.length < 2 || words.length > 6 || words.every((word) => HANGUL.test(word))) return null;
     const out = [];
@@ -80,7 +65,6 @@ export function makeTranslator(dictionary) {
   return { translate, phrase, exact: (text) => exact.get(text.trim()) ?? text, patterns, size: exact.size + patterns.length };
 }
 
-// ── English ─────────────────────────────────────────────────────────────────
 const english = lang() === "en" ? makeTranslator((await import("./i18n-en.mjs")).EN) : null;
 export const t = (text) => (english ? english.translate(text) : text);
 
@@ -106,7 +90,6 @@ function translateAttributes(element) {
     const value = element.getAttribute(name);
     if (value && HANGUL.test(value)) setIfChanged(element, name, value, english.translate(value, element.getAttribute("data-i18n-ctx") || ""));
   }
-  // Defaults a dialog pre-fills (a reason, a note) are written to the record in this language.
   const value = element.tagName === "INPUT" && element.getAttribute("value");
   if (value && HANGUL.test(value) && element.closest?.("#dialog")) setIfChanged(element, "value", value, english.exact(value));
 }

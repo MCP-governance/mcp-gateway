@@ -140,7 +140,7 @@ test("the consent page renders in English with no Korean left", async () => {
   const panel = code.slice(code.indexOf("const panel = "), code.indexOf("const chartBox = "));
   const route = code.slice(code.indexOf("const CONSENT_STATUS = "), code.indexOf("ROUTES.intake = "));
   assert.ok(source.includes("CONSENT_STATUS"));
-  const context = vm.createContext({ ROUTES: {}, badges: {}, api: async () => ({ consents: [
+  const context = vm.createContext({ ROUTES: {}, badges: {}, URLSearchParams, api: async () => ({ consents: [
     { id: 1, server_id: "files", tool_name: "read", status: "PENDING", grade: "nonimportant", purpose: "", terms: { destinations: [], inputs: ["path"] } },
     { id: 2, server_id: "files", tool_name: "send", status: "GRANTED", grade: "important", purpose: "", terms: { destinations: ["docs.example.test"] } }] }),
   NONE: "—", DATA_CLASS: { public: "공개", nonimportant: "내부", important: "중요" }, page: (v) => v, head: (v) => v, kpiStrip: (v) => v,

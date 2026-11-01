@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
-const safeHtml = source.slice(source.indexOf("class Raw {"), source.indexOf("// ── API"));
+const safeHtml = source.slice(source.indexOf("class Raw {"), source.indexOf("function detailText("));
 const render = source.slice(source.indexOf("const OUTCOME_LABELS ="), source.indexOf("const decisionTable ="));
 const chips = runInNewContext(`${safeHtml}
 const chip = (tone, value) => html\`<span class="chip \${tone}">\${value}</span>\`;
@@ -13,8 +13,8 @@ outcomeChips;`);
 
 test("outcome labels and Korean values remain separate and missing data is a dash", () => {
   const rendered = String(chips({connection: "연결 성공", decision: "허용", task: "제공자 한도 초과", effect: "미확인"}));
-  for (const label of ["연결", "정책 판정", "도구 업무", "독립 효과", "제공자 한도 초과"]) assert.ok(rendered.includes(label));
-  assert.equal((String(chips(null)).match(/—/g) || []).length, 4);
+  for (const label of ["경로", "연결", "정책 판정", "도구 실행", "업무 결과", "독립 효과", "제공자 한도 초과"]) assert.ok(rendered.includes(label));
+  assert.equal((String(chips(null)).match(/—/g) || []).length, 6);
 });
 
 test("outcome text always uses the production HTML escaping", () => {

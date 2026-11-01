@@ -55,7 +55,7 @@ test("second administrator sees the frozen scope without editable expiry or supp
 });
 
 test("failed scan prevents submit and rejection stays available", () => {
-  const ask = source.slice(source.indexOf("function ask({"), source.indexOf("// ── tabs"));
+  const ask = source.slice(source.indexOf("function ask({"), source.indexOf("function tabBar("));
   let formMarkup = "";
   const dialog = {returnValue:"",showModal(){},addEventListener(){}};
   const form = {set innerHTML(value){formMarkup=value;}};
@@ -77,7 +77,7 @@ test("repository without execution contract exposes no local execution controls"
 
 test("intake form uses a data grade and tools rather than six risk questions", () => {
   const form=source.slice(source.indexOf('data-form="intake"'),source.indexOf('const TRANSPORT ='));
-  assert.ok(form.includes('field.select("data_class"'));
+  assert.match(form, /name="data_class"[^>]*aria-describedby="intake-data_class-error"/);
   assert.ok(form.includes("data-requested-tools"));
   assert.ok(!form.includes("riskFields()"));
   assert.ok(!form.includes("???"));

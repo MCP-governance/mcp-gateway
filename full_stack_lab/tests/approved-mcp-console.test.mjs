@@ -6,7 +6,7 @@ import { makeTranslator } from "../gateway/app/agent_static/i18n.mjs";
 import { EN } from "../gateway/app/agent_static/i18n-en.mjs";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
-const safe = source.slice(source.indexOf("class Raw {"), source.indexOf("// ── API"));
+const safe = source.slice(source.indexOf("class Raw {"), source.indexOf("function detailText("));
 const table = source.slice(source.indexOf("function approvedMcpTable("), source.indexOf("ROUTES.intake ="));
 const render = runInNewContext(`${safe}
 const when = (v) => v || "—";

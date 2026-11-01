@@ -8,7 +8,7 @@ const source = readFileSync(new URL("console.js", STATIC), "utf8");
 const css = readFileSync(new URL("console.css", STATIC), "utf8");
 const safeHTML = source.slice(source.indexOf("class Raw {"), source.indexOf("const short = "));
 const kitSource = source.slice(source.indexOf("const PLATFORM_KIT ="), source.indexOf("const EXIT_TERMS = {"));
-const toolSource = source.slice(source.indexOf("function requestedToolList("), source.indexOf("// ── intake ──"));
+const toolSource = source.slice(source.indexOf("function requestedToolList("), source.indexOf("let intakeTimer = null;"));
 
 function sandbox(platform) {
   const context = vm.createContext({ navigator: { platform }, URL });
