@@ -1026,14 +1026,15 @@ def live(read, check=None, screen=None, sources=None, address=None):
                 if time.monotonic() - fetched[0] > 30:
                     fetch()
                 screen.keys = page_keys(screen, check, sources)
-                if (screen.data or {}).get("consents"):
-                    screen.next = "이용 동의 필요: mint console consent"
             try:
                 screen.summary = read()
                 if not isinstance(screen.summary, dict):
                     raise ValueError("invalid snapshot")
             except (OSError, ValueError, TypeError, KeyError):
                 screen.summary = {}
+            # After read(): the Linux reader sets its own next step, and a waiting consent comes first.
+            if (screen.data or {}).get("consents"):
+                screen.next = "이용 동의 필요: mint console consent"
             try:
                 screen.cells = results.get_nowait()
                 checking = False

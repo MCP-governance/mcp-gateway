@@ -286,7 +286,7 @@ CALL_COLUMNS = ("시각", "하네스", "경로", "서버 · 도구", "판정", "
 
 
 def call_rows(summary, limit=None):
-    return [(short_time(c["called_at"]), HARNESSES.get(c["harness"], c["harness"]), PATHS.get(c["path"], c["path"]),
+    return [(short_time(c["called_at"]), HARNESSES.get(c["harness"], c["harness"]) or "—", PATHS.get(c["path"], c["path"]),
              f'{c.get("server_name") or c["server"]} · {c["tool"]}', call_verdict(c), call_outcome(c))
             for c in summary.get("calls", [])[:limit]]
 

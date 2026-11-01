@@ -650,7 +650,7 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
     ledger = await db.fetch_all(
         """SELECT d.created_at AS called_at,
                   CASE WHEN d.client->>'harness' ILIKE '%%codex%%' THEN 'codex' WHEN d.client->>'harness' ILIKE '%%claude%%' THEN 'claude'
-                       ELSE coalesce(d.client->>'harness', '') END AS harness,
+                       ELSE '' END AS harness,
                   '' AS account, d.server_id AS server, s.display_name AS server_name, d.tool_name AS tool, 'gateway' AS path,
                   d.error IS NOT NULL AS failed, 0 AS input_bytes, 0 AS output_bytes, d.id AS decision_id, d.decision, d.policy_id,
                   d.reason, d.created_at AS decided_at
