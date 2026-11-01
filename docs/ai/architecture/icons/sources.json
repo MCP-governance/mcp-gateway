@@ -910,5 +910,527 @@
   "site": "iconify",
   "license": "CC BY 4.0",
   "author": "streamline-color"
+ },
+ {
+  "name": "flat-bell",
+  "file": "flat-bell.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/bell.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "flat-link",
+  "file": "flat-link.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/link.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "flat-receipt",
+  "file": "flat-receipt.svg",
+  "url": "https://api.iconify.design/fluent-emoji-flat/receipt.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "fluent-emoji-flat",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "lg-google-gmail",
+  "file": "lg-google-gmail.svg",
+  "url": "https://api.iconify.design/logos/google-gmail.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "lg-notion-icon",
+  "file": "lg-notion-icon.svg",
+  "url": "https://api.iconify.design/logos/notion-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "lg-podman",
+  "file": "lg-podman.svg",
+  "url": "https://api.iconify.design/simple-icons/podman.svg",
+  "site": "iconify",
+  "license": "CC0-1.0",
+  "author": "simple-icons",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "lg-slack-icon",
+  "file": "lg-slack-icon.svg",
+  "url": "https://api.iconify.design/logos/slack-icon.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "logo-huggingface",
+  "file": "logo-huggingface.svg",
+  "url": "https://api.iconify.design/logos/huggingface.svg",
+  "site": "iconify",
+  "license": "MIT (svgporn)",
+  "author": "logos",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-activity",
+  "file": "tb-activity.svg",
+  "url": "https://api.iconify.design/tabler/activity.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-adjustments-horizontal",
+  "file": "tb-adjustments-horizontal.svg",
+  "url": "https://api.iconify.design/tabler/adjustments-horizontal.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-alert-triangle",
+  "file": "tb-alert-triangle.svg",
+  "url": "https://api.iconify.design/tabler/alert-triangle.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-apps",
+  "file": "tb-apps.svg",
+  "url": "https://api.iconify.design/tabler/apps.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-arrows-exchange",
+  "file": "tb-arrows-exchange.svg",
+  "url": "https://api.iconify.design/tabler/arrows-exchange.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-ban",
+  "file": "tb-ban.svg",
+  "url": "https://api.iconify.design/tabler/ban.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-bell",
+  "file": "tb-bell.svg",
+  "url": "https://api.iconify.design/tabler/bell.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-box",
+  "file": "tb-box.svg",
+  "url": "https://api.iconify.design/tabler/box.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-brain",
+  "file": "tb-brain.svg",
+  "url": "https://api.iconify.design/tabler/brain.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-browser",
+  "file": "tb-browser.svg",
+  "url": "https://api.iconify.design/tabler/browser.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-checkbox",
+  "file": "tb-checkbox.svg",
+  "url": "https://api.iconify.design/tabler/checkbox.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-clipboard-check",
+  "file": "tb-clipboard-check.svg",
+  "url": "https://api.iconify.design/tabler/clipboard-check.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-clock-pause",
+  "file": "tb-clock-pause.svg",
+  "url": "https://api.iconify.design/tabler/clock-pause.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-cloud-download",
+  "file": "tb-cloud-download.svg",
+  "url": "https://api.iconify.design/tabler/cloud-download.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-cloud",
+  "file": "tb-cloud.svg",
+  "url": "https://api.iconify.design/tabler/cloud.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-cpu",
+  "file": "tb-cpu.svg",
+  "url": "https://api.iconify.design/tabler/cpu.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-database",
+  "file": "tb-database.svg",
+  "url": "https://api.iconify.design/tabler/database.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-device-desktop",
+  "file": "tb-device-desktop.svg",
+  "url": "https://api.iconify.design/tabler/device-desktop.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-device-laptop",
+  "file": "tb-device-laptop.svg",
+  "url": "https://api.iconify.design/tabler/device-laptop.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-eye",
+  "file": "tb-eye.svg",
+  "url": "https://api.iconify.design/tabler/eye.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-file-search",
+  "file": "tb-file-search.svg",
+  "url": "https://api.iconify.design/tabler/file-search.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-file-text",
+  "file": "tb-file-text.svg",
+  "url": "https://api.iconify.design/tabler/file-text.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-heart-rate-monitor",
+  "file": "tb-heart-rate-monitor.svg",
+  "url": "https://api.iconify.design/tabler/heart-rate-monitor.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-id-badge-2",
+  "file": "tb-id-badge-2.svg",
+  "url": "https://api.iconify.design/tabler/id-badge-2.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-key",
+  "file": "tb-key.svg",
+  "url": "https://api.iconify.design/tabler/key.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-layout-dashboard",
+  "file": "tb-layout-dashboard.svg",
+  "url": "https://api.iconify.design/tabler/layout-dashboard.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-lock-access",
+  "file": "tb-lock-access.svg",
+  "url": "https://api.iconify.design/tabler/lock-access.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-lock-off",
+  "file": "tb-lock-off.svg",
+  "url": "https://api.iconify.design/tabler/lock-off.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-mail-forward",
+  "file": "tb-mail-forward.svg",
+  "url": "https://api.iconify.design/tabler/mail-forward.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-plug-connected",
+  "file": "tb-plug-connected.svg",
+  "url": "https://api.iconify.design/tabler/plug-connected.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-puzzle-off",
+  "file": "tb-puzzle-off.svg",
+  "url": "https://api.iconify.design/tabler/puzzle-off.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-refresh",
+  "file": "tb-refresh.svg",
+  "url": "https://api.iconify.design/tabler/refresh.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-route",
+  "file": "tb-route.svg",
+  "url": "https://api.iconify.design/tabler/route.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-server-2",
+  "file": "tb-server-2.svg",
+  "url": "https://api.iconify.design/tabler/server-2.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-server",
+  "file": "tb-server.svg",
+  "url": "https://api.iconify.design/tabler/server.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-settings-cog",
+  "file": "tb-settings-cog.svg",
+  "url": "https://api.iconify.design/tabler/settings-cog.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-shield-check",
+  "file": "tb-shield-check.svg",
+  "url": "https://api.iconify.design/tabler/shield-check.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-shield-lock",
+  "file": "tb-shield-lock.svg",
+  "url": "https://api.iconify.design/tabler/shield-lock.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-subtask",
+  "file": "tb-subtask.svg",
+  "url": "https://api.iconify.design/tabler/subtask.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-terminal-2",
+  "file": "tb-terminal-2.svg",
+  "url": "https://api.iconify.design/tabler/terminal-2.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-ticket",
+  "file": "tb-ticket.svg",
+  "url": "https://api.iconify.design/tabler/ticket.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-topology-star-3",
+  "file": "tb-topology-star-3.svg",
+  "url": "https://api.iconify.design/tabler/topology-star-3.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-trash",
+  "file": "tb-trash.svg",
+  "url": "https://api.iconify.design/tabler/trash.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-user-check",
+  "file": "tb-user-check.svg",
+  "url": "https://api.iconify.design/tabler/user-check.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-user-shield",
+  "file": "tb-user-shield.svg",
+  "url": "https://api.iconify.design/tabler/user-shield.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-user",
+  "file": "tb-user.svg",
+  "url": "https://api.iconify.design/tabler/user.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-webhook",
+  "file": "tb-webhook.svg",
+  "url": "https://api.iconify.design/tabler/webhook.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-world-search",
+  "file": "tb-world-search.svg",
+  "url": "https://api.iconify.design/tabler/world-search.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-world",
+  "file": "tb-world.svg",
+  "url": "https://api.iconify.design/tabler/world.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
+ },
+ {
+  "name": "tb-zoom-scan",
+  "file": "tb-zoom-scan.svg",
+  "url": "https://api.iconify.design/tabler/zoom-scan.svg",
+  "site": "iconify",
+  "license": "MIT",
+  "author": "tabler",
+  "note": "2026-11-01 반입: iconify API 요청 제한(429)으로 원본 대조 미실행, 모음은 viewBox·색 규약으로 판별"
  }
 ]
