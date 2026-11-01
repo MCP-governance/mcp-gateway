@@ -165,10 +165,9 @@ def main():
         return document
 
     try:
-        def sources():
-            settings = json.loads(args.settings.read_text(encoding="utf-8")) if args.settings else {}
-            return screen_module.source_menu("\\\\.\\pipe\\mcpgw-" + settings.get("user", "").lower() + "-source")
-        screen_module.live(read, check, screen, sources=sources)
+        settings = json.loads(args.settings.read_text(encoding="utf-8")) if args.settings else {}
+        broker = "\\\\.\\pipe\\mcpgw-" + settings.get("user", "").lower() + "-source"
+        screen_module.live(read, check, screen, sources=lambda: screen_module.source_menu(broker), address=broker if settings else None)
     finally:
         screen.stop()
 

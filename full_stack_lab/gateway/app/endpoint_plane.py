@@ -643,6 +643,22 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
                   e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason, g.decided_at
              FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) """ + GATEWAY_DECISION + """
             WHERE e.endpoint_id=ANY(%s) ORDER BY e.id DESC LIMIT %s""", (lineage, max(1, min(limit, 200))))
+    # A call the Gateway refused never reaches the harness's after-call hook (Codex reports only calls that returned), so
+    # the PC's own report misses exactly the calls the employee most needs to see (pj1 11-01: #244 consent block). The
+    # Gateway's ledger knows this PC by the workstation the call came from; calls already paired above stay single.
+    shown = {c["decision_id"] for c in calls if c["decision_id"]}
+    ledger = await db.fetch_all(
+        """SELECT d.created_at AS called_at,
+                  CASE WHEN d.client->>'harness' ILIKE '%%codex%%' THEN 'codex' WHEN d.client->>'harness' ILIKE '%%claude%%' THEN 'claude'
+                       ELSE coalesce(d.client->>'harness', '') END AS harness,
+                  '' AS account, d.server_id AS server, s.display_name AS server_name, d.tool_name AS tool, 'gateway' AS path,
+                  d.error IS NOT NULL AS failed, 0 AS input_bytes, 0 AS output_bytes, d.id AS decision_id, d.decision, d.policy_id,
+                  d.reason, d.created_at AS decided_at
+             FROM decisions d LEFT JOIN mcp_servers s ON s.id = d.server_id
+            WHERE d.user_token=%s AND coalesce(d.client->>'workstation', d.client->>'endpoint_id') = ANY(%s)
+            ORDER BY d.id DESC LIMIT %s""", (device.get("owner_token"), lineage, max(1, min(limit, 200)))) if owner else []
+    calls = sorted([*calls, *(d for d in ledger if d["decision_id"] not in shown)],
+                   key=lambda c: c["called_at"], reverse=True)[:max(1, min(limit, 200))]
     requests = await db.fetch_all(
         """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=ANY(%s)
             ORDER BY created_at DESC LIMIT 10""", (lineage,))

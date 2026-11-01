@@ -94,7 +94,8 @@ class Commands(unittest.TestCase):
         code, out, sent, _ = run("sources")
         self.assertEqual(code, 0)
         self.assertIn("받기 가능", out)
-        self.assertIn("https://gateway.example/mcp/hf/", out)
+        self.assertIn("원격 · 게이트웨이 경유", out)
+        self.assertNotIn("/mcp/hf/", out)
         code, out, sent, _ = run("sources", "Memory", "--to", "inbox")
         self.assertEqual(code, 0)
         self.assertEqual(sent[-1], ({"action": "download", "server": "memory", "commit": "a" * 40}, "inbox"))
@@ -155,6 +156,25 @@ class Commands(unittest.TestCase):
         code, out, *_ = run("sources", "--json")
         self.assertEqual(json.loads(out)[0]["server_id"], "memory")
 
+    def test_request_problems_are_named_before_sending(self):
+        self.assertEqual(access.request_problem("Semgrep", "https://mcp.semgrep.ai/mcp", "보안 점검"), "사용 목적은 10자 이상")
+        self.assertEqual(access.request_problem("Semgrep", "http://mcp.semgrep.ai/mcp", "코드 보안 점검을 위해 씁니다"), "소스 주소는 https:// 주소만")
+        self.assertEqual(access.request_problem("", "", "코드 보안 점검을 위해 씁니다"), "서버 이름 확인 필요 (1~120자)")
+        self.assertIsNone(access.request_problem("Semgrep", "", "코드 보안 점검을 위해 씁니다"))
+        code, out, sent, _ = run("request", "Semgrep", "--source", "ftp://x", "--purpose", "코드 보안 점검을 위해 씁니다")
+        self.assertEqual((code, out.strip()), (2, "소스 주소는 https:// 주소만"))
+        self.assertFalse(sent)
+        with patch("builtins.input", side_effect=EOFError):
+            code, out, sent, _ = run("request", "Semgrep")
+        self.assertEqual(code, 2)
+        self.assertIn("--purpose", out)
+
+    def test_a_server_waiting_for_consent_is_not_usable_yet(self):
+        with patch.dict(SUMMARY, consents=[{"name": "Hugging Face", "tools": 4}]):
+            code, out, *_ = run("servers")
+        self.assertIn("동의 필요", out)
+        self.assertNotIn("사용 가능", out.split("커넥터")[0])
+
     def test_input_errors_read_in_korean(self):
         for argv, words in ((["logs", "abc"], "'abc' 확인 필요"), (["console", "bad"], "'bad' 없음 · 선택"), (["request"], "필요한 값: 서버")):
             err = io.StringIO()
@@ -167,6 +187,56 @@ class Commands(unittest.TestCase):
         with patch.dict(SUMMARY, console_url=""):
             code, out, *_ = run("console")
         self.assertEqual((code, out.strip()), (1, "콘솔 주소 확인 실패 · mint --check"))
+
+
+
+
+class TerminalPages(unittest.TestCase):
+    """`mint` itself: the local screen's pages in the terminal, read from the same broker data."""
+
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location("kit_screen_cli", KIT / "kit_screen.py")
+        self.kit = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.kit)
+        self.screen = self.kit.Screen(output=io.StringIO(), input=io.StringIO())
+        self.screen.access, self.screen.data, self.screen.sources = access, SUMMARY, SOURCES
+        self.screen.summary = {"state": "active", "connected": True, "updated": __import__("time").time()}
+
+    def page(self, n, detail=None):
+        self.screen.page, self.screen.detail = n, detail
+        self.screen.keys = self.kit.page_keys(self.screen, None, True)
+        with patch("shutil.get_terminal_size", return_value=os.terminal_size((120, 40))):
+            return "\n".join(self.kit.strip_ansi(x.text) for x in self.screen.lines())
+
+    def test_every_page_has_the_app_bar_and_the_local_screen_menu(self):
+        for n in range(4):
+            text = self.page(n)
+            self.assertIn("MINT", text)
+            for tab in ("1 상태", "2 MCP 서버", "3 호출 기록", "4 도입 요청"):
+                self.assertIn(tab, text)
+            self.assertNotIn("███", text)
+
+    def test_pages_show_what_the_local_screen_shows(self):
+        self.assertIn("승인된 MCP 서버 · 1", self.page(1))
+        self.assertIn("승인된 소스 · 2", self.page(1))
+        calls = self.page(2)
+        self.assertIn("MCP 호출 · 2", calls)
+        self.assertIn("실행 안 함", calls)
+        detail = self.page(2, 0)
+        for value in ("P-CONSENT-001", "이용 동의 필요", "판정 번호", "#/activity?d=912"):
+            self.assertIn(value, detail)
+        requests = self.page(3)
+        self.assertIn("내 요청 · 1", requests)
+        self.assertIn("승인 · 게이트웨이 등록", requests)
+        self.assertIn("n 도입 요청", requests)
+
+    def test_the_console_key_opens_the_page_on_screen(self):
+        self.screen.page, self.screen.detail = 2, 0
+        with patch.object(access, "can_open_browser", lambda: False):
+            self.assertEqual(self.kit.open_console(self.screen), CONSOLE + "#/activity?d=912")
+        self.screen.page, self.screen.detail = 3, None
+        with patch.object(access, "can_open_browser", lambda: False):
+            self.assertEqual(self.kit.open_console(self.screen), CONSOLE + "#/intake")
 
 
 if __name__ == "__main__":

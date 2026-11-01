@@ -771,7 +771,7 @@ def connection_cells(found, servers):
     """② tool count and ③ one approved server's initialize, as the two cells beside the model answer."""
     failed = found.get("failed") or {}
     tools = f"{found['tools']}개 (서버 {len(found['initialized'])}/{servers})" if found.get("initialized") else "—"
-    first = (f"{found['initialized'][0]} 연결 정상" if found.get("initialized")
+    first = (f"{len(found['initialized'])}/{servers} 연결 정상" if found.get("initialized")
              else ("실패 · " + ", ".join(f"{k} {v}" for k, v in list(failed.items())[:2])) if failed else "승인 서버 없음")
     return [("도구", tools), ("서버 연결", first)]
 
@@ -828,6 +828,11 @@ def status(args):
         except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
             # 점검 실패의 원문(헤더 도우미·서버 응답)은 화면에 내지 않는다. 결과만 보인다.
             cells = [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
+        # A check prints once and ends (as `tailscale status` does); the live screen is `mint` alone.
+        rows = [("연결 상태", "연결됨" if summary.get("connected") else "연결 끊김"),
+                ("관리 상태", kit_screen.STATES.get(summary.get("state"), "—")), *cells]
+        print("\n".join(f"{a}: {b}" for a, b in rows))
+        return
     screen = Screen()
     if getattr(args, "sources", False):
         screen.stop()
@@ -848,7 +853,8 @@ def status(args):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
     # 닫으면 화면을 지운 채 끝난다(대체 화면). 상태를 남기려면 `mint | cat`.
-    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
+    broker = summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"
+    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(broker), address=broker)
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
@@ -1291,6 +1297,8 @@ def serve(args):
                 cache["state"] = report["state"]
             summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]),
                            names=sorted(policy["servers"]), harnesses=dict(HARNESS_VERSIONS),
+                           # What the employee reads (Hugging Face), as Windows shows it; the ids stay for the checks.
+                           server_names=[policy.get("server_names", {}).get(s) or s for s in sorted(policy["servers"])],
                            protected_configs=health.get("protected_configs"),
                            claude_ca="NODE_EXTRA_CA_CERTS" in policy["files"]["managed-settings.json"])
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)

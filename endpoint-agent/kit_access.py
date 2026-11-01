@@ -80,6 +80,17 @@ def login(bundle, request, inputs, attempts=3):
     raise error
 
 
+def request_problem(server, source, purpose):
+    """The request form's rules in words; None when the request can go."""
+    if not 0 < len(server.strip()) <= 120 or not server.isprintable():
+        return "서버 이름 확인 필요 (1~120자)"
+    if source and (len(source) > 300 or not re.fullmatch(r"https://\S+", source)):
+        return "소스 주소는 https:// 주소만"
+    if not 10 <= len(purpose.strip()) <= 1000:
+        return "사용 목적은 10자 이상"
+    return None
+
+
 def request_fields(command):
     """An employee's request from their own PC: a name, an optional https source and a purpose, nothing else."""
     server, source, purpose = command.get("server"), command.get("source_url", ""), command.get("purpose")
@@ -242,9 +253,11 @@ def short_time(value):
 
 def sections(summary):
     """(제목, 열, 행) — the terminal prints them as text, the local screen as tables."""
+    waiting = {c["name"] for c in summary.get("consents") or []}
     return [
         ("승인된 MCP 서버", ("서버", "경로", "상태"), [(s["name"], PATHS.get(s["path"], s["path"]),
-                                                  "사용 가능" if s.get("available", True) else "이 PC 미지원")
+                                                  "이 PC 미지원" if not s.get("available", True) else "동의 필요" if s["name"] in waiting
+                                                  else "사용 가능")
                                                  for s in summary.get("servers", [])]),
         ("커넥터", ("이름", "하네스", "상태"),
          [(c["name"], HARNESSES.get(c["harness"], c["harness"]), STATES.get(c["state"], c["state"])) for c in summary.get("connectors", [])]),
@@ -309,7 +322,7 @@ def application_rows(summary):
 
 def source_rows(servers):
     return [(s.get("display_name") or s["server_id"], (s.get("commit_sha") or "—")[:12],
-             "받기 가능" if s.get("source_available") else s.get("connection_url") or "—") for s in servers]
+             "받기 가능" if s.get("source_available") else "원격 · 게이트웨이 경유") for s in servers]
 
 
 def can_open_browser():
@@ -422,7 +435,15 @@ def mint_command(argv, address, status_lines, check):
         if args.command == "ui":
             return serve_ui(address, status_lines, check)
         if args.command == "request":
-            purpose = args.purpose or input("사용 목적: ")
+            try:
+                purpose = args.purpose or input("사용 목적: ")
+            except (EOFError, KeyboardInterrupt):
+                print('\n사용 목적 필요 · mint request <서버> --purpose "…"')
+                return 2
+            problem = request_problem(args.server, args.source, purpose)
+            if problem:
+                print(problem)
+                return 2
             print(mint_request(address, args.server, args.source, purpose))
             return 0
         if args.command == "sources":
@@ -433,8 +454,11 @@ def mint_command(argv, address, status_lines, check):
                 print_table("승인된 MCP", ("서버", "커밋", "소스"), source_rows(servers))
                 return 0
             found = [s for s in servers if args.server in (s["server_id"], s.get("display_name"))]
-            if not found or not found[0].get("source_available"):
-                print(f"받을 수 있는 소스 없음 · {args.server} · mint sources")
+            if not found:
+                print(f"승인된 MCP 아님 · {args.server} · mint sources")
+                return 1
+            if not found[0].get("source_available"):
+                print(f"원격 MCP라 받을 소스 없음 · {args.server}")
                 return 1
             print("받음 · " + receive(address, {"action": "download", "server": found[0]["server_id"],
                                               "commit": found[0]["commit_sha"]}, args.to))
@@ -548,6 +572,10 @@ STYLE = (
     ".foot{margin:0;padding:12px 20px;color:var(--ink-3);font-size:13.5px;border-top:1px solid var(--line)}"
     "@media (max-width:900px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}"
     ".nav{flex-direction:row;overflow-x:auto;padding:8px}.nav a{white-space:nowrap}.main{padding:20px 16px 48px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}"
+    "@media (max-width:480px){html,body{overflow-x:hidden}.app-bar{padding:0 12px}.app-identity{display:none}.main{padding:16px 12px 40px}"
+    ".page-head h1{font-size:22.5px}.kpis{gap:8px}.kpi .value{font-size:18px}.panel>header{padding:14px 14px 0}.panel .body{padding:12px 14px 14px}"
+    ".kv{grid-template-columns:96px minmax(0,1fr)}.panel>header .tools-end{margin-left:0;flex-wrap:wrap}.note{flex-direction:column;align-items:flex-start}"
+    ".note .btn{margin-left:0}.nav a{padding:6px 10px;min-height:34px}}"
 )
 
 ICONS = {
@@ -740,7 +768,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 mine = table_html("내 요청", ("서버", "상태", "시각"), request_rows(summary))
                 applied = table_html("도입 신청", ("서버", "상태", "시각"), application_rows(summary))
                 return show("도입 요청", f'<div class="stack">{form}{mine}{applied}</div>')
-            self.reply(404, "")
+            return show("없는 화면", f'<section class="panel"><p class="empty"><a class="btn" href="/{token}/">상태로</a></p></section>', 404)
 
         def do_POST(self):
             name = self.route()
@@ -775,6 +803,10 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     url = f"http://127.0.0.1:{server.server_address[1]}/{token}/"
     print(url, flush=True)
+    if os.environ.get("SSH_CONNECTION"):
+        import getpass
+        port = server.server_address[1]
+        print(f"다른 PC에서 열기: ssh -L {port}:127.0.0.1:{port} {getpass.getuser()}@{socket.gethostname()} → 위 주소", flush=True)
     if open_browser and can_open_browser():
         webbrowser.open(url)
     threading.Thread(target=server.serve_forever, daemon=True).start()
