@@ -178,9 +178,6 @@ table.call-table td:nth-child(4){min-width:200px;max-width:360px}table.call-tabl
 .analysis-refresh svg{width:16px;height:16px}
 .filters label{display:flex;flex-direction:column;gap:5px;font-size:13.5px;color:var(--ink-3)}
 .filters input,.filters select{min-height:40px;padding:8px 11px;border:1px solid var(--line-2);border-radius:7px;background:var(--panel);color:var(--ink);min-width:0}
-.filters select{appearance:none;padding-right:36px}
-.filters label:has(select){position:relative}
-.filters label:has(select)::after{content:"";position:absolute;right:14px;bottom:16px;width:6px;height:6px;border-right:1.5px solid var(--ink-3);border-bottom:1.5px solid var(--ink-3);transform:rotate(45deg);pointer-events:none}
 .filters .grow{flex:1 1 240px;min-width:0}.filters>input[data-filter="person"]{width:130px}
 .feed-advanced{flex:1 0 100%;border-top:1px solid var(--line);padding-top:12px}
 .feed-advanced summary{display:inline-flex;align-items:center;min-height:32px;color:var(--ink-2);font-size:14.58px;font-weight:650;cursor:pointer;list-style:none}
@@ -289,4 +286,13 @@ details summary{padding:12px 0;cursor:pointer;color:var(--ink-2);font-weight:600
   .call-table tbody tr.new-call > td {
     animation-duration: 1ms;
   }
+}
+select:not([multiple]):not([size]),select:not([multiple])[size="1"]{
+ appearance:none;padding-right:36px;
+ background-image:linear-gradient(45deg,transparent 40%,var(--ink-3) 40%,var(--ink-3) 60%,transparent 60%),linear-gradient(135deg,transparent 40%,var(--ink-3) 40%,var(--ink-3) 60%,transparent 60%);
+ background-position:calc(100% - 18px) 50%,calc(100% - 14px) 50%;
+ background-size:5px 5px;background-repeat:no-repeat
+}
+@media(forced-colors:active){
+ select:not([multiple]):not([size]),select:not([multiple])[size="1"]{appearance:auto;background-image:none;padding-right:12px}
 }
