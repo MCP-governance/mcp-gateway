@@ -6,7 +6,7 @@ import * as state from "../gateway/app/agent_static/console-state.mjs";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
 const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
-const adminPages = ["overview", "activity", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"];
+const adminPages = ["overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"];
 const employeePages = ["activity", "consent", "intake", "connections"];
 const code = source.slice(0, source.indexOf("// ── wiring")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 
@@ -110,14 +110,16 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
   for (const [page, tab, target, nextTab] of [
     ["overview", "planes", "servers", "items"],
     ["overview", "traffic", "activity", "stats"],
-    ["audit", "", "activity", "live"], ["audit", "incidents", "activity", "incidents"],
-    ["audit", "siem", "activity", "live"], ["activity", "events", "activity", "live"], ["activity", "siem", "activity", "live"], ["coverage", "", "servers", "items"],
+    ["audit", "", "activity", "live"], ["audit", "incidents", "security", "incidents"],
+    ["audit", "siem", "security", "integration"], ["activity", "events", "activity", "live"], ["activity", "siem", "security", "integration"],
+    ["activity", "incidents", "security", "incidents"], ["coverage", "", "servers", "items"],
     ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
     ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "intake", "impact"],
     ["servers", "shadow", "endpoints", "shadow"],
     ["people", "devices", "endpoints", "devices"], ["people", "managed", "endpoints", "managed"],
     ["approvals", "", "overview", "approvals"], ["approvals", "queue", "overview", "approvals"],
-    ["approvals", "unsent", "activity", "unsent"], ["approvals", "history", "activity", "approval-history"],
+    ["approvals", "unsent", "overview", "unsent"], ["activity", "unsent", "overview", "unsent"], ["approvals", "history", "overview", "approvals"],
+    ["activity", "approval-history", "overview", "approvals"],
     ["approvals", "consent", "consent", "pending"],
     ["policy", "capabilities", "servers", "capabilities"],
   ]) {
@@ -126,6 +128,7 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
     assert.equal(out.page, target); assert.equal(out.query.get("t"), nextTab);
     assert.equal(out.query.get("q"), "a & b"); assert.equal(out.query.get("before"), "42");
     assert.equal(at.query.get("t"), tab);
+    if ((page === "activity" && tab === "approval-history") || (page === "approvals" && tab === "history")) assert.equal(out.query.get("approval_view"), "history");
   }
   for (const page of ["activity", "toString", "__proto__"]) {
     const at = { page, query: new URLSearchParams() }; assert.equal(ui.canonicalRoute(at), at);
@@ -150,9 +153,11 @@ test("직원에게 감사·동의 관리·공급망 탭과 관리자 조회를 �
 test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유지한다", async () => {
   const ui = build(true, { "/api/supply-chain/impact": { counts: { affected: 1, unaffected: 0, unknown: 0, no_data: 0 } } });
   const activity = await ui.ROUTES.activity("", "events", new URLSearchParams("t=events&principal=alice&before=12"));
-  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats", "unsent", "approval-history", "incidents"]);
+  assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats"]);
+  assert.ok(ui.calls.every((url) => url !== "/approvals"));
   assert.match(String(activity.html.tabs[0].body), /audit-verify[^]*audit-export/);
-  assert.match(String(activity.html.tabs[0].body), /<details class="record-delivery"[^]*보안 관제 전달/);
+  assert.doesNotMatch(String(activity.html.tabs[0].body), /보안 관제 전달/);
+  assert.ok(ui.calls.every((url) => !url.startsWith("/gw/audit/siem") && !url.startsWith("/gw/audit/incidents")));
   assert.ok(ui.calls.every((url) => !url.startsWith("/gw/audit/events?")));
   const selected = new URL(ui.calls.find((url) => url.startsWith("/gw/activity?")), "https://console.invalid").searchParams;
   assert.equal(selected.get("principal"), "alice"); assert.equal(selected.get("before"), "12");
@@ -196,7 +201,7 @@ test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관�
   assert.match(String(out.html.kpis), /전체 호출<\/div><div class="value">20/);
   assert.match(String(out.html.kpis), /차단된 호출<\/div><div class="value">6/);
   assert.doesNotMatch(String(out.html.kpis), /오늘 운영 현황|현재 상태|통제 적용 엔드포인트|실행된 호출/);
-  assert.match(String(out.html.kpis), /href="#\/activity\?t=unsent"><div class="label">실행 여부 확인<\/div><div class="value">305<\/div>/);
+  assert.match(String(out.html.kpis), /href="#\/overview\?t=unsent"><div class="label">실행 여부 확인<\/div><div class="value">305<\/div>/);
   assert.match(String(out.html.kpis), /종료 처리<\/div><div class="value">9<\/div>/);
   assert.match(String(out.html.kpis), /attention=overdue"><span>기한 초과<\/span><b>3/);
   assert.doesNotMatch(summary, /실행 확인 필요|종료 기한 초과/);
@@ -233,7 +238,7 @@ test("통제 분포는 AI 연결 관리에서만 표시하고 그래프 선택�
     { key: "vendor:b", item_key: "vendor", class: "vendor_native_connector", name: "Vendor", state: "bypass_possible" },
   ] } });
   const overview = await ui.ROUTES.overview("", "summary");
-  assert.deepEqual(Array.from(overview.html.tabs, (t) => t.key), ["summary", "approvals", "latency"]);
+  assert.deepEqual(Array.from(overview.html.tabs, (t) => t.key), ["summary", "approvals", "unsent", "latency"]);
   assert.doesNotMatch(String(overview.html.tabs[0].body), /조직 통제 의존 경로|c-connections-matrix/);
   assert.equal(overview.charts["c-ov-matrix"], undefined);
   assert.match(String(overview.html.kpis), /href="#\/servers\?t=items&state=bypass_possible"/);
@@ -285,7 +290,9 @@ test("통합 호출 분석은 목록과 같은 기간 및 필터를 쓰고 과�
   assert.match(stats, /정책별 차단 및 경보/);
   assert.match(stats, /&lt;retired&gt;/); assert.match(stats, /엔드포인트 미확인/);
   assert.doesNotMatch(stats, /통제 상태|최근 하네스/);
-  assert.match(stats, /하네스별 호출 판정/);
+  assert.doesNotMatch(stats, /하네스별 호출 판정|c-harness-outcomes/);
+  const sections = ["호출 추이", "정책별 차단 및 경보", "서버별 호출 판정", "엔드포인트별 호출", "사용자별 호출 판정", "응답 처리"];
+  for (let i = 1; i < sections.length; i++) assert.ok(stats.indexOf(sections[i - 1]) < stats.indexOf(sections[i]));
   const listRequest = new URL(ui.calls.find((p) => p.startsWith("/gw/activity?")), "http://test");
   const analysisRequest = new URL(ui.calls.find((p) => p.startsWith("/gw/activity/analysis?")), "http://test");
   for (const key of ["since", "until", "event_kind", "server"]) assert.equal(listRequest.searchParams.get(key), analysisRequest.searchParams.get(key));
@@ -402,10 +409,10 @@ test("가입 승인 전체 건수는 페이지와 무관하고 대기 필터의 
 
 test("실행 확인 전체 건수와 200건 이후 페이지의 처리 버튼을 유지한다", async () => {
   const ui = build(true, { "/gw/dispatch-intents?page=2": { rows: [{ request_id: "old-intent", server_id: "docs", tool_name: "read", action: "r" }], total: 305, page: 2, page_size: 200 } });
-  const out = await ui.ROUTES.activity("", "unsent", new URLSearchParams("intent_page=2"));
+  const out = await ui.ROUTES.overview("", "unsent", new URLSearchParams("intent_page=2"));
   const tab = out.html.tabs.find((t) => t.key === "unsent");
   assert.equal(tab.n, 305);
-  assert.match(String(tab.body), /intent_page=1/);
+  assert.match(String(tab.body), /#\/overview\?[^"<]*intent_page=1/);
   assert.doesNotMatch(String(tab.body), /intent_page=3/);
   assert.match(String(tab.body), /data-act="intent-resolve" data-id="old-intent"/);
 });
@@ -552,19 +559,39 @@ test("종료 조치 필터와 페이지 이동을 서버에 전달하고 기한 
   assert.ok(ui.calls.includes("/gw/termination/cases?attention=overdue"));
 });
 
-test("실행 확인과 승인 번복 버튼은 감사 기록의 해당 탭에 유지한다", async () => {
+test("실행 확인과 승인 처리 이력은 대시보드에 모으고 상세와 번복을 유지한다", async () => {
   const ui = build(true, { "/approvals": { approvals: [], history: [{ id: "past", requested_by: "alice",
     server_id: "docs", tool: "read", status: "EXECUTED", explanation: {}, can_revoke: true }] },
     "/gw/dispatch-intents": { rows: [{ request_id: "uncertain", server_id: "docs", tool_name: "read", action: "r" }] } });
-  const out = await ui.ROUTES.activity("", "unsent", new URLSearchParams());
+  const out = await ui.ROUTES.overview("", "unsent", new URLSearchParams());
   assert.equal(out.html.active, "unsent");
   const unsent = String(out.html.tabs.find((t) => t.key === "unsent").body);
   assert.match(unsent, /data-act="intent-resolve" data-id="uncertain" data-outcome="not_executed"/);
   assert.match(unsent, /data-outcome="executed"/);
-  const history = String(out.html.tabs.find((t) => t.key === "approval-history").body);
+  const activity = await ui.ROUTES.activity("", "approval-history", new URLSearchParams());
+  assert.ok(activity.html.tabs.every((t) => !["unsent", "approval-history"].includes(t.key)));
+  const overview = await ui.ROUTES.overview("", "approvals", new URLSearchParams("approval_view=history"));
+  const history = String(overview.html.tabs.find((t) => t.key === "approvals").body);
+  assert.match(history, /승인 대기[^]*처리 이력[^]*승인 처리 이력/);
+  assert.doesNotMatch(history, /호출 승인 요청/);
   assert.match(history, /data-act="approval" data-id="past"/);
   assert.match(history, /data-act="approval-revoke" data-id="past"/);
   assert.ok(!ui.calls.includes("/api/consents"));
+});
+
+test("승인 이력 갱신은 선택한 보기를 보존하고 실패를 빈 이력으로 덮지 않는다", async () => {
+  const ui = build();
+  const query = new URLSearchParams("t=approvals&approval_view=history");
+  const out = await ui.ROUTES.overview("", "approvals", query);
+  assert.match(String(out.html.tabs.find((t) => t.key === "approvals").body), /처리 이력 없음/);
+  ui.setCurrent({page:"overview", query});
+  ui.responses["/approvals"] = {approvals:[],history:[{id:"expired", requested_by:"Alice",server_id:"docs",tool:"read",status:"EXPIRED"}]};
+  await ui.refreshApprovalLists(true);
+  assert.match(ui.node("#approval-queue").innerHTML, /Alice/);
+  assert.doesNotMatch(ui.node("#approval-queue").innerHTML, /호출 승인 요청/);
+  ui.responses["/approvals"] = new Error("unavailable");
+  await ui.refreshApprovalLists(true);
+  assert.match(ui.node("#approval-queue").innerHTML, /Alice[^]*갱신 실패|갱신 실패[^]*Alice/);
 });
 
 test("접근 권한은 AI 연결 관리에서만 조회하고 정책은 기존 목록과 집행 모드를 유지한다", async () => {
@@ -696,12 +723,26 @@ test("도입 신청 타이머는 기존 탭에서 갱신하고 공급망 폼·�
 
 test("감사 데이터 조회 실패를 정상 빈 목록으로 숨기지 않는다", async () => {
   const ui = build(true, { "/gw/audit/siem": new Error("관제 조회 실패") });
-  const result = await ui.ROUTES.activity("", "live", new URLSearchParams());
+  const result = await ui.ROUTES.security("", "integration");
   assert.match(String(result.html.tabs[0].body), /보안 관제 전달[^]*조회 실패/);
   ui.responses["/gw/audit/incidents"] = new Error("사고 조회 실패");
-  const failed = await ui.ROUTES.activity("", "incidents", new URLSearchParams());
+  const failed = await ui.ROUTES.security("", "incidents");
   assert.match(String(failed.html.tabs.at(-1).body), /조회 실패/);
   assert.doesNotMatch(String(failed.html.tabs.at(-1).body), /사고 기록 없음/);
+});
+
+test("보안 관제는 관리자 전용 두 탭으로 관제 상태와 사고 증빙을 유지한다", async () => {
+  const ui = build(true, {"/gw/audit/siem": {pending:3,retrying:1,oldest_pending:new Date(Date.now()-7200000).toISOString(),last_delivered:"2026-11-01T00:00:00Z"},
+    "/gw/audit/incidents": {timer_status:"정상",incidents:[{id:"case-1",title:"사고",detected_at:"2026-11-01T00:00:00Z",
+      deadlines:[{jurisdiction_name:"관할",stage_name:"단계",due_at:"2026-11-02T00:00:00Z",remaining_seconds:3600,status:"임박"}]}]}});
+  const out = await ui.ROUTES.security("", "");
+  assert.equal(out.html.active, "integration");
+  assert.deepEqual(Array.from(out.html.tabs, (t) => t.key), ["integration", "incidents"]);
+  assert.match(String(out.html.tabs[0].body), /미전달[^]*3[^]*재시도 중[^]*1[^]*최장 대기 시간[^]*title=[^]*최근 전달 성공/);
+  assert.match(String(out.html.tabs[1].body), /data-act="incident-evidence" data-id="case-1"[^]*임박/);
+  const employee = build(false);
+  await assert.rejects(employee.ROUTES.security("", "integration"), /접근 권한/);
+  assert.equal(employee.calls.length, 0);
 });
 
 test("호출 증빙은 현재 필터와 다음 페이지를 유지하고 직원에게 제공하지 않는다", async () => {

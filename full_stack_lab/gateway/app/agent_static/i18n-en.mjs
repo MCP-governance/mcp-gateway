@@ -1,6 +1,22 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "보안 관제": "Security monitoring",
+  "관제 연동": "Monitoring integration",
+  "사고 보고": "Incident reporting",
+  "접근 권한이 없습니다.": "Access denied.",
+  "호출 승인 보기": "Approval view",
+  "처리 이력 없음": "No approval history",
+  "최근 50건": "Latest 50 records",
+  "실행 결과 확인": "Confirm execution result",
+  "서버별 호출 판정": "Call decisions by server",
+  "사용자별 호출 판정": "Call decisions by user",
+  "미전달": "Undelivered",
+  "재시도 중": "Retrying",
+  "최장 대기 시간": "Longest wait",
+  "최근 전달 성공": "Last successful delivery",
+  "1분 미만": "Less than a minute",
+  "{n}시간 {n}분": "{1} h {2} min",
   "증빙 내보내기": "Export evidence",
   "다음 증빙 내보내기": "Export next evidence page",
   "전체 원장의 해시 사슬을 검증합니다.": "Verify the hash chain of the entire ledger.",

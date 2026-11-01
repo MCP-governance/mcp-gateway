@@ -6,7 +6,7 @@
  * a menu here is convenience only.
  */
 import { lang, locale, t, clockText, dateTimeText } from "./i18n.mjs";
-import { mergeRows, sankeyData, harnessLabel, DECISIONS,
+import { mergeRows, harnessLabel, DECISIONS,
   statusView, dedupeItems, connectorControl, pipelineOf, resourceValues, observationRows, listenerCoverage,
   msText, pctText, LATENCY_STAGE, timingRows, privacyText,
   originLabel, denialClass, provenanceView, countView, pager, denialCount } from "./console-state.mjs";
@@ -318,6 +318,7 @@ const ICON = {
   policy: '<path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
 };
 ICON.endpoints = ICON.people;
+ICON.security = ICON.coverage;
 const icon = (name) => raw(`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ""}</svg>`);
 
 // ── chrome: toast, drawer, dialog ────────────────────────────────────────────
@@ -416,6 +417,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 const PAGES = [
   { id: "overview", label: "대시보드", group: "운영", badge: "approvals" },
   { id: "activity", label: "호출 및 감사 기록", group: "운영" },
+  { id: "security", label: "보안 관제", group: "운영" },
   { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
@@ -465,18 +467,22 @@ function canonicalRoute(at) {
   if (!viewer.admin) return at;
   const destinations = {
     overview: at.query.get("t") === "traffic" ? ["activity", "stats"] : ["servers", "items"],
-    audit: ["activity", at.query.get("t") === "incidents" ? "incidents" : "live"],
-    activity: ["activity", "live"],
+    audit: at.query.get("t") === "incidents" ? ["security", "incidents"]
+      : at.query.get("t") === "siem" ? ["security", "integration"] : ["activity", "live"],
+    activity: at.query.get("t") === "unsent" ? ["overview", "unsent"]
+      : at.query.get("t") === "approval-history" ? ["overview", "approvals"]
+        : at.query.get("t") === "incidents" ? ["security", "incidents"]
+          : at.query.get("t") === "siem" ? ["security", "integration"] : ["activity", "live"],
     people: ["endpoints", at.query.get("t")],
     coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
     servers: ["endpoints", "shadow"],
     "sbom-impact": ["intake", "impact"],
     approvals: at.query.get("t") === "consent" ? ["consent", "pending"]
-      : at.query.get("t") === "unsent" ? ["activity", "unsent"]
-        : at.query.get("t") === "history" ? ["activity", "approval-history"] : ["overview", "approvals"],
+      : at.query.get("t") === "unsent" ? ["overview", "unsent"]
+        : ["overview", "approvals"],
     policy: ["servers", "capabilities"],
   };
-  if (at.page === "activity" && !["events", "siem"].includes(at.query.get("t"))) return at;
+  if (at.page === "activity" && !["events", "siem", "incidents", "unsent", "approval-history"].includes(at.query.get("t"))) return at;
   if (at.page === "overview" && !["planes", "traffic"].includes(at.query.get("t"))) return at;
   if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
@@ -485,6 +491,7 @@ function canonicalRoute(at) {
   const target = destinations[at.page];
   const query = new URLSearchParams(at.query);
   query.set("t", target[1]);
+  if ((at.page === "activity" && at.query.get("t") === "approval-history") || (at.page === "approvals" && at.query.get("t") === "history")) query.set("approval_view", "history");
   if ((at.page === "audit" && target[1] === "live") || (at.page === "activity" && at.query.get("t") === "events")) {
     if (!query.has("since")) query.set("since", "");
     if (!query.has("event_kind")) query.set("event_kind", "");
@@ -754,7 +761,7 @@ function dashboardKpis(o, pl) {
   const count = (state) => items.filter((i) => i.state === state).length;
   return html`<div class="dashboard-kpi-groups">
         <section><h2>확인 및 조치</h2><div class="kpis kpis-4">
-          <a class="kpi ${o.unresolved_execution > 0 ? "alert" : ""}" href="#/activity?t=unsent"><div class="label">실행 여부 확인</div><div class="value">${o.unresolved_execution ?? "—"}</div></a>
+          <a class="kpi ${o.unresolved_execution > 0 ? "alert" : ""}" href="#/overview?t=unsent"><div class="label">실행 여부 확인</div><div class="value">${o.unresolved_execution ?? "—"}</div></a>
           <a class="kpi ${count("bypass_possible") > 0 ? "alert" : ""}" href="#/servers?t=items&state=bypass_possible"><div class="label">연결 통제 점검</div><div class="value">${count("bypass_possible")}</div></a>
           <a class="kpi ${abnormalServers > 0 ? "alert" : ""}" href="#/servers?t=servers&attention=required"><div class="label">MCP 서버 점검</div><div class="value">${abnormalServers}</div></a>
           <div class="kpi ${term.action_required > 0 ? "alert" : ""}"><a class="kpi-main" href="#/termination?t=cases&attention=required"><div class="label">종료 처리</div><div class="value">${term.action_required ?? "—"}</div></a>
@@ -781,8 +788,8 @@ function dashboardBlocked(rows, window) {
 
 ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
   const blockedWindow = recentBlockedWindow();
-  const [o, blocked, pl, lat, net, health, approvalData, signups, inventory] = await Promise.all([gw("overview"), gw(`activity?${blockedParams(blockedWindow, 10)}`), planes(),
-    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null), api("/approvals"), api("/api/signup-requests?status=pending"), gw("endpoint/inventory")]);
+  const [o, blocked, pl, lat, net, health, approvalData, signups, inventory, executionTab] = await Promise.all([gw("overview"), gw(`activity?${blockedParams(blockedWindow, 10)}`), planes(),
+    gw("latency").catch(() => null), gw("endpoint/network-quality").catch(() => null), gw("health").catch(() => null), api("/approvals"), api("/api/signup-requests?status=pending"), gw("endpoint/inventory"), executionConfirmationTab(query)]);
   const requestedPage = Math.min(approvalPageNumber(query), Math.max(1, Math.ceil((approvalData.total ?? approvalData.approvals.length) / (approvalData.page_size || 30))));
   if (requestedPage !== approvalPageNumber(query)) {
     query.set("approval_page", requestedPage);
@@ -802,7 +809,8 @@ ROUTES.overview = async (arg, tab, query = new URLSearchParams()) => {
           <div id="dashboard-registration">${dashboardRegistration(o, signups, inventory)}</div>
           <div id="dashboard-blocked">${dashboardBlocked(feed.rows, blockedWindow)}</div>
         </div>` },
-        { key: "approvals", label: "호출 승인", n: approvalPaging.total, hot: approvalPaging.total > 0, body: html`<div id="approval-queue">${approvalQueue(approvalPending)}</div>` },
+        { key: "approvals", label: "호출 승인", n: approvalPaging.total, hot: approvalPaging.total > 0, body: html`<div id="approval-queue">${approvalWorkspace(query)}</div>` },
+        executionTab,
         { key: "latency", label: "성능", body: performancePanels(lat, net, serverName) },
       ],
     }),
@@ -914,7 +922,6 @@ function feedCharts() {
     ...(viewer.admin ? {
       "c-policy-outcomes": () => charts.stacked((data.policies || []).map((p) => p.other ? "기타" : p.key || "—"),
         ["Block", "Alert"].map((d) => ({ name: DECISION[d][1], color: charts.color(d), data: (data.policies || []).map((p) => p[d] || 0) })), { horizontal: true, grouped: true }),
-      "c-harness-outcomes": () => charts.sankey(sankeyData((data.flows || []).map((f) => ({ ...f, server: f.server || "—" })), (d) => DECISION[d]?.[1] || "—")),
     } : {}),
   };
 }
@@ -1022,7 +1029,6 @@ ROUTES.activity = async (arg, tab, query) => {
               ${f.before ? html`<label>기록 번호 상한<input data-filter="before" type="number" min="0" step="1" value="${f.before}" aria-label="기록 번호 상한" /></label>` : ""}
             </div></details>
           </div>`;
-  const [audit, approvalRecords] = viewer.admin ? await Promise.all([recordAudit(), approvalRecordTabs(query)]) : [{ tools: "", delivery: "", tabs: [] }, []];
   return {
     html: page({
       head: head(viewer.admin ? "호출 및 감사 기록" : "호출 기록"),
@@ -1032,28 +1038,25 @@ ROUTES.activity = async (arg, tab, query) => {
           <span class="live"><span class="dot" id="feed-dot"></span><span id="feed-live-state"></span><span aria-hidden="true">|</span><span id="feed-live-time"></span>
             <button class="feed-live-toggle" type="button" data-act="live" aria-pressed="${String(!feed.live)}" aria-label="${feed.live ? "일시정지" : "실시간 재개"}" title="${feed.live ? "일시정지" : "실시간 재개"}">${icon(feed.live ? "pause" : "play")}</button></span>
           <span class="feed-count" id="feed-status"></span>
-          ${audit.tools}
+          ${viewer.admin ? auditTools() : ""}
         </div><section class="panel feed-panels">
           ${filters}
-          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div>${audit.delivery}</section>` },
+          <div class="body flush">${decisionTable([], "feed")}<p class="empty" id="feed-empty" hidden></p><div class="pager" id="feed-pager"></div></div></section>` },
         { key: "stats", label: "분석", body: html`<section class="panel feed-panels">${filters}</section><div class="feed-toolbar analysis-toolbar">
           <span class="analysis-total" id="analysis-total">전체 ${analysis.total ?? 0}건</span>
           <span class="analysis-updated">갱신 시각 <span id="analysis-updated-time">${clockText(new Date(), { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span></span>
           <button class="analysis-refresh" type="button" data-act="analysis-refresh" aria-label="분석 새로고침" title="분석 새로고침">${icon("refresh")}</button>
         </div><div class="stack">
           ${panel("호출 추이", chartBox("c-minutes", "전체 호출 추이", "sm"), { sub: `${analysis.total}건` })}
-          ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}
           ${viewer.admin ? panel("정책별 차단 및 경보", chartBox("c-policy-outcomes", "정책별 차단 및 경보 건수", "lg")) : ""}
-          ${panel("서버별", chartBox("c-by-server", "전체 호출의 서버별 판정"))}
-          ${viewer.admin ? html`${panel("사용자별", chartBox("c-by-person", "전체 호출의 사용자별 판정", "lg"))}
-            ${panel("엔드포인트별 호출", html`<div id="analysis-endpoints">${analysisEndpoints(analysis)}</div>`, { flush: true })}
-            ${panel("하네스별 호출 판정", chartBox("c-harness-outcomes", "하네스와 서버별 호출 판정 건수", "xl"))}` : ""}</div>` },
-        ...approvalRecords,
-        ...audit.tabs,
+          ${panel("서버별 호출 판정", chartBox("c-by-server", "전체 호출의 서버별 판정"))}
+          ${viewer.admin ? html`${panel("엔드포인트별 호출", html`<div id="analysis-endpoints">${analysisEndpoints(analysis)}</div>`, { flush: true })}
+            ${panel("사용자별 호출 판정", chartBox("c-by-person", "전체 호출의 사용자별 판정", "lg"))}` : ""}
+          ${panel("응답 처리", chartBox("c-by-response", "전체 호출의 응답 처리 비율", "sm"))}</div>` },
       ],
     }),
     charts: feedCharts(),
-    after: () => { const highlighted = feed.highlight; feed.highlight = []; renderFeed(highlighted); startLive(); if (viewer.admin && arg) showApproval(arg); },
+    after: () => { const highlighted = feed.highlight; feed.highlight = []; renderFeed(highlighted); startLive(); },
   };
 };
 
@@ -1130,13 +1133,15 @@ async function showDecision(id) {
 
 let approvalRows = [];
 let approvalPending = [];
+let approvalHistoryRows = [];
 let approvalPaging = { page: 1, pageSize: 30, total: 0, oldest: null };
 let approvalTimer = null, approvalBusy = false, approvalGeneration = 0, approvalFailed = false;
 const approvalPageNumber = (query) => Math.max(1, Math.floor(Number(query.get("approval_page")) || 1));
 function setApprovalLists(first, selected) {
   const firstPage = first.approvals.map((a) => ({ ...a, pending: true }));
   approvalPending = selected.approvals.map((a) => ({ ...a, pending: true }));
-  approvalRows = [...approvalPending, ...firstPage, ...first.history];
+  approvalHistoryRows = first.history;
+  approvalRows = [...approvalPending, ...firstPage, ...approvalHistoryRows];
   approvalPaging = { page: selected.page || 1, pageSize: selected.page_size || 30,
     total: selected.total ?? selected.approvals.length, oldest: first.oldest };
   approvalFailed = false;
@@ -1180,7 +1185,7 @@ async function refreshApprovalLists(manual = false) {
   }
   if (generation !== approvalGeneration || seq !== routeSeq) return;
   const queue = $("#approval-queue"), count = $("#p-tab-approvals .n");
-  if (queue) queue.innerHTML = String(approvalQueue(approvalPending));
+  if (queue) queue.innerHTML = String(approvalWorkspace(current.query));
   if (count) { count.textContent = approvalPaging.total; count.classList.toggle("hot", approvalPaging.total > 0); }
   if (manual) $("#approval-queue [data-act='approval-refresh']")?.focus();
 }
@@ -1202,26 +1207,38 @@ function approvalQueue(approvals) {
             sub: approvalPaging.total > 0 ? `가장 오래된 요청 ${ago(oldest)}` : "" });
 }
 
-async function approvalRecordTabs(query = new URLSearchParams()) {
+function approvalWorkspace(query) {
+  const history = query.get("approval_view") === "history";
+  return html`<nav class="feed-toolbar row-actions" aria-label="호출 승인 보기">
+    <a class="btn ${history ? "" : "primary"}" href="#/overview?t=approvals" ${history ? "" : raw('aria-current="page"')}>승인 대기</a>
+    <a class="btn ${history ? "primary" : ""}" href="#/overview?t=approvals&approval_view=history" ${history ? raw('aria-current="page"') : ""}>처리 이력</a>
+    </nav>${history ? approvalHistory() : approvalQueue(approvalPending)}`;
+}
+
+async function executionConfirmationTab(query = new URLSearchParams()) {
   const page = listPageNumber(query, "intent_page");
-  const [{ approvals, history }, result] = await Promise.all([api("/approvals"), gw(`dispatch-intents${page > 1 ? `?page=${page}` : ""}`)]);
+  const result = await gw(`dispatch-intents${page > 1 ? `?page=${page}` : ""}`);
   const { rows: unsent } = result, total = result.total ?? unsent.length;
   const paging = listPager({ ...result, total, page_size: result.page_size || 200 },
-    (p) => `#/activity?${new URLSearchParams({ ...Object.fromEntries(query), t: "unsent", intent_page: p })}`);
-  approvalRows = [...approvals.map((a) => ({ ...a, pending: true })), ...history];
-  return [{ key: "unsent", label: "실행 확인", n: total, hot: total > 0, body: panel("실행 확인 필요", unsent.length ? html`<table class="data">
+    (p) => `#/overview?${new URLSearchParams({ ...Object.fromEntries(query), t: "unsent", intent_page: p })}`);
+  return { key: "unsent", label: "실행 결과 확인", n: total, hot: total > 0, body: panel("실행 결과 확인", unsent.length ? html`<table class="data">
           <thead><tr><th>사용자</th><th>도구</th><th>행위</th><th>전송</th><th></th></tr></thead><tbody>
           ${unsent.map((u) => html`<tr><td class="who-cell"><b>${u.display_name || u.user_token}</b></td>
             <td><code>${u.server_id}.${u.tool_name}</code></td><td>${ACTION[u.action] || u.action}</td>
             <td class="small">${when(u.attempted_at, { seconds: true })}</td>
             <td class="num nowrap"><button class="btn sm" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="not_executed">실행 안 됨</button>
               <button class="btn sm primary" data-act="intent-resolve" data-id="${u.request_id}" data-outcome="executed">실행됨</button></td></tr>`)}
-          </tbody></table>` : empty("확인할 호출 없음"), { flush: true, end: paging }) },
-        { key: "approval-history", label: "승인 처리 이력", n: history.length, body: html`${panel("이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리 시각</th><th>검토자</th></tr></thead><tbody>
+          </tbody></table>` : empty("확인할 호출 없음"), { flush: true, end: paging }) };
+}
+
+function approvalHistory() {
+  const history = approvalHistoryRows;
+  return panel("승인 처리 이력", history.length ? html`<table class="data"><thead><tr><th>요청자</th><th>도구</th><th>결과</th><th>처리 시각</th><th>검토자</th></tr></thead><tbody>
             ${history.map((h) => html`<tr class="clickable" tabindex="0" data-act="${h.explanation ? "approval" : ""}" data-id="${h.id}"><td class="who-cell"><b>${h.display_name || h.requested_by}</b><span class="sub">${h.department || ""}</span></td>
               <td><code>${h.server_id}.${h.tool}</code></td><td>${chip(...(APPROVAL_STATUS[h.status] || ["", h.status]))}</td>
               <td class="small">${when(h.reviewed_at || h.created_at)}</td><td class="small">${h.reviewed_by || "—"}
-                ${h.explanation && h.can_revoke && ["APPROVED", "UNCONFIRMED", "EXECUTED", "NOT_EXECUTED"].includes(h.status) ? html`<button class="btn sm danger" data-act="approval-revoke" data-id="${h.id}">승인 번복</button>` : ""}</td></tr>`)}</tbody></table>` : "", { flush: true })}` }];
+                ${h.explanation && h.can_revoke && ["APPROVED", "UNCONFIRMED", "EXECUTED", "NOT_EXECUTED"].includes(h.status) ? html`<button class="btn sm danger" data-act="approval-revoke" data-id="${h.id}">승인 번복</button>` : ""}</td></tr>`)}</tbody></table>` : empty("처리 이력 없음"), { flush: true, sub: "최근 50건", status: approvalFailed ? chip("alert", "갱신 실패") : "",
+      end: html`<button class="btn sm" data-act="approval-refresh">새로고침</button>` });
 }
 
 const IMPACT_DOMAIN = { employment: "고용·급여", credit: "신용", legal: "법적 효력", benefits: "급부", contract: "계약", service_access: "서비스 접근" };
@@ -2471,15 +2488,29 @@ const policySourceLabel = (ledger) => ledger.source_state === "loaded" ? "조회
 const policyDeployLabel = (ledger, key) => typeof ledger.deployment?.[key] !== "boolean" ? "미확인"
   : ledger.deployment[key] ? "일치" : "불일치";
 
-async function recordAudit() {
-  const [delivery, incidentData] = await Promise.all([gw("audit/siem").catch(() => null), gw("audit/incidents").catch(() => null)]);
-  return {
-    tools: html`<div class="row-actions"><button class="btn" data-act="audit-verify" title="전체 원장의 해시 사슬을 검증합니다.">무결성 검증</button><button class="btn primary" data-act="audit-export" title="현재 조회 조건의 감사 필드를 최대 500건씩 내보냅니다.">증빙 내보내기</button><button class="btn" id="audit-export-next" data-act="audit-export-next" hidden>다음 증빙 내보내기</button></div>`,
-    delivery: html`<details class="record-delivery"><summary>보안 관제 전달 ${delivery ? chip(delivery.retrying > 0 ? "alert" : "outline", html`<span>대기</span> ${delivery.pending} / <span>재시도</span> ${delivery.retrying}`) : chip("alert", "조회 실패")}</summary>${delivery ? kv([["대기", delivery.pending], ["재시도", delivery.retrying], ["최초 대기", delivery.oldest_pending ? when(delivery.oldest_pending) : "—"], ["최근 수신 확인", delivery.last_delivered ? when(delivery.last_delivered) : "—"]]) : ""}</details>`,
-    tabs: [{ key: "incidents", label: "사고 보고 기한", body: panel("사고 보고 기한", incidentData === null ? html`<div class="note bad">조회 실패</div>` : html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
-        <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub: incidentData ? `타이머 ${incidentData.timer_status}` : ""}) }],
-  };
+function auditTools() {
+  return html`<div class="row-actions"><button class="btn" data-act="audit-verify" title="전체 원장의 해시 사슬을 검증합니다.">무결성 검증</button><button class="btn primary" data-act="audit-export" title="현재 조회 조건의 감사 필드를 최대 500건씩 내보냅니다.">증빙 내보내기</button><button class="btn" id="audit-export-next" data-act="audit-export-next" hidden>다음 증빙 내보내기</button></div>`;
 }
+
+ROUTES.security = async (_, tab) => {
+  if (!viewer.admin) throw new Error("접근 권한이 없습니다.");
+  const [delivery, incidentData] = await Promise.all([gw("audit/siem").catch(() => null), gw("audit/incidents").catch(() => null)]);
+  const pendingSince = delivery?.oldest_pending ? new Date(delivery.oldest_pending) : null;
+  const waitingMinutes = pendingSince ? Math.max(0, Math.floor((Date.now() - pendingSince.getTime()) / 60000)) : NaN;
+  const waiting = !Number.isFinite(waitingMinutes) ? "—" : waitingMinutes < 1 ? "1분 미만"
+    : waitingMinutes < 60 ? `${waitingMinutes}분`
+      : waitingMinutes < 1440 ? `${Math.floor(waitingMinutes / 60)}시간 ${waitingMinutes % 60}분`
+        : `${Math.floor(waitingMinutes / 1440)}일 ${Math.floor(waitingMinutes % 1440 / 60)}시간`;
+  return { html: page({ head: head("보안 관제"), active: tab || "integration", tabs: [
+    { key: "integration", label: "관제 연동", body: panel("보안 관제 전달", delivery ? kv([
+      ["미전달", delivery.pending], ["재시도 중", delivery.retrying],
+      ["최장 대기 시간", Number.isFinite(waitingMinutes) ? html`<span title="${dateTimeText(pendingSince)}">${waiting}</span>` : "—"],
+      ["최근 전달 성공", delivery.last_delivered ? when(delivery.last_delivered) : "—"]
+    ]) : html`<div class="note bad">조회 실패</div>`) },
+    { key: "incidents", label: "사고 보고", body: panel("사고 보고 기한", incidentData === null ? html`<div class="note bad">조회 실패</div>` : html`${incidentData.incidents.length ? html`<table class="data"><thead><tr><th>사고</th><th>관할·단계</th><th>기한</th><th>남은 시간</th><th>상태</th></tr></thead><tbody>${incidentData.incidents.flatMap((incident) => incident.deadlines.map((deadline) => html`<tr class="clickable" tabindex="0" data-act="incident-evidence" data-id="${incident.id}">
+        <td>${incident.title}<span class="sub">${when(incident.detected_at)}</span></td><td>${deadline.jurisdiction_name}<span class="sub">${deadline.stage_name}</span></td><td>${deadline.due_at ? when(deadline.due_at) : "—"}</td><td>${deadline.remaining_seconds == null ? "—" : `${deadline.remaining_seconds < 0 ? "초과 " : ""}${Math.floor(Math.abs(deadline.remaining_seconds) / 86400)}일 ${Math.floor(Math.abs(deadline.remaining_seconds) % 86400 / 3600)}시간`}</td><td>${deadline.status}</td></tr>`))}</tbody></table>` : empty("사고 기록 없음")}`, {flush:true, sub: incidentData ? `타이머 ${incidentData.timer_status}` : ""}) }
+  ] }) };
+};
 
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
 
