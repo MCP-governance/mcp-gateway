@@ -5,6 +5,7 @@ import importlib.util
 import io
 import os
 import unittest
+from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -184,6 +185,29 @@ class Commands(unittest.TestCase):
         narrow = access.STYLE.split("@media (max-width:900px)")[1]
         self.assertIn(".shell{grid-template-columns:minmax(0,1fr)}", narrow)
 
+    def test_phone_menu_has_two_columns_and_wrappable_names(self):
+        phone = access.STYLE.split("@media (max-width:480px)")[1]
+        self.assertIn(".nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow-x:visible}", phone)
+        self.assertIn(".nav a span{white-space:normal;overflow-wrap:anywhere}", phone)
+        self.assertIn(".form .row{flex-wrap:wrap}", phone)
+        markup = access.page("도입 요청", "request", "", "token", counts=dict.fromkeys((key for key, _ in access.TABS), 999))
+        for _, name in access.TABS:
+            self.assertIn(name, markup)
+        self.assertEqual(markup.count('class="count">999'), 4)
+
+    def test_help_has_one_command_role_and_example_per_line(self):
+        out = io.StringIO()
+        with self.assertRaises(SystemExit) as done, contextlib.redirect_stdout(out):
+            access.mint_command(["-h"], "pipe", list, list)
+        self.assertEqual(done.exception.code, 0)
+        lines = [line for line in out.getvalue().splitlines() if " · " in line]
+        self.assertEqual(len(lines), len(access.SUBCOMMANDS))
+        for name, line in zip(access.SUBCOMMANDS, lines):
+            self.assertTrue(line.startswith(name), line)
+            self.assertEqual(len(line.split(" · ")), 3)
+            self.assertIn("mint " + name, line)
+            self.assertLessEqual(access.cells(line), 79)
+
     def test_input_errors_read_in_korean(self):
         for argv, words in ((["logs", "abc"], "'abc' 확인 필요"), (["console", "bad"], "'bad' 없음 · 선택"), (["request"], "필요한 값: 서버")):
             err = io.StringIO()
@@ -246,6 +270,40 @@ class TerminalPages(unittest.TestCase):
         self.screen.page, self.screen.detail = 3, None
         with patch.object(access, "can_open_browser", lambda: False):
             self.assertEqual(self.kit.open_console(self.screen), CONSOLE + "#/intake")
+
+    def test_route_colours_are_separate_from_decisions(self):
+        for name, web, terminal in (("게이트웨이", "brand", "accent"), ("커넥터", "restrict", "restrict"), ("로컬", "alert", "warn")):
+            self.assertEqual(access.CHIPS[name], web)
+            self.assertEqual(self.kit.value_role(name), terminal)
+        self.assertEqual(self.kit.ROLES["restrict"][0], (137, 220, 230))
+
+    def test_empty_server_cancels_before_other_prompts_or_submission(self):
+        out = io.StringIO()
+        out.isatty = lambda: True
+        with patch("builtins.input", return_value=" ") as prompt, patch.object(access, "mint_request") as send, contextlib.redirect_stdout(out):
+            self.kit.new_request(access, "pipe")
+        prompt.assert_called_once()
+        send.assert_not_called()
+        self.assertTrue(out.getvalue().startswith("\x1b[2J\x1b[H"))
+        self.assertIn("빈 서버 이름 Enter · Ctrl+C 취소", out.getvalue())
+
+    def test_request_interrupt_resumes_the_original_page(self):
+        # Run the live loop with a terminal double; no console, broker or host settings are touched.
+        for inputs in ([""], [KeyboardInterrupt], ["Memory", KeyboardInterrupt], ["Memory", "", KeyboardInterrupt]):
+            with self.subTest(inputs=inputs), \
+                    patch("importlib.util.spec_from_file_location", return_value=SimpleNamespace(loader=SimpleNamespace(exec_module=lambda module: None))), \
+                    patch("importlib.util.module_from_spec", return_value=access), patch.object(self.screen, "resume") as resume, \
+                    patch.object(self.screen, "pause") as pause, patch.object(self.screen, "draw"), \
+                    patch.object(self.screen, "read_key", side_effect=["n", "q"]), \
+                    patch("builtins.input", side_effect=inputs), patch.object(access, "mint_request") as send, \
+                    patch.object(access, "receive", return_value=SUMMARY), contextlib.redirect_stdout(io.StringIO()):
+                self.screen.page = 3
+                self.screen.window = self.screen
+                self.kit.live(lambda: self.screen.summary, address="pipe", screen=self.screen)
+            pause.assert_called_once()
+            resume.assert_called_once()
+            send.assert_not_called()
+            self.assertEqual(self.screen.page, 3)
 
 
 if __name__ == "__main__":

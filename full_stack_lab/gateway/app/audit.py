@@ -33,9 +33,12 @@ async def alerts(limit=100, *, since=None, until=None, hours=None, before=0, see
     count = await db.fetch_one("SELECT count(*) AS n FROM ops_alerts a WHERE " + base, tuple(params))
     rows = await db.fetch_all(
         "SELECT a.id,a.kind,a.origin,a.origin_id,a.created_at,a.evidence,s.display_name AS server_name, "
-        "d.client->>'device_id' AS decision_endpoint, d.reason, d.upstream_attempted, d.upstream_executed "
+        "d.client->>'device_id' AS decision_endpoint, d.reason, d.upstream_attempted, d.upstream_executed, "
+        "ep.hostname, p.display_name AS owner_name "
         "FROM ops_alerts a LEFT JOIN mcp_servers s ON s.id=a.evidence->>'server_id' "
-        "LEFT JOIN decisions d ON a.origin='decision' AND d.id::text=a.origin_id WHERE "
+        "LEFT JOIN decisions d ON a.origin='decision' AND d.id::text=a.origin_id "
+        "LEFT JOIN endpoint_agents ep ON ep.endpoint_id=coalesce(a.evidence->>'endpoint_id', d.client->>'device_id') "
+        "LEFT JOIN principals p ON p.token=coalesce(ep.owner_token, a.evidence->>'user_token', d.user_token) WHERE "
         + base + (" AND a.id < %s" if before else "") + " ORDER BY a.id DESC LIMIT %s",
         (*params, *([before] if before else []), limit + 1))
     for row in rows:

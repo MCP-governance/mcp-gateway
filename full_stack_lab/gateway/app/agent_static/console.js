@@ -601,9 +601,10 @@ function shadowLink(endpoint, kind, id) {
 }
 const alertTarget = (a) => {
   const e = a.evidence || {};
-  if ((e.policy_id || "").startsWith("MCP-SHADOW-")) return [e.hostname || e.endpoint_id || e.label || "—", shadowLink(e.endpoint_id, e.record_kind, e.record_id)];
-  if (a.kind === "unapproved-endpoint-mcp") return [`${e.hostname || e.endpoint_id || "—"} · ${e.label || "—"}`, shadowLink(e.endpoint_id, e.record_kind, e.record_id)];
-  if (a.kind === "endpoint-quarantined") return [e.hostname || e.endpoint_id || "—", `#/endpoints?t=devices&endpoint=${encodeURIComponent(e.endpoint_id || "")}`];
+  const person = a.owner_name || e.owner_name;
+  const target = [...new Set([a.hostname || e.hostname, person].filter(Boolean))].join(" · ") || "—";
+  if ((e.policy_id || "").startsWith("MCP-SHADOW-") || a.kind === "unapproved-endpoint-mcp") return [target, shadowLink(e.endpoint_id, e.record_kind, e.record_id)];
+  if (a.kind === "endpoint-quarantined") return [target, `#/endpoints?t=devices&endpoint=${encodeURIComponent(e.endpoint_id || "")}`];
   if (a.kind === "incident-deadline") return [`${e.jurisdiction || ""} ${e.stage || ""}`.trim() || "—", "#/security?t=incidents"];
   if (e.server_id) return [a.server_name || e.server_id, `#/servers/${encodeURIComponent(e.server_id)}`];
   return ["—", ""];
@@ -644,12 +645,14 @@ function componentHealth(health) {
     ${issues.length || tracingIssue ? html`<span class="health-detail">${[...issues, ...(tracingIssue ? ["추적 수집(선택)"] : [])].join(", ")}</span>` : ""}`;
 }
 
+const decisionReason = (r) => ({ "P-RATE-003": "중복 호출 차단", "P-CONSENT-001": "이용 동의 필요" }[r.policy_id]
+  || policyLedger.find((p) => p.policy_id === r.policy_id)?.name || "사유 미확인");
 function decisionRow(r) {
   return html`<tr class="clickable" tabindex="0" data-act="decision" data-id="${r.id}">
     <td class="t">${when(r.at, { seconds: true })}</td>
     <td>${decisionChip(r.decision)}${r.invalid ? chip("outline", "무효 처리") : ""}</td>
     <td class="who-cell"><b>${r.who}</b></td>
-    <td><b>${r.server_name || r.server}</b><span class="sub mono">${r.tool}</span></td>
+    <td><b>${r.server_name || r.server}</b><span class="sub mono">${r.tool}</span>${r.decision === "Block" ? html`<span class="sub">${decisionReason(r)}</span>` : ""}</td>
     <td>${TOOL_PATH.gateway[1]}</td><td>${r.outcome_axes?.execution || "—"}</td><td>${outcomeSummary({ task: r.outcome_axes?.task })}</td></tr>`;
 }
 const OUTCOME_LABELS = { route: "경로", connection: "연결", decision: "정책 판정", execution: "도구 실행", task: "업무 결과", effect: "독립 효과" };
@@ -2710,7 +2713,9 @@ function alertGroups(alerts) {
   const groups = new Map();
   for (const a of alerts) {
     const [target] = alertTarget(a);
-    const key = JSON.stringify([a.kind, [a.evidence?.endpoint_id, a.evidence?.server_id, a.evidence?.label, target], alertDetail(a)]);
+    const e = a.evidence || {};
+    const evidence = Object.fromEntries(Object.entries(e).filter(([key]) => key !== "record_id").sort(([a], [b]) => a.localeCompare(b)));
+    const key = JSON.stringify([a.kind, a.origin, evidence, a.reason, target, alertDetail(a)]);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(a);
   }
@@ -2720,7 +2725,9 @@ function alertGroups(alerts) {
 function groupedAlerts(alerts) {
   return alerts.length ? html`<div class="stack">${alertGroups(alerts).map(({ rows, first, last }) => {
     const a = rows[0], [target] = alertTarget(a);
-    return html`<details class="panel"><summary>${ALERT_KIND[a.kind] || " 경보"} · ${target} · ${rows.length}건</summary>
+    const e = a.evidence || {};
+    const resource = [a.server_name || e.label || e.server_id, e.tool_name || e.tool || (a.origin === "endpoint-tool" ? e.place : "")].filter(Boolean).join(" · ");
+    return html`<details class="panel"><summary>${ALERT_KIND[a.kind] || "경보"} · ${target} · ${resource || short(alertDetail(a), 40) || "—"} · ${when(last, { seconds: true })} · ${rows.length}건</summary>
       ${kv([["사유", alertDetail(a) || "—"], ["건수", rows.length], ["최초 시각", when(first)], ["최근 시각", when(last)]])}
       <table class="data"><thead><tr><th>시각</th><th>종류</th><th>대상</th><th>내용</th></tr></thead><tbody>
       ${rows.map((r) => html`<tr class="clickable" tabindex="0" data-act="alert-detail" data-id="${r.id}"><td class="nowrap">${when(r.created_at)}</td>
@@ -2776,7 +2783,7 @@ ROUTES.security = async (_, tab, query = new URLSearchParams()) => {
 };
 
 const EVENT_KIND = { "tools/call": "도구 호출", "mcp-connection": "연결 거부" };
-const TOOL_PATH = { gateway: ["allow", "게이트웨이"], connector: ["outline", "커넥터"], local: ["block", "로컬 MCP"] };
+const TOOL_PATH = { gateway: ["brand", "게이트웨이"], connector: ["restrict", "커넥터"], local: ["alert", "로컬 MCP"] };
 const byteText = (n) => { const v = Number(n) || 0; return v < 1024 ? `${v} B` : v < 1048576 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1048576).toFixed(1)} MB`; };
 function endpointCallsTab(toolData) {
   return { key: "tools", label: "엔드포인트 호출", n: toolData?.total, body: panel("엔드포인트 호출", !toolData ? empty("", { failed: true }) : toolData.rows.length ? html`<table class="data"><thead><tr><th>시각</th><th>엔드포인트</th><th>하네스</th><th>경로</th><th>MCP 서버 · 도구</th><th>게이트웨이 판정</th><th>도구 실행</th><th>업무 결과</th><th class="num">입력</th><th class="num">출력 크기</th></tr></thead><tbody>${toolData.rows.map((e) => html`<tr ${e.decision_id ? raw(`class="clickable" tabindex="0" data-act="decision" data-id="${Number(e.decision_id)}"`) : ""}>
@@ -2934,7 +2941,7 @@ const ACTIONS = {
     rememberDetail(a.id, "alert-detail");
     openDrawer("경보", kv([["사유", alertDetail(a) || ALERT_KIND[a.kind] || "—"],
       ["실행", a.execution || "미확인"], ["조치", href ? html`<a class="btn sm" href="${href}">${a.kind === "unapproved-endpoint-mcp" || (a.evidence?.policy_id || "").startsWith("MCP-SHADOW-") ? "미등록 MCP 보기" : "대상 보기"}</a>` : "—"],
-      ["종류", ALERT_KIND[a.kind] || "—"], ["대상", target], ["시각", when(a.created_at)]]));
+      ["종류", ALERT_KIND[a.kind] || "—"], ["대상", target], ["엔드포인트 식별자", a.evidence?.endpoint_id || "—"], ["시각", when(a.created_at)]]));
   },
   async "audit-event"(el) {
     const seq = routeSeq, detail = ++detailSeq;

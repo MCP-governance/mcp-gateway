@@ -1,4 +1,9 @@
 export const EN = {
+  "중복 호출 차단": "Duplicate call blocked",
+  "이용 동의 필요": "Consent required",
+  "사유 미확인": "Reason unconfirmed",
+  "엔드포인트 식별자": "Endpoint identifier",
+  "빈 서버 이름 Enter · Ctrl+C 취소": "Empty server name + Enter or Ctrl+C to cancel",
   "허용·경보": "Allowed with alert",
   "보조 연결": "Supporting link",
   "요청 실패": "Request failed",
