@@ -48,7 +48,7 @@ class OneClickVerificationRecord(mk.OneClickProvenance, lab.RegisterServerRoute)
                     self.assertTrue(found["provenance_reason"], where)
                     self.assertEqual(found["attestation"], envelope, where)  # 증명 본문
                     self.assertEqual(found["match"], True, where)  # 사본 대조 결과도 그대로
-                    self.assertEqual((found["by"], found["sha256"]), ("tok-root" if tier == "low" else "tok-b", "c" * 64), where)
+                    self.assertEqual((found["by"], found["sha256"]), ("tok-root" if tier == "low" or self.forced else "tok-b", "c" * 64), where)  # D-306: root finishes alone in single-operator mode
 
     async def test_missing_attestation_is_recorded_as_unconfirmed(self):
         for tier in ("low", "high"):

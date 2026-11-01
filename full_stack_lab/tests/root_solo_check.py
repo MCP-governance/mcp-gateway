@@ -40,7 +40,9 @@ class RootSolo(unittest.TestCase):
         gate = function_source(SERVICE, "risk_tier_gate")
         self.assertIn("approvers = 1 + len(others)", gate)
         self.assertIn("solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)", gate)
-        self.assertIn('risk_tier.decide(assessed["tier"], approvers, reason)', gate)
+        # D-306: root in single-operator mode meets the count alone; the recorded approvers stay the real people.
+        self.assertIn('risk_tier.decide(assessed["tier"], max(approvers, risk_tier.APPROVAL[assessed["tier"]]["approvers"])', gate)
+        self.assertIn("if solo else approvers, reason)", gate)
         self.assertNotIn("approvers = max(", gate)
         self.assertNotIn("approvers +=", gate)
         self.assertIn('"solo_mode": solo_mode', gate)

@@ -1,5 +1,3 @@
-// Console state and data shaping, kept free of the DOM so it can be tested on its own.
-// The server already scopes rows to the signed-in viewer; nothing here may widen that.
 export const FEED_LIMIT = 500;
 export const DECISIONS = ["Allow", "Alert", "Restrict", "Approval", "Block"];
 
@@ -23,9 +21,6 @@ export function resourceValues(sample, now = Date.now()) {
     measuredAt: timestamp,
   };
 }
-
-/** Newest first, one row per numeric id. A poll that overlaps a page load must not
- * show a call twice, and a malformed row must not push a real decision out. */
 export function mergeRows(current, incoming, limit = FEED_LIMIT) {
   const rows = new Map();
   for (const row of [...(current || []), ...(incoming || [])]) {
@@ -36,8 +31,6 @@ export function mergeRows(current, incoming, limit = FEED_LIMIT) {
 }
 
 const SEARCHED = ["who", "department", "workstation", "harness", "server", "tool", "target", "policy_id", "trace_id", "reason"];
-
-/** Search over what is already loaded: person, PC, harness, tool, target, policy or trace id. */
 export function searchRows(rows, query = "") {
   const term = String(query).trim().toLocaleLowerCase();
   if (!term) return rows;
@@ -47,23 +40,17 @@ export function searchRows(rows, query = "") {
 
 const pad = (n) => String(n).padStart(2, "0");
 const clock = (t) => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
-
-/** One status phrase. It never calls a view fresh after a failed poll. */
 export function liveLabel({ live, lastOk = 0, failing = false, pending = 0 }) {
   if (failing) return `갱신 실패${lastOk ? ` · 마지막 ${clock(lastOk)}` : ""}`;
   if (!live) return `일시정지${pending ? ` · 대기 ${pending}건` : ""}`;
   return lastOk ? `실시간 · ${clock(lastOk)}` : "실시간 · 연결 중";
 }
 
-// MCP clients as they name themselves in `initialize` (clientInfo.name).
 const HARNESS = {
   "claude-code": "Claude Code", "codex-mcp-client": "Codex CLI", "gemini-cli-mcp-client": "Gemini CLI",
   opencode: "OpenCode", "inspector-cli": "MCP Inspector", "termination-probe": "종료 점검", mcp: "Python SDK",
 };
 export const harnessLabel = (name) => HARNESS[name] || name || "알 수 없음";
-
-/** The last 24 hours as 24 hourly buckets, oldest first, with a count per decision.
- * `series` rows are {hour, decision, n} from /api/overview; hours without calls are 0. */
 export function hourBuckets(series, now = Date.now()) {
   const HOUR = 3600e3;
   const end = Math.floor(now / HOUR) * HOUR;
@@ -80,8 +67,6 @@ export function hourBuckets(series, now = Date.now()) {
   }
   return buckets;
 }
-
-/** Count rows by `key`, with a split by decision: [{key, total, Allow, ..., Block}], largest first. */
 export function splitBy(rows, key, weight = () => 1) {
   const groups = new Map();
   for (const row of rows || []) {
@@ -95,9 +80,6 @@ export function splitBy(rows, key, weight = () => 1) {
   }
   return [...groups.values()].sort((a, b) => b.total - a.total || String(a.key).localeCompare(String(b.key)));
 }
-
-/** harness -> server -> decision flows for a Sankey. Layers are kept apart by name so
- * a server called "fetch" never merges with a harness of the same name. */
 export function sankeyData(flows, decisionLabel = (d) => d) {
   const nodes = new Map();
   const links = new Map();
@@ -118,10 +100,6 @@ export function sankeyData(flows, decisionLabel = (d) => d) {
   return { nodes: [...nodes.values()], links: [...links.values()] };
 }
 
-// ── control planes ───────────────────────────────────────────────────────────
-// A status is never shown alone: it travels with how sure we are. Levels follow the
-// evidence kind the server names: 4 endpoint heartbeat, 3 audit record, 2 manual
-// vendor-console record, 1 self report, 0 none.
 export const EVIDENCE = {
   kernel: { level: 4, label: "엔드포인트 점검", ttl: 180 },
   ledger: { level: 3, label: "감사 기록", ttl: null },
@@ -133,8 +111,6 @@ export const STATE_TONE = {
   gateway_enforced: "allow", endpoint_enforced: "allow", vendor_enforced: "restrict",
   observed_only: "alert", unknown_not_enrolled: "outline", bypass_possible: "block",
 };
-
-/** Seconds since an ISO time, or null. */
 export function ageSeconds(iso, now = Date.now()) {
   const t = new Date(iso ?? NaN).getTime();
   return Number.isFinite(t) ? Math.max(0, Math.round((now - t) / 1000)) : null;
@@ -147,8 +123,6 @@ const OBSERVATION_STATE = {
   unsupported: ["지원 안 함", "outline"], unknown: ["확인 불가", "outline"],
 };
 const FRESHNESS_LABEL = { fresh: "최근 보고", stale: "오래됨", unknown: "확인 불가" };
-
-/** Render only bounded observation metadata; never pass the agent's detail object to the page. */
 export function observationRows(agents, now = Date.now()) {
   return (agents || []).flatMap((agent) => Object.entries(OBSERVATION_CHANNELS).map(([key, label]) => {
     const report = agent?.detail?.observation?.[key] || {};
@@ -173,8 +147,6 @@ const LISTENER_CLASS = { registered: "등록", shadow: "미등록", "retired-res
 const MCP_EVIDENCE = { confirmed: "MCP 응답 확인", suspected: "MCP로 추정", unknown: "MCP 여부 미확인" };
 const SCAN_STATE = { success: "보고됨", partial: "일부 보고", failed: "실패", disabled: "중지",
   unauthorized: "권한 없음", unsupported: "지원 안 함", unknown: "확인 불가" };
-
-/** Keep listener-only endpoints in the coverage view and expose only display-safe fields. */
 export function listenerCoverage(listeners, now = Date.now()) {
   const rows = (listeners || []).filter((item) => item?.classification !== "registered").map((item) => {
     const observedAt = item?.observed_at || null;
@@ -209,9 +181,6 @@ export function agoText(seconds) {
   if (seconds < 172800) return `${Math.round(seconds / 3600)}시간 전`;
   return `${Math.round(seconds / 86400)}일 전`;
 }
-
-/** {state, tone, level, evLabel, stale}. An enforced state without fresh evidence of
- * at least a ledger row is drawn neutral, so green always means "seen enforcing". */
 export function statusView(item, now = Date.now()) {
   const kind = EVIDENCE[item?.evidence_kind] ? item.evidence_kind : "none";
   const ev = EVIDENCE[kind];
@@ -224,8 +193,6 @@ export function statusView(item, now = Date.now()) {
     : `${ev.label}${ref}${age !== null ? ` · ${agoText(age)}` : ""}${stale ? " · 만료" : ""}`;
   return { state: item?.state || "unknown_not_enrolled", tone, level: stale ? Math.min(ev.level, 1) : ev.level, evLabel, stale };
 }
-
-/** One row per item_key; the PCs and owners that reported it are folded into a count. */
 export function dedupeItems(items) {
   const groups = new Map();
   for (const item of items || []) {
@@ -236,7 +203,6 @@ export function dedupeItems(items) {
     g.pcs += 1;
     if (item.owner && !g.owners.includes(item.owner)) g.owners.push(item.owner);
     if (item.device && !g.devices.includes(item.device)) g.devices.push(item.device);
-    // The worst state wins: one open PC makes the item bypassable.
     if (item.state === "bypass_possible") g.state = "bypass_possible";
     g.bypass = [...new Set([...(g.bypass || []), ...(item.bypass || [])])];
   }
@@ -245,15 +211,11 @@ export function dedupeItems(items) {
 
 const CONNECTOR_CONTROL = [["bypass_possible", "block", "차단 미검증"], ["observed_only", "alert", "차단 미검증"],
   ["vendor_enforced", "brand", "벤더 콘솔 차단"], ["endpoint_enforced", "allow", "엔드포인트에서 차단"]];
-
-/** The weakest control among the endpoints that reported one harness item: one open path decides it. [tone, label] or null. */
 export function connectorControl(items, key) {
   const states = new Set((items || []).filter((i) => i?.item_key === key).map((i) => i.state));
   const hit = CONNECTOR_CONTROL.find(([state]) => states.has(state));
   return hit ? [hit[1], hit[2]] : null;
 }
-
-/** The five stops of one audit row: source, gateway, endpoint, upstream, response. */
 export function pipelineOf(row) {
   const connection = row?.event_kind === "mcp-connection";
   const endpoint = (row?.planes || []).includes("endpoint");
@@ -268,8 +230,6 @@ export function pipelineOf(row) {
 }
 
 const isMs = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
-
-/** "4.2 ms", "38 ms", "1.6 s"; "—" for a value that was not measured. */
 export function msText(value) {
   if (!isMs(value)) return "—";
   if (value >= 10000) return `${(value / 1000).toFixed(1)} s`;
@@ -280,8 +240,6 @@ export function pctText(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 100
     ? `${value < 10 && value % 1 ? value.toFixed(1) : Math.round(value)}%` : "—";
 }
-
-/** What the masking found, as an administrator reads it; an unlisted kind never shows its raw name. */
 export const PRIVACY_TYPE = {
   EMAIL_ADDRESS: "이메일", KR_RRN: "주민등록번호", KR_PHONE: "전화번호", KR_BRN: "사업자등록번호",
   KR_ACCOUNT: "계좌번호", KR_PASSPORT: "여권번호", KR_DRIVER_LICENSE: "운전면허번호", CARD_NUMBER: "카드번호",
@@ -298,8 +256,6 @@ export const LATENCY_STAGE = {
   policy: "정책 판정", dispatch: "전송 준비", connect: "서버 연결", list: "계약 재확인", recheck: "실행 전 재판정",
   intent: "실행 기록", call: "도구 실행", close: "세션 종료", inspect_out: "출력 검사",
 };
-
-/** One call's stages in path order with their share of the total; unknown keys are dropped. */
 export function timingRows(timings) {
   const total = isMs(timings?.total) ? timings.total : null;
   const rows = Object.keys(LATENCY_STAGE).filter((key) => isMs(timings?.[key]))

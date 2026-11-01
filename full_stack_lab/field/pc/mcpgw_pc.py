@@ -948,6 +948,8 @@ def cmd_managed(args) -> None:
         tables += ["", f"[apps.{app}]", "enabled = false"]
     # TOML은 루트 키가 첫 테이블보다 앞에 있어야 한다.
     lines = ["# Codex requirements.toml: 목록에 없는 MCP 서버는 켜지지 않는다(이름과 URL이 모두 맞아야 함)."] + root
+    # 표가 없으면 Codex는 MCP를 제한하지 않는다. 승인 서버가 없어도 빈 표를 둬 전부 끈다.
+    lines += ["", "[mcp_servers]"]
     for server in settings["servers"]:
         lines += ["", f"[mcp_servers.{server}]", f'identity = {{ url = "{endpoint(settings, server)}" }}']
     (out / "requirements.toml").write_text("\n".join(lines + tables) + "\n", encoding="utf-8")

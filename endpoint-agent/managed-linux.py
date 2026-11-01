@@ -771,9 +771,38 @@ def connection_cells(found, servers):
     """② tool count and ③ one approved server's initialize, as the two cells beside the model answer."""
     failed = found.get("failed") or {}
     tools = f"{found['tools']}개 (서버 {len(found['initialized'])}/{servers})" if found.get("initialized") else "—"
-    first = (f"{found['initialized'][0]} 연결 정상" if found.get("initialized")
+    first = (f"{len(found['initialized'])}/{servers} 연결 정상" if found.get("initialized")
              else ("실패 · " + ", ".join(f"{k} {v}" for k, v in list(failed.items())[:2])) if failed else "승인 서버 없음")
     return [("도구", tools), ("서버 연결", first)]
+
+
+def mint_subcommand(access, argv):
+    user = pwd.getpwuid(os.getuid()).pw_name
+    path = status_path(user, "json")
+    if not path.exists():
+        found = sorted(PROGRAMS.glob("status-*.json"))
+        path = found[0] if len(found) == 1 else path
+    try:
+        summary = json.loads(path.read_text())
+    except (OSError, ValueError):
+        print("이 PC에는 관리형 연결의 상태가 없습니다")
+        return 1
+
+    def lines():
+        current = model_status(json.loads(path.read_text()))
+        names = current.get("names") or []
+        return [f"연결 상태: {'연결됨' if current.get('connected') else '연결 끊김'}",
+                f"관리 상태: {kit_screen.STATES.get(current.get('state'), current.get('state') or '—')}",
+                f"승인 서버: {len(names)}개" + (" · " + ", ".join(names) if names else ""),
+                f"게이트웨이: {current.get('gateway') or '—'}"]
+
+    def check():
+        try:
+            current = model_status(json.loads(path.read_text()))
+            return connection_cells(check_connection(current), len(current.get("names") or []))
+        except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
+            return [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
+    return access.mint_command(argv, summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source", lines, check)
 
 
 def status(args):
@@ -800,6 +829,13 @@ def status(args):
             # 점검 실패의 원문(헤더 도우미·서버 응답)은 화면에 내지 않는다. 결과만 보인다.
             cells = [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
     screen = Screen()
+    if args.check:
+        # A check prints the whole screen once and ends (as `tailscale status` does), next step included;
+        # the live screen is `mint` alone.
+        screen.stop()
+        screen.summary, screen.cells, screen.next, screen.keys = summary, cells, next_step(summary, time.time()), ()
+        print(screen.text())
+        return
     if getattr(args, "sources", False):
         screen.stop()
         return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")
@@ -819,7 +855,8 @@ def status(args):
         return connection_cells(check_connection(current), len(current.get("names") or []))
 
     # 닫으면 화면을 지운 채 끝난다(대체 화면). 상태를 남기려면 `mint | cat`.
-    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"))
+    broker = summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source"
+    kit_screen.live(read, check, screen, sources=lambda: kit_screen.source_menu(broker), address=broker)
 
 
 # -- Connectors and built-in features the managed account's harnesses carry. The kit sends the same report
@@ -1109,7 +1146,8 @@ def serve(args):
                  "ENDPOINT_ID": config["endpoint_id"], "ENDPOINT_CONFIG_PATHS": os.pathsep.join([pwd.getpwnam(config["username"]).pw_dir,
                  *sorted({str(path.parent) for path in FILES.values()})]), "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_NETSCAN": "0",
                  "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_PROCESS_UID": str(config["uid"]), "ENDPOINT_ORIGIN": "automatic",
-                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
+                 "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", []),
+                 "ENDPOINT_TOOL_EVENT_FILES": str(Path(pwd.getpwnam(config["username"]).pw_dir) / ".mcpgw" / "tool-events.jsonl")}))
     previous = config["policy_hash"]
     runner = PROGRAMS / "local-runner.py"
     local = None
@@ -1261,6 +1299,8 @@ def serve(args):
                 cache["state"] = report["state"]
             summary.update(state=report["state"], connected=True, last_report=time.time(), servers=len(policy["servers"]),
                            names=sorted(policy["servers"]), harnesses=dict(HARNESS_VERSIONS),
+                           # What the employee reads (Hugging Face), as Windows shows it; the ids stay for the checks.
+                           server_names=[policy.get("server_names", {}).get(s) or s for s in sorted(policy["servers"])],
                            protected_configs=health.get("protected_configs"),
                            claude_ca="NODE_EXTRA_CA_CERTS" in policy["files"]["managed-settings.json"])
             print(json.dumps({"endpoint_id": config["endpoint_id"], "state": report["state"], "checks": health}), flush=True)
@@ -1389,7 +1429,9 @@ def main():
     helper.add_argument("--socket", required=True)
     helper.set_defaults(run=header)
     # 직원이 치는 `mint`는 이 하위 명령이다. 도움말은 직원이 쓰는 옵션만 직원의 말로 보인다.
-    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False)
+    access = load_module("kit_access", Path(__file__).with_name("kit_access.py"))
+    access.korean_argparse()
+    show = commands.add_parser("status", prog="mint", description="MINT 엔드포인트 상태 화면", add_help=False, epilog=access.HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     show.add_argument("-h", "--help", action="help", help="도움말")
     show.add_argument("--user", help=argparse.SUPPRESS)
     show.add_argument("--check", action="store_true", help="게이트웨이 연결을 지금 점검")
@@ -1398,6 +1440,8 @@ def main():
     remove = commands.add_parser("rollback")
     remove.add_argument("--user", required=True)
     remove.set_defaults(run=rollback)
+    if len(sys.argv) > 2 and sys.argv[1] == "status" and sys.argv[2] in access.SUBCOMMANDS:
+        sys.exit(mint_subcommand(access, sys.argv[2:]))
     args, extra = parser.parse_known_args()
     if extra:
         # `mint <틀린 인자>`의 오류도 `mint` 사용법으로 보인다(내부 파일·명령 이름을 내보이지 않는다).

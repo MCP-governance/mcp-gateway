@@ -1,7 +1,3 @@
-// Charts on Apache ECharts (vendor/echarts.min.js, loaded as a classic script before
-// this module). Colours come from the CSS tokens at mount time, so the decision
-// colours in a chart are the same ones the badges use, in both themes. Canvas
-// rendering keeps the page inside `style-src 'self'`.
 import { DECISIONS } from "./console-state.mjs";
 import { t } from "./i18n.mjs";
 
@@ -16,9 +12,6 @@ function base() {
   return {
     animation: !calm(),
     textStyle: { fontFamily: css("--sans"), fontSize: 13.5, color: css("--ink-2") },
-    // richText: the tooltip is drawn on the canvas, not built as HTML. Series names come
-    // from the audit log (a harness names itself), so nothing here may reach innerHTML;
-    // HTML tooltips would also need inline style attributes, which the CSP refuses.
     tooltip: {
       renderMode: "richText", backgroundColor: css("--panel"), borderColor: css("--line-2"), borderWidth: 1,
       textStyle: { color: css("--ink"), fontSize: 13.5 }, confine: true,
@@ -33,11 +26,8 @@ const axis = (extra = {}) => ({
   axisLabel: { color: css("--ink-3"), fontSize: 13.5 }, splitLine: { lineStyle: { color: css("--line") } }, ...extra,
 });
 
-// ── mounting ─────────────────────────────────────────────────────────────
-const live = new Map();          // element -> {chart, option, observer}
-const pending = new Map();       // element id -> option builder (mounted when visible)
-
-/** Register charts for the page; mountVisible() draws the ones whose panel is shown. */
+const live = new Map();
+const pending = new Map();
 export function register(builders) {
   for (const [id, build] of Object.entries(builders || {})) pending.set(id, build);
 }
@@ -51,18 +41,15 @@ export function mountVisible(root = document) {
   }
 }
 
-// Every value a series carries: numbers, {value}, heatmap [x, y, v], sankey links.
 const values = (option) => (option.series || []).flatMap((s) => [...(s.data || []), ...(s.links || [])])
   .map((d) => (Array.isArray(d) ? d.at(-1) : d && typeof d === "object" ? d.value : d));
 
-// Chart text is drawn on the canvas, outside the DOM, so it is translated here.
 export const localize = (v) => (typeof v === "string" ? t(v) : Array.isArray(v) ? v.map(localize)
   : v && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, localize(x)])) : v);
 
 function chartOption(build) {
   const { onClick, ...built } = build();
   const option = localize(built);
-  // ECharts defaults data marks to a hand cursor, even when the chart has no click action.
   if (option.series) option.series = option.series.map((series) => ({ ...series, cursor: onClick ? "pointer" : "default" }));
   return { onClick, option };
 }
@@ -72,7 +59,6 @@ function draw(el, build) {
   if (!echarts) { el.textContent = "차트를 불러오지 못했습니다."; return; }
   const { onClick, option } = chartOption(build);
   el.classList.toggle("chart-interactive", Boolean(onClick));
-  // A chart of zeros reads as a broken chart. Say there is nothing yet; redraw() replaces it when data comes.
   if (!values(option).some((v) => Number(v) > 0)) {
     el.classList.add("is-empty");
     el.replaceChildren(Object.assign(document.createElement("p"), { className: "empty", textContent: "표시할 데이터가 없습니다." }));
@@ -88,14 +74,10 @@ function draw(el, build) {
   observer.observe(el);
   live.set(el, { chart, build, observer });
 }
-
-/** Drop every chart (route change). */
 export function disposeAll() {
   for (const [el, { chart, observer }] of live) { observer?.disconnect(); chart?.dispose(); live.delete(el); }
   pending.clear();
 }
-
-/** Live data changed: rebuild one chart if it is on screen, else keep it for later. */
 export function redraw(id, build) {
   for (const [el, entry] of live) {
     if (el.id !== id) continue;
@@ -105,19 +87,13 @@ export function redraw(id, build) {
   }
   pending.set(id, build);
 }
-
-/** Theme switch: rebuild with the new tokens. */
 export function redrawAll() {
-  // Iterate a copy: draw() puts the same element back into `live`, and a Map iterator visits
-  // entries added during iteration - over the live map this never ended and froze the page.
   for (const [el, { chart, build, observer }] of [...live]) {
     observer?.disconnect(); chart?.dispose(); live.delete(el);
     draw(el, build);
   }
 }
 
-// ── builders ─────────────────────────────────────────────────────────────
-/** Stacked columns (or bars) per category: [{name, color, data}]. */
 export function stacked(categories, series, { horizontal = false, onClick, grouped = false, unit = "" } = {}) {
   const cat = axis({ type: "category", data: categories,
     axisLabel: { color: css("--ink-2"), fontSize: 13.5, ...(horizontal ? { width: 160, overflow: "truncate" } : {}) } });
@@ -134,19 +110,13 @@ export function stacked(categories, series, { horizontal = false, onClick, group
     onClick,
   };
 }
-
-/** Stacked by decision: traffic over time, calls per server or per person. */
 export function decisionColumns(categories, rows, options = {}) {
   return stacked(categories, DECISIONS.map((d) => ({ name: DECISION_LABEL[d], color: color(d), data: rows.map((r) => r[d] || 0) })), options);
 }
-
-/** Share of a whole; the total sits in the hole. */
 export function donut(items, { total = true } = {}) {
   const sum = items.reduce((s, i) => s + (i.value || 0), 0);
   return {
     tooltip: { ...base().tooltip, trigger: "item", formatter: "{b} · {c}건 ({d}%)" },
-    // Legend below, one scrolling row: it fits a narrow panel as well as a wide one. Long
-    // names (a harness names itself) are cut with an ellipsis; the tooltip has the full name.
     legend: { ...base().legend, type: "scroll", top: undefined, bottom: 0, left: "center", orient: "horizontal",
       textStyle: { ...base().legend.textStyle, width: 120, overflow: "truncate" } },
     title: total ? { text: String(sum), subtext: "건", left: "center", top: "33%",
@@ -158,8 +128,6 @@ export function donut(items, { total = true } = {}) {
     }],
   };
 }
-
-/** Plain horizontal bars (top-N lists). */
 export function bars(items, { unit = "건", tone = "--brand", onClick } = {}) {
   return {
     legend: { show: false },
@@ -173,8 +141,6 @@ export function bars(items, { unit = "건", tone = "--brand", onClick } = {}) {
     onClick,
   };
 }
-
-/** Harness -> server -> decision flows. */
 export function sankey({ nodes, links }) {
   const layerColor = [css("--brand"), css("--muted-series")];
   const decisionColor = Object.fromEntries(DECISIONS.map((d) => [DECISION_LABEL[d], color(d)]));

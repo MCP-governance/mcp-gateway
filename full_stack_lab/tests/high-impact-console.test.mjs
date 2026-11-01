@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
-const safe = source.slice(source.indexOf("class Raw {"), source.indexOf("// ── API"));
+const safe = source.slice(source.indexOf("class Raw {"), source.indexOf("function detailText("));
 const explanation = source.slice(source.indexOf("const IMPACT_DOMAIN ="), source.indexOf("async function showApproval"));
 const fields = source.slice(source.indexOf("const field ="), source.indexOf("const ACTIONS ="));
 const api = runInNewContext(`${safe}

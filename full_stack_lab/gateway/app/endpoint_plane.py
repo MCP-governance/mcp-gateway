@@ -441,10 +441,27 @@ def _listed(row: dict, *times: str) -> dict:
     return item
 
 
-async def inventory_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+def device_filter(alias, endpoint=None, q=None, state=None):
+    clauses, params = [], []
+    for column, value in (("a2.endpoint_id", endpoint), ("a2.managed_state", state)):
+        if value:
+            clauses.append(f"{column}=%s")
+            params.append(value)
+    if q:
+        clauses.append("concat_ws(' ',a2.endpoint_id,a2.hostname,a2.owner_token,p2.display_name,a2.local_username) ILIKE %s")
+        params.append("%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
+    return ((f"{alias}.endpoint_id IN (SELECT a2.endpoint_id FROM endpoint_agents a2 LEFT JOIN principals p2 ON p2.token=a2.owner_token WHERE "
+             + " AND ".join(clauses) + ")") if clauses else "TRUE", params)
+
+
+async def inventory_page(classification: str | None = None, limit: int = 100, cursor: str | None = None,
+                         endpoint=None, q=None, state=None) -> dict:
     """전체 건수는 반환 창과 따로 센다. 창이 200건이라고 전체가 200건은 아니다."""
     limit, after = _bounds(limit, cursor)
     where, params = ["a.status='active'", "a.agent_version<>'unregistered'"], []
+    device_where, device_params = device_filter("i", endpoint, q, state)
+    where.append(device_where)
+    params.extend(device_params)
     if classes := _classes(classification):
         where.append("i.classification = ANY(%s::text[])")
         params.append(classes)
@@ -465,14 +482,16 @@ async def inventory_page(classification: str | None = None, limit: int = 100, cu
             "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
 
 
-async def agents() -> list[dict]:
+async def agents(endpoint=None, q=None, state=None) -> list[dict]:
+    where, params = device_filter("a", endpoint, q, state)
     rows = await db.fetch_all(
-        """SELECT a.*, count(i.id) AS entries,
+        """SELECT a.*, p.display_name AS owner_name, count(i.id) AS entries,
                   count(i.id) FILTER (WHERE i.classification='shadow') AS shadow,
                   count(i.id) FILTER (WHERE i.classification='retired-residue') AS residue
              FROM endpoint_agents a LEFT JOIN endpoint_inventory i USING (endpoint_id)
+             LEFT JOIN principals p ON p.token=a.owner_token
             WHERE a.status='active' AND a.agent_version<>'unregistered'
-            GROUP BY a.endpoint_id ORDER BY a.last_seen_at DESC"""
+             AND """ + where + " GROUP BY a.endpoint_id,p.display_name ORDER BY a.last_seen_at DESC", tuple(params)
     )
     result = []
     for row in rows:
@@ -565,10 +584,196 @@ async def ingest_os_events(endpoint_id: str, events: list[dict]) -> dict:
             "duplicates": len(events) - accepted}
 
 
-async def os_events_page(kind: str | None = None, denial_class: str | None = None,
-                         limit: int = 100, cursor: str | None = None) -> dict:
+def canonical_server(server: str) -> str:
+    """The registry id behind a harness's server name. Codex names a server's tools mcp__<name>__<tool> with every "-"
+    of the id written as "_" (pj3: huggingface_co_b272ed53), which made approved calls look like a local MCP."""
+    from . import registry
+    ids = registry.servers()
+    if server in ids:
+        return server
+    dashed = server.replace("_", "-")
+    return dashed if dashed in ids else server
+
+
+def tool_path(server: str) -> str:
+    """Which route a reported MCP call took. Gateway servers carry their registry id as the harness server name;
+    claude.ai connectors and ChatGPT apps arrive under the vendor's own server names."""
+    from . import registry
+    if server in registry.servers():
+        return "gateway"
+    if server.startswith("claude_ai_") or server == "codex_apps":
+        return "connector"
+    return "local"
+
+
+async def ingest_tool_events(endpoint_id: str, events: list[dict]) -> dict:
+    accepted = 0
+    async with db.transaction() as connection:
+        for event in events:
+            accepted += (await connection.execute(
+                """INSERT INTO endpoint_tool_events(endpoint_id,event_id,called_at,harness,account,server,tool,path,
+                                                    input_bytes,input_sha256,output_bytes,failed)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(endpoint_id,event_id) DO NOTHING""",
+                (endpoint_id, event["event_id"], event["called_at"], event["harness"], event.get("account") or "",
+                 canonical_server(event["server"]), event["tool"], tool_path(canonical_server(event["server"])), event.get("input_bytes") or 0,
+                 event.get("input_sha256") or "", event.get("output_bytes") or 0, bool(event.get("failed"))))).rowcount
+        await connection.execute("UPDATE endpoint_agents SET last_seen_at=now() WHERE endpoint_id=%s", (endpoint_id,))
+    return {"endpoint_id": endpoint_id, "accepted": accepted, "received": len(events)}
+
+
+async def self_summary(device: dict, limit: int = 50) -> dict:
+    """What the employee sees on their own PC (`mint`, local screen): the same facts the console holds for this device."""
+    from . import connectors, pac
+    owner = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (device["owner_token"],)) if device.get("owner_token") else None
+    usable = set(pac.servers_for(owner)) if owner else set()
+    rows = await db.fetch_all("SELECT id, display_name, deployment FROM mcp_servers"
+                              " WHERE status IN ('READY','DRIFT') AND lifecycle='OPERATING' ORDER BY id")
+    # Windows has no PC-isolated runner for local-run servers, so the managed policy leaves them out there; the employee
+    # still sees them as approved but not usable on this PC.
+    windows = managed_platform(device) == "windows"
+    servers = [{"id": r["id"], "name": r["display_name"] or r["id"], "path": "local" if r["deployment"] == "local" else "gateway",
+                "available": not (windows and r["deployment"] == "local")} for r in rows if r["id"] in usable]
+    # A reinstall on the same PC replaces the device record (superseded_by); its calls and requests stay this PC's history.
+    lineage = [r["id"] for r in await db.fetch_all(
+        """WITH RECURSIVE chain(id) AS (SELECT %s::text UNION
+             SELECT a.endpoint_id FROM endpoint_agents a JOIN chain c ON a.detail->>'superseded_by' = c.id)
+           SELECT id FROM chain""", (device["endpoint_id"],))]
+    decided = {d["item_key"]: d["decision"] for d in await db.fetch_all("SELECT item_key, decision FROM harness_decisions")}
+    now = datetime.now(UTC)
+    items = await db.fetch_all(
+        """SELECT item_key, harness, kind, name, min(first_seen) AS first_seen FROM harness_items
+            WHERE workstation=%s AND active GROUP BY item_key, harness, kind, name ORDER BY name""",
+        (connectors.DEVICE_PREFIX + device["endpoint_id"],))
+    labels = {k: v["label"] for k, v in connectors.CATALOG.items()}
+    connected, features = [], []
+    for item in items:
+        state = connectors.state_of(decided.get(item["item_key"]), item["kind"] in connectors.DEFAULT_KINDS, item["first_seen"], now)
+        entry = {"name": labels.get(item["item_key"], item["name"]), "harness": item["harness"], "state": state}
+        (features if item["kind"] == "feature" else connected).append(entry)
+    unregistered = await db.fetch_all(
+        # A remote server's address (the agent already strips credentials from it) is the source the request form can carry;
+        # a local command is only a digest and gives none.
+        """SELECT server_label AS name, transport, config_path AS place, max(reported_at) AS seen,
+                  max(CASE WHEN endpoint_ref LIKE 'https://%%' THEN endpoint_ref END) AS source FROM endpoint_inventory
+            WHERE endpoint_id=%s AND classification='shadow' GROUP BY server_label, transport, config_path ORDER BY 4 DESC""",
+        (device["endpoint_id"],))
+    calls = await db.fetch_all(
+        """SELECT e.called_at, e.harness, e.account, e.server, s.display_name AS server_name, e.tool, e.path, e.failed,
+                  e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason, g.decided_at
+             FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) """ + GATEWAY_DECISION + """
+            WHERE e.endpoint_id=ANY(%s) ORDER BY e.id DESC LIMIT %s""", (lineage, max(1, min(limit, 200))))
+    # A call the Gateway refused never reaches the harness's after-call hook (Codex reports only calls that returned), so
+    # the PC's own report misses exactly the calls the employee most needs to see (pj1 11-01: #244 consent block). The
+    # Gateway's ledger knows this PC by the workstation the call came from; calls already paired above stay single.
+    shown = {c["decision_id"] for c in calls if c["decision_id"]}
+    ledger = await db.fetch_all(
+        """SELECT d.created_at AS called_at,
+                  CASE WHEN d.client->>'harness' ILIKE '%%codex%%' THEN 'codex' WHEN d.client->>'harness' ILIKE '%%claude%%' THEN 'claude'
+                       ELSE '' END AS harness,
+                  '' AS account, d.server_id AS server, s.display_name AS server_name, d.tool_name AS tool, 'gateway' AS path,
+                  d.error IS NOT NULL AS failed, 0 AS input_bytes, 0 AS output_bytes, d.id AS decision_id, d.decision, d.policy_id,
+                  d.reason, d.created_at AS decided_at
+             FROM decisions d LEFT JOIN mcp_servers s ON s.id = d.server_id
+            WHERE d.user_token=%s AND coalesce(d.client->>'workstation', d.client->>'endpoint_id') = ANY(%s)
+            ORDER BY d.id DESC LIMIT %s""", (device.get("owner_token"), lineage, max(1, min(limit, 200)))) if owner else []
+    calls = sorted([*calls, *(d for d in ledger if d["decision_id"] not in shown)],
+                   key=lambda c: c["called_at"], reverse=True)[:max(1, min(limit, 200))]
+    requests = await db.fetch_all(
+        """SELECT server_label AS name, status, created_at FROM endpoint_mcp_requests WHERE endpoint_id=ANY(%s)
+            ORDER BY created_at DESC LIMIT 10""", (lineage,))
+    # What the console's 「내 신청」 shows: applications in the employee's name, including those an administrator wrote
+    # up from this PC's requests.
+    applications = await db.fetch_all(
+        """SELECT display_name AS name, status, created_at, registered_server_id FROM mcp_intake_requests
+            WHERE submitted_by=%s ORDER BY created_at DESC LIMIT 20""", (device["owner_token"],)) if owner else []
+    # Consent stays in the console, where the employee signs in: the harness on this PC must not be able to give it.
+    # The PC only says that something waits there and where.
+    consents = await db.fetch_all(
+        """SELECT coalesce(s.display_name, c.server_id) AS name, count(*) AS tools FROM user_consents c
+             LEFT JOIN mcp_servers s ON s.id=c.server_id
+            WHERE c.user_token=%s AND c.status='PENDING' GROUP BY 1 ORDER BY 1""", (device.get("owner_token"),)) if owner else []
+    issuer = os.getenv("IDP_ISSUER", "").rstrip("/")
+    return {"endpoint": {"id": device["endpoint_id"], "hostname": device.get("hostname"), "managed_state": device.get("managed_state"),
+                         "owner": (owner or {}).get("display_name") or (owner or {}).get("user_id")},
+            "servers": servers, "connectors": connected, "features": features, "unregistered": unregistered,
+            "calls": calls, "requests": requests, "applications": applications, "consents": consents,
+            "consent_url": issuer + "/workspace#/consent" if issuer.startswith("https://") else "",
+            "console_url": issuer + "/workspace" if issuer.startswith("https://") else ""}
+
+
+async def self_request(device: dict, server_label: str, source_url: str, purpose: str) -> dict:
+    existing = await db.fetch_one(
+        "SELECT id FROM endpoint_mcp_requests WHERE endpoint_id=%s AND server_label=%s AND status='OPEN'",
+        (device["endpoint_id"], server_label))
+    if existing:
+        return {"id": str(existing["id"]), "status": "OPEN", "duplicate": True}
+    row = await db.fetch_one(
+        """INSERT INTO endpoint_mcp_requests(id,endpoint_id,owner_token,server_label,source_url,purpose)
+           VALUES (%s,%s,%s,%s,%s,%s) RETURNING id, status""",
+        (str(uuid.uuid4()), device["endpoint_id"], device.get("owner_token"), server_label, source_url, purpose))
+    return {"id": str(row["id"]), "status": row["status"], "duplicate": False}
+
+
+async def endpoint_requests(status: str = "OPEN") -> list[dict]:
+    return await db.fetch_all(
+        """SELECT r.id, r.server_label, r.source_url, r.purpose, r.created_at, r.status, r.closed_by, r.closed_at,
+                  a.hostname, p.display_name AS owner_name
+             FROM endpoint_mcp_requests r JOIN endpoint_agents a USING (endpoint_id)
+             LEFT JOIN principals p ON p.token = r.owner_token
+            WHERE r.status=%s ORDER BY r.created_at DESC LIMIT 200""", (status,))
+
+
+async def close_endpoint_request(request_id: str, actor: str) -> bool:
+    row = await db.fetch_one(
+        "UPDATE endpoint_mcp_requests SET status='CLOSED', closed_by=%s, closed_at=now() WHERE id=%s AND status='OPEN' RETURNING id",
+        (actor, request_id))
+    return bool(row)
+
+
+# A call the harness reports for a gateway server is also a Gateway decision: the hook only knows the call returned,
+# the Gateway knows whether it was blocked, alerted or run (pj3 10-31: blocked calls read "완료" on the PC).
+# Matched by person, server, tool and time; the closest decision within the hook's delay.
+GATEWAY_DECISION = """LEFT JOIN LATERAL (
+       SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at,
+              d.outcome, d.upstream_attempted, d.upstream_executed, d.result_preview, d.error,
+              count(*) OVER () AS candidate_count FROM decisions d
+        WHERE e.path='gateway' AND d.server_id=e.server AND d.tool_name=e.tool AND d.user_token=a.owner_token
+           AND (d.client->>'device_id' IS NULL OR d.client->>'device_id'=e.endpoint_id)
+           AND d.created_at BETWEEN e.called_at - interval '30 seconds' AND e.called_at + interval '5 seconds'
+        ORDER BY abs(extract(epoch FROM d.created_at - e.called_at)) LIMIT 1) g ON TRUE
+     LEFT JOIN mcp_servers s ON s.id = e.server"""
+
+
+async def tool_events_page(path: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
     limit, after = _bounds(limit, cursor)
-    where, params = [], []
+    base, params = ("e.path=%s", [path]) if path else ("TRUE", [])
+    total = await db.fetch_one("SELECT count(*) AS n FROM endpoint_tool_events e WHERE " + base, tuple(params))
+    rows = await db.fetch_all(
+        """SELECT e.*, a.hostname, p.display_name AS owner_name, g.decision_id, g.decision, g.policy_id,
+                  g.reason, g.outcome, g.upstream_attempted, g.upstream_executed, g.result_preview, g.error,
+                  g.candidate_count, s.display_name AS server_name
+             FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) LEFT JOIN principals p ON p.token = a.owner_token
+             """ + GATEWAY_DECISION + """ WHERE """
+        + base + (" AND e.id < %s" if after else "") + " ORDER BY e.id DESC LIMIT %s",
+        (*params, *([after] if after else []), limit + 1))
+    rows, next_cursor = _window(rows, limit)
+    from .outcomes import endpoint_outcome
+    for row in rows:
+        if row.get("candidate_count", 1) != 1:
+            for key in ("decision_id", "decision", "policy_id", "reason", "outcome", "upstream_attempted", "upstream_executed", "result_preview", "error"):
+                row[key] = None
+        row["outcome_axes"] = endpoint_outcome(row)
+        row["link_strength"] = "supporting" if row.get("decision_id") else "none"
+        for key in ("outcome", "result_preview", "error"):
+            row.pop(key, None)
+    return {"rows": rows, "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
+
+
+async def os_events_page(kind: str | None = None, denial_class: str | None = None,
+                         limit: int = 100, cursor: str | None = None, endpoint=None, q=None, state=None) -> dict:
+    limit, after = _bounds(limit, cursor)
+    device_where, params = device_filter("e", endpoint, q, state)
+    where = [device_where]
     for column, value in (("kind", kind), ("denial_class", denial_class)):
         if value:
             where.append(f"e.{column}=%s")
@@ -872,9 +1077,12 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     version = await db.fetch_one("SELECT last_value FROM mcp_servers_version", connection=connection)
     # Said to the harness while the device waits for activation, so the model does not hunt for MCP settings
     # in the user's files or try to run the harness from its shell.
-    guidance = (("# 조직 승인 MCP 도구\n이 PC는 조직 관리자의 활성화를 기다리는 중이라 아직 MCP 도구를 쓸 수 없습니다. "
-                "사용자에게 이 사실과 함께 관리자에게 활성화를 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
-                if device.get("managed_state") in ("pending", "quarantined") else pac.harness_guidance(owner, servers))
+    # A quarantined PC is told so: "waiting for activation" sent the employee to ask for something already granted.
+    held = {"pending": "조직 관리자의 활성화를 기다리는 중이라",
+            "quarantined": "관리형 설정이 바뀐 것이 감지되어 격리됐고, 관리자가 확인해 다시 활성화할 때까지"}.get(device.get("managed_state"))
+    guidance = ((f"# 조직 승인 MCP 도구\n이 PC는 {held} MCP 도구를 쓸 수 없습니다. "
+                 "사용자에게 이 사실과 함께 관리자에게 확인을 요청하라고 안내하고, 설정 파일을 찾거나 다른 방법으로 MCP를 연결하려 하지 않습니다.\n")
+                if held else pac.harness_guidance(owner, servers))
     detail = device.get("detail") or {}
     helper = (detail.get("helper_command") if windows
               else f'/Library/MCPGatewayManaged/enforcement/mcpgw-{device["local_username"]}/header-helper'
@@ -903,6 +1111,22 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             ca_env = {"NODE_EXTRA_CA_CERTS": f"/usr/local/lib/mcpgw-managed/ca-{device['local_uid']}.crt"}
     # Built-in features and the harness account's connectors are allowed unless an administrator blocked them (D-298).
     controls = await connectors.managed_controls(connection)
+    # Every MCP tool call the harness makes, on any path, is reported by a managed PostToolUse hook that runs the kit's
+    # own agent (D-301). Only managed hooks load (allowManagedHooksOnly / allow_managed_hooks_only).
+    hook_dir = hook_python = None
+    if windows and '\\managed-windows.py"' in (helper or ""):
+        head = helper[:helper.index('\\managed-windows.py"')]
+        hook_dir = head[head.rfind('"') + 1:]
+        hook_python = (hook_dir + "\\python\\python.exe").replace("\\", "/")
+    elif managed_platform(device) == "linux":
+        hook_dir, hook_python = "/usr/local/lib/mcpgw-managed", "/usr/bin/python3"
+
+    def hook_args(harness: str) -> list:
+        return ["-I", "-S", "-X", "utf8", (hook_dir + "/agent.py").replace(chr(92), "/"), "hook", harness]
+
+    def hook(harness: str) -> str:
+        # Codex on Windows runs hook commands in PowerShell, where a quoted path is a string until `&` calls it (pj3 10-31).
+        return ("& " if windows else "") + " ".join(f'"{a}"' if " " in a else a for a in [hook_python, *hook_args(harness)])
 
     def render(servers: list, guidance: str | None) -> dict:
         routes = {s: public + "/mcp/" + s + "/" for s in servers}
@@ -928,6 +1152,10 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
                     # header helper the harness profile may run (DEV-42). Only managed hooks load, and the
                     # same gate narrows statusLine and fileSuggestion to managed values (D-147).
                     "allowManagedHooksOnly": True}
+        if hook_dir:
+            # Executable and arguments apart: Claude Code on Windows runs hooks in Git Bash or PowerShell, whichever it has.
+            settings["hooks"] = {"PostToolUse": [{"matcher": "mcp__.*", "hooks": [{"type": "command", "command": hook_python,
+                                                                                   "args": hook_args("claude"), "timeout": 10}]}]}
         if guidance:
             settings["claudeMd"] = guidance  # managed-only; users cannot exclude it (code.claude.com/docs/en/memory)
         if proxy or ca_env:
@@ -947,9 +1175,16 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
             "requirements.toml": ('allowed_web_search_modes = ["disabled"]\n' if "web_search" in off else "")
                         + ("allow_browser_and_computer_use = false\n" if {"browser_use", "computer_use"} <= off else "")
                         + 'allow_managed_hooks_only = true\n'
+                        # An absent table leaves Codex unconstrained; present but empty disables every MCP server
+                        # (learn.chatgpt.com managed configuration). A device with no approved server gets the empty table.
+                        + '\n[mcp_servers]\n'
                         + "".join(f'\n[mcp_servers.{s}]\nidentity = {{ url = {json_document(u).strip()} }}\n' for s, u in routes.items())
-                        + '\n[features]\n' + "".join(f"{f} = false\n" for f in features_off)
-                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps,
+                        + '\n[features]\n' + ("hooks = true\n" if hook_dir else "") + "".join(f"{f} = false\n" for f in features_off)
+                        + '\n[marketplaces]\nrestrict_to_allowed_sources = true\n' + disabled_apps
+                        + (f'\n[hooks]\n{"windows_managed_dir" if windows else "managed_dir"} = {json_document(hook_dir).strip()}\n'
+                           '\n[[hooks.PostToolUse]]\nmatcher = "^mcp__"\n'
+                           f'\n[[hooks.PostToolUse.hooks]]\ntype = "command"\ncommand = {json_document(hook("codex")).strip()}\ntimeout = 10\n'
+                           if hook_dir else ""),
         }
         if windows:
             # Codex on Windows reads no managed_config.toml. requirements.toml admits only these servers;
@@ -1122,7 +1357,7 @@ async def network_quality() -> dict:
     """엔드포인트에서 게이트웨이까지의 측정값. 오래된 값은 지연으로 보이지 않고 stale로 남는다."""
     rows = await db.fetch_all(
         """SELECT DISTINCT ON (a.endpoint_id) a.endpoint_id, a.hostname, s.measured_at, s.rtt_p50_ms,
-                  s.rtt_p95_ms, s.jitter_ms, s.failure_pct
+                  s.rtt_p95_ms, s.jitter_ms, s.failure_pct, s.probes
              FROM endpoint_agents a LEFT JOIN endpoint_network_samples s ON s.endpoint_id = a.endpoint_id
             WHERE a.status='active' AND a.agent_version<>'unregistered'
               AND (a.device_epoch IS NOT NULL OR s.endpoint_id IS NOT NULL)
@@ -1139,14 +1374,15 @@ async def network_quality() -> dict:
             "endpoint_id": row["endpoint_id"], "hostname": row["hostname"],
             "measured_at": measured.isoformat() if measured else None,
             "rtt_p50_ms": _round(row["rtt_p50_ms"]), "rtt_p95_ms": _round(row["rtt_p95_ms"]),
-            "jitter_ms": _round(row["jitter_ms"]), "failure_pct": _round(row["failure_pct"]), "state": state})
+            "jitter_ms": _round(row["jitter_ms"]), "failure_pct": _round(row["failure_pct"]),
+            "probes": row.get("probes"), "state": state})
     total = await db.fetch_one(
         """SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY rtt_p50_ms) AS p50,
                   percentile_disc(0.95) WITHIN GROUP (ORDER BY rtt_p95_ms) AS p95,
                   sum(failure_pct * probes) / NULLIF(sum(probes), 0) AS failure
              FROM endpoint_network_samples
             WHERE endpoint_id = ANY(%s::text[]) AND measured_at > now() - interval '24 hours'""", (fresh,)) or {}
-    return {"devices": devices,
+    return {"devices": devices, "checked_at": now.isoformat(),
             "summary": {"p50_ms": _round(total.get("p50")), "p95_ms": _round(total.get("p95")),
                         "failure_pct": _round(total.get("failure")), "devices": len(fresh)}}
 
@@ -1385,9 +1621,11 @@ async def _ingest_listeners(connection, endpoint_id: str, findings: list, comple
             "counts": counts, "evidence": evidence, "complete": complete, "sources": sources}
 
 
-async def listeners_page(classification: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
+async def listeners_page(classification: str | None = None, limit: int = 100, cursor: str | None = None,
+                         endpoint=None, q=None, state=None) -> dict:
     limit, after = _bounds(limit, cursor)
-    where, params = [], []
+    device_where, params = device_filter("l", endpoint, q, state)
+    where = [device_where]
     if classes := _classes(classification):
         where.append("l.classification = ANY(%s::text[])")
         params.append(classes)

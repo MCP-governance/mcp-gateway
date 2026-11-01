@@ -1,36 +1,20 @@
 {
-  "captured_at": "2026-10-31T14:35:09+09:00",
-  "head": "3402278b1473effba80abfb1b7d21cee295d5533",
-  "branch": "10/28-windows-kit",
+  "captured_at": "2026-11-01T18:33:21+09:00",
+  "head": "fff14ce261de6435d33f38f0c133805b28cfa88a",
+  "branch": "10/31-overhaul",
   "status": [
-    "M .github/actions/compose-cache/index.cjs",
-    " M .github/ci/compose-cache.test.cjs",
-    " M full_stack_lab/gateway/app/local_sources.py",
-    " M full_stack_lab/supply_chain/dependency_locks.py",
-    " M full_stack_lab/tests/dependency_locks_check.py",
-    " M full_stack_lab/tests/dest_pin_credential_redaction_check.py",
-    " M full_stack_lab/tests/endpoint_stdio_check.py",
-    " M full_stack_lab/tests/field_tls_check.py",
-    " M full_stack_lab/tests/intake_fixture.py",
-    " M full_stack_lab/tests/intake_identity_pg_check.py",
-    " M full_stack_lab/tests/intake_one_click_ast_check.py",
-    " M full_stack_lab/tests/intake_one_click_check.py",
-    " M full_stack_lab/tests/local_run_presets_check.py",
-    " M full_stack_lab/tests/nested_tx_check.py",
-    " M full_stack_lab/tests/nested_tx_refactor_check.py",
-    " M full_stack_lab/tests/oneclick_markers_provenance_check.py",
-    " M full_stack_lab/tests/provenance_verify_check.py",
-    " M full_stack_lab/tests/remaining_controls_check.py",
-    " M full_stack_lab/tests/root_solo_behavior_check.py",
-    " M research/llm-wiki/analysis/integration-cases.json",
+    "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
-    " M research/llm-wiki/status/backlog.md",
-    " M research/llm-wiki/status/current.md",
+    " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
+    " M research/llm-wiki/catalogs/threats.json",
+    " M research/llm-wiki/status/decisions-index.md",
+    " M research/llm-wiki/status/reports/README.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
     "?? api.py",
     "?? c",
     "?? p3_ui.py",
     "?? q",
-    "?? research/llm-wiki/status/reports/2026-10-31-pr69-d299-ci.md",
     "?? sftp_put.py"
   ],
   "scope": "local-code-only",
@@ -39,7 +23,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "f8dfbc92cdc8f7972a37bcb412fd61a7801a1c55ec9d42900d4ead3c0861c523"
+      "sha256": "d9198a7b01b52aae208b072e1a68610eadd59f28c22731de14d55b0e4868835b"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -75,7 +59,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "06ae3638334c39d195f09fb87ffb4ec219eee955f333f24584e428107b7a2d2f"
+      "sha256": "f0663c02332d3a9f152e2c29a9d17a2fd44ff410ebfa3ae73ca38991a5b9c412"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",

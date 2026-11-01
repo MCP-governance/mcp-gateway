@@ -12,7 +12,7 @@ const panel = source.slice(source.indexOf("const panel = "), source.indexOf("con
 async function render(consents) {
   const calls = [];
   const context = vm.createContext({
-    ROUTES: {}, badges: {}, api: async (...args) => { calls.push(args); return { consents }; },
+    ROUTES: {}, badges: {}, URLSearchParams, ask: async () => true, kv: (v) => JSON.stringify(v), api: async (...args) => { calls.push(args); return { consents }; },
     NONE: "—", DATA_CLASS: { public: "공개", nonimportant: "일반", important: "중요" },
     page: (value) => value, head: (value) => value, kpiStrip: (value) => value,
     when: (value) => value || "—", destinationText: (value) => (value || []).join(", "),
@@ -41,7 +41,7 @@ test("six tools produce one server group and one pair of bulk buttons", async ()
   assert.equal((markup.match(/<code>files\.tool/g) || []).length, 6);
   assert.match(markup, /docs.example.test/);
   assert.match(markup, /입력 path/);
-  assert.doesNotMatch(markup, /data-act="consent"/);
+  assert.equal((markup.match(/data-act="consent"/g) || []).length, 12);
 });
 
 test("server groups and history stay separate, even with a prototype-like server id", async () => {
@@ -64,7 +64,7 @@ test("server, purpose, tools, destinations, and input fields are escaped", async
 });
 
 test("bulk handler sends only displayed ids with an encoded server path", async () => {
-  const { context, calls } = await render([row(1), row(2)]);
+  const { context, calls } = await render([row(1, "files/a"), row(2, "files/a")]);
   await context.actions["consent-server"]({ dataset: { id: "files/a", consents: "1,2", decision: "grant" } });
   const [path, options] = calls[1];
   assert.equal(path, "/api/consents/server/files%2Fa");

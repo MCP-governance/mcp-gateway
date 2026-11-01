@@ -69,6 +69,22 @@ def outcome_axes(event: dict) -> dict:
 def recorded_outcome(event: dict) -> dict:
     """New rows keep their snapshot; legacy rows are projected without rewriting."""
     axes = dict(event.get("outcome") or outcome_axes(event))
+    if event.get("decision") in {"Alert", "Restrict"}:
+        axes["decision"] = {"Alert": "허용·경보", "Restrict": "제한 실행"}[event["decision"]]
     if event.get("intent_state") in {"confirmed_executed", "confirmed_not_executed"}:
         axes["effect"] = outcome_axes(event)["effect"]
+    return axes
+
+
+def endpoint_outcome(event: dict) -> dict:
+    """A nearby ledger row is supporting evidence, not an exact call identifier."""
+    linked = bool(event.get("decision_id")) and event.get("candidate_count", 1) == 1
+    if linked:
+        axes = recorded_outcome(event)
+        axes["execution"] = ("실행됨" if event.get("upstream_executed") else "실행 미확인"
+                             if event.get("upstream_attempted") else "실행 안 함")
+    else:
+        axes = {"connection": "미확인", "decision": "원장 연결 없음", "execution": "미확인",
+                "task": "도구 오류" if event.get("failed") is True else "미확인", "effect": "미확인"}
+    axes["route"] = {"gateway": "게이트웨이", "connector": "커넥터", "local": "로컬 MCP"}.get(event.get("path"), "미확인")
     return axes

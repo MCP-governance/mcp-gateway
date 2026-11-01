@@ -267,6 +267,18 @@ class DownloadTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(result["servers"][0]["execution"], expected)
             self.assertTrue(result["servers"][0]["source_available"])
 
+    async def test_list_adds_only_approved_tool_metadata_and_purpose(self):
+        self.row["purpose"] = "문서 검색"
+        self.spec.update(tools={"search": "r"}, tool_reviews={"search": {"purpose": "문서 조회", "secret": "excluded"}},
+                         parameter_constraints={"search": {"secret": "excluded"}})
+        result = await self.scope["list_approved_mcp"](USER)
+        row = result["servers"][0]
+        self.assertEqual(row["purpose"], "문서 검색")
+        self.assertEqual(row["tools"], [{"name": "search", "action": "r", "purpose": "문서 조회", "scope_reviewed": True}])
+        self.assertNotIn("excluded", str(result))
+        self.allowed = ["other"]
+        self.assertEqual((await self.scope["list_approved_mcp"](USER))["servers"], [])
+
     async def test_untrusted_or_missing_internal_repository_is_refused(self):
         for url in [None, "http://other/git/mcp/repo", "http://console/git/other/repo",
                     "http://console/git/mcp/../repo", "http://console/git/mcp/repo?ref=main",

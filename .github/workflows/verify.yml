@@ -88,6 +88,7 @@ jobs:
         run: |
           node --test ../.github/ci/compose-cache.test.cjs
           python3 ../.github/ci/changes_test.py
+          python3 ../.github/ci/prepare_lab_capabilities_test.py
           bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
@@ -141,6 +142,7 @@ jobs:
       - name: 실기기 배치 키트·오버레이 검사
         run: |
           python3 tests/field_kit_check.py
+          python3 tests/mint_cli_check.py
           python3 tests/managed_enforcement_check.py
           python3 tests/managed_policy_gap_check.py
       - name: 시스템 자원·연결 지표와 관리자 경계
@@ -533,6 +535,7 @@ jobs:
 
       - name: ./console.sh up --no-llm
         run: |
+          python3 ../.github/ci/prepare_lab_capabilities.py
           ./console.sh init-disposal
           ./console.sh prepare-acceptance-tls
           export COMPOSE_FILE=$COMPOSE_FILE:compose.acceptance.yaml

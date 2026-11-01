@@ -257,10 +257,18 @@ def checked_codex_text(path):
         codex_parts(current)
         without_codex_block(current)
     except ValueError:
-        backup = path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup")
-        shutil.copyfile(path, backup)
+        keep_backup(path)
         raise
     return current
+
+
+def keep_backup(path):
+    """One copy per distinct content: the service retries every few seconds and an unchanged broken file must not
+    pile up copies (pj3 11-01: 1,087 in three hours)."""
+    data = path.read_bytes()
+    backup = path.with_name(path.name + ".mcpgw-" + hashlib.sha256(data).hexdigest()[:12] + ".backup")
+    if not backup.exists():
+        backup.write_bytes(data)
 
 
 def apply_policy(config, policy):
@@ -974,7 +982,8 @@ def serve(args):
                                                   str(FILES["managed-mcp.json"].parent), str(FILES["requirements.toml"].parent)]),
         "ENDPOINT_TAILSCALE_NODE_ID": config["tailscale_node_id"], "ENDPOINT_MANAGED_SID": config["sid"],
         "ENDPOINT_PROCESS_SID": config["sid"], "ENDPOINT_PROCESS_SCAN": "1", "ENDPOINT_NETSCAN": "0",
-        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", [])}))
+        "ENDPOINT_ORIGIN": "automatic", "ENDPOINT_HARNESS_PATHS": config.get("harness_paths", []),
+        "ENDPOINT_TOOL_EVENT_FILES": str(Path(config["profile"]) / ".mcpgw" / "tool-events.jsonl")}))
     previous = config["policy_hash"]
     last_state = None
     from windows_status import publish
@@ -1113,7 +1122,7 @@ def serve(args):
             # inventory is a completeness result the Gateway already received; it is in service.log, not a lost link.
             # The tray shows the approved servers, the state and the versions; no key, token or policy text.
             publish(status_path, True, os_observer.get("recent_blocks", []), management,
-                    details={"state": report["state"], "servers": sorted(policy["servers"]),
+                    details={"state": report["state"], "servers": sorted(policy["servers"]), "user": config.get("username", ""),
                              "server_names": [policy.get("server_names", {}).get(s) or s for s in sorted(policy["servers"])], "mode": config.get("mode", "isolated"),
                              "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"],
                              "protected_configs": health.get("protected_configs")})
@@ -1154,7 +1163,7 @@ def rollback(args):
     try:
         current = without_codex_block(current, owned.read_text(encoding="utf-8") if owned.exists() else None)
     except ValueError:
-        shutil.copyfile(path, path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup"))
+        keep_backup(path)
         raise
     powershell(STOP_SERVICE, {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
     tray = PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"]

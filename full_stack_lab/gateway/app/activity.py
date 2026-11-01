@@ -64,7 +64,7 @@ def describe(row: dict) -> dict:
         "agent": client.get("agent"), "task_id": client.get("task_id"), "traceparent": client.get("traceparent"),
         "harness": (client.get("harness") or {}).get("name"),
         "event_kind": client.get("event_kind") or "tools/call",
-        "server": server, "tool": tool, "target": target,
+        "server": server, "server_name": _server_name(server), "tool": tool, "target": target,
         "action": row.get("action"), "action_ko": ACTION_KO.get(row.get("action") or "", row.get("action")),
         "data_class": row.get("data_class"), "data_class_ko": CLASS_KO.get(row.get("data_class") or "", row.get("data_class")),
         "policy_id": row.get("policy_id"), "reason": row.get("reason"), "outcome": outcome,
@@ -79,27 +79,34 @@ def describe(row: dict) -> dict:
         "response_types": evidence.get("content_types") or [], "masked_types": evidence.get("masked_types") or [],
         "conflicts": conflicts, "pac_failures": pac_failures,
         "planes": planes, "device_id": client.get("device_id"), "evidence_sha256": row.get("entry_sha256"),
-        "timings": row.get("timings") or {}, "outcome_axes": recorded_outcome(row),
+        "timings": row.get("timings") or {}, "outcome_axes": {
+            **recorded_outcome(row), "route": "게이트웨이", "execution": outcome},
         "line": line,
     }
 
 
-async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
-                 decision: str | None = None, server: str | None = None, person: str | None = None,
-                 event_kind: str | None = None, execution: str | None = None,
-                 endpoint: str | None = None, policy: str | None = None,
-                 since: datetime | None = None, until: datetime | None = None,
-                 page: int = 1, query: str | None = None) -> dict:
-    base_clauses, base_params = [], []
+def _server_name(server_id: str | None) -> str | None:
+    """The registered name an administrator recognises; the id stays in the detail."""
+    try:
+        from . import registry
+        return (registry.server(server_id or "") or {}).get("display_name")
+    except Exception:  # a list row must not fail on the catalog; the id is shown instead
+        return None
+
+
+def filter_predicates(user_token=None, decision=None, server=None, person=None,
+                      event_kind=None, execution=None, endpoint=None, policy=None,
+                      since=None, until=None, query=None, principal=None, trace_id=None, before=0):
+    clauses, params = [], []
     if user_token:
-        base_clauses.append("d.user_token = %s"); base_params.append(user_token)
-    clauses, params = list(base_clauses), list(base_params)
+        clauses.append("d.user_token = %s"); params.append(user_token)
     if decision:
         clauses.append("d.decision = %s"); params.append(decision)
     if server:
         clauses.append("d.server_id = %s"); params.append(server)
     if person:
-        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)"); params += [f"%{person}%", f"%{person}%"]
+        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
+        params += [f"%{person}%", f"%{person}%"]
     if endpoint:
         clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
         params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
@@ -129,6 +136,29 @@ async def recent(after: int = 0, limit: int = 100, user_token: str | None = None
             OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
             OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
         params.extend([term] * 13)
+    if principal:
+        clauses.append("d.user_token = %s"); params.append(principal)
+    if trace_id:
+        clauses.append("d.trace_id = %s"); params.append(trace_id)
+    if before:
+        clauses.append("d.id < %s"); params.append(before)
+    return clauses, params
+
+
+async def recent(after: int = 0, limit: int = 100, user_token: str | None = None,
+                 decision: str | None = None, server: str | None = None, person: str | None = None,
+                 event_kind: str | None = None, execution: str | None = None,
+                 endpoint: str | None = None, policy: str | None = None,
+                 since: datetime | None = None, until: datetime | None = None,
+                 page: int = 1, query: str | None = None, principal: str | None = None,
+                 trace_id: str | None = None, before: int = 0, decision_id: int | None = None) -> dict:
+    base_clauses, base_params = [], []
+    if user_token:
+        base_clauses.append("d.user_token = %s"); base_params.append(user_token)
+    clauses, params = filter_predicates(user_token, decision, server, person, event_kind, execution,
+                                        endpoint, policy, since, until, query, principal, trace_id, before)
+    if decision_id:  # one call by its number: a detail opened from a link, another tab or after a reload
+        clauses.append("d.id = %s"); params.append(decision_id)
     filtered_where = " AND ".join(clauses) or "true"
     filtered_params = tuple(params)
     page_size = min(max(limit, 1), 100)
@@ -171,46 +201,10 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
                    event_kind: str | None = None, execution: str | None = None,
                    endpoint: str | None = None, policy: str | None = None,
                    since: datetime | None = None, until: datetime | None = None,
-                   query: str | None = None) -> dict:
-    clauses, params = [], []
-    if user_token:
-        clauses.append("d.user_token = %s"); params.append(user_token)
-    if decision:
-        clauses.append("d.decision = %s"); params.append(decision)
-    if server:
-        clauses.append("d.server_id = %s"); params.append(server)
-    if person:
-        clauses.append("(p.display_name ILIKE %s OR d.user_token ILIKE %s)")
-        params += [f"%{person}%", f"%{person}%"]
-    if endpoint:
-        clauses.append("(COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s OR COALESCE(d.client->>'device_id','') ILIKE %s)")
-        params += [f"%{endpoint}%", f"%{endpoint}%", f"%{endpoint}%"]
-    if policy:
-        clauses.append("d.policy_id ILIKE %s"); params.append(f"%{policy}%")
-    if since:
-        clauses.append("d.created_at >= %s"); params.append(since)
-    if until:
-        clauses.append("d.created_at <= %s"); params.append(until)
-    if event_kind:
-        clauses.append("COALESCE(d.client->>'event_kind','tools/call')=%s"); params.append(event_kind)
-    if execution == "executed":
-        clauses.append("d.upstream_executed=true")
-    elif execution == "not-sent":
-        clauses.append("d.upstream_attempted=false AND d.upstream_executed=false")
-    elif execution == "unknown":
-        clauses.append("d.upstream_attempted=true AND d.upstream_executed=false")
-    elif execution == "withheld":
-        clauses.append("d.upstream_executed=true AND (d.result_preview->>'disposition'='withheld' OR d.policy_id='MCP-OUTPUT-001')")
-    elif execution == "connection-denied":
-        clauses.append("COALESCE(d.client->>'event_kind','tools/call')='mcp-connection'")
-    if query and query.strip():
-        term = f"%{query.strip()}%"
-        clauses.append("""(p.display_name ILIKE %s OR p.department ILIKE %s OR d.user_token ILIKE %s
-            OR COALESCE(d.client->>'workstation','') ILIKE %s OR COALESCE(d.client->>'endpoint_id','') ILIKE %s
-            OR COALESCE(d.client->>'harness','') ILIKE %s OR COALESCE(d.client->>'agent','') ILIKE %s
-            OR d.server_id ILIKE %s OR d.tool_name ILIKE %s OR COALESCE(d.resource_id,'') ILIKE %s
-            OR d.policy_id ILIKE %s OR COALESCE(d.trace_id::text,'') ILIKE %s OR d.reason ILIKE %s)""")
-        params.extend([term] * 13)
+                   query: str | None = None, principal: str | None = None,
+                   trace_id: str | None = None, before: int = 0) -> dict:
+    clauses, params = filter_predicates(user_token, decision, server, person, event_kind, execution,
+                                        endpoint, policy, since, until, query, principal, trace_id, before)
     where = " AND ".join(clauses) or "true"
     joins = "FROM decisions d LEFT JOIN principals p ON p.token = d.user_token"
     args = tuple(params)
@@ -219,7 +213,8 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
     total = int(bounds["n"] or 0)
     if not total:
         return {"total": 0, "bucket": "hour", "series": [], "responses": [],
-                "hours": [], "harnesses": [], "servers": [], "people": []}
+                "hours": [], "harnesses": [], "servers": [], "people": [],
+                "policies": [], "endpoints": [], "flows": []}
     span = (bounds["last"] - bounds["first"]).total_seconds()
     unit = "hour" if span <= 172800 else "day" if span <= 10368000 else "month"
     series_rows = await db.fetch_all(
@@ -248,6 +243,19 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
             f"""SELECT {expression} AS key, d.decision, count(*) AS n
                    {joins} WHERE {where} GROUP BY 1, 2""", args)
 
+    policy_rows = await db.fetch_all(
+        f"""SELECT COALESCE(d.policy_id, '') AS key, d.decision, count(*) AS n
+              {joins} WHERE {where} AND d.decision IN ('Block', 'Alert') GROUP BY 1, 2""", args)
+    endpoint_rows = await db.fetch_all(
+        f"""SELECT COALESCE(NULLIF(d.client->>'workstation', ''), NULLIF(d.client->>'endpoint_id', ''),
+                            NULLIF(d.client->>'device_id', ''), '') AS key,
+                   d.decision, count(*) AS n, max(d.created_at) AS last_call
+              {joins} WHERE {where} GROUP BY 1, 2""", args)
+    flow_rows = await db.fetch_all(
+        f"""SELECT COALESCE(NULLIF(d.client->'harness'->>'name', ''), NULLIF(d.client->>'agent', ''), '') AS harness,
+                   COALESCE(d.server_id, '') AS server, d.decision, count(*) AS n
+              {joins} WHERE {where} GROUP BY 1, 2, 3""", args)
+
     decisions = ("Allow", "Alert", "Restrict", "Approval", "Block")
     def grouped(rows: list, cap: int = 12) -> list[dict]:
         groups = {}
@@ -256,13 +264,17 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
             count = int(row["n"] or 0)
             item[row["decision"]] = count
             item["total"] += count
+            if row.get("last_call") and (not item.get("last_call") or row["last_call"] > item["last_call"]):
+                item["last_call"] = row["last_call"]
         ordered = sorted(groups.values(), key=lambda item: item["total"], reverse=True)
         if len(ordered) <= cap:
             return ordered
-        other = {"key": "기타", "total": 0, **{key: 0 for key in decisions}}
+        other = {"key": "기타", "other": True, "total": 0, **{key: 0 for key in decisions}}
         for item in ordered[cap:]:
             for key in ("total", *decisions):
                 other[key] += item[key]
+            if item.get("last_call") and (not other.get("last_call") or item["last_call"] > other["last_call"]):
+                other["last_call"] = item["last_call"]
         return ordered[:cap] + [other]
 
     return {
@@ -273,4 +285,8 @@ async def analysis(user_token: str | None = None, decision: str | None = None,
         "harnesses": grouped(dimension_rows["harnesses"]),
         "servers": grouped(dimension_rows["servers"]),
         "people": grouped(dimension_rows["people"]),
+        "policies": grouped(policy_rows),
+        "endpoints": grouped(endpoint_rows),
+        "flows": [{"harness": row["harness"], "server": row["server"], "decision": row["decision"],
+                   "n": int(row["n"] or 0)} for row in flow_rows],
     }

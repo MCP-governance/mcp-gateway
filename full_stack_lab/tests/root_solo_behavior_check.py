@@ -93,6 +93,8 @@ class FakeLedger:
             return {"id": len(self.events)}
         if s.startswith("SELECT pg_advisory_xact_lock"):
             return None
+        if s.startswith("SELECT 1 AS found FROM principals WHERE token=%s AND user_id='root'"):
+            return {"found": 1} if self.tokens.get(params[0]) == "root" else None
         if s.startswith(("SELECT r.*, p.user_id AS submitter_user_id", "SELECT r.*, p.department",
                          "SELECT * FROM mcp_intake_requests WHERE id")):
             row = self._row(params)
@@ -187,6 +189,11 @@ def repository_row(tier):
 @unittest.skipIf(service is None, "게이트웨이 이미지 의존성이 없어 승인 경로 시험을 건너뜀")
 class Lab(unittest.IsolatedAsyncioTestCase):
     env_mode = "1"  # ROOT_SOLO_APPROVAL
+
+    @property
+    def forced(self):
+        """D-306: with the mode on, root carries out an approval alone (its own request, a high tier)."""
+        return self.env_mode == "1"
 
     async def asyncSetUp(self):
         await self.start(self.env_mode)
@@ -300,6 +307,11 @@ class SoloApprovalRoute(Lab):
                 await self.start(self.env_mode)
                 self.new_request(tier)
                 result = await self.approve("tok-root", reason)
+                if self.forced:
+                    self.assertIsNot(result.get("pending"), True)
+                    scope = self.approved_scope()
+                    self.assertEqual((scope["approvers"], scope["solo_operator"]), (["tok-root"], True))
+                    continue
                 self.assertIs(result["pending"], True)
                 self.assert_not_approved()
                 (cosign,) = self.ledger.kinds("intake-cosign", "recorded")
@@ -313,6 +325,8 @@ class SoloApprovalRoute(Lab):
         self.assertEqual(self.ledger.kinds("intake-cosign"), [])
 
     async def test_the_same_root_pressing_again_or_with_another_token_is_still_one_person(self):
+        if self.forced:
+            self.skipTest("단독 모드의 root는 첫 승인에서 끝난다(D-306)")
         for tier, reason in (("high", ""), ("very_high", REASON)):
             with self.subTest(tier):
                 await self.start(self.env_mode)
@@ -330,6 +344,12 @@ class SoloApprovalRoute(Lab):
                 with self.subTest(tier=tier, applicant=submitted_by, token=token):
                     await self.start(self.env_mode)
                     self.new_request(tier, submitted_by=submitted_by)
+                    if self.forced and submitted_by == "tok-root":
+                        await self.approve(token)
+                        self.assertEqual(self.ledger.intake()["status"], "APPROVED")
+                        (forced,) = self.ledger.kinds("intake-approve", "forced")
+                        self.assertEqual((forced["actor"], forced["reason"]), (token, "root 강제 집행"))
+                        continue
                     error = await self.refused(token, status=403)
                     self.assertIn("본인이 신청한 건", error.detail)
                     self.assert_not_approved()
@@ -338,23 +358,28 @@ class SoloApprovalRoute(Lab):
                     self.assertEqual(self.ledger.kinds("intake-cosign"), [])
 
     async def test_second_administrator_completes_high(self):
+        # root finishes alone in single-operator mode, so it is the second one there.
+        first, second = ("tok-b", "tok-root") if self.forced else ("tok-root", "tok-b")
         self.new_request("high")
-        await self.approve("tok-root")
-        await self.approve("tok-b")
+        await self.approve(first)
+        await self.approve(second)
         self.assertEqual(self.ledger.intake()["status"], "APPROVED")
-        self.assertEqual(self.approved_scope()["approvers"], ["tok-b", "tok-root"])
+        self.assertEqual(self.approved_scope()["approvers"], [second, first])
 
     async def test_very_high_needs_the_second_administrator_and_a_written_reason(self):
+        first, second = ("tok-b", "tok-root") if self.forced else ("tok-root", "tok-b")
         self.new_request("very_high")
-        await self.approve("tok-root", REASON)
-        await self.refused("tok-b")
-        await self.refused("tok-b", "짧은 사유")
+        await self.approve(first, REASON)
+        await self.refused(second)  # the written reason binds root too
+        await self.refused(second, "짧은 사유")
         self.assert_not_approved()
-        await self.approve("tok-b", REASON)
-        self.assertEqual(self.approved_scope()["approvers"], ["tok-b", "tok-root"])
+        await self.approve(second, REASON)
+        self.assertEqual(self.approved_scope()["approvers"], [second, first])
         self.assertIs(self.ledger.intake()["evidence"]["risk_assessment"]["written_reason"], True)
 
     async def test_two_tokens_of_one_person_cannot_pass_as_the_second_administrator(self):
+        if self.forced:
+            self.skipTest("단독 모드의 root는 첫 승인에서 끝난다(D-306)")
         self.new_request("high")
         await self.approve("tok-root")
         self.assertIs((await self.approve("tok-root-2"))["pending"], True)
@@ -381,6 +406,10 @@ class SoloApprovalRoute(Lab):
                 await self.start(env)
                 self.new_request("high")
                 await self.approve(token)
+                if env == "1" and token == "tok-root":  # D-306: finished alone, the marks are on the approval
+                    scope = self.approved_scope()
+                    self.assertEqual((scope["solo_mode"], scope["solo_operator"]), expected)
+                    continue
                 (cosign,) = self.ledger.kinds("intake-cosign")
                 self.assertEqual((cosign["scope"]["solo_mode"], cosign["scope"]["solo_operator"]), expected)
 
@@ -469,7 +498,13 @@ class SoloOneClick(OneClickLab):
             with self.subTest(tier=tier, reason=bool(reason)):
                 await self.start(self.env_mode)
                 shown = await self.open_review(tier)
-                self.assertIs((await self.click("tok-root", shown, reason))["pending"], True)
+                result = await self.click("tok-root", shown, reason)
+                if self.forced:
+                    self.assertEqual(len(self.registered), 1)
+                    recorded = self.ledger.intake()["evidence"]["risk_assessment"]
+                    self.assertEqual((recorded["approvers"], recorded["solo_operator"]), (["tok-root"], True))
+                    continue
+                self.assertIs(result["pending"], True)
                 self.assertEqual((self.registered, self.ledger.intake()["status"]), ([], "HOLD" if tier != "low" else "VALIDATED"))
                 self.assertEqual(self.pending(), ["tok-root"])
 
@@ -481,6 +516,8 @@ class SoloOneClick(OneClickLab):
         self.assertEqual(self.registered, [])
 
     async def test_the_same_root_pressing_again_or_with_another_token_is_still_one_person(self):
+        if self.forced:
+            self.skipTest("단독 모드의 root는 첫 승인에서 끝난다(D-306)")
         for tier, reason in (("high", ""), ("very_high", REASON)):
             with self.subTest(tier):
                 await self.start(self.env_mode)
@@ -498,6 +535,14 @@ class SoloOneClick(OneClickLab):
                 shown = await self.open_review("medium")
                 self.ledger.intake()["submitted_by"] = submitted_by
                 self.ledger.tokens.setdefault(submitted_by, submitted_by)
+                if self.forced and submitted_by == "tok-root":
+                    # The applicant is part of the reviewed proposal: open the review again as the new applicant's request.
+                    shown = await service.preview_intake_approval(REQUEST_ID, service.ApprovalPreview(), USERS[token], token)
+                    await self.click(token, shown)
+                    self.assertEqual(len(self.registered), 1)
+                    forced = self.ledger.kinds("intake-one-click", "forced")  # the review screen and the click each say so
+                    self.assertTrue(forced and all(e["actor"] == token for e in forced))
+                    continue
                 error = await self.refused(token, shown, status=403)
                 self.assertIn("본인이 신청한 건", error.detail)
                 self.assertEqual((self.registered, self.ledger.intake()["status"]), ([], "HOLD"))
@@ -508,18 +553,21 @@ class SoloOneClick(OneClickLab):
         for tier, reason in (("high", ""), ("very_high", REASON)):
             with self.subTest(tier):
                 await self.start(self.env_mode)
+                first, second = ("tok-b", "tok-root") if self.forced else ("tok-root", "tok-b")
                 shown = await self.open_review(tier)
-                await self.click("tok-root", shown, reason)
+                await self.click(first, shown, reason)
                 if tier == "very_high":
-                    await self.refused("tok-b", shown)  # 두 번째 관리자도 사유를 쓴다
-                    await self.refused("tok-b", shown, "짧은 사유")
+                    await self.refused(second, shown)  # 두 번째 관리자도 사유를 쓴다
+                    await self.refused(second, shown, "짧은 사유")
                     self.assertEqual(self.registered, [])
-                await self.click("tok-b", shown, reason)
+                await self.click(second, shown, reason)
                 self.assertEqual(len(self.registered), 1)
                 recorded = self.ledger.intake()["evidence"]["risk_assessment"]
-                self.assertEqual((recorded["tier"], recorded["approvers"]), (tier, ["tok-root", "tok-b"]))
+                self.assertEqual((recorded["tier"], recorded["approvers"]), (tier, [first, second]))
 
     async def test_two_tokens_of_one_person_cannot_pass_as_the_second_administrator(self):
+        if self.forced:
+            self.skipTest("단독 모드의 root는 첫 승인에서 끝난다(D-306)")
         shown = await self.open_review("high")
         await self.click("tok-root", shown)
         self.assertIs((await self.click("tok-root-2", shown))["pending"], True)
@@ -603,7 +651,20 @@ class RegisterServerRoute(OneClickLab):
             for approvers in (["tok-root"], ["tok-root", "tok-root"], ["tok-root", "tok-root-2"], []):
                 with self.subTest(solo=solo, approvers=approvers):
                     self.set_evidence(approvers=approvers, solo_mode=solo, solo_operator=solo)
+                    if solo and approvers and self.forced:
+                        continue  # D-306: root's own carry-out in single-operator mode registers (next test)
                     await self.refuses(body, "서로 다른 관리자 두 명")
+        # The mark alone is not enough: someone other than root, or the mode off, is still one person.
+        for approvers in (["tok-b"], ["tok-emp", "tok-emp-2"]):
+            with self.subTest(forged=approvers):
+                self.set_evidence(approvers=approvers, solo_mode=True, solo_operator=True)
+                await self.refuses(body, "서로 다른 관리자 두 명")
+
+    async def test_root_carry_out_in_single_operator_mode_registers(self):
+        body = await self.approved("high")
+        self.set_evidence(approvers=["tok-root"], solo_mode=True, solo_operator=True)
+        await self.register(body)
+        self.assertEqual(len(self.saved), 1)
 
     async def test_high_with_two_different_administrators_registers(self):
         body = await self.approved("high")

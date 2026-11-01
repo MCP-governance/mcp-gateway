@@ -148,7 +148,7 @@ read_password() {
 }
 
 # 콘솔은 기동할 때마다 root(관리자)·user(직원) 기본 계정을 아이디와 같은 비밀번호로 만든다(이미 있으면 그대로).
-# 게시 포트를 열기 전에, 기본 비밀번호가 남은 root는 임의 값으로 바꾸고 기본 직원 계정은 중지한다.
+# 게시 포트를 열기 전에, 기본 비밀번호가 남은 root는 임의 값으로 바꾸고 기본 직원 계정과 기본 관리자 admin1~3은 중지한다.
 # 비밀번호를 이미 바꾼 서버(업그레이드·복구)에서는 아무것도 바꾸지 않는다.
 first_admin() {
   local pw; pw="$(openssl rand -base64 18 | tr '+/' '-_')"
@@ -162,6 +162,9 @@ with psycopg.connect(os.environ["DATABASE_URL"]) as db:
     db.execute("""UPDATE principals SET status = %s
                   WHERE token = %s AND role <> %s AND password_hash = crypt(token, password_hash)""",
                ("disabled", "user", "admin"))
+    db.execute("""UPDATE principals SET status = %s
+                  WHERE token = ANY(%s) AND password_hash = crypt(token, password_hash)""",
+               ("disabled", ["admin1", "admin2", "admin3"]))
 print(n)')"
   if [[ "$rotated" == 1 ]]; then
     (umask 077; printf '%s\n' "$pw" > "$DEPLOY_DIR/initial-admin-password")

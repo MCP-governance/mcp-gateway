@@ -1,19 +1,24 @@
 # docs/ai — 다음 AI 작업자를 위한 문서
 
 처음이면 [START_HERE](../../research/llm-wiki/START_HERE.md)(규칙 → 현황 → 내 작업의 결정·보고서, 하려는 일별 경로)부터, 설계는 이 순서로 읽는다: **ARCHITECTURE → RUNBOOK → TESTING**, 그리고 손댈 영역의 문서.
-저장소 규칙과 작업 방식은 루트의 [AGENTS.md](../../AGENTS.md), 바뀌지 않는 원칙은 [README](../../README.md#원칙).
+저장소 규칙과 작업 방식·불변식은 루트의 [AGENTS.md](../../AGENTS.md), 제품 보안 경계는 [README](../../README.md#보안-경계).
 날짜가 붙은 문서는 그 시점의 기록이며 현재 상태는 [개발 현황](../../research/llm-wiki/status/current.md)이 기준이다.
 
 | 문서 | 무엇 | 언제 |
 | --- | --- | --- |
+| [architecture/README.md](architecture/README.md) | 현재 구조도 2판: 전체·영역·확대·기능 집중·6개 시나리오의 역할별 흐름과 단계군 전체 보기, 29쪽·생성기 | 현재 구조·설명 자료를 볼 때 |
+| [OVERHAUL_2026-10-31.md](OVERHAUL_2026-10-31.md) | 관리형 호출 후 훅·엔드포인트 호출 기록·미등록 경보, `mint` CLI/화면·직원 요청, 커넥터/기능 분리의 설계·한계(D-301~305) | 직원 PC 기능과 기록 경로를 볼 때 |
+| [decisions/D-301-350.md](decisions/D-301-350.md) | root 단독 모드 강제 집행(D-306), 호출 결과 축·경보 조회·상세 탐색(D-307) | 승인 예외와 현재 조회 동작을 확인할 때 |
+| [../../endpoint-agent/README.md](../../endpoint-agent/README.md) | MINT 설치 로그인·`mint` 명령·터미널/로컬 화면·승인 소스의 엔드포인트 실행 | 직원 PC 설치·운영 |
+| [../../policy/README.md](../../policy/README.md) | 팀 정책 90개 PaC·입력 계약·추적 검사(런타임 번들과 별도) | 시트 정책과 코드의 대응을 볼 때 |
 | [OSS_ADOPTION_2026-10-03.md](OSS_ADOPTION_2026-10-03.md) | Keycloak/Authlib·Gitleaks·Audit API 및 UI 전환·검증 경계 | 오픈소스 인증·검사·감사 조회 |
 | [FIELD.md](FIELD.md) | 솔루션 기기 배치, 내부 Git, 게이트웨이 등록, 직원 PC 연결, 통제 주체, 도입 검증 | 기기에 올리고 직원을 붙일 때 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | v3 정본 설계: 직원 PC의 하네스·관리형 설정·서버별 엔드포인트·LLM 경로·망·신원·디렉터리 | 항상 먼저 |
 | [SECURITY_BOUNDARIES.md](SECURITY_BOUNDARIES.md) | 실제 통제 범위, Kong·LiteLLM·Microsoft 비교, 우회 위협 모델, 재설계와 실제 MCP 검증 | 통제·시험·제품 주장을 정할 때 |
 | [CONTROL_PLANES_2026-10-01.md](CONTROL_PLANES_2026-10-01.md) | D-62/D-63 통제 상태·증거·응답 통제, 실제 원장 대조와 UI 배포 | 이번 인계를 이어서 볼 때 |
-| [PJ1_SIGNALS_2026-10-01.md](PJ1_SIGNALS_2026-10-01.md) | D-59 뒤 실제 PC(pj1)의 신호 81건·하네스 12회를 기기 원장과 대조, 찾은 결함과 조치 | 실기기 최신 검증 결과를 볼 때 |
+| [실기기 신호 검증(10-01)](PJ1_SIGNALS_2026-10-01.md) | D-59 뒤 실제 PC의 신호 81건·하네스 12회를 기기 원장과 대조, 찾은 결함과 조치 | 해당 시점의 실기기 검증 결과를 볼 때 |
 | [REMASTER_2026-10-01.md](REMASTER_2026-10-01.md) | 사용자 요청 8개, 원격 MCP 오류 원인, 실제 시험과 미완료 경계 | 이번 개편을 이어서 할 때 |
-| [BENCHMARK_UI_ONBOARDING_2026-10-01.md](BENCHMARK_UI_ONBOARDING_2026-10-01.md) | MS·IBM·LiteLLM 고정 커밋의 UI·조직 관리 분석, 채택한 흐름과 OS 통제 경계 | UI·가입·단말 통제를 바꿀 때 |
+| [BENCHMARK_UI_ONBOARDING_2026-10-01.md](BENCHMARK_UI_ONBOARDING_2026-10-01.md) | MS·IBM·LiteLLM 고정 커밋의 UI·조직 관리 분석, 채택한 흐름과 OS 통제 경계 | UI·가입·엔드포인트 통제를 바꿀 때 |
 | [FOLLOWUP_VALIDATION_2026-10-01.md](FOLLOWUP_VALIDATION_2026-10-01.md) | 인계 뒤 남은 빈 곳의 실측과 보강(D-56), 실제 LLM 하네스(Codex·Claude Code)가 솔루션 기기 게이트웨이를 거친 업무 10회 | 최신 검증 범위와 결과를 볼 때 |
 | [OVERHAUL_VALIDATION_2026-09-30.md](OVERHAUL_VALIDATION_2026-09-30.md) | Claude 변경 인계, 클린 재구축, 실제 일곱 MCP·DB 효과·SSH VM·배포 확인 | 그 전 단계의 검증 |
 | [PAC_MAPPING.md](PAC_MAPPING.md) | PAC-01~15의 집행 위치와 남은 경계 | 정책 초안과 실제 구현을 대조할 때 |
@@ -21,7 +26,7 @@
 | [BENCHMARK_MICROSOFT.md](BENCHMARK_MICROSOFT.md) | MS Gateway·Wassette의 코드 근거와 비교 한계 | Microsoft·실행 경계 검토 |
 | [BENCHMARK_AGT_2026-10-05.md](BENCHMARK_AGT_2026-10-05.md) | microsoft/agent-governance-toolkit(MIT)의 OWASP MCP Top 10 자체 평가와 소스를 우리 통제와 대조, 가져올 것 2가지·가져오지 않을 것 | 도구 설명 검사·MCP Top 10 대응을 바꿀 때 |
 | [REFERENCES_MCP_SECURITY_2026-10-05.md](REFERENCES_MCP_SECURITY_2026-10-05.md) | MCP 보안·거버넌스 표준·연구·오픈소스 12건(확인 수준·라이선스 표시)과 다음 작업 연결 | 새 탐지·정책·시험 코퍼스를 찾기 전 |
-| [architecture.html](architecture.html) · [architecture.png](architecture.png) | 구성도(archify로 생성, HTML은 브라우저로 — 확대·경로 추적·가이드 뷰) | 그림이 필요할 때 |
+| [architecture.html](architecture.html) · [architecture.png](architecture.png) | 이전 archify 구성도(HTML 확대·경로 추적·가이드 뷰) | 이전 도식·생성 방식을 확인할 때 |
 | [DECISIONS.md](DECISIONS.md) | 설계 결정 D-01~ 과 이유 — 본문은 번호대 파일 `decisions/D-xxx-yyy.md`(50개 단위), 한 건은 `split_decisions.py show D-n`, 되돌릴 조건(실기기 배치·도입 자동 검증은 D-42~D-46) | "왜 이렇게 했지?" — 처음부터 읽지 않는다: [결정 색인](../../research/llm-wiki/status/decisions-index.md)에서 번호를 찾고 `python research/llm-wiki/tools/split_decisions.py show D-번호` |
 | [RUNBOOK.md](RUNBOOK.md) | 운영 배포(`deploy/`)·실습 스택 명령, 백업·복구·업그레이드·롤백, 계정, PC에서 하네스를 손으로 쓰는 법 | 띄우고 돌릴 때 |
 | [TESTING.md](TESTING.md) | 검증 층, 개별 실행, 시험 작성 규칙 | 고친 뒤 |
@@ -41,8 +46,11 @@
 | [FIELD_MCP_CANDIDATES.md](FIELD_MCP_CANDIDATES.md) | field 설치에서 시험할 원격 MCP 후보, 취약 버전·엣지 케이스(자동 등록하지 않음) | 실기기 시연 준비 |
 
 API 요약은 [../API.md](../API.md), 기계용 명세는 `./console.sh openapi` → `docs/openapi/*.json`.
+현재 코드의 API와 JSON 생성 시점은 구분한다. 명세 생성은 기존 승인 환경에서 하며 개발 노트북에 스택을 새로 띄우지 않는다.
+솔루션 기기 기동은 `full_stack_lab/`의 `./console.sh field up`, 실제 하네스 시험은 지정 시험 PC, 운영 배포 묶음 검증은 GitHub CI 일회용 스택에서 한다.
 
-구성도를 고치려면 원본 `architecture.archify.json`을 편집하고 [archify](https://github.com/tt-a1i/archify)로 다시 만든다
+현재 구조도의 생성 절차는 [구조도 README](architecture/README.md)를 따른다. 아래는 이전 archify판의 재생성 절차다.
+이전판을 고치려면 원본 `architecture.archify.json`을 편집하고 [archify](https://github.com/tt-a1i/archify)로 다시 만든다
 (설치 불필요, Node 18+):
 ```bash
 git clone --depth 1 https://github.com/tt-a1i/archify.git /tmp/archify && cd /tmp/archify/archify

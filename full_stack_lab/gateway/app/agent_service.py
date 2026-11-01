@@ -22,7 +22,7 @@ from urllib.parse import parse_qs, quote, unquote, urlsplit
 from uuid import UUID, uuid4
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
@@ -69,7 +69,8 @@ async def bootstrap_field_accounts() -> None:
         return
     # Keep the lab fixture in its own volume; old field volumes may still contain it.
     await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@bob.local'")
-    for username, role in (("root", "admin"), ("user", "employee")):
+    # admin1~3: the field's other administrators, so approvals that need a second person can be tried as they run.
+    for username, role in (("root", "admin"), ("user", "employee"), ("admin1", "admin"), ("admin2", "admin"), ("admin3", "admin")):
         await db.execute(
             """INSERT INTO principals(token, user_id, email, display_name, role, password_hash)
                VALUES (%s,%s,%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
@@ -258,6 +259,8 @@ class McpIntake(StrictModel):
     risk_input: ImpactInput | None = None
     data_class: Literal["public", "nonimportant", "important"] = "nonimportant"
     requested_tools: list[str] = Field(default_factory=list, max_length=300)
+    # An administrator writing up an employee's request from their PC (`mint request`): the employee is the applicant.
+    endpoint_request_id: UUID | None = None
 
 
 class ExitTermsReview(StrictModel):
@@ -833,13 +836,22 @@ async def list_accounts(authorization: str | None = Header(default=None)):
 
 
 @app.get("/api/signup-requests")
-async def list_signup_requests(authorization: str | None = Header(default=None)):
+async def list_signup_requests(authorization: str | None = Header(default=None),
+                               status: Literal["pending", "approved", "rejected"] | None = None,
+                               page: int = Query(default=1, ge=1)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "가입 신청은 관리자만 볼 수 있습니다.")
+    counts = await db.fetch_one(
+        """SELECT count(*) FILTER (WHERE %s::text IS NULL OR status=%s) AS total,
+                  count(*) FILTER (WHERE status='pending') AS pending_total FROM signup_requests""", (status, status))
+    total = int(counts["total"])
+    current_page = min(page, max(1, (total + 99) // 100))
     return {"requests": await db.fetch_all(
         """SELECT id, username, display_name, status, requested_at, reviewed_at, reviewed_by
-           FROM signup_requests ORDER BY requested_at DESC LIMIT 100""")}
+           FROM signup_requests WHERE (%s::text IS NULL OR status=%s)
+           ORDER BY requested_at DESC, id DESC LIMIT 100 OFFSET %s""", (status, status, (current_page - 1) * 100)),
+            "total": total, "pending_total": int(counts["pending_total"]), "page": current_page, "page_size": 100}
 
 
 @app.post("/api/signup-requests/{request_id}/approve")
@@ -1103,7 +1115,7 @@ PAGES_BY_ROLE = {
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
     "partner": ("activity", "consent", "intake", "connections"),
     "employee": ("activity", "consent", "intake", "connections"),
-    "admin": ("overview", "approvals", "activity", "servers", "people", "policy", "intake", "termination", "connections"),
+    "admin": ("overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 
@@ -1329,6 +1341,17 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     if existing:
         raise HTTPException(409, "같은 대상의 신청이 이미 진행 중입니다.")
     applicant_input = request.risk_input.model_dump() if request.risk_input else {"data_class": request.data_class}
+    # Written up from an employee's request, the request is theirs: the administrator who typed it stays free to
+    # approve it, as the separation of duties intends (a single administrator could otherwise never approve one).
+    applicant = user["principal"]
+    if request.endpoint_request_id:
+        if "admin" not in user["roles"]:
+            raise HTTPException(403, "관리자 계정이 필요합니다.")
+        asked = await db.fetch_one("SELECT owner_token FROM endpoint_mcp_requests WHERE id=%s AND status='OPEN'",
+                                   (str(request.endpoint_request_id),))
+        if not asked or not asked["owner_token"]:
+            raise HTTPException(409, "이미 처리된 엔드포인트 요청입니다.")
+        applicant = asked["owner_token"]
     if endpoint:
         found = await gateway_proxy("/api/registry/intake-discover", authorization, "POST", {"endpoint": endpoint}, timeout=45)
         if not request.requested_tools or not set(request.requested_tools) <= {t["name"] for t in found["tools"]}:
@@ -1343,14 +1366,18 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
                  ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                  RETURNING id, display_name, repository_url, repository_path, requested_transport, purpose,
                            status, risk_level, exit_terms, created_at, intake_kind, endpoint_url""",
-            (uuid4(), user["principal"], request.display_name.strip(), repository_url,
+            (uuid4(), applicant, request.display_name.strip(), repository_url,
              request.requested_transport, request.purpose.strip(), Jsonb({}),
              "HOLD" if endpoint else "VALIDATION_QUEUED", request.intake_kind, endpoint,
              Jsonb(applicant_input), Jsonb(sorted(set(request.requested_tools))),
              "" if endpoint else repository_path))).fetchone()
+        if row and request.endpoint_request_id:
+            await connection.execute(
+                "UPDATE endpoint_mcp_requests SET status='CLOSED', closed_by=%s, closed_at=now() WHERE id=%s AND status='OPEN'",
+                (user["principal"], str(request.endpoint_request_id)))
         if row:
-            await review.record_event("user-consent", "recorded", "intake", row["id"], user["principal"],
-                                      applicant=user["principal"], reason=request.purpose.strip(),
+            await review.record_event("user-consent", "recorded", "intake", row["id"], applicant,
+                                      applicant=applicant, reason=request.purpose.strip(),
                                       scope={"kind": request.intake_kind, "target": endpoint or "/".join(filter(None, (repository_url, repository_path))),
                                              "transport": request.requested_transport}, connection=connection)
     return {"request": row, "message": "신청했습니다."}
@@ -1574,7 +1601,9 @@ async def risk_tier_gate(request_id: UUID, row: dict, user: dict, reason: str) -
             others.append(earlier)
     approvers = 1 + len(others)
     solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)
-    verdict, message = risk_tier.decide(assessed["tier"], approvers, reason)
+    # root in single-operator mode carries out the approval alone (forced); the record keeps solo_operator.
+    verdict, message = risk_tier.decide(assessed["tier"], max(approvers, risk_tier.APPROVAL[assessed["tier"]]["approvers"])
+                                        if solo else approvers, reason)
     if verdict == "refuse":
         raise HTTPException(409, "승인할 수 없습니다: " + message)
     if verdict == "cosign":
@@ -1926,7 +1955,7 @@ async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[di
                  AND a.managed_state='active' AND p.status='active'""", (user["endpoint_id"], user["principal"])):
         raise HTTPException(403, "장치·계정 확인 필요")
     rows = await db.fetch_all(
-        """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.repository_url,
+        """SELECT r.id AS intake_id, r.status AS intake_status, r.display_name, r.purpose, r.repository_url,
                   r.endpoint_url, r.intake_kind, r.commit_sha, r.internal_repo_url,
                   s.id AS server_id, s.status AS server_status, s.lifecycle, s.source_ref
              FROM mcp_intake_requests r JOIN mcp_servers s ON s.id=r.registered_server_id
@@ -1955,7 +1984,11 @@ async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[di
         commit = row["commit_sha"] or ""
         if not remote and (not re.fullmatch(r"[0-9a-f]{40}", commit) or spec.get("version") != commit):
             continue
-        approved.append({**row, "valid_until": until.isoformat(),
+        approved_tools = [{"name": name, "action": action if action in {"r", "w", "x"} else None,
+                           "purpose": ((spec.get("tool_reviews") or {}).get(name) or {}).get("purpose", ""),
+                           "scope_reviewed": bool((spec.get("tool_reviews") or {}).get(name))}
+                          for name, action in (spec.get("tools") or {}).items()]
+        approved.append({**row, "valid_until": until.isoformat(), "tools": approved_tools,
                          "execution": "remote" if remote else "pc" if spec.get("local") else
                                       "reapproval"})
     return approved
@@ -1985,7 +2018,8 @@ async def list_approved_mcp(user: dict = Depends(caller)):
                 pass
         servers.append({key: row[key] for key in ("server_id", "display_name", "commit_sha", "valid_until", "execution")}
                        | {"source_url": row["endpoint_url"] if row["intake_kind"] == "remote-endpoint" else row["repository_url"],
-                          "connection_url": f"/mcp/{row['server_id']}/", "source_available": source_available})
+                          "connection_url": f"/mcp/{row['server_id']}/", "source_available": source_available,
+                          "purpose": row.get("purpose") or "", "tools": row["tools"]})
     return {"servers": servers}
 
 
@@ -2458,7 +2492,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
                 raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
             assessed = proposal["risk"]
-            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188: recorded per approval, never counted
+            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188, D-306: recorded per approval
             approvers = []
             if pending:
                 for actor in pending["approvers"]:
@@ -2471,7 +2505,9 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
             # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
             risk_reason = request.risk_reason.strip()
-            verdict, message = risk_tier.decide(assessed["tier"], len(approvers), risk_reason)
+            # root in single-operator mode carries out the approval alone (forced); the record keeps solo_operator.
+            verdict, message = risk_tier.decide(assessed["tier"], max(len(approvers), risk_tier.APPROVAL[assessed["tier"]]["approvers"])
+                                                if solo else len(approvers), risk_reason)
             if verdict == "refuse":
                 raise HTTPException(422, message)
             risk_reasons = ({**((pending or {}).get("risk_reasons") or {}), user["principal"]: risk_reason}
@@ -2697,11 +2733,11 @@ async def disconnect(server_id: str, user: dict = Depends(caller)):
 
 
 @app.get("/approvals")
-async def approvals(authorization: str | None = Header(default=None)):
+async def approvals(authorization: str | None = Header(default=None), page: int = Query(default=1, ge=1)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
-    pending, history = await asyncio.gather(db.fetch_all(
+        raise HTTPException(403, "관리자 권한이 필요합니다.")
+    pending, history, pending_summary = await asyncio.gather(db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.expires_at,
                   (a.requested_by = %s OR p.user_id = %s) AS own,
                   a.request_payload->>'server_id' AS server_id, a.request_payload->>'tool' AS tool,
@@ -2713,8 +2749,9 @@ async def approvals(authorization: str | None = Header(default=None)):
              LEFT JOIN LATERAL (SELECT summary, policy_id, reason, data_class, action,
                                       policy_input#>'{pac,facts,residency,targets}' AS residency_targets FROM decisions
                                  WHERE approval_id = a.id ORDER BY id LIMIT 1) d ON true
-            WHERE a.status='PENDING' AND a.expires_at>now() ORDER BY a.created_at DESC LIMIT 30""",
-        (user["principal"], user.get("user_id"))),
+            WHERE a.status='PENDING' AND a.expires_at>now()
+            ORDER BY a.expires_at, a.created_at, a.id LIMIT 30 OFFSET %s""",
+        (user["principal"], user.get("user_id"), (page - 1) * 30)),
         # Decided (or lapsed) requests: what the queue turned into.
         db.fetch_all(
         """SELECT a.id, a.requested_by, a.created_at, a.reviewed_at, a.reviewed_by,
@@ -2724,12 +2761,15 @@ async def approvals(authorization: str | None = Header(default=None)):
                   (a.reviewed_by = %s) AS can_revoke
              FROM approvals a LEFT JOIN principals p ON p.token = a.requested_by
             WHERE a.status <> 'PENDING' OR a.expires_at <= now()
-            ORDER BY COALESCE(a.reviewed_at, a.expires_at) DESC LIMIT 50""", (user["principal"],)))
+            ORDER BY COALESCE(a.reviewed_at, a.expires_at) DESC LIMIT 50""", (user["principal"],)),
+        db.fetch_one("""SELECT count(*) AS total, min(created_at) AS oldest
+                         FROM approvals WHERE status='PENDING' AND expires_at>now()"""))
     for row in pending:
         if row.get("explanation"):
             row["arguments"] = row["explanation"]["arguments"]
             row["summary"] = row["explanation"]["summary"]
-    return {"approvals": pending, "history": history}
+    return {"approvals": pending, "history": history, "page": page, "page_size": 30,
+            "total": int(pending_summary["total"]), "oldest": pending_summary["oldest"]}
 
 
 class Rejection(StrictModel):

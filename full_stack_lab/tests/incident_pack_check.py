@@ -324,11 +324,11 @@ class IncidentRevisionAdapterCheck(unittest.IsolatedAsyncioTestCase):
         api = self.api
         api.db.pool = AsyncMock(return_value=type("Pool", (), {"connection": staticmethod(session)})())
         namespace = dict(db=api.db, incidents=type("Timer", (), {"check_deadlines": AsyncMock(side_effect=RuntimeError())}),
-                         LOG=logging.getLogger(__name__), observed_alerts=AsyncMock(),
+                         LOG=logging.getLogger(__name__), observed_alerts=AsyncMock(), endpoint_alerts=AsyncMock(),
                          contain_repeated=AsyncMock(), self_test=AsyncMock())
         exec(compile(ast.Module(body=[tick], type_ignores=[]), str(path), "exec"), namespace)
         with self.assertLogs(level="ERROR"): await namespace["tick"]("http://opa.invalid")
-        for name in ("observed_alerts", "contain_repeated", "self_test"):
+        for name in ("observed_alerts", "endpoint_alerts", "contain_repeated", "self_test"):
             namespace[name].assert_awaited_once()
 
     async def test_package_links_approval_scope_history_invalidity_and_policy(self):

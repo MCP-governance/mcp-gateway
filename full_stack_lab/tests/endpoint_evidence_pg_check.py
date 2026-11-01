@@ -339,8 +339,9 @@ async def check_network():
     ok("heartbeats store one sample per measurement time and the ingest removes rows older than seven days")
 
     view = await endpoint_plane.network_quality()
-    assert set(view) == {"devices", "summary"} and set(view["summary"]) == {"p50_ms", "p95_ms", "failure_pct", "devices"}
-    keys = {"endpoint_id", "hostname", "measured_at", "rtt_p50_ms", "rtt_p95_ms", "jitter_ms", "failure_pct", "state"}
+    assert set(view) == {"devices", "summary", "checked_at"} and set(view["summary"]) == {"p50_ms", "p95_ms", "failure_pct", "devices"}
+    assert now <= datetime.fromisoformat(view["checked_at"]) <= datetime.now(UTC)
+    keys = {"endpoint_id", "hostname", "measured_at", "rtt_p50_ms", "rtt_p95_ms", "jitter_ms", "failure_pct", "probes", "state"}
     assert all(set(device) == keys for device in view["devices"])
     states = {device["endpoint_id"]: device["state"] for device in view["devices"]}
     assert states == {"ep-a": "fresh", "ep-b": "stale", "ep-c": "unknown"}, states
@@ -349,6 +350,8 @@ async def check_network():
     assert abs(view["summary"]["failure_pct"] - 16.7 * 6 / 12) <= 0.051, view["summary"]
     ep_c = next(device for device in view["devices"] if device["endpoint_id"] == "ep-c")
     assert ep_c["measured_at"] is None and ep_c["rtt_p50_ms"] is None
+    assert ep_c["probes"] is None
+    assert next(device for device in view["devices"] if device["endpoint_id"] == "ep-a")["probes"] == 6
     ok("network quality returns the exact contract; stale and unknown devices stay out of the fresh summary")
 
     receipt = (await db.fetch_one("SELECT detail->'install_receipt' AS receipt FROM endpoint_agents WHERE endpoint_id='ep-a'"))["receipt"]

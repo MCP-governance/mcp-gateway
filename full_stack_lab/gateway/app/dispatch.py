@@ -169,18 +169,19 @@ async def record(request_id: str, action: str, approval_id: str | None = None, *
     return "duplicate" if duplicate else "reservation"
 
 
-async def uncertain(limit: int = 200) -> list[dict]:
+async def uncertain(limit: int = 200, offset: int = 0) -> list[dict]:
     rows = await db.fetch_all(
         f"""SELECT i.request_id, i.user_token, p.display_name, i.server_id, i.tool_name, i.action,
                    i.attempted_at, i.decision_id
               FROM dispatch_intents i LEFT JOIN principals p ON p.token = i.user_token
-             WHERE {UNSETTLED} ORDER BY i.attempted_at DESC LIMIT %s""", (limit,))
+             WHERE {UNSETTLED} ORDER BY i.attempted_at DESC, i.request_id DESC LIMIT %s OFFSET %s""", (limit, offset))
     return [{**row, "request_id": str(row["request_id"]), "attempted_at": row["attempted_at"].isoformat()}
             for row in rows]
 
 
-async def uncertain_count(server_id: str | None = None, user_token: str | None = None, unledgered: bool = False) -> int:
-    row = await db.fetch_one(
+async def uncertain_count(server_id: str | None = None, user_token: str | None = None, unledgered: bool = False,
+                          fetch_one=None) -> int:
+    row = await (fetch_one or db.fetch_one)(
         f"""SELECT count(*) AS n FROM dispatch_intents i
              WHERE {UNSETTLED} AND (%s::text IS NULL OR i.server_id = %s) AND (%s::text IS NULL OR i.user_token = %s)
                AND (NOT %s OR i.decision_id IS NULL)""",

@@ -31,10 +31,10 @@ CONSOLE = ROOT / "gateway" / "app" / "agent_static" / "console.js"
 # Kinds the scan must find, so a refactor that hides the scan cannot pass silently.
 CANARIES = {"intake-approve", "user-server-suspend", "auto-suspend-count-failed"}
 
-# Forwarded `kind` uses per file: review.py require_independent -> record_event;
-# agent_service.py hold_intake -> transition; worker.py event() helper calls.
+# Forwarded `kind` uses per file: review.py require_independent -> record_event (refused, and root's forced
+# carry-out, D-306); agent_service.py hold_intake -> transition; worker.py event() helper calls.
 FORWARDED_OK = {
-    "gateway/app/review.py": 1,
+    "gateway/app/review.py": 2,
     "gateway/app/agent_service.py": 1,
 }
 # Bind-parameter kinds in an INSERT per file: review.record_event, worker.py event().

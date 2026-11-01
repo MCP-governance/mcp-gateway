@@ -66,14 +66,14 @@ TEXT_EN = {
 
 
 # ── 표시 계층 ────────────────────────────────────────────────────────────────────────────────
-# 색은 의미가 있을 때만 쓴다(clig.dev): 청록 강조, 회색 라벨, 초록·노랑·빨강 결과. 표시 장치가 못 그리는 단계로 내려간다
+# 색은 의미가 있을 때만 쓴다(clig.dev). 값은 웹 콘솔·로컬 화면의 어두운 테마 토큰(console.css)과 같다: 브랜드 남색 강조,
+# 회색 라벨, 허용 초록·경보 노랑·차단 빨강. 표시 장치가 못 그리는 단계로 내려간다
 # (Lip Gloss와 같은 truecolor → 256 → 16 → 없음, NO_COLOR·TERM=dumb·파이프면 색 없음).
 ROLES = {
-    "accent": ((45, 212, 191), 43, 36), "accent2": ((74, 222, 128), 78, 32), "title": ((230, 237, 243), 255, 97),
-    "dim": ((139, 148, 158), 245, 90), "border": ((61, 75, 85), 239, 90), "ok": ((74, 222, 128), 78, 32),
-    "warn": ((250, 204, 21), 220, 33), "err": ((248, 113, 113), 203, 31),
+    "accent": ((167, 197, 255), 153, 94), "accent2": ((183, 208, 255), 153, 94), "title": ((237, 242, 249), 255, 97),
+    "dim": ((161, 176, 195), 248, 90), "border": ((117, 134, 157), 244, 90), "ok": ((139, 224, 173), 115, 32),
+    "warn": ((243, 206, 121), 222, 33), "err": ((255, 167, 175), 217, 31),
 }
-GRADIENT = ((34, 211, 238), (45, 212, 191), (74, 222, 128))
 UTF = {"tl": "╭", "tr": "╮", "bl": "╰", "br": "╯", "h": "─", "v": "│", "ok": "✓", "err": "✗", "warn": "!",
        "dot": "●", "none": "·", "next": "▸", "spin": "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"}
 ASCII = {"tl": "+", "tr": "+", "bl": "+", "br": "+", "h": "-", "v": "|", "ok": "v", "err": "x", "warn": "!",
@@ -81,8 +81,7 @@ ASCII = {"tl": "+", "tr": "+", "bl": "+", "br": "+", "h": "-", "v": "|", "ok": "
 KEYS = "q 종료 · c 지금 점검 · r 새로고침 · s 승인된 MCP"
 KEY_ITEMS = (("q", "종료"), ("c", "지금 점검"), ("r", "새로고침"), ("s", "승인된 MCP"))
 FINISH_ITEMS = (("Enter", "닫기"),)
-LOGO = ["███╗   ███╗██╗███╗   ██╗████████╗", "████╗ ████║██║████╗  ██║╚══██╔══╝", "██╔████╔██║██║██╔██╗ ██║   ██║   ",
-        "██║╚██╔╝██║██║██║╚██╗██║   ██║   ", "██║ ╚═╝ ██║██║██║ ╚████║   ██║   ", "╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝   "]
+TITLE = "엔드포인트 · MCP 연결 관리"
 
 
 def color_profile(stream=None):
@@ -118,29 +117,13 @@ def paint(text, role, profile, bold=False, reverse=False):
     return "\x1b[" + ";".join(codes) + "m" + text + "\x1b[0m" if codes else text
 
 
-def logo_line(row, profile, g):
-    """MINT 글자를 왼쪽에서 오른쪽으로 청록→초록으로 칠한다(Gemini CLI 머리 배너와 같은 방식)."""
-    if g is ASCII:
-        row = "".join("#" if c != " " else " " for c in row)
-    if profile in ("none", "16"):
-        return paint(row, "accent", profile, bold=True)
-    out, n = [], max(1, len(row) - 1)
-    for i, c in enumerate(row):
-        t = i / n
-        a, b = (GRADIENT[0], GRADIENT[1]) if t < .5 else (GRADIENT[1], GRADIENT[2])
-        u = t * 2 if t < .5 else t * 2 - 1
-        rgb = tuple(round(a[k] + (b[k] - a[k]) * u) for k in range(3))
-        if c == " ":
-            out.append(c)
-        elif profile == "true":
-            out.append("\x1b[1;38;2;%d;%d;%dm%s" % (*rgb, c))
-        else:
-            out.append(f"\x1b[1;38;5;{[51, 50, 49, 48, 47, 46][min(5, int(t * 6))]}m{c}")
-    return "".join(out) + "\x1b[0m"
+def app_mark(profile):
+    """The console's app-bar mark: MINT on a brand tile (reverse video keeps it legible on any terminal background)."""
+    return paint(" MINT ", "accent", profile, bold=True, reverse=True) if profile != "none" else "MINT"
 
 
 def banner(ascii_only=False):
-    return ["".join("#" if c != " " else " " for c in row) for row in LOGO] if ascii_only else list(LOGO)
+    return ["MINT  " + TITLE]
 
 
 def strip_ansi(text):
@@ -260,10 +243,7 @@ def login_inputs(address, notice=""):
         if restore:
             print("\x1b[?1049h\x1b[2J\x1b[H", end="")
         print()
-        if columns >= 40 and g is UTF:
-            for row in LOGO:
-                print("  " + logo_line(row, profile, g))
-        print("  " + paint("엔드포인트 · MCP 연결 관리", "dim", profile))
+        print("  " + app_mark(profile) + "  " + paint(TITLE, "dim", profile))
         print()
         rows = [kv("게이트웨이", address, inner, profile, g, 10)]
         if notice:
@@ -460,7 +440,7 @@ def _ago(seconds, language="ko"):
 
 
 def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=None, stale=180, language="ko",
-           profile="none", g=UTF, keys=KEY_ITEMS, spin=0):
+           profile="none", g=UTF, keys=KEY_ITEMS, spin=0, tabs=None):
     """화면 한 장을 Line 목록으로 만든다. 표시 높이를 넘으면 덜 중요한 카드부터 줄인다."""
     now = time.time() if now is None else now
     t = lambda text: translate(text, language)
@@ -576,16 +556,18 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     # 높이가 모자라면 덜 중요한 카드를 통째로 뺀다(카드를 중간에서 자르지 않는다). 다음 할 일·키 안내는 늘 남는다.
     def assemble(big_logo, step_limit, show_versions, dropped, compact):
         out = [] if compact else [Line("")]
-        for row in LOGO if big_logo and g is UTF else []:  # 블록 글꼴은 UTF-8 터미널에서만
-            out.append(Line(" " + logo_line(row, profile, g), 1 + width(row)))
-        title = t("엔드포인트 · MCP 연결 관리")
-        head = paint("MINT", "accent", profile, bold=True) + "  " + paint(title, "dim", profile)
-        head_cells = 6 + width(title)
+        # The console's app bar: the mark, the product line and the connection state; no block-letter logo.
+        title = t(TITLE)
+        tile = 4 if profile == "none" else 6
+        head = app_mark(profile) + "  " + paint(title, "dim", profile)
+        head_cells = tile + 2 + width(title)
         pill_text = g["dot"] + " " + t(badge)
         if head_cells + 2 + width(pill_text) > total:
-            head, head_cells = paint("MINT", "accent", profile, bold=True), 4
+            head, head_cells = app_mark(profile), tile
         gap = max(2, total - head_cells - width(pill_text))
         out.append(Line(" " + head + " " * gap + paint(pill_text, badge_role, profile, bold=True), 1 + head_cells + gap + width(pill_text)))
+        if tabs is not None:
+            out.append(Line(" " + tabs.text, 1 + tabs.cells))
         if not compact:
             out.append(Line(" " + paint(g["h"] * total, "border", profile), 1 + total))
         cards = []
@@ -638,6 +620,161 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     return [Line(fit(message, max(0, columns - 1)))][:height]
 
 
+PAGES = ("상태", "MCP 서버", "호출 기록", "도입 요청")
+# The console's chip colours for the values the tables show.
+VALUE_ROLES = {"허용": "ok", "완료": "ok", "사용 가능": "ok", "승인": "ok", "기본 승인": "ok", "처리됨": "ok", "활성": "ok", "연결됨": "ok",
+               "경보": "warn", "제한": "warn", "검토 대기": "warn", "검토 중": "warn", "이 PC 미지원": "warn", "동의 필요": "warn",
+               "로컬": "warn", "검토 기한 만료": "warn", "검증 대기": "warn", "검증 중": "warn", "실행 안 함": "dim",
+               "차단": "err", "실패": "err", "거부": "err", "검증 실패": "err", "검증 완료": "ok", "연결 끊김": "err", "게이트웨이": "accent", "커넥터": "accent"}
+
+
+def value_role(value):
+    text = str(value)
+    return VALUE_ROLES.get(text) or VALUE_ROLES.get(text.split(" · ")[0])
+
+
+def tab_bar(active, profile, total, data=None):
+    """The local screen's menu as one line; the open page is a brand tile, a waiting count rides on its tab."""
+    data = data or {}
+    counts = {1: len(data.get("unregistered") or []) + len(data.get("consents") or []),
+              3: sum(1 for r in data.get("requests") or [] if r.get("status") == "OPEN")}
+    parts, cells = [], 0
+    for i, name in enumerate(PAGES):
+        label = f"{i + 1} {name}" + (f" {counts[i]}" if counts.get(i) else "")
+        if cells + width(label) + 3 > total:
+            break
+        parts.append(paint(f" {label} ", "accent", profile, bold=True, reverse=True) if i == active
+                     else (f"[{label}]" if profile == "none" and i == active else " " + paint(label, "dim", profile) + " "))
+        cells += width(label) + 2 + (1 if parts[:-1] else 0)
+    return Line(" ".join(parts), cells)
+
+
+def table_rows(columns, rows, room, profile, selected=None):
+    """Columns sized to their values, the widest one shortened until the table fits; values coloured as the console's chips."""
+    widths = [max(width(str(c)), *(width(str(r[i])) for r in rows)) if rows else width(str(c)) for i, c in enumerate(columns)]
+    while sum(widths) + 2 * (len(widths) - 1) > room and max(widths) > 6:
+        widest = widths.index(max(widths))
+        widths[widest] -= 1
+    cell = lambda value, i: fit(str(value), widths[i]) + " " * max(0, widths[i] - width(fit(str(value), widths[i])))
+    head = "  ".join(cell(c, i) for i, c in enumerate(columns))
+    out = [Line(paint(head, "dim", profile, bold=True), width(head))]
+    for n, row in enumerate(rows):
+        plain = "  ".join(cell(v, i) for i, v in enumerate(row))
+        if n == selected:
+            out.append(Line(paint(plain, "accent", profile, bold=True, reverse=True) if profile != "none" else "> " + plain, width(plain)))
+            continue
+        text = "  ".join(paint(cell(v, i), value_role(v), profile, bold=bool(value_role(v))) for i, v in enumerate(row))
+        out.append(Line(text, width(plain)))
+    return out
+
+
+def console_page(screen, columns, lines, profile, g, tabs):
+    """MCP 서버 · 호출 기록 · 도입 요청 with the same app bar and tab bar as the status page."""
+    access, data, language = screen.access, screen.data or {}, screen.language
+    t = lambda text: translate(text, language)
+    if columns < 44 or lines < 12:
+        return [Line(fit(t("창을 넓혀 주세요") + " (44×12)", max(0, columns - 1)))][: max(0, lines - 1)]
+    total = min(columns - 2, 132)
+    inner = total - 4
+    badge, badge_role, _ = _badge(screen.summary, (), time.time(), 180)
+    title, tile = t(TITLE), 4 if profile == "none" else 6
+    pill = g["dot"] + " " + t(badge)
+    head_cells = tile + 2 + width(title)
+    gap = max(2, total - head_cells - width(pill))
+    out = [Line(""), Line(" " + app_mark(profile) + "  " + paint(title, "dim", profile) + " " * gap + paint(pill, badge_role, profile, bold=True),
+                          1 + head_cells + gap + width(pill)),
+           Line(" " + tabs.text, 1 + tabs.cells), Line(" " + paint(g["h"] * total, "border", profile), 1 + total)]
+    cards = []
+    if screen.page == 1:
+        for name, cols, rows in access.sections(data):
+            cards.append((f"{name} · {len(rows)}", table_rows(cols, rows, inner, profile) if rows else [Line(paint("—", "dim", profile), 1)]))
+        if data.get("consents"):
+            rows = [(c["name"], f'{c["tools"]}개') for c in data["consents"]]
+            cards.append((f"동의 대기 · {len(rows)}", table_rows(("서버", "도구"), rows, inner, profile)))
+        rows = access.source_rows(screen.sources or [])
+        cards.append((f"승인된 소스 · {len(rows)}", table_rows(("서버", "커밋", "소스"), rows, inner, profile) if rows else [Line(paint("—", "dim", profile), 1)]))
+    elif screen.page == 2 and screen.detail is not None:
+        call = data.get("calls", [])[screen.detail]
+        pairs = access.call_detail(call, data.get("console_url", ""))
+        lw = min(12, max(width(a) for a, _ in pairs))
+        cards.append((f"호출 {screen.detail + 1}", [kv(a, b, inner, profile, g, lw, value_role(b) or ("accent" if a == "콘솔" else None), wrap=True)
+                                                 for a, b in pairs]))
+    elif screen.page == 2:
+        calls = data.get("calls", [])
+        rows = [(n, *row) for n, row in enumerate(access.call_rows(data), 1)]
+        room = max(3, lines - 9)
+        first = max(0, min(screen.sel - room // 2, len(rows) - room))
+        body = table_rows(("번호", *access.CALL_COLUMNS), rows[first:first + room], inner, profile,
+                          screen.sel - first if calls else None) if rows else [Line(paint("—", "dim", profile), 1)]
+        cards.append((f"MCP 호출 · {len(rows)}", body))
+    elif screen.page == 3:
+        for name, rows in (("내 요청", access.request_rows(data)), ("도입 신청", access.application_rows(data))):
+            cards.append((f"{name} · {len(rows)}", table_rows(("서버", "상태", "시각"), rows, inner, profile) if rows else [Line(paint("—", "dim", profile), 1)]))
+    room = max(1, lines - 1 - len(out) - 2)
+    for name, rows in cards:
+        box = card(name, rows, inner, profile, g)
+        if len(box) > room:
+            if room < 4:
+                break
+            box = card(name, rows[:room - 3] + [Line(paint("…", "dim", profile), 1)], inner, profile, g)
+        out += [Line(" " + x.text, 1 + x.cells) for x in box]
+        room -= len(box)
+    if screen.notice:
+        note = fit(screen.notice, total - 2)
+        out.append(Line(" " + paint(g["next"], "accent", profile, bold=True) + " " + paint(note, "accent", profile), 3 + width(note)))
+    if screen.keys:
+        bar = keybar(screen.keys, profile, language, total)
+        out.append(Line(" " + bar.text, 1 + bar.cells))
+    return out[: max(0, lines - 1)]
+
+
+def page_keys(screen, check, sources):
+    keys = [("q", "종료"), ("1-4", "화면")]
+    if screen.page == 0:
+        keys += [("c", "지금 점검")] if check else []
+    if screen.page == 1 and sources:
+        keys.append(("s", "소스 받기"))
+    if screen.page == 2:
+        keys += [("Esc", "목록")] if screen.detail is not None else [("↑↓", "선택"), ("Enter", "상세")]
+    if screen.page == 3:
+        keys.append(("n", "도입 요청"))
+    return tuple(keys + [("o", "웹 콘솔"), ("r", "새로고침")])
+
+
+def open_console(screen):
+    """The console page that matches what is on screen; the address always shows, a browser only on a desktop."""
+    data = screen.data or {}
+    base = data.get("console_url") or ""
+    if not base.startswith("https://"):
+        return "콘솔 주소 확인 실패"
+    calls = data.get("calls", [])
+    target = (base + "#/consent" if screen.page == 1 and data.get("consents") else
+              base + f'#/activity?d={calls[screen.detail]["decision_id"]}' if screen.page == 2 and screen.detail is not None
+              and calls[screen.detail].get("decision_id") else
+              base + "#/activity" if screen.page == 2 else base + "#/intake" if screen.page == 3 else base)
+    if screen.access.can_open_browser():
+        import webbrowser
+        webbrowser.open(target)
+    return target
+
+
+def new_request(access, address):
+    """The local screen's request form as three questions; the same checks as the form, said before sending."""
+    profile, g = color_profile(sys.stdout), glyphs_for(sys.stdout)
+    arrow = paint(g["next"], "accent", profile, bold=True)
+    print("\n  " + app_mark(profile) + "  " + paint("도입 요청", "title", profile, bold=True) + "\n")
+    server = input(f"  {arrow} " + paint("서버 이름 ", "dim", profile)).strip()
+    source = input(f"  {arrow} " + paint("소스 주소 (https://, 없으면 Enter) ", "dim", profile)).strip()
+    purpose = input(f"  {arrow} " + paint("사용 목적 (10자 이상) ", "dim", profile)).strip()
+    problem = access.request_problem(server, source, purpose)
+    try:
+        message = problem or access.mint_request(address, server, source, purpose)
+    except (OSError, ValueError, KeyError, TypeError):
+        message = "엔드포인트 서비스 연결 실패"
+    print("\n  " + paint(message, "err" if problem else "ok", profile, bold=True))
+    input("\n  " + paint("Enter 돌아가기", "dim", profile) + " ")
+
+
 def frame(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=None, stale=180, language="ko"):
     """색 없는 한 장(자동화·시험·로그용). 실제 화면과 같은 배치다."""
     out = layout(summary, rows, cells, next_line, columns, lines, now, stale, language)
@@ -667,6 +804,8 @@ class Screen:
         self.language = language
         self.summary, self.window = {}, None
         self.keys, self.spin = (), 0  # 키를 실제로 받는 화면(live·finish)만 안내를 단다
+        # The local screen's pages (mint ui) in the terminal; page 0 is the status cards, the rest need the console data.
+        self.page, self.data, self.sources, self.sel, self.detail, self.notice, self.access = 0, None, [], 0, None, "", None
         self._restore_vt = self._terminal = None
         self._handlers = {}
         self._size = None
@@ -733,9 +872,16 @@ class Screen:
     def lines(self, height=None):
         size = shutil.get_terminal_size((80, 30))
         profile = color_profile(self.output)
-        return layout(self.summary, self.rows, self.cells, self.next, size.columns,
-                      size.lines if height is None else height, language=self.language, profile=profile,
-                      g=glyphs_for(self.output), keys=self.keys, spin=self.spin)
+        lines = size.lines if height is None else height
+        if self.access is None:
+            return layout(self.summary, self.rows, self.cells, self.next, size.columns, lines, language=self.language,
+                          profile=profile, g=glyphs_for(self.output), keys=self.keys, spin=self.spin)
+        total = min(size.columns - 2, 132)
+        tabs = tab_bar(self.page, profile, total, self.data)
+        if self.page == 0:
+            return layout(self.summary, self.rows, self.cells, self.next, size.columns, lines, language=self.language,
+                          profile=profile, g=glyphs_for(self.output), keys=self.keys, spin=self.spin, tabs=tabs)
+        return console_page(self, size.columns, lines, profile, glyphs_for(self.output), tabs)
 
     def text(self, height=None):
         """화면을 닫은 뒤 스크롤백에 남기는 한 장: 같은 배치·같은 색, 높이 제한 없음."""
@@ -769,9 +915,8 @@ class Screen:
                 if msvcrt.kbhit():
                     key = msvcrt.getwch()
                     if key in ("\x00", "\xe0"):
-                        msvcrt.getwch()
-                    else:
-                        return key.lower()
+                        return {"H": "up", "P": "down", "K": "left", "M": "right"}.get(msvcrt.getwch(), "")
+                    return "enter" if key in ("\r", "\n") else "back" if key == "\x08" else key.lower()
                 time.sleep(min(.05, max(0, deadline - time.monotonic())))
             else:
                 import select
@@ -782,7 +927,11 @@ class Screen:
                 if ready:
                     data = os.read(self.input.fileno(), 8)
                     if data.startswith(b"\x1b") and len(data) > 1:
-                        return ""  # 화살표 등 다른 키는 무시한다
+                        return {b"A": "up", b"B": "down", b"C": "right", b"D": "left"}.get(data[2:3], "")
+                    if data[:1] in (b"\r", b"\n"):
+                        return "enter"
+                    if data[:1] in (b"\x7f", b"\x08"):
+                        return "back"
                     return data[:1].decode("ascii", errors="ignore").lower()
             if self.resized():
                 self.draw()
@@ -838,11 +987,28 @@ class Screen:
         print(line, file=self.output, flush=True)
 
 
-def live(read, check=None, screen=None, sources=None):
-    """Read snapshots afresh; an interrupted read never keeps a stale success on screen."""
+def live(read, check=None, screen=None, sources=None, address=None):
+    """Read snapshots afresh; an interrupted read never keeps a stale success on screen. With the service's broker
+    address the screen also has the local screen's pages (MCP 서버 · 호출 기록 · 도입 요청)."""
     screen = screen or Screen()
     results = queue.Queue()
     checking = False
+    fetched = [0.0]
+    if address:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
+        screen.access = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(screen.access)
+
+    def fetch():
+        # Every 30 seconds or on r: one Gateway round trip per refresh, not per key.
+        fetched[0] = time.monotonic()
+        try:
+            screen.data = screen.access.receive(address, {"action": "self"})
+            screen.sources = screen.access.receive(address, {"action": "list"})
+        except (OSError, ValueError, KeyError, TypeError):
+            screen.data = screen.data if isinstance(screen.data, dict) else {}
+            screen.notice = "엔드포인트 서비스 연결 실패"
 
     def measure(summary):
         try:
@@ -856,12 +1022,19 @@ def live(read, check=None, screen=None, sources=None):
     try:
         while True:
             screen.next = ""
+            if screen.access is not None:
+                if time.monotonic() - fetched[0] > 30:
+                    fetch()
+                screen.keys = page_keys(screen, check, sources)
             try:
                 screen.summary = read()
                 if not isinstance(screen.summary, dict):
                     raise ValueError("invalid snapshot")
             except (OSError, ValueError, TypeError, KeyError):
                 screen.summary = {}
+            # After read(): the Linux reader sets its own next step, and a waiting consent comes first.
+            if (screen.data or {}).get("consents"):
+                screen.next = "이용 동의 필요: mint console consent"
             try:
                 screen.cells = results.get_nowait()
                 checking = False
@@ -872,9 +1045,44 @@ def live(read, check=None, screen=None, sources=None):
                 print(screen.text(), file=screen.output)
                 break
             key = screen.read_key(.5 if checking else 2)
+            if screen.access is not None and key:
+                if key not in ("o",):
+                    screen.notice = ""
+                if screen.detail is not None and key in ("\x1b", "back", "left", "enter"):
+                    screen.detail = None
+                    continue
+                if key in ("1", "2", "3", "4"):
+                    screen.page, screen.detail = int(key) - 1, None
+                    continue
+                if key in ("left", "right"):
+                    screen.page, screen.detail = (screen.page + (1 if key == "right" else -1)) % len(PAGES), None
+                    continue
+                calls = (screen.data or {}).get("calls", [])
+                if screen.page == 2 and key in ("up", "down", "j", "k") and calls:
+                    screen.sel = max(0, min(len(calls) - 1, screen.sel + (1 if key in ("down", "j") else -1)))
+                    continue
+                if screen.page == 2 and key == "enter" and calls:
+                    screen.detail = min(screen.sel, len(calls) - 1)
+                    continue
+                if key == "r":
+                    fetch()
+                    continue
+                if key == "o":
+                    screen.notice = open_console(screen)
+                    continue
+                if key == "n" and screen.page == 3:
+                    screen.pause()
+                    try:
+                        new_request(screen.access, address)
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+                    finally:
+                        screen.resume()
+                    fetch()
+                    continue
             if key in ("q", "\x1b"):
                 break
-            if key in ("s", "3") and sources:
+            if key == "s" and sources:
                 screen.pause()
                 try:
                     if sources():

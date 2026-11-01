@@ -194,7 +194,7 @@ class ManagedLinux(unittest.TestCase):
 
     def test_the_cells_say_what_was_measured(self):
         cells = self.m.connection_cells({"initialized": ["learn", "deepwiki"], "failed": {}, "tools": 7}, 2)
-        self.assertEqual(cells, [("도구", "7개 (서버 2/2)"), ("서버 연결", "learn 연결 정상")])
+        self.assertEqual(cells, [("도구", "7개 (서버 2/2)"), ("서버 연결", "2/2 연결 정상")])
         cells = self.m.connection_cells({"initialized": [], "failed": {"learn": "HTTP 403"}, "tools": 0}, 1)
         self.assertEqual(cells, [("도구", "—"), ("서버 연결", "실패 · learn HTTP 403")])
 

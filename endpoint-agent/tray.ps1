@@ -37,7 +37,7 @@ $script:healthJob = $null
 $script:healthResult = ''
 $script:probeJob = $null
 $script:probe = $null
-$script:window = $null
+$script:ui = $null
 $script:pipeGone = $null
 $script:serviceMissing = $false
 try { $script:probe = Get-Content -LiteralPath $probePath -Raw -Encoding UTF8 | ConvertFrom-Json } catch { }
@@ -143,9 +143,7 @@ function Start-EndpointProbe([switch]$Show) {
     try {
         $script:probeJob = Start-Process -FilePath $python -ArgumentList $arguments -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput ($probePath + '.tmp') -RedirectStandardError (Join-Path $work 'probe.err')
-        $script:probeShow = [bool]$Show
-        Update-EndpointWindow
-    } catch { $script:probeJob = $null }
+        } catch { $script:probeJob = $null }
 }
 
 function Complete-EndpointProbe {
@@ -159,8 +157,6 @@ function Complete-EndpointProbe {
     } catch { $script:healthResult = T 'check_failed' }
     $script:probeJob.Dispose()
     $script:probeJob = $null
-    Update-EndpointWindow
-    if ($script:probeShow) { Show-EndpointWindow }
 }
 
 function Start-EndpointLogin([string]$Harness) {
@@ -174,8 +170,7 @@ function Start-EndpointLogin([string]$Harness) {
 
 function Start-EndpointReconnect {
     if ($script:snapshot.state -eq 'removed' -or -not (Test-Path -LiteralPath $SettingsPath)) {
-        $script:healthResult = T 'next_removed'
-        Update-EndpointWindow
+        $icon.ShowBalloonTip(8000, (T 'reconnect'), (T 'next_removed'), [Windows.Forms.ToolTipIcon]::Warning)
         return
     }
     if ($script:healthJob) { return }
@@ -189,7 +184,6 @@ function Start-EndpointReconnect {
         $script:healthJob = Start-Process -FilePath $script:PowerShellExe -ArgumentList $arguments -PassThru -WindowStyle Hidden
         $script:healthResult = T 'checking'
     } catch { $script:healthResult = T 'check_failed' }
-    Update-EndpointWindow
 }
 
 function Complete-EndpointReconnect {
@@ -216,150 +210,25 @@ function Complete-EndpointReconnect {
             } catch { $script:healthResult = T 'uac_cancelled' }
         }
     }
-    Update-EndpointWindow
+    $icon.ShowBalloonTip(8000, (T 'reconnect'), ((Get-EndpointValue $script:healthResult $script:lang) + "`n" + (Get-EndpointNext)),
+        [Windows.Forms.ToolTipIcon]::Info)
 }
 
-function New-EndpointButton([string]$Key, [scriptblock]$Action) {
-    $button = New-Object Windows.Forms.Button
-    $button.AutoSize = $true
-    $button.Tag = $Key
-    $button.Text = T $Key
-    $button.Add_Click($Action)
-    return $button
-}
-
-function Update-EndpointWindow {
-    $form = $script:window
-    if (-not $form -or $form.IsDisposed) { return }
-    $form.Text = T 'product'
-    $snapshot = $script:snapshot
-    $servers = @($snapshot.server_names | Where-Object { $_ })
-    if (-not $servers.Count) { $servers = @($snapshot.servers) }
-    $versions = @()
-    if ($snapshot.harnesses) { $versions = @($snapshot.harnesses.PSObject.Properties | ForEach-Object { "$($_.Name) $($_.Value)" }) }
-    $cells = Get-EndpointCells
-    $mode = if ($simple) { T 'mode_simple' } elseif ($settings.connection -eq 'isolated') { T 'mode_isolated' } else { '—' }
-    $management = if ($snapshot.state -in @('active', 'pending', 'quarantined', 'revoked', 'removed', 'unknown')) { T $snapshot.state }
-                  elseif ($snapshot.management) { Get-EndpointValue $snapshot.management $script:lang } else { '—' }
-    $rows = [ordered]@{ connection = T $script:label; management = $management;
-        way = $mode; servers = $(if ($servers.Count) { "$($servers.Count) · " + ($servers -join ', ') } else { '—' });
-        harness = $(if ($versions.Count) { $versions -join ', ' } else { '—' }); reported = $script:updated;
-        model = $(if ($script:probeJob) { T 'checking' } else { $cells[0] }); tools = $cells[1]; server = $cells[2];
-        gateway = $(if ($script:healthResult) { Get-EndpointValue $script:healthResult $script:lang } else { $settings.gateway_url }); next = Get-EndpointNext }
-    foreach ($key in $rows.Keys) {
-        $form.Tag.captions[$key].Text = T $key
-        $form.Tag.values[$key].Text = [string]$rows[$key]
-    }
-    foreach ($button in $form.Tag.buttons) { $button.Text = T $button.Tag }
-}
-
+# The status window is the local page (`mint ui`, the console's design): reopened while it runs, started otherwise.
+# It closes itself after 30 idle minutes.
 function Show-EndpointWindow {
-    Update-EndpointTray
-    if ($script:window -and -not $script:window.IsDisposed) { $script:window.Activate(); Update-EndpointWindow; return }
-    $form = New-Object Windows.Forms.Form
-    $form.Font = New-Object Drawing.Font('맑은 고딕', 10)
-    $form.AutoScaleMode = 'Dpi'
-    $form.AutoSize = $true
-    $form.AutoSizeMode = 'GrowAndShrink'
-    $form.StartPosition = 'CenterScreen'
-    $form.MaximizeBox = $false
-    $form.Icon = $appIcon
-    $form.MinimumSize = New-Object Drawing.Size(560, 0)
-    $layout = New-Object Windows.Forms.TableLayoutPanel
-    $layout.AutoSize = $true
-    $layout.Dock = 'Fill'
-    $layout.Padding = New-Object Windows.Forms.Padding(16)
-    $layout.ColumnCount = 2
-    $layout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('AutoSize'))) | Out-Null
-    $layout.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100))) | Out-Null
-    $form.Controls.Add($layout)
-    $captions = @{}; $values = @{}
-    foreach ($key in @('connection', 'management', 'way', 'servers', 'harness', 'reported', 'model', 'tools', 'server', 'gateway', 'next')) {
-        $caption = New-Object Windows.Forms.Label
-        $caption.AutoSize = $true
-        $caption.Margin = New-Object Windows.Forms.Padding(3, 6, 12, 6)
-        $value = New-Object Windows.Forms.Label
-        $value.AutoSize = $true
-        $value.MaximumSize = New-Object Drawing.Size(520, 0)
-        $value.Margin = New-Object Windows.Forms.Padding(3, 6, 3, 6)
-        if ($key -eq 'next') { $value.Font = New-Object Drawing.Font('맑은 고딕', 10, [Drawing.FontStyle]::Bold) }
-        $row = $layout.RowCount; $layout.RowCount++
-        $layout.Controls.Add($caption, 0, $row); $layout.Controls.Add($value, 1, $row)
-        $captions[$key] = $caption; $values[$key] = $value
+    $urlPath = Join-Path $work 'ui.url'
+    if ($script:ui -and -not $script:ui.HasExited) {
+        try {
+            $url = (Get-Content -LiteralPath $urlPath -TotalCount 1).Trim()
+            if ($url -match '^http://127\.0\.0\.1:\d+/[A-Za-z0-9_-]+/$') { Start-Process $url; return }
+        } catch { }
     }
-    $buttons = New-Object Windows.Forms.FlowLayoutPanel
-    $buttons.AutoSize = $true
-    $list = @(
-        (New-EndpointButton 'check' { Start-EndpointProbe -Show }),
-        (New-EndpointButton 'login' { Start-EndpointLogin $(if (Get-Command claude -ErrorAction SilentlyContinue) { 'claude' } else { 'codex' }) }),
-        (New-EndpointButton 'reconnect' { Start-EndpointReconnect }),
-        (New-EndpointButton 'open_console' { Start-Process $settings.gateway_url }),
-        (New-EndpointButton 'language' { Switch-EndpointLanguage }),
-        (New-EndpointButton 'remove' { Start-EndpointRemove }),
-        (New-EndpointButton 'close' { $script:window.Close() }))
-    $buttons.Controls.AddRange($list)
-    $row = $layout.RowCount; $layout.RowCount++
-    $layout.Controls.Add($buttons, 0, $row); $layout.SetColumnSpan($buttons, 2)
-    $form.Tag = @{ captions = $captions; values = $values; buttons = $list }
-    $navigation = Set-EndpointChrome $form $layout { Show-EndpointSources } { Start-EndpointLogin $(if (Get-Command claude -ErrorAction SilentlyContinue) { 'claude' } else { 'codex' }) } { Start-EndpointReconnect }
-    $form.Tag.navigation = $navigation
-    $script:window = $form
-    Update-EndpointWindow
-    $form.Show()
-}
-
-
-function Show-EndpointSources {
-    $sourceForm = New-Object Windows.Forms.Form
-    $sourceForm.Text = T 'approved'; $sourceForm.AutoScaleMode = 'Dpi'
-    $sourceForm.Size = New-Object Drawing.Size(640, 420); $sourceForm.StartPosition = 'CenterScreen'
-    $sourceForm.BackColor = [Drawing.Color]::White
-    $sources = New-Object Windows.Forms.ListBox
-    $sources.Dock = 'Fill'; $sources.DisplayMember = 'display_name'
-    $download = New-Object Windows.Forms.Button
-    $download.Text = T 'source'; $download.Dock = 'Bottom'; $download.Height = 44; $download.Enabled = $false
-    $result = New-Object Windows.Forms.Label
-    $result.Dock = 'Bottom'; $result.AutoSize = $true
-    $sourceForm.Controls.AddRange(@($sources, $result, $download))
-    $state = @{ job = $null; download = $false }
-    $output = Join-Path $work 'sources.json'
-    $start = {
-        param($server)
-        if ($state.job) { return }
-        $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'managed-windows.py')) +
-            ' sources --settings ' + (Quote-EndpointArgument $SettingsPath)
-        if ($server) {
-            $arguments += ' --server ' + (Quote-EndpointArgument $server.server_id) + ' --commit ' + (Quote-EndpointArgument $server.commit_sha)
-        }
-        $state.download = [bool]$server
-        $download.Enabled = $false; $result.Text = T 'checking'
-        try {
-            $state.job = Start-Process -FilePath $python -ArgumentList $arguments -PassThru -WindowStyle Hidden `
-                -RedirectStandardOutput $output -RedirectStandardError ($output + '.err')
-        } catch { $result.Text = T 'failed' }
-    }.GetNewClosure()
-    $sources.Add_SelectedIndexChanged({ $download.Enabled = -not $state.job -and $sources.SelectedItem.source_available }.GetNewClosure())
-    $download.Add_Click({ & $start $sources.SelectedItem }.GetNewClosure())
-    $timer = New-Object Windows.Forms.Timer
-    $timer.Interval = 400
-    $timer.Add_Tick({
-        if (-not $state.job -or -not $state.job.HasExited) { return }
-        try {
-            if ($state.job.ExitCode -ne 0) { throw 'source' }
-            $answer = Get-Content -LiteralPath $output -Raw -Encoding UTF8 | ConvertFrom-Json
-            if ($state.download) { $result.Text = (T 'ok') + ' · ' + $answer.file }
-            else {
-                $sources.Items.Clear()
-                foreach ($server in $answer.servers) { [void]$sources.Items.Add($server) }
-                $result.Text = T 'approved'
-            }
-        } catch { $result.Text = T 'failed' }
-        $state.job.Dispose(); $state.job = $null
-        $download.Enabled = $sources.SelectedItem -and $sources.SelectedItem.source_available
-    }.GetNewClosure())
-    $sourceForm.Add_FormClosing({ param($sender, $event) if ($state.job) { $event.Cancel = $true } }.GetNewClosure())
-    & $start $null; $timer.Start()
-    try { [void]$sourceForm.ShowDialog() } finally { $timer.Dispose(); $sourceForm.Dispose() }
+    $arguments = '-X utf8 -B -I -S ' + (Quote-EndpointArgument (Join-Path $settings.directory 'windows_status.py')) + ' ui'
+    try {
+        $script:ui = Start-Process -FilePath $python -ArgumentList $arguments -PassThru -WindowStyle Hidden `
+            -RedirectStandardOutput $urlPath -RedirectStandardError (Join-Path $work 'ui.err')
+    } catch { [void][Windows.Forms.MessageBox]::Show((T 'check_failed'), (T 'product')) }
 }
 
 function Switch-EndpointLanguage {
@@ -367,7 +236,6 @@ function Switch-EndpointLanguage {
     try { [IO.File]::WriteAllText((Join-Path $work 'lang.txt'), $script:lang) } catch { }
     Set-EndpointMenuText
     Update-EndpointTray
-    Update-EndpointWindow
 }
 
 function Start-EndpointRemove {
@@ -415,7 +283,6 @@ $timer.Add_Tick({
     Update-EndpointTray
     if ($script:healthJob -and $script:healthJob.HasExited) { Complete-EndpointReconnect }
     if ($script:probeJob -and $script:probeJob.HasExited) { Complete-EndpointProbe }
-    Update-EndpointWindow
     if (Test-Path -LiteralPath (Join-Path $work 'show-status')) {
         Remove-Item -LiteralPath (Join-Path $work 'show-status') -Force
         $script:probe = $null
@@ -431,7 +298,7 @@ try {
     $timer.Dispose()
     if ($script:healthJob) { $script:healthJob.WaitForExit(15000) | Out-Null; $script:healthJob.Dispose() }
     if ($script:probeJob) { $script:probeJob.Dispose() }
-    if ($script:window -and -not $script:window.IsDisposed) { $script:window.Dispose() }
+    if ($script:ui) { $script:ui.Dispose() }
     $icon.Visible = $false
     $icon.Dispose()
     $menu.Dispose()
