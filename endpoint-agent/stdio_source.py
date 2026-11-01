@@ -127,7 +127,9 @@ def prepare(config, manifest, request, check=None, seconds=1800):
                 raise ValueError('검사한 Linux wheel에는 glibc 2.28 이상이 필요합니다')
     base = Path(config['source_root'])
     digest = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-    folder = base / digest
+    # 64자 이름은 wheel의 깊은 파일을 Windows 경로 한도(260자) 너머로 밀었다: 설치(짧은 prepare-* 폴더)는 되고
+    # 이름을 바꾼 뒤 검증·실행이 실패했다(pj3 onnxruntime 263자). 설치 폴더와 같은 16자로 둔다. 내용은 .ready.json이 고정한다.
+    folder = base / digest[:16]
     end = time.monotonic() + seconds
     def current():
         if check:

@@ -63,6 +63,8 @@ class Preparation(unittest.TestCase):
     def test_prepare_and_verified_cache_no_second_install(self):
         args,folder,env=source.prepare(self.config,self.body,self.request)
         self.assertEqual(folder.parent,self.base)
+        # No longer than the prepare-* folder it was installed in: Windows' 260-character limit held there (pj3).
+        self.assertLessEqual(len(folder.name),len('prepare-12345678'))
         self.assertIn('-I',args)
         # 고정 시스템 경로만, 실행기 자신의 PATH는 물려주지 않는다.
         self.assertNotEqual(env['PATH'],source.os.environ.get('PATH'))
