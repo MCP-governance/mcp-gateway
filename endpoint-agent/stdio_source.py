@@ -69,6 +69,12 @@ def file_hash(path):
     return digest.hexdigest()
 
 
+def fingerprint(folder):
+    stats = [(str(path.relative_to(folder)), info.st_size, info.st_mtime_ns, info.st_ino)
+             for path in [folder, *folder.rglob('*')] for info in [path.lstat()]]
+    return hashlib.sha256(json.dumps(sorted(stats)).encode()).hexdigest()
+
+
 def inventory(folder):
     result = {}
     for path in folder.rglob('*'):
@@ -140,14 +146,22 @@ def prepare(config, manifest, request, check=None, seconds=1800):
         current()
     try:
         current()
+        ready = folder / '.ready.json'
+        # 보호·해시 전체 검증은 Windows에서 파일 8천 개에 1분 가까이 걸려 호출 상한을 다 썼다(pj3). 실행기 프로세스가
+        # 검증을 통과한 폴더의 지문(경로·크기·수정 시각·파일 번호)을 기억하고, 지문이 같으면 다시 하지 않는다.
+        # 바뀐 파일은 지문을 바꾸므로 전체 검증으로 돌아간다. 재시작하면 사전 준비가 다시 검증한다.
+        verified = config.setdefault('verified_sources', {})
+        mark = fingerprint(folder) if ready.is_file() else None
+        if mark and verified.get(str(folder)) == mark:
+            return command(folder, source, manifest, config), folder, env
         if not config['source_protected'](base):
             raise ValueError('실행기 폴더 보호 확인 실패')
-        ready = folder / '.ready.json'
         if ready.is_file():
             if not config['source_protected'](folder):
                 raise ValueError('준비 폴더 보호 확인 실패')
             if json.loads(ready.read_text(encoding='utf-8')) != inventory(folder):
                 raise ValueError('준비한 실행 파일이 변경되었습니다')
+            verified[str(folder)] = mark
             return command(folder, source, manifest, config), folder, env
         with tempfile.TemporaryDirectory(dir=base, prefix='prepare-') as temporary:
             stage = Path(temporary)
@@ -223,6 +237,7 @@ def prepare(config, manifest, request, check=None, seconds=1800):
             elif not config['source_seal'](stage):
                 raise ValueError('직원 읽기·실행 권한 설정 실패')
             os.rename(stage, folder)
+            verified[str(folder)] = fingerprint(folder)
         current()
         return command(folder, source, manifest, config), folder, env
     finally:

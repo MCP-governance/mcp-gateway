@@ -81,6 +81,17 @@ class Preparation(unittest.TestCase):
         (folder/'source/main.py').write_text('changed')
         with self.assertRaises(ValueError):source.prepare(self.config,self.body,self.request)
 
+    def test_verified_folder_skips_the_full_check_until_it_changes(self):
+        source.prepare(self.config,self.body,self.request)
+        checked=[]
+        self.config['source_protected']=lambda path:checked.append(path) or True
+        source.prepare(self.config,self.body,self.request)
+        self.assertEqual(checked,[])  # same files, same process: no second walk over every file (pj3: about a minute)
+        _,folder,_=source.prepare(self.config,self.body,self.request)
+        (folder/'source/main.py').write_text('changed')
+        with self.assertRaises(ValueError):source.prepare(self.config,self.body,self.request)
+        self.assertTrue(checked)
+
     def test_target_lock_download_and_runtime_mismatch(self):
         from collections import namedtuple
         Version = namedtuple("Version", "major minor")
