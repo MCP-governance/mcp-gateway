@@ -1,8 +1,8 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-11-01T18:33:21+09:00
+확인 시각: 2026-11-01T19:28:59+09:00
 
-HEAD: `fff14ce261de6435d33f38f0c133805b28cfa88a` · 로컬 브랜치: `10/31-overhaul`
+HEAD: `5262d08f67a9e12cd493fed5aafe31edb5731102` · 로컬 브랜치: `11/01-ui-review`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
@@ -11,12 +11,7 @@ HEAD: `fff14ce261de6435d33f38f0c133805b28cfa88a` · 로컬 브랜치: `10/31-ove
 ```text
 M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
- M research/llm-wiki/analysis/threat-trace-review-1020/README.md
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/decisions-index.md
- M research/llm-wiki/status/reports/README.md
- M research/llm-wiki/status/repository-snapshot.json
- M research/llm-wiki/status/repository-snapshot.md
 ?? api.py
 ?? c
 ?? p3_ui.py
