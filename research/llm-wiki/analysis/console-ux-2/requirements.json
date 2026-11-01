@@ -1,0 +1,2052 @@
+{
+  "date": "2026-11-01",
+  "base_commit": "7e390ac0c9e0c07ccbae130684b51b27fbc3e37c",
+  "decision": "D-307",
+  "evidence_level": "offline-static-and-unit-only",
+  "real_mcp_execution": false,
+  "requirements": [
+    {
+      "id": "A02",
+      "name": "호출 결과 축",
+      "symbols": "outcomes.endpoint_outcome·recorded_outcome, activity.describe, audit.with_outcome, endpoint_plane.tool_events_page, GATEWAY_DECISION, decisionRow·showDecision·auditTabs",
+      "behavior": "경로·정책 판정·도구 실행·업무 결과를 별도 표시한다. 경보/제한은 허용과 구분한다. 후보 1개만 보조 연결하고 복수 후보는 연결 없음으로 둔다. 출력 크기로 성공을 추정하지 않는다.",
+      "tests": "console_ux2_check.py::Axes; ReadModels.test_endpoint_link_ambiguity_and_redacted_projection; console-ia 결과 축 시험",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A03",
+      "name": "사유에서 조치·근거로 이동",
+      "symbols": "decisionAction·shadowLink·alertTarget, route, ACTIONS.endpoint-record·alert-detail, audit.alerts",
+      "behavior": "차단·경보 상단에 사유·실행·조치를 표시한다. 미등록 경보의 출처/원본 ID를 설정·수신기 링크로 변환한다. endpoint·record_kind·record_id 소비와 서버/도구별 역할별 동의 직행을 구현했다.",
+      "tests": "console-ia 미등록 MCP 조치; 근거 직행 URL; Python 경보 원본 연결",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A05",
+      "name": "같은 기간의 경보",
+      "symbols": "main.audit_alerts, audit.alerts, ROUTES.overview, auditTabs",
+      "behavior": "대시보드 집계의 절대 시작·종료를 URL에 넣고 목록 API에 적용한다. 감사 탭의 로드 행 수 배지를 제거하고 표시 건수와 다음 페이지를 본문에 둔다.",
+      "tests": "ReadModels.test_alert_window_pagination_unread_and_evidence_navigation; console-ia 경보 기간",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A06",
+      "name": "사용자·기기 조회",
+      "symbols": "main.device_filters, endpoint_plane.device_filter·agents·inventory_page·listeners_page·os_events_page, ROUTES.people·covPage",
+      "behavior": "서버가 검색·상태·ID 조건을 행과 전체 건수에 공통 적용한다. 세 표를 같은 엔드포인트 집합으로 좁힌다. 사용자·호스트·PC 계정을 별도 열과 선택 기기 dl.kv로 표시한다.",
+      "tests": "ReadModels.test_device_filters_apply_to_rows_counts_and_agents; console-ia 엔드포인트 검색",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A07",
+      "name": "URL·뒤로가기 복원",
+      "symbols": "rememberDetail·rememberTab·openDrawer·closeDrawer·route·rememberFeed·covPage, 상세 핸들러",
+      "behavior": "최초 상세 push, 상세 전환/탭 replace, 진입 표식 있는 닫기 back. 직접 링크 닫기·호출 필터/페이지·재고 커서 이력·상세 탭 복원과 중복 이동 제거를 구현했다.",
+      "tests": "console-ia 최초 push/replace/back; 목록 URL; 근거 상세 탭 복원; MCP 설정 다음 페이지",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A10",
+      "name": "신청 폼 복구·경쟁",
+      "symbols": "intakeStatus·resetIntakeTools·requestedToolList, FORMS.intake, ACTIONS.intake-discover, input/change/invalid 이벤트",
+      "behavior": "각 입력/도구에 aria-invalid·aria-describedby와 인접 오류를 연결했다. 조회 중복·제출 중복을 막고 주소·유형·연결 방식 변경 뒤 늦은 조회 결과를 버린다. 실패 후 입력·선택을 유지한다.",
+      "tests": "console-ia 조회 경쟁/실패/재시도; 신청 실패와 필드 오류; 기존 원클릭 검사",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A11",
+      "name": "경보 묶음과 미열람",
+      "symbols": "alertGroups·groupedAlerts·markAlertsSeen·refreshAlertBell, audit.alerts",
+      "behavior": "종류·대상·사유로 표시 창의 원본을 묶어 건수·최초/최근을 보여 주고 details로 원본 전체를 조회한다. 읽음 ID 구간을 사용자별로 저장하며 서버가 표시 제한과 무관한 미열람 수를 센다. 삭제·자동 종결은 없다.",
+      "tests": "console-ia 경보 그룹·원본 보존; 필터된 읽음/전체 미열람; Python 읽음 SQL 조건",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A12",
+      "name": "도구별 동의",
+      "symbols": "consentTabs, ACTIONS.consent·consent-server",
+      "behavior": "대기 도구마다 동의·거부를 제공한다. 일괄 조작 전 표시된 도구 수·목적지·등급을 dl.kv로 확인하고 취소 시 API를 호출하지 않는다. 기존 본인 동의 인가와 ID 집합 검증을 유지한다.",
+      "tests": "consent-per-server-console.test.mjs; console-ia 동의 필터/확인 취소",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A17",
+      "name": "종료 예상·실제 구분",
+      "symbols": "ROUTES.termination·relationshipRow",
+      "behavior": "관계·케이스 목록에 현재 준비도에 따른 예상 결과와 최근 케이스의 실제 결과를 분리하고 기존 증거 탭 링크를 제공한다. 종료 판정 규칙은 변경하지 않았다.",
+      "tests": "console-ia 종료 목록 시험; session_termination_check.py; tool_sunset_snapshot_check.py",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A18",
+      "name": "짧은 상태와 배포 소스",
+      "symbols": "toast·api·startAdminSessionGuard, console.html, 자체 agent_static JS/MJS",
+      "behavior": "알림·공통 오류·만료창을 상태/사유/결과/만료 시각/재로그인 라벨과 값으로 표시한다. 서버의 한국어 오류 사유는 이스케이프해 유지한다. 자체 배포 소스의 개발 주석을 제거하고 시험 추출 경계는 함수명으로 바꿨다. vendor 라이선스는 보존했다.",
+      "tests": "console_copy_check.py; i18n.test.mjs; console-ia 배포 주석/만료창",
+      "status": "implemented-local-checks-passed"
+    },
+    {
+      "id": "A14",
+      "name": "빈 상태 보강",
+      "symbols": "empty·endpointSettings·consentTabs·ROUTES.people·groupedAlerts",
+      "behavior": "정상 빈 목록, 조건 결과 없음, 조회 실패를 구분한다. 정상/검색은 status, 실패/필드 오류는 alert를 유지한다.",
+      "tests": "console-ia 빈 상태·실패/복구; 기존 전체 회귀",
+      "status": "implemented-local-checks-passed"
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/anthropics/skills/ca45fc496a3436251f191354091d557da31c15b5/skills/frontend-design/SKILL.md",
+      "sha256": "d91970639e9f5c37682ac7ab60094d35f1c7c1f38d731bd56396563aee10c1d3",
+      "bytes": 9390
+    },
+    {
+      "url": "https://raw.githubusercontent.com/anthropics/skills/ca45fc496a3436251f191354091d557da31c15b5/skills/frontend-design/LICENSE.txt",
+      "sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+      "bytes": 10174
+    },
+    {
+      "url": "https://raw.githubusercontent.com/primer/react/6826a6a0665e81e19723ddd4e0c9418f1f9e5d44/LICENSE",
+      "sha256": "bf4f127cb7d82ed5c00d7095616440211225f4ca3b0195a0ecd0051720df5c18",
+      "bytes": 1069
+    }
+  ],
+  "code_evidence": [
+    {
+      "file": "full_stack_lab/gateway/app/activity.py",
+      "sha256": "878ac6fdeb1ea6f65314d505ef14fcfcb401fc426e35bc6f4027c0b66d2acceb",
+      "symbols": [
+        {
+          "symbol": "_time",
+          "line": 21,
+          "end_line": 24
+        },
+        {
+          "symbol": "describe",
+          "line": 27,
+          "end_line": 85
+        },
+        {
+          "symbol": "_server_name",
+          "line": 88,
+          "end_line": 94
+        },
+        {
+          "symbol": "recent",
+          "line": 97,
+          "end_line": 178
+        },
+        {
+          "symbol": "analysis",
+          "line": 181,
+          "end_line": 288
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/gateway/app/audit.py",
+      "sha256": "0751a5b9ccd06634101ac6f3e20fa7f84ceff527e85c08df2a056fc51156a4a6",
+      "symbols": [
+        {
+          "symbol": "alerts",
+          "line": 17,
+          "end_line": 71
+        },
+        {
+          "symbol": "predicates",
+          "line": 84,
+          "end_line": 110
+        },
+        {
+          "symbol": "events",
+          "line": 113,
+          "end_line": 125
+        },
+        {
+          "symbol": "detail",
+          "line": 128,
+          "end_line": 132
+        },
+        {
+          "symbol": "with_outcome",
+          "line": 135,
+          "end_line": 143
+        },
+        {
+          "symbol": "export",
+          "line": 146,
+          "end_line": 158
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/gateway/app/endpoint_plane.py",
+      "sha256": "89d24c2c11f54b2fcda125041b7f816e11e4b7ae50482ad6544fd4a704768610",
+      "symbols": [
+        {
+          "symbol": "normalise",
+          "line": 45,
+          "end_line": 49
+        },
+        {
+          "symbol": "command_digest",
+          "line": 52,
+          "end_line": 53
+        },
+        {
+          "symbol": "safe_endpoint_ref",
+          "line": 56,
+          "end_line": 64
+        },
+        {
+          "symbol": "fingerprint",
+          "line": 67,
+          "end_line": 70
+        },
+        {
+          "symbol": "canonical_sha256",
+          "line": 88,
+          "end_line": 90
+        },
+        {
+          "symbol": "canonical_time",
+          "line": 93,
+          "end_line": 94
+        },
+        {
+          "symbol": "projection_of",
+          "line": 97,
+          "end_line": 99
+        },
+        {
+          "symbol": "provenance_of",
+          "line": 102,
+          "end_line": 114
+        },
+        {
+          "symbol": "_clip",
+          "line": 117,
+          "end_line": 120
+        },
+        {
+          "symbol": "_origin",
+          "line": 123,
+          "end_line": 126
+        },
+        {
+          "symbol": "enroll",
+          "line": 129,
+          "end_line": 142
+        },
+        {
+          "symbol": "_registry_index",
+          "line": 150,
+          "end_line": 181
+        },
+        {
+          "symbol": "_match",
+          "line": 184,
+          "end_line": 208
+        },
+        {
+          "symbol": "check_route_matching",
+          "line": 211,
+          "end_line": 225
+        },
+        {
+          "symbol": "ingest",
+          "line": 233,
+          "end_line": 239
+        },
+        {
+          "symbol": "_record_observation",
+          "line": 242,
+          "end_line": 258
+        },
+        {
+          "symbol": "observation_status",
+          "line": 261,
+          "end_line": 282
+        },
+        {
+          "symbol": "observation_freshness",
+          "line": 285,
+          "end_line": 296
+        },
+        {
+          "symbol": "_ingest_inventory",
+          "line": 299,
+          "end_line": 377
+        },
+        {
+          "symbol": "_link_residue_to_cases",
+          "line": 380,
+          "end_line": 406
+        },
+        {
+          "symbol": "_classes",
+          "line": 412,
+          "end_line": 416
+        },
+        {
+          "symbol": "_bounds",
+          "line": 419,
+          "end_line": 426
+        },
+        {
+          "symbol": "_window",
+          "line": 429,
+          "end_line": 432
+        },
+        {
+          "symbol": "_listed",
+          "line": 435,
+          "end_line": 441
+        },
+        {
+          "symbol": "device_filter",
+          "line": 444,
+          "end_line": 454
+        },
+        {
+          "symbol": "inventory_page",
+          "line": 457,
+          "end_line": 482
+        },
+        {
+          "symbol": "agents",
+          "line": 485,
+          "end_line": 503
+        },
+        {
+          "symbol": "shadow_count_for",
+          "line": 506,
+          "end_line": 517
+        },
+        {
+          "symbol": "coverage",
+          "line": 520,
+          "end_line": 548
+        },
+        {
+          "symbol": "ingest_os_events",
+          "line": 563,
+          "end_line": 584
+        },
+        {
+          "symbol": "canonical_server",
+          "line": 587,
+          "end_line": 595
+        },
+        {
+          "symbol": "tool_path",
+          "line": 598,
+          "end_line": 606
+        },
+        {
+          "symbol": "ingest_tool_events",
+          "line": 609,
+          "end_line": 621
+        },
+        {
+          "symbol": "self_summary",
+          "line": 624,
+          "end_line": 682
+        },
+        {
+          "symbol": "self_request",
+          "line": 685,
+          "end_line": 695
+        },
+        {
+          "symbol": "endpoint_requests",
+          "line": 698,
+          "end_line": 704
+        },
+        {
+          "symbol": "close_endpoint_request",
+          "line": 707,
+          "end_line": 711
+        },
+        {
+          "symbol": "tool_events_page",
+          "line": 728,
+          "end_line": 750
+        },
+        {
+          "symbol": "os_events_page",
+          "line": 753,
+          "end_line": 770
+        },
+        {
+          "symbol": "_hash_key",
+          "line": 773,
+          "end_line": 778
+        },
+        {
+          "symbol": "issue_device",
+          "line": 781,
+          "end_line": 811
+        },
+        {
+          "symbol": "revoke_device",
+          "line": 814,
+          "end_line": 816
+        },
+        {
+          "symbol": "authenticate_device",
+          "line": 819,
+          "end_line": 832
+        },
+        {
+          "symbol": "devices",
+          "line": 835,
+          "end_line": 863
+        },
+        {
+          "symbol": "managed_platform",
+          "line": 882,
+          "end_line": 885
+        },
+        {
+          "symbol": "managed_mode",
+          "line": 888,
+          "end_line": 890
+        },
+        {
+          "symbol": "managed_checks",
+          "line": 893,
+          "end_line": 902
+        },
+        {
+          "symbol": "managed_event",
+          "line": 905,
+          "end_line": 908
+        },
+        {
+          "symbol": "enrollment_token",
+          "line": 911,
+          "end_line": 918
+        },
+        {
+          "symbol": "companion_names",
+          "line": 921,
+          "end_line": 925
+        },
+        {
+          "symbol": "_same_pc",
+          "line": 928,
+          "end_line": 942
+        },
+        {
+          "symbol": "endpoint_settings",
+          "line": 945,
+          "end_line": 950
+        },
+        {
+          "symbol": "set_endpoint_settings",
+          "line": 953,
+          "end_line": 957
+        },
+        {
+          "symbol": "consume_enrollment",
+          "line": 960,
+          "end_line": 1033
+        },
+        {
+          "symbol": "managed_policy",
+          "line": 1036,
+          "end_line": 1211
+        },
+        {
+          "symbol": "json_document",
+          "line": 1214,
+          "end_line": 1216
+        },
+        {
+          "symbol": "installed_hash",
+          "line": 1219,
+          "end_line": 1222
+        },
+        {
+          "symbol": "legacy_hash",
+          "line": 1225,
+          "end_line": 1227
+        },
+        {
+          "symbol": "policy_installed",
+          "line": 1230,
+          "end_line": 1237
+        },
+        {
+          "symbol": "control_matches",
+          "line": 1240,
+          "end_line": 1242
+        },
+        {
+          "symbol": "held_servers",
+          "line": 1245,
+          "end_line": 1250
+        },
+        {
+          "symbol": "policy_accepted",
+          "line": 1253,
+          "end_line": 1254
+        },
+        {
+          "symbol": "heartbeat",
+          "line": 1257,
+          "end_line": 1334
+        },
+        {
+          "symbol": "network_quality",
+          "line": 1337,
+          "end_line": 1367
+        },
+        {
+          "symbol": "_round",
+          "line": 1370,
+          "end_line": 1371
+        },
+        {
+          "symbol": "activate_managed",
+          "line": 1374,
+          "end_line": 1394
+        },
+        {
+          "symbol": "managed_failure",
+          "line": 1397,
+          "end_line": 1419
+        },
+        {
+          "symbol": "scan_policy",
+          "line": 1427,
+          "end_line": 1436
+        },
+        {
+          "symbol": "set_scan_policy",
+          "line": 1439,
+          "end_line": 1467
+        },
+        {
+          "symbol": "listener_fingerprint",
+          "line": 1472,
+          "end_line": 1475
+        },
+        {
+          "symbol": "_listener_keys",
+          "line": 1478,
+          "end_line": 1487
+        },
+        {
+          "symbol": "ingest_listeners",
+          "line": 1490,
+          "end_line": 1499
+        },
+        {
+          "symbol": "_ingest_listeners",
+          "line": 1502,
+          "end_line": 1601
+        },
+        {
+          "symbol": "listeners_page",
+          "line": 1604,
+          "end_line": 1634
+        },
+        {
+          "symbol": "observations_page",
+          "line": 1640,
+          "end_line": 1672
+        },
+        {
+          "symbol": "record_detail",
+          "line": 1681,
+          "end_line": 1694
+        },
+        {
+          "symbol": "_record",
+          "line": 1697,
+          "end_line": 1704
+        },
+        {
+          "symbol": "correlate",
+          "line": 1707,
+          "end_line": 1765
+        },
+        {
+          "symbol": "shadow_listener_count_for",
+          "line": 1768,
+          "end_line": 1783
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/gateway/app/main.py",
+      "sha256": "23aad6d8b6105e882f9ed0e6907c5bedf9ab4d4ad0ee5a3b0d1b7dc5344b8745",
+      "symbols": [
+        {
+          "symbol": "_error_detail",
+          "line": 68,
+          "end_line": 71
+        },
+        {
+          "symbol": "RequireBearer",
+          "line": 74,
+          "end_line": 132
+        },
+        {
+          "symbol": "ServerPath",
+          "line": 135,
+          "end_line": 218
+        },
+        {
+          "symbol": "StrictModel",
+          "line": 221,
+          "end_line": 222
+        },
+        {
+          "symbol": "RejectRequest",
+          "line": 225,
+          "end_line": 227
+        },
+        {
+          "symbol": "ApprovalEvidence",
+          "line": 230,
+          "end_line": 232
+        },
+        {
+          "symbol": "IntentResolve",
+          "line": 235,
+          "end_line": 237
+        },
+        {
+          "symbol": "EnforcementRequest",
+          "line": 240,
+          "end_line": 241
+        },
+        {
+          "symbol": "SessionRequest",
+          "line": 244,
+          "end_line": 246
+        },
+        {
+          "symbol": "caller",
+          "line": 249,
+          "end_line": 256
+        },
+        {
+          "symbol": "admin_caller",
+          "line": 259,
+          "end_line": 269
+        },
+        {
+          "symbol": "AddonDecision",
+          "line": 272,
+          "end_line": 278
+        },
+        {
+          "symbol": "AddonResult",
+          "line": 281,
+          "end_line": 286
+        },
+        {
+          "symbol": "lifespan",
+          "line": 290,
+          "end_line": 309
+        },
+        {
+          "symbol": "public_http_error",
+          "line": 316,
+          "end_line": 317
+        },
+        {
+          "symbol": "public_validation_error",
+          "line": 321,
+          "end_line": 323
+        },
+        {
+          "symbol": "OpsResume",
+          "line": 326,
+          "end_line": 327
+        },
+        {
+          "symbol": "ops_status",
+          "line": 331,
+          "end_line": 337
+        },
+        {
+          "symbol": "ops_resume",
+          "line": 341,
+          "end_line": 345
+        },
+        {
+          "symbol": "SuspendRequest",
+          "line": 348,
+          "end_line": 351
+        },
+        {
+          "symbol": "suspensions",
+          "line": 355,
+          "end_line": 356
+        },
+        {
+          "symbol": "suspend_use",
+          "line": 360,
+          "end_line": 366
+        },
+        {
+          "symbol": "resume_use",
+          "line": 370,
+          "end_line": 374
+        },
+        {
+          "symbol": "UserSuspendAllRequest",
+          "line": 377,
+          "end_line": 379
+        },
+        {
+          "symbol": "UserResumeAllRequest",
+          "line": 382,
+          "end_line": 384
+        },
+        {
+          "symbol": "suspend_all_use",
+          "line": 388,
+          "end_line": 392
+        },
+        {
+          "symbol": "resume_all_use",
+          "line": 396,
+          "end_line": 397
+        },
+        {
+          "symbol": "_absent",
+          "line": 400,
+          "end_line": 402
+        },
+        {
+          "symbol": "_probe",
+          "line": 405,
+          "end_line": 410
+        },
+        {
+          "symbol": "health",
+          "line": 421,
+          "end_line": 422
+        },
+        {
+          "symbol": "_compute_health",
+          "line": 425,
+          "end_line": 449
+        },
+        {
+          "symbol": "state",
+          "line": 453,
+          "end_line": 469
+        },
+        {
+          "symbol": "registry_view",
+          "line": 473,
+          "end_line": 509
+        },
+        {
+          "symbol": "registry_export",
+          "line": 513,
+          "end_line": 521
+        },
+        {
+          "symbol": "overview",
+          "line": 528,
+          "end_line": 536
+        },
+        {
+          "symbol": "_compute_overview",
+          "line": 539,
+          "end_line": 614
+        },
+        {
+          "symbol": "latency",
+          "line": 628,
+          "end_line": 630
+        },
+        {
+          "symbol": "_compute_latency",
+          "line": 633,
+          "end_line": 682
+        },
+        {
+          "symbol": "activity_feed",
+          "line": 686,
+          "end_line": 697
+        },
+        {
+          "symbol": "activity_analysis",
+          "line": 701,
+          "end_line": 710
+        },
+        {
+          "symbol": "protected_resource_metadata",
+          "line": 714,
+          "end_line": 720
+        },
+        {
+          "symbol": "policy_matrix",
+          "line": 724,
+          "end_line": 730
+        },
+        {
+          "symbol": "policy_ledger_view",
+          "line": 734,
+          "end_line": 749
+        },
+        {
+          "symbol": "session",
+          "line": 753,
+          "end_line": 777
+        },
+        {
+          "symbol": "addon_mcp_decision",
+          "line": 781,
+          "end_line": 782
+        },
+        {
+          "symbol": "addon_mcp_result",
+          "line": 786,
+          "end_line": 787
+        },
+        {
+          "symbol": "approve",
+          "line": 791,
+          "end_line": 796
+        },
+        {
+          "symbol": "reject",
+          "line": 800,
+          "end_line": 804
+        },
+        {
+          "symbol": "approval_evidence",
+          "line": 808,
+          "end_line": 812
+        },
+        {
+          "symbol": "approval_revoke",
+          "line": 816,
+          "end_line": 820
+        },
+        {
+          "symbol": "dispatch_intents",
+          "line": 824,
+          "end_line": 826
+        },
+        {
+          "symbol": "dispatch_intent_resolve",
+          "line": 830,
+          "end_line": 834
+        },
+        {
+          "symbol": "catalog_refresh",
+          "line": 838,
+          "end_line": 839
+        },
+        {
+          "symbol": "ContractApproval",
+          "line": 844,
+          "end_line": 845
+        },
+        {
+          "symbol": "registry_approve_contract",
+          "line": 849,
+          "end_line": 861
+        },
+        {
+          "symbol": "registry_check",
+          "line": 865,
+          "end_line": 870
+        },
+        {
+          "symbol": "LocalRun",
+          "line": 874,
+          "end_line": 877
+        },
+        {
+          "symbol": "RegistryDiscover",
+          "line": 880,
+          "end_line": 883
+        },
+        {
+          "symbol": "RegistryRegister",
+          "line": 888,
+          "end_line": 906
+        },
+        {
+          "symbol": "registry_discover",
+          "line": 910,
+          "end_line": 918
+        },
+        {
+          "symbol": "registry_intake_discover",
+          "line": 922,
+          "end_line": 931
+        },
+        {
+          "symbol": "registry_register",
+          "line": 935,
+          "end_line": 943
+        },
+        {
+          "symbol": "ToolReviews",
+          "line": 946,
+          "end_line": 947
+        },
+        {
+          "symbol": "ResidencyReview",
+          "line": 950,
+          "end_line": 963
+        },
+        {
+          "symbol": "registry_tool_reviews",
+          "line": 967,
+          "end_line": 975
+        },
+        {
+          "symbol": "registry_residency_review",
+          "line": 979,
+          "end_line": 988
+        },
+        {
+          "symbol": "ServerAudience",
+          "line": 991,
+          "end_line": 993
+        },
+        {
+          "symbol": "registry_server_audience",
+          "line": 997,
+          "end_line": 1004
+        },
+        {
+          "symbol": "registry_deregister",
+          "line": 1008,
+          "end_line": 1012
+        },
+        {
+          "symbol": "supply_chain_import",
+          "line": 1016,
+          "end_line": 1020
+        },
+        {
+          "symbol": "supply_chain_cover",
+          "line": 1024,
+          "end_line": 1028
+        },
+        {
+          "symbol": "enforcement",
+          "line": 1032,
+          "end_line": 1033
+        },
+        {
+          "symbol": "enforcement_update",
+          "line": 1037,
+          "end_line": 1042
+        },
+        {
+          "symbol": "monitor",
+          "line": 1046,
+          "end_line": 1048
+        },
+        {
+          "symbol": "audit_verify",
+          "line": 1052,
+          "end_line": 1054
+        },
+        {
+          "symbol": "RetentionRequest",
+          "line": 1057,
+          "end_line": 1059
+        },
+        {
+          "symbol": "audit_retention",
+          "line": 1063,
+          "end_line": 1064
+        },
+        {
+          "symbol": "audit_retention_update",
+          "line": 1068,
+          "end_line": 1073
+        },
+        {
+          "symbol": "AuditAnnotation",
+          "line": 1076,
+          "end_line": 1079
+        },
+        {
+          "symbol": "audit_annotate",
+          "line": 1083,
+          "end_line": 1088
+        },
+        {
+          "symbol": "audit_annotation_list",
+          "line": 1092,
+          "end_line": 1093
+        },
+        {
+          "symbol": "audit_filters",
+          "line": 1096,
+          "end_line": 1102
+        },
+        {
+          "symbol": "audit_events",
+          "line": 1106,
+          "end_line": 1108
+        },
+        {
+          "symbol": "audit_export",
+          "line": 1112,
+          "end_line": 1114
+        },
+        {
+          "symbol": "audit_siem",
+          "line": 1118,
+          "end_line": 1119
+        },
+        {
+          "symbol": "audit_alerts",
+          "line": 1123,
+          "end_line": 1129
+        },
+        {
+          "symbol": "audit_event",
+          "line": 1133,
+          "end_line": 1134
+        },
+        {
+          "symbol": "IncidentCreate",
+          "line": 1137,
+          "end_line": 1150
+        },
+        {
+          "symbol": "IncidentReport",
+          "line": 1153,
+          "end_line": 1157
+        },
+        {
+          "symbol": "IncidentSupplement",
+          "line": 1160,
+          "end_line": 1164
+        },
+        {
+          "symbol": "audit_incidents",
+          "line": 1168,
+          "end_line": 1169
+        },
+        {
+          "symbol": "audit_incident_create",
+          "line": 1173,
+          "end_line": 1174
+        },
+        {
+          "symbol": "audit_incident_detail",
+          "line": 1178,
+          "end_line": 1179
+        },
+        {
+          "symbol": "audit_incident_report",
+          "line": 1183,
+          "end_line": 1184
+        },
+        {
+          "symbol": "audit_incident_supplement",
+          "line": 1188,
+          "end_line": 1190
+        },
+        {
+          "symbol": "TerminationOpen",
+          "line": 1200,
+          "end_line": 1205
+        },
+        {
+          "symbol": "TargetCreate",
+          "line": 1208,
+          "end_line": 1217
+        },
+        {
+          "symbol": "TargetUpdate",
+          "line": 1220,
+          "end_line": 1222
+        },
+        {
+          "symbol": "EvidenceCreate",
+          "line": 1225,
+          "end_line": 1233
+        },
+        {
+          "symbol": "CaseClose",
+          "line": 1236,
+          "end_line": 1238
+        },
+        {
+          "symbol": "CaseReopen",
+          "line": 1241,
+          "end_line": 1242
+        },
+        {
+          "symbol": "EvidenceCollect",
+          "line": 1245,
+          "end_line": 1247
+        },
+        {
+          "symbol": "termination_relationships",
+          "line": 1251,
+          "end_line": 1254
+        },
+        {
+          "symbol": "termination_collect",
+          "line": 1258,
+          "end_line": 1263
+        },
+        {
+          "symbol": "termination_revoke_credential",
+          "line": 1267,
+          "end_line": 1273
+        },
+        {
+          "symbol": "lab_restore",
+          "line": 1277,
+          "end_line": 1287
+        },
+        {
+          "symbol": "termination_cases",
+          "line": 1291,
+          "end_line": 1292
+        },
+        {
+          "symbol": "termination_open",
+          "line": 1296,
+          "end_line": 1303
+        },
+        {
+          "symbol": "termination_detail",
+          "line": 1307,
+          "end_line": 1311
+        },
+        {
+          "symbol": "termination_add_target",
+          "line": 1315,
+          "end_line": 1322
+        },
+        {
+          "symbol": "termination_update_target",
+          "line": 1326,
+          "end_line": 1332
+        },
+        {
+          "symbol": "termination_add_evidence",
+          "line": 1336,
+          "end_line": 1349
+        },
+        {
+          "symbol": "termination_probe",
+          "line": 1353,
+          "end_line": 1358
+        },
+        {
+          "symbol": "termination_assess",
+          "line": 1362,
+          "end_line": 1366
+        },
+        {
+          "symbol": "termination_close",
+          "line": 1370,
+          "end_line": 1376
+        },
+        {
+          "symbol": "termination_reopen",
+          "line": 1380,
+          "end_line": 1385
+        },
+        {
+          "symbol": "termination_report",
+          "line": 1389,
+          "end_line": 1394
+        },
+        {
+          "symbol": "termination_disclosure",
+          "line": 1398,
+          "end_line": 1408
+        },
+        {
+          "symbol": "termination_drill",
+          "line": 1412,
+          "end_line": 1421
+        },
+        {
+          "symbol": "EndpointDeviceCreate",
+          "line": 1432,
+          "end_line": 1438
+        },
+        {
+          "symbol": "EndpointEnroll",
+          "line": 1441,
+          "end_line": 1447
+        },
+        {
+          "symbol": "Provenance",
+          "line": 1450,
+          "end_line": 1455
+        },
+        {
+          "symbol": "EndpointEntry",
+          "line": 1458,
+          "end_line": 1463
+        },
+        {
+          "symbol": "EndpointReport",
+          "line": 1466,
+          "end_line": 1470
+        },
+        {
+          "symbol": "ObservationReport",
+          "line": 1473,
+          "end_line": 1481
+        },
+        {
+          "symbol": "EndpointOSEvent",
+          "line": 1484,
+          "end_line": 1490
+        },
+        {
+          "symbol": "EndpointToolEvent",
+          "line": 1493,
+          "end_line": 1503
+        },
+        {
+          "symbol": "EndpointToolReport",
+          "line": 1506,
+          "end_line": 1508
+        },
+        {
+          "symbol": "EndpointOSReport",
+          "line": 1511,
+          "end_line": 1513
+        },
+        {
+          "symbol": "HostAccount",
+          "line": 1516,
+          "end_line": 1519
+        },
+        {
+          "symbol": "HostReport",
+          "line": 1522,
+          "end_line": 1529
+        },
+        {
+          "symbol": "NetworkQuality",
+          "line": 1532,
+          "end_line": 1551
+        },
+        {
+          "symbol": "UserCommandSetting",
+          "line": 1554,
+          "end_line": 1559
+        },
+        {
+          "symbol": "ManagedHeartbeat",
+          "line": 1562,
+          "end_line": 1568
+        },
+        {
+          "symbol": "ManagedActivation",
+          "line": 1571,
+          "end_line": 1573
+        },
+        {
+          "symbol": "ListenerFinding",
+          "line": 1576,
+          "end_line": 1586
+        },
+        {
+          "symbol": "ListenerReport",
+          "line": 1589,
+          "end_line": 1603
+        },
+        {
+          "symbol": "EndpointSettingsUpdate",
+          "line": 1606,
+          "end_line": 1607
+        },
+        {
+          "symbol": "ScanPolicyUpdate",
+          "line": 1610,
+          "end_line": 1617
+        },
+        {
+          "symbol": "endpoint_device",
+          "line": 1620,
+          "end_line": 1627
+        },
+        {
+          "symbol": "endpoint_device_create",
+          "line": 1631,
+          "end_line": 1644
+        },
+        {
+          "symbol": "endpoint_device_revoke",
+          "line": 1648,
+          "end_line": 1652
+        },
+        {
+          "symbol": "endpoint_device_list",
+          "line": 1656,
+          "end_line": 1657
+        },
+        {
+          "symbol": "endpoint_managed_policy",
+          "line": 1661,
+          "end_line": 1666
+        },
+        {
+          "symbol": "endpoint_source_proxy",
+          "line": 1669,
+          "end_line": 1701
+        },
+        {
+          "symbol": "endpoint_approved_mcp",
+          "line": 1705,
+          "end_line": 1707
+        },
+        {
+          "symbol": "endpoint_approved_source",
+          "line": 1711,
+          "end_line": 1717
+        },
+        {
+          "symbol": "endpoint_heartbeat",
+          "line": 1721,
+          "end_line": 1738
+        },
+        {
+          "symbol": "LocalJobDiagnostics",
+          "line": 1741,
+          "end_line": 1746
+        },
+        {
+          "symbol": "LocalJobResult",
+          "line": 1749,
+          "end_line": 1754
+        },
+        {
+          "symbol": "endpoint_local_job",
+          "line": 1758,
+          "end_line": 1763
+        },
+        {
+          "symbol": "endpoint_local_job_result",
+          "line": 1767,
+          "end_line": 1777
+        },
+        {
+          "symbol": "endpoint_local_recovery",
+          "line": 1781,
+          "end_line": 1782
+        },
+        {
+          "symbol": "endpoint_local_manifests",
+          "line": 1786,
+          "end_line": 1791
+        },
+        {
+          "symbol": "endpoint_local_source",
+          "line": 1795,
+          "end_line": 1799
+        },
+        {
+          "symbol": "endpoint_local_control",
+          "line": 1803,
+          "end_line": 1807
+        },
+        {
+          "symbol": "endpoint_local_start",
+          "line": 1811,
+          "end_line": 1815
+        },
+        {
+          "symbol": "endpoint_managed_activate",
+          "line": 1819,
+          "end_line": 1824
+        },
+        {
+          "symbol": "endpoint_harness_inventory",
+          "line": 1828,
+          "end_line": 1835
+        },
+        {
+          "symbol": "endpoint_enroll",
+          "line": 1839,
+          "end_line": 1853
+        },
+        {
+          "symbol": "endpoint_scan_policy_read",
+          "line": 1857,
+          "end_line": 1863
+        },
+        {
+          "symbol": "endpoint_scan_policy_admin",
+          "line": 1867,
+          "end_line": 1868
+        },
+        {
+          "symbol": "endpoint_scan_policy_update",
+          "line": 1872,
+          "end_line": 1878
+        },
+        {
+          "symbol": "endpoint_settings_read",
+          "line": 1882,
+          "end_line": 1883
+        },
+        {
+          "symbol": "endpoint_settings_update",
+          "line": 1887,
+          "end_line": 1888
+        },
+        {
+          "symbol": "endpoint_report",
+          "line": 1892,
+          "end_line": 1907
+        },
+        {
+          "symbol": "endpoint_listener_report",
+          "line": 1911,
+          "end_line": 1926
+        },
+        {
+          "symbol": "endpoint_observation_status",
+          "line": 1930,
+          "end_line": 1942
+        },
+        {
+          "symbol": "device_filters",
+          "line": 1945,
+          "end_line": 1948
+        },
+        {
+          "symbol": "endpoint_inventory",
+          "line": 1952,
+          "end_line": 1978
+        },
+        {
+          "symbol": "endpoint_inventory_entries",
+          "line": 1987,
+          "end_line": 1990
+        },
+        {
+          "symbol": "endpoint_inventory_listeners",
+          "line": 1994,
+          "end_line": 1997
+        },
+        {
+          "symbol": "endpoint_tool_report",
+          "line": 2001,
+          "end_line": 2005
+        },
+        {
+          "symbol": "EndpointSelfRequest",
+          "line": 2008,
+          "end_line": 2011
+        },
+        {
+          "symbol": "endpoint_self",
+          "line": 2015,
+          "end_line": 2016
+        },
+        {
+          "symbol": "endpoint_self_request",
+          "line": 2020,
+          "end_line": 2021
+        },
+        {
+          "symbol": "endpoint_requests",
+          "line": 2025,
+          "end_line": 2026
+        },
+        {
+          "symbol": "endpoint_request_close",
+          "line": 2030,
+          "end_line": 2033
+        },
+        {
+          "symbol": "endpoint_tool_events",
+          "line": 2037,
+          "end_line": 2040
+        },
+        {
+          "symbol": "endpoint_inventory_os_events",
+          "line": 2044,
+          "end_line": 2049
+        },
+        {
+          "symbol": "endpoint_observations",
+          "line": 2053,
+          "end_line": 2055
+        },
+        {
+          "symbol": "endpoint_record",
+          "line": 2059,
+          "end_line": 2064
+        },
+        {
+          "symbol": "endpoint_correlation",
+          "line": 2068,
+          "end_line": 2079
+        },
+        {
+          "symbol": "endpoint_network_quality",
+          "line": 2083,
+          "end_line": 2084
+        },
+        {
+          "symbol": "endpoint_os_report",
+          "line": 2088,
+          "end_line": 2094
+        },
+        {
+          "symbol": "risk_catalog",
+          "line": 2098,
+          "end_line": 2105
+        },
+        {
+          "symbol": "console",
+          "line": 2112,
+          "end_line": 2114
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/gateway/app/outcomes.py",
+      "sha256": "78a9ff5b238c2a5d761d1df23f84b2f6f2e44be84026332789a6e858d232b5b5",
+      "symbols": [
+        {
+          "symbol": "outcome_axes",
+          "line": 7,
+          "end_line": 66
+        },
+        {
+          "symbol": "recorded_outcome",
+          "line": 69,
+          "end_line": 76
+        },
+        {
+          "symbol": "endpoint_outcome",
+          "line": 79,
+          "end_line": 90
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/gateway/app/agent_static/console.js",
+      "sha256": "37927d73b750aaa94126355d1ac1d597f7d643430ebe66960f6b8202b0b012a3",
+      "symbols": [
+        {
+          "symbol": "tokenTimes",
+          "line": 18
+        },
+        {
+          "symbol": "html",
+          "line": 35
+        },
+        {
+          "symbol": "detailText",
+          "line": 45
+        },
+        {
+          "symbol": "api",
+          "line": 52
+        },
+        {
+          "symbol": "statusPair",
+          "line": 140
+        },
+        {
+          "symbol": "flow3",
+          "line": 147
+        },
+        {
+          "symbol": "pipeline",
+          "line": 156
+        },
+        {
+          "symbol": "planes",
+          "line": 172
+        },
+        {
+          "symbol": "preferredKitPlatform",
+          "line": 188
+        },
+        {
+          "symbol": "kitSteps",
+          "line": 191
+        },
+        {
+          "symbol": "kitView",
+          "line": 199
+        },
+        {
+          "symbol": "when",
+          "line": 259
+        },
+        {
+          "symbol": "dateTimeInput",
+          "line": 266
+        },
+        {
+          "symbol": "ago",
+          "line": 272
+        },
+        {
+          "symbol": "toast",
+          "line": 309
+        },
+        {
+          "symbol": "setDrawer",
+          "line": 321
+        },
+        {
+          "symbol": "openDrawer",
+          "line": 329
+        },
+        {
+          "symbol": "routeHash",
+          "line": 337
+        },
+        {
+          "symbol": "rememberDetail",
+          "line": 340
+        },
+        {
+          "symbol": "closeDrawer",
+          "line": 359
+        },
+        {
+          "symbol": "ask",
+          "line": 368
+        },
+        {
+          "symbol": "tabBar",
+          "line": 385
+        },
+        {
+          "symbol": "tabPanel",
+          "line": 391
+        },
+        {
+          "symbol": "page",
+          "line": 395
+        },
+        {
+          "symbol": "renderNav",
+          "line": 431
+        },
+        {
+          "symbol": "setNavCollapsed",
+          "line": 448
+        },
+        {
+          "symbol": "parseHash",
+          "line": 456
+        },
+        {
+          "symbol": "canonicalRoute",
+          "line": 462
+        },
+        {
+          "symbol": "route",
+          "line": 477
+        },
+        {
+          "symbol": "rememberTab",
+          "line": 523
+        },
+        {
+          "symbol": "markAlertsSeen",
+          "line": 534
+        },
+        {
+          "symbol": "showAlertCount",
+          "line": 545
+        },
+        {
+          "symbol": "refreshAlertBell",
+          "line": 551
+        },
+        {
+          "symbol": "shadowLink",
+          "line": 559
+        },
+        {
+          "symbol": "refreshBadges",
+          "line": 585
+        },
+        {
+          "symbol": "componentHealth",
+          "line": 602
+        },
+        {
+          "symbol": "decisionRow",
+          "line": 612
+        },
+        {
+          "symbol": "outcomeChips",
+          "line": 621
+        },
+        {
+          "symbol": "outcomeSummary",
+          "line": 626
+        },
+        {
+          "symbol": "validityChip",
+          "line": 646
+        },
+        {
+          "symbol": "stopSystemMetrics",
+          "line": 657
+        },
+        {
+          "symbol": "metricsCards",
+          "line": 663
+        },
+        {
+          "symbol": "latencyCards",
+          "line": 671
+        },
+        {
+          "symbol": "startSystemMetrics",
+          "line": 680
+        },
+        {
+          "symbol": "ROUTES.overview",
+          "line": 712
+        },
+        {
+          "symbol": "stopLive",
+          "line": 844
+        },
+        {
+          "symbol": "rememberFeed",
+          "line": 850
+        },
+        {
+          "symbol": "renderFeedStatus",
+          "line": 855
+        },
+        {
+          "symbol": "feedCharts",
+          "line": 877
+        },
+        {
+          "symbol": "renderFeed",
+          "line": 909
+        },
+        {
+          "symbol": "startLive",
+          "line": 925
+        },
+        {
+          "symbol": "ROUTES.activity",
+          "line": 955
+        },
+        {
+          "symbol": "timingView",
+          "line": 1025
+        },
+        {
+          "symbol": "relatedBody",
+          "line": 1034
+        },
+        {
+          "symbol": "decisionAction",
+          "line": 1053
+        },
+        {
+          "symbol": "showDecision",
+          "line": 1063
+        },
+        {
+          "symbol": "ROUTES.approvals",
+          "line": 1113
+        },
+        {
+          "symbol": "impactExplanation",
+          "line": 1155
+        },
+        {
+          "symbol": "showApproval",
+          "line": 1164
+        },
+        {
+          "symbol": "ROUTES.servers",
+          "line": 1198
+        },
+        {
+          "symbol": "showServer",
+          "line": 1255
+        },
+        {
+          "symbol": "downstreamText",
+          "line": 1309
+        },
+        {
+          "symbol": "connectorState",
+          "line": 1325
+        },
+        {
+          "symbol": "connectorTab",
+          "line": 1353
+        },
+        {
+          "symbol": "harnessFeatureTab",
+          "line": 1367
+        },
+        {
+          "symbol": "covPage",
+          "line": 1381
+        },
+        {
+          "symbol": "serverControlTabs",
+          "line": 1428
+        },
+        {
+          "symbol": "checksChip",
+          "line": 1497
+        },
+        {
+          "symbol": "osEventTarget",
+          "line": 1503
+        },
+        {
+          "symbol": "ROUTES.people",
+          "line": 1520
+        },
+        {
+          "symbol": "intakeStatus",
+          "line": 1617
+        },
+        {
+          "symbol": "resetIntakeTools",
+          "line": 1629
+        },
+        {
+          "symbol": "requestedToolList",
+          "line": 1636
+        },
+        {
+          "symbol": "stopIntake",
+          "line": 1644
+        },
+        {
+          "symbol": "patchIntakePanel",
+          "line": 1646
+        },
+        {
+          "symbol": "refreshIntake",
+          "line": 1668
+        },
+        {
+          "symbol": "catalogResults",
+          "line": 1689
+        },
+        {
+          "symbol": "consentTabs",
+          "line": 1700
+        },
+        {
+          "symbol": "ROUTES.consent",
+          "line": 1730
+        },
+        {
+          "symbol": "ROUTES.connections",
+          "line": 1734
+        },
+        {
+          "symbol": "approvedMcpTable",
+          "line": 1754
+        },
+        {
+          "symbol": "ROUTES.intake",
+          "line": 1763
+        },
+        {
+          "symbol": "supplyChainImpact",
+          "line": 1840
+        },
+        {
+          "symbol": "riskCell",
+          "line": 1866
+        },
+        {
+          "symbol": "riskView",
+          "line": 1874
+        },
+        {
+          "symbol": "assuranceRows",
+          "line": 1894
+        },
+        {
+          "symbol": "intakeApprovalFields",
+          "line": 1904
+        },
+        {
+          "symbol": "askLocalRun",
+          "line": 1966
+        },
+        {
+          "symbol": "showIntakeApproval",
+          "line": 2005
+        },
+        {
+          "symbol": "exitConclusionChip",
+          "line": 2044
+        },
+        {
+          "symbol": "exitTermsView",
+          "line": 2052
+        },
+        {
+          "symbol": "intakeProvenanceView",
+          "line": 2076
+        },
+        {
+          "symbol": "reviewRecords",
+          "line": 2090
+        },
+        {
+          "symbol": "scopeTerms",
+          "line": 2103
+        },
+        {
+          "symbol": "scopeTable",
+          "line": 2110
+        },
+        {
+          "symbol": "toolSunsetRow",
+          "line": 2122
+        },
+        {
+          "symbol": "gateView",
+          "line": 2127
+        },
+        {
+          "symbol": "showIntakeReport",
+          "line": 2139
+        },
+        {
+          "symbol": "ROUTES.termination",
+          "line": 2218
+        },
+        {
+          "symbol": "relationshipRow",
+          "line": 2250
+        },
+        {
+          "symbol": "showRelationship",
+          "line": 2261
+        },
+        {
+          "symbol": "procedureState",
+          "line": 2280
+        },
+        {
+          "symbol": "caseView",
+          "line": 2292
+        },
+        {
+          "symbol": "evidenceResult",
+          "line": 2348
+        },
+        {
+          "symbol": "evidenceItem",
+          "line": 2364
+        },
+        {
+          "symbol": "showTarget",
+          "line": 2374
+        },
+        {
+          "symbol": "alertGroups",
+          "line": 2395
+        },
+        {
+          "symbol": "groupedAlerts",
+          "line": 2406
+        },
+        {
+          "symbol": "auditTabs",
+          "line": 2417
+        },
+        {
+          "symbol": "ROUTES.policy",
+          "line": 2460
+        },
+        {
+          "symbol": "scopeFields",
+          "line": 2494
+        },
+        {
+          "symbol": "collectScopes",
+          "line": 2512
+        },
+        {
+          "symbol": "startAdminSessionGuard",
+          "line": 3595
+        },
+        {
+          "symbol": "boot",
+          "line": 3690
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/tests/console_ux2_check.py",
+      "sha256": "fa23f92113fe8ac00f919e0f6e29c5368929c2cf0503021c13af18d7daa9ca22",
+      "symbols": [
+        {
+          "symbol": "valid_sql",
+          "line": 17,
+          "end_line": 19
+        },
+        {
+          "symbol": "Axes",
+          "line": 22,
+          "end_line": 47
+        },
+        {
+          "symbol": "ReadModels",
+          "line": 50,
+          "end_line": 131
+        },
+        {
+          "symbol": "API",
+          "line": 134,
+          "end_line": 157
+        }
+      ]
+    },
+    {
+      "file": "full_stack_lab/tests/console-ia.test.mjs",
+      "sha256": "d7a85128146c82121b79b3917418b03b99c0782aabe219db2eea33c5e66cd7ad",
+      "symbols": [
+        {
+          "symbol": "build",
+          "line": 13
+        }
+      ]
+    }
+  ],
+  "verification_manifest": {
+    "node_tests": 111,
+    "python_unittest": 110,
+    "self_checks": 2,
+    "failures": 0,
+    "stack_started": false,
+    "deployed": false
+  }
+}
