@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-10-31T20:51:02+09:00",
-  "head": "29248b5328f658e96d2799d92ad2f39b13d6c08e",
+  "captured_at": "2026-11-01T18:33:21+09:00",
+  "head": "fff14ce261de6435d33f38f0c133805b28cfa88a",
   "branch": "10/31-overhaul",
   "status": [
     "M research/llm-wiki/analysis/integration-cases.json",
@@ -8,9 +8,11 @@
     " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json",
     " M research/llm-wiki/status/decisions-index.md",
+    " M research/llm-wiki/status/reports/README.md",
+    " M research/llm-wiki/status/repository-snapshot.json",
+    " M research/llm-wiki/status/repository-snapshot.md",
     "?? api.py",
     "?? c",
-    "?? docs/ai/decisions/D-301-350.md",
     "?? p3_ui.py",
     "?? q",
     "?? sftp_put.py"
@@ -21,7 +23,7 @@
   "files": [
     {
       "path": "full_stack_lab/gateway/app/core.py",
-      "sha256": "f8dfbc92cdc8f7972a37bcb412fd61a7801a1c55ec9d42900d4ead3c0861c523"
+      "sha256": "d9198a7b01b52aae208b072e1a68610eadd59f28c22731de14d55b0e4868835b"
     },
     {
       "path": "full_stack_lab/gateway/app/pac.py",
@@ -57,7 +59,7 @@
     },
     {
       "path": "endpoint-agent/managed-linux.py",
-      "sha256": "17c84ec633e511dc1e0b719dff25fe94979b8868d8ed34a28d605dc518c3cabc"
+      "sha256": "f0663c02332d3a9f152e2c29a9d17a2fd44ff410ebfa3ae73ca38991a5b9c412"
     },
     {
       "path": "endpoint-agent/enforce-linux.py",
