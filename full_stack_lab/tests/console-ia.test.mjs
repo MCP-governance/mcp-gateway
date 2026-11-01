@@ -116,6 +116,7 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
     ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
     ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "intake", "impact"],
     ["servers", "shadow", "endpoints", "shadow"],
+    ["servers", "contract", "servers", "servers"],
     ["people", "devices", "endpoints", "devices"], ["people", "managed", "endpoints", "managed"],
     ["approvals", "", "overview", "approvals"], ["approvals", "queue", "overview", "approvals"],
     ["approvals", "unsent", "overview", "unsent"], ["activity", "unsent", "overview", "unsent"], ["approvals", "history", "overview", "approvals"],
@@ -169,7 +170,7 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.match(String(consent.tabs[0].body), /확인할 요청 없음/);
   assert.match(String(consent.tabs[1].body), /동의 기록/);
   const servers = await ui.ROUTES.servers("", "servers", new URLSearchParams());
-  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "contract", "capabilities", "items", "vendor"]);
+  assert.deepEqual(Array.from(servers.html.tabs, (item) => item.key), ["servers", "tools", "capabilities", "items", "vendor"]);
   assert.doesNotMatch(String(servers.html.head), /통제 범위/);
   assert.match(String(servers.html.head), /AI 연결 관리/);
   assert.equal(ui.ROUTES.coverage, undefined);
@@ -181,6 +182,20 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   const intake = await ui.ROUTES.intake("", "impact", new URLSearchParams("package=alpha&range=%3E%3D1.0.0"));
   assert.equal(intake.html.tabs.at(-1).key, "impact");
   assert.match(String(intake.html.tabs.at(-1).body), /value="alpha"[^]*sbom-impact-stop/);
+});
+
+test("MCP 서버에 계약 상태와 확인 시각을 통합하고 상세의 승인본 갱신을 유지한다", async () => {
+  const ui = build(true, {"/gw/registry": {servers:[{id:"docs",display_name:"Docs",status:"DRIFT",status_reason:"도구 정의 변경",last_seen_at:"2026-11-01T00:00:00Z",lifecycle:"OPERATING"}],tools:[],registrations:{},usage_relationships:[]}});
+  const result = await ui.ROUTES.servers("docs", "servers", new URLSearchParams());
+  assert.deepEqual(Array.from(result.html.tabs, (t) => t.label), ["MCP 서버", "도구", "접근 권한", "연결 목록", "기본 기능 및 커넥터"]);
+  assert.match(String(result.html.tabs[0].body), /마지막 확인[^]*도구 정의 변경/);
+  let detail;
+  ui.policyDrawer((title, controls, tabs) => { detail = {controls:String(controls),tabs}; });
+  result.after();
+  assert.match(detail.controls, /approve-contract[^]*승인본 갱신/);
+  assert.match(detail.controls, /도구 정의 변경/);
+  assert.match(String(detail.tabs[0].body), /마지막 확인/);
+  assert.match(String(result.html.head), /catalog-refresh/);
 });
 
 test("대시보드는 호출 승인 탭에서만 목록을 표시하고 각 관리 작업으로의 이동을 제공한다", async () => {

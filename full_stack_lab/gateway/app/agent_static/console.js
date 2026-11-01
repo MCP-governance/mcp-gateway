@@ -475,7 +475,7 @@ function canonicalRoute(at) {
           : at.query.get("t") === "siem" ? ["security", "integration"] : ["activity", "live"],
     people: ["endpoints", at.query.get("t")],
     coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
-    servers: ["endpoints", "shadow"],
+    servers: at.query.get("t") === "contract" ? ["servers", "servers"] : ["endpoints", "shadow"],
     "sbom-impact": ["intake", "impact"],
     approvals: at.query.get("t") === "consent" ? ["consent", "pending"]
       : at.query.get("t") === "unsent" ? ["overview", "unsent"]
@@ -486,7 +486,7 @@ function canonicalRoute(at) {
   if (at.page === "overview" && !["planes", "traffic"].includes(at.query.get("t"))) return at;
   if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
-  if (at.page === "servers" && at.query.get("t") !== "shadow") return at;
+  if (at.page === "servers" && !["shadow", "contract"].includes(at.query.get("t"))) return at;
   if (!Object.hasOwn(destinations, at.page)) return at;
   const target = destinations[at.page];
   const query = new URLSearchParams(at.query);
@@ -1292,7 +1292,6 @@ ROUTES.servers = async (id, tab, query) => {
   const actions = (list) => (list || []).map((a) => ACTION[a] || a).join(", ");
   const toolFilter = query.get("server") || "";
   const tools = reg.tools.filter((t) => !toolFilter || t.server_id === toolFilter);
-  const drifted = servers.filter((s) => s.status !== "READY");
   const option = (value, label) => html`<option value="${value}" ${value === toolFilter ? raw("selected") : ""}>${label}</option>`;
   return {
     html: page({
@@ -1301,8 +1300,8 @@ ROUTES.servers = async (id, tab, query) => {
         <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
       active: tab || "servers",
       tabs: [
-        { key: "servers", label: "서버 목록", n: serverRows.length, body: html`<div class="stack">
-          ${panel(attention ? "MCP 점검 필요" : "등록된 MCP 서버", serverRows.length ? html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>통제</th><th>사용 기한</th><th class="num">도구</th><th class="num">24시간 호출</th></tr></thead><tbody id="server-list">
+        { key: "servers", label: "MCP 서버", n: serverRows.length, body: html`<div class="stack">
+          ${panel(attention ? "MCP 점검 필요" : "등록된 MCP 서버", serverRows.length ? html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>통제</th><th>사용 기한</th><th>마지막 확인</th><th class="num">도구</th><th class="num">24시간 호출</th></tr></thead><tbody id="server-list">
             ${serverRows.map((s) => html`<tr class="clickable" tabindex="0" data-act="goto" data-href="#/servers/${encodeURIComponent(s.id)}">
               <td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
               <td>${chip(s.status === "READY" ? "allow" : s.status === "DISABLED" ? "outline" : "alert", SERVER_STATUS[s.status] || s.status)}
@@ -1311,9 +1310,11 @@ ROUTES.servers = async (id, tab, query) => {
                 ${s.registration?.risk_review?.state === "grace" ? chip("alert", "재평가 필요") : ""}
                 ${s.registration?.supplier_assurance?.support_end ? chip(supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 경과" ? "block" :
                   supportStatus(s.registration.supplier_assurance.support_end) === "지원 종료 임박" ? "alert" : "outline", supportStatus(s.registration.supplier_assurance.support_end)) : ""}
-                <span class="sub">${s.deployment === "provider" ? "제공자 운영" : "사내 운영"}</span></td>
+                <span class="sub">${s.deployment === "provider" ? "제공자 운영" : "사내 운영"}</span>
+                ${s.status_reason ? html`<span class="sub" title="${s.status_reason}">${short(s.status_reason, 90)}</span>` : ""}</td>
               <td>${s.plane ? statusPair(s.plane) : NONE}</td>
               <td>${validityChip(s.registration) || NONE}</td>
+              <td class="small">${s.last_seen_at ? when(s.last_seen_at) : "—"}</td>
               <td class="num">${s.tools ?? reg.tools.filter((t) => t.server_id === s.id && t.enabled).length}</td><td class="num">${s.calls || 0}</td></tr>`)}</tbody></table><p class="empty" data-list-empty="server-list" hidden>검색 결과 없음</p>`
             : attention ? empty("점검할 MCP 서버 없음") : html`${empty("등록된 MCP 서버 없음")}<div class="row-actions center"><a class="btn primary" href="#/intake">도입 신청</a></div>`,
             { flush: true, end: attention ? html`<a class="btn sm" href="#/servers?t=servers">전체 보기</a>` : "", tools: listToolbar("server-list", "서버 검색") })}
@@ -1325,12 +1326,6 @@ ROUTES.servers = async (id, tab, query) => {
               <td>${!t.enabled ? chip("outline", "미승인") : t.contract_ok ? chip("allow", "계약 일치") : chip("alert", "계약 불일치")}</td></tr>`)}
             </tbody></table>`, { flush: true, sub: `${tools.length}개`,
             tools: html`<select data-act-change="tool-filter" aria-label="서버">${option("", "모든 서버")}${reg.servers.map((s) => option(s.id, s.id))}</select>` })}</div>` },
-        { key: "contract", label: "계약", n: drifted.length, hot: drifted.length > 0, body: panel("서버 상태", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>사유</th><th>마지막 확인</th><th></th></tr></thead><tbody>
-            ${servers.map((s) => html`<tr><td><b>${s.display_name}</b><span class="sub mono">${s.id}</span></td>
-              <td>${chip({ READY: "allow", DRIFT: "alert" }[s.status] || "block", SERVER_STATUS[s.status] || s.status)}</td>
-              <td class="small clip">${s.status_reason || "—"}</td><td class="small">${ago(s.last_seen_at)}</td>
-              <td class="num">${s.status === "DRIFT" && !s.registration ? html`<button class="btn sm primary" data-act="approve-contract" data-id="${s.id}">승인본 갱신</button>` : ""}</td></tr>`)}
-            </tbody></table>`, { flush: true }) },
         { key: "capabilities", label: "접근 권한", n: matrix.capabilities.length + matrix.runtime_envelopes.length, body: panel("접근 권한",
           matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료 시각</th></tr></thead><tbody>
           ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${(g.principals || []).join(", ")}</td><td>${(g.servers || []).join(", ")}</td>
@@ -1365,7 +1360,7 @@ function showServer(id) {
       ${registration?.intake_id && s.deployment === "provider" ? html`<button class="btn sm primary" type="button" data-act="residency-review" data-id="${s.id}">위치 심사</button>` : ""}
       ${registration?.intake_id ? html`<button class="btn sm" type="button" data-act="server-audience" data-id="${s.id}">사용 대상</button>` : ""}
       ${registration ? html`<button class="btn sm danger" type="button" data-act="server-deregister" data-id="${s.id}">등록 해제</button>` : ""}</div>
-    ${s.status_reason && s.status !== "READY" ? html`<p class="note warn">${s.status_reason}</p>` : ""}`, [
+    ${s.status_reason ? html`<p class="note ${s.status !== "READY" ? "warn" : ""}">${s.status_reason}</p>` : ""}`, [
     { key: "info", label: "개요", body: kv([["ID", html`<code>${s.id}</code>`], ["게이트웨이 경로", html`<code>/mcp/${s.id}/</code>`],
       ["패키지", html`<code>${s.source_ref || `${s.package}@${s.version}`}</code>`], ["원격 주소", html`<code>${s.endpoint}</code>`],
       ["공급자", s.supplier], ["라이선스", s.license], ["하위 시스템", downstreamText(s.downstream)],
@@ -1541,7 +1536,7 @@ async function serverControlTabs(query, snapshot = planes()) {
         tools: html`<input type="search" data-coverage-search maxlength="80" value="${query.get("q") || ""}" placeholder="이름·대상·사용자" aria-label="항목 검색" />
           ${coverageSelect("state", "상태", CONTROL_STATE, state)}
           ${coverageSelect("class", "연동 유형", INTEGRATION_CLASS, cls)}<span class="small muted">${rows.length}/${items.length}건</span>` })}</div>` },
-    { key: "vendor", label: "벤더 커넥터", n: review, hot: review > 0, body: builtinTabs(conn, items) },
+    { key: "vendor", label: "기본 기능 및 커넥터", n: review, hot: review > 0, body: builtinTabs(conn, items) },
   ];
 }
 
