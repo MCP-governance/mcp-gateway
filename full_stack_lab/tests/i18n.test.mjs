@@ -47,6 +47,7 @@ test("dictionary entries are well formed", () => {
 });
 
 test("known phrases, patterns, plurals and runtime joins", () => {
+  assert.equal(t("25분"), "25 min");
   assert.equal(t("대시보드"), "Dashboard");
   assert.equal(t("  차단된 요청 "), "  Blocked requests ");
   assert.equal(t("요청 1건"), "1 request");

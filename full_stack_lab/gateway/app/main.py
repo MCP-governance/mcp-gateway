@@ -610,7 +610,7 @@ async def _compute_overview() -> dict:
         "pending_approvals": int(approvals["n"] or 0),
         "intake_actions": int(intake_actions["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
-        "unresolved_execution": await dispatch.uncertain_count(),
+        "unresolved_execution": await dispatch.uncertain_count(fetch_one=db.admin_fetch_one),
         "enforcement": await enforcement_mode(db.admin_fetch_one), "catalog_version": registry.catalog_version(),
     }
 

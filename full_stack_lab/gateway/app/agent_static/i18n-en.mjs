@@ -58,7 +58,7 @@ export const EN = {
   "명령": "Commands",
   "전송 대상": "Transfer destinations",
   "승인 상태": "Approval status",
-  "{}분": "{1} min",
+  "{n}분": "{1} min",
   "권한 출처": "Permission source",
   "개별 접근 권한": "Explicit access grant",
   "허용 행위": "Allowed actions",

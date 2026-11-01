@@ -179,8 +179,9 @@ async def uncertain(limit: int = 200, offset: int = 0) -> list[dict]:
             for row in rows]
 
 
-async def uncertain_count(server_id: str | None = None, user_token: str | None = None, unledgered: bool = False) -> int:
-    row = await db.fetch_one(
+async def uncertain_count(server_id: str | None = None, user_token: str | None = None, unledgered: bool = False,
+                          fetch_one=None) -> int:
+    row = await (fetch_one or db.fetch_one)(
         f"""SELECT count(*) AS n FROM dispatch_intents i
              WHERE {UNSETTLED} AND (%s::text IS NULL OR i.server_id = %s) AND (%s::text IS NULL OR i.user_token = %s)
                AND (NOT %s OR i.decision_id IS NULL)""",

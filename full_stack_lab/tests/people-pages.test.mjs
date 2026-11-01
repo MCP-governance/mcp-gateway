@@ -7,7 +7,7 @@ const source = readFileSync(new URL('../gateway/app/agent_static/console.js', im
 function routes(provider = 'local') {
   const calls = [];
   const context = vm.createContext({
-    ROUTES: {}, peopleAccounts: [],
+    ROUTES: {}, peopleAccounts: [], URLSearchParams,
     api: async (path) => {
       calls.push(path);
       if (path === '/api/signup-requests') return { requests: [] };
@@ -27,6 +27,7 @@ function routes(provider = 'local') {
     listToolbar: () => '', kpiStrip: (v) => v,
     head: (title) => title, page: (value) => value,
   });
+  vm.runInContext(source.slice(source.indexOf('const signupPendingTotal ='), source.indexOf('\nlet dashboardTimer =')), context);
   vm.runInContext(source.slice(source.indexOf('ROUTES.people ='), source.indexOf('\nfunction requestedToolList(')), context);
   return { context, calls };
 }
