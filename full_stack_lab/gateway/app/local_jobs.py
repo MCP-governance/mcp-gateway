@@ -76,7 +76,8 @@ async def failure_message(error, diagnostics=None):
     messages={'permission':'이미지 실행 파일의 권한 때문에 관리 계정으로 실행할 수 없습니다',
               'exited':'로컬 MCP가 종료되었습니다',
               'timeout':'로컬 MCP 준비 또는 실행 기한이 지났습니다',
-              'failed':'로컬 MCP 실행을 완료하지 못했습니다'}
+              'failed':'로컬 MCP 실행을 완료하지 못했습니다',
+              'contract':'엔드포인트의 도구 계약이 승인값과 달라 실행하지 않았습니다'}
     message=messages.get(diagnostics.get('kind'),messages['failed'])
     code=diagnostics.get('exit_code')
     if type(code) is int and 0<=code<=255:
@@ -666,7 +667,19 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
                 'control_sha256':row['control_sha256'],
                 'protocol_version':registry.pinned_protocol(row['server_id']) if allowed['observed'] else None,
                 'expires_at':allowed['expires_at'].isoformat(),'deadline':row['deadline'].isoformat(),
-                'contracts':{t['name']:{'description_sha256':t['approved_description_hash'],'schema_sha256':t['approved_schema_hash'],'output_schema_sha256':t['approved_output_schema_hash']} for t in await (await connection.execute('SELECT * FROM mcp_tools WHERE server_id=%s AND enabled',(row['server_id'],))).fetchall()} if allowed['observed'] else {}}
+                'contracts':{t['name']:{'description_sha256':t['approved_description_hash'],'schema_sha256':t['approved_schema_hash'],'output_schema_sha256':t['approved_output_schema_hash'],
+                                        'description_clean_sha256':clean_description_hash(t)} for t in await (await connection.execute('SELECT * FROM mcp_tools WHERE server_id=%s AND enabled',(row['server_id'],))).fetchall()} if allowed['observed'] else {}}
+
+
+def clean_description_hash(tool: dict) -> str | None:
+    """The approved description with docstring indentation removed (D-336). Python 3.13 strips it at compile time and
+    3.12 keeps it, so one source shows two descriptions: approved on a 3.12 PC, refused on a 3.13 one (Ghidra, pj3).
+    Only the stored text that still matches the approved hash is normalized; any other change still refuses."""
+    import inspect
+    text = tool.get('description')
+    if not isinstance(text, str) or hashlib.sha256(canonical(text)).hexdigest() != tool.get('approved_description_hash'):
+        return None
+    return hashlib.sha256(canonical(inspect.cleandoc(text))).hexdigest()
 
 
 async def complete(device: dict, job_id: str, result: dict | None, error: str | None, *, stopped: bool = False, isolation=None, diagnostics=None) -> bool:

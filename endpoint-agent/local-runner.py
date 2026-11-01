@@ -12,6 +12,7 @@ import re
 import stat
 import signal
 import importlib.util
+import inspect
 from functools import lru_cache
 from contextlib import ExitStack
 import subprocess
@@ -49,6 +50,22 @@ def helper(name):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+class ContractMismatch(ValueError):
+    """The runner refused the tool itself; reported as such, not as the exit code of the process it then stopped."""
+
+
+def contract_matches(tool, pin):
+    if not pin:
+        return False
+    digest=lambda value:hashlib.sha256(canonical(value)).hexdigest()
+    description=tool.get('description','')
+    # D-336: Python 3.13 strips docstring indentation that 3.12 keeps; the Gateway sends the approved text's cleaned hash.
+    described=digest(description)==pin['description_sha256'] or (
+        bool(pin.get('description_clean_sha256')) and digest(inspect.cleandoc(description))==pin['description_clean_sha256'])
+    return described and digest(tool.get('inputSchema',{}))==pin['schema_sha256'] \
+        and digest(tool.get('outputSchema'))==pin['output_schema_sha256']
 
 
 def canonical(manifest):
@@ -659,17 +676,15 @@ def execute_job(config, job, request, account):
             listed=session.request('tools/list',{},deadline-time.time())
             tool=next((t for t in listed.get('tools',[]) if t.get('name')==params['name']),None)
             pin=control['contracts'].get(params['name'])
-            if not tool or not pin or any(hashlib.sha256(canonical(value)).hexdigest()!=pin[key] for key,value in
-                [('description_sha256',tool.get('description','')),('schema_sha256',tool.get('inputSchema',{})),
-                 ('output_schema_sha256',tool.get('outputSchema'))]):
-                raise ValueError('엔드포인트의 도구 계약이 승인값과 다릅니다')
+            if not tool or not contract_matches(tool,pin):
+                raise ContractMismatch('엔드포인트의 도구 계약이 승인값과 다릅니다')
             check()
             result=session.request(method,params,deadline-time.time())
         else:
             raise ValueError('허용하지 않는 로컬 요청')
         answer={'result':result}
     except Exception as exc:
-        reason='timeout' if isinstance(exc,TimeoutError) else 'failed'
+        reason='timeout' if isinstance(exc,TimeoutError) else 'contract' if isinstance(exc,ContractMismatch) else 'failed'
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
         mcp_error=exc.detail if isinstance(exc,McpError) else ''
         # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
@@ -695,6 +710,9 @@ def execute_job(config, job, request, account):
                 diagnostic=session.diagnostic(secrets)
                 if answer['diagnostics']['kind']=='timeout' and diagnostic['kind']!='permission':
                     diagnostic['kind']='timeout'
+                if answer['diagnostics']['kind']=='contract':
+                    # The runner stopped the process itself; its exit code and start banner say nothing about why.
+                    diagnostic.update(kind='contract',exit_code=None,stderr_tail='')
                 if mcp_error:
                     # The same masking as stderr: the MCP's message can echo arguments or file contents.
                     diagnostic['mcp_error']=masked_stderr(mcp_error.encode(),secrets)

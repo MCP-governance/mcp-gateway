@@ -3,6 +3,7 @@ import ast
 from datetime import datetime, timedelta, timezone
 from contextlib import ExitStack
 import hashlib
+import inspect
 import io
 import os
 from pathlib import Path
@@ -236,7 +237,7 @@ class ProcessChecks(unittest.TestCase):
         text=ast.unparse(execute)
         self.assertIn('ProcessSession',text)
         self.assertIn("session.request('tools/list'",text)
-        self.assertIn('output_schema_sha256',text)
+        self.assertIn('contract_matches',text)
         self.assertIn('check_control(job, control)',text)
         self.assertIs(runner.ProcessSession.request,runner.Session.request)
         self.assertIs(runner.ProcessSession.diagnostic,runner.Session.diagnostic)
@@ -275,6 +276,19 @@ class DispatchContract(unittest.TestCase):
                 else:
                     self.assertEqual(answer['result'],{'content':[]})
                     self.assertEqual(calls.call_args.args[0],'tools/call')
+
+    def test_docstring_indentation_is_not_a_contract_change(self):
+        # Python 3.12 keeps a docstring's indentation and 3.13 strips it: one source, two descriptions (pj3, D-336).
+        kept='Decompile.\n\n    Accepts a target.\n    '
+        digest=lambda value:hashlib.sha256(runner.canonical(value)).hexdigest()
+        pin={'description_sha256':digest(kept),'description_clean_sha256':digest(inspect.cleandoc(kept)),
+             'schema_sha256':digest({}),'output_schema_sha256':digest(None)}
+        stripped={'description':'Decompile.\n\nAccepts a target.\n','inputSchema':{}}
+        self.assertTrue(runner.contract_matches(stripped,pin))
+        self.assertTrue(runner.contract_matches({**stripped,'description':kept},pin))
+        self.assertFalse(runner.contract_matches({**stripped,'description':'Decompile.\n\nAccepts any target.\n'},pin))
+        self.assertFalse(runner.contract_matches(stripped,{**pin,'description_clean_sha256':None}))
+        self.assertFalse(runner.contract_matches(stripped,None))
 
 
 if __name__=='__main__':unittest.main(verbosity=2)
