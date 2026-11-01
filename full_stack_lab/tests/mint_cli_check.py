@@ -179,6 +179,11 @@ class Commands(unittest.TestCase):
         self.assertIn("동의 필요", out)
         self.assertNotIn("사용 가능", out.split("커넥터")[0])
 
+    def test_local_screen_column_shrinks_on_a_phone(self):
+        # pj3 11-01 (390px): a 1fr column grew to its content's minimum width (471px) and the page ran off the screen.
+        narrow = access.STYLE.split("@media (max-width:900px)")[1]
+        self.assertIn(".shell{grid-template-columns:minmax(0,1fr)}", narrow)
+
     def test_input_errors_read_in_korean(self):
         for argv, words in ((["logs", "abc"], "'abc' 확인 필요"), (["console", "bad"], "'bad' 없음 · 선택"), (["request"], "필요한 값: 서버")):
             err = io.StringIO()

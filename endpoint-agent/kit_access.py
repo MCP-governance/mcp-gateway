@@ -579,7 +579,7 @@ STYLE = (
     ".note.warn{background:var(--alert-bg);border-color:var(--alert)}.note .btn{margin-left:auto}"
     ".empty{padding:44px 24px;text-align:center;color:var(--ink-3);margin:0}"
     ".foot{margin:0;padding:12px 20px;color:var(--ink-3);font-size:13.5px;border-top:1px solid var(--line)}"
-    "@media (max-width:900px){.shell{grid-template-columns:1fr}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}"
+    "@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr)}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}"
     ".nav{flex-direction:row;overflow-x:auto;padding:8px}.nav a{white-space:nowrap}.main{padding:20px 16px 48px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}"
     "@media (max-width:480px){html,body{overflow-x:hidden}.app-bar{padding:0 12px}.app-identity{display:none}.main{padding:16px 12px 40px}"
     ".page-head h1{font-size:22.5px}.kpis{gap:8px}.kpi .value{font-size:18px}.panel>header{padding:14px 14px 0}.panel .body{padding:12px 14px 14px}"
