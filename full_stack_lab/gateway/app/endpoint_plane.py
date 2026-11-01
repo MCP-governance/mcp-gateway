@@ -632,7 +632,10 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
         entry = {"name": labels.get(item["item_key"], item["name"]), "harness": item["harness"], "state": state}
         (features if item["kind"] == "feature" else connected).append(entry)
     unregistered = await db.fetch_all(
-        """SELECT server_label AS name, transport, config_path AS place, max(reported_at) AS seen FROM endpoint_inventory
+        # A remote server's address (the agent already strips credentials from it) is the source the request form can carry;
+        # a local command is only a digest and gives none.
+        """SELECT server_label AS name, transport, config_path AS place, max(reported_at) AS seen,
+                  max(CASE WHEN endpoint_ref LIKE 'https://%%' THEN endpoint_ref END) AS source FROM endpoint_inventory
             WHERE endpoint_id=%s AND classification='shadow' GROUP BY server_label, transport, config_path ORDER BY 4 DESC""",
         (device["endpoint_id"],))
     calls = await db.fetch_all(

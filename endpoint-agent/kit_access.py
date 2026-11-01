@@ -254,18 +254,28 @@ def sections(summary):
     ]
 
 
-def call_result(call):
-    """The Gateway's decision when the call went through it (a blocked call still "returns" to the harness)."""
+DECISIONS = {"Allow": "허용", "Alert": "경보", "Restrict": "제한", "Block": "차단"}
+
+
+def call_verdict(call):
+    """The Gateway's decision; a call that did not pass the Gateway (local, connector) has none."""
+    return DECISIONS.get(call.get("decision"), "—")
+
+
+def call_outcome(call):
+    """What happened to the tool itself, apart from the decision: an alert can still fail, a block never ran."""
     if call.get("decision") == "Block":
-        return "차단"
-    if call.get("decision") == "Alert":
-        return "경보"
+        return "실행 안 함"
     return "실패" if call.get("failed") else "완료"
+
+
+CALL_COLUMNS = ("시각", "하네스", "경로", "서버 · 도구", "판정", "결과")
 
 
 def call_rows(summary, limit=None):
     return [(short_time(c["called_at"]), HARNESSES.get(c["harness"], c["harness"]), PATHS.get(c["path"], c["path"]),
-             f'{c.get("server_name") or c["server"]} · {c["tool"]}', call_result(c)) for c in summary.get("calls", [])[:limit]]
+             f'{c.get("server_name") or c["server"]} · {c["tool"]}', call_verdict(c), call_outcome(c))
+            for c in summary.get("calls", [])[:limit]]
 
 
 def size_text(value):
@@ -277,7 +287,7 @@ def call_detail(call, console_url=""):
     """One call as the console's detail drawer lists it: the PC's report beside the Gateway's decision."""
     pairs = [("호출 시각", short_time(call["called_at"])), ("하네스", HARNESSES.get(call["harness"], call["harness"])),
              ("PC 계정", call.get("account") or "—"), ("경로", PATHS.get(call["path"], call["path"])),
-             ("서버", call.get("server_name") or call["server"]), ("도구", call["tool"]), ("결과", call_result(call)),
+             ("서버", call.get("server_name") or call["server"]), ("도구", call["tool"]), ("판정", call_verdict(call)), ("결과", call_outcome(call)),
              ("정책", call.get("policy_id") or "—"), ("사유", call.get("reason") or "—"),
              ("입력", size_text(call.get("input_bytes"))), ("출력", size_text(call.get("output_bytes"))),
              ("판정 시각", short_time(call["decided_at"]) if call.get("decided_at") else "—"),
@@ -328,14 +338,32 @@ def print_pairs(title, pairs):
         print(f"  {pad(label, width)}  {value}")
 
 
+def terminal_columns():
+    """The terminal's width; a pipe or a file has no width, so it gets the table as it is."""
+    import shutil
+    import sys
+    return shutil.get_terminal_size((10 ** 4, 24)).columns if sys.stdout.isatty() else 10 ** 4
+
+
 def print_table(title, columns, rows):
     print(f"\n{title} · {len(rows)}")
     if not rows:
         print("  —")
         return
     widths = [max(cells(col), *(cells(r[i]) for r in rows)) for i, col in enumerate(columns)]
+    if 2 + sum(widths) + 2 * (len(widths) - 1) > terminal_columns():
+        # Narrower than the table (an 80-column console, a phone over SSH): one line per row instead of columns that wrap.
+        for row in rows:
+            print("  " + " · ".join(str(cell) for cell in row))
+        return
     for row in (columns, *rows):
         print(("  " + "  ".join(pad(cell, widths[i]) for i, cell in enumerate(row))).rstrip())
+
+
+def print_json(document):
+    import json
+    print(json.dumps(document, ensure_ascii=False, indent=2, default=str))
+    return 0
 
 
 def mint_request(address, server, source_url, purpose):
@@ -367,12 +395,14 @@ def mint_command(argv, address, status_lines, check):
     parser = argparse.ArgumentParser(prog="mint", add_help=False, epilog=HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-h", "--help", action="help", help="도움말")
     commands = parser.add_subparsers(dest="command", required=True, metavar="명령")
-    commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP")
-    logs = commands.add_parser("logs", help="MCP 호출 기록")
+    machine = argparse.ArgumentParser(add_help=False)
+    machine.add_argument("--json", action="store_true", help="JSON 출력")
+    commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP", parents=[machine])
+    logs = commands.add_parser("logs", help="MCP 호출 기록", parents=[machine])
     logs.add_argument("number", nargs="?", type=int, metavar="번호", help="호출 상세 (목록의 번호)")
     logs.add_argument("-n", type=int, default=30, metavar="건수", help="표시할 건수")
-    commands.add_parser("requests", help="내 도입 요청·신청")
-    sources = commands.add_parser("sources", help="승인된 MCP 소스")
+    commands.add_parser("requests", help="내 도입 요청·신청", parents=[machine])
+    sources = commands.add_parser("sources", help="승인된 MCP 소스", parents=[machine])
     sources.add_argument("server", nargs="?", metavar="서버", help="받을 서버")
     sources.add_argument("--to", metavar="폴더", help="받을 폴더")
     request = commands.add_parser("request", help="MCP 도입 요청")
@@ -397,6 +427,8 @@ def mint_command(argv, address, status_lines, check):
             return 0
         if args.command == "sources":
             servers = receive(address, {"action": "list"})
+            if not args.server and args.json:
+                return print_json(servers)
             if not args.server:
                 print_table("승인된 MCP", ("서버", "커밋", "소스"), source_rows(servers))
                 return 0
@@ -418,6 +450,13 @@ def mint_command(argv, address, status_lines, check):
                 import webbrowser
                 webbrowser.open(url)
             return 0
+        if getattr(args, "json", False):
+            keys = {"servers": ("servers", "connectors", "features", "unregistered", "consents"), "requests": ("requests", "applications"),
+                    "logs": ("calls",)}[args.command]
+            document = {key: summary.get(key, []) for key in keys}
+            if args.command == "logs":
+                document["calls"] = document["calls"][:max(1, args.n)] if args.number is None else document["calls"][args.number - 1:args.number]
+            return print_json(document)
         if args.command == "requests":
             print_table("내 요청", ("서버", "상태", "시각"), request_rows(summary))
             print_table("도입 신청", ("서버", "상태", "시각"), application_rows(summary))
@@ -437,7 +476,7 @@ def mint_command(argv, address, status_lines, check):
             print_pairs("MCP 호출", call_detail(calls[args.number - 1], summary.get("console_url", "")))
         else:
             rows = [(n, *row) for n, row in enumerate(call_rows(summary, max(1, args.n)), 1)]
-            print_table("MCP 호출", ("번호", "시각", "하네스", "경로", "서버 · 도구", "결과"), rows)
+            print_table("MCP 호출", ("번호", *CALL_COLUMNS), rows)
             print(f"\n전송 대기 {unsent_calls()}건 · 상세: mint logs <번호>")
         return 0
     except (OSError, ValueError, KeyError, TypeError):
@@ -521,10 +560,10 @@ ICONS = {
 TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("request", "도입 요청"))
 # Values coloured as the console colours them.
 CHIPS = {"경보": "alert", "사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "승인 · 게이트웨이 등록": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
-         "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
+         "차단": "block", "실패": "block", "허용": "allow", "제한": "restrict", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
          "검토 기한 만료": "alert", "게이트웨이 등록": "allow", "검증 실패": "alert", "거부": "block", "검증 대기": "approval",
          "검증 중": "approval", "검증 완료": "restrict", "계약 검토 완료": "approval", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}
-CHIP_COLUMNS = {"상태", "결과", "경로"}
+CHIP_COLUMNS = {"상태", "결과", "경로", "판정"}
 
 
 def svg(name):
@@ -646,7 +685,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 cards = (("연결 상태", values.get("연결 상태", "—"), "allow" if values.get("연결 상태") == "연결됨" else "block", ""),
                          ("사용 가능 서버", sum(1 for s in known.get("servers", []) if s.get("available", True)), "", "servers"),
                          ("미등록 MCP", counts["servers"], "alert" if counts["servers"] else "", "servers"),
-                         ("MCP 호출", len(calls), "block" if any(c.get("failed") for c in calls) else "", "logs"))
+                         ("MCP 호출", len(calls), "block" if any(c.get("failed") or c.get("decision") == "Block" for c in calls) else "", "logs"))
                 kpis = "".join((f'<a class="kpi {tone}" href="/{token}/{link}">' if link else f'<div class="kpi {tone}">')
                                + f'<div class="label">{html.escape(label)}</div><div class="value">{html.escape(str(value))}</div>'
                                + ("</a>" if link else "</div>") for label, value, tone, link in cards)
@@ -678,21 +717,24 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                                f'<div class="body flush"><table class="data"><thead><tr><th>서버</th><th>커밋</th><th></th></tr></thead>'
                                f'<tbody>{rows}</tbody></table></div></section>')
                 parts = sections(summary)
-                links = [f'<a class="btn sm" href="/{token}/request?{urllib.parse.urlencode({"server": u["name"]})}">도입 요청</a>'
+                links = [f'<a class="btn sm" href="/{token}/request?{urllib.parse.urlencode({"server": u["name"], "source": u.get("source") or ""})}">도입 요청</a>'
                          for u in summary.get("unregistered", [])]
                 tables = [table_html(*part, actions=links if part[0] == "미등록 MCP" and links else None) for part in parts]
                 return show("MCP 서버", '<div class="stack">' + "".join(tables) + sources + "</div>")
             if name == "logs":
-                return show("호출 기록", table_html("MCP 호출", ("시각", "하네스", "경로", "서버 · 도구", "결과"), call_rows(summary),
+                return show("호출 기록", table_html("MCP 호출", CALL_COLUMNS, call_rows(summary),
                                                 f"전송 대기 {unsent_calls()}건"))
             if name == "request":
                 options = "".join(f'<option value="{html.escape(u["name"])}">' for u in summary.get("unregistered", []))
-                asked = urllib.parse.parse_qs(self.path.partition("?")[2]).get("server", [""])[0][:120]
+                query = urllib.parse.parse_qs(self.path.partition("?")[2])
+                asked = query.get("server", [""])[0][:120]
+                source = query.get("source", [""])[0][:300]
+                source = source if re.fullmatch(r"https://\S+", source) else ""
                 form = ('<section class="panel"><header><h2>도입 요청</h2></header><div class="body">'
                         f'<form class="form" method="post" action="/{token}/request">'
                         f'<label>서버 이름<input name="server" list="unregistered" required maxlength="120" value="{html.escape(asked)}"></label>'
                         f'<datalist id="unregistered">{options}</datalist>'
-                        f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300"></label>'
+                        f'<label>소스 주소<input name="source_url" type="url" pattern="https://.*" placeholder="https://" maxlength="300" value="{html.escape(source)}"></label>'
                         f'<label>사용 목적<textarea name="purpose" required minlength="10" maxlength="1000"></textarea></label>'
                         f'<div class="row"><button class="btn primary">요청</button></div></form></div></section>')
                 mine = table_html("내 요청", ("서버", "상태", "시각"), request_rows(summary))

@@ -129,6 +129,32 @@ class Commands(unittest.TestCase):
             code, out, *_ = run("logs", "1")
         self.assertEqual((code, out.strip()), (1, "MCP 호출 기록 없음"))
 
+    def test_decision_and_tool_outcome_are_separate(self):
+        cases = [({"decision": "Allow", "failed": False}, ("허용", "완료")), ({"decision": "Alert", "failed": False}, ("경보", "완료")),
+                 ({"decision": "Alert", "failed": True}, ("경보", "실패")), ({"decision": "Block", "failed": False}, ("차단", "실행 안 함")),
+                 ({"decision": "Allow", "failed": True}, ("허용", "실패")), ({"decision": None, "failed": False}, ("—", "완료"))]
+        for call, expected in cases:
+            self.assertEqual((access.call_verdict(call), access.call_outcome(call)), expected, call)
+        code, out, *_ = run("logs")
+        self.assertIn("판정", out)
+        self.assertIn("실행 안 함", out)
+
+    def test_narrow_terminal_prints_one_line_per_row(self):
+        out = io.StringIO()
+        with patch.object(access, "terminal_columns", lambda: 40), contextlib.redirect_stdout(out):
+            access.print_table("MCP 호출", access.CALL_COLUMNS, [("2026-11-01 09:00:00", "Codex", "게이트웨이", "Hugging Face · hub_repo_search", "경보", "완료")])
+        self.assertIn("  2026-11-01 09:00:00 · Codex · 게이트웨이 · Hugging Face · hub_repo_search · 경보 · 완료", out.getvalue())
+
+    def test_json_output_for_scripts(self):
+        import json
+        code, out, *_ = run("logs", "--json", "-n", "1")
+        self.assertEqual(code, 0)
+        self.assertEqual([c["decision_id"] for c in json.loads(out)["calls"]], [912])
+        code, out, *_ = run("requests", "--json")
+        self.assertEqual(len(json.loads(out)["applications"]), 2)
+        code, out, *_ = run("sources", "--json")
+        self.assertEqual(json.loads(out)[0]["server_id"], "memory")
+
     def test_input_errors_read_in_korean(self):
         for argv, words in ((["logs", "abc"], "'abc' 확인 필요"), (["console", "bad"], "'bad' 없음 · 선택"), (["request"], "필요한 값: 서버")):
             err = io.StringIO()
