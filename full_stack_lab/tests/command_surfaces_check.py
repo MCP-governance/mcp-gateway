@@ -65,9 +65,23 @@ class ManagedCommandSurfaces(unittest.TestCase):
                   [s.get("headersHelper") for s in mcp.values()])
             check_connector_surfaces(self, json.loads((out / "managed-settings.json").read_text(encoding="utf-8")), ["git"])
 
+    def test_windows_keeps_process_local_servers_only(self):
+        path = LAB / "gateway/app/endpoint_plane.py"
+        node = next(n for n in ast.parse(path.read_text(encoding="utf-8")).body if getattr(n, "name", None) == "runs_on")
+        namespace = {"__name__": "endpoint_under_test", "__package__": "policy_under_test"}
+        exec(compile(ast.Module(body=[node], type_ignores=[]), str(path), "exec"), namespace)
+        specs = {"remote": {"deployment": "provider"},
+                 "process": {"deployment": "local", "local": {"manifest": {"image": "", "source": {"runtime": "python"}}}},
+                 "container": {"deployment": "local", "local": {"manifest": {"image": "mcp/x@sha256:" + "0" * 64}}}}
+        package = ModuleType("policy_under_test")
+        package.registry = SimpleNamespace(server=specs.get)
+        with patch.dict(sys.modules, {"policy_under_test": package}):
+            self.assertEqual([s for s in specs if namespace["runs_on"](True, s)], ["remote", "process"])
+            self.assertEqual([s for s in specs if namespace["runs_on"](False, s)], ["remote", "process", "container"])
+
     def test_endpoint_managed_policy(self):
         path = LAB / "gateway/app/endpoint_plane.py"
-        names = {"managed_policy", "managed_platform", "json_document", "installed_hash"}
+        names = {"managed_policy", "managed_platform", "json_document", "installed_hash", "runs_on"}
         nodes = [n for n in ast.parse(path.read_text(encoding="utf-8")).body if getattr(n, "name", None) in names]
         self.assertEqual({n.name for n in nodes}, names)
         package = ModuleType("policy_under_test")

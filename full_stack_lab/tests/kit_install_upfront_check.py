@@ -212,6 +212,19 @@ class PrepareLoop(unittest.TestCase):
         self.assertEqual(runner.preparation, {"ready": 1, "total": 1, "note": "", "documents": ["/home/emp/mcp-docs"]})
         self.assertEqual(self.logged, [{"local_runner": "prepared", "server": "local-files"}])
 
+    def test_a_source_server_installs_its_locked_wheels_instead_of_pulling_an_image(self):
+        body = {**manifest(), "image": "", "mounts": [], "source": {"runtime": "python"}}
+        self.listing = {"servers": [{"server_id": body["server_id"], "manifest": body, "signature": "signature",
+                                     "manifest_sha256": runner_digest(body)}]}
+        source = SimpleNamespace(prepare=Mock(return_value=([], "/folder", {})))
+        with patch.object(runner, "helper", return_value=source) as helper:
+            self.once()
+        helper.assert_called_once_with("stdio_source")
+        self.assertEqual(source.prepare.call_args.kwargs, {"seconds": runner.PREFETCH_SECONDS})
+        self.engine.assert_not_called()
+        self.mounts.assert_not_called()  # Windows' runner account has no home: nothing to create without mounts
+        self.assertEqual(self.logged, [{"local_runner": "prepared", "server": "local-files"}])
+
     def test_a_prepared_server_is_not_opened_again_and_a_withdrawn_one_is_forgotten(self):
         self.once()
         self.once()

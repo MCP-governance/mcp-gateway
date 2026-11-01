@@ -3,6 +3,7 @@ import ast
 from datetime import datetime, timedelta, timezone
 from contextlib import ExitStack
 import hashlib
+import inspect
 import io
 import os
 from pathlib import Path
@@ -63,6 +64,8 @@ class Preparation(unittest.TestCase):
     def test_prepare_and_verified_cache_no_second_install(self):
         args,folder,env=source.prepare(self.config,self.body,self.request)
         self.assertEqual(folder.parent,self.base)
+        # No longer than the prepare-* folder it was installed in: Windows' 260-character limit held there (pj3).
+        self.assertLessEqual(len(folder.name),len('prepare-12345678'))
         self.assertIn('-I',args)
         # 고정 시스템 경로만, 실행기 자신의 PATH는 물려주지 않는다.
         self.assertNotEqual(env['PATH'],source.os.environ.get('PATH'))
@@ -78,6 +81,17 @@ class Preparation(unittest.TestCase):
         _,folder,_=source.prepare(self.config,self.body,self.request)
         (folder/'source/main.py').write_text('changed')
         with self.assertRaises(ValueError):source.prepare(self.config,self.body,self.request)
+
+    def test_verified_folder_skips_the_full_check_until_it_changes(self):
+        source.prepare(self.config,self.body,self.request)
+        checked=[]
+        self.config['source_protected']=lambda path:checked.append(path) or True
+        source.prepare(self.config,self.body,self.request)
+        self.assertEqual(checked,[])  # same files, same process: no second walk over every file (pj3: about a minute)
+        _,folder,_=source.prepare(self.config,self.body,self.request)
+        (folder/'source/main.py').write_text('changed')
+        with self.assertRaises(ValueError):source.prepare(self.config,self.body,self.request)
+        self.assertTrue(checked)
 
     def test_target_lock_download_and_runtime_mismatch(self):
         from collections import namedtuple
@@ -204,11 +218,15 @@ class ProcessChecks(unittest.TestCase):
             package.mkdir(parents=True)
             (package/'__init__.py').write_text('')
             (package/'value.py').write_text("TEXT='module-ready'")
-            (package/'__main__.py').write_text("from .value import TEXT; print(TEXT)")
+            (package/'__main__.py').write_text("from .value import TEXT; import extra; print(TEXT, extra.X)")
+            # A locked wheel's .pth (pywin32 puts pywintypes there) is honoured although the runner starts with -I -S (pj3).
+            (folder/'packages/lib').mkdir(parents=True)
+            (folder/'packages/lib/extra.py').write_text("X='pth-ready'")
+            (folder/'packages/example.pth').write_text("lib\n")
             args=source.command(folder,{'runtime':'python','entrypoint':'packages/example/src/example/__main__.py'},
                                 {'command':[]},{})
             result=subprocess.run(args,capture_output=True,check=True)
-            self.assertEqual(result.stdout.strip(),b'module-ready')
+            self.assertEqual(result.stdout.strip(),b'module-ready pth-ready')
             with patch.object(source.sys,'executable',str(folder/'missing-python')):
                 with self.assertRaises(ValueError):source.command(folder,{'runtime':'python','entrypoint':'main.py'},
                                                                   {'command':[]},{})
@@ -219,7 +237,7 @@ class ProcessChecks(unittest.TestCase):
         text=ast.unparse(execute)
         self.assertIn('ProcessSession',text)
         self.assertIn("session.request('tools/list'",text)
-        self.assertIn('output_schema_sha256',text)
+        self.assertIn('contract_matches',text)
         self.assertIn('check_control(job, control)',text)
         self.assertIs(runner.ProcessSession.request,runner.Session.request)
         self.assertIs(runner.ProcessSession.diagnostic,runner.Session.diagnostic)
@@ -258,6 +276,19 @@ class DispatchContract(unittest.TestCase):
                 else:
                     self.assertEqual(answer['result'],{'content':[]})
                     self.assertEqual(calls.call_args.args[0],'tools/call')
+
+    def test_docstring_indentation_is_not_a_contract_change(self):
+        # Python 3.12 keeps a docstring's indentation and 3.13 strips it: one source, two descriptions (pj3, D-336).
+        kept='Decompile.\n\n    Accepts a target.\n    '
+        digest=lambda value:hashlib.sha256(runner.canonical(value)).hexdigest()
+        pin={'description_sha256':digest(kept),'description_clean_sha256':digest(inspect.cleandoc(kept)),
+             'schema_sha256':digest({}),'output_schema_sha256':digest(None)}
+        stripped={'description':'Decompile.\n\nAccepts a target.\n','inputSchema':{}}
+        self.assertTrue(runner.contract_matches(stripped,pin))
+        self.assertTrue(runner.contract_matches({**stripped,'description':kept},pin))
+        self.assertFalse(runner.contract_matches({**stripped,'description':'Decompile.\n\nAccepts any target.\n'},pin))
+        self.assertFalse(runner.contract_matches(stripped,{**pin,'description_clean_sha256':None}))
+        self.assertFalse(runner.contract_matches(stripped,None))
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

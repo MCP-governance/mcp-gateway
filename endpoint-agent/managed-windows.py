@@ -548,7 +548,15 @@ def serve_pipe(config, cache, lock, source=False):
         if handle == invalid:
             raise OSError(ctypes.get_last_error(), "파이프를 만들 수 없습니다")
         return handle
-    handle = instance(first=True)
+    # A client still holding the previous service's pipe keeps the name alive for a moment after a restart; the first
+    # instance then fails, and a thread that gave up left the PC with no token and no source pipe until the next restart
+    # (pj3 11-01, "서비스 중지"). The flag stays: it is what keeps another process from squatting the name.
+    while True:
+        try:
+            handle = instance(first=True)
+            break
+        except OSError:
+            time.sleep(1)
     while True:
         connected = kernel32.ConnectNamedPipe(handle, None) or ctypes.get_last_error() == 535  # ERROR_PIPE_CONNECTED
         waiting = instance()  # the next client never finds the name missing

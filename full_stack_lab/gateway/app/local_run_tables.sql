@@ -12,7 +12,11 @@ ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS result_sha256 text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS token_jti uuid;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS policy_version text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS control_sha256 text;
-ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS run_seconds double precision NOT NULL DEFAULT 20 CHECK (run_seconds>0 AND run_seconds<=20);
+ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS run_seconds double precision NOT NULL DEFAULT 60 CHECK (run_seconds>0 AND run_seconds<=60);
+-- D-333: the per-call bound went from 20 to 60 seconds; installed databases carry the old check.
+ALTER TABLE local_jobs DROP CONSTRAINT IF EXISTS local_jobs_run_seconds_check;
+ALTER TABLE local_jobs ADD CONSTRAINT local_jobs_run_seconds_check CHECK (run_seconds>0 AND run_seconds<=60);
+ALTER TABLE local_jobs ALTER COLUMN run_seconds SET DEFAULT 60;
 CREATE INDEX IF NOT EXISTS local_jobs_owner ON local_jobs(user_token,created_at);
 CREATE INDEX IF NOT EXISTS local_jobs_server ON local_jobs(server_id,created_at);
 CREATE TABLE IF NOT EXISTS local_approvals (

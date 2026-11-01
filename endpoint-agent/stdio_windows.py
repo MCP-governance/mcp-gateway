@@ -77,6 +77,43 @@ class ProcessInfo(C.Structure):
     _fields_ = [('process', W.HANDLE), ('thread', W.HANDLE), ('pid', W.DWORD), ('tid', W.DWORD)]
 
 
+# 직원 프로필의 위치 값만 물려준다. 이게 없으면 Java·Python 서버가 설정·임시 폴더를 못 정해 죽는다
+# (Ghidra: APPDATA 없음, 11-01 pj3). 직원이 바꿀 수 있는 실행 경로·옵션(PATH, PYTHON*, JAVA_TOOL_OPTIONS 등)은
+# 승인한 코드 밖을 실행하게 하므로 넣지 않는다.
+PROFILE_KEYS = {k.upper() for k in (
+    'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'HOMEDRIVE', 'HOMEPATH', 'USERNAME', 'USERDOMAIN',
+    'COMPUTERNAME', 'ProgramData', 'ALLUSERSPROFILE', 'PUBLIC', 'SystemDrive', 'windir', 'ProgramFiles',
+    'ProgramFiles(x86)', 'ProgramW6432', 'CommonProgramFiles', 'CommonProgramFiles(x86)', 'CommonProgramW6432',
+    'PROCESSOR_ARCHITECTURE', 'NUMBER_OF_PROCESSORS', 'OS')}
+
+
+def profile_environment(token):
+    userenv = C.WinDLL('userenv', use_last_error=True)
+    userenv.CreateEnvironmentBlock.argtypes = [C.POINTER(C.c_void_p), W.HANDLE, W.BOOL]
+    userenv.CreateEnvironmentBlock.restype = W.BOOL
+    userenv.DestroyEnvironmentBlock.argtypes = [C.c_void_p]
+    block = C.c_void_p()
+    if not userenv.CreateEnvironmentBlock(C.byref(block), token, False):
+        raise OSError('직원 프로필 환경 확인 실패: ' + str(C.get_last_error()))
+    try:
+        values, at = {}, block.value
+        while entry := C.wstring_at(at):
+            at += (len(entry) + 1) * C.sizeof(C.c_wchar)
+            name, _, value = entry[1:].partition('=')  # 「=C:=C:\」처럼 =로 시작하는 드라이브 항목도 있다
+            name = entry[0] + name
+            if name.upper() in PROFILE_KEYS:
+                values[name] = value
+        return values
+    finally:
+        userenv.DestroyEnvironmentBlock(block)
+
+
+def merged_environment(profile, approved):
+    """Approved values win; Windows names are case-insensitive, so a profile key never doubles one."""
+    taken = {k.upper() for k in approved}
+    return {**{k: v for k, v in profile.items() if k.upper() not in taken}, **approved}
+
+
 def user_token(sid, kernel, security, sessions):
     if not re.fullmatch(r'S-1-5-21-\d+-\d+-\d+-\d+', sid or ''):
         raise ValueError('직원 SID가 없습니다')
@@ -231,7 +268,8 @@ class Job:
             startup.startup.desktop = 'winsta0\\default'
             startup.startup.stdin, startup.startup.stdout, startup.startup.stderr = child
             startup.attributes = C.cast(attributes, C.c_void_p)
-            environment = C.create_unicode_buffer('\0'.join(f'{k}={v}' for k, v in sorted(env.items())) + '\0\0')
+            env = merged_environment(profile_environment(token), env)
+            environment = C.create_unicode_buffer('\0'.join(f'{k}={v}' for k, v in sorted(env.items(), key=lambda kv: kv[0].upper())) + '\0\0')
             command = C.create_unicode_buffer(subprocess.list2cmdline([str(a) for a in args]))
             # The inherited handles are the three pipes only; no service credentials or ambient environment.
             if not security.CreateProcessAsUserW(token, str(args[0]), command, None, None, True,

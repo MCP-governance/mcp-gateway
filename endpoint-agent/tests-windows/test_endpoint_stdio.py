@@ -35,7 +35,9 @@ class WindowsProcess(unittest.TestCase):
             self.assertTrue(inherit)
             self.assertEqual(flags & (0x4 | 0x80000 | 0x400), 0x4 | 0x80000 | 0x400)
             self.assertEqual(set(inherited), {startup._obj.startup.stdin, startup._obj.startup.stdout, startup._obj.startup.stderr})
-            self.assertEqual(env[:env[:].index('\0')], 'LANG=C.UTF-8')
+            entries = env[:].split('\0')
+            self.assertIn('LANG=C.UTF-8', entries)
+            self.assertIn(r'APPDATA=C:\Users\u\AppData\Roaming', entries)
             info._obj.process, info._obj.thread, info._obj.pid = 71, 72, 73
             return True
         security.CreateProcessAsUserW.side_effect = create
@@ -44,7 +46,8 @@ class WindowsProcess(unittest.TestCase):
         job = windows.Job.__new__(windows.Job)
         job.kernel, job.handle = kernel, 69
         with patch.object(windows.C, 'WinDLL', side_effect=lambda name, **kw: security if name == 'advapi32' else sessions), \
-                patch.object(windows, 'user_token', return_value=70) as token:
+                patch.object(windows, 'user_token', return_value=70) as token, \
+                patch.object(windows, 'profile_environment', return_value={'APPDATA': r'C:\Users\u\AppData\Roaming'}):
             child = job.start([sys.executable, '-I'], sid='S-1-5-21-1-2-3-1001', cwd=ROOT, env={'LANG':'C.UTF-8'})
         self.assertEqual(events, ['create', 'bind', 'resume'])
         self.assertEqual(child.pid, 73)
@@ -59,12 +62,25 @@ class WindowsProcess(unittest.TestCase):
         kernel.AssignProcessToJobObject.side_effect = lambda *args: False
         kernel.ResumeThread.reset_mock()
         with patch.object(windows.C, 'WinDLL', side_effect=lambda name, **kw: security if name == 'advapi32' else sessions), \
-                patch.object(windows, 'user_token', return_value=70), patch.object(job, 'close') as close:
+                patch.object(windows, 'user_token', return_value=70), patch.object(job, 'close') as close, \
+                patch.object(windows, 'profile_environment', return_value={'APPDATA': r'C:\Users\u\AppData\Roaming'}):
             with self.assertRaisesRegex(OSError, '결속'):
                 job.start([sys.executable], sid='S-1-5-21-1-2-3-1001', cwd=ROOT, env={'LANG':'C.UTF-8'})
         kernel.ResumeThread.assert_not_called()
         kernel.TerminateProcess.assert_called_once_with(71, 1)
         close.assert_called_once()
+
+    def test_profile_environment_keeps_locations_only(self):
+        block = ctypes.create_unicode_buffer('=C:=C:\\\0APPDATA=C:\\A\0Path=C:\\evil\0JAVA_TOOL_OPTIONS=-javaagent:x\0'
+                                             'PYTHONPATH=C:\\x\0TEMP=C:\\T\0\0')
+        userenv = Mock()
+        userenv.CreateEnvironmentBlock.side_effect = lambda ref, token, inherit: setattr(ref._obj, 'value', ctypes.addressof(block)) or True
+        with patch.object(windows.C, 'WinDLL', return_value=userenv):
+            found = windows.profile_environment(70)
+        self.assertEqual(found, {'APPDATA': 'C:\\A', 'TEMP': 'C:\\T'})
+        userenv.DestroyEnvironmentBlock.assert_called_once()
+        self.assertEqual(windows.merged_environment({'Temp': 'C:\\T', 'APPDATA': 'C:\\A'}, {'TEMP': 'C:\\mine', 'LANG': 'C.UTF-8'}),
+                         {'APPDATA': 'C:\\A', 'TEMP': 'C:\\mine', 'LANG': 'C.UTF-8'})
 
     def test_missing_session_never_creates_a_process(self):
         kernel, security, sessions = Mock(), Mock(), Mock()

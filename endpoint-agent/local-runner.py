@@ -12,6 +12,7 @@ import re
 import stat
 import signal
 import importlib.util
+import inspect
 from functools import lru_cache
 from contextlib import ExitStack
 import subprocess
@@ -30,7 +31,7 @@ MAX_LINE = 262144
 MAX_BYTES = 1048576
 MAX_LINES = 1024
 MAX_QUEUE = 32
-READ_SECONDS = 20
+READ_SECONDS = 60  # 게이트웨이 RUN_SECONDS와 같다(D-333)
 PREPARE_SECONDS = 180
 # 설치·승인 때 미리 받을 때는 첫 호출 한도(PREPARE_SECONDS)에 묶이지 않는다. PJ1의 첫 pull이 5~15분이었다.
 PREFETCH_SECONDS = 1800
@@ -49,6 +50,22 @@ def helper(name):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+class ContractMismatch(ValueError):
+    """The runner refused the tool itself; reported as such, not as the exit code of the process it then stopped."""
+
+
+def contract_matches(tool, pin):
+    if not pin:
+        return False
+    digest=lambda value:hashlib.sha256(canonical(value)).hexdigest()
+    description=tool.get('description','')
+    # D-336: Python 3.13 strips docstring indentation that 3.12 keeps; the Gateway sends the approved text's cleaned hash.
+    described=digest(description)==pin['description_sha256'] or (
+        bool(pin.get('description_clean_sha256')) and digest(inspect.cleandoc(description))==pin['description_clean_sha256'])
+    return described and digest(tool.get('inputSchema',{}))==pin['schema_sha256'] \
+        and digest(tool.get('outputSchema'))==pin['output_schema_sha256']
 
 
 def canonical(manifest):
@@ -659,17 +676,15 @@ def execute_job(config, job, request, account):
             listed=session.request('tools/list',{},deadline-time.time())
             tool=next((t for t in listed.get('tools',[]) if t.get('name')==params['name']),None)
             pin=control['contracts'].get(params['name'])
-            if not tool or not pin or any(hashlib.sha256(canonical(value)).hexdigest()!=pin[key] for key,value in
-                [('description_sha256',tool.get('description','')),('schema_sha256',tool.get('inputSchema',{})),
-                 ('output_schema_sha256',tool.get('outputSchema'))]):
-                raise ValueError('엔드포인트의 도구 계약이 승인값과 다릅니다')
+            if not tool or not contract_matches(tool,pin):
+                raise ContractMismatch('엔드포인트의 도구 계약이 승인값과 다릅니다')
             check()
             result=session.request(method,params,deadline-time.time())
         else:
             raise ValueError('허용하지 않는 로컬 요청')
         answer={'result':result}
     except Exception as exc:
-        reason='timeout' if isinstance(exc,TimeoutError) else 'failed'
+        reason='timeout' if isinstance(exc,TimeoutError) else 'contract' if isinstance(exc,ContractMismatch) else 'failed'
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
         mcp_error=exc.detail if isinstance(exc,McpError) else ''
         # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
@@ -695,6 +710,9 @@ def execute_job(config, job, request, account):
                 diagnostic=session.diagnostic(secrets)
                 if answer['diagnostics']['kind']=='timeout' and diagnostic['kind']!='permission':
                     diagnostic['kind']='timeout'
+                if answer['diagnostics']['kind']=='contract':
+                    # The runner stopped the process itself; its exit code and start banner say nothing about why.
+                    diagnostic.update(kind='contract',exit_code=None,stderr_tail='')
                 if mcp_error:
                     # The same masking as stderr: the MCP's message can echo arguments or file contents.
                     diagnostic['mcp_error']=masked_stderr(mcp_error.encode(),secrets)
@@ -812,9 +830,15 @@ def prepare_once(config, request, log, account, done, folders, failed):
             verify_manifest(config,manifest,entry['signature'],entry['manifest_sha256'],entry['server_id'])
             if iso(manifest['approval']['expires_at']).timestamp()<=time.time():
                 raise ValueError('승인 기한이 지났습니다')
-            folders[key]=ensure_mounts(manifest,account,documents)
-            preparation.update(note='이미지 받는 중: '+name,documents=sorted({d for k in folders for d in folders[k]}))
-            engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
+            # 마운트 없는 매니페스트(소스 실행, Windows)는 폴더를 만들 것이 없다. Windows 실행 계정에는 홈 경로도 없다.
+            folders[key]=ensure_mounts(manifest,account,documents) if manifest['mounts'] else []
+            # 소스 실행 서버는 이미지가 없다. 첫 호출과 같은 준비(잠금 wheel 설치)를 미리 해 둔다.
+            source='source' in manifest
+            preparation.update(note=('설치 중: ' if source else '이미지 받는 중: ')+name,documents=sorted({d for k in folders for d in folders[k]}))
+            if source:
+                helper('stdio_source').prepare(config,manifest,request,seconds=PREFETCH_SECONDS)
+            else:
+                engine_configuration(config,manifest,seconds=PREFETCH_SECONDS)
             done.add(key)
             failed.pop(key,None)
             preparation.update(ready=len(done),note='')
