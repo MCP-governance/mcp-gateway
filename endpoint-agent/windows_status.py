@@ -10,7 +10,7 @@ screen_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(screen_module)
 
 # What the tray may show beside the connection (D-239): names and versions only, never a key or token.
-DETAILS = {"state", "servers", "server_names", "mode", "harnesses", "gateway", "protected_configs"}
+DETAILS = {"state", "servers", "server_names", "mode", "harnesses", "gateway", "protected_configs", "user"}
 
 
 def publish(path, connected, blocks=(), management="", details=None):

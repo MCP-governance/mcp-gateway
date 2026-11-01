@@ -1122,7 +1122,7 @@ def serve(args):
             # inventory is a completeness result the Gateway already received; it is in service.log, not a lost link.
             # The tray shows the approved servers, the state and the versions; no key, token or policy text.
             publish(status_path, True, os_observer.get("recent_blocks", []), management,
-                    details={"state": report["state"], "servers": sorted(policy["servers"]),
+                    details={"state": report["state"], "servers": sorted(policy["servers"]), "user": config.get("username", ""),
                              "server_names": [policy.get("server_names", {}).get(s) or s for s in sorted(policy["servers"])], "mode": config.get("mode", "isolated"),
                              "harnesses": beat.get("host", {}).get("harnesses", {}), "gateway": config["gateway_url"],
                              "protected_configs": health.get("protected_configs")})
