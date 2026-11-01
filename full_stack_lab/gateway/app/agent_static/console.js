@@ -211,7 +211,7 @@ function kitView(kit, os) {
   return html`<div class="row-actions">${chip(kit.servers ? "allow" : "outline", kit.servers ? `MCP 서버 ${kit.servers.split(",").length}개` : "사용 가능한 서버 없음")}</div>
     <div class="row-actions" role="group">${platforms.map((name) => html`<button class="btn sm ${name === os ? "primary" : ""}" type="button" aria-pressed="${String(name === os)}" data-act="pc-kit-os" data-os="${name}">${PLATFORM_KIT[name] || "—"}</button>`)}</div>
     ${platforms.includes(os) ? html`${kitSteps(os, kit)}${os === "macos" ? "" : html`<label class="check"><input type="checkbox" name="kit-isolated"> 고급: 격리 계정<span class="sub">관리자 활성화</span></label>`}
-      <div class="row-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
+      <div class="row-actions kit-download-actions"><button class="btn primary" type="button" data-act="pc-kit-download" data-os="${os}">설치 파일 받기</button></div>` : ""}`;
 }
 const EXIT_TERMS = {
   provider_credential_disclosure: "보유 자격 고지",
