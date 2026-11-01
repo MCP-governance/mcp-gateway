@@ -146,6 +146,7 @@ services:
       - ../full_stack_lab/opa:/policy:ro
       - ../full_stack_lab/registry/field:/registry-field:ro
       - ../endpoint-agent:/endpoint-kit:ro
+      - intake_reports:/intake-reports:ro
       - registry_runtime:/registry-runtime
       - disposal_journal:/disposal
       - upstream_credentials:/run/upstream-credentials:ro
@@ -211,7 +212,6 @@ services:
       - ../full_stack_lab/registry/field:/registry-field:ro
       - ../full_stack_lab/registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
       - ../full_stack_lab/field/pc/mcpgw_pc.py:/app/app/agent_static/kit/mcpgw_pc.py:ro
-      - ../full_stack_lab/runtime/recipes:/runtime-recipes:ro
       - ../endpoint-agent:/endpoint-kit:ro
       - ./ca:/field-ca:ro
       # 동기화 상태 표시는 매핑만 읽는다. 관리 키는 게이트웨이만 받는다.
@@ -241,34 +241,6 @@ services:
       - ../full_stack_lab/supply_chain/semgrep-mcp.yml:/rules/semgrep-mcp.yml:ro
     networks: [data, scanner]
     <<: *hardened
-
-  # 승인한 소스 MCP를 고정 레시피로 빌드·실행하는 유일한 프로세스. 엔진 소켓은 이 컨테이너만 받는다.
-  runtime-worker:
-    image: mcpgw/runtime-worker:${MINT_VERSION}
-    build: {context: ../full_stack_lab, dockerfile: runtime/Dockerfile}
-    restart: unless-stopped
-    environment:
-      DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD}@db:5432/mcp_governance
-      REGISTRY_RUNTIME_DIR: /registry-runtime
-      MCP_PROVENANCE_TRUST_KEYS_FILE: /provenance-trust-keys.json
-      GITEA_ADMIN_URL: http://corp-git:3000
-      GITEA_ADMIN_USER: ${GITEA_ADMIN_USER:-mintadmin}
-      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD}
-      RUNTIME_EGRESS_IMAGE: mcpgw/model-proxy:${MINT_VERSION}
-      RUNTIME_SCAN_INTERVAL_SECONDS: ${RUNTIME_SCAN_INTERVAL_SECONDS:-86400}
-      RUNTIME_CRITICAL_DEADLINE_DAYS: ${RUNTIME_CRITICAL_DEADLINE_DAYS:-7}
-      TRIVY_CACHE_DIR: /trivy-cache
-    depends_on:
-      db: {condition: service_healthy}
-      corp-git: {condition: service_healthy}
-    volumes:
-      - ../full_stack_lab/registry/provenance-trust-keys.json:/provenance-trust-keys.json:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - registry_runtime:/registry-runtime:ro
-      - runtime_trivy_cache:/trivy-cache
-    tmpfs: [/work]
-    networks: [data, ops, scanner]
-    security_opt: ["no-new-privileges:true"]
 
   # 승인된 소스의 사내 사본. 신원은 콘솔 로그인이고 Caddy(고정 IP)가 실은 헤더만 믿는다.
   corp-git:
@@ -390,6 +362,5 @@ volumes:
   intake_reports: {}
   intake_work: {}
   intake_trivy_cache: {}
-  runtime_trivy_cache: {}
   git_data: {}
   caddy_data: {}

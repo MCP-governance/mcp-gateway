@@ -12,6 +12,7 @@ const ui = runInNewContext(`${safe}
 const when = (v) => v || "—", viewer = {kit: true}, location = {origin:"https://console.example"};
 const ACTION = {r:"읽기",w:"쓰기",x:"외부전송 및 실행"};
 const empty = (v) => html\`<div>\${v}</div>\`;
+const chip = (_, label) => html\`<span>\${label}</span>\`;
 const kv = (pairs) => html\`<dl>\${pairs.map(([k,v]) => html\`<dt>\${k}</dt><dd>\${v}</dd>\`)}</dl>\`;
 let drawer;
 const openDrawer = (title,controls,tabs) => {drawer={title,controls,tabs};};
@@ -41,6 +42,10 @@ test("usage details expose only the gateway address and retain approved tools an
   assert.match(String(detail.tabs[2].body), /mcp-source-download[^]*data-commit="a{40}"/);
   const remote = ui.show({...row,execution:"remote",source_available:false,commit_sha:null});
   assert.doesNotMatch(String(remote.tabs[2].body), /mcp-source-download/);
+  const reapproval = ui.show({...row,execution:"reapproval"});
+  assert.match(String(reapproval.tabs[0].body), /엔드포인트 실행으로 재승인 필요/);
+  assert.doesNotMatch(String(reapproval.controls), /available-mcp-copy/);
+  assert.match(String(render([{...row,execution:"reapproval"}])), /엔드포인트 실행으로 재승인 필요/);
   assert.equal(ui.address({...row,connection_url:"https://outside.example/mcp/notes/"}), "");
   assert.equal(ui.address({...row,connection_url:"javascript:alert(1)"}), "");
 });

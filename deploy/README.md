@@ -92,10 +92,10 @@ LiteLLM 설정 견본과 매핑 형식은 [addons/litellm](../addons/litellm/REA
 | `presidio-analyzer` · `presidio-anonymizer` | `mcpgw/presidio-analyzer:<판본>` · Presidio 2.2.364 (digest 고정) | 개인정보 탐지·가림 |
 | `db` | `postgres:18.6-alpine3.24` (digest 고정) | 판정·승인 원장 |
 | `intake-worker` | `mcpgw/intake-worker:<판본>` | 도입 신청 공급망 검사 |
-| `runtime-worker` | `mcpgw/runtime-worker:<판본>` | 승인한 소스 MCP 빌드·격리 실행 |
 | `corp-git` | `gitea/gitea:1.27.3-rootless` (digest 고정) | 승인된 소스의 사내 사본 |
 | `model-proxy` | `mcpgw/model-proxy:<판본>` | 관리형 하네스의 모델 API 목적지 제한 |
 | `siem-worker`(선택) | `mcpgw/gateway:<판본>` | OCSF 이벤트 SIEM 전달 |
 
 추적은 고객의 OpenTelemetry 수집기가 있을 때 `.env`의 `OTEL_SDK_DISABLED=false`와 `OTEL_EXPORTER_OTLP_ENDPOINT`로 켭니다.
-`runtime-worker`는 승인한 MCP를 실행하려고 Docker 소켓을 받습니다. 이 서버는 MINT 전용으로 둡니다.
+
+승인 소스 MCP는 직원 엔드포인트에서 실행하고, 솔루션은 공급망 검사·승인·호출 판정을 담당합니다. 엔진 소켓은 배포 묶음에 게시하지 않습니다. 이전 솔루션 실행 등록은 엔드포인트 실행 재승인이 필요합니다. 업그레이드 전 해당 배치의 이전 실행과 잔여 자원을 중지·확인해야 합니다.

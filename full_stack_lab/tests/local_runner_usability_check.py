@@ -318,11 +318,16 @@ class GatewayControl(unittest.IsolatedAsyncioTestCase):
     async def test_only_inspected_local_error_crosses_core_public_boundary(self):
         class ExceptionGroupDouble(Exception):
             pass
+        class NotStarted(ConnectionError):
+            pass
         public=load_functions(APP/'core.py',{'_root_cause'},
-                 {'BaseExceptionGroup':ExceptionGroupDouble,'local_jobs':self.functions})
+                 {'BaseExceptionGroup':ExceptionGroupDouble,
+                  'local_jobs':SimpleNamespace(LocalExecutionError=self.functions.LocalExecutionError,NotStarted=NotStarted)})
         error=self.functions.LocalExecutionError('관리 계정으로 실행할 수 없습니다 · 종료 코드 126')
         self.assertEqual(public._root_cause(error),str(error))
         self.assertNotIn('synthetic-token',public._root_cause(RuntimeError('synthetic-token')))
+        # 게이트웨이가 쓴 미시작 사유도 그대로(관리자가 원인을 본다).
+        self.assertEqual(public._root_cause(NotStarted('엔드포인트 점검 보고가 만료됐습니다.')),'엔드포인트 점검 보고가 만료됐습니다.')
 
     async def test_complete_hashes_and_appends_the_same_scrubbed_diagnostic(self):
         import hashlib

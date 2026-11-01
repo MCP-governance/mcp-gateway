@@ -78,8 +78,8 @@ async def impact(package: str, version_range: str) -> dict:
     # shortcut: DB keeps only 200 SBOM components; a missing package in a truncated row is unknown.
     rows = await db.fetch_all(
         """SELECT s.id AS server_id, s.display_name, i.id::text AS intake_id,
-                  i.source_ref, r.id::text AS runtime_id, r.generation,
-                  (r.source_commit=i.commit_sha) AS source_match,
+                  i.source_ref, NULL::text AS runtime_id, NULL::integer AS generation,
+                  (s.version=i.commit_sha) AS source_match,
                   sr.id AS sbom_id, sr.status AS sbom_status,
                   i.evidence->'scanners'->'syft'->>'status' AS scan_status,
                   sr.summary->'inventory' AS inventory,
@@ -90,18 +90,16 @@ async def impact(package: str, version_range: str) -> dict:
                    WHERE registered_server_id=s.id
                    ORDER BY updated_at DESC,created_at DESC,id DESC LIMIT 1
              ) i ON true
-             LEFT JOIN mcp_runtimes r ON r.intake_id=i.id
              LEFT JOIN LATERAL (
                   SELECT id,status,summary FROM supply_chain_reports
                    WHERE source_ref=i.source_ref AND scanner='Syft'
                    ORDER BY imported_at DESC,id DESC LIMIT 1
              ) sr ON true
-            ORDER BY s.id,r.generation NULLS FIRST""")
+            ORDER BY s.id""")
     servers = []
     for row in rows:
         inventory = row.get("inventory")
         if (row.get("sbom_status") != "IMPORTED" or row.get("scan_status") != "DONE"
-                or row.get("runtime_id") is None or row.get("generation") is None
                 or row.get("source_match") is not True
                 or not isinstance(inventory, list)):
             judgement, evidence = "자료 없음", []

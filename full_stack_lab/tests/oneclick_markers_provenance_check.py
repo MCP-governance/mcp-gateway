@@ -132,6 +132,7 @@ class OneClickProvenance(lab.OneClickLab):
     async def open_repository(self, tier, envelope=None):
         """tier가 low(공개 자료·읽기) 또는 high(중요 자료·실행)인 저장소 신청의 검토 화면."""
         row = base.row("repository", grade="important" if tier == "high" else "public")
+        row["evidence"]["local_run"] = lab.source_run(row)
         if envelope is not None:
             row["provenance"]["verification"] = {"attestation": envelope}
         self.ledger.add_intake(row)

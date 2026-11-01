@@ -224,35 +224,5 @@ class Pool(unittest.IsolatedAsyncioTestCase):
             await pool.close()
 
 
-class Executor(unittest.TestCase):
-    def test_termination_stops_runtime_and_retries_leftovers_before_success(self):
-        for lifecycle in ("TERMINATING", "RETIRED"):
-            with self.subTest(lifecycle=lifecycle):
-                runtime = {"id": "runtime", "intake_id": "intake", "status": "ACTIVE",
-                           "source_commit": "commit", "image_id": "image"}
-                current = {"status": "APPROVED", "intake_kind": "repository", "commit_sha": "commit",
-                           "repository_url": "repository", "lifecycle": lifecycle, "server_status": "READY"}
-                connection = Mock()
-                connection.execute.side_effect = lambda query, *args: (
-                    SimpleNamespace(fetchall=lambda: [runtime]) if query.startswith("SELECT * FROM mcp_runtimes")
-                    else SimpleNamespace(fetchone=lambda: current) if "FROM mcp_intake_requests" in query
-                    else SimpleNamespace(fetchone=lambda: {"id": "runtime"}))
-                remove = Mock(side_effect=[1, 0])
-                event = Mock()
-                worker = definitions("../../runtime/worker.py", {"approval_problem", "reconcile"}, {
-                    "names": lambda row: {"container": "owned-container"}, "inspect": Mock(return_value={"Image": "image"}),
-                    "remove_runtime_resources": remove, "Jsonb": lambda value: value, "event": event, "log": Mock(),
-                })
-                worker.reconcile(connection, {}, {})
-                event.assert_not_called()
-                self.assertTrue(any("status='STOPPING'" in call.args[0] for call in connection.execute.call_args_list))
-                runtime["status"] = "STOPPING"
-                worker.reconcile(connection, {}, {})
-                self.assertEqual(remove.call_count, 2)
-                event.assert_called_once()
-                self.assertEqual(event.call_args.args[2], "runtime-stopped")
-                self.assertEqual(event.call_args.kwargs["scope"], {"left": 0})
-
-
 if __name__ == "__main__":
     unittest.main()

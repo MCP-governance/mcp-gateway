@@ -81,7 +81,7 @@ class ReviewFixes(unittest.TestCase):
         console = (APP / "agent_static" / "console.js").read_text(encoding="utf-8")
         approval = console[console.index("function intakeApprovalFields("):console.index("async function showIntakeApproval(")]
         self.assertIn('const localRun = out.local_execution || p.local_execution || r.local_execution || r.evidence?.local_execution;', approval)
-        self.assertIn("<legend>PC 격리 실행</legend>", approval)
+        self.assertIn("<legend>엔드포인트 실행</legend>", approval)
         self.assertIn("localRun.user_mapping || unknown", approval)
         self.assertIn('async "intake-one-click"', console)
         self.assertNotIn('async "intake-approve"', console)

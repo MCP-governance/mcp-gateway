@@ -40,7 +40,6 @@ FORWARDED_OK = {
 # Bind-parameter kinds in an INSERT per file: review.record_event, worker.py event().
 INSERT_PARAM_OK = {
     "gateway/app/review.py": 1,
-    "runtime/worker.py": 1,
 }
 
 KIND_CALLS = {"record_event", "require_independent", "transition", "hold_intake"}

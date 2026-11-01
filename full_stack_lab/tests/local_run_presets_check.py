@@ -96,7 +96,11 @@ class Presets(unittest.TestCase):
         self.assertIn('"local_run_status": intake_proposal.local_run_status(row)', SERVICE)
         self.assertIn("askLocalRun(id, out.request, out.local_run_preset, out.local_run_status)", CONSOLE)
         self.assertIn('${status ? chip("alert", status) : ""}', CONSOLE)
-        self.assertIn("const cur = request.evidence?.local_run || preset;", CONSOLE)
+        self.assertIn("const generated = request.evidence?.endpoint_source;", CONSOLE)
+        self.assertIn("const cur = request.evidence?.local_run || (generated ? { source: generated } : preset);", CONSOLE)
+        self.assertIn("commit: request.commit_sha", CONSOLE)
+        self.assertIn("sha256: request.provenance?.artifact?.sha256", CONSOLE)
+        self.assertIn('lock_sha256: generated?.lock_sha256', CONSOLE)
         self.assertIn("mounts, env, reason_kind", CONSOLE, "환경 변수는 입력란의 값을 보낸다")
 
 

@@ -66,7 +66,7 @@ class Pac12Reason(unittest.TestCase):
         self.assertIn("승인되지 않았습니다", gap(pac_input(pairs=())))
         self.assertIn("허용 목록이 이 도구의 승인 목적지보다 넓어", gap(pac_input(verified=False)))
         # 10-27 실측: 원격 제공자(AWS Knowledge)는 실행기 출구 프록시가 없어 최종 목적지를 확인할 수 없다(D-132).
-        self.assertIn("외부 제공자 서버는", gap(pac_input(verified=False), runtime=False))
+        self.assertIn("최종 접속 목적지를 게이트웨이가 확인할 수 없어", gap(pac_input(verified=False), runtime=False))
         self.assertIn("「중요」 등급 데이터는 외부로 보낼 수 없습니다", gap(pac_input(grade="important")))
 
     def test_no_reason_when_transfer_is_off_or_pair_matches(self):

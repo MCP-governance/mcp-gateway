@@ -97,7 +97,7 @@ class SbomImpactCheck(unittest.TestCase):
         ]
         with patch.object(sbom_impact.db, "fetch_all", new=AsyncMock(return_value=rows)):
             result = asyncio.run(sbom_impact.impact("alpha", ">=1.0.0 <2.0.0"))
-        self.assertEqual(result["counts"], {"affected": 1, "unaffected": 1, "unknown": 3, "no_data": 4})
+        self.assertEqual(result["counts"], {"affected": 2, "unaffected": 1, "unknown": 3, "no_data": 3})
         by_server = {item["server_id"]: item for item in result["servers"]}
         self.assertEqual(by_server["affected"]["judgement"], "영향 있음")
         self.assertEqual(by_server["affected"]["generation"], 2)
@@ -105,7 +105,8 @@ class SbomImpactCheck(unittest.TestCase):
         self.assertEqual(by_server["truncated"]["judgement"], "판단 불가")
         self.assertEqual(by_server["truncated-match"]["judgement"], "판단 불가")
         self.assertEqual(by_server["missing"]["judgement"], "자료 없음")
-        for server in ("source-mismatch", "scan-pending", "no-generation"):
+        self.assertEqual(by_server["no-generation"]["judgement"], "영향 있음")
+        for server in ("source-mismatch", "scan-pending"):
             self.assertEqual(by_server[server]["judgement"], "자료 없음")
             self.assertEqual(by_server[server]["evidence"], [])
 
@@ -177,7 +178,7 @@ class SbomImpactCheck(unittest.TestCase):
         self.assertEqual(ledger[2]["requested_by"], "admin")
         self.assertEqual(ledger[2]["batch"], "batch-1")
         self.assertTrue(any("SET status='DISABLED'" in s for s, _ in connection.statements))
-        self.assertTrue(any("UPDATE mcp_runtimes SET status='STOPPING'" in s for s, _ in connection.statements))
+        self.assertFalse(any("UPDATE mcp_runtimes" in s for s, _ in connection.statements))
 
     def test_already_stopped_server_is_skipped_without_changing_its_reason_or_runtime(self):
         for status, suspended in (("DISABLED", True), ("DISABLED", False),

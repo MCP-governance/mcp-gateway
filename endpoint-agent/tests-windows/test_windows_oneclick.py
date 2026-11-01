@@ -179,7 +179,7 @@ function Start-Process {
         tree = ast.parse((ROOT / 'full_stack_lab/gateway/app/agent_service.py').read_text(encoding='utf-8'))
         names = ast.literal_eval(next(n.value for n in tree.body if isinstance(n, ast.Assign)
                                      and any(isinstance(t, ast.Name) and t.id == 'KIT_FILES' for t in n.targets)))['windows']
-        files = {name: b'synthetic' for name in (*names, 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')}
+        files = {name: b'synthetic' for name in (*names, 'pip.zip', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')}
         files['windows-trust.ps1'] = (ROOT / 'endpoint-agent/windows-trust.ps1').read_bytes()
         manifest = {'schema': 1, 'gateway_url': 'https://gateway.example', 'tailscale_node_id': '',
                     'files': {name: hashlib.sha256(value).hexdigest() for name, value in files.items()}}

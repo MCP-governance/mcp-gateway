@@ -241,9 +241,8 @@ def transfer_gap(pac_input: dict, runtime: bool = True) -> str:
     if not pairs:
         return "이 목적지로의 외부 전송이 도구 범위 심사에서 승인되지 않았습니다"
     if not transfer.get("verified"):
-        # D-132: only a server the solution runtime runs has an egress proxy that proves the final hop.
         if not runtime:
-            return "외부 제공자 서버는 최종 접속 목적지를 게이트웨이가 확인할 수 없어 주소 인자로 외부 전송하지 않습니다"
+            return "최종 접속 목적지를 게이트웨이가 확인할 수 없어 주소 인자로 외부 전송하지 않습니다"
         return "서버의 외부 접속 허용 목록이 이 도구의 승인 목적지보다 넓어 최종 목적지를 확인할 수 없습니다"
     if grade == "important":
         return "「중요」 등급 데이터는 외부로 보낼 수 없습니다"
@@ -255,10 +254,8 @@ def transfer_gap(pac_input: dict, runtime: bool = True) -> str:
 def transfer_binding(spec: dict, feature: str, destinations: list[str]) -> tuple[bool, list[dict]]:
     """POL-26: whether the final destination is proven, and the purpose/destination/grade pairs approved together.
 
-    Multiple or unverified final transfer targets fail closed. HTTP redirects at an MCP tool's
-    downstream HTTP client are not proved by Gateway TLS. The egress proxy of a server the runtime
-    runs admits the reviewed hosts of all its tools (D-114); only when that set is inside this
-    tool's own reviewed hosts does every final hop, redirects included, stay within this binding.
+    Gateway TLS and historical proxy settings cannot prove an endpoint process's final hop.
+    External targets stay unverified until independent endpoint egress evidence is available.
     """
     if not destinations:
         return True, []
@@ -268,8 +265,7 @@ def transfer_binding(spec: dict, feature: str, destinations: list[str]) -> tuple
                                         for h in terms.get("destinations") or [])
     pairs = [{"destination_id": destination, "grade": grade, "purpose": terms.get("purpose", "")}
              for grade in GRADES_UP_TO.get(terms.get("grade"), [])] if covered else []
-    egress = {h for review in (spec.get("tool_reviews") or {}).values() for h in review.get("destinations") or []}
-    return covered and bool(spec.get("runtime")) and egress <= set(terms.get("destinations") or []), pairs
+    return False, pairs
 
 
 async def build(payload: dict, principal: dict, cls, tool: dict | None, contract: dict,

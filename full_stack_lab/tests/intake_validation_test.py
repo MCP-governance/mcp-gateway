@@ -88,7 +88,7 @@ class ValidationTest(unittest.TestCase):
             work, reports = root / "work", root / "reports"
             reports.mkdir()
 
-            def clone(url, checkout):
+            def clone(url, checkout, commit=None):
                 checkout.mkdir(parents=True)
                 (checkout / "README.md").write_text("API key revocation and audit retention")
                 return "d" * 40
