@@ -74,7 +74,7 @@ async def bootstrap_field_accounts() -> None:
         await db.execute(
             """INSERT INTO principals(token, user_id, email, display_name, role, password_hash)
                VALUES (%s,%s,%s,%s,%s,crypt(%s, gen_salt('bf', 12)))
-               ON CONFLICT (token) DO NOTHING""",
+               ON CONFLICT DO NOTHING""",  # an existing account of that name (any token) stays as it is
             (username, username, username, username, role, username),
         )
     await db.execute(
