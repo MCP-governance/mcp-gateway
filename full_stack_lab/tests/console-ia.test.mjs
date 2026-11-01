@@ -114,7 +114,7 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
     ["audit", "siem", "security", "integration"], ["activity", "events", "activity", "live"], ["activity", "siem", "security", "integration"],
     ["activity", "incidents", "security", "incidents"], ["coverage", "", "servers", "items"],
     ["coverage", "devices", "endpoints", "devices"], ["coverage", "shadow", "endpoints", "shadow"],
-    ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "intake", "impact"],
+    ["coverage", "vendor", "servers", "vendor"], ["sbom-impact", "", "servers", "servers"], ["intake", "impact", "servers", "servers"],
     ["servers", "shadow", "endpoints", "shadow"],
     ["servers", "contract", "servers", "servers"],
     ["people", "devices", "endpoints", "devices"], ["people", "managed", "endpoints", "managed"],
@@ -129,6 +129,7 @@ test("옛 주소 네 종류와 세부 탭·필터를 새 위치로 보낸다", (
     assert.equal(out.page, target); assert.equal(out.query.get("t"), nextTab);
     assert.equal(out.query.get("q"), "a & b"); assert.equal(out.query.get("before"), "42");
     assert.equal(at.query.get("t"), tab);
+    if (page === "sbom-impact" || (page === "intake" && tab === "impact")) assert.equal(out.query.get("impact"), "1");
     if ((page === "activity" && tab === "approval-history") || (page === "approvals" && tab === "history")) assert.equal(out.query.get("approval_view"), "history");
   }
   for (const page of ["activity", "toString", "__proto__"]) {
@@ -145,7 +146,7 @@ test("직원에게 감사·동의 관리·공급망 탭과 관리자 조회를 �
   const activity = await ui.ROUTES.activity("", "events", new URLSearchParams("t=events"));
   assert.deepEqual(Array.from(activity.html.tabs, (item) => item.key), ["live", "stats"]);
   const intake = await ui.ROUTES.intake("", "impact");
-  assert.deepEqual(Array.from(intake.html.tabs, (item) => item.key), ["list", "approved", "new"]);
+  assert.deepEqual(Array.from(intake.html.tabs, (item) => item.key), ["approved", "new", "list"]);
   const consent = await ui.ROUTES.consent("", "history");
   assert.deepEqual(Array.from(consent.tabs, (item) => item.key), ["pending", "history"]);
   assert.ok(ui.calls.every((path) => !/audit|supply-chain|integrations|approvals/.test(path)));
@@ -179,9 +180,11 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
   assert.deepEqual(Array.from(people.html.tabs, (item) => item.key), ["devices", "shadow", "managed"]);
   assert.match(String(people.html.tabs[1].body), /엔드포인트 MCP 설정[^]*엔드포인트 수신기[^]*관측 수집 상태[^]*엔드포인트 차단/);
   assert.match(String(devices.body), /새 PC 활성화[^]*통제 점검[^]*엔드포인트 MCP 설정/);
-  const intake = await ui.ROUTES.intake("", "impact", new URLSearchParams("package=alpha&range=%3E%3D1.0.0"));
-  assert.equal(intake.html.tabs.at(-1).key, "impact");
-  assert.match(String(intake.html.tabs.at(-1).body), /value="alpha"[^]*sbom-impact-stop/);
+  const serversWithImpact = await ui.ROUTES.servers("", "servers", new URLSearchParams("impact=1&package=alpha&range=%3E%3D1.0.0"));
+  assert.equal(serversWithImpact.html.tabs.length, 5);
+  assert.match(String(serversWithImpact.html.tabs[0].body), /server-impact[^]*open[^]*공급망 영향 조회[^]*value="alpha"[^]*sbom-impact-stop/);
+  const intake = await ui.ROUTES.intake("", "", new URLSearchParams());
+  assert.deepEqual(Array.from(intake.html.tabs, (t) => t.key), ["list", "new", "approved"]);
 });
 
 test("MCP 서버에 계약 상태와 확인 시각을 통합하고 상세의 승인본 갱신을 유지한다", async () => {
@@ -766,16 +769,28 @@ test("전체 설정과 발견 항목의 페이지 커서는 독립적이다", as
   assert.equal(ui.covPaging.entries.next, "shadow-3");
 });
 
-test("도입 신청 타이머는 기존 탭에서 갱신하고 공급망 폼·새 신청은 보존한다", async () => {
+test("도입 신청 타이머는 기존 탭에서 갱신하고 새 신청은 보존한다", async () => {
   const ui = build(); let refreshed = 0;
   ui.refreshHook(async () => { refreshed++; });
   const intake = await ui.ROUTES.intake("", "list"); intake.after();
   const tick = [...ui.timers.values()][0];
-  for (const tab of ["list", "approved", "impact", "new"]) {
+  for (const tab of ["list", "approved", "new"]) {
     ui.context.location.hash = `#/intake?t=${tab}`; tick();
   }
   assert.equal(refreshed, 2);
   ui.stopIntake(); assert.equal(ui.timers.size, 0);
+});
+
+test("도입 신청은 역할별 탭 순서와 기본 탭을 적용하고 직접 선택은 유지한다", async () => {
+  for (const admin of [true, false]) {
+    const ui = build(admin);
+    const out = await ui.ROUTES.intake("", "");
+    const order = admin ? ["list", "new", "approved"] : ["approved", "new", "list"];
+    assert.deepEqual(Array.from(out.html.tabs, (t) => t.key), order);
+    assert.equal(out.html.active, order[0]);
+    const selected = await ui.ROUTES.intake("", "new");
+    assert.equal(selected.html.active, "new");
+  }
 });
 
 test("감사 데이터 조회 실패를 정상 빈 목록으로 숨기지 않는다", async () => {

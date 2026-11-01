@@ -421,7 +421,7 @@ const PAGES = [
   { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
   { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
-  { id: "policy", label: "정책", group: "접근 통제" },
+  { id: "policy", label: "보안 관리 정책", group: "접근 통제" },
   { id: "intake", label: "도입 신청", group: "도입 및 종료" },
   { id: "termination", label: "종료·폐기", group: "도입 및 종료", badge: "termination" },
   { id: "consent", label: "이용 동의", group: "내 계정", badge: "consent" },
@@ -476,7 +476,8 @@ function canonicalRoute(at) {
     people: ["endpoints", at.query.get("t")],
     coverage: [["devices", "shadow"].includes(at.query.get("t")) ? "endpoints" : "servers", at.query.get("t") || "items"],
     servers: at.query.get("t") === "contract" ? ["servers", "servers"] : ["endpoints", "shadow"],
-    "sbom-impact": ["intake", "impact"],
+    "sbom-impact": ["servers", "servers"],
+    intake: ["servers", "servers"],
     approvals: at.query.get("t") === "consent" ? ["consent", "pending"]
       : at.query.get("t") === "unsent" ? ["overview", "unsent"]
         : ["overview", "approvals"],
@@ -487,10 +488,12 @@ function canonicalRoute(at) {
   if (at.page === "policy" && at.query.get("t") !== "capabilities") return at;
   if (at.page === "people" && !["devices", "managed"].includes(at.query.get("t"))) return at;
   if (at.page === "servers" && !["shadow", "contract"].includes(at.query.get("t"))) return at;
+  if (at.page === "intake" && at.query.get("t") !== "impact") return at;
   if (!Object.hasOwn(destinations, at.page)) return at;
   const target = destinations[at.page];
   const query = new URLSearchParams(at.query);
   query.set("t", target[1]);
+  if (at.page === "sbom-impact" || (at.page === "intake" && at.query.get("t") === "impact")) query.set("impact", "1");
   if ((at.page === "activity" && at.query.get("t") === "approval-history") || (at.page === "approvals" && at.query.get("t") === "history")) query.set("approval_view", "history");
   if ((at.page === "audit" && target[1] === "live") || (at.page === "activity" && at.query.get("t") === "events")) {
     if (!query.has("since")) query.set("since", "");
@@ -547,7 +550,7 @@ async function route() {
   }
 }
 const reload = () => current.page === "intake" && parseHash().page === "intake"
-  && !["new", "impact"].includes(parseHash().query.get("t")) ? refreshIntake() : route();
+  && parseHash().query.get("t") !== "new" ? refreshIntake() : route();
 
 /** Remember the open tab in the address, without a reload. */
 function rememberTab(key) {
@@ -1280,6 +1283,7 @@ async function showApproval(id) {
 
 let registry = null;
 ROUTES.servers = async (id, tab, query) => {
+  const impactOpen = (!tab || tab === "servers") && query.get("impact") === "1";
   const snapshot = planes();
   const [reg, o, pl, controls, matrix] = await Promise.all([gw("registry"), gw("overview"), snapshot, serverControlTabs(query, snapshot), gw("policy/matrix")]);
   registry = reg;
@@ -1321,6 +1325,7 @@ ROUTES.servers = async (id, tab, query) => {
             { flush: true, end: html`${attention ? html`<a class="btn sm" href="#/servers?t=servers">전체 보기</a>` : ""}<a class="panel-shortcut" href="#/intake"><span>도입 신청</span><span aria-hidden="true">↗</span></a>`,
               tools: html`${listToolbar("server-list", "서버 검색")}<div class="server-list-actions"><button class="btn" type="button" data-act="catalog-refresh">도구 정의 다시 확인</button>
                 <select data-registry-export aria-label="도입 승인 등록부 내보내기"><option value="">도입 승인 등록부 내보내기</option><option value="csv">CSV</option><option value="json">JSON</option></select></div>` })}
+          <details class="server-impact" ${impactOpen ? raw("open") : ""}><summary>공급망 영향 조회</summary>${await supplyChainImpact(impactOpen ? query : new URLSearchParams())}</details>
         </div>` },
         { key: "tools", label: "도구", n: reg.tools.length, body: html`<div class="stack">
           ${panel("등록된 도구", html`<table class="data"><thead><tr><th>서버</th><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
@@ -1758,7 +1763,7 @@ async function refreshIntake() {
   intakeRefreshing = true;
   const seq = routeSeq;
   try {
-    const out = await ROUTES.intake("", parseHash().query.get("t") || "list");
+    const out = await ROUTES.intake("", parseHash().query.get("t") || "");
     if (seq !== routeSeq || parseHash().page !== "intake") return;
     const markup = String(out.html);
     if (markup === intakeRendered) return;
@@ -1846,12 +1851,13 @@ function approvedMcpTable(servers) {
 }
 
 ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
+  const tabOrder = viewer.admin ? ["list", "new", "approved"] : ["approved", "new", "list"];
   const [{ requests }, { servers }, catalog] = await Promise.all([api("/api/mcp-requests"), api("/api/approved-mcp"),
     tab === "new" ? api("/api/mcp-catalog/search") : Promise.resolve(null)]);
   return {
     html: page({
       head: head("도입 신청"),
-      active: tab || "list",
+      active: tabOrder.includes(tab) ? tab : tabOrder[0],
       tabs: [
         { key: "list", label: viewer.admin ? "전체 신청" : "내 신청", n: requests.length, body: html`<div class="stack">
           ${panel("신청", html`<table class="data"><thead><tr><th>서버</th><th>상태</th><th>종료 조건</th><th>위험 등급</th><th>신청</th>${viewer.admin ? html`<th></th>` : ""}</tr></thead><tbody>
@@ -1897,13 +1903,12 @@ ROUTES.intake = async (_, tab, query = new URLSearchParams()) => {
             <div data-requested-tools></div>
           </fieldset>
           <div class="row-actions"><button class="btn primary" type="submit">신청</button></div></form>`)}</div>` },
-        ...(viewer.admin ? [{ key: "impact", label: "공급망 영향", body: await supplyChainImpact(query) }] : []),
-      ],
+      ].sort((a, b) => tabOrder.indexOf(a.key) - tabOrder.indexOf(b.key)),
     }),
     after: () => {
       intakeTimer = setInterval(() => {
         // Do not close a report drawer, reset an unfinished form or interrupt a review.
-        if (!document.hidden && parseHash().page === "intake" && !["new", "impact"].includes(parseHash().query.get("t"))
+        if (!document.hidden && parseHash().page === "intake" && parseHash().query.get("t") !== "new"
           && !$("#drawer").classList.contains("open") && !$("#dialog").open)
           refreshIntake().catch((error) => toast(error.message, true));
       }, 5000);
@@ -2524,7 +2529,7 @@ ROUTES.policy = async (_, tab) => {
   organizationPolicies = ledger.organization?.policies || [];
   return {
     html: page({
-      head: head("정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
+      head: head("보안 관리 정책", { status: modeChip(enforcement), actions: html`<button class="btn ${enforcement === "enforce" ? "danger" : "primary"}" data-act="enforcement"
         data-mode="${enforcement === "enforce" ? "monitor" : "enforce"}">${enforcement === "enforce" ? "관찰 모드로 전환" : "집행 모드로 전환"}</button>` }),
       active: tab === "organization" ? "organization" : "ledger",
       tabs: [{ key: "organization", label: "전체 보안 정책", n: organizationPolicies.length, body:
@@ -3465,8 +3470,8 @@ const FORMS = {
   },
   "sbom-impact"(form) {
     const q = new URLSearchParams(new FormData(form));
-    location.hash = `#/intake?t=impact&${q}`;
-    route();
+    const hash = `#/servers?t=servers&impact=1&${q}`;
+    if (location.hash === hash) route(); else location.hash = hash;
   },
 
   async intake(form) {
