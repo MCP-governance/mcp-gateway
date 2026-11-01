@@ -73,6 +73,7 @@ ROLES = {
     "accent": ((167, 197, 255), 153, 94), "accent2": ((183, 208, 255), 153, 94), "title": ((237, 242, 249), 255, 97),
     "dim": ((161, 176, 195), 248, 90), "border": ((117, 134, 157), 244, 90), "ok": ((139, 224, 173), 115, 32),
     "warn": ((243, 206, 121), 222, 33), "err": ((255, 167, 175), 217, 31),
+    "restrict": ((137, 220, 230), 116, 36),
 }
 UTF = {"tl": "╭", "tr": "╮", "bl": "╰", "br": "╯", "h": "─", "v": "│", "ok": "✓", "err": "✗", "warn": "!",
        "dot": "●", "none": "·", "next": "▸", "spin": "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"}
@@ -625,7 +626,7 @@ PAGES = ("상태", "MCP 서버", "호출 기록", "도입 요청")
 VALUE_ROLES = {"허용": "ok", "완료": "ok", "사용 가능": "ok", "승인": "ok", "기본 승인": "ok", "처리됨": "ok", "활성": "ok", "연결됨": "ok",
                "경보": "warn", "제한": "warn", "검토 대기": "warn", "검토 중": "warn", "이 PC 미지원": "warn", "동의 필요": "warn",
                "로컬": "warn", "검토 기한 만료": "warn", "검증 대기": "warn", "검증 중": "warn", "실행 안 함": "dim",
-               "차단": "err", "실패": "err", "거부": "err", "검증 실패": "err", "검증 완료": "ok", "연결 끊김": "err", "게이트웨이": "accent", "커넥터": "accent"}
+               "차단": "err", "실패": "err", "거부": "err", "검증 실패": "err", "검증 완료": "ok", "연결 끊김": "err", "게이트웨이": "accent", "커넥터": "restrict"}
 
 
 def value_role(value):
@@ -762,8 +763,13 @@ def new_request(access, address):
     """The local screen's request form as three questions; the same checks as the form, said before sending."""
     profile, g = color_profile(sys.stdout), glyphs_for(sys.stdout)
     arrow = paint(g["next"], "accent", profile, bold=True)
+    if sys.stdout.isatty():
+        sys.stdout.write("\x1b[2J\x1b[H")
     print("\n  " + app_mark(profile) + "  " + paint("도입 요청", "title", profile, bold=True) + "\n")
+    print("  빈 서버 이름 Enter · Ctrl+C 취소\n")
     server = input(f"  {arrow} " + paint("서버 이름 ", "dim", profile)).strip()
+    if not server:
+        return
     source = input(f"  {arrow} " + paint("소스 주소 (https://, 없으면 Enter) ", "dim", profile)).strip()
     purpose = input(f"  {arrow} " + paint("사용 목적 (10자 이상) ", "dim", profile)).strip()
     problem = access.request_problem(server, source, purpose)

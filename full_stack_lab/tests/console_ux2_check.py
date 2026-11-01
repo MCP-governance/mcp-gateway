@@ -49,28 +49,36 @@ class Axes(unittest.TestCase):
 
 class ReadModels(unittest.IsolatedAsyncioTestCase):
     async def test_endpoint_link_ambiguity_and_redacted_projection(self):
-        rows = [{"id": i, "decision_id": 41, "candidate_count": count, "path": "gateway", "decision": "Alert",
-                 "policy_id": "P-ANOMALY-001", "upstream_attempted": True, "upstream_executed": True,
+        # Row 3 has one candidate (41). Rows 2 and 1 are a burst of the same tool: both list 41 first, so 2 (earlier)
+        # takes the next unclaimed one (40) and 1 has nothing left — no decision shown twice, none invented.
+        rows = [{"id": i, "called_at": at, "decision_id": 41, "candidate_count": count, "candidate_ids": ids, "path": "gateway",
+                 "decision": "Alert", "policy_id": "P-ANOMALY-001", "upstream_attempted": True, "upstream_executed": True,
                  "outcome": {"task": "도구 오류"}, "error": "private", "result_preview": {"sha256": "digest"}}
-                for i, count in [(3, 1), (2, 2), (1, 1)]]
+                for i, at, count, ids in [(3, 30, 1, [41]), (2, 20, 2, [41, 40]), (1, 25, 2, [41, 40])]]
         async def one(query, params):
             valid_sql(query, params)
             return {"n": 3}
         async def all_rows(query, params):
             valid_sql(query, params)
-            self.assertIn("d.client->>'device_id'=e.endpoint_id", query)
+            if "FROM decisions d WHERE d.id = ANY" in query:
+                self.assertEqual(params, ([40],))
+                return [{"decision_id": 40, "decision": "Block", "policy_id": "P-RATE-003", "reason": "같은 호출",
+                         "decided_at": 20, "outcome": None, "upstream_attempted": False, "upstream_executed": False,
+                         "result_preview": None, "error": None}]
+            self.assertIn(endpoint_plane.DECISION_DEVICE + "=e.endpoint_id", query)
             self.assertIn("count(*) OVER ()", query)
+            self.assertIn("AS candidate_ids", query)
             return deepcopy(rows)
         with patch.object(endpoint_plane.db, "fetch_one", side_effect=one), patch.object(endpoint_plane.db, "fetch_all", side_effect=all_rows):
-            page = await endpoint_plane.tool_events_page(limit=2)
-        self.assertEqual(page["next_cursor"], "2")
-        self.assertEqual(page["rows"][0]["decision"], "Alert")
-        self.assertEqual(page["rows"][0]["policy_id"], "P-ANOMALY-001")
-        self.assertEqual(page["rows"][0]["link_strength"], "supporting")
-        self.assertIsNone(page["rows"][1]["decision_id"])
-        self.assertEqual(page["rows"][1]["outcome_axes"]["decision"], "원장 연결 없음")
+            page = await endpoint_plane.tool_events_page(limit=3)
+        by_id = {row["id"]: row for row in page["rows"]}
+        self.assertEqual((by_id[3]["decision_id"], by_id[3]["link_strength"]), (41, "supporting"))
+        self.assertEqual((by_id[2]["decision_id"], by_id[2]["policy_id"], by_id[2]["link_strength"]), (40, "P-RATE-003", "supporting"))
+        self.assertIsNone(by_id[1]["decision_id"])
+        self.assertEqual(by_id[1]["link_strength"], "none")
+        self.assertEqual(by_id[1]["outcome_axes"]["decision"], "원장 연결 없음")
         for row in page["rows"]:
-            self.assertFalse({"error", "result_preview", "outcome"} & row.keys())
+            self.assertFalse({"error", "result_preview", "outcome", "candidate_ids"} & row.keys())
 
     async def test_device_filters_apply_to_rows_counts_and_agents(self):
         calls = []

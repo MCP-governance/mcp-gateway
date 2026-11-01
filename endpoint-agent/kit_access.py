@@ -230,7 +230,16 @@ LOGINS = {"claude": ["claude", "auth", "login"], "codex": ["codex", "login", "--
 # Console pages the terminal can open; consent and account connections are given only there, signed in (D-301).
 CONSOLE_PAGES = {"logs": "activity", "consent": "consent", "requests": "intake", "connections": "connections"}
 SUBCOMMANDS = ("servers", "logs", "requests", "request", "sources", "login", "ui", "console")
-HELP = "명령: servers · logs [번호] · requests · request · sources [서버] · login · ui · console [페이지]  (mint <명령> -h)"
+HELP = "\n".join((
+    "servers · MCP 서버·커넥터 · mint servers",
+    "logs [번호] · 호출 기록·상세 · mint logs 1",
+    "requests · 내 도입 요청 · mint requests",
+    "request <서버> · 도입 요청 · mint request Memory",
+    "sources [서버] · 승인 소스 받기 · mint sources Memory",
+    "login <하네스> · 모델 로그인 · mint login codex",
+    "ui · 화면 열기 · mint ui",
+    "console [페이지] · 웹 콘솔 열기 · mint console consent",
+))
 
 
 def unsent_calls():
@@ -416,7 +425,7 @@ def mint_command(argv, address, status_lines, check):
     korean_argparse()
     parser = argparse.ArgumentParser(prog="mint", add_help=False, epilog=HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-h", "--help", action="help", help="도움말")
-    commands = parser.add_subparsers(dest="command", required=True, metavar="명령")
+    commands = parser.add_subparsers(dest="command", required=True, metavar="명령", help=argparse.SUPPRESS)
     machine = argparse.ArgumentParser(add_help=False)
     machine.add_argument("--json", action="store_true", help="JSON 출력")
     commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP", parents=[machine])
@@ -584,7 +593,9 @@ STYLE = (
     "@media (max-width:480px){html,body{overflow-x:hidden}.app-bar{padding:0 12px}.app-identity{display:none}.main{padding:16px 12px 40px}"
     ".page-head h1{font-size:22.5px}.kpis{gap:8px}.kpi .value{font-size:18px}.panel>header{padding:14px 14px 0}.panel .body{padding:12px 14px 14px}"
     ".kv{grid-template-columns:96px minmax(0,1fr)}.panel>header .tools-end{margin-left:0;flex-wrap:wrap}.note{flex-direction:column;align-items:flex-start}"
-    ".note .btn{margin-left:0}.nav a{padding:6px 10px;min-height:34px}}"
+    ".note .btn{margin-left:0}.nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow-x:visible}"
+    ".nav a{min-width:0;padding:6px 10px;min-height:34px}.nav a span{white-space:normal;overflow-wrap:anywhere}"
+    ".form,.form label{min-width:0}.form .row{flex-wrap:wrap}.btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}}"
 )
 
 ICONS = {
@@ -722,7 +733,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 cards = (("연결 상태", values.get("연결 상태", "—"), "allow" if values.get("연결 상태") == "연결됨" else "block", ""),
                          ("사용 가능 서버", sum(1 for s in known.get("servers", []) if s.get("available", True)), "", "servers"),
                          ("미등록 MCP", counts["servers"], "alert" if counts["servers"] else "", "servers"),
-                         ("MCP 호출", len(calls), "block" if any(c.get("failed") or c.get("decision") == "Block" for c in calls) else "", "logs"))
+                         ("MCP 호출", len(calls), "", "logs"))
                 kpis = "".join((f'<a class="kpi {tone}" href="/{token}/{link}">' if link else f'<div class="kpi {tone}">')
                                + f'<div class="label">{html.escape(label)}</div><div class="value">{html.escape(str(value))}</div>'
                                + ("</a>" if link else "</div>") for label, value, tone, link in cards)

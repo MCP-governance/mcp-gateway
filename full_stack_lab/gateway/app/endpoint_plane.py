@@ -659,12 +659,14 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
         (device["endpoint_id"],))
     calls = await db.fetch_all(
         """SELECT e.called_at, e.harness, e.account, e.server, s.display_name AS server_name, e.tool, e.path, e.failed,
-                  e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason, g.decided_at
+                  e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason, g.decided_at,
+                  g.candidate_count, g.candidate_ids
              FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) """ + GATEWAY_DECISION + """
             WHERE e.endpoint_id=ANY(%s) ORDER BY e.id DESC LIMIT %s""", (lineage, max(1, min(limit, 200))))
     # A call the Gateway refused never reaches the harness's after-call hook (Codex reports only calls that returned), so
     # the PC's own report misses exactly the calls the employee most needs to see (pj1 11-01: #244 consent block). The
     # Gateway's ledger knows this PC by the workstation the call came from; calls already paired above stay single.
+    await assign_links(calls)
     shown = {c["decision_id"] for c in calls if c["decision_id"]}
     ledger = await db.fetch_all(
         """SELECT d.created_at AS called_at,
@@ -672,9 +674,9 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
                        ELSE '' END AS harness,
                   '' AS account, d.server_id AS server, s.display_name AS server_name, d.tool_name AS tool, 'gateway' AS path,
                   d.error IS NOT NULL AS failed, 0 AS input_bytes, 0 AS output_bytes, d.id AS decision_id, d.decision, d.policy_id,
-                  d.reason, d.created_at AS decided_at
+                  d.reason, d.created_at AS decided_at, 'exact' AS link_strength
              FROM decisions d LEFT JOIN mcp_servers s ON s.id = d.server_id
-            WHERE d.user_token=%s AND coalesce(d.client->>'workstation', d.client->>'endpoint_id') = ANY(%s)
+            WHERE d.user_token=%s AND """ + DECISION_DEVICE + """ = ANY(%s)
             ORDER BY d.id DESC LIMIT %s""", (device.get("owner_token"), lineage, max(1, min(limit, 200)))) if owner else []
     calls = sorted([*calls, *(d for d in ledger if d["decision_id"] not in shown)],
                    key=lambda c: c["called_at"], reverse=True)[:max(1, min(limit, 200))]
@@ -732,16 +734,52 @@ async def close_endpoint_request(request_id: str, actor: str) -> bool:
 
 # A call the harness reports for a gateway server is also a Gateway decision: the hook only knows the call returned,
 # the Gateway knows whether it was blocked, alerted or run (pj3 10-31: blocked calls read "완료" on the PC).
-# Matched by person, server, tool and time; the closest decision within the hook's delay.
+# Device-token identity takes precedence over legacy client-reported device hints. Time alone is only supporting evidence.
+DECISION_DEVICE = "coalesce(nullif(d.client->>'device_id',''), nullif(d.client->>'endpoint_id',''), nullif(d.client->>'workstation',''))"
 GATEWAY_DECISION = """LEFT JOIN LATERAL (
        SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at,
               d.outcome, d.upstream_attempted, d.upstream_executed, d.result_preview, d.error,
-              count(*) OVER () AS candidate_count FROM decisions d
+              count(*) OVER () AS candidate_count,
+              array_agg(d.id) OVER (ORDER BY abs(extract(epoch FROM d.created_at - e.called_at)), d.id
+                                    ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS candidate_ids FROM decisions d
         WHERE e.path='gateway' AND d.server_id=e.server AND d.tool_name=e.tool AND d.user_token=a.owner_token
-           AND (d.client->>'device_id' IS NULL OR d.client->>'device_id'=e.endpoint_id)
+           AND """ + DECISION_DEVICE + """=e.endpoint_id
            AND d.created_at BETWEEN e.called_at - interval '30 seconds' AND e.called_at + interval '5 seconds'
         ORDER BY abs(extract(epoch FROM d.created_at - e.called_at)) LIMIT 1) g ON TRUE
      LEFT JOIN mcp_servers s ON s.id = e.server"""
+
+
+LINK_FIELDS = ("decision_id", "decision", "policy_id", "reason", "decided_at", "outcome", "upstream_attempted",
+               "upstream_executed", "result_preview", "error")
+
+
+async def assign_links(rows: list[dict]) -> None:
+    """One decision per reported call, on the PC and the web alike. A burst of the same tool (pj3 11-01: three
+    hub_repo_search calls in two seconds) has several candidates per call: a call with a single candidate keeps it,
+    the rest take the nearest unclaimed one in time order, so no decision is shown twice and none is dropped.
+    ponytail: matching is within the rows at hand (one page); a burst split across pages may pair differently."""
+    taken = {row["decision_id"] for row in rows if row.get("candidate_count") == 1 and row.get("decision_id")}
+    pending = {}
+    for row in sorted(rows, key=lambda r: r.get("called_at") or 0):
+        if (row.get("candidate_count") or 0) <= 1:
+            continue
+        choice = next((i for i in row.get("candidate_ids") or [] if i not in taken), None)
+        if choice is not None:
+            taken.add(choice)
+        if choice != row.get("decision_id"):
+            for key in LINK_FIELDS:
+                row[key] = None
+            if choice is not None:
+                pending[choice] = row
+    if pending:
+        for found in await db.fetch_all(
+                """SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at, d.outcome,
+                          d.upstream_attempted, d.upstream_executed, d.result_preview, d.error
+                     FROM decisions d WHERE d.id = ANY(%s)""", (list(pending),)):
+            pending[found["decision_id"]].update(found)
+    for row in rows:
+        row.pop("candidate_ids", None)
+        row["link_strength"] = "supporting" if row.get("decision_id") else "none"
 
 
 async def tool_events_page(path: str | None = None, limit: int = 100, cursor: str | None = None) -> dict:
@@ -751,19 +789,16 @@ async def tool_events_page(path: str | None = None, limit: int = 100, cursor: st
     rows = await db.fetch_all(
         """SELECT e.*, a.hostname, p.display_name AS owner_name, g.decision_id, g.decision, g.policy_id,
                   g.reason, g.outcome, g.upstream_attempted, g.upstream_executed, g.result_preview, g.error,
-                  g.candidate_count, s.display_name AS server_name
+                  g.candidate_count, g.candidate_ids, s.display_name AS server_name
              FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) LEFT JOIN principals p ON p.token = a.owner_token
              """ + GATEWAY_DECISION + """ WHERE """
         + base + (" AND e.id < %s" if after else "") + " ORDER BY e.id DESC LIMIT %s",
         (*params, *([after] if after else []), limit + 1))
     rows, next_cursor = _window(rows, limit)
     from .outcomes import endpoint_outcome
+    await assign_links(rows)
     for row in rows:
-        if row.get("candidate_count", 1) != 1:
-            for key in ("decision_id", "decision", "policy_id", "reason", "outcome", "upstream_attempted", "upstream_executed", "result_preview", "error"):
-                row[key] = None
         row["outcome_axes"] = endpoint_outcome(row)
-        row["link_strength"] = "supporting" if row.get("decision_id") else "none"
         for key in ("outcome", "result_preview", "error"):
             row.pop(key, None)
     return {"rows": rows, "total": int(total["n"] or 0), "limit": limit, "next_cursor": next_cursor}
