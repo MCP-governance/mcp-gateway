@@ -88,7 +88,7 @@ test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사�
     const ui = build(admin); ui.renderNav("activity");
     const markup = ui.node("#nav").innerHTML;
     assert.deepEqual([...markup.matchAll(/href="#\/([\w-]+)"/g)].map((m) => m[1]), admin ? adminPages : ["activity", "intake", "consent", "connections"]);
-    assert.match(markup, admin ? /호출 및 감사 기록/ : /호출 기록/);
+    assert.match(markup, /호출 기록/);
   }
 });
 

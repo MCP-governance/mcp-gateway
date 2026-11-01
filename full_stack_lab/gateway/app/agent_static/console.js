@@ -416,7 +416,7 @@ const chartBox = (id, label, size = "") => html`<div class="chart ${size}" id="$
 // ── routing ──────────────────────────────────────────────────────────────────
 const PAGES = [
   { id: "overview", label: "대시보드", group: "운영", badge: "approvals" },
-  { id: "activity", label: "호출 및 감사 기록", group: "운영" },
+  { id: "activity", label: "호출 기록", group: "운영" },
   { id: "security", label: "보안 관제", group: "운영" },
   { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
   { id: "people", label: "사용자 관리", group: "접근 통제" },
@@ -1031,10 +1031,10 @@ ROUTES.activity = async (arg, tab, query) => {
           </div>`;
   return {
     html: page({
-      head: head(viewer.admin ? "호출 및 감사 기록" : "호출 기록"),
+      head: head("호출 기록"),
       active: tab || "live",
       tabs: [
-        { key: "live", label: "호출 기록", body: html`<div class="feed-toolbar">
+        { key: "live", label: "목록", body: html`<div class="feed-toolbar">
           <span class="live"><span class="dot" id="feed-dot"></span><span id="feed-live-state"></span><span aria-hidden="true">|</span><span id="feed-live-time"></span>
             <button class="feed-live-toggle" type="button" data-act="live" aria-pressed="${String(!feed.live)}" aria-label="${feed.live ? "일시정지" : "실시간 재개"}" title="${feed.live ? "일시정지" : "실시간 재개"}">${icon(feed.live ? "pause" : "play")}</button></span>
           <span class="feed-count" id="feed-status"></span>
@@ -1298,8 +1298,7 @@ ROUTES.servers = async (id, tab, query) => {
     html: page({
       head: head("AI 연결 관리", { actions: html`<button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button><button class="btn" data-act="registry-export" data-format="csv">등록부 CSV</button>
         <button class="btn" data-act="registry-export" data-format="json">등록부 JSON</button>
-        <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>
-        <button class="btn" type="button" data-act="connector-policy">커넥터 정책 내보내기</button>` }),
+        <button class="btn" data-act="catalog-refresh">계약 다시 확인</button>` }),
       active: tab || "servers",
       tabs: [
         { key: "servers", label: "서버 목록", n: serverRows.length, body: html`<div class="stack">
