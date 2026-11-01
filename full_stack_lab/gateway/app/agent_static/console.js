@@ -1290,6 +1290,9 @@ ROUTES.servers = async (id, tab, query) => {
   const attention = query.get("attention") === "required";
   const serverRows = attention ? servers.filter(serverNeedsAttention) : servers;
   const actions = (list) => (list || []).map((a) => ACTION[a] || a).join(", ");
+  const resources = (g) => html`${[["경로", g.path_roots], ["읽기 전용 경로", g.readonly_path_roots],
+    ["저장소", g.repositories], ["테이블", g.tables], ["명령", g.commands], ["전송 대상", g.transfer_destinations]]
+    .filter(([, values]) => values?.length).map(([label, values]) => html`<span class="sub"><span>${label}</span>: <span>${values.join(", ")}</span></span>`)}`;
   const toolFilter = query.get("server") || "";
   const tools = reg.tools.filter((t) => !toolFilter || t.server_id === toolFilter);
   const option = (value, label) => html`<option value="${value}" ${value === toolFilter ? raw("selected") : ""}>${label}</option>`;
@@ -1320,17 +1323,19 @@ ROUTES.servers = async (id, tab, query) => {
             { flush: true, end: attention ? html`<a class="btn sm" href="#/servers?t=servers">전체 보기</a>` : "", tools: listToolbar("server-list", "서버 검색") })}
         </div>` },
         { key: "tools", label: "도구", n: reg.tools.length, body: html`<div class="stack">
-          ${panel("도구", html`<table class="data"><thead><tr><th>서버</th><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
+          ${panel("등록된 도구", html`<table class="data"><thead><tr><th>서버</th><th>도구</th><th>행위</th><th>상태</th></tr></thead><tbody>
             ${tools.map((t) => html`<tr><td class="mono">${t.server_id}</td><td><code>${t.name}</code></td>
               <td>${chip({ r: "allow", w: "alert", x: "block" }[t.action] || "", ACTION[t.action] || t.action)}</td>
               <td>${!t.enabled ? chip("outline", "미승인") : t.contract_ok ? chip("allow", "계약 일치") : chip("alert", "계약 불일치")}</td></tr>`)}
             </tbody></table>`, { flush: true, sub: `${tools.length}개`,
             tools: html`<select data-act-change="tool-filter" aria-label="서버">${option("", "모든 서버")}${reg.servers.map((s) => option(s.id, s.id))}</select>` })}</div>` },
         { key: "capabilities", label: "접근 권한", n: matrix.capabilities.length + matrix.runtime_envelopes.length, body: panel("접근 권한",
-          matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>사용자</th><th>서버</th><th>행위·자원</th><th>만료 시각</th></tr></thead><tbody>
-          ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>${(g.principals || []).join(", ")}</td><td>${(g.servers || []).join(", ")}</td>
-            <td>${actions(g.actions)}<span class="sub">${(g.path_roots || []).join(", ")}</span></td><td>${when(g.valid_until)}</td></tr>`)}
-          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>${audienceText(g.principals)}</td><td><code>${g.server_id}</code></td><td>${Object.keys(g.tools || {}).join(", ")}<span class="sub">도입 승인</span></td><td>${when(g.valid_until)}</td></tr>`)}
+          matrix.capabilities.length + matrix.runtime_envelopes.length ? html`<table class="data"><thead><tr><th>권한</th><th>권한 출처</th><th>사용자</th><th>서버</th><th>허용 행위</th><th>허용 자원</th><th>허용 도구</th><th>만료 시각</th></tr></thead><tbody>
+          ${matrix.capabilities.map((g) => html`<tr><td><code>${g.id}</code></td><td>개별 접근 권한</td><td>${audienceText(g.principals)}</td><td>${(g.servers || []).join(", ") || "—"}</td>
+            <td>${Object.keys(g.server_actions || {}).length ? (g.servers || []).map((server) => html`<span class="sub">${server}: ${actions(g.server_actions[server] || g.actions) || "—"}</span>`) : actions(g.actions) || "—"}</td>
+            <td>${String(resources(g)) ? resources(g) : "—"}</td><td>${(g.tools || []).join(", ") || "—"}</td><td>${when(g.valid_until)}</td></tr>`)}
+          ${matrix.runtime_envelopes.map((g) => html`<tr><td><code>${g.server_id}</code></td><td>도입 승인</td><td>${audienceText(g.principals)}</td><td><code>${g.server_id}</code></td>
+            <td>${actions([...new Set(Object.values(g.tools || {}).filter((a) => typeof a === "string"))]) || "—"}</td><td>—</td><td>${Object.entries(g.tools || {}).map(([tool, action]) => html`<span class="sub"><code>${tool}</code>${ACTION[action] ? ` / ${ACTION[action]}` : ""}</span>`)}</td><td>${when(g.valid_until)}</td></tr>`)}
           </tbody></table>` : empty("실행 권한 없음"), { flush: true }) },
         ...controls,
       ],
@@ -1441,7 +1446,7 @@ const groupRow = (g, items, switchOff = false) => { const vendor = items.find((i
   <td>${["denied", "pending", "expired"].includes(g.state) || switchOff ? connectorControlChip(connectorItems, g.key) : NONE}</td>
   <td class="small">${vendor ? chip("restrict", VENDOR_CONSOLE[vendor.console_state] || vendor.console_state) : NONE}</td>
   <td class="num nowrap">${connectorButtons(g)}</td></tr>`; };
-const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">보고 엔드포인트</th><th>상태</th><th>통제</th><th>벤더 콘솔</th><th></th></tr></thead>`;
+const GROUP_HEAD = html`<thead><tr><th>이름</th><th>하네스</th><th>종류</th><th class="num">보고 엔드포인트</th><th>승인 상태</th><th>통제 적용 상태</th><th>벤더 콘솔</th><th></th></tr></thead>`;
 const BUILTIN_HEAD = (first) => html`<thead><tr><th>${first}</th><th>하네스</th><th>경로</th><th class="num">보고 엔드포인트</th><th>상태</th><th></th></tr></thead>`;
 function builtinTabs(conn, items) {
   const builtins = conn.builtins || [], catalog = new Set(builtins.map((b) => b.key));
@@ -1455,8 +1460,8 @@ function builtinTabs(conn, items) {
   return html`<div class="stack">
     ${panel("기본 기능", html`<table class="data">${BUILTIN_HEAD("기능")}<tbody>${features.map(builtinRow)}</tbody></table>
       ${extraFeatures.length ? html`<table class="data">${GROUP_HEAD}<tbody>${extraFeatures.map((g) => groupRow(g, items))}</tbody></table>` : ""}`, { flush: true })}
-    ${panel("기본 커넥터", html`<table class="data">${BUILTIN_HEAD("커넥터")}<tbody>${switches.map(builtinRow)}</tbody></table>
-      ${connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items, off.has(g.harness)))}</tbody></table>` : ""}`, { flush: true })}
+    ${panel("커넥터 전체 사용 설정", switches.length ? html`<table class="data">${BUILTIN_HEAD("커넥터")}<tbody>${switches.map(builtinRow)}</tbody></table>` : empty("항목 없음"), { flush: true })}
+    ${panel("개별 커넥터", connectors.length ? html`<table class="data">${GROUP_HEAD}<tbody>${connectors.map((g) => groupRow(g, items, off.has(g.harness)))}</tbody></table>` : empty("보고된 항목 없음"), { flush: true })}
     ${panel("플러그인·직접 추가", review.length ? html`<table class="data">${GROUP_HEAD}<tbody>${review.map((g) => groupRow(g, items))}</tbody></table>`
       : empty("보고된 항목 없음"), { flush: true, sub: conn.review_days ? `검토 기한 ${conn.review_days}일` : "" })}</div>`;
 }
@@ -1517,7 +1522,7 @@ async function serverControlTabs(query, snapshot = planes()) {
   const coverageSelect = (key, label, choices, cur) => html`<label class="list-search">${label}<select data-coverage-filter="${key}" aria-label="${label}">
     <option value="">전체</option>${Object.entries(choices).map(([k,v]) => html`<option value="${k}" ${k === cur ? raw("selected") : ""}>${Array.isArray(v) ? v[1] : v}</option>`)}</select></label>`;
   return [
-    { key: "items", label: "연결 목록", n: items.length, body: html`<div class="stack">
+    { key: "items", label: "연결 통제 현황", n: items.length, body: html`<div class="stack">
       ${panel("연결 유형별 통제 현황", items.length ? chartBox("c-connections-matrix", "연결 유형별 통제 항목 수", "lg") : empty("항목 없음"), { sub: "연결 항목 수" })}
       ${kpiStrip([["게이트웨이 통제", count("gateway_enforced"), "allow", "#/servers?t=items&state=gateway_enforced"],
         ["엔드포인트 통제", count("endpoint_enforced"), "allow", "#/servers?t=items&state=endpoint_enforced"],

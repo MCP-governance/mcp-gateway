@@ -1,6 +1,21 @@
 // English text for the console. Keys are the Korean text as the screens show it; see i18n.mjs for the
 // key syntax. tests/i18n.test.mjs checks that every Korean text the console can show has an entry.
 export const EN = {
+  "테이블": "Tables",
+  "명령": "Commands",
+  "전송 대상": "Transfer destinations",
+  "승인 상태": "Approval status",
+  "{}분": "{1} min",
+  "권한 출처": "Permission source",
+  "개별 접근 권한": "Explicit access grant",
+  "허용 행위": "Allowed actions",
+  "허용 도구": "Allowed tools",
+  "읽기 전용 경로": "Read-only paths",
+  "커넥터 전체 사용 설정": "Connector-wide settings",
+  "개별 커넥터": "Individual connectors",
+  "연결 통제 현황": "Connection control status",
+  "통제 적용 상태": "Control enforcement status",
+  "등록된 도구": "Registered tools",
   "기본 기능 및 커넥터": "Built-in features and connectors",
   "보안 관제": "Security monitoring",
   "관제 연동": "Monitoring integration",

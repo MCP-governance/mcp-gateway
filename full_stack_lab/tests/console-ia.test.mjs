@@ -187,7 +187,7 @@ test("관리자 통합 탭은 기존 데이터와 필터·작업 버튼을 유�
 test("MCP 서버에 계약 상태와 확인 시각을 통합하고 상세의 승인본 갱신을 유지한다", async () => {
   const ui = build(true, {"/gw/registry": {servers:[{id:"docs",display_name:"Docs",status:"DRIFT",status_reason:"도구 정의 변경",last_seen_at:"2026-11-01T00:00:00Z",lifecycle:"OPERATING"}],tools:[],registrations:{},usage_relationships:[]}});
   const result = await ui.ROUTES.servers("docs", "servers", new URLSearchParams());
-  assert.deepEqual(Array.from(result.html.tabs, (t) => t.label), ["MCP 서버", "도구", "접근 권한", "연결 목록", "기본 기능 및 커넥터"]);
+  assert.deepEqual(Array.from(result.html.tabs, (t) => t.label), ["MCP 서버", "도구", "접근 권한", "연결 통제 현황", "기본 기능 및 커넥터"]);
   assert.match(String(result.html.tabs[0].body), /마지막 확인[^]*도구 정의 변경/);
   let detail;
   ui.policyDrawer((title, controls, tabs) => { detail = {controls:String(controls),tabs}; });
@@ -611,20 +611,36 @@ test("승인 이력 갱신은 선택한 보기를 보존하고 실패를 빈 이
 
 test("접근 권한은 AI 연결 관리에서만 조회하고 정책은 기존 목록과 집행 모드를 유지한다", async () => {
   const ui = build(true, { "/gw/policy/matrix": {
-    capabilities: [{ id: "permission-1", principals: ["alice"], servers: ["docs"], actions: ["r"], path_roots: ["/docs"], valid_until: null }],
-    runtime_envelopes: [{ server_id: "docs", principals: ["*"], tools: { read_file: {} }, valid_until: null }],
+    capabilities: [{ id: "permission-1", principals: ["alice"], servers: ["docs"], actions: ["r", "w"], server_actions:{docs:["r"]}, path_roots: ["/docs"], tables:["public.products"], tools:["read"], valid_until: null }],
+    runtime_envelopes: [{ server_id: "docs", principals: ["*"], tools: { read_file: "r" }, valid_until: null }],
   } });
   const connections = await ui.ROUTES.servers("", "capabilities", new URLSearchParams());
   const access = connections.html.tabs.find((tab) => tab.key === "capabilities");
   assert.equal(access.label, "접근 권한");
   assert.equal(access.n, 2);
   assert.match(String(access.body), /permission-1[^]*alice[^]*docs[^]*\/docs[^]*read_file/);
+  assert.match(String(access.body), /권한 출처[^]*허용 행위[^]*허용 자원[^]*허용 도구/);
+  assert.match(String(access.body), /개별 접근 권한[^]*docs: 읽기[^]*public.products[^]*도입 승인/);
+  assert.doesNotMatch(String(access.body), /쓰기/);
   ui.calls.length = 0;
   const policy = await ui.ROUTES.policy("", "");
   assert.equal(policy.html.active, "ledger");
   assert.deepEqual(Array.from(policy.html.tabs, (tab) => tab.key), ["organization", "ledger"]);
   assert.match(String(policy.html.head), /관찰 모드로 전환/);
   assert.ok(!ui.calls.includes("/gw/policy/matrix"));
+});
+
+test("커넥터 전체 설정과 개별 항목을 분리하고 전체 차단 표시를 유지한다", async () => {
+  const ui = build(true, {"/api/connectors": {summary:{pending:0,expired:0},
+    builtins:[{key:"all",label:"전체 커넥터",kind:"connector",harness:"claude",state:"denied"}],
+    items:[{key:"claude:connector:docs",names:["Docs"],kinds:["connector"],harness:"claude",builtin:true,state:"approved",active_pcs:2,people:1}]}});
+  const out = await ui.ROUTES.servers("", "vendor", new URLSearchParams());
+  const body = String(out.html.tabs.find((t) => t.key === "vendor").body);
+  assert.match(body, /커넥터 전체 사용 설정[^]*개별 커넥터[^]*Docs/);
+  assert.match(body, /승인 상태[^]*통제 적용 상태/);
+  assert.match(body, /전체 차단/);
+  assert.match(body, /data-key="all" data-decision="reset"/);
+  assert.match(body, /data-key="claude:connector:docs"/);
 });
 
 test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 POL 연결만 표시한다", async () => {
