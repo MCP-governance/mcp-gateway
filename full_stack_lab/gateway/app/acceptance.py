@@ -612,8 +612,8 @@ async def invitation_enrollment() -> str:
 # Every API path the Console's screens call, with the fields their renderers read. The Console reaches the
 # Gateway only through its own origin, so this goes through agent-service like the browser does.
 CONSOLE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000").rstrip("/")
-# D-265: 감사·통제 범위·동의·공급망 영향은 다른 메뉴의 탭으로 옮겨 관리자 메뉴는 9개다.
-ADMIN_MENUS = {"overview", "approvals", "activity", "servers", "people", "policy", "intake", "termination", "connections"}
+# Keep runtime acceptance aligned with the role-scoped console navigation.
+ADMIN_MENUS = {"overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"}
 EMPLOYEE_MENUS = {"activity", "consent", "intake", "connections"}
 ADMIN_SCREENS = [
     ("/auth/me", ["name", "role_label", "user_id", "pages"]),

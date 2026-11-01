@@ -828,12 +828,14 @@ def status(args):
         except (OSError, ValueError, KeyError, IndexError, subprocess.SubprocessError):
             # 점검 실패의 원문(헤더 도우미·서버 응답)은 화면에 내지 않는다. 결과만 보인다.
             cells = [("하네스 응답", "실패"), ("게이트웨이 MCP 목록", "실패")]
-        # A check prints once and ends (as `tailscale status` does); the live screen is `mint` alone.
-        rows = [("연결 상태", "연결됨" if summary.get("connected") else "연결 끊김"),
-                ("관리 상태", kit_screen.STATES.get(summary.get("state"), "—")), *cells]
-        print("\n".join(f"{a}: {b}" for a, b in rows))
-        return
     screen = Screen()
+    if args.check:
+        # A check prints the whole screen once and ends (as `tailscale status` does), next step included;
+        # the live screen is `mint` alone.
+        screen.stop()
+        screen.summary, screen.cells, screen.next, screen.keys = summary, cells, next_step(summary, time.time()), ()
+        print(screen.text())
+        return
     if getattr(args, "sources", False):
         screen.stop()
         return kit_screen.source_menu(summary.get("source_socket") or f"/run/mcpgw-{summary['user']}.source")

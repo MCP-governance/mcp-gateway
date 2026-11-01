@@ -88,6 +88,7 @@ jobs:
         run: |
           node --test ../.github/ci/compose-cache.test.cjs
           python3 ../.github/ci/changes_test.py
+          python3 ../.github/ci/prepare_lab_capabilities_test.py
           bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
@@ -534,6 +535,7 @@ jobs:
 
       - name: ./console.sh up --no-llm
         run: |
+          python3 ../.github/ci/prepare_lab_capabilities.py
           ./console.sh init-disposal
           ./console.sh prepare-acceptance-tls
           export COMPOSE_FILE=$COMPOSE_FILE:compose.acceptance.yaml

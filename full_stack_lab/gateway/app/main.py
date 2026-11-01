@@ -40,6 +40,7 @@ from .core import (
 from .mcp_facade import build_mcp, transport_security
 from .agent_contract import CONSOLE_SCOPE, ResidencyFields, ToolReview, authenticate, authenticated_user
 from .release import build_info, policy_info
+from . import organization_policy
 from . import activity, audit, incidents, registry, residency, retention, review, risk_tier, siem, supplier_assurance, tool_sunset
 
 AGENT_SERVICE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000")
@@ -610,6 +611,7 @@ async def _compute_overview() -> dict:
         "pending_approvals": int(approvals["n"] or 0),
         "intake_actions": int(intake_actions["n"] or 0), "endpoint_requests": int(endpoint_requests["n"] or 0), "termination": cases,
         "series": series, "flows": flows, "execution": execution, "pipeline": pipeline,
+        "unresolved_execution": await dispatch.uncertain_count(fetch_one=db.admin_fetch_one),
         "enforcement": await enforcement_mode(db.admin_fetch_one), "catalog_version": registry.catalog_version(),
     }
 
@@ -631,9 +633,13 @@ async def latency(hours: int = Query(24, ge=1, le=168), user: dict = Depends(adm
 
 
 async def _compute_latency(hours: int) -> dict:
+    checked_at = datetime.now(UTC)
+    window_start = checked_at - timedelta(hours=hours)
+    window_params = (window_start, checked_at)
     upstream_ms = " + ".join(f"COALESCE((d.timings->>'{stage}')::float8, 0)" for stage in UPSTREAM_STAGES)
-    window = f"""FROM decisions d WHERE d.created_at > now() - make_interval(hours => %s)
-                   AND d.timings IS NOT NULL AND d.action <> 'connect' AND {decommission.REAL_CALL}"""
+    window = f"""FROM decisions d WHERE d.created_at >= %s AND d.created_at <= %s
+                   AND d.timings IS NOT NULL AND d.action <> 'connect'
+                   AND COALESCE(d.client->>'event_kind','tools/call')='tools/call' AND {decommission.REAL_CALL}"""
     summary = await db.admin_fetch_one(f"""WITH t AS (SELECT (d.timings->>'total')::float8 AS total, {upstream_ms} AS upstream,
                                           d.timings ? 'call' AS dispatched {window})
                          SELECT count(*) AS calls, count(*) FILTER (WHERE dispatched) AS dispatched,
@@ -644,29 +650,32 @@ async def _compute_latency(hours: int) -> dict:
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY total) AS total_p95,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY upstream) FILTER (WHERE dispatched) AS upstream_p95
-                           FROM t""", (hours,))
+                           FROM t""", window_params)
     stages = await db.admin_fetch_all(f"""SELECT s.key AS stage, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY s.value::float8) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY s.value::float8) AS p95
                            {window.replace("FROM decisions d", "FROM decisions d, jsonb_each_text(d.timings) s")}
-                            AND s.key <> 'total' GROUP BY s.key""", (hours,))
+                            AND s.key <> 'total' GROUP BY s.key""", window_params)
     servers = await db.admin_fetch_all(f"""SELECT d.server_id, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY {upstream_ms}) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY {upstream_ms}) AS p95,
                                 count(*) FILTER (WHERE d.policy_id = 'MCP-UPSTREAM-001') AS failed
-                           {window} AND d.timings ? 'connect' GROUP BY d.server_id ORDER BY n DESC LIMIT 12""", (hours,))
+                           {window} AND d.timings ? 'connect' GROUP BY d.server_id
+                           ORDER BY p95 DESC NULLS LAST, n DESC, d.server_id LIMIT 12""", window_params)
     series = await db.admin_fetch_all(f"""WITH t AS (SELECT date_trunc('hour', d.created_at) AS hour,
                                           (d.timings->>'total')::float8 - ({upstream_ms}) AS gateway {window})
                          SELECT hour, count(*) AS n,
                                 percentile_cont(0.5) WITHIN GROUP (ORDER BY gateway) AS p50,
                                 percentile_cont(0.95) WITHIN GROUP (ORDER BY gateway) AS p95
-                           FROM t GROUP BY hour ORDER BY hour""", (hours,))
+                           FROM t GROUP BY hour ORDER BY hour""", window_params)
     order = {stage: index for index, stage in enumerate(LATENCY_STAGES)}
 
     def ms(value):
         return None if value is None else round(float(value), 2)
     return {
         "window_hours": hours,
+        "checked_at": checked_at.isoformat(), "window_start": window_start.isoformat(), "window_end": checked_at.isoformat(),
+        "server_sort": "p95_desc", "server_limit": 12,
         "calls": int(summary["calls"] or 0), "dispatched": int(summary["dispatched"] or 0),
         "gateway": {key: ms(summary[f"gateway_{key}"]) for key in ("p50", "p95", "p99")},
         "total": {key: ms(summary[f"total_{key}"]) for key in ("p50", "p95")},
@@ -690,11 +699,13 @@ async def activity_feed(after: int = 0, limit: int = 100, decision: str | None =
                         endpoint: str | None = None, policy: str | None = None,
                         since: datetime | None = None, until: datetime | None = None,
                         page: int = 1, q: str | None = None, decision_id: int | None = None,
+                        principal: str | None = Query(None, max_length=150), trace_id: str | None = Query(None, max_length=128),
+                        before: int = Query(0, ge=0),
                         user: dict = Depends(caller)) -> dict:
     """Decisions as readable sentences. Admins see everyone; others see themselves."""
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.recent(after, limit, own, decision, server, person, event_kind, execution,
-                                 endpoint, policy, since, until, page, q, decision_id)
+                                 endpoint, policy, since, until, page, q, principal, trace_id, before, decision_id)
 
 
 @app.get("/api/activity/analysis")
@@ -704,10 +715,12 @@ async def activity_analysis(decision: str | None = None, server: str | None = No
                             execution: Literal["executed", "not-sent", "unknown", "withheld", "connection-denied"] | None = None,
                             endpoint: str | None = None, policy: str | None = None,
                             since: datetime | None = None, until: datetime | None = None,
-                            q: str | None = None, user: dict = Depends(caller)) -> dict:
+                            q: str | None = None, user: dict = Depends(caller),
+                            principal: str | None = Query(None, max_length=150), trace_id: str | None = Query(None, max_length=128),
+                            before: int = Query(0, ge=0)) -> dict:
     own = None if "admin" in user["roles"] else user["principal"]
     return await activity.analysis(own, decision, server, person, event_kind, execution,
-                                   endpoint, policy, since, until, q)
+                                   endpoint, policy, since, until, q, principal, trace_id, before)
 
 
 @app.get("/.well-known/oauth-protected-resource")
@@ -731,22 +744,47 @@ async def policy_matrix(user: dict = Depends(caller)) -> dict:
 
 
 @app.get("/api/policy/ledger")
-async def policy_ledger_view(user: dict = Depends(caller)) -> dict:
+async def policy_ledger_view(user: dict = Depends(admin_caller)) -> dict:
     """The policy list as the running OPA holds it, ordered by priority."""
-    ledger, policy_set, authorization, active = await asyncio.gather(
-        core.policy_ledger(refresh=True),
+    checked_at = datetime.now(UTC)
+    ledger, policy_set, authorization, active, records, deployment = await asyncio.gather(
+        core.opa_document("policy_ledger"),
         core.opa_document("policy_set"),
         core.opa_document("authorization"),
         db.fetch_one("SELECT * FROM policy_versions WHERE status='ACTIVE' ORDER BY activated_at DESC LIMIT 1"),
+        db.fetch_all("""SELECT policy_id, count(*) AS count, max(created_at) AS last_seen_at
+                        FROM decisions WHERE created_at >= %s AND created_at <= %s
+                        GROUP BY policy_id""", (checked_at - timedelta(hours=24), checked_at)),
+        policy_deployment_evidence(),
     )
-    entries = [{"policy_id": pid, **entry} for pid, entry in sorted(ledger.items(), key=lambda item: item[1].get("priority", 9999))]
+    loaded = isinstance(ledger, dict)
+    recent = {row["policy_id"]: {"count": row["count"], "last_seen_at": row["last_seen_at"]} for row in records}
+    entries = [{**entry, "policy_id": pid, "recent": recent.get(pid, {"count": 0, "last_seen_at": None}),
+                "monitor_behavior": "protected" if pid.startswith(core.ALWAYS_ENFORCED) else "eligible"}
+               for pid, entry in sorted((ledger if loaded else {}).items(), key=lambda item: item[1].get("priority", 9999))]
     return {
+        "source_state": "loaded" if loaded else "unavailable",
+        "checked_at": checked_at.isoformat(),
+        "deployment": deployment,
+        "record_window_hours": 24,
+        "organization": organization_policy.catalog(),
         "policy_set": policy_set or {},
         "authorization": authorization or {},
         "deployed_rego": active,
         "environment": core.GATEWAY_ENVIRONMENT,
         "policies": entries,
     }
+
+
+async def policy_deployment_evidence() -> dict | None:
+    try:
+        info = await policy_info(core.OPA_URL)
+    except (OSError, ValueError, KeyError, TypeError, httpx.HTTPError):
+        return None
+    # A missing OPA response is unknown, not a confirmed mismatch or a successful deployment.
+    if not info.get("loaded_sha256") or not info.get("loaded_data_sha256"):
+        return None
+    return {"rules_match": info["rules_match"], "data_match": info["data_match"]}
 
 
 @app.post("/api/session")
@@ -821,9 +859,12 @@ async def approval_revoke(approval_id: UUID, request: ApprovalEvidence, user: di
 
 
 @app.get("/api/dispatch-intents")
-async def dispatch_intents(user: dict = Depends(admin_caller)) -> dict:
+async def dispatch_intents(user: dict = Depends(admin_caller), page: int = Query(default=1, ge=1)) -> dict:
     """Calls that were sent and never answered. The gateway does not retry them."""
-    return {"rows": await dispatch.uncertain()}
+    total = await dispatch.uncertain_count()
+    current_page = min(page, max(1, (total + 199) // 200))
+    return {"rows": await dispatch.uncertain(offset=(current_page - 1) * 200),
+            "total": total, "page": current_page, "page_size": 200}
 
 
 @app.post("/api/dispatch-intents/{request_id}/resolve")
@@ -1097,9 +1138,12 @@ def audit_filters(before: int = Query(0, ge=0), decision: str | None = Query(Non
                   server: str | None = Query(None, max_length=150), principal: str | None = Query(None, max_length=150),
                   policy: str | None = Query(None, max_length=150), event_kind: str | None = Query(None, max_length=30),
                   execution: str | None = Query(None, max_length=30), since: datetime | None = None,
-                  until: datetime | None = None, trace_id: str | None = Query(None, max_length=128)) -> dict:
+                  until: datetime | None = None, trace_id: str | None = Query(None, max_length=128),
+                  person: str | None = Query(None, max_length=150), endpoint: str | None = Query(None, max_length=200),
+                  q: str | None = Query(None, max_length=120), view: Literal["ledger", "calls"] = "ledger") -> dict:
     return dict(before=before, decision=decision, server=server, principal=principal, policy=policy,
-                event_kind=event_kind, execution=execution, since=since, until=until, trace_id=trace_id)
+                event_kind=event_kind, execution=execution, since=since, until=until, trace_id=trace_id,
+                person=person, endpoint=endpoint, query=q, view=view)
 
 
 @app.get("/api/audit/events")
@@ -1288,8 +1332,13 @@ async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dic
 
 
 @app.get("/api/termination/cases")
-async def termination_cases(user: dict = Depends(admin_caller)) -> dict:
-    return {"cases": await decommission.list_cases(), "summary": await decommission.summary()}
+async def termination_cases(user: dict = Depends(admin_caller),
+                            attention: Literal["required", "overdue"] | None = None,
+                            page: int = Query(default=1, ge=1)) -> dict:
+    summary = await decommission.summary()
+    return {"cases": await decommission.list_cases(attention=attention, offset=(page - 1) * 50),
+            "summary": summary, "page": page, "page_size": 50,
+            "total": summary["action_required" if attention == "required" else "overdue" if attention == "overdue" else "total_cases"]}
 
 
 @app.post("/api/termination/cases", status_code=201)

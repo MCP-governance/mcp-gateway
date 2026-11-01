@@ -19,7 +19,7 @@ import sys
 LAB = pathlib.Path(__file__).resolve().parent.parent
 ROUTER = LAB / "gateway" / "app" / "main.py"
 README = LAB / "README.md"
-DOC_MARKER = "Gateway API 중 토큰 없이 열려 있는 것은 다음뿐입니다:"
+DOC_MARKER = "게이트웨이 API 중 토큰 없이 열려 있는 것은 다음뿐입니다:"
 CONSOLE_REDIRECT = '+ "/workspace")'
 # Login has to be reachable without a token or nobody could ever get one; the
 # browser console is served by the Agent service and is not an API.
