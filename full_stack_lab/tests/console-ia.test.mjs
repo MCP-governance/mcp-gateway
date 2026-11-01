@@ -326,7 +326,8 @@ test("연결 해제와 검토 종료는 대상 확인 취소 시 쓰기를 보�
 
 test("표는 한글 상태·서버명과 시각을 보존하고 주소·해시만 강제 줄바꿈한다", () => {
   const css = readFileSync(new URL("../gateway/app/agent_static/console.css", import.meta.url), "utf8");
-  assert.match(css, /table\.data td\{[^}]*word-break:keep-all;overflow-wrap:normal/);
+  // A long id without the address/hash class still breaks instead of widening the table; Hangul words stay whole.
+  assert.match(css, /table\.data td\{[^}]*word-break:keep-all;overflow-wrap:break-word/);
   assert.match(css, /table\.data \.chip\{word-break:keep-all;overflow-wrap:normal/);
   assert.match(css, /\.nowrap\{white-space:nowrap;font-variant-numeric:tabular-nums/);
   assert.match(css, /table\.data \.address,table\.data \.hash\{word-break:normal;overflow-wrap:anywhere/);
