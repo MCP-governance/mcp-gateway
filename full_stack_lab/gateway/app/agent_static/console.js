@@ -418,14 +418,14 @@ const PAGES = [
   { id: "overview", label: "대시보드", group: "운영", badge: "approvals" },
   { id: "activity", label: "호출 기록", group: "운영" },
   { id: "security", label: "보안 관제", group: "운영" },
-  { id: "servers", label: "AI 연결 관리", group: "접근 통제", badge: "coverage" },
-  { id: "people", label: "사용자 관리", group: "접근 통제" },
-  { id: "endpoints", label: "엔드포인트 관리", group: "접근 통제" },
-  { id: "policy", label: "보안 관리 정책", group: "접근 통제" },
+  { id: "servers", label: "AI 연결 관리", group: "보안 관리", badge: "coverage" },
+  { id: "people", label: "사용자 관리", group: "보안 관리" },
+  { id: "endpoints", label: "엔드포인트 관리", group: "보안 관리" },
+  { id: "policy", label: "보안 관리 정책", group: "보안 관리" },
   { id: "intake", label: "도입 관리", group: "도입 및 종료" },
   { id: "termination", label: "종료 및 폐기", group: "도입 및 종료", badge: "termination" },
   { id: "consent", label: "이용 동의", group: "내 계정", badge: "consent" },
-  { id: "connections", label: "내 연결", group: "내 계정" },
+  { id: "connections", label: "서비스 계정 연결", group: "내 계정" },
 ];
 let viewer = null;
 let routeSeq = 0;
@@ -1837,7 +1837,7 @@ ROUTES.connections = async () => {
           <a class="btn" href="${c.token_url}" target="_blank" rel="noopener noreferrer">토큰 만들기 ↗</a></div></form>`
       : chip("block", "연결 불가"),
     { sub: c.service, end: c.expired ? chip("alert", "만료") : c.connected ? chip("allow", "연결됨") : chip("outline", "연결 안 됨") });
-  return page({ head: head("내 연결"), active: "list", tabs: [{ key: "list", label: "연결",
+  return page({ head: head("서비스 계정 연결"), active: "list", tabs: [{ key: "list", label: "연결",
     body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
 };
 
@@ -1865,7 +1865,7 @@ function showAvailableMcp(server) {
   const address = approvedMcpAddress(server), tools = server.tools || [];
   const execution = { remote: "원격", pc: "엔드포인트 격리", runtime: "솔루션 실행 환경" };
   openDrawer(server.display_name || server.server_id, html`<div class="row-actions">${address ? html`<button class="btn primary" data-act="available-mcp-copy" data-id="${server.server_id}">MCP 주소 복사</button>` : ""}
-    <a class="btn" href="#/connections">계정 연결 확인</a>${viewer.kit ? html`<button class="btn" data-act="pc-kit">PC 연결 설정</button>` : ""}</div>`, [
+    <a class="btn" href="#/connections">서비스 계정 연결</a>${viewer.kit ? html`<button class="btn" data-act="pc-kit">PC 연결 설정</button>` : ""}</div>`, [
     { key: "usage", label: "이용 방법", body: html`${kv([["사용 목적", server.purpose || "—"], ["연결 경로", "게이트웨이"],
       ["MCP 주소", address ? html`<code>${address}</code>` : "—"], ["실행 방식", execution[server.execution] || "—"], ["사용 기한", when(server.valid_until)]])}` },
     { key: "tools", label: "제공 도구", n: tools.length, body: tools.length ? html`<table class="data"><thead><tr><th>도구</th><th>허용 행위</th><th>사용 목적</th><th>범위 심사</th></tr></thead><tbody>
