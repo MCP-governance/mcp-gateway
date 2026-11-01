@@ -637,7 +637,7 @@ async def self_summary(device: dict, limit: int = 50) -> dict:
         (device["endpoint_id"],))
     calls = await db.fetch_all(
         """SELECT e.called_at, e.harness, e.account, e.server, s.display_name AS server_name, e.tool, e.path, e.failed,
-                  e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason
+                  e.input_bytes, e.output_bytes, g.decision_id, g.decision, g.policy_id, g.reason, g.decided_at
              FROM endpoint_tool_events e JOIN endpoint_agents a USING (endpoint_id) """ + GATEWAY_DECISION + """
             WHERE e.endpoint_id=ANY(%s) ORDER BY e.id DESC LIMIT %s""", (lineage, max(1, min(limit, 200))))
     requests = await db.fetch_all(
@@ -696,7 +696,7 @@ async def close_endpoint_request(request_id: str, actor: str) -> bool:
 # the Gateway knows whether it was blocked, alerted or run (pj3 10-31: blocked calls read "완료" on the PC).
 # Matched by person, server, tool and time; the closest decision within the hook's delay.
 GATEWAY_DECISION = """LEFT JOIN LATERAL (
-       SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason FROM decisions d
+       SELECT d.id AS decision_id, d.decision, d.policy_id, d.reason, d.created_at AS decided_at FROM decisions d
         WHERE e.path='gateway' AND d.server_id=e.server AND d.tool_name=e.tool AND d.user_token=a.owner_token
           AND d.created_at BETWEEN e.called_at - interval '30 seconds' AND e.called_at + interval '5 seconds'
         ORDER BY abs(extract(epoch FROM d.created_at - e.called_at)) LIMIT 1) g ON TRUE

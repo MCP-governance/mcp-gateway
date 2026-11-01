@@ -18,7 +18,8 @@ SUMMARY = {
     "servers": [{"name": "Hugging Face", "path": "gateway", "available": True}],
     "calls": [{"called_at": "2026-11-01T03:00:00+00:00", "harness": "codex", "account": "pj3", "server": "hf", "server_name": "Hugging Face",
                "tool": "hub_repo_search", "path": "gateway", "failed": False, "input_bytes": 120, "output_bytes": 37000,
-               "decision_id": 912, "decision": "Block", "policy_id": "P-CONSENT-001", "reason": "이용 동의 필요"},
+               "decision_id": 912, "decision": "Block", "policy_id": "P-CONSENT-001", "reason": "이용 동의 필요",
+               "decided_at": "2026-11-01T02:59:59+00:00"},
               {"called_at": "2026-11-01T02:59:00+00:00", "harness": "claude", "server": "memory", "tool": "read_graph",
                "path": "local", "failed": False}],
     "requests": [{"name": "ghidra", "status": "OPEN", "created_at": "2026-11-01T01:00:00+00:00"}],
@@ -72,6 +73,8 @@ class Commands(unittest.TestCase):
         self.assertEqual(code, 0)
         for value in ("차단", "P-CONSENT-001", "이용 동의 필요", "36.1 KB", "120 B", "pj3", f"{CONSOLE}#/activity?d=912"):
             self.assertIn(value, out)
+        self.assertIn("판정 시각", out)
+        self.assertIn("호출 시각", out)
         code, out, *_ = run("logs", "2")
         self.assertIn("로컬", out)
         self.assertNotIn("#/activity", out)
@@ -84,7 +87,7 @@ class Commands(unittest.TestCase):
         self.assertIn("내 요청 · 1", out)
         self.assertIn("검토 대기", out)
         self.assertIn("도입 신청 · 2", out)
-        self.assertIn("게이트웨이 등록", out)
+        self.assertIn("승인 · 게이트웨이 등록", out)
         self.assertNotIn("HOLD", out)
 
     def test_sources_lists_and_downloads_only_an_available_source(self):
@@ -125,6 +128,14 @@ class Commands(unittest.TestCase):
         with patch.dict(SUMMARY, calls=[]):
             code, out, *_ = run("logs", "1")
         self.assertEqual((code, out.strip()), (1, "MCP 호출 기록 없음"))
+
+    def test_input_errors_read_in_korean(self):
+        for argv, words in ((["logs", "abc"], "'abc' 확인 필요"), (["console", "bad"], "'bad' 없음 · 선택"), (["request"], "필요한 값: 서버")):
+            err = io.StringIO()
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(err):
+                access.mint_command(argv, "pipe", list, list)
+            self.assertIn(words, err.getvalue())
+            self.assertNotIn("error", err.getvalue())
 
     def test_console_without_address_is_a_label(self):
         with patch.dict(SUMMARY, console_url=""):

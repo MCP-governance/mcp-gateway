@@ -257,10 +257,18 @@ def checked_codex_text(path):
         codex_parts(current)
         without_codex_block(current)
     except ValueError:
-        backup = path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup")
-        shutil.copyfile(path, backup)
+        keep_backup(path)
         raise
     return current
+
+
+def keep_backup(path):
+    """One copy per distinct content: the service retries every few seconds and an unchanged broken file must not
+    pile up copies (pj3 11-01: 1,087 in three hours)."""
+    data = path.read_bytes()
+    backup = path.with_name(path.name + ".mcpgw-" + hashlib.sha256(data).hexdigest()[:12] + ".backup")
+    if not backup.exists():
+        backup.write_bytes(data)
 
 
 def apply_policy(config, policy):
@@ -1155,7 +1163,7 @@ def rollback(args):
     try:
         current = without_codex_block(current, owned.read_text(encoding="utf-8") if owned.exists() else None)
     except ValueError:
-        shutil.copyfile(path, path.with_name(path.name + ".mcpgw-" + secrets.token_hex(4) + ".backup"))
+        keep_backup(path)
         raise
     powershell(STOP_SERVICE, {"name": TASK.format(user=args.user.lower()), "rules": [f"MCPGW-{args.user}-{r}" for r in RULES]})
     tray = PROGRAM_DATA / "MCPGatewayManagedTray" / config["sid"]

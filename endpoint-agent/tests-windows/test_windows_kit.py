@@ -618,6 +618,20 @@ Write-Output 'Managed request data snapshot and approved destination OK'
         self.assertEqual(hashlib.sha256((self.root / 'managed-settings.json').read_bytes()).hexdigest(),
                          hashlib.sha256(content.encode()).hexdigest())
 
+    def test_broken_codex_markers_back_up_once_per_content(self):
+        # pj3 11-01: a removed start marker failed every 10-second retry and each retry left a new backup (1,087).
+        managed = load('windows_backup_test', 'endpoint-agent/managed-windows.py')
+        path = self.root / 'config.toml'
+        path.write_text('[a]\nx = 1\n' + managed.END + '\n', encoding='utf-8')
+        for _ in range(3):
+            with self.assertRaises(ValueError):
+                managed.checked_codex_text(path)
+        self.assertEqual(len(list(self.root.glob('config.toml.mcpgw-*.backup'))), 1)
+        path.write_text('[b]\n' + managed.END + '\n', encoding='utf-8')
+        with self.assertRaises(ValueError):
+            managed.checked_codex_text(path)
+        self.assertEqual(len(list(self.root.glob('config.toml.mcpgw-*.backup'))), 2)
+
     def test_acl_reaches_existing_files_through_inheritance(self):
         # pj3: icacls /T left existing files with empty DACLs, so the elevated installer could not take ownership.
         managed = load('windows_acl_test', 'endpoint-agent/managed-windows.py')

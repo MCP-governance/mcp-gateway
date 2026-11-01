@@ -275,11 +275,12 @@ def size_text(value):
 
 def call_detail(call, console_url=""):
     """One call as the console's detail drawer lists it: the PC's report beside the Gateway's decision."""
-    pairs = [("시각", short_time(call["called_at"])), ("하네스", HARNESSES.get(call["harness"], call["harness"])),
+    pairs = [("호출 시각", short_time(call["called_at"])), ("하네스", HARNESSES.get(call["harness"], call["harness"])),
              ("PC 계정", call.get("account") or "—"), ("경로", PATHS.get(call["path"], call["path"])),
              ("서버", call.get("server_name") or call["server"]), ("도구", call["tool"]), ("결과", call_result(call)),
              ("정책", call.get("policy_id") or "—"), ("사유", call.get("reason") or "—"),
              ("입력", size_text(call.get("input_bytes"))), ("출력", size_text(call.get("output_bytes"))),
+             ("판정 시각", short_time(call["decided_at"]) if call.get("decided_at") else "—"),
              ("판정 번호", str(call.get("decision_id") or "—"))]
     if call.get("decision_id") and console_url:
         pairs.append(("콘솔", f'{console_url}#/activity?d={call["decision_id"]}'))
@@ -291,7 +292,8 @@ def request_rows(summary):
 
 
 def application_rows(summary):
-    return [(a["name"], "게이트웨이 등록" if a.get("registered_server_id") else APPLICATION_STATES.get(a["status"], a["status"]),
+    # The console shows the status and, beside it, that the server is registered on the Gateway.
+    return [(a["name"], APPLICATION_STATES.get(a["status"], a["status"]) + (" · 게이트웨이 등록" if a.get("registered_server_id") else ""),
              short_time(a["created_at"])) for a in summary.get("applications", [])]
 
 
@@ -342,29 +344,46 @@ def mint_request(address, server, source_url, purpose):
     return ("이미 요청함" if result.get("duplicate") else "요청함") + " · 관리자 검토 대기 · 승인되면 mint servers에 표시"
 
 
+# argparse's own words (usage, errors, -h) for the employee: argparse looks its strings up through gettext at call time.
+ARGPARSE_WORDS = {
+    "usage: ": "사용법: ", "positional arguments": "인자", "options": "옵션", "show this help message and exit": "도움말",
+    "%(prog)s: error: %(message)s\n": "%(prog)s: %(message)s\n", "argument %(argument_name)s: %(message)s": "%(argument_name)s: %(message)s",
+    "invalid %(type)s value: %(value)r": "%(value)r 확인 필요 (숫자)", "invalid choice: %(value)r (choose from %(choices)s)": "%(value)r 없음 · 선택: %(choices)s",
+    "the following arguments are required: %s": "필요한 값: %s", "unrecognized arguments: %s": "알 수 없는 인자: %s",
+    "expected one argument": "값 필요",
+}
+
+
+def korean_argparse():
+    import argparse
+    import gettext
+    argparse._ = lambda text: ARGPARSE_WORDS.get(text) or gettext.gettext(text)
+
+
 def mint_command(argv, address, status_lines, check):
     """Returns the exit code. status_lines() -> [str]; check() -> [(label, value)]."""
     import argparse
+    korean_argparse()
     parser = argparse.ArgumentParser(prog="mint", add_help=False, epilog=HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("-h", "--help", action="help", help="도움말")
-    commands = parser.add_subparsers(dest="command", required=True)
+    commands = parser.add_subparsers(dest="command", required=True, metavar="명령")
     commands.add_parser("servers", help="MCP 서버·커넥터·하네스 기능·미등록 MCP")
     logs = commands.add_parser("logs", help="MCP 호출 기록")
-    logs.add_argument("number", nargs="?", type=int, help="호출 상세 (목록의 번호)")
-    logs.add_argument("-n", type=int, default=30, help="표시할 건수")
+    logs.add_argument("number", nargs="?", type=int, metavar="번호", help="호출 상세 (목록의 번호)")
+    logs.add_argument("-n", type=int, default=30, metavar="건수", help="표시할 건수")
     commands.add_parser("requests", help="내 도입 요청·신청")
     sources = commands.add_parser("sources", help="승인된 MCP 소스")
-    sources.add_argument("server", nargs="?", help="받을 서버")
-    sources.add_argument("--to", help="받을 폴더")
+    sources.add_argument("server", nargs="?", metavar="서버", help="받을 서버")
+    sources.add_argument("--to", metavar="폴더", help="받을 폴더")
     request = commands.add_parser("request", help="MCP 도입 요청")
-    request.add_argument("server", help="서버 이름")
-    request.add_argument("--source", default="", help="소스 주소 (https://)")
-    request.add_argument("--purpose", default="", help="사용 목적")
+    request.add_argument("server", metavar="서버", help="서버 이름")
+    request.add_argument("--source", default="", metavar="주소", help="소스 주소 (https://)")
+    request.add_argument("--purpose", default="", metavar="목적", help="사용 목적")
     login = commands.add_parser("login", help="모델 로그인")
-    login.add_argument("harness", choices=sorted(LOGINS))
+    login.add_argument("harness", choices=sorted(LOGINS), metavar="하네스", help="claude · codex")
     commands.add_parser("ui", help="화면 열기")
     console = commands.add_parser("console", help="웹 콘솔 열기")
-    console.add_argument("page", nargs="?", choices=sorted(CONSOLE_PAGES), help="호출 기록·동의·신청·연결")
+    console.add_argument("page", nargs="?", choices=sorted(CONSOLE_PAGES), metavar="페이지", help="logs · consent · requests · connections")
     args = parser.parse_args(argv)
     try:
         if args.command == "login":
@@ -474,7 +493,7 @@ STYLE = (
     ".kv dt,.kv dd{padding:11px 0;border-bottom:1px solid var(--line)}.kv dt{color:var(--ink-3)}.kv dd{margin:0;overflow-wrap:anywhere;min-width:0}"
     ".kv dt:nth-last-child(2),.kv dd:last-child{border-bottom:0}"
     ".chip{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;line-height:20px;padding:3px 8px;border-radius:6px;background:var(--panel-2);color:var(--ink-2)}"
-    ".chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}"
+    ".chip{white-space:nowrap}.chip::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}"
     ".chip.allow{color:var(--allow);background:var(--allow-bg)}.chip.alert{color:var(--alert);background:var(--alert-bg)}"
     ".chip.restrict{color:var(--restrict);background:var(--restrict-bg)}.chip.approval{color:var(--approval);background:var(--approval-bg)}"
     ".chip.block{color:var(--block);background:var(--block-bg)}.chip.brand{color:var(--brand);background:var(--brand-soft)}"
@@ -501,7 +520,7 @@ ICONS = {
 }
 TABS = (("", "상태"), ("servers", "MCP 서버"), ("logs", "호출 기록"), ("request", "도입 요청"))
 # Values coloured as the console colours them.
-CHIPS = {"경보": "alert", "사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
+CHIPS = {"경보": "alert", "사용 가능": "allow", "이 PC 미지원": "alert", "승인": "allow", "승인 · 게이트웨이 등록": "allow", "기본 승인": "allow", "완료": "allow", "연결됨": "allow", "활성": "allow", "처리됨": "allow",
          "차단": "block", "실패": "block", "연결 끊김": "block", "검토 중": "approval", "검토 대기": "approval",
          "검토 기한 만료": "alert", "게이트웨이 등록": "allow", "검증 실패": "alert", "거부": "block", "검증 대기": "approval",
          "검증 중": "approval", "검증 완료": "restrict", "계약 검토 완료": "approval", "게이트웨이": "brand", "커넥터": "restrict", "로컬": "alert"}

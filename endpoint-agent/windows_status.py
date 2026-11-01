@@ -76,6 +76,7 @@ def main():
     spec = importlib.util.spec_from_file_location("kit_access", Path(__file__).with_name("kit_access.py"))
     access = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(access)
+    access.korean_argparse()
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and not sys.argv[1].lower().endswith(".json"):
         if hasattr(sys.stdout, "reconfigure"):
             sys.stdout.reconfigure(encoding="utf-8", errors="replace")
