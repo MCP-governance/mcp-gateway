@@ -812,7 +812,8 @@ def prepare_once(config, request, log, account, done, folders, failed):
             verify_manifest(config,manifest,entry['signature'],entry['manifest_sha256'],entry['server_id'])
             if iso(manifest['approval']['expires_at']).timestamp()<=time.time():
                 raise ValueError('승인 기한이 지났습니다')
-            folders[key]=ensure_mounts(manifest,account,documents)
+            # 마운트 없는 매니페스트(소스 실행, Windows)는 폴더를 만들 것이 없다. Windows 실행 계정에는 홈 경로도 없다.
+            folders[key]=ensure_mounts(manifest,account,documents) if manifest['mounts'] else []
             # 소스 실행 서버는 이미지가 없다. 첫 호출과 같은 준비(잠금 wheel 설치)를 미리 해 둔다.
             source='source' in manifest
             preparation.update(note=('설치 중: ' if source else '이미지 받는 중: ')+name,documents=sorted({d for k in folders for d in folders[k]}))

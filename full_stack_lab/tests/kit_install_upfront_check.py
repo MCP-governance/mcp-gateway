@@ -222,6 +222,7 @@ class PrepareLoop(unittest.TestCase):
         helper.assert_called_once_with("stdio_source")
         self.assertEqual(source.prepare.call_args.kwargs, {"seconds": runner.PREFETCH_SECONDS})
         self.engine.assert_not_called()
+        self.mounts.assert_not_called()  # Windows' runner account has no home: nothing to create without mounts
         self.assertEqual(self.logged, [{"local_runner": "prepared", "server": "local-files"}])
 
     def test_a_prepared_server_is_not_opened_again_and_a_withdrawn_one_is_forgotten(self):
