@@ -15,7 +15,11 @@ LiteLLM(1.105.0)이 MCP를 중앙에서 연결하는 기업도 MINT의 통제를
 공통 전제: **LiteLLM에 공유 직원 토큰을 넣지 않는다.** 직원마다 자기 MINT 토큰을 보내고, MINT는 그 토큰으로만 신원을 정한다.
 LiteLLM이 주장하는 사용자·팀은 기록만 한다. A의 `oauth_delegate`는 받은 토큰을 그대로 넘기고 보관하지 않는다. B는 직원 토큰을 upstream으로 보내지 않는다.
 
+이 애드온은 LiteLLM의 **MCP 집계·실행 경로**를 연결한다. 실습 스택의 모델 추론용 LiteLLM 경로와 별개이며, 엔드포인트의 벤더 기본 커넥터·하네스 기능을 이 애드온의 호출 전 판정 대상으로 보지 않는다. 콘솔에서는 커넥터를 「MCP 서버 > 커넥터」, 기본 기능을 「정책 > 하네스 기능」에서 관리한다.
+
 ## 설치
+
+고객 서버의 운영 배포는 [`deploy/`](../../deploy/README.md), 실험 스택 검증은 GitHub CI 일회용 스택에서 한다. 개발 노트북에 솔루션 스택을 띄우지 않는다.
 
 1. **LiteLLM 띄우기** — 위 견본을 LiteLLM `config.yaml`로 쓴다. 두 견본 모두 `require_key_mcp_access_defined: true`(키에 MCP 권한이 명시돼야 MCP를 씀)와
    프롬프트·응답 저장 끔이 들어 있다. A는 LiteLLM이 MINT의 사설 루트(`deploy/ca/root.crt`)를 신뢰해야 한다(`SSL_CERT_FILE`에 공인 CA와 합친 묶음).

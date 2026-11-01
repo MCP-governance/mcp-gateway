@@ -1,8 +1,8 @@
-# Endpoint Agent 설치
+# 엔드포인트 에이전트 설치
 
 이 디렉터리는 관측 에이전트(`agent.py`)와 **관리형 설치기**(Linux `managed-linux.py`, Windows `managed-windows.py`)를 포함합니다.
 macOS 관리형 설치기는 `managed-macos.py`이며 서비스 코드는 Homebrew 소유 경로를 피한 `/Library/MCPGatewayManaged`에 둡니다.
-Gateway와 OPA는 `full_stack_lab/`에서 실행합니다. 아래 사용자 범위 설치기들은 관측 전용입니다.
+게이트웨이와 OPA의 운영 배포는 [`deploy/`](../deploy/README.md), 솔루션 기기 배치는 `full_stack_lab/`의 `./console.sh field up`을 사용합니다. 개발 노트북에는 스택을 띄우지 않습니다. 아래 사용자 범위 설치기들은 관측 전용입니다.
 강제 연결에는 다음 root 설치 경로를 사용합니다.
 
 관리형 Linux·Windows는 등록 계정 홈의 Claude 설정 두 파일과 Codex `config.toml`·직계 `*.config.toml`을 읽어
@@ -16,7 +16,7 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 
 | | 간편 모드(기본) | 격리 계정(고급) |
 | --- | --- | --- |
-| 선택 | 기본 | 콘솔 「내 PC 연결 → 고급: 격리 계정」, Linux `install.sh --isolated`, Windows 마법사 체크 |
+| 선택 | 기본 | 콘솔 「PC 연결 설정 → 고급: 격리 계정」, Linux `install.sh --isolated`, Windows 마법사 체크 |
 | 실행 계정 | 지금 로그인한 직원 계정(관리자·표준 모두, 로그아웃 없음) | 별도 관리 계정 `managed-<직원>`(Linux)·`mcpgw-<직원>`(Windows) |
 | 하네스 | 직원이 설치한 그대로 | `/opt/mcpgw-approved`·`%ProgramFiles%\MCPGatewayManaged\harness`에 복사·SHA-256 |
 | 놓는 것 | 관리형 설정, 헤더 헬퍼, 보고 서비스, `mint`, CA 환경(Linux `/etc/environment` 블록·Windows 사용자 환경) | 위 + AppArmor·nft(Windows SID 방화벽)·sudoers·shim·셸 함수·홈 런처 |
@@ -24,11 +24,12 @@ Windows는 계정 사용자 환경에 `CODEX_HOME`·`CLAUDE_CONFIG_DIR`가 있�
 | 활성화 | 설치 점검 통과 시 자동(콘솔 「새 PC 활성화」에서 끌 수 있음) | 관리자 |
 | 콘솔 통제 범위 | `observed_only` · 「간편 모드 · 게이트웨이 판정 적용」 | `endpoint_enforced`(다른 계정이 있으면 `bypass_possible`) |
 
-설치는 파일 하나 실행·관리자 확인 1회·질문 0개다. 끝에 세 칸을 실측해 보인다: **모델 응답**(하네스가 실제로 답하는지), **도구**
+설치는 파일 하나 실행·관리자 확인 1회와 MINT 계정 로그인으로 진행한다. 키트에 직원별 등록 토큰은 없으며, 로그인 화면에서 게이트웨이 주소를 바꿀 수 있다. 잘못된 비밀번호·잠긴 계정·가입 승인 대기·통신 실패를 구분한다. 끝에 세 칸을 실측해 보인다: **모델 응답**(하네스가 실제로 답하는지), **도구**
 (직원 하네스와 같은 헤더로 승인 서버의 `tools/list` 도구 수), **서버 연결**(승인 서버 1건 `initialize`). 자격 파일이 있다는 것만으로
-성공 처리하지 않는다. Linux는 터미널이면 curses 풀화면(단계·소요·세 칸·다음 할 일), 아니면 한 줄씩 출력한다.
-`mint`도 터미널이면 2초마다 갱신되는 화면(`q` 닫기, `c` 연결 확인), `mint --check`는 세 칸 중 두 칸을 다시 잰다.
-Linux 상태 화면의 「다음 할 일」은 설치 점검에서 로그인이 필요했던 하네스의 로그인 명령을 표시한다. 모델 로그인 값은 마지막 설치 점검의 관측이며, 상태 명령은 모델 인증을 다시 검사하지 않는다.
+성공 처리하지 않는다. Linux·Windows는 공용 ANSI/VT 터미널 화면(`kit_screen.py`)을 쓰며, VT 불가·파이프에서는 글로 출력한다.
+`mint`는 상태를 2초마다 갱신하고, `1` 상태 · `2` MCP 서버 · `3` 호출 기록 · `4` 도입 요청을 숫자나 좌우 화살표로 전환한다(목록 자동 갱신 30초).
+호출은 ↑↓ 선택·Enter 상세·Esc 목록, 도입 요청은 `n`, MCP 서버의 소스 받기는 `s`, 웹 콘솔은 `o`, 새로고침은 `r`, 종료는 `q`다. 상태 화면의 `c`와 `mint --check`는 연결을 다시 확인하며 후자는 한 번 출력하고 끝난다.
+상태 화면의 「다음 할 일」은 필요한 모델 로그인 명령과 동의 대기를 안내한다. 관리형 Linux·Windows 서비스는 하네스별 로그인 상태를 30초마다 다시 읽는다. 로그인 상태 조회는 실제 모델 응답 시험과 다르다.
 설치 전 연결 거부·임시 DNS 오류와 정책 수신의 일시 오류는 단계별 최대 3회(1·2초 간격, 요청당 15초 제한) 시도한다. 인증 거부·인증서 오류는 즉시 실패한다.
 등록 요청의 응답 시간 초과·응답 유실·HTTP 오류는 등록 토큰이 이미 소모됐을 수 있어 다시 보내지 않는다. 실패 문구와 보호된 설치 로그에는 HTTP 상태 또는 오류 종류만 남긴다.
 설치 결과의 관리 상태는 서비스 시작 뒤 최대 60초 동안 받은 최신 보고를 따른다. 확인되지 않으면 「확인 필요」이며, 등록 응답만으로 활성이라 표시하지 않는다.
@@ -36,15 +37,15 @@ Linux 상태 화면의 「다음 할 일」은 설치 점검에서 로그인이 
 지운다(홈·프로필 폴더는 남김). Linux·macOS에서 등록 파일을 소모한 폴더를 다시 실행하면 현재 직원의 기존 설치 기록과 상태 확인 명령을 안내하고 끝난다.
 등록 토큰은 다시 쓰지 않는다. 간편 모드가 포기하는 것은 [SECURITY_BOUNDARIES](../docs/ai/SECURITY_BOUNDARIES.md)에 있다.
 
-Windows 트레이: 상태 창(연결·관리 상태·모드·승인 서버·하네스 판본·세 칸·다음 할 일), 연결 확인, 모델 로그인(Claude·Codex),
-다시 연결(게이트웨이 점검, 서비스가 멈췄으면 관리자 권한으로 다시 시작), 콘솔 열기, English/한국어, 제거. 처음 활성화되면 한 번 스스로
-연결을 확인한다. 콘솔에서는 `python.exe windows_status.py <status.json>`이 같은 상태를 글로 보인다.
+Windows 트레이의 상태 창·더블클릭·바탕화면 「MCP 연결」은 `mint ui` 로컬 화면을 연다. 실행 중이면 같은 주소를 다시 연다.
+로컬 화면에서 모델 로그인·승인 소스 받기를 제공하며, 트레이에도 터미널 화면·연결 확인·모델 로그인·다시 연결·최근 차단·콘솔 열기·언어·제거가 있다. 다시 연결은 게이트웨이를 점검하고 서비스가 멈췄으면 관리자 권한으로 다시 시작한다.
+트레이는 별도 `MCPGateway.exe`로 실행한다. 터미널 화면은 `mint`, 글 출력은 `python.exe windows_status.py <status.json>`을 쓴다.
 
 ## 가입자용 관리형 Linux 설치
 
 아래 3~5와 관리 계정·실행 연결·AppArmor 설명은 **격리 계정(`--isolated`) 기준**이다. 간편 모드는 위 절.
 
-1. 가입 승인·초대 수락 → Console 로그인 → **내 PC 연결**에서 개인별 키트 다운로드. 등록 토큰은 30분·1회용입니다.
+1. 가입 승인·초대 수락 → 콘솔 로그인 → **PC 연결 설정**에서 키트 다운로드. 설치 중 MINT 로그인으로 30분·1회용 등록 토큰을 발급받습니다.
 2. 조직 IT가 게이트웨이 HTTPS와 배치 루트·SHA-256 지문, 승인된 설치기, 공식 native ELF 배포판을 확인합니다.
    사용자가 수정한 스크립트를 root로 실행하지 않습니다. 관리형 배포 시스템에서 승인 출처를 검증한 설치기를 사용하세요.
 3. 일반 계정 UID 1000 이상, sudo·wheel·docker·lxd·libvirt 권한 없음, 기존 세션 없음이 필요합니다.
@@ -62,7 +63,7 @@ rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit 
 관리 계정 결정 → `managed-linux.py install` → 실행 연결(관리자 계정일 때) → 모델 로그인을 순서대로 합니다(D-71).
 실행 연결은 `/usr/local/bin`의 shim과, PATH 앞쪽 `~/.local/bin`의 하네스를 이기도록 직원 계정에만 정의되는 셸 함수
 (`/etc/profile.d/mcpgw-managed.sh`, `/etc/bash.bashrc`·`/etc/zsh/zshrc`의 표식 블록)입니다(D-72). 설치 뒤 **새 터미널**에서 실행합니다.
-이미 설치된 장치면 먼저 `rollback`을 돌리고 다시 설치합니다. `--remove`는 이 PC의 연결만 제거합니다(함수·블록 포함).
+재설치는 새 등록·정책 수신 성공 뒤 기존 설치를 교체합니다. `--remove`는 이 PC의 연결만 제거합니다(함수·블록 포함).
 
 Linux Codex 모델 로그인은 설치기가 `codex login --device-auth`로 실행합니다. 건너뛴 경우 같은 명령으로 로그인합니다.
 별도 관리 계정의 루프백 출발은 계속 차단하며, 설치를 실행한 직원 계정이 먼저 연 루프백 연결에 대한 응답만 허용합니다(D-119).
@@ -70,10 +71,10 @@ Linux Codex 모델 로그인은 설치기가 `codex login --device-auth`로 실�
 직원 계정 자체가 관리 계정인 설치에는 소유자 예외를 넣지 않습니다. 현재 코드의 실기기 재검증은 남아 있습니다.
 아래 수동 경로는 그 단계들을 따로 돌릴 때만 씁니다.
 
-4. 설치기는 단말 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
+4. 설치기는 엔드포인트 키를 생성하여 한 번 등록하고, `/var/lib/mcpgw-managed/<계정>/config.json`(root 600)에만 저장합니다.
    `/etc/claude-code/{managed-mcp.json,managed-settings.json}`과 `/etc/codex/{managed_config.toml,requirements.toml}`은
    승인된 레지스트리에서 렌더링한 root 소유 설정입니다. 하네스·공급자 MCP 코드는 변경하지 않습니다.
-5. 다른 관리자가 **단말 → 활성화**에서 실제 호스트의 일반 계정·AppArmor enforce·nft UID 규칙·보호된 설정을 확인합니다.
+5. 다른 관리자가 **사용자·엔드포인트 → 활성화**에서 실제 호스트의 일반 계정·AppArmor enforce·nft UID 규칙·보호된 설정을 확인합니다.
    자체 보고는 원격 하드웨어 attestation이 아닙니다. 확인 없이 자동 활성화하거나 자기 장치를 승인하지 않습니다.
 
 root 서비스 `mcpgw-managed-<계정>.service`는 실제 커널 규칙과 파일 해시를 활성화 전에는 10초, 활성화 뒤에는 60초마다 보고합니다.
@@ -83,7 +84,7 @@ root 서비스 `mcpgw-managed-<계정>.service`는 실제 커널 규칙과 파�
 AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니다. 비슷한 다른 계정의 프로필명으로 정상 처리하지 않습니다.
 `mcpgw-egress-<계정>.service`는 부팅 후에도 UID별 방화벽을 유지합니다. 180초 heartbeat 만료·격리·폐기는
 아직 만료되지 않은 JWT도 Gateway에서 거부합니다. 설정이 복구돼도 독립 관리자 활성화가 다시 필요합니다.
-단말 키 대신 짧은 JWT만 UID가 일치하는 로컬 인증 헬퍼에 전달하며, 시스템 설정·argv·환경에 토큰을 넣지 않습니다.
+엔드포인트 키 대신 짧은 JWT만 UID가 일치하는 로컬 인증 헬퍼에 전달하며, 시스템 설정·argv·환경에 토큰을 넣지 않습니다.
 
 이 프로필은 **Linux SSH 일반 계정**의 실행과 UID 전체 IP egress를 제한합니다. 다른 로그인 경로·root·관리자·커널 침해를
 통제했다고 주장하지 않습니다. UID 규칙은 솔루션 기기의 게이트웨이 포트와 **모델 프록시 포트**(D-67), 위의 소유자 시작 루프백 응답(D-119)을 허용합니다.
@@ -97,10 +98,17 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 | 명령 | 하는 일 |
 | --- | --- |
 | `mint servers` | 이 PC의 승인 MCP 서버·커넥터·하네스 기능·미등록 MCP |
-| `mint logs [-n 30]` | 이 PC의 MCP 호출 기록(중앙 원장 기준)과 전송 대기 건수 |
+| `mint logs [번호] [-n 30]` | 이 PC의 호출 목록·번호별 상세(판정·정책·사유·결과·크기·콘솔 주소)와 전송 대기 건수 |
+| `mint requests` | 내 엔드포인트 도입 요청과 직원 명의 도입 신청 상태 |
 | `mint request <이름> [--source https://…] [--purpose …]` | 미등록 MCP 도입 요청 → 콘솔 「도입 신청 > 엔드포인트 요청」 |
+| `mint sources [서버] [--to 폴더]` | 승인된 MCP 소스 목록·다운로드(기본 홈의 `MINT/소스`, SHA-256 확인) |
 | `mint login claude\|codex` | 하네스 모델 로그인 |
 | `mint ui` | 위 기능을 `127.0.0.1` 임시 포트의 화면으로 연다(경로 토큰, 30분 유휴 시 종료) |
+| `mint console [logs\|consent\|requests\|connections]` | 콘솔 주소 출력, 데스크톱에서는 브라우저도 열기 |
+
+`servers`·`logs`·`requests`·`sources`는 `--json`을 지원한다. `mint <명령> -h`로 옵션을 확인한다.
+도입 요청의 사용 목적은 10~1000자이고 소스 주소는 선택이며 HTTPS만 받는다. 요청은 관리자의 검토·신청서 작성으로 이어지고 자동 등록하지 않는다.
+동의·계정 연결은 로그인한 콘솔에서만 처리한다. `mint ui`는 스크립트 없는 화면이며 SSH에서는 로컬 접속용 터널 명령을 안내한다.
 
 명령과 화면은 `kit_access.py`의 한 명령 표를 쓰고, 장치 키는 서비스만 가진다. 직원 계정은 서비스의 로컬 통로(Windows 파이프·Linux 소켓, 그 계정만 접근)로
 `/api/endpoint/self`·`/api/endpoint/self/requests`만 부른다.
@@ -114,7 +122,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 PATH 변경이 없고 CA 경로만 사용자 환경 변수(`NODE_EXTRA_CA_CERTS`·`CODEX_CA_CERTIFICATE`)로 둔다. 아래 계정·방화벽·로그아웃 설명은
 **「고급: 격리 계정」 기준**이다.
 
-콘솔의 **내 PC 연결 → Windows**는 `mcp-managed-setup-windows.cmd` 한 파일을 내려줍니다(D-197).
+콘솔의 **PC 연결 설정 → Windows**는 `mcp-managed-setup-windows.cmd` 한 파일을 내려줍니다(D-197).
 실행 후 UAC 한 번을 승인하면 포함된 ZIP을 메모리에서 검증하고 보호된 승인 설치기를 준비한 뒤 등록까지 실행합니다.
 별도 압축 해제·IT 선행 배포·직원 계정 로그아웃은 필요하지 않습니다. 기존에 설치된 공식 Claude 또는 Codex 실행 파일은 필요합니다.
 직원 계정과 별도의 표준 관리 계정 `mcpgw-<직원>`을 준비하고 Windows `CreateProfile`로 프로필을 생성하므로 첫 로그인 없이 설치가 끝납니다.
@@ -145,7 +153,7 @@ Expand-Archive mcp-managed-kit-windows.zip mcp-managed-kit
 
 | 구성 | 위치 |
 | --- | --- |
-| 단말 키·설정·방화벽 기준선·서비스 로그 | `%ProgramData%\MCPGatewayManaged\<계정>\`(SYSTEM·Administrators만) |
+| 엔드포인트 키·설정·방화벽 기준선·서비스 로그 | `%ProgramData%\MCPGatewayManaged\<계정>\`(SYSTEM·Administrators만) |
 | 프로그램 | `%ProgramFiles%\MCPGatewayManaged\`(사용자 읽기 전용) |
 | Claude Code 관리형 설정 | `C:\Program Files\ClaudeCode\managed-mcp.json`·`managed-settings.json`(프록시 `env` 포함) |
 | Codex 강제 설정 | `%ProgramData%\OpenAI\Codex\requirements.toml`. Windows Codex는 `managed_config.toml`을 읽지 않으므로 서버 정의는 계정 `%USERPROFILE%\.codex\config.toml` 끝의 표식 블록에 두고 해시로 점검 |
@@ -180,13 +188,13 @@ Windows 키트는 실행파일·스크립트·DLL 통제 정책을 설치하지 
 트레이용 파일은 장치 키·직원 토큰 없이 시각·상태·차단 기록 식별자만 저장하며 인가에 사용하지 않습니다.
 이 파일들은 Users가 읽을 수 있는 공용 프로그램 폴더에 저장하지 않습니다. 다른 표준 계정에는 읽기 권한을 부여하지 않습니다.
 설치기는 설치 파일 목록만 제거해 설치 경로에 추가된 사용자 파일을 보존합니다. 실패 진단용 `setup.log`는 사용자 설치 로그 위치에 남습니다.
-실제 화면·UAC·재설치 검수는 [pj3 시험 절차](tests-windows/README.md)를 따릅니다.
+실제 화면·UAC·재설치 검수는 [Windows 시험 절차](tests-windows/README.md)를 따릅니다.
 
-### 같은 단말의 다른 계정(D-62)
+### 같은 엔드포인트의 다른 계정(D-62)
 
 heartbeat는 `host`로 커널 버전·WSL 여부·관리 계정 밖의 로그인 계정(uid ≥ 1000, nologin 제외)과 그 계정의 특권 그룹
-(sudo·wheel·docker·lxd·libvirt·root)을 함께 보냅니다. 이 계정들은 AppArmor·UID 방화벽이 가두지 않으므로 Console
-**직원·단말 → 통제 범위**에서 관리 계정의 커널 강제(`account_state: endpoint_enforced`)와 별도로 단말 상태를
+(sudo·wheel·docker·lxd·libvirt·root)을 함께 보냅니다. 이 계정들은 AppArmor·UID 방화벽이 가두지 않으므로 콘솔
+**사용자·엔드포인트 → 통제 점검**에서 관리 계정의 커널 강제(`account_state: endpoint_enforced`)와 별도로 엔드포인트 상태를
 `bypass_possible`로 표시합니다. 다른 계정을 보고하지 않는 구버전 에이전트, 관리형 설치 없는 Windows·WSL도 같은 상태입니다.
 이 보고는 격리 판정에 쓰지 않습니다. 다른 계정이 있다고 관리 계정의 MCP 인증을 끊지 않습니다.
 
@@ -194,14 +202,14 @@ Gateway가 먼저 이 필드를 받도록 배포된 뒤에 에이전트를 갱�
 
 ### 확인·격리·제거
 
-- Console 단말 표의 상태·정책 확인 시각과 **OS 차단 / 설치·연결 이력**을 확인합니다. MCP 도구 실행 기록과 섞지 않습니다.
-- 설치 실패나 이미 설치된 장치는 새 등록 토큰을 재사용하지 않습니다. 먼저 기존 단말 자격을 폐기하고 IT가 아래 절차로 제거한 뒤 새 키트를 받습니다.
+- 콘솔 엔드포인트 표의 상태·정책 확인 시각과 **OS 차단 / 설치·연결 이력**을 확인합니다. MCP 도구 실행 기록과 섞지 않습니다.
+- 설치 실패나 이미 설치된 장치는 새 등록 토큰을 재사용하지 않습니다. 먼저 기존 엔드포인트 자격을 폐기하고 IT가 아래 절차로 제거한 뒤 새 키트를 받습니다.
 - 관리형 제거: 서버에서 **자격 폐기** → 해당 계정 세션 종료 →
   `sudo python3 mcp-managed-kit/managed-linux.py rollback --user <계정>`(새 키트의 설치기).
   서비스를 멈추고 로그인 셸·AppArmor·UID 방화벽을 원복한 뒤, 원래 설정의 private `.backup`을 복구하고(없으면 관리형 파일 삭제)
-  해당 계정의 `/var/lib/mcpgw-managed/<계정>`을 제거합니다. 그 뒤 같은 키트로 재설치할 수 있습니다.
+  해당 계정의 `/var/lib/mcpgw-managed/<계정>`을 제거합니다. 재설치에는 콘솔에서 새 키트를 받습니다.
   공용 프로그램과 다른 계정의 방화벽·장치 자격은 제거하지 않습니다.
-- PJ1 재검증: root가 Console 직원·독립 관리자 신원을 stdin으로 제공하고
+- Linux 실기기 재검증: root가 콘솔 직원·독립 관리자 신원을 stdin으로 제공하고
   `python3 full_stack_lab/tests/managed_kernel_proof.py --config /var/lib/mcpgw-managed/<계정>/config.json` 실행.
   실제 185초 보고 중단·보호 파일 변조·복구·검증용 추가 자격 폐기를 수행하고 `finally`에서 원래 서비스와 파일을 복구합니다.
   이 검사는 모델이나 공급자 MCP를 모사하지 않습니다. 실제 native MCP 호출은 별도 실행 증거로 확인합니다.
@@ -214,8 +222,8 @@ IT 관리형), `.mcp.json`·`mcp.json`·`mcp_settings.json`·`cline_mcp_settings
 
 ## 준비
 
-1. Console(관리자)의 **직원·단말 → 단말 → 장치 자격 발급**에서 고유한 `endpoint_id`와 `inventory` 권한의 장치 키를 발급합니다. 망 탐색이 필요하고 정책 범위가 승인됐다면 `netscan`도 추가합니다. 키는 한 번만 표시됩니다.
-2. 대상 PC에서 Gateway 주소를 준비합니다. 유효한 HTTPS와 배치 루트·SHA-256 지문을 사용합니다.
+1. 콘솔(관리자)의 **사용자·엔드포인트 → 엔드포인트 → 장치 자격 발급**에서 고유한 `endpoint_id`와 `inventory` 권한의 장치 키를 발급합니다. 망 탐색이 필요하고 정책 범위가 승인됐다면 `netscan`도 추가합니다. 키는 한 번만 표시됩니다.
+2. 대상 PC에서 게이트웨이 주소를 준비합니다. 유효한 HTTPS와 배치 루트·SHA-256 지문을 사용합니다.
    field의 Caddy는 `/api/endpoint/*`를 게시하고 각 API에서 장치 범위 또는 관리자 권한을 검증합니다.
    `./console.sh field register-pc <이름>`은 관측 자격 발급이며, 관리형 MCP 실행 권한을 활성화하지 않습니다.
 3. 해당 PC에서 **실제로 존재하는** MCP 설정 파일 또는 디렉터리 경로를 선택합니다. `env`·`headers`·파일 본문은 전송하지 않으며, stdio 명령 인자는 SHA-256 digest로 바꿔 보냅니다. URL에 직접 포함된 자격 정보는 설정에서 제거하세요.
@@ -260,12 +268,18 @@ Get-ScheduledTask -TaskName 'MCPGatewayEndpoint-endpoint-win-001'
 
 ## 확인과 폐기
 
-- Console의 **직원·단말** 화면에서 등록 장치, 마지막 보고 시각, `registered` / `shadow` / `retired-residue` 분류를 확인합니다. `--once`가 0으로 끝났다는 사실만으로 수집 범위가 충분하다는 뜻은 아닙니다.
-- 장치 키를 잃거나 PC를 폐기하면 Console의 단말 표에서 **자격 폐기**를 누릅니다. 새 키가 필요하면 재발급 후 재설치합니다.
+- Console의 **사용자·엔드포인트** 화면에서 등록 장치, 마지막 보고 시각, `registered` / `shadow` / `retired-residue` 분류를 확인합니다. `--once`가 0으로 끝났다는 사실만으로 수집 범위가 충분하다는 뜻은 아닙니다.
+- 장치 키를 잃거나 PC를 폐기하면 Console의 엔드포인트 표에서 **자격 폐기**를 누릅니다. 새 키가 필요하면 재발급 후 재설치합니다.
 - Linux 제거: `systemctl --user disable --now mcp-gateway-endpoint.service` (등록돼 있을 때), 사용자 서비스 파일과 `~/.local/share/mcp-gateway-endpoint`, `~/.config/mcp-gateway-endpoint`를 제거합니다. Windows는 먼저 서버의 장치 자격을 폐기한 뒤 트레이 **제거**를 사용합니다. 예약 작업 종료를 기다린 뒤 키트 소유 파일만 제거합니다.
-- 코드 자체 점검: `python endpoint-agent/agent.py --self-check`. Compose 실습에서는 직원 PC 컨테이너(`ws-*`)가 이 `agent.py`를 이미지에 복사해 실행합니다(`cd full_stack_lab && ./console.sh up`).
+- 코드 자체 점검: `python endpoint-agent/agent.py --self-check`. CI 일회용 스택에서는 직원 PC 컨테이너(`ws-*`)가 이 `agent.py`를 이미지에 복사해 실행합니다. 개발 노트북에서 스택을 기동하지 않습니다.
 
 `agent.py`와 사용자 범위 설치기는 관측 전용입니다. 위 관리형 설치 경로만 OS 집행을 구성합니다.
+
+## 호출 기록·미등록 MCP 경보
+
+Claude Code·Codex 관리형 설정의 `PostToolUse` 훅은 MCP 도구 이름·인자 크기·SHA-256·결과 크기·실패를 직원 홈의 `.mcpgw/tool-events.jsonl`에 기록하고 서비스가 중앙으로 보낸다. 인자·결과 본문은 이 훅 기록에 넣지 않는다.
+콘솔 「호출·감사 기록 > 엔드포인트 호출」은 게이트웨이·커넥터·로컬 경로를 구분하며, 미등록 설정·확인된 수신기와 로컬 경로 첫 호출은 경보 대상이다. Codex는 승인 서버가 없어도 빈 `[mcp_servers]` 표를 유지해 임의 서버 로드를 허용하지 않는다.
+호출 후 기록은 호출 전 차단이 아니며 직원이 기록 파일을 지울 수 있다. Windows Claude Code 훅 실행과 Windows 하네스 커넥터·기능 보고는 검증 공백이 남고, 호출 전 훅 차단·자가 복구 명령은 구현하지 않았다. 최신 검증 범위는 [개편 설계](../docs/ai/OVERHAUL_2026-10-31.md)를 따른다.
 
 ## 관측 보고 계약 (D-83, 2026-10-14)
 
@@ -281,14 +295,14 @@ Windows의 `os-observer-windows.py`는 보호된 collector다. AppLocker event T
 
 npm Codex는 진입 링크의 실경로를 확인하고, 설치 시 해당 `bin/codex.js`를 기준으로 Node 모듈 해석기가 선택한 플랫폼 패키지의 실행 파일도 같은 목록에 기록한다(D-276). 플랫폼 패키지가 없으면 공식 래퍼와 같이 해당 Codex 패키지의 `vendor` 경로를 확인한다. 래퍼나 하네스를 실행하지 않고 경로만 확인하며, 확인 실패·파일 누락이면 별도 경로를 제외하지 않는다. 패키지 하위 전체나 다른 위치의 동명 파일을 허용하지 않는다.
 
-[PJ1 Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.
+[Linux 실제 검증과 로그](../research/llm-wiki/status/reports/2026-10-14-endpoint-telemetry-fix.md). 키트 설치·합성 marker 관측·실제 OS 이벤트·SDK/MCP 호출·모델 turn은 다른 검증 층이다.
 
 ## 증거 계약 (D-86 – D-89)
 
-- **출처 해시.** 수집기는 레코드마다 `provenance`를 붙인다: `raw_sha256`(원본 레코드: 설정 항목은 `env`·`headers`를 뺀 설정, 커널 이벤트는 저널 한 줄, 프로세스는 명령줄), `projection_sha256`(보내는 필드만의 정규 JSON), `transformations`(적용한 변환 이름), `collector`. 정규 JSON은 키 정렬·공백 없음·UTF-8, 시각은 UTC 마이크로초 `…Z`이며 서버의 `endpoint_plane.canonical_sha256`과 같은 바이트여야 한다. 서버는 **저장한 필드만으로** projection 해시를 다시 계산해 `일치`/`불일치`를 남기고, 에이전트가 해시를 보내지 않은 옛 보고는 `미보고`다. 원본 해시는 서버가 검증할 수 없고 단말의 원본과 나중에 대조하기 위해서만 보관한다.
+- **출처 해시.** 수집기는 레코드마다 `provenance`를 붙인다: `raw_sha256`(원본 레코드: 설정 항목은 `env`·`headers`를 뺀 설정, 커널 이벤트는 저널 한 줄, 프로세스는 명령줄), `projection_sha256`(보내는 필드만의 정규 JSON), `transformations`(적용한 변환 이름), `collector`. 정규 JSON은 키 정렬·공백 없음·UTF-8, 시각은 UTC 마이크로초 `…Z`이며 서버의 `endpoint_plane.canonical_sha256`과 같은 바이트여야 한다. 서버는 **저장한 필드만으로** projection 해시를 다시 계산해 `일치`/`불일치`를 남기고, 에이전트가 해시를 보내지 않은 옛 보고는 `미보고`다. 원본 해시는 서버가 검증할 수 없고 엔드포인트의 원본과 나중에 대조하기 위해서만 보관한다.
 - **수집 출처.** 관리형 서비스는 `observer.json`의 `ENDPOINT_ORIGIN=automatic`으로 수집기를 띄운다. 이 값이 없으면 계속 도는 서비스는 `automatic`, `--once`로 손수 돌린 실행·업로드는 `manual`이다. OS 이벤트는 항상 `os_event`다. 같은 원본 해시를 7일 안에 다시 받으면 새 행을 만들지 않는다.
 - **OS 거부 분류.** `os-observer.py`는 AppArmor 거부에서 실행 시도 프로세스(`comm`)·프로파일·대상 파일명을 보내고 `harness_startup`(Claude Code·Codex가 자기 기동 중 부르는 `git`·`claude`·`codex`를 시스템 경로에서 실행하려다 거부됨) / `blocked_attempt`(그 밖의 거부된 exec) / `unknown`(프로세스 또는 작업을 알 수 없음, 네트워크 거부)으로 나눈다. 프로파일과 nft 규칙은 바꾸지 않는다.
-- **게이트웨이 지연.** 관리형 서비스는 하트비트마다 설정된 Gateway 주소(다른 대상 없음)에 TCP 연결 5회와 `GET /api/health` 1회를 하고 p50·p95·지터(연속 표본 차이의 평균)·실패율을 `network_quality`로 보낸다. 지연은 TCP 연결 시간이며 실패율은 프로브 실패 비율이지 패킷 손실이 아니다.
+- **게이트웨이 지연.** 관리형 서비스는 하트비트마다 설정된 게이트웨이 주소(다른 대상 없음)에 TCP 연결 5회와 `GET /api/health` 1회를 하고 p50·p95·지터(연속 표본 차이의 평균)·실패율을 `network_quality`로 보낸다. 지연은 TCP 연결 시간이며 실패율은 프로브 실패 비율이지 패킷 손실이 아니다.
 - `python endpoint-agent/agent.py --self-check`, `tests/endpoint_evidence_check.py`(단위), `tests/endpoint_evidence_pg_check.py`(격리 PostgreSQL)로 확인한다.
 
 ## 현장 사설 CA(D-124)
@@ -303,7 +317,7 @@ Windows도 등록 전 지문 검사와 서비스·관측기 CA 전달을 적용�
 [배포 절차](../docs/ai/FIELD.md#현장-tls와-루트-배포d-124) · [검증과 인계](../research/llm-wiki/status/reports/2026-10-18-field-tls-d124.md).
 ## macOS 직원 PC 키트 (2026-10-22)
 
-콘솔 「내 PC 연결」은 브라우저 운영체제의 연결 파일을 먼저 표시한다. macOS 연결 파일을 받은 뒤
+콘솔 「PC 연결 설정」은 브라우저 운영체제의 연결 파일을 먼저 표시한다. macOS 연결 파일을 받은 뒤
 터미널에서 `/bin/bash "$HOME/Downloads/mcp-connect-macos.command"` 한 줄을 실행하고 관리자 암호를 한 번 입력한다.
 다운로드 자격은 5분·1회용이며 파일 안에서 curl 설정 파일로 전달하고 즉시 삭제한다. URL query·명령 인자·환경 변수에
 토큰을 넣지 않는다. Gatekeeper의 더블클릭 허용이나 quarantine 해제 명령은 필요하지 않다.
@@ -324,12 +338,18 @@ pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에
 헬퍼 호출·관리자 우회는 남는다. Apple은 PF를 안정된 API로 보장하지 않는다. root 규칙 전체를 다시 로드하지 않는다.
 
 제거는 키트 폴더에서 `bash install.sh --remove`로 실행한다. launchd → shim/셸 함수 → 실행기/헬퍼 → pf anchor/활성화 참조
-→ 기존 관리 설정 복원 → 프로그램 → 관리 계정/홈 순서로 되돌린다. 재설치도 기존 연결부터 제거한다.
+→ 기존 관리 설정 복원 → 프로그램 → 관리 계정/홈 순서로 되돌린다. 재설치는 새 등록·정책 수신 성공 뒤 기존 연결을 교체한다.
 키트를 지운 뒤에는 `sudo /Library/Frameworks/Python.framework/Versions/3.14/bin/python3.14 -I -B /Library/MCPGatewayManaged/managed-macos.py --remove`를 사용한다.
 공유 Python 런타임은 남기며, 서버의 기존 엔드포인트 자격 폐기는 콘솔의 기존 관리 경로를 따른다.
 
-**macOS 실설치·활성화·MCP 호출·제거는 미실행**이다. Windows에서 오프라인 코드 검사만 수행했다.
+연결된 macOS 보고서의 증거는 오프라인 코드 검사까지이며 **macOS 실설치·활성화·MCP 호출·제거는 미실행**이다.
 [보고](../research/llm-wiki/status/reports/2026-10-22-kit-macos.md) · [D-196](../docs/ai/DECISIONS.md).
+
+## 승인 소스 MCP 실행과 로컬 이미지 준비
+
+승인 소스 stdio MCP는 솔루션에서 빌드·실행하지 않고 엔드포인트의 프로세스로 실행한다. 공급망 검사에서 만든 플랫폼별 wheel 해시 잠금과 서명 매니페스트를 장치 자격으로 받고 소스·잠금·준비 파일을 검증한다. 소스 빌드나 지원하지 않는 플랫폼으로의 느슨한 설치는 거부한다.
+Windows는 등록 직원과 일치하는 로그온 토큰으로 실행하며, 세션이 없으면 실행하지 않는다. Linux 간편 모드는 등록 직원 UID를 쓴다. 보호된 준비 폴더·제한된 환경을 사용하지만 호스트 네트워크 격리를 보장하지 않는다.
+기존 솔루션 실행 등록은 엔드포인트 실행으로 재승인해야 한다. 공식 이미지의 엔드포인트 컨테이너 실행은 아래 경로를 유지한다. 플랫폼별 준비와 실기기 검증 범위는 [엔드포인트 stdio 보고](../research/llm-wiki/status/reports/2026-10-28-endpoint-stdio.md)에서 구분한다.
 
 ## 로컬 MCP 이미지 준비와 엔진 선택 (D-200, 2026-10-23)
 
@@ -340,7 +360,7 @@ pf는 기존 `com.apple/*` anchor 참조를 확인하고 하위 전용 anchor에
 일반 호출과 상태 점검은 호출자가 지정한 전체 기한 안에서만 준비 시간을 배분하며, 짧은 상태 점검의 기한이나
 호출 예약의 유효 기간을 늘리지 않는다. 승인 관찰은 기존 240초 콘솔 프록시 기한 안에서 수행한다.
 
-공식 카탈로그 이미지도 일반 UID 실행을 보장하지 않는다. 10-23 PJ1 Docker 29.8.1 실측에서 `mcp/git`·
+공식 카탈로그 이미지도 일반 UID 실행을 보장하지 않는다. 10-23 Linux Docker 29.8.1 실측에서 `mcp/git`·
 `mcp/time`은 `/app/.venv/bin` 실행 권한 거부가 보고됐다. 이 판본·digest의 관찰이며 이미지 이름 전체에 대한
 영구 판정이 아니다. 실행기는 관리 계정 UID를 유지하고 root로 재시도하지 않는다. 승인 미리보기와 호출 오류에는
 한국어 사유·확인된 종료 코드·비밀을 숨긴 표준 오류 마지막 5줄(최대 300자)을 전달한다.
@@ -356,5 +376,5 @@ digest 고정 이미지를 첫 호출 전에 백그라운드로 준비한다(D-2
 | rootless Podman | [공식 rootless 설명](https://docs.podman.io/en/latest/markdown/podman.1.html#rootless-mode)에 따라 별도 엔진 계정·subuid/subgid·저장소·cgroup 조건을 준비 | 현재 root 서비스의 `podman --userns=auto`는 rootless가 아님. 전용 계정 실행·마운트 매핑·복구/회수 어댑터 검증 전에는 설치만으로 지원된다고 보지 않음 |
 | 사용자 재매핑 없는 Docker | 기존 위험 수용과 관리 UID 실행을 유지 | 실행 권한 거부 이미지는 차단된 상태로 유지. `--user 0`, `--privileged`, 사용자 공간 비활성화, 파일 권한 수정으로 우회하지 않음 |
 
-Docker 데몬 재설정·rootless 전환은 별도 운영 변경이다. 이번 수정에서는 실행하지 않았다.
-이번 로컬 검증과 실기기 재측정 공백은 [작업 보고](../research/llm-wiki/status/reports/2026-10-23-local-runner-usability.md)에 둔다.
+Docker 데몬 재설정·rootless 전환은 별도 운영 변경이다. 엔진 구성 변경은 별도 검증이 필요하다.
+당시 로컬 검증과 실기기 재측정 공백은 [작업 보고](../research/llm-wiki/status/reports/2026-10-23-local-runner-usability.md)에 둔다.

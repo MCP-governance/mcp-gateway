@@ -16,6 +16,8 @@ python3 full_stack_lab/eval/before_after.py \
 
 여러 입력 파일은 `--cases file1.json file2.json`처럼 전달합니다. `--before`는 `none` 또는 Git ref, `--after`는 Git ref 또는 기본값 `worktree`입니다. Git ref에서 `full_stack_lab/opa/`를 `git archive`로 꺼내며 `_test.rego` 파일은 제외합니다. `worktree`는 현재 작업 트리의 OPA 디렉터리를 복사합니다. 양쪽 번들은 Docker 안에서 같은 OPA 이미지와 게이트웨이의 `POST /v1/data/mcp/authz/decision` 경로로 평가합니다. 요청은 사례당 `--repeat`회(기본 5회) 실행합니다. 컨테이너는 종료 시 제거합니다.
 
+이 명령은 일회성 OPA 컨테이너만 띄우며 솔루션 Compose 스택을 기동하지 않습니다. 별도 팀 정책 [`policy/pac/`](../../policy/README.md)는 현재 평가 대상 번들이 아닙니다.
+
 `--before none`은 정책 없는 직접 사용 기준선으로 모든 사례를 `Allow`, 지연 0 ms로 계산합니다. 이 기준선은 실제 MCP 서버 호출을 실행하지 않습니다.
 
 도커 없이 지표 계산과 레거시 사례 변환을 점검하려면:
@@ -25,6 +27,8 @@ python3 full_stack_lab/eval/before_after.py --self-test
 ```
 
 결과는 `<out>/result.json`과 `<out>/report.md`에 기록됩니다. JSON에는 Git ref와 commit SHA, 제외 테스트 파일을 뺀 정책 번들의 SHA-256, OPA 이미지 digest, 입력 사례 파일 SHA-256, 사례별 판정·정책 ID·반복별 지연 및 지표가 포함됩니다. 사례는 ID 순으로 정렬되고 JSON 키와 비율 소수점 자릿수는 고정됩니다. 실행 시각은 `run` 필드에만 기록합니다.
+
+`after.expect_mismatches`에는 기대 실행 가능 여부·지정된 `policy_id`의 불일치나 반복 중 판정 변동이 든 사례 ID를 기록합니다. 이 목록이 있어도 명령은 결과 저장 후 종료 코드 0을 반환하므로 검토 시 목록을 함께 확인합니다. 종료 코드만으로 정책 회귀 통과를 판단하지 않습니다.
 
 ## 지표 정의 (잠정안)
 
