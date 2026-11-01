@@ -206,11 +206,15 @@ class ProcessChecks(unittest.TestCase):
             package.mkdir(parents=True)
             (package/'__init__.py').write_text('')
             (package/'value.py').write_text("TEXT='module-ready'")
-            (package/'__main__.py').write_text("from .value import TEXT; print(TEXT)")
+            (package/'__main__.py').write_text("from .value import TEXT; import extra; print(TEXT, extra.X)")
+            # A locked wheel's .pth (pywin32 puts pywintypes there) is honoured although the runner starts with -I -S (pj3).
+            (folder/'packages/lib').mkdir(parents=True)
+            (folder/'packages/lib/extra.py').write_text("X='pth-ready'")
+            (folder/'packages/example.pth').write_text("lib\n")
             args=source.command(folder,{'runtime':'python','entrypoint':'packages/example/src/example/__main__.py'},
                                 {'command':[]},{})
             result=subprocess.run(args,capture_output=True,check=True)
-            self.assertEqual(result.stdout.strip(),b'module-ready')
+            self.assertEqual(result.stdout.strip(),b'module-ready pth-ready')
             with patch.object(source.sys,'executable',str(folder/'missing-python')):
                 with self.assertRaises(ValueError):source.command(folder,{'runtime':'python','entrypoint':'main.py'},
                                                                   {'command':[]},{})

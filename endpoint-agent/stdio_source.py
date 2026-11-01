@@ -253,6 +253,7 @@ def command(folder, source, manifest, config):
             parent = parent.parent
         paths.append(parent)
         target, module = '.'.join(package), True
-    script = "import sys,runpy,json;sys.path[:0]=json.loads(sys.argv[1]);p=sys.argv[3];m=sys.argv[2]=='module';sys.argv=sys.argv[3:];(runpy.run_module if m else runpy.run_path)(p,run_name='__main__')"
+    # -S skips site, so the locked wheels' .pth files (pywin32's pywintypes path, pj3) are read here explicitly.
+    script = "import sys,runpy,json,site;sys.path[:0]=json.loads(sys.argv[1]);site.addsitedir(sys.path[0]);p=sys.argv[3];m=sys.argv[2]=='module';sys.argv=sys.argv[3:];(runpy.run_module if m else runpy.run_path)(p,run_name='__main__')"
     return [sys.executable, '-I', '-S', '-B', '-c', script, json.dumps([str(p) for p in paths]),
             'module' if module else 'path', target, *args]
