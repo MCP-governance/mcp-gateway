@@ -37,7 +37,7 @@ for candidate in (Path(__file__).resolve().parent.parent / "gateway", Path("/app
         break
 from app import activity, agent_service, audit, core, db, endpoint_plane, main, mcp_facade, privacy, registry, review, secret_scan, upstream
 from app.agent_contract import AUDIENCE, ISSUER
-from intake_fixture import approval_body, impact_input
+from intake_fixture import approval_body, impact_input, local_manifest_keys, source_run
 from termination_lab_support import isolated_disposal, signing_keys
 
 PASSED: list[str] = []
@@ -538,9 +538,28 @@ async def accepted_risk_lifecycle(console: httpx.AsyncClient, intake: str) -> No
     scope = {"server_id": "codesrv", "endpoint": ENDPOINT, "catalog_hash": found["catalog_hash"], "tools": {"search": "r"}, "data_class": "nonimportant",
              "valid_days": 30, "poisoning_ack": False, "tool_reviews": {"search": REVIEWS["search"]}}
     as_("wbsb-admin-a")
-    registered = await console.post(f"/api/mcp-requests/{intake}/register", json=scope)
+    legacy = await console.post(f"/api/mcp-requests/{intake}/register", json=scope)
+    check(legacy.status_code == 409 and "엔드포인트 실행으로 재승인 필요" in legacy.json()["detail"],
+          f"실행 위치 없는 소스 등록이 거부되지 않음: {legacy.status_code}")
+    device = "intake-" + uuid.uuid4().hex
+    await db.execute("""INSERT INTO endpoint_agents(endpoint_id,hostname,platform,agent_version,owner_token,status,
+                        managed_state,local_username,local_uid,heartbeat_at)
+                        VALUES (%s,'lab','linux','lab',%s,'active','active','managed-lab',2001,now())""",
+                     (device, row["submitted_by"]))
+    spec = source_run(row)
+    await db.execute("UPDATE mcp_intake_requests SET evidence=%s,local_observer_device=%s WHERE id=%s",
+                     (Jsonb({**row["evidence"], "local_run": spec}), device, intake))
+    # The MCP transport remains the existing double; manifest signing, owner binding and
+    # local_approvals writes now use the production endpoint registration path and real DB.
+    with patch.dict(os.environ, local_manifest_keys()):
+        local = await agent_service.signed_local_run(spec, "codesrv")
+        scope.update(endpoint="local:codesrv", local=local)
+        registered = await console.post(f"/api/mcp-requests/{intake}/register", json=scope)
     check(registered.status_code == 200, f"소스 서버 등록: {registered.text}")
     server = registry.server("codesrv")
+    check(server["local"]["manifest"]["source"] == spec["source"], "엔드포인트 실행의 승인 커밋·소스·잠금 불일치")
+    approved = await db.fetch_one("SELECT * FROM local_approvals WHERE server_id='codesrv'")
+    check(approved["observed"] and approved["observer_device"] == device, "신청자 엔드포인트의 계약 관찰 기록 누락")
     check(server["provenance"]["artifact"]["sha256"] == row["provenance"]["artifact"]["sha256"] and server["license"] == "MIT", "등록에 출처 기록이 실림")
     linked = await db.fetch_all("SELECT scanner FROM supply_chain_reports WHERE source_ref=%s", (registry.source_ref(server),))
     check({r["scanner"] for r in linked} == {"Syft", "Trivy", "Semgrep", "Gitleaks"}, f"승인된 릴리스에 연결된 보고서: {linked}")

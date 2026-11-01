@@ -162,6 +162,7 @@ class FieldTLS(unittest.TestCase):
             exec(compile(ast.Module(body=payload_nodes, type_ignores=[]), "archive", "exec"), {
                 "zipfile": zipfile, "output": output, "bundle": {**ca, "enrollment_token": "synthetic"}, "json": json,
                 "ca": ca, "STATIC_DIR": static, "source": static, "names": [], "platform": "linux", "KIT_EXECUTABLE": set(),
+                "Path": Path, "io": io,
             })
         with zipfile.ZipFile(output) as archive:
             self.assertEqual(archive.read("root.crt").decode(), self.pem)

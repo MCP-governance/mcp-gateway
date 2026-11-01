@@ -131,7 +131,7 @@ function Get-EndpointApprovedKit {
     $approval = Get-Content -LiteralPath $approvalPath -Raw -Encoding UTF8 | ConvertFrom-Json
     $required = @('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
         'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
-        'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json')
+        'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'local-runner.py', 'stdio_source.py', 'stdio_windows.py', 'pip.zip', 'python.zip', 'windows-python.json')
     $names = @($approval.files.PSObject.Properties.Name)
     $caFiles = @('root.crt', 'root.sha256', 'mcpgw_pc.py')
     if (@($names | Where-Object { $_ -in $caFiles }).Count) { $required += $caFiles }

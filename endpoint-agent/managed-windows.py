@@ -346,7 +346,7 @@ def set_user_environment(config, values, *, owned_only=False):
 
 # -- Gateway ---------------------------------------------------------------------
 
-def request(config, path, body=None, *, credential=True):
+def request(config, path, body=None, *, credential=True, download=None, deadline=None):
     context = verify_transport(config)
     headers = {"Content-Type": "application/json"}
     if credential:
@@ -358,7 +358,20 @@ def request(config, path, body=None, *, credential=True):
             raise ValueError("장치 자격을 다른 주소로 전달하지 않습니다")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=context))
-    with opener.open(urllib.request.Request(config["gateway_url"] + path, data=data, headers=headers), timeout=15) as response:
+    with opener.open(urllib.request.Request(config["gateway_url"] + path, data=data, headers=headers), timeout=min(15, max(.001, deadline-time.monotonic())) if deadline is not None else 15) as response:
+        if download is not None:
+            total = 0
+            while True:
+                if deadline is not None and time.monotonic() >= deadline:
+                    raise TimeoutError('소스 수신 기한이 지났습니다')
+                block = response.read(65536)
+                if not block:
+                    break
+                total += len(block)
+                if total > 128 << 20:
+                    raise ValueError('소스 크기 상한')
+                download.write(block)
+            return response.headers
         return json.loads(response.read(131072))
 
 
@@ -718,6 +731,11 @@ def harness_versions(profile):
             value = file_version(path)
             if name not in found and value:
                 found[name] = value
+    for name, pattern in NATIVE_HARNESSES:
+        # Installed without a version resource (the Codex desktop installer's codex.exe): still a harness on this PC.
+        # An empty version reads as 「설치됨」; leaving it out hid Codex from the tray and the console (pj3 10-28).
+        if name not in found and any(Path(profile).glob(pattern)):
+            found[name] = ""
     for name, package in (("claude", "@anthropic-ai/claude-code"), ("codex", "@openai/codex")):
         manifest = Path(profile) / "AppData/Roaming/npm/node_modules" / package / "package.json"
         if name not in found and manifest.is_file():
@@ -728,6 +746,9 @@ def harness_versions(profile):
             if version.match(value):
                 found[name] = value[:40]
     return found
+
+
+MINT_COMMAND = '@"%~dp0..\\python\\python.exe" -X utf8 -B -I -S "%~dp0..\\windows_status.py" %*\r\n'
 
 
 def broadcast_environment():
@@ -810,7 +831,7 @@ def enroll(args):
                              else "등록 자격 확인 필요 · 새 키트로 다시 시도") from None
         raise
     config = {k: bundle[k] for k in ("gateway_url", "tailscale_node_id", "device_key")}
-    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256") if k in bundle})
+    config.update({k: bundle[k] for k in ("ca_certificate", "ca_sha256", "manifest_pubkey") if k in bundle})
     folder = STATE / args.user.lower()
     config.update(endpoint_id=enrolled["endpoint_id"], username=args.user, sid=person["sid"], profile=person["profile"],
                   source_sid=source_person["sid"] if source_person else person["sid"],
@@ -855,6 +876,9 @@ def install(args):
         source = Path(__file__).parent / name
         if source.resolve() != (PROGRAMS / name).resolve():
             write_file(PROGRAMS / name, source.read_text(encoding="utf-8"))
+    # `mint` in any new terminal, as on Linux: the folder joins the employee's own PATH below.
+    (PROGRAMS / "bin").mkdir(exist_ok=True)
+    write_file(PROGRAMS / "bin" / "mint.cmd", MINT_COMMAND)
     # Only a completed enrollment and policy fetch may retire the employee's working installation.
     for previous in previous_installs(employee):
         if previous.lower() != args.user.lower():
@@ -885,14 +909,15 @@ def install(args):
     apply_policy(config, policy)
     if isolated:
         launcher_folder, launcher_files = harness_launchers(config, harness_folder, harnesses)
-        set_user_environment(config, {**(policy.get("proxy_environment") or {}), "PATH_APPEND": str(launcher_folder)})
+        set_user_environment(config, {**(policy.get("proxy_environment") or {}),
+                                       "PATH_APPEND": str(launcher_folder) + os.pathsep + str(PROGRAMS / "bin")})
         powershell(APPLY_RULES, {"rules": firewall_rules(args.user, person["sid"], policy["gateway_ips"], ports(policy))})
         write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
     else:
         # The employee's own harnesses trust the Gateway's CA through their user environment. No firewall rule,
         # no PATH entry, no copied harness; Claude takes the model proxy from the managed settings (D-239).
         launcher_files = {}
-        set_user_environment(config, ca_environment(config))
+        set_user_environment(config, {**ca_environment(config), "PATH_APPEND": str(PROGRAMS / "bin")})
         broadcast_environment()
     pythonw = python.with_name("pythonw.exe")
     started = time.time()
@@ -960,6 +985,34 @@ def serve(args):
             log.unlink()
         with open(log, "a", encoding="utf-8") as output:
             output.write(json.dumps({"at": time.strftime("%Y-%m-%dT%H:%M:%S"), **entry}, ensure_ascii=False) + "\n")
+    import importlib.util
+    runner_path = Path(__file__).with_name('local-runner.py')
+    runner_spec = importlib.util.spec_from_file_location('local_runner', runner_path)
+    runner = importlib.util.module_from_spec(runner_spec)
+    runner_spec.loader.exec_module(runner)
+    source_root = PROGRAMS / 'sources' / config['sid']
+    def source_protected(path):
+        if any(p.exists() and p.lstat().st_file_attributes & 0x400 for p in (path, *path.parents)):
+            return False
+        if not protected([PROGRAMS]):
+            return False
+        if path == source_root and not path.exists():
+            lock_down(path, readers=False)
+            subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                           check=True, capture_output=True)
+        paths = [path, *path.rglob('*')]
+        if any(p.lstat().st_file_attributes & 0x400 for p in paths):
+            return False
+        return protected(paths)
+    def source_seal(path):
+        lock_down(path, readers=False)
+        subprocess.run(['icacls', str(path), '/grant:r', f"*{config['sid']}:(OI)(CI)RX", '/Q'],
+                       check=True, capture_output=True)
+        return source_protected(path)
+    runner_config={**config, "uid":None, "source_root":str(source_root),
+                   "source_protected":source_protected, "source_seal":source_seal}
+    for target in (runner.run, runner.prepare):
+        threading.Thread(target=target, args=(runner_config, request, record), daemon=True).start()
     latest = {"inventory": "pending", "os": {"state": "failed", "error_code": "not_run", "accepted_count": 0}}
 
     def observe():
@@ -968,19 +1021,22 @@ def serve(args):
         while True:
             inventory_status = "success"
             try:  # configuration inventory is independent from OS event observation
-                done = subprocess.run([sys.executable, "-B", "-I", "-S", str(PROGRAMS / "agent.py"), "--config", str(observer_config), "--once"],
-                                      check=True, timeout=40, capture_output=True, text=True, encoding="utf-8")
+                # -X utf8: under pythonw the child prints in the ANSI code page (cp949) and -I ignores PYTHONIOENCODING.
+                # pj3 10-28: the Korean progress line failed to decode, stdout came back None and the thread died at once.
+                done = subprocess.run([sys.executable, "-B", "-I", "-S", "-X", "utf8", str(PROGRAMS / "agent.py"), "--config",
+                                       str(observer_config), "--once"], check=True, timeout=40, capture_output=True, text=True,
+                                      encoding="utf-8", errors="replace")
                 observation = json.loads(done.stdout.strip().splitlines()[-1])["observation"]
                 states = {observation[channel]["state"] for channel in ("inventory", "process", "network")}
                 if not states <= {"success", "partial", "disabled"}:
                     raise ValueError("invalid collector output")
                 inventory_status = "partial" if "partial" in states else "success"
-            except (OSError, ValueError, KeyError, IndexError, TypeError, subprocess.SubprocessError) as exc:
+            except Exception as exc:  # any failure is a reported result, never the end of this thread
                 inventory_status = type(exc).__name__
             os_observer = {"state": "failed", "error_code": "collector_failed", "accepted_count": 0}
             try:  # OS events are separately gated, scoped and reported; disabled is never mapped to success.
                 done = subprocess.run(
-                    [sys.executable, "-B", "-I", "-S", str(PROGRAMS / "os-observer-windows.py"),
+                    [sys.executable, "-B", "-I", "-S", "-X", "utf8", str(PROGRAMS / "os-observer-windows.py"),
                      "--config", str(observer_config)], check=True, timeout=45, capture_output=True, text=True,
                     encoding="utf-8", errors="replace")
                 lines = [line for line in done.stdout.splitlines() if line.startswith("{")]
@@ -992,7 +1048,7 @@ def serve(args):
                         os_observer["error_code"] = "invalid_collector_output"
                 else:
                     os_observer["error_code"] = "missing_collector_output"
-            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+            except Exception as exc:
                 os_observer["error_code"] = type(exc).__name__
             with lock:
                 latest.update(inventory=inventory_status, os=os_observer)

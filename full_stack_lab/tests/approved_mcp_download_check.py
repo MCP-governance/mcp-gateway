@@ -260,8 +260,8 @@ class DownloadTests(unittest.IsolatedAsyncioTestCase):
         await self.denied(409)
         self.assertEqual(self.client_args, [])
 
-    async def test_list_classifies_pc_runtime_and_hosted_source(self):
-        for local, runtime, expected in [({"image": "pin"}, None, "pc"), (None, {"id": "1"}, "runtime"), (None, None, "remote")]:
+    async def test_list_classifies_pc_and_source_reapproval(self):
+        for local, runtime, expected in [({"image": "pin"}, None, "pc"), (None, {"id": "1"}, "reapproval"), (None, None, "reapproval")]:
             self.spec.update(local=local, runtime=runtime)
             result = await self.scope["list_approved_mcp"](USER)
             self.assertEqual(result["servers"][0]["execution"], expected)

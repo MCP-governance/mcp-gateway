@@ -1,0 +1,547 @@
+{
+  "base_commit": "0c0bb1512865ff72a53fb120a7442ad7a17b0ff0",
+  "python": "3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]",
+  "scope": "local unit/static checks only; no deployment, SYSTEM service, scanner image or real OSS MCP execution",
+  "records": [
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/endpoint_stdio_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.33,
+      "tests": 15,
+      "skipped": 2,
+      "output": "{\"local_runner\": \"job_failed\", \"job\": \"00000000-0000-0000-0000-000000000001\", \"error\": \"ValueError\", \"detail\": \"엔드포인트의 도구 계약이 승인값과 다릅니다\"}\r\ntest_source_mode_uses_same_contract_and_refuses_mismatch (__main__.DispatchContract) ... ok\r\ntest_archive_duplicate_symlink_and_size_refused (__main__.Preparation) ... ok\r\ntest_changed_prepared_file_fails_closed (__main__.Preparation) ... ok\r\ntest_environment_and_path_boundaries (__main__.Preparation) ... ok\r\ntest_missing_node_runtime_and_missing_lock_fail (__main__.Preparation) ... ok\r\ntest_prepare_and_verified_cache_no_second_install (__main__.Preparation) ... ok\r\ntest_source_hash_lock_hash_and_network_failure_never_install (__main__.Preparation) ... ok\r\ntest_target_lock_download_and_runtime_mismatch (__main__.Preparation) ... ok\r\ntest_unprotected_root_and_deadline_do_not_download (__main__.Preparation) ... ok\r\ntest_child_tree_is_reaped (__main__.ProcessChecks) ... skipped 'CreateProcessAsUserW requires SYSTEM; ctypes path tested separately'\r\ntest_control_mismatch_before_spawn (__main__.ProcessChecks) ... ok\r\ntest_existing_control_and_contract_checks_remain_shared (__main__.ProcessChecks) ... ok\r\ntest_package_entrypoint_and_missing_python (__main__.ProcessChecks) ... ok\r\ntest_silent_process_deadline_and_confirmed_tree_stop (__main__.ProcessChecks) ... skipped 'CreateProcessAsUserW requires SYSTEM; ctypes path tested separately'\r\ntest_windows_path_command_has_no_shell_and_no_host_environment (__main__.ProcessChecks) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 15 tests in 0.134s\r\n\r\nOK (skipped=2)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/endpoint_stdio_check.py": "67cd6007d606e91e04180507caf86033204b09dd94218e08094d8c1692e6c710"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/endpoint_source_api_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.45,
+      "tests": 12,
+      "skipped": 0,
+      "output": "test_current_authorization_and_only_bound_observer_can_fetch (__main__.DeviceAPI) ... ok\r\ntest_download_rechecks_after_io_and_audits_only_success (__main__.DeviceAPI) ... ok\r\ntest_lock_commit_or_source_replacement_refuses (__main__.DeviceAPI) ... ok\r\ntest_lock_download_is_authenticated_rechecked_and_hash_verified (__main__.DeviceAPI) ... ok\r\ntest_migration_revalidation_preserves_commit_and_requires_admin (__main__.DeviceAPI) ... ok\r\ntest_revocation_wrong_manifest_and_user_scope_refuse (__main__.DeviceAPI) ... ok\r\ntest_route_requires_enforcement_device_credential (__main__.DeviceAPI) ... ok\r\ntest_solution_runtime_routes_and_worker_are_removed (__main__.DeviceAPI) ... ok\r\ntest_stream_bounds_and_internal_credentials_without_device_key (__main__.DeviceAPI) ... ok\r\ntest_legacy_execution_is_ineligible_without_mutating_history (__main__.SourceSpec) ... ok\r\ntest_python_source_cannot_use_an_unscanned_legacy_lock (__main__.SourceSpec) ... ok\r\ntest_source_metadata_pins_validation_and_lock (__main__.SourceSpec) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 12 tests in 0.224s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/endpoint_source_api_check.py": "5a6d7416953b07a5ac8ffdbb50d38377824ae35ffbde7be2fbebe5a7ddf61519"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dependency_locks_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.3,
+      "tests": 7,
+      "skipped": 0,
+      "output": "test_dynamic_and_direct_url_dependencies_refused (__main__.Dependencies) ... ok\r\ntest_hatch_dynamic_version_is_read_as_data_without_importing (__main__.Dependencies) ... ok\r\ntest_markitdown_uses_both_same_commit_packages_and_stdio_entry (__main__.Dependencies) ... ok\r\ntest_missing_wheel_or_resolver_failure_does_not_publish_lock (__main__.Dependencies) ... ok\r\ntest_platform_wheels_hashes_and_scanner_set_match (__main__.Dependencies) ... ok\r\ntest_sbom_must_include_every_locked_name_and_version (__main__.Dependencies) ... ok\r\ntest_wheel_path_traversal_is_refused (__main__.Dependencies) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.085s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/dependency_locks_check.py": "185848baef378d7753ac8ac7651eb667a9f4e904a1f7bb50a147c0572e54e6d8"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_rework_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.31,
+      "tests": 23,
+      "skipped": 4,
+      "output": "test_D192_empty_setting_measures_engine (__main__.ControlChecks) ... ok\r\ntest_F2_current_generation_accepts_then_each_change_blocks (__main__.ControlChecks) ... ok\r\ntest_F2_signed_expiry_and_generation_are_required (__main__.ControlChecks) ... ok\r\ntest_F3_both_sides_restrict_exact_mirror_and_digest (__main__.ControlChecks) ... ok\r\ntest_F3_container_uses_preimported_digest_and_no_log_disk (__main__.ControlChecks) ... ok\r\ntest_F5_actual_host_mapping_cannot_pass_as_userns (__main__.ControlChecks) ... ok\r\ntest_F5_missing_or_wrong_engine_mapping_is_blocked (__main__.ControlChecks) ... ok\r\ntest_F4_concurrent_parent_replacement_never_selects_secret_inode (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F4_parent_symlink_is_refused (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F4_repeated_replacement_never_redirects_pinned_source (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_mount_target_is_fixed_workspace_not_home (__main__.MountRaces) ... skipped 'Linux openat/FD bind 실측 필요'\r\ntest_F10_claimed_unknown_result_is_not_retried (__main__.OutcomeAndQueue) ... ok\r\ntest_F10_restart_only_removes_orphans_and_never_executes_them (__main__.OutcomeAndQueue) ... ok\r\ntest_F7_queue_and_rate_saturation_block_before_insert (__main__.OutcomeAndQueue) ... ok\r\ntest_F8_bound_observer_survives_a_newer_device_heartbeat (__main__.OutcomeAndQueue) ... ok\r\ntest_F9_F10_dispatch_outcomes_keep_not_executed_and_unconfirmed_separate (__main__.OutcomeAndQueue) ... ok\r\ntest_F9_result_evidence_retains_uuid_timestamps_state_hash (__main__.OutcomeAndQueue) ... ok\r\ntest_F2_stop_receipt_is_idempotent_and_requires_engine_confirmation (__main__.OutputBounds) ... ok\r\ntest_F6_line_count_bound_is_independent (__main__.OutputBounds) ... ok\r\ntest_F6_queue_bound_stops_without_unbounded_growth (__main__.OutputBounds) ... ok\r\ntest_F6_silent_stdout_read_deadline_stops (__main__.OutputBounds) ... ok\r\ntest_F6_single_line_bound_stops_and_discards_session (__main__.OutputBounds) ... ok\r\ntest_F6_total_byte_bound_is_independent (__main__.OutputBounds) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 23 tests in 0.124s\r\n\r\nOK (skipped=4)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/dev73_rework_check.py": "3105bbac855915808373b6dfa0c9d0960097daff3a2e463646f3bae24c786e78"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_review2_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.14,
+      "tests": 5,
+      "skipped": 0,
+      "output": "test_cancel_control_reads_recorded_stop_before_token_lock (__main__.ReviewFixes) ... ok\r\ntest_registration_view_uses_measured_mapping_and_d189_screen (__main__.ReviewFixes) ... ok\r\ntest_request_params_limit_has_exact_boundary_and_both_guards (__main__.ReviewFixes) ... ok\r\ntest_result_hash_is_for_value_after_storage_cap (__main__.ReviewFixes) ... ok\r\ntest_resume_removes_server_stop_inside_transition_transaction (__main__.ReviewFixes) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 5 tests in 0.048s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/dev73_review2_check.py": "d6b3ef7081abb1d22b1dcb42053bccc4d407661500ce898524307abf39c329c2"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/dev73_integration_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.28,
+      "tests": 7,
+      "skipped": 0,
+      "output": ".......\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.127s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/dev73_integration_check.py": "7a48f30c70e7bccbf9373a8fa832d747cd7802b40765e3cb5dca4e43c91f3821"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/local_runner_usability_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.72,
+      "tests": 33,
+      "skipped": 0,
+      "output": "{\"local_runner\": \"job_failed\", \"job\": \"unit\", \"error\": \"ValueError\", \"detail\": \"process exited\"}\r\n{\"local_runner\": \"job_failed\", \"job\": \"unit\", \"error\": \"McpError\", \"detail\": \"\"}\r\ntest_diagnostic_inspection_failure_does_not_skip_removal (__main__.DiagnosticCapture) ... ok\r\ntest_display_never_exposes_a_fragment_of_a_line_over_the_limit (__main__.DiagnosticCapture) ... ok\r\ntest_known_secrets_and_credential_lines_are_masked_before_length_limit (__main__.DiagnosticCapture) ... ok\r\ntest_permission_error_is_korean_classifiable_and_keeps_container_exit_code (__main__.DiagnosticCapture) ... ok\r\ntest_stderr_ring_and_display_are_bounded_even_with_unterminated_lines (__main__.DiagnosticCapture) ... ok\r\ntest_stop_collects_container_status_before_removal_and_is_idempotent (__main__.DiagnosticCapture) ... ok\r\ntest_truncated_first_line_and_control_characters_are_discarded (__main__.DiagnosticCapture) ... ok\r\ntest_admin_stop_is_reported_as_the_reason_not_a_timeout (__main__.ExchangeBudget) ... ok\r\ntest_legacy_errors_remain_opaque_and_inspected_failure_gets_typed_exception (__main__.ExchangeBudget) ... ok\r\ntest_only_initialize_gets_preparation_budget_and_original_runtime_is_stored (__main__.ExchangeBudget) ... ok\r\ntest_ordinary_calls_and_health_checks_keep_their_original_total_timeout (__main__.ExchangeBudget) ... ok\r\ntest_preparation_control_precedes_start_and_execution_uses_started_deadline (__main__.ExecutionSequence) ... ok\r\ntest_session_start_failure_reports_engine_exit_without_root_retry (__main__.ExecutionSequence) ... ok\r\ntest_complete_hashes_and_appends_the_same_scrubbed_diagnostic (__main__.GatewayControl) ... ok\r\ntest_control_racing_start_judges_the_started_row_not_the_stale_one (__main__.GatewayControl) ... ok\r\ntest_control_renews_unstarted_lease_only_after_authorization (__main__.GatewayControl) ... ok\r\ntest_diagnostic_instruction_or_inspection_failure_is_withheld (__main__.GatewayControl) ... ok\r\ntest_gateway_names_the_mcp_error_before_stderr (__main__.GatewayControl) ... ok\r\ntest_gateway_reason_is_allowlisted_and_diagnostic_is_bounded (__main__.GatewayControl) ... ok\r\ntest_gateway_scanner_failure_hides_stderr_but_keeps_reason_and_exit_code (__main__.GatewayControl) ... ok\r\ntest_lost_renewal_race_is_a_failure (__main__.GatewayControl) ... ok\r\ntest_only_inspected_local_error_crosses_core_public_boundary (__main__.GatewayControl) ... ok\r\ntest_revocation_epoch_policy_lease_and_stop_fail_without_renewal (__main__.GatewayControl) ... ok\r\ntest_running_job_is_not_renewed_and_start_returns_shorter_deadline (__main__.GatewayControl) ... ok\r\ntest_short_requested_run_budget_is_not_extended_by_preparation (__main__.GatewayControl) ... ok\r\ntest_cached_image_does_not_pull (__main__.ImagePreparation) ... ok\r\ntest_cold_pull_polls_control_and_pins_digest (__main__.ImagePreparation) ... ok\r\ntest_manifest_volume_or_version_mismatch_stays_blocked (__main__.ImagePreparation) ... ok\r\ntest_pull_has_absolute_timeout_and_is_reaped (__main__.ImagePreparation) ... ok\r\ntest_revocation_or_control_outage_kills_pull_without_container_start (__main__.ImagePreparation) ... ok\r\ntest_unapproved_repository_or_mutable_tag_cannot_pull (__main__.ImagePreparation) ... ok\r\ntest_job_failure_reports_mcp_error_masked_beside_container_state (__main__.McpErrorReason) ... ok\r\ntest_session_request_keeps_the_mcp_error (__main__.McpErrorReason) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 33 tests in 0.526s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/local_runner_usability_check.py": "6710e1f55d290b5ac9fb7dc82c1348fa0f25d11252e16e0e65a9e7e1604dde6f"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/kit_simple_mode_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.56,
+      "tests": 14,
+      "skipped": 0,
+      "output": "test_an_older_kits_companion_without_the_comment_is_still_cleaned_up (__main__.Bootstrap) ... ok\r\ntest_isolated_install_does_not_name_a_harness_the_pc_lacks (__main__.Bootstrap) ... ok\r\ntest_isolated_mode_is_the_earlier_install (__main__.Bootstrap) ... ok\r\ntest_pending_quarantine_revocation_and_unknown_are_not_reported_as_active (__main__.Bootstrap) ... ok\r\ntest_simple_mode_leaves_the_employee_account_as_it_is (__main__.Bootstrap) ... ok\r\ntest_simple_packages_are_tried_never_required (__main__.Bootstrap) ... ok\r\ntest_simple_mode_answers_the_account_uid_only (__main__.Broker) ... ok\r\ntest_harnesses_are_not_stdio_servers_but_the_servers_still_are (__main__.HarnessCommandLine) ... ok\r\ntest_a_model_answer_is_a_run_not_a_file (__main__.InstallCheck) ... ok\r\ntest_initialize_and_tools_list_with_the_harness_header (__main__.InstallCheck) ... ok\r\ntest_a_rendering_of_ours_is_never_kept_as_the_employee_original (__main__.ManagedLinux) ... ok\r\ntest_simple_checks_report_only_the_protected_files (__main__.ManagedLinux) ... ok\r\ntest_the_ca_lines_are_ours_alone_and_leave_the_file_as_found (__main__.ManagedLinux) ... ok\r\ntest_the_cells_say_what_was_measured (__main__.ManagedLinux) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 14 tests in 1.377s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/kit_simple_mode_check.py": "3f52aff72990195d40679bcbca586f0a8096423b5e427b8d8406782f7f649bca"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/approved_mcp_download_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.55,
+      "tests": 23,
+      "skipped": 0,
+      "output": ".......................\r\n----------------------------------------------------------------------\r\nRan 23 tests in 0.368s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/approved_mcp_download_check.py": "c6bd0be6179c1ca942d91223cf83a753a446c23ca9287555ae005fd37a8b25ff"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/kit_login_source_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.98,
+      "tests": 53,
+      "skipped": 0,
+      "output": "test_audit_failure_fails_closed (__main__.DeviceDownload) ... ok\r\ntest_bad_headers_empty_truncated_encoded_and_redirected_responses_fail (__main__.DeviceDownload) ... ok\r\ntest_cancellation_and_early_consumer_close_release_spool (__main__.DeviceDownload) ... ok\r\ntest_device_download_owner_audit_audience_expiry_and_withdrawal (__main__.DeviceDownload) ... ok\r\ntest_disabled_deregistered_and_terminating_servers_are_refused (__main__.DeviceDownload) ... ok\r\ntest_everyone_audience_lets_any_employee_download (__main__.DeviceDownload) ... ok\r\ntest_exact_cap_is_allowed_without_content_length (__main__.DeviceDownload) ... ok\r\ntest_expired_missing_naive_or_invalid_expiry_is_refused (__main__.DeviceDownload) ... ok\r\ntest_header_and_stream_caps_abort_and_close (__main__.DeviceDownload) ... ok\r\ntest_list_classifies_pc_and_source_reapproval (__main__.DeviceDownload) ... ok\r\ntest_registration_must_name_same_intake_and_source (__main__.DeviceDownload) ... ok\r\ntest_remote_has_connection_only_and_no_archive (__main__.DeviceDownload) ... ok\r\ntest_revocation_or_replacement_during_fetch_prevents_delivery (__main__.DeviceDownload) ... ok\r\ntest_routes_require_caller_and_console_auth (__main__.DeviceDownload) ... ok\r\ntest_success_preserves_bytes_digest_headers_and_append_event (__main__.DeviceDownload) ... ok\r\ntest_transport_failure_and_timeout_close_without_success_event (__main__.DeviceDownload) ... ok\r\ntest_unapproved_and_withdrawn_intakes_never_contact_gitea (__main__.DeviceDownload) ... ok\r\ntest_unscoped_employee_is_refused_and_admin_can_review (__main__.DeviceDownload) ... ok\r\ntest_untrusted_or_missing_internal_repository_is_refused (__main__.DeviceDownload) ... ok\r\ntest_wrong_commit_or_ref_is_refused_before_io (__main__.DeviceDownload) ... ok\r\ntest_audit_failure_fails_closed (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_bad_headers_empty_truncated_encoded_and_redirected_responses_fail (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_cancellation_and_early_consumer_close_release_spool (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_disabled_deregistered_and_terminating_servers_are_refused (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_everyone_audience_lets_any_employee_download (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_exact_cap_is_allowed_without_content_length (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_expired_missing_naive_or_invalid_expiry_is_refused (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_header_and_stream_caps_abort_and_close (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_list_classifies_pc_and_source_reapproval (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_registration_must_name_same_intake_and_source (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_remote_has_connection_only_and_no_archive (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_revocation_or_replacement_during_fetch_prevents_delivery (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_routes_require_caller_and_console_auth (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_success_preserves_bytes_digest_headers_and_append_event (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_transport_failure_and_timeout_close_without_success_event (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_unapproved_and_withdrawn_intakes_never_contact_gitea (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_unscoped_employee_is_refused_and_admin_can_review (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_untrusted_or_missing_internal_repository_is_refused (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_wrong_commit_or_ref_is_refused_before_io (approved_mcp_download_check.DownloadTests) ... ok\r\ntest_expired_model_login_reads_as_login_needed (__main__.Login) ... ok\r\ntest_failure_locked_pending_throttled_and_network_are_fixed_labels_without_secret (__main__.Login) ... ok\r\ntest_login_changes_address_keeps_secrets_only_in_request_and_does_not_mutate_bundle (__main__.Login) ... ok\r\ntest_login_prompt_without_terminal_stops_before_any_screen (__main__.Login) ... ok\r\ntest_noninteractive_password_never_falls_back_to_echo (__main__.Login) ... ok\r\ntest_refused_account_stops_at_once_and_shows_gateway_sentence (__main__.Login) ... ok\r\ntest_three_mistakes_end_and_closed_input_is_a_label_not_a_traceback (__main__.Login) ... ok\r\ntest_wrong_password_asks_again_with_reason_then_succeeds (__main__.Login) ... ok\r\ntest_api_uses_same_password_verifier_rate_limit_and_enrollment_issuer (__main__.LoginAPI) ... ok\r\ntest_device_identity_comes_from_key_not_body_and_admin_devices_have_no_audience_bypass (__main__.LoginAPI) ... ok\r\ntest_banner_plain_no_color_and_eighty_columns (__main__.Product) ... ok\r\ntest_private_address_rule_all_ranges_boundaries_and_documentation_networks (__main__.Product) ... ok\r\ntest_broker_only_accepts_approved_paths_and_bounded_headers (__main__.Transfer) ... ok\r\ntest_download_verifies_size_hash_deletes_partial_and_never_saves_key (__main__.Transfer) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 53 tests in 0.762s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/kit_login_source_check.py": "8bfbbba192f0a72ec5f900b7c2649f01c73ead4b46fa242c3c634972b01b5ef5"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/ops_response_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 4.23,
+      "tests": 18,
+      "skipped": 0,
+      "output": "..................\r\n----------------------------------------------------------------------\r\nRan 18 tests in 4.069s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/ops_response_check.py": "81a0697b50c22c0e1eafcc8b229fb918f0de0d577ec05122ac482de54aea6fab"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/resource_residual_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.33,
+      "tests": 12,
+      "skipped": 0,
+      "output": "............\r\n----------------------------------------------------------------------\r\nRan 12 tests in 0.173s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/resource_residual_check.py": "fca0078f4f274c8c1753c9fc28f753a8a5bf78d93182eebdf171528a6c7465fa"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/sbom_impact_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.19,
+      "tests": 8,
+      "skipped": 0,
+      "output": "........\r\n----------------------------------------------------------------------\r\nRan 8 tests in 0.031s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/sbom_impact_check.py": "ee5622ff798769cc6d70a70e603fe4eb9059ffd6c19a335b43b43ad06e2af6f5"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/server_egress_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.17,
+      "tests": 8,
+      "skipped": 0,
+      "output": "........\r\n----------------------------------------------------------------------\r\nRan 8 tests in 0.012s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/server_egress_check.py": "741dbfb795e11814cf2cb39b7b7db30a1d44b0a47adaee7444a534151b0564b0"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/transfer_grade_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.11,
+      "tests": 7,
+      "skipped": 0,
+      "output": ".......\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.001s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/transfer_grade_check.py": "2c0036daeb06b2d21fa4248fe073c4413c51b215184cefe942a080cb36305f65"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/event_kind_labels_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.3,
+      "tests": null,
+      "skipped": 0,
+      "output": "event kind labels: 47 kinds written, 59 labels, 0 missing, 0 problem(s)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/event_kind_labels_check.py": "6fe7854fb7f5419f5101d5eb066e29486b8dfa6f1df506ef3d147f8f9daef3e0"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/open_endpoints.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.08,
+      "tests": null,
+      "skipped": 0,
+      "output": "PASS 무인증 1개가 문서와 일치, 인증 필요 105개 (그중 장치 자격 18개: GET /api/endpoint/approved-mcp, GET /api/endpoint/approved-mcp/{server_id}/source, GET /api/endpoint/local-jobs, GET /api/endpoint/local-jobs/recovery, GET /api/endpoint/local-jobs/{job_id}/control, GET /api/endpoint/local-manifests, GET /api/endpoint/local-sources/{server_id}, GET /api/endpoint/managed-policy, GET /api/endpoint/scan-policy, POST /api/endpoint/enroll, POST /api/endpoint/harness-inventory, POST /api/endpoint/heartbeat, POST /api/endpoint/inventory, POST /api/endpoint/listeners, POST /api/endpoint/local-jobs/{job_id}, POST /api/endpoint/local-jobs/{job_id}/start, POST /api/endpoint/observation-status, POST /api/endpoint/os-events)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/open_endpoints.py": "b03db1da8a9e9c4c3309c6fe78cdc4ab6573a7dbd1de1984854e6e0dbefab69e"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/schema_check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.05,
+      "tests": null,
+      "skipped": 0,
+      "output": "PASS 기동마다 다시 만드는 CHECK 제약 12개가 파일 사이에서 같다\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/schema_check.py": "127d76b86603fd8cd904dbe871176816fb9e9734be8bdae2e877f63aa52d2d04"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "endpoint-agent/tests-windows/test_endpoint_stdio.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.23,
+      "tests": 7,
+      "skipped": 0,
+      "output": "test_ctypes_user_creation_inherits_only_pipes_and_binds_before_resume (__main__.WindowsProcess) ... ok\r\ntest_ed25519_valid_tampered_message_signature_and_key (__main__.WindowsProcess) ... ok\r\ntest_missing_session_never_creates_a_process (__main__.WindowsProcess) ... ok\r\ntest_named_empty_job_recovery_is_idempotent (__main__.WindowsProcess) ... ok\r\ntest_named_job_collision_is_refused_before_child_spawn (__main__.WindowsProcess) ... ok\r\ntest_worker_and_service_include_runner_and_pinned_key (__main__.WindowsProcess) ... ok\r\ntest_wts_sid_mismatch_and_duplicate_token_cleanup (__main__.WindowsProcess) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 7 tests in 0.059s\r\n\r\nOK\r\n",
+      "source_hashes": {
+        "endpoint-agent/tests-windows/test_endpoint_stdio.py": "51f5e3b80e74380877a4386e9ddad90fc06c26205371f34325ef39f460cfddc4"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "deploy/check.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.09,
+      "tests": null,
+      "skipped": 0,
+      "output": "PASS 판본·변경 기록·배포 묶음 고정·제품 문서 위생\r\n",
+      "source_hashes": {
+        "deploy/check.py": "d1f4c08a6d739d34b242e91a934e7a9893de894654ec4c781e3c6c804f03b77d"
+      }
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "full_stack_lab/gateway/app/agent_static/console.js"
+      ],
+      "exit_code": 0,
+      "seconds": 0.05,
+      "tests": null,
+      "skipped": 0,
+      "output": "",
+      "source_hashes": {
+        "full_stack_lab/gateway/app/agent_static/console.js": "6f3c764855aabc4afd6a6c22823a3df3748ab0834fdd64f47c940995595174ab"
+      }
+    },
+    {
+      "command": [
+        "node",
+        "--test",
+        "full_stack_lab/tests/console-state.test.mjs",
+        "full_stack_lab/tests/intake_one_click_ui_check.mjs",
+        "full_stack_lab/tests/intake_d189_ui_check.mjs",
+        "full_stack_lab/tests/approved-mcp-console.test.mjs"
+      ],
+      "exit_code": 0,
+      "seconds": 0.14,
+      "tests": null,
+      "skipped": 0,
+      "output": "✔ approved sources show their fixed commit, expiry, mode and download action (0.765ms)\n✔ remote services have connection information and no source action (0.1644ms)\n✔ approved source values are escaped, missing values use a dash and the empty state has no action (0.138ms)\n✔ approved source labels translate into English (2.0125ms)\n✔ employee navigation shows the internal repository shortcut; intake rows do not link to Gitea (1.6262ms)\n✔ source download uses the console route, bearer header and fixed filename (0.8304ms)\n✔ masked kinds read in Korean and an unknown kind never shows its raw name (0.66ms)\n✔ a poll overlapping a page load shows each call once, newest first, within the limit (0.7087ms)\n✔ ids sort numerically and malformed rows cannot displace real decisions (0.1702ms)\n✔ search matches person, PC, harness, server.tool, target, policy and trace, ignoring case and spaces (0.2693ms)\n✔ the status phrase never presents a failed poll as fresh (0.7469ms)\n✔ 24 hourly buckets end at the current hour and keep empty hours at zero (0.5962ms)\n✔ splitBy counts per key with a decision split, largest first (0.2673ms)\n✔ sankey layers never merge a server with a harness of the same name (0.1973ms)\n✔ endpoint observation shows disabled, stale and failed sources separately from zero accepted rows (0.4452ms)\n✔ listener-only endpoints remain in coverage counts and expose no raw command line or owner token (1.2227ms)\n✔ enforced is green only with fresh evidence of a ledger row or a kernel heartbeat (0.6541ms)\n✔ latency values read as durations and never invent a measurement (0.314ms)\n✔ endpoint evidence labels never turn a missing value into a good one (0.3287ms)\n✔ totals are reported apart from the window and page navigation follows the cursor (10.4461ms)\n✔ latency and failure show only a fresh sample and a denial count only a collected channel (0.234ms)\n✔ a harness connector row shows the weakest control among the endpoints that reported it (0.2689ms)\n✔ only the very high tier asks for the written reason, and the second administrator is asked too (1.9124ms)\n✔ the approval request carries the reason (0.1495ms)\n✔ a request without a stated input or proposal shows a hold, never a tier or a count (0.3285ms)\n✔ supplier items that were not received read 확인 안 됨, never blank, undefined or a claim (0.2658ms)\n✔ display values are escaped, selected tools default on, optional supplier inputs are not required (1.546ms)\n✔ only critical findings ask for a required reason (0.6304ms)\n✔ second administrator sees the frozen scope without editable expiry or supplier fields (0.3864ms)\n✔ failed scan prevents submit and rejection stays available (0.9672ms)\n✔ repository without execution contract exposes no local execution controls (0.8975ms)\n✔ intake form uses a data grade and tools rather than six risk questions (0.2048ms)\nℹ tests 32\nℹ suites 0\nℹ pass 32\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 98.4823\n",
+      "source_hashes": {
+        "full_stack_lab/tests/console-state.test.mjs": "b201affe5ac603a6d96d6b14a7c7be25b4901ed5f8cd18868b634bb234d47280",
+        "full_stack_lab/tests/intake_one_click_ui_check.mjs": "685a59e77ce1db36d30928869ac8d4e6e5c58da81b7cdd778d1984363471933b",
+        "full_stack_lab/tests/intake_d189_ui_check.mjs": "4cb001b1cc7870ba27a8d5aa8ec3bd1c2bc642fda59ec3800356f0fe5e2adcc3",
+        "full_stack_lab/tests/approved-mcp-console.test.mjs": "ee61cd45e98e9e3b5db8a433e03cc988b7ec9f9a4b381f4789866cf25ae73542"
+      }
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "full_stack_lab/console.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.03,
+      "tests": null,
+      "skipped": 0,
+      "output": "",
+      "source_hashes": {
+        "full_stack_lab/console.sh": "815bb26db73e61bb72c6d35b73a08a255551e946baace5539334ae76a2c18ff0"
+      }
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/mint.sh"
+      ],
+      "exit_code": 0,
+      "seconds": 0.02,
+      "tests": null,
+      "skipped": 0,
+      "output": "",
+      "source_hashes": {
+        "deploy/mint.sh": "9b0592fc3378a2a7248c0296898f156a65261dfffbf888c1d4646be4cca4bf02"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-m",
+        "pyflakes",
+        "endpoint-agent/stdio_windows.py"
+      ],
+      "exit_code": 1,
+      "seconds": 0.05,
+      "tests": null,
+      "skipped": 0,
+      "output": "C:\\Program Files\\Python310\\python.exe: No module named pyflakes\r\n",
+      "source_hashes": {
+        "endpoint-agent/stdio_windows.py": "23b6c559d6ddf9272776b18c6c36c94fd9b02147174f36517bcdcf3e677979f5"
+      }
+    },
+    {
+      "command": [
+        "AST",
+        "all changed Python and new modules"
+      ],
+      "exit_code": 0,
+      "output": "Parsed without importing or running application code.",
+      "source_hashes": {}
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_wiki.py",
+        "--ci-ignored-local-sources"
+      ],
+      "exit_code": 1,
+      "output": "{\r\n  \"ok\": false,\r\n  \"counts\": {\r\n    \"endpoint-permission-references\": 12,\r\n    \"experiments\": 13,\r\n    \"imports\": 22,\r\n    \"local-tool-risks\": 13,\r\n    \"papers\": 292,\r\n    \"solutions\": 22,\r\n    \"threats\": 24,\r\n    \"sources_evidence_records\": 3,\r\n    \"solutions_evidence_records\": 21,\r\n    \"reviewed_local_tools\": 92,\r\n    \"markdown_documents\": 786\r\n  },\r\n  \"warnings\": [\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\extracts\\\\LIB-L05.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\originals\\\\pipc-genai-privacy-guide-2025-08.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L05\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\extracts\\\\LIB-L06.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\originals\\\\kisa-ai-red-teaming-guide-2026-07.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L06\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\extracts\\\\LIB-L09.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\originals\\\\bs-iso-iec-42001-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L09\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\extracts\\\\LIB-L10.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\originals\\\\iso-iec-27001-2022.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L10\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\extracts\\\\LIB-L11.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\originals\\\\azs-iso-iec-tr-24028-2024-az.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L11\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\extracts\\\\LIB-L12.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\originals\\\\iso-iec-5230-2020.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-L12\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\extracts\\\\LIB-M04.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\originals\\\\imda-mgf-agentic-ai-v1-5.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M04\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\extracts\\\\LIB-M08.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\originals\\\\csa-securing-agentic-ai-addendum.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M08\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\extracts\\\\LIB-M13.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\originals\\\\ca-tbs-directive-automated-decision-making.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M13\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\extracts\\\\LIB-M14.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\originals\\\\ccpa-admt-risk-cyber-approved-text.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M14\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\extracts\\\\LIB-M15.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\originals\\\\co-sb26-189-session-law.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M15\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\extracts\\\\LIB-M17.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\originals\\\\nist-ai-600-1.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M17\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\extracts\\\\LIB-M20.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\originals\\\\nist-ai-100-2e2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M20\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\extracts\\\\LIB-M21.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\originals\\\\nist-ir-8596-iprd.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M21\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\extracts\\\\LIB-M22.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\originals\\\\csi-deploying-ai-systems-securely-2024-ncsc-nz-copy.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M22\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\extracts\\\\LIB-M28.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\originals\\\\cn-network-data-security-regulations-790.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M28\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\extracts\\\\LIB-M31.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\originals\\\\tc260-ai-safety-governance-framework-2-0.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M31\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\extracts\\\\LIB-M32.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\originals\\\\gbt-45654-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M32\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\extracts\\\\LIB-M34.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\originals\\\\sg-pdpa-2012.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M34\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\extracts\\\\LIB-M36.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\originals\\\\quebec-law-25-2021.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M36\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\extracts\\\\LIB-M37.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\originals\\\\sg-mas-ai-risk-management-guidelines-2026.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M37\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\extracts\\\\LIB-M38.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\originals\\\\sg-pdpc-ai-recommendation-decision-advisory-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M38\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\extracts\\\\LIB-M39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\originals\\\\csa-guidelines-on-securing-ai-systems-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M39\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\extracts\\\\LIB-M40.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\originals\\\\etsi-en-304-223.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M40\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\extracts\\\\LIB-M43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\originals\\\\au-guidance-ai-adoption-implementation.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M43\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\extracts\\\\LIB-M44.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\originals\\\\india-dpdp-rules-2025.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M44\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\extracts\\\\LIB-M45.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\originals\\\\india-dpdp-act-2023.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M45\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\extracts\\\\LIB-M48.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\originals\\\\au-poa-act-2024.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M48\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\extracts\\\\LIB-M49.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\originals\\\\india-ai-governance-guidelines.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\compliance\\\\LIB-M49\\\\provenance.json\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\extracts\\\\P39.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P39\\\\originals\\\\P39.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\extracts\\\\P43.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P43\\\\originals\\\\P43.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\extracts\\\\P46.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P46\\\\originals\\\\P46.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\extracts\\\\P47.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P47\\\\originals\\\\P47.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\extracts\\\\P54.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P54\\\\originals\\\\P54.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\extracts\\\\P58.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P58\\\\originals\\\\P58.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\extracts\\\\P60.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P60\\\\originals\\\\P60.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\extracts\\\\P63.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\P63\\\\originals\\\\P63.pdf\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\extracts\\\\T01_mcp_auth_security.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T01\\\\originals\\\\T01_mcp_auth_security.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\extracts\\\\T02_mcp_tools.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T02\\\\originals\\\\T02_mcp_tools.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\extracts\\\\T04_web.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T04\\\\originals\\\\T04.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_cheat.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\extracts\\\\T08_owasp_mcp.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_cheat.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T08\\\\originals\\\\T08_owasp_mcp.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\extracts\\\\T21_mcp_best.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T21\\\\originals\\\\T21_mcp_best.html\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\extracts\\\\T22_supplement.md\",\r\n    \"Missing ignored local source: research\\\\llm-wiki\\\\local-sources\\\\policy\\\\T22\\\\originals\\\\T22_supplement.html\"\r\n  ],\r\n  \"errors\": [\r\n    \"Code changed after mapping: full_stack_lab/supply_chain/intake_worker.py; review and run map_threats.py\",\r\n    \"Missing local file: full_stack_lab/runtime/worker.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/agent_service.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Missing local file: full_stack_lab/runtime/worker.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/upstream.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/registry.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: endpoint-agent/managed-windows.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/endpoint_plane.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/upstream.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/local_jobs.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/pac.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/registry.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Missing local file: full_stack_lab/runtime/worker.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/core.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/local_jobs.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/disposal.py; review and run map_threats.py\",\r\n    \"Code changed after mapping: full_stack_lab/gateway/app/local_jobs.py; review and run map_threats.py\"\r\n  ]\r\n}\r\n",
+      "source_hashes": {
+        "research/llm-wiki/tools/check_wiki.py": "d6765705b363044364000dd092186f379f6be484f470079518dd87eba1c1c49e"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_trace.py"
+      ],
+      "exit_code": 0,
+      "output": "결과: 오류 0, 경고 5",
+      "source_hashes": {
+        "research/llm-wiki/tools/check_trace.py": "305323b397e446276b6758b10bc797a8b6638914b76721877d4da9ee592e19db"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_enterprise_analysis.py"
+      ],
+      "exit_code": 1,
+      "output": "{\r\n  \"ok\": false,\r\n  \"requirements\": 80,\r\n  \"comparisons\": 21,\r\n  \"integration_conditions\": 50,\r\n  \"real_mcp_targets\": 14,\r\n  \"errors\": [\r\n    \"Code hash changed: full_stack_lab/supply_chain/intake_worker.py\",\r\n    \"Code hash changed: full_stack_lab/supply_chain/intake_worker.py\",\r\n    \"Code hash changed: full_stack_lab/supply_chain/intake_worker.py\",\r\n    \"Code hash changed: full_stack_lab/supply_chain/intake_worker.py\",\r\n    \"Code hash changed: full_stack_lab/supply_chain/intake_worker.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/pac.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/pac.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/pac.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/pac.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/pac.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/compose.yaml\",\r\n    \"Integration code hash changed: full_stack_lab/console.sh\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/compose.yaml\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/compose.yaml\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/core.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/gateway/app/upstream.py\",\r\n    \"Integration code hash changed: full_stack_lab/compose.yaml\"\r\n  ],\r\n  \"warnings\": []\r\n}\r\n",
+      "source_hashes": {
+        "research/llm-wiki/tools/check_enterprise_analysis.py": "f86aa0835c15773b5b8e5683029cb90eae71bef03170f8cd65d1362ede38aaec"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "research/llm-wiki/tools/check_freshness.py"
+      ],
+      "exit_code": 0,
+      "output": "정상  research/llm-wiki/status/current.md: 기준일 2026-10-28, 제품 코드 마지막 변경 2026-10-28 (+0일)\r\n낡음  research/llm-wiki/status/backlog.md: 기준일 2026-10-25, 제품 코드 마지막 변경 2026-10-28 (+3일)\r\n낡음  research/llm-wiki/START_HERE.md: 기준일 2026-10-25, 제품 코드 마지막 변경 2026-10-28 (+3일)\r\n낡음  current.md가 인용한 최신 결정: current.md 최대 D-279, 결정 기록 최대 D-299 (차이 20)\r\n정상  current.md 이후에 쓴 작업 보고서: 0건\r\n낡음  current.md 이후 제품 코드 커밋: 2개\r\n낡음  시트 당겨오기(sheet/pulled) 마지막 반영: 2026-10-18 (저장소 마지막 커밋 2026-10-28, 10일 차이). sheet_pull.py는 사람이 돌리는 도구이고 CI·정기 실행이 없다\r\n정상  보고서 색인: 보고서 색인 최신\r\n정상  결정 색인: 결정 색인 최신\r\n낡음 5건 / 점검 9건 (기준: 저장소 마지막 커밋 2026-10-28)\r\n",
+      "source_hashes": {
+        "research/llm-wiki/tools/check_freshness.py": "d4e2601a445367bed0adf5a300bd6d0b6ab6a88fd28b980deb9ca190638d0c07"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/intake_one_click_check.py"
+      ],
+      "exit_code": 0,
+      "output": "test_admin_may_lower_tool_action_only_and_gateway_accepts_it (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_audience_requester_and_selected_land_in_the_contract (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_contract_change_is_refused_without_registration (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_failed_scan_disables_preview_and_refuses_forged_click (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_gateway_scope_guard_accepts_exact_review_and_refuses_edits (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_grade_change_after_display_is_refused (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_high_tier_waits_and_alias_is_not_a_second_person (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_pack_activated_after_preview_requires_new_review (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_remote_one_approval_registers_and_records_each_checked_tool (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_repository_one_approval_publishes_and_registers (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_repository_without_endpoint_execution_is_not_registered (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_same_person_cannot_approve (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_second_review_keeps_scope_but_contract_drift_discards_first_approval (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_selected_audience_is_checked_before_a_first_approval_is_recorded (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_url_tool_suggested_hosts_reach_the_contract_and_the_approver_may_edit_them (__main__.ApprovalFlowCheck) ... skipped \"Gateway image required: No module named 'fastapi'\"\r\ntest_address_tool_gets_its_server_and_contract_hosts_as_a_suggestion (__main__.SuggestionCheck) ... ok\r\ntest_applicant_grade_preserved_and_other_inputs_derived (__main__.SuggestionCheck) ... ok\r\ntest_assurance_optional_but_invalid_or_expired_eol_refused (__main__.SuggestionCheck) ... ok\r\ntest_automatic_scope_grants_no_unknown_hosts_or_cross_server_data (__main__.SuggestionCheck) ... ok\r\ntest_destructive_and_command_arguments_outrank_read_hint (__main__.SuggestionCheck) ... ok\r\ntest_fingerprint_binds_source_grade_tools_and_scan_counts (__main__.SuggestionCheck) ... ok\r\ntest_id_is_valid_stable_and_distinct (__main__.SuggestionCheck) ... ok\r\ntest_pack_default_disabled_and_opt_in_missing_location_refused (__main__.SuggestionCheck) ... ok\r\ntest_registered_address_pattern_follows_new_destinations_only_when_derived (__main__.SuggestionCheck) ... skipped 'review needs the gateway dependencies'\r\ntest_supplier_files_are_bounded_untrusted_data (__main__.SuggestionCheck) ... ok\r\n\r\n----------------------------------------------------------------------\r\nRan 25 tests in 0.065s\r\n\r\nOK (skipped=16)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/intake_one_click_check.py": "2be1d1a59fbbc5a6ea7f42704dedc5d1b2e941c8080c8ff7fcbdd3f20e20551d"
+      }
+    },
+    {
+      "command": [
+        "python",
+        "-B",
+        "-X",
+        "utf8",
+        "full_stack_lab/tests/intake_one_click_ast_check.py"
+      ],
+      "exit_code": 1,
+      "output": "Traceback (most recent call last):\r\n  File \"<worktree>\\full_stack_lab\\tests\\intake_one_click_ast_check.py\", line 18, in <module>\r\n    from datetime import UTC, datetime, timedelta\r\nImportError: cannot import name 'UTC' from 'datetime' (C:\\Program Files\\Python310\\lib\\datetime.py)\r\n",
+      "source_hashes": {
+        "full_stack_lab/tests/intake_one_click_ast_check.py": "198c019d2a50006bbf8d9e9d53a65a9c5bdd6254779d3f85fcc714786961fd69"
+      }
+    }
+  ],
+  "initial_full_local_suite": {
+    "file": "local-suite-round2-first.json",
+    "counts": {
+      "통과": 72,
+      "실패": 62,
+      "외부 의존 생략": 18,
+      "검토 갱신 대기": 0
+    }
+  },
+  "generation": {
+    "command": [
+      "python",
+      "research/llm-wiki/tools/refresh_generated.py"
+    ],
+    "exit_code": 1,
+    "output": "[위협 매핑·코드 해시] map_threats.py\n      File \"<worktree>\\research\\llm-wiki\\tools\\map_threats.py\", line 50, in build\n        assert path.is_file(), f\"Missing code candidate: {name}\"\n    AssertionError: Missing code candidate: full_stack_lab/runtime/worker.py\n[요구사항·연동 조건의 코드 위치] build_enterprise_analysis.py --refresh-code-only\n      File \"<worktree>\\research\\llm-wiki\\tools\\build_enterprise_analysis.py\", line 152, in current\n        raise ValueError(\"Source is uncommitted or symbol is missing: \" + entry[\"path\"])\n    ValueError: Source is uncommitted or symbol is missing: full_stack_lab/supply_chain/intake_worker.py\n[저장소 스냅샷] capture_status.py\n    {\"head\": \"0c0bb1512865ff72a53fb120a7442ad7a17b0ff0\", \"dirty_paths\": 73, \"scope\": \"local-code-only\"}\n[보고서 색인] build_report_index.py\n    research\\llm-wiki\\status\\reports\\README.md 갱신: 보고서 188개\n[결정 색인] split_decisions.py index\n    research\\llm-wiki\\status\\decisions-index.md 갱신\n[위키 검사] check_wiki.py --ci-ignored-local-sources\n        \"Missing local file: ../../../full_stack_lab/runtime/worker.py\"\n      ]\n    }\n[ID 추적] check_trace.py\n    경고: 참조 0 (기능) 24건: F-11, F-12, F-13, F-15, F-16, F-17, F-19, F-20 …\n    경고: 참조 0 (위협) 13건: TH-01, TH-04, TH-05, TH-07, TH-09, TH-10, TH-12, TH-14 …\n    결과: 오류 0, 경고 5\n[기업 분석 해시] check_enterprise_analysis.py\n      ],\n      \"warnings\": []\n    }\n[신선도(경고)] check_freshness.py\n    정상  보고서 색인: 보고서 색인 최신\n    정상  결정 색인: 결정 색인 최신\n    낡음 5건 / 점검 9건 (기준: 저장소 마지막 커밋 2026-10-28)\n실패: 위협 매핑·코드 해시, 요구사항·연동 조건의 코드 위치, 위키 검사, 기업 분석 해시\n",
+    "limitation": "Frozen threat mapping still references deleted runtime source; enterprise current-code generator rejects uncommitted sources. No check weakened or evidence hashes fabricated."
+  },
+  "not_run": [
+    "Real SYSTEM employee token/ACL/Job lifecycle on designated PC",
+    "Real MarkItDown resolution, scanner image, wheel installation, model/harness and independent effects",
+    "Docker compose config: Docker CLI is absent",
+    "Deployment, push, PR and commit: forbidden by BRIEF"
+  ]
+}

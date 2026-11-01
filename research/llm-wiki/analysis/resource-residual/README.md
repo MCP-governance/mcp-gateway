@@ -1,5 +1,6 @@
 # DEV-08 발급 토큰과 자원 서버의 잔존 재접근
 
+> 2026-10-28 D-299 2차: 솔루션 실행기는 제거됐다. 아래 실행기 링크는 삭제 전 고정 커밋의 역사 자료이며 현재 구현·실행 증거가 아니다. 현재 경계와 재승인은 [2차 보고](../../status/reports/2026-10-28-endpoint-stdio.md)를 따른다.
 2026-10-20 · Codex sol · D-156 · 브랜치 `10/20-resource-server-residual` · 시작 `bac155a8b78222fc878ff642ea1aa177ddb82fba`.
 정본은 이 문서와 [원자 요구사항·코드 지문](requirements.json)이다. [작업 보고](../../status/reports/2026-10-20-resource-server-residual.md)의 실행 결과와
 기기 절차를 구분한다. [종료 모델](../../../../docs/ai/TERMINATION_MODEL.md)·[결정 기록](../../../../docs/ai/DECISIONS.md)의 D-146·D-123·D-154를 전제로 한다.
@@ -13,7 +14,7 @@
 | RS-03 자원 서버 응답의 우선순위 | [decommission.py](../../../../full_stack_lab/gateway/app/decommission.py) `STATE_EVIDENCE_FOR`에 두 토큰 종류의 `resource-rejection` 누락 보완. `_judge_target`의 기존 잔존 판정 재사용 | 수정 전 새 시험에서 client/refresh 토큰 모두 수락 증거를 무시해 T1, 직접 거부만 있으면 T3(3실패). 수정 후 수락 T2·거부 T1·증거 없음/폐기 전 증거 T3 통과 |
 | RS-04 서버 보유 별도 자격 | 같은 파일 `seed_targets`·`collect`·`_resource_verdict`·`revoke_credential`: `server_held_credentials` 고지와 조직 확인 권한 분리, 보호 자원에 같은 PAT 재제시 | 로컬 판정은 목록 부재보다 실제 수락 우선. PG 절차는 Gitea에 전용 PAT를 만들고 상위 JWT 폐기 전 200→이후에도 200→하위 PAT 폐기 뒤 401 및 T2→T1 대상 등급 확인. 기기 미실행 |
 | RS-05 업스트림 풀·세션 | [upstream.py](../../../../full_stack_lab/gateway/app/upstream.py) `release_pool`·`_sweep`·`maintain_pool`; [upstream_sessions.py](../../../../full_stack_lab/gateway/app/upstream_sessions.py) `Pool.close`·`borrow`; [mcp_sessions.py](../../../../full_stack_lab/gateway/app/mcp_sessions.py) `terminate` | 기존 종료 개시가 풀 폐기와 세션 종료를 호출. 로컬에서 사용 중 lease·대기자 모두 옛 세대 재사용 거부, close 완료·재호출 0 확인. PG에서는 개시 전 결속한 세션의 개시 후 거부와 최종 dispatch 의도 0 확인 예정 |
-| RS-06 실행기 잔존 | [worker.py](../../../../full_stack_lab/runtime/worker.py) `approval_problem`·`run_job`·`reconcile`·`remove_runtime_resources`: 빌드/실행 전 재검사, 종료 시 STOPPING, 제거 잔존이면 재시도 | 로컬 엔진/DB 대역으로 TERMINATING·RETIRED 각각 자원 1개 잔존 시 성공 사건 없음→잔존 0이면 STOPPED/감사 사건. 실제 컨테이너 제거·이미지·다중 워커 미실행 |
+| RS-06 실행기 잔존 | [worker.py](https://github.com/MCP-governance/mcp-gateway/blob/0c0bb1512865ff72a53fb120a7442ad7a17b0ff0/full_stack_lab/runtime/worker.py) `approval_problem`·`run_job`·`reconcile`·`remove_runtime_resources`: 빌드/실행 전 재검사, 종료 시 STOPPING, 제거 잔존이면 재시도 | 로컬 엔진/DB 대역으로 TERMINATING·RETIRED 각각 자원 1개 잔존 시 성공 사건 없음→잔존 0이면 STOPPED/감사 사건. 실제 컨테이너 제거·이미지·다중 워커 미실행 |
 | RS-07 T1~T3 범위 | `_judge_target`·`assess`: 발급자 상태만 확인한 토큰 대상 T1과 전체 이용 관계 종료를 구분 | 동일 inactive 상태라도 서명 자체 검증의 만료 공백은 T2, 증거 없음은 T3. 새 PG 절차에서 발급자 T1 대상이 있어도 미확인 대상·게이트웨이 경로가 남은 전체 케이스 T3 확인 예정 |
 
 실행 증거: [로컬 검사 기록](checks.json). 새 [로컬 시험](../../../../full_stack_lab/tests/resource_residual_check.py)은 제품 AST 함수와 표준 라이브러리 풀을 실행하며 DB/인증·엔진 응답만 대역이다.

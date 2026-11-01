@@ -100,7 +100,8 @@ def runtime_endpoints() -> set[str]:
 
 
 def servers() -> dict[str, dict]:
-    return catalog().get("servers", {})
+    return {key: spec for key, spec in catalog().get("servers", {}).items()
+            if not spec.get("runtime") or spec.get("local")}
 
 
 def server(server_id: str) -> dict | None:
@@ -248,7 +249,7 @@ async def sync() -> dict:
     # Servers that left the catalog are switched off, not deleted: their audit rows
     # and termination cases still refer to them.
     await db.execute(
-        """UPDATE mcp_servers SET status='DISABLED', status_reason='카탈로그에서 제거된 서버'
+        """UPDATE mcp_servers SET status='DISABLED', status_reason=CASE WHEN EXISTS (SELECT 1 FROM mcp_runtimes r JOIN mcp_intake_requests i ON i.id=r.intake_id WHERE i.registered_server_id=mcp_servers.id) THEN '엔드포인트 실행으로 재승인 필요' ELSE '카탈로그에서 제거된 서버' END
            WHERE NOT (id = ANY(%s::text[])) AND status <> 'DISABLED'""",
         (sorted(cat_servers),),
     )

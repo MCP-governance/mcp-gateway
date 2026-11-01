@@ -1,32 +1,18 @@
 """DEV-20: real production parsers/collector with DB and engine doubles, never a mock MCP."""
 from __future__ import annotations
 
-import ast
 import importlib.util
-import hashlib
-import subprocess
 import sys
 import types
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('server_egress', ROOT / 'gateway/app/server_egress.py')
 egress = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(egress)
-
-
-def load_worker_functions(*names, **overrides):
-    tree = ast.parse((ROOT / 'runtime/worker.py').read_text(encoding='utf-8'))
-    selected = ast.Module(body=[node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names],
-                          type_ignores=[])
-    namespace = dict(server_egress=egress, datetime=datetime, timedelta=timedelta, timezone=timezone,
-                     Jsonb=lambda value: value, RuntimeError=RuntimeError, subprocess=subprocess,
-                     psycopg=types.SimpleNamespace(Error=type('DatabaseError', (Exception,), {})), **overrides)
-    exec(compile(selected, 'runtime/worker.py', 'exec'), namespace)
-    return types.SimpleNamespace(**{name: namespace[name] for name in names})
 
 
 def log(message, second=1):
@@ -130,104 +116,6 @@ class QueryCheck(unittest.IsolatedAsyncioTestCase):
                 package.db.fetch_all.assert_not_awaited()
         finally:
             egress.__package__, egress.__spec__ = old_package, old_spec
-
-
-class CollectorCheck(unittest.TestCase):
-    def setUp(self):
-        self.runtime = dict(id='runtime-1', intake_id='intake-1', evidence={})
-        self.proxy = dict(Id='proxy-1', Image='sha256:image', Created='2026-10-20T00:00:00Z',
-                          Config=dict(Labels={'mcpgw.runtime': 'runtime-1', 'mcpgw.role': 'egress'}))
-        self.db = Mock()
-        self.events = []
-        self.cursor = {}
-        self.seen = set()
-
-        def execute(sql, args):
-            result = Mock()
-            if 'FOR UPDATE' in sql:
-                result.fetchone.return_value = dict(evidence=self.cursor.copy())
-            elif 'registered_server_id' in sql:
-                result.fetchone.return_value = dict(registered_server_id='server-a')
-            elif 'SELECT 1 FROM approval_events' in sql:
-                result.fetchone.return_value = {'found': 1} if args[1] in self.seen else None
-            elif 'jsonb_set' in sql:
-                self.cursor['egress_log_cursor'] = args[0]
-            else:
-                raise AssertionError(sql)
-            return result
-
-        def event(connection, runtime, kind, outcome='recorded', scope=None):
-            self.seen.add(scope['event_id'])
-            self.events.append((kind, outcome, scope))
-
-        self.db.execute.side_effect = execute
-        self.docker = Mock(return_value=subprocess.CompletedProcess([], 0, log(
-            'Proxying refused on filtered domain "outside.example.org"'), ''))
-        self.worker = load_worker_functions('collect_egress', docker=self.docker, event=event)
-
-    def test_overlap_replay_is_idempotent_and_new_container_is_separate(self):
-        for _ in range(2):
-            self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.assertEqual(len(self.events), 1)
-        kind, outcome, scope = self.events[0]
-        self.assertEqual((kind, outcome, scope['server_id']), ('runtime-egress', 'recorded', 'server-a'))
-        self.assertEqual(scope['proxy_image_id'], 'sha256:image')
-        self.worker.collect_egress(self.db, self.runtime, dict(self.proxy, Id='proxy-2'))
-        self.assertEqual(len(self.events), 2)
-
-    def test_engine_failure_does_not_advance_checkpoint(self):
-        self.docker.side_effect = RuntimeError('engine unavailable')
-        with self.assertRaises(RuntimeError):
-            self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.db.execute.assert_not_called()
-        self.assertFalse(self.events)
-
-    def test_wrong_proxy_and_truncated_log_batch_fail(self):
-        proxy = dict(self.proxy, Config=dict(Labels={'mcpgw.runtime': 'other', 'mcpgw.role': 'egress'}))
-        with self.assertRaises(RuntimeError):
-            self.worker.collect_egress(self.db, self.runtime, proxy)
-        self.docker.assert_not_called()
-        self.docker.return_value.stdout = '\n'.join(['line'] * 10001)
-        with self.assertRaises(RuntimeError):
-            self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.db.execute.assert_not_called()
-
-    def test_commit_failure_is_not_success_and_replay_can_recover(self):
-        self.db.commit.side_effect = [None, RuntimeError('commit acknowledgement lost')]
-        with self.assertRaises(RuntimeError):
-            self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.db.commit.side_effect = None
-        self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.assertEqual(len(self.events), 1)
-
-    def test_stale_collector_does_not_move_cursor_backwards(self):
-        future = '2099-01-01T00:00:00Z'
-        self.cursor['egress_log_cursor'] = dict(container_id='proxy-1', until=future)
-        self.worker.collect_egress(self.db, self.runtime, self.proxy)
-        self.assertEqual(self.cursor['egress_log_cursor']['until'], future)
-        self.db.rollback.assert_called_once()
-        self.assertFalse(self.events)
-
-    def test_observation_failure_removes_superseded_filter_before_propagating(self):
-        proxy = dict(self.proxy, State=dict(Running=True),
-                     Config=dict(Labels={'mcpgw.allow': 'old'}))
-        docker = Mock()
-        worker = load_worker_functions('sync_egress', hashlib=hashlib, names=lambda r: dict(egress='proxy'),
-                                       egress_filter=lambda h: '^$', destinations=lambda i: [],
-                                       inspect=lambda kind, name: proxy, docker=docker,
-                                       collect_egress=Mock(side_effect=RuntimeError('logs unavailable')))
-        with self.assertRaises(RuntimeError):
-            worker.sync_egress(self.db, self.runtime, {})
-        docker.assert_called_once_with('rm', '-f', 'proxy')
-
-    def test_event_writer_only_appends_and_binds_runtime_generation(self):
-        worker = load_worker_functions('event', WORKER_ID='worker')
-        connection = Mock()
-        worker.event(connection, dict(self.runtime, generation=2), 'runtime-egress', scope={'destination': 'example.org'})
-        sql, params = connection.execute.call_args.args
-        self.assertTrue(sql.startswith('INSERT INTO approval_events'))
-        self.assertEqual(params[-1]['runtime'], self.runtime['id'])
-        self.assertEqual(params[-1]['generation'], 2)
 
 
 if __name__ == '__main__':

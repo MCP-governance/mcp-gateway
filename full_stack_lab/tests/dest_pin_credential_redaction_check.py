@@ -143,8 +143,8 @@ class DestinationPin(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await module._internal_endpoint("http://mcp-a:8000/mcp"))
         self.assertFalse(await module._internal_endpoint("http://unapproved:8000/mcp"))
         db.fetch_one.return_value = {"id": "approved-executor"}
-        self.assertTrue(await module._internal_endpoint("http://executor:8000/mcp"))
-        self.assertIn("status='ACTIVE'", db.fetch_one.call_args.args[0])
+        self.assertFalse(await module._internal_endpoint("http://executor:8000/mcp"))
+        db.fetch_one.assert_not_awaited()
         for host in ("github.example", "127.0.0.1", "2130706433", "0x7f000001"):
             endpoint = f"https://{host}/mcp"
             registry.servers.return_value["a"] = {"endpoint": endpoint, "deployment": "internal"}

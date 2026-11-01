@@ -84,10 +84,7 @@ async def suspend(server_id, source, reason, evidence, batch=None):
             return False
         await connection.execute(
             "UPDATE mcp_servers SET status='DISABLED',status_reason=%s WHERE id=%s", (reason, server_id))
-        await connection.execute(
-            """UPDATE mcp_runtimes SET status='STOPPING',error=%s,updated_at=now()
-               WHERE intake_id IN (SELECT id FROM mcp_intake_requests WHERE registered_server_id=%s)
-                 AND status NOT IN ('STOPPED','FAILED','STOPPING')""", (reason, server_id))
+
         scope = {"source": source, **evidence}
         if batch:
             scope["batch"] = batch

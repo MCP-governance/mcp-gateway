@@ -116,7 +116,7 @@ class WindowsKitTests(unittest.TestCase):
             (runtime / 'windows-python.json').write_text('{}', encoding='utf-8')
             content = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows'))
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            self.assertEqual(set(archive.namelist()), set(namespace['KIT_FILES']['windows']) | {'enrollment.json', 'python.zip', 'windows-python.json', 'windows-kit-manifest.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py'})
+            self.assertEqual(set(archive.namelist()), set(namespace['KIT_FILES']['windows']) | {'enrollment.json', 'pip.zip', 'python.zip', 'windows-python.json', 'windows-kit-manifest.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py'})
             self.assertEqual(archive.read('python.zip'), b'synthetic archive content')
             manifest = json.loads(archive.read('windows-kit-manifest.json'))
             self.assertEqual(response_headers['X-Windows-Kit-Manifest-SHA256'],
@@ -342,7 +342,9 @@ Write-Output 'Per-request CA verification OK'
         enroll = dict(sent)['/oauth/device-enroll']
         self.assertEqual((enroll['mode'], enroll['local_sid'], enroll['local_username']), ('simple', person['sid'], 'fixture'))
         values = environment.call_args.args[1]
-        self.assertEqual(set(values), {'NODE_EXTRA_CA_CERTS', 'CODEX_CA_CERTIFICATE'})
+        self.assertEqual(set(values), {'NODE_EXTRA_CA_CERTS', 'CODEX_CA_CERTIFICATE', 'PATH_APPEND'})
+        # `mint` in a new terminal
+        self.assertIn('windows_status.py', (Path(values['PATH_APPEND']) / 'mint.cmd').read_text(encoding='utf-8'))
         self.assertEqual(Path(values['NODE_EXTRA_CA_CERTS']).read_text(encoding='utf-8'), ca['ca_certificate'])
         broadcast.assert_called_once()
         summary = json.loads(out.getvalue().splitlines()[0])
@@ -378,7 +380,7 @@ Write-Output 'Per-request CA verification OK'
         policy.mkdir()
         names = ('install.cmd', 'setup.ps1', 'windows-common.ps1', 'windows-worker.ps1', 'windows-trust.ps1', 'tray.ps1',
                  'runtime-check.py', 'windows_status.py', 'kit_screen.py', 'kit_access.py', 'install.py', 'install-windows.ps1', 'managed-windows.py',
-                 'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
+                 'agent.py', 'os-observer-windows.py', 'offline_buffer.py', 'local-runner.py', 'stdio_source.py', 'stdio_windows.py', 'pip.zip', 'python.zip', 'windows-python.json', 'root.crt', 'root.sha256', 'mcpgw_pc.py')
         for name in names:
             (code / name).write_bytes(('synthetic, never executed: ' + name).encode())
         manifest = {'schema': 1, 'gateway_url': 'https://approved.example', 'tailscale_node_id': '',

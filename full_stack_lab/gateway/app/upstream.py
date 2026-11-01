@@ -178,9 +178,7 @@ async def _internal_endpoint(endpoint: str) -> bool:
     if re.fullmatch(r"[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?", host):
         if any(spec.get("endpoint") == endpoint for spec in registry.servers().values()):
             return True
-        # Approved executors are discovered before registration; the name alone is not approval.
-        return bool(await db.fetch_one("SELECT id FROM mcp_runtimes WHERE endpoint=%s AND status='ACTIVE'",
-                                       (endpoint,)))
+        return False
     return False
 
 

@@ -231,7 +231,7 @@ class ApprovalOrdering(unittest.IsolatedAsyncioTestCase):
             solo_mode_enabled=lambda: False, solo_operator=lambda _: False, same_person=AsyncMock(return_value=False),
             transition=transition, record_event=AsyncMock(), RISK_ACCEPTANCE_MIN_REASON=10)
         model = lambda **values: types.SimpleNamespace(model_dump=lambda: values)
-        module = load('agent_service.py', ['approve_and_register'], INTAKE_APPROVAL_LOCK=asyncio.Lock(),
+        module = load('agent_service.py', ['approve_and_register', 'local_discover_timeout'], INTAKE_APPROVAL_LOCK=asyncio.Lock(),
             db=types.SimpleNamespace(transaction=transaction), approval_row=AsyncMock(return_value=row),
             intake_proposal=types.SimpleNamespace(digest=lambda _: 'digest', basis=lambda _: 'basis', scan_basis=lambda _: 'scan'),
             datetime=datetime, timedelta=timedelta, UTC=timezone.utc, review=review,

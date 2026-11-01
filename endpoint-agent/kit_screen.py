@@ -49,7 +49,7 @@ TEXT_EN = {
     "게이트웨이 판정": "Gateway decision", "격리 계정": "Isolated account",
     "활성화 대기": "Waiting for activation", "서비스 중지": "Service stopped", "활성": "Active", "격리됨": "Quarantined",
     "등록 해제됨": "Unregistered", "철회됨": "Revoked", "제거됨": "Removed", "확인 필요": "Needs attention",
-    "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers", "로컬 MCP 준비": "Local MCP ready", "직원 문서 폴더": "Document folders", "새로 반영": "Newly added", "Enter 돌아가기": "Enter to go back", "설치 진행 중": "Installing", "열린 하네스는 다시 시작": "restart open harnesses",
+    "승인 서버": "Approved servers", "승인 MCP 서버": "Approved MCP servers", "로컬 MCP 준비": "Local MCP ready", "직원 문서 폴더": "Document folders", "새로 반영": "Newly added", "Enter 돌아가기": "Enter to go back", "설치 진행 중": "Installing", "설치됨": "installed", "열린 하네스는 다시 시작": "restart open harnesses",
     "하네스 판본": "Harness versions", "하네스 응답": "Harness response", "하네스": "Harnesses",
     "최근 보고": "Last report", "최근 엔드포인트 차단": "Recent endpoint blocks",
     "게이트웨이 MCP 목록": "Gateway MCP list", "MCP 목록": "MCP list", "관리 설정": "Managed settings", "엔드포인트 · MCP 연결 관리": "Endpoint · MCP connection management",
@@ -505,7 +505,7 @@ def layout(summary, rows=(), cells=(), next_line="", columns=80, lines=30, now=N
     if values.get("서버 연결") and legacy_cell(values["서버 연결"]) != "완료":
         tools += " · " + t("서버 연결") + " " + legacy_cell(values["서버 연결"])
     versions = summary.get("harnesses") or {}
-    version_text = " · ".join(f"{name} {clean(version)}" for name, version in sorted(versions.items())
+    version_text = " · ".join(f"{name} {clean(version) if version else t('설치됨')}" for name, version in sorted(versions.items())
                               if name in {"claude", "codex", "gemini", "opencode"}) or "—"
     lw = lab("모델 로그인", "하네스 응답", "MCP 목록", "관리 설정", "하네스 판본")
     checks = ([kv(t("모델 로그인"), t(logins), inner, profile, g, lw, marked=True, wrap=True)] if logins else []) + [

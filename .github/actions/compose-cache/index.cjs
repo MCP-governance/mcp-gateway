@@ -77,7 +77,7 @@ function run() {
   const plans = [JSON.parse(docker(['compose', '-f', 'compose.yaml', '--profile', '*', 'build', '--print'], renderEnv, true))];
   if (stack === 'full_stack_lab') {
     plans.push(JSON.parse(docker(['compose', '-f', 'compose.yaml', '-f', 'compose.field.yaml',
-      'build', '--print', 'runtime-worker', 'model-proxy'], renderEnv, true)));
+      'build', '--print', 'model-proxy'], renderEnv, true)));
   }
   const write = process.env.GITHUB_EVENT_NAME === 'push' && process.env.GITHUB_REF === 'refs/heads/main';
   const load = stack === 'full_stack_lab';
