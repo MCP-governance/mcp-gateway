@@ -300,7 +300,6 @@ const ICON = {
   termination: '<path d="m19 5 3-3M2 22l3-3"/><path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="M7.5 13.5 10 11M10.5 16.5 13 14"/><path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>',
   git: '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
   plug: '<path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>',
-  connections: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   policy: '<path d="m16 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="m2 16 3-8 3 8c-.9.7-1.9 1-3 1s-2.1-.3-3-1Z"/><path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
 };
 ICON.endpoints = ICON.people;
@@ -423,8 +422,7 @@ const PAGES = [
   { id: "policy", label: "보안 관리 정책", group: "보안 관리" },
   { id: "intake", label: "도입 관리", group: "도입 및 종료" },
   { id: "termination", label: "종료 및 폐기", group: "도입 및 종료", badge: "termination" },
-  { id: "consent", label: "이용 동의", group: "내 계정", badge: "consent" },
-  { id: "connections", label: "서비스 계정 연결", group: "내 계정" },
+  { id: "consent", label: "도구 이용 동의", group: "이용 설정", badge: "consent" },
 ];
 let viewer = null;
 let routeSeq = 0;
@@ -846,7 +844,7 @@ function dashboardRegistration(o, signups, inventory, consents) {
   const activationCount = inventory.agents.filter((a) => a.status !== "revoked" && ["pending", "quarantined"].includes(a.managed_state) && a.policy_hash).length;
   const consentCount = consents?.consents ? new Set(consents.consents.filter((c) => c.status === "PENDING").map((c) => c.server_id)).size : null;
   const shadowCount = o.workstations ? o.workstations.filter((station) => Number(station.shadow) > 0).length : null;
-  const todo = [["엔드포인트 도입 요청", o.endpoint_requests, "#/intake?t=requests"], ["이용 동의", consentCount, "#/consent"],
+  const todo = [["엔드포인트 도입 요청", o.endpoint_requests, "#/intake?t=requests"], ["도구 이용 동의", consentCount, "#/consent"],
     ["미등록 MCP 엔드포인트", shadowCount, "#/endpoints?t=shadow"]];
   return panel("승인 및 등록", html`<div class="action-list">
             <a class="action-link" href="#/people?t=signups&signup_status=pending"><span>가입 승인</span><b class="n">${signupPendingTotal(signups)}</b></a>
@@ -1182,7 +1180,7 @@ function decisionAction(r) {
     : /SHADOW/.test(r.policy_id || "") ? shadowLink(r.device_id || r.evidence?.endpoint_id, r.evidence?.record_kind, r.evidence?.record_id) : "";
   return kv([["사유", r.reason || policyLabel(r.policy_id) || "—"],
     ["실행", r.outcome_axes?.execution || (r.executed ? "실행됨" : r.attempted ? "실행 미확인" : "실행 안 함")],
-    ["조치", href ? html`<a class="btn sm" href="${href}">${consent ? "이용 동의" : "미등록 MCP 보기"}</a>` : "—"]]);
+    ["조치", href ? html`<a class="btn sm" href="${href}">${consent ? "도구 이용 동의" : "미등록 MCP 보기"}</a>` : "—"]]);
 }
 
 async function showDecision(id) {
@@ -1971,29 +1969,8 @@ async function consentTabs(query = new URLSearchParams()) {
     { key: "history", label: "이력", n: decided.length, body: panel("동의 기록", decided.length ? table(decided) : empty("기록 없음", { filtered: query.has("server") || query.has("tool") }), { flush: true }) },
   ];
 }
-ROUTES.consent = async (_, tab, query = new URLSearchParams()) => page({ head: head("이용 동의"), active: tab || "pending", tabs: await consentTabs(query) });
+ROUTES.consent = async (_, tab, query = new URLSearchParams()) => page({ head: head("도구 이용 동의"), active: tab || "pending", tabs: await consentTabs(query) });
 
-
-const CONNECTION_KIND = { token: "개인 액세스 토큰", device: "인증 코드" };
-ROUTES.connections = async () => {
-  const { connections, available } = await api("/api/my-connections");
-  const card = (c) => panel(c.name, c.connected && !c.expired ? html`<table class="data"><tbody>
-      <tr><th>계정</th><td><b>${c.account}</b></td></tr>
-      <tr><th>방식</th><td>${CONNECTION_KIND[c.kind] || NONE}</td></tr>
-      <tr><th>연결 시각</th><td class="nowrap">${when(c.connected_at)}</td></tr>
-      <tr><th>만료</th><td>${c.expires_at ? when(c.expires_at) : NONE}</td></tr>
-      <tr><th>마지막 사용</th><td>${c.last_used_at ? when(c.last_used_at) : NONE}</td></tr></tbody></table>
-    <div class="row-actions"><button class="btn danger" data-act="disconnect" data-id="${c.server_id}" data-name="${c.name}" data-account="${c.account}">연결 해제</button></div>`
-    : available ? html`<form class="stack form" data-form="connect-token" data-id="${c.server_id}">
-        <label>개인 액세스 토큰<input name="token" type="password" autocomplete="off" required minlength="8" maxlength="2000" /></label>
-        <div class="row-actions"><button class="btn primary" type="submit">연결</button>
-          ${c.device ? html`<button class="btn" type="button" data-act="connect-device" data-id="${c.server_id}">인증 코드로 연결</button>` : ""}
-          <a class="btn" href="${c.token_url}" target="_blank" rel="noopener noreferrer">토큰 만들기 ↗</a></div></form>`
-      : chip("block", "연결 불가"),
-    { sub: c.service, end: c.expired ? chip("alert", "만료") : c.connected ? chip("allow", "연결됨") : chip("outline", "연결 안 됨") });
-  return page({ head: head("서비스 계정 연결"), active: "list", tabs: [{ key: "list", label: "연결",
-    body: connections.length ? html`<div class="stack">${connections.map(card)}</div>` : empty("연결할 계정 없음") }] });
-};
 
 let approvedMcpSearch = "";
 function approvedMcpTable(servers, query = "") {
@@ -2019,7 +1996,7 @@ function showAvailableMcp(server) {
   const address = approvedMcpAddress(server), tools = server.tools || [];
   const execution = { remote: "원격", pc: "엔드포인트", reapproval: "엔드포인트 실행으로 재승인 필요" };
   openDrawer(server.display_name || server.server_id, html`<div class="row-actions">${address ? html`<button class="btn primary" data-act="available-mcp-copy" data-id="${server.server_id}">MCP 주소 복사</button>` : ""}
-    <a class="btn" href="#/connections">서비스 계정 연결</a>${viewer.kit ? html`<button class="btn" data-act="pc-kit">PC 연결 설정</button>` : ""}</div>`, [
+    ${viewer.kit ? html`<button class="btn" data-act="pc-kit">PC 연결 설정</button>` : ""}</div>`, [
     { key: "usage", label: "이용 방법", body: html`${kv([["사용 목적", server.purpose || "—"], ["연결 경로", "게이트웨이"],
       ["MCP 주소", address ? html`<code>${address}</code>` : "—"], ["실행 방식", execution[server.execution] || "—"], ["사용 기한", when(server.valid_until)]])}` },
     { key: "tools", label: "제공 도구", n: tools.length, body: tools.length ? html`<table class="data"><thead><tr><th>도구</th><th>허용 행위</th><th>사용 목적</th><th>범위 심사</th></tr></thead><tbody>
@@ -2880,36 +2857,6 @@ const ACTIONS = {
     } });
     toast(`중지 ${result.counts.succeeded}건 · 건너뜀 ${result.counts.skipped}건 · 실패 ${result.counts.failed}건`, result.counts.failed > 0);
     reload();
-  },
-  async disconnect(el) {
-    if (!await ask({ title: "연결 해제", fields: kv([["서버", el.dataset.name || el.dataset.id], ["계정", el.dataset.account || "—"],
-      ["결과", "계정 연결 해제"]]), confirm: "연결 해제", danger: true })) return;
-    await api(`/api/my-connections/${encodeURIComponent(el.dataset.id)}`, { method: "DELETE" });
-    toast("연결을 해제했습니다.");
-    reload();
-  },
-  async "connect-device"(el) {
-    const base = `/api/my-connections/${encodeURIComponent(el.dataset.id)}/device`;
-    const flow = await api(`${base}/start`, { method: "POST" });
-    const dialog = $("#dialog");
-    const outcome = { connected: ["연결했습니다.", false], expired: ["인증 코드가 만료되었습니다.", true],
-      denied: ["연결이 거부되었습니다.", true], failed: ["연결하지 못했습니다.", true] };
-    let timer = null;
-    const poll = async () => {
-      let result;
-      try { result = await api(`${base}/poll`, { method: "POST", body: { flow_id: flow.flow_id } }); } catch { result = { state: "failed" }; }
-      if (result.state === "pending") { timer = setTimeout(poll, (result.interval || flow.interval) * 1000); return; }
-      timer = null;
-      toast(...(outcome[result.state] || outcome.failed));
-      if (dialog.open) dialog.close("cancel");
-      reload();
-    };
-    timer = setTimeout(poll, flow.interval * 1000);
-    const link = String(flow.verification_uri).startsWith("https://github.com/") ? flow.verification_uri : "https://github.com/login/device";
-    await ask({ title: "인증 코드로 연결", confirm: "닫기",
-      fields: html`<label>코드<input value="${flow.user_code}" readonly /></label>
-        <a href="${link}" target="_blank" rel="noopener noreferrer">${link.replace("https://", "")} ↗</a>` });
-    clearTimeout(timer);
   },
   async consent(el) {
     await api(`/api/consents/${el.dataset.id}`, { method: "POST", body: { decision: el.dataset.decision } });
@@ -3792,14 +3739,6 @@ const ACTIONS = {
 let lastDocument = null;
 
 const FORMS = {
-  async "connect-token"(form) {
-    const data = new FormData(form);
-    const result = await api(`/api/my-connections/${encodeURIComponent(form.dataset.id)}/token`, {
-      method: "POST", body: { token: String(data.get("token") || "").trim() } });
-    form.reset();
-    toast(`${result.account} 계정을 연결했습니다.`);
-    reload();
-  },
   "sbom-impact"(form) {
     const q = new URLSearchParams(new FormData(form));
     const hash = `#/servers?t=servers&impact=1&${q}`;

@@ -613,8 +613,8 @@ async def invitation_enrollment() -> str:
 # Gateway only through its own origin, so this goes through agent-service like the browser does.
 CONSOLE_URL = os.getenv("AGENT_SERVICE_URL", "http://agent-service:8000").rstrip("/")
 # Keep runtime acceptance aligned with the role-scoped console navigation.
-ADMIN_MENUS = {"overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"}
-EMPLOYEE_MENUS = {"activity", "consent", "intake", "connections"}
+ADMIN_MENUS = {"overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent"}
+EMPLOYEE_MENUS = {"activity", "consent", "intake"}
 ADMIN_SCREENS = [
     ("/auth/me", ["name", "role_label", "user_id", "pages"]),
     ("/gw/overview", ["today_since", "servers", "workstations", "top_policies", "pending_approvals", "intake_actions",
@@ -657,7 +657,6 @@ ADMIN_SCREENS = [
     ("/gw/enforcement", ["enforcement"]),
     ("/gw/policy/matrix", ["capabilities", "runtime_envelopes"]),
     ("/gw/policy/ledger", ["policies"]),
-    ("/api/my-connections", ["connections", "available"]),
 ]
 EMPLOYEE_SCREENS = [
     ("/auth/me", ["name", "role_label", "pages"]),
@@ -667,7 +666,6 @@ EMPLOYEE_SCREENS = [
     ("/api/consents", ["consents"]),
     ("/api/mcp-requests", ["requests"]),
     ("/api/mcp-catalog/search", ["requests", "registry"]),
-    ("/api/my-connections", ["connections", "available"]),
 ]
 
 

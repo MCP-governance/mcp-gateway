@@ -6,8 +6,8 @@ import * as state from "../gateway/app/agent_static/console-state.mjs";
 
 const source = readFileSync(new URL("../gateway/app/agent_static/console.js", import.meta.url), "utf8");
 const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
-const adminPages = ["overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"];
-const employeePages = ["activity", "consent", "intake", "connections"];
+const adminPages = ["overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent"];
+const employeePages = ["activity", "consent", "intake"];
 const code = source.slice(0, source.indexOf("document.addEventListener(\"click\", (event) => {")).replace(/^import[\s\S]*?;\r?\n/gm, "");
 
 function build(admin = true, extra = {}) {
@@ -288,7 +288,8 @@ test("브라우저 배포 소스는 개발 주석을 포함하지 않고 만료�
   assert.match(source, /\["만료 시각",/); assert.match(source, /\["만료 사유",/); assert.match(source, /\["재로그인",/);
 });
 
-test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사는 기존 4개를 본다", () => {
+test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사는 개인 이용 메뉴를 본다", () => {
+  assert.doesNotMatch(source, /ROUTES\.connections|\/api\/my-connections|href="#\/connections"/);
   const roles = service.slice(service.indexOf("PAGES_BY_ROLE ="), service.indexOf("ROLE_LABELS ="));
   const ids = (role) => [...roles.match(new RegExp(`"${role}": \\(([^)]+)\\)`))[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(ids("admin"), adminPages);
@@ -296,9 +297,9 @@ test("관리자는 분리된 관리 메뉴를 순서대로, 직원과 협력사�
   for (const admin of [true, false]) {
     const ui = build(admin); ui.renderNav("activity");
     const markup = ui.node("#nav").innerHTML;
-    assert.deepEqual([...markup.matchAll(/href="#\/([\w-]+)"/g)].map((m) => m[1]), admin ? adminPages : ["activity", "intake", "consent", "connections"]);
+    assert.deepEqual([...markup.matchAll(/href="#\/([\w-]+)"/g)].map((m) => m[1]), admin ? adminPages : ["activity", "intake", "consent"]);
     assert.match(markup, /호출 기록/);
-    assert.match(markup, /서비스 계정 연결/);
+    assert.doesNotMatch(markup, /서비스 계정 연결/);
     if (admin) assert.match(markup, /보안 관리/);
     assert.doesNotMatch(markup, /접근 통제|내 연결/);
     assert.match(markup, admin ? /도입 관리/ : /도입 신청/);
@@ -1147,7 +1148,7 @@ test("승인 및 등록은 이용 동의·엔드포인트 요청·미등록 MCP 
     "/api/consents": { consents: [{ status: "PENDING", server_id: "a" }, { status: "PENDING", server_id: "a" }, { status: "GRANTED", server_id: "b" }] },
   });
   const markup = String((await ui.ROUTES.overview()).html.tabs[0].body);
-  for (const [label, count, href] of [["엔드포인트 도입 요청", 3, "#/intake?t=requests"], ["이용 동의", 1, "#/consent"], ["미등록 MCP 엔드포인트", 1, "#/endpoints?t=shadow"]]) {
+  for (const [label, count, href] of [["엔드포인트 도입 요청", 3, "#/intake?t=requests"], ["도구 이용 동의", 1, "#/consent"], ["미등록 MCP 엔드포인트", 1, "#/endpoints?t=shadow"]]) {
     assert.ok(markup.includes(`href="${href}"><span>${label}</span><b class="n ${count > 0 ? "hot" : ""}">${count}</b>`));
   }
 });
@@ -1156,7 +1157,7 @@ test("조회 실패와 누락된 대시보드 값은 0건이 되지 않는다", 
   const ui = build(true, { "/gw/overview": overviewData, "/api/consents": new Error("실패"), "/gw/audit/alerts?limit=6": new Error("실패") });
   const out = (await ui.ROUTES.overview()).html;
   const markup = String(out.tabs[0].body);
-  for (const label of ["이용 동의", "엔드포인트 도입 요청"]) {
+  for (const label of ["도구 이용 동의", "엔드포인트 도입 요청"]) {
     assert.ok(markup.includes(`<span>${label}</span><b class="n ">—</b>`));
   }
   assert.match(markup, /role="alert">조회 실패/);
@@ -1242,22 +1243,20 @@ test("상하 페이지 제어는 같은 상태를 표시하고 빈 호출의 실
   assert.match(ui.node("#feed-empty").innerHTML, /호출 없음/);
 });
 
-test("연결 해제와 검토 종료는 대상 확인 취소 시 쓰기를 보내지 않는다", async () => {
+test("검토 종료는 대상 확인 취소 시 쓰기를 보내지 않는다", async () => {
   const ui = build(); const prompts = [];
   ui.context.ask = async (value) => { prompts.push(value); return null; };
   const el = { dataset: { id: "id/1", name: "<서버>", account: "직원", endpoint: "PC-1" } };
-  await ui.ACTIONS.disconnect(el); await ui.ACTIONS["endpoint-request-close"](el);
+  await ui.ACTIONS["endpoint-request-close"](el);
   assert.equal(ui.calls.length, 0);
-  assert.match(String(prompts[0].fields), /&lt;서버&gt;[^]*직원[^]*결과/);
-  assert.match(String(prompts[1].fields), /&lt;서버&gt;[^]*PC-1[^]*도입 요청 검토 종료/);
-  assert.equal(prompts[1].confirm, "검토 종료");
+  assert.match(String(prompts[0].fields), /&lt;서버&gt;[^]*PC-1[^]*도입 요청 검토 종료/);
+  assert.equal(prompts[0].confirm, "검토 종료");
   ui.context.ask = async () => new FormData();
   ui.setCurrent({ page: "intake" }); ui.context.location.hash = "#/intake?t=list";
   ui.refreshHook(async () => {}); ui.context.toast = () => {}; ui.context.refreshBadges = () => {};
-  ui.responses["/api/my-connections/id%2F1"] = {};
   ui.responses["/gw/endpoint/requests/id%2F1/close"] = { closed: true };
-  await ui.ACTIONS.disconnect(el); await ui.ACTIONS["endpoint-request-close"](el);
-  assert.deepEqual(ui.calls, ["/api/my-connections/id%2F1", "/gw/endpoint/requests/id%2F1/close"]);
+  await ui.ACTIONS["endpoint-request-close"](el);
+  assert.deepEqual(ui.calls, ["/gw/endpoint/requests/id%2F1/close"]);
 });
 
 test("표는 한글 상태·서버명과 시각을 보존하고 주소·해시만 강제 줄바꿈한다", () => {
