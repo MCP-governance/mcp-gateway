@@ -28,7 +28,7 @@ MINT는 직원 PC의 AI 코딩 에이전트(Claude Code·Codex CLI)가 쓰는 MC
   <img src="assets/architecture.png" alt="MINT 전체 구성도" width="100%">
 </p>
 
-구성도의 추적 수집기(Jaeger)는 선택 사항이며 기본 배포에서는 꺼져 있습니다.
+구성도의 추적 수집기(Jaeger)는 운영 묶음에 들어 있지 않은 선택 구성요소입니다. 쓰려면 별도로 설치하고, `deploy/.env`의 `OTEL_SDK_DISABLED=false`와 `OTEL_EXPORTER_OTLP_ENDPOINT`로 연결을 켭니다. 기본값은 비활성입니다.
 
 ## 지원 범위
 
@@ -60,8 +60,8 @@ cd mint/deploy
 ```
 
 설치기는 `.env`와 비밀 값·서명 키를 만들고, 이미지를 빌드해 서비스를 올린 뒤 사설 루트 인증서를 `deploy/ca/root.crt`로 내보냅니다.
-끝나면 `https://<사내 IPv4>/`에서 관리자 `root`로 로그인합니다. 초기 비밀번호는 `deploy/initial-admin-password`에 있으며,
-`./mint.sh set-password root`로 바로 바꿉니다. 브라우저에는 `deploy/ca/root.sha256` 지문을 대조한 뒤 루트 인증서를 등록합니다.
+끝나면 브라우저에 `deploy/ca/root.sha256` 지문을 별도 경로로 확인해 대조한 뒤 루트 인증서를 등록하고, `https://<사내 IPv4>/`에서 관리자 `root`로 로그인합니다.
+초기 비밀번호는 `deploy/initial-admin-password`에 있으며, `./mint.sh set-password root`로 바로 바꿉니다.
 
 DNS 이름 지정, 신뢰된 인증서(`tailscale`·`file`) 사용, 단독 운영 모드, 설정 값은 [deploy/README.md](deploy/README.md)에 있습니다.
 

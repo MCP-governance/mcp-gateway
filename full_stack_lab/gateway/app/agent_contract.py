@@ -70,7 +70,7 @@ def _key_material(name: str) -> bytes:
     except ValueError:
         material = b""
     if len(material) != 32:
-        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./console.sh")
+        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes")
     return material
 
 

@@ -144,8 +144,8 @@ important_limit := object.get(input, ["context", "important_limit"], 1000000000)
 
 # 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
 # 세지 못한다. Gateway가 판정 전에 이번 호출의 자리를 원자적으로 예약하고, 그
-# 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 값이 없는 배포와
-# 예전에 기록된 재생 사례는 이 통제가 없던 때이므로 판단하지 않는다.
+# 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 요청 예약 상태가 없으면
+# 이 통제에서 판단하지 않는다.
 active_calls := object.get(input, ["context", "active_calls"], 0)
 
 concurrency_limit := object.get(input, ["context", "concurrency_limit"], 1000000000)
@@ -536,8 +536,8 @@ candidate["MCP-SHADOW-001"] := {
 # 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
 # 평상시 호출에도 적용한다. 서버에 운영 중인 이용 관계가 있는데 호출한 자원이 어느 관계의
 # 허용 자원에도 없으면 경보로 남긴다. 차단이 아닌 이유: 카탈로그의 allowed_resources는
-# 회수 범위를 적으려고 만든 목록이라 아직 소유자가 인가 목록으로 검토한 적이 없다. 차단으로
-# 올리는 것은 관리대장의 결정이다. 값이 없는 입력(구버전 Gateway·재생 사례)은 판단하지 않는다.
+# 회수 범위를 적는 목록이라 인가 목록으로 검토되기 전에는 차단으로 올리지 않는다.
+# 이용 관계 정보가 입력에 없으면 판단하지 않는다.
 relationship_defined := object.get(input, ["relationship", "defined"], false)
 
 relationship_in_scope := object.get(input, ["relationship", "in_scope"], true)

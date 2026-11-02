@@ -85,8 +85,9 @@ def main(tag, out):
                 continue
             data = tar.extractfile(member).read()
             if member.name == ".gitattributes":
-                data = b"".join(line for line in data.splitlines(True)
-                                if b"research/" not in line and "통합 시트".encode() not in line)
+                # Rules for the lab's own files and the research wiki name paths the release does not have.
+                data = b"".join(line for line in data.splitlines(True) if not line.startswith((b"full_stack_lab/", b"research/"))
+                                and "통합 시트".encode() not in line)
             target = out / member.name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)

@@ -747,7 +747,7 @@ async def register_server(request: dict, actor: str) -> dict:
     github = source_url.startswith("https://github.com/")
     package = source_url.removeprefix("https://") if github else host
     # For a GitHub source the version is the validated commit, which is also what the
-    # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
+    # intake worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
     assurance = request.get("supplier_assurance") or {}
     assurance_errors = supplier_assurance.validate(assurance, required=False)

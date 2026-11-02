@@ -13,13 +13,13 @@ import tokenize
 # Anywhere in a shipped file: work-process notes, test machines, internal documents, decision numbers.
 STRONG = re.compile(
     r"(?<![\w-])D-\d{2,3}\b|\b[Pp][Jj][1-3]\b|\bwinvm\b|\bkali(?:-linux)?\b|\bDEV-\d+\b|\bW\d{1,2}-[A-Z]\b"
-    r"|실측|소유자 (?:지시|규칙)|질책|사용자 지시|팀원|\bWBS\b|Codex가|\bMythos\b|\bastra\b|\bkuku\b|\b(?:ysg|jwj|pse|nkk|kkg)\b"
+    r"|실측|소유자 (?:지시|규칙)|질책|사용자 지시|팀원|\bWBS\b|Codex가|\bMythos\b|\bastra\b|\bkuku\b|\b(?:ysg|jwj|pse|nkk|kkg)\b|console\.sh"
     r"|docs/ai/|research/|llm-wiki|AGENTS\.md|CLAUDE\.md|DECISIONS\.md|RUNBOOK\.md|github\.com/MCP-governance/mcp-gateway")
 # In comments and docstrings only: dates, change-request numbers, model lanes, internal iterations, the lab,
 # unfinished-work markers.
 SOFT = re.compile(
     r"\bPR ?#\d+|(?<![\w&])#\d{2,3}\b|\b(?:sol|luna|terra|Opus|Sonnet|Haiku)\b|(?<!Compose )\bv[2-4]\b|\b[Ll]ab\b|실습"
-    r"|\bTODO\b|\bFIXME\b|\bXXX\b|\bHACK\b|\bPAC-15\b|팀 룰셋|레인\b|ponytail|§\s?\d|\bbob\b|\bbob-\w+|논문|\b[Pp]aper\b")
+    r"|\bTODO\b|\bFIXME\b|\bXXX\b|\bHACK\b|\bPAC-15\b|팀 룰셋|레인\b|ponytail|§\s?\d|\bbob\b|\bbob-\w+|논문|\b[Pp]aper\b|실기기|\b시트\b|테스트베드|합성 (?:관리자|계정|인증)")
 # A date is a trace unless it names an MCP specification revision.
 DATE = re.compile(r"\b(?:20\d\d-)?(?:0?[1-9]|1[0-2])-[0-3]\d\b")
 SPEC = re.compile(r"MCP|[Rr]evision|[Ss]pec|transport|Streamable|protocolVersion")

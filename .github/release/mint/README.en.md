@@ -29,7 +29,7 @@ and administrators operate it through the web console and the `./mint.sh` comman
   <img src="assets/architecture.png" alt="MINT overall architecture" width="100%">
 </p>
 
-The trace collector (Jaeger) in the diagram is optional and is off in the default deployment.
+The trace collector (Jaeger) in the diagram is an optional component that is not part of the production bundle. To use it, install it separately and turn on the connection with `OTEL_SDK_DISABLED=false` and `OTEL_EXPORTER_OTLP_ENDPOINT` in `deploy/.env`. It is off by default.
 
 ## Supported environments
 
@@ -61,8 +61,8 @@ cd mint/deploy
 ```
 
 The installer creates `.env`, the secrets, and the signing keys, builds the images and starts the services, then exports the private root certificate to `deploy/ca/root.crt`.
-When it finishes, sign in at `https://<internal IPv4>/` as the administrator `root`. The initial password is in `deploy/initial-admin-password`;
-change it right away with `./mint.sh set-password root`. In the browser, compare the fingerprint in `deploy/ca/root.sha256`, then register the root certificate.
+When it finishes, compare the fingerprint in `deploy/ca/root.sha256` through a separate channel, register the root certificate in the browser, and sign in at `https://<internal IPv4>/` as the administrator `root`.
+The initial password is in `deploy/initial-admin-password`; change it right away with `./mint.sh set-password root`.
 
 DNS names, trusted certificates (`tailscale` or `file`), solo operation mode, and the settings are described in [deploy/README.md](deploy/README.md).
 
@@ -100,7 +100,7 @@ For what the installer sets up, removal, and troubleshooting, see [endpoint-agen
 | Accounts, usage suspension, sign-up requests | Console **User management** |
 | Employee PC activation and status | Console **Endpoint management** |
 | Policy review | Console **Security management policies** |
-| MCP onboarding request, review, and approval | Console **Adoption management** (the employee screen is **Onboarding requests**) |
+| MCP onboarding request, review, and approval | Console **Adoption management** (employee menu: **Onboarding**; page title: **Onboarding requests**) |
 | Ending a usage relationship, revocation evidence | Console **Termination and disposal** |
 | Tool usage consent | Console **Tool usage consent** |
 | Employee PC installers | Console **PC connection setup** |

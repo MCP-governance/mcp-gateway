@@ -61,7 +61,7 @@ cd mint/deploy
 | `ACCESS_TOKEN_MINUTES`, `REFRESH_TOKEN_HOURS` | 접근 토큰 10분, 갱신 토큰 8시간입니다. |
 | `FLOW_MATCH_MODE` | 기본 `coarse`입니다. 중요정보를 읽은 뒤 다른 서버에 쓰기·실행하는 흐름의 판정 방식입니다. |
 | `TERMINATION_SLA_DAYS`, `CONNECTOR_REVIEW_DAYS` | 종료 기한과 연결 검토 주기입니다. 각각 기본 14일입니다. |
-| `GITHUB_OAUTH_CLIENT_ID` | 선택적인 GitHub 계정 연결용 OAuth App client ID입니다. |
+| `GITHUB_OAUTH_CLIENT_ID` | GitHub 계정 연결에 사용하는 선택적인 OAuth App client ID입니다. 현 판본의 콘솔에는 직원용 계정 연결 화면이 없으므로 이 값만 설정해도 직원이 연결할 수 없습니다. 아래 운영자 자격 파일을 사용할 수 있습니다. |
 | `OTEL_SDK_DISABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT` | 외부 OpenTelemetry 수집기 연동 설정입니다. 기본값은 비활성입니다. |
 | `SIEM_URL`, `SIEM_TOKEN_FILE`, `SIEM_CA_FILE` | 선택적인 SIEM 전송 설정입니다. 파일은 `deploy/siem/`에 두고 컨테이너 경로 `/run/siem/…`로 지정한 뒤 `./mint.sh up --with-siem`을 실행합니다. |
 | 서명 키와 `USER_CREDENTIAL_KEY` | 설치 시 생성합니다. 기존 값을 임의로 바꾸거나 잃으면 서명 검증과 저장된 자격 복구에 문제가 생길 수 있습니다. |
@@ -94,7 +94,7 @@ openssl x509 -in ca/root.crt -noout -fingerprint -sha256
 
 운영자가 원격 MCP 자격 파일을 사용하는 경우 `upstream_credentials` Docker 볼륨에 파일을 배치하고 `.env`에 컨테이너 경로를 지정합니다. 예를 들어 `MCP_UPSTREAM_CREDENTIALS_FILE=/run/upstream-credentials/credentials.json`으로 설정한 뒤 `./mint.sh up`을 실행합니다. 볼륨은 게이트웨이에 읽기 전용으로 마운트됩니다.
 
-파일은 아래 형식의 JSON입니다. `endpoint`는 자격을 사용할 정확한 HTTPS 주소이고, `allowed_principals`는 허용할 사용자 식별자 배열입니다. `*`는 승인된 모든 호출자와 공유합니다. `expires_at`은 Unix 초 단위 만료 시각이며 `0`은 만료 없음입니다. 토큰은 실제 값으로 안전하게 등록합니다.
+파일은 아래 형식의 JSON입니다. `endpoint`는 자격을 사용할 정확한 HTTPS 주소이고, `allowed_principals`는 허용할 사용자의 관리대장 `token` 값 배열입니다. 위 `add-account` 명령으로 만든 직원 `alice`는 `emp-alice`, 관리자는 해당 아이디를 사용합니다. `*`는 승인된 모든 호출자와 공유합니다. `expires_at`은 Unix 초 단위 만료 시각이며 `0`은 만료 없음입니다. 토큰은 실제 값으로 안전하게 등록합니다.
 
 ```json
 {

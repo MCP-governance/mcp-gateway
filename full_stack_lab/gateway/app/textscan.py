@@ -9,8 +9,7 @@ atom is translated by asking re itself which alphabet symbols it accepts.
 
 A rule that uses a construct this translator does not cover stays on re, and so does
 everything when the extension is not installed or PCRE2 reports an error: the result
-is the same, only slower. tests/textscan_parity_check.py verifies each atom over all
-code points and fuzzes whole rules against re.
+is the same, only slower.
 """
 from __future__ import annotations
 

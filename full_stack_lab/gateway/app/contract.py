@@ -73,7 +73,7 @@ AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "dest
 # v6: the PDF-integration fields - the policy input (for replay against a candidate
 # policy), the investigation risk score, Presidio entity types and chain flags.
 # A chain version number is not reused for another column set. A database written under
-# an older definition of the same number is not migrated (it needs `./console.sh reset`):
+# an older definition of the same number is not migrated (it needs a database reset):
 # verifying its rows against this definition would fail, and accepting either definition
 # would let a row tampered in a column only one covers pass.
 AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")

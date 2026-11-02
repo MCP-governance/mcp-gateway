@@ -56,7 +56,7 @@ async def bootstrap_passwords() -> None:
 
     해시를 SQL 파일에 박아두면 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 없고, 매
     기동마다 덮어쓰면 관리대장이 아니라 환경변수가 정본이 된다. 그래서 비어 있는
-    계정만 채운다. 바꾸고 싶으면 `./console.sh reset`으로 다시 심는다.
+    계정만 채운다. 바꾸려면 계정 비밀번호 변경 명령을 쓴다.
     """
     await db.execute(
         """UPDATE principals SET password_hash = crypt(%s, gen_salt('bf', 12))

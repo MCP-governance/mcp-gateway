@@ -676,7 +676,7 @@ def render_status(summary, now, environment=None):
              "승인 서버: " + (f"{servers}개" if servers is not None else "—"),
              # The names the harness shows (mcp__<name>__tool): an employee cannot otherwise tell which servers this PC has.
              *(["서버 이름: " + ", ".join(summary["names"])] if summary.get("names") else []),
-             # Only servers still approved: one revoked within the hour is not "newly reflected" (S4-11).
+             # Only servers still approved: one revoked within the hour is not "newly reflected".
              *([f"새로 반영된 서버: {', '.join(fresh)} ({clock(added['at'])}) "
                 "— 이미 열려 있는 하네스에 보이지 않으면 다시 시작하세요."]
                if (added := summary.get("added")) and not silent and now - added["at"] < ADDED_SHOWN_SECONDS
@@ -1324,8 +1324,8 @@ def serve(args):
 
 def rollback(args):
     """Run after the device credential is revoked in the Console and the account is signed out.
-    enforce-linux.py --rollback alone left the service, the /etc files and the device secret behind,
-    and a reinstall then refused the device as already installed."""
+    enforce-linux.py --rollback alone leaves the service, the /etc files and the device secret behind,
+    and a reinstall then refuses the device as already installed."""
     if os.geteuid() != 0:
         raise ValueError("root로 실행하세요")
     person = pwd.getpwnam(args.user)

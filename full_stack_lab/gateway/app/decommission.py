@@ -874,7 +874,7 @@ async def restore_server(server_id: str, actor: str) -> dict:
             present, _ = await _gitea_token_present(cred["account"], cred["token_name"])
             if present is False:
                 follow_up.append(f"{cred['label']}이(가) 폐기된 상태입니다. "
-                                 f"./console.sh restore-token {server_id} 로 재발급해야 도구가 다시 동작합니다.")
+                                 f"서버 자격을 다시 발급해야 도구가 다시 동작합니다.")
     return {"server_id": server_id, "previous_lifecycle": server.get("lifecycle"), "lifecycle": "OPERATING",
             "follow_up": follow_up}
 

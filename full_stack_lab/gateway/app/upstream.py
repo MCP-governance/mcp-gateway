@@ -146,10 +146,10 @@ class _Lease:
 
 
 # Dispatch connections are reused per (endpoint, principal, credential): a tools/call
-# no longer pays a TCP and TLS handshake every time. Conversation-bound MCP sessions
+# avoids paying a TCP and TLS handshake every time. Conversation-bound MCP sessions
 # have their own lifetime, and a pool entry is never shared between
 # principals, so nothing an upstream ties to a connection crosses callers. Cookies are
-# not kept at all, as with the fresh client each call used to get.
+# not kept at all, as with a fresh client per call.
 POOL_SIZE = int(os.getenv("UPSTREAM_POOL_SIZE", "32"))
 _pool: OrderedDict[tuple, _Lease] = OrderedDict()
 _sessions = upstream_sessions.Pool(POOL_SIZE)

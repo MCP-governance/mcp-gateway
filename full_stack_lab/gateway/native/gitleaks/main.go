@@ -9,7 +9,7 @@
 // The detector is configured exactly like `gitleaks stdin --redact=100
 // --ignore-gitleaks-allow` with no config file: default catalog, decode depth 5,
 // no archive traversal, Go's stdlib regexp (the official binary is built the same
-// way). tests/secret_engine_parity_check.py compares the two on every rule.
+// way).
 package main
 
 /*

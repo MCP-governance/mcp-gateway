@@ -201,7 +201,7 @@ findings contains lib.finding("POL-R-05", "DENY", "무효·만료·다른 서버
 	not token_ok
 }
 
-# 시트 검사 시점은 「토큰을 사용하는 원격 요청마다」다. 등록부가 로컬로 정한 서버만 토큰 없이 부른다.
+# 정책의 검사 시점은 「토큰을 사용하는 원격 요청마다」다. 등록부가 로컬로 정한 서버만 토큰 없이 부른다.
 token_ok if {
 	facts.token.used == false
 	reg.kind == "local"
