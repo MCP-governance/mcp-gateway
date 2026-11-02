@@ -29,7 +29,7 @@ function harness(fetch, os = "windows", isolated = false) {
 }
 
 test("each platform uses a small authenticated ticket fetch then a native POST with only a body credential", async () => {
-  for (const [os, query] of [["windows", "&packaging=oneclick"], ["macos", "&delivery=command"], ["linux", ""]]) {
+  for (const [os, query] of [["windows", "&packaging=oneclick"], ["macos", "&delivery=command"], ["linux", "&packaging=oneclick"]]) {
     const calls = [];
     const h = harness(async (url, options) => {
       calls.push([url, options]);

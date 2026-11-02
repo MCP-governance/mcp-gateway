@@ -37,11 +37,13 @@ class OneclickTests(unittest.TestCase):
         self.builder = load('oneclick', 'full_stack_lab/gateway/app/windows_oneclick.py')
         self.managed = load('oneclick_managed', 'endpoint-agent/managed-windows.py')
 
-    def test_single_file_roundtrip_and_cmd_length(self):
+    def test_single_file_roundtrip_and_command_length(self):
         bootstrap = (ROOT / 'endpoint-agent/windows-oneclick.ps1.in').read_text(encoding='utf-8')
-        artifact = self.builder.launcher(b'synthetic ZIP', bootstrap).decode()
-        command = artifact.splitlines()[3]
+        artifact = self.builder.launcher(b'synthetic ZIP', bootstrap, b'MZ program').decode()
+        self.assertTrue(artifact.startswith('MZ program\r\n:MCPGW_COMMAND '))
+        command = artifact.split(':MCPGW_COMMAND ', 1)[1].split('\r\n', 1)[0]
         self.assertLess(len(command), 8191)
+        self.assertNotIn('"', command)  # passed as one CreateProcess argument
         self.assertEqual(command.count('-Verb RunAs'), 1)
         self.assertNotIn('synthetic ZIP', command)
         payload = json.loads(base64.b64decode(artifact.split(':MCPGW_PAYLOAD\r\n')[1]))
@@ -62,11 +64,11 @@ class OneclickTests(unittest.TestCase):
 
     def test_real_loader_passes_only_artifact_identity_to_one_mocked_uac(self):
         # Execute the generated loader but replace Start-Process: no UAC or child installer is launched.
-        artifact = self.builder.launcher(b'synthetic ZIP', 'throw "must not run"')
-        source = self.root / "employee's setup.cmd"
+        artifact = self.builder.launcher(b'synthetic ZIP', 'throw "must not run"', b'MZ program')
+        source = self.root / "employee's setup.exe"
         source.write_bytes(artifact)
         captured = self.root / 'arguments.txt'
-        command = artifact.decode().splitlines()[3].split(' -Command "', 1)[1][:-1]
+        command = artifact.decode().split(':MCPGW_COMMAND ', 1)[1].split('\r\n', 1)[0]
         script = r'''
 function Start-Process {
     param($FilePath, $ArgumentList, $Verb, $WindowStyle, [switch]$PassThru, [switch]$Wait)
@@ -364,9 +366,10 @@ for ($i=0; $i -lt $paths.Count; $i++) {
         source.mkdir(); runtime.mkdir()
         for name in namespace['KIT_FILES']['windows']:
             (source / name).write_text('synthetic')
-        for name in ('python.zip', 'windows-python.json'):
+        for name in ('python.zip', 'windows-python.json', 'windows-amd64.exe'):
             (runtime / name).write_text('synthetic')
-        with mock.patch.dict(os.environ, ENDPOINT_KIT_DIR=str(source), WINDOWS_PYTHON_DIR=str(runtime), IDP_ISSUER='https://gateway.example'), \
+        with mock.patch.dict(os.environ, ENDPOINT_KIT_DIR=str(source), WINDOWS_PYTHON_DIR=str(runtime), SETUP_PROGRAM_DIR=str(runtime),
+                             IDP_ISSUER='https://gateway.example'), \
                 mock.patch.dict(sys.modules, {'oneclick_fixture': SimpleNamespace(),
                     'oneclick_fixture.endpoint_plane': SimpleNamespace(enrollment_token=enrollment),
                     'oneclick_fixture.windows_oneclick': self.builder}):
@@ -376,7 +379,8 @@ for ($i=0; $i -lt $paths.Count; $i++) {
             (source / 'windows-oneclick.ps1.in').write_text('param($Context,$ArchiveBase64)')
             result = asyncio.run(namespace['download_managed_kit'](SimpleNamespace(headers={}), 'windows', authorization=None, packaging='oneclick'))
             self.assertEqual(result.media_type, 'application/octet-stream')
-            self.assertIn('.cmd', result.headers['Content-Disposition'])
+            self.assertIn('.exe', result.headers['Content-Disposition'])
+            self.assertTrue(result.content.startswith(b'synthetic\r\n:MCPGW_COMMAND '))
             self.assertEqual(result.headers['Cache-Control'], 'no-store')
             body = json.loads(base64.b64decode(result.content.decode().split(':MCPGW_PAYLOAD\r\n')[1]))
             with zipfile.ZipFile(io.BytesIO(base64.b64decode(body['archive']))) as archive:

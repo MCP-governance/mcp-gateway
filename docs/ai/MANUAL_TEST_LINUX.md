@@ -19,12 +19,12 @@
 
 ## 1. 설치
 
-1. 브라우저로 콘솔에 직원 계정으로 로그인 → 왼쪽 아래 **PC 연결 설정** → **Linux** → **설치 파일 받기**(`mcp-managed-kit-linux.zip`).
+1. 브라우저로 콘솔에 직원 계정으로 로그인 → 왼쪽 아래 **PC 연결 설정** → **Linux** → **설치 파일 받기**(`mcp-managed-setup-linux`).
    - 「고급: 격리 계정」은 체크하지 않는다(기본 간편 모드). 격리 계정 시험은 7절.
 2. 터미널에서 실행:
 
    ```bash
-   unzip ~/Downloads/mcp-managed-kit-linux.zip -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh
+   f="$(ls -t ~/Downloads/mcp-managed-setup-linux* | head -1)" && chmod +x "$f" && "$f"
    ```
 
    관리자 암호를 한 번 묻는다. 터미널이면 풀화면으로 단계·소요 시간이 보인다.

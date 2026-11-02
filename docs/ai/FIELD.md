@@ -69,11 +69,11 @@ Tailscale IP가 있어야 하고, 직원·관리자 PC도 같은 tailnet에서 �
 가입 승인·초대 수락 후 **내 PC 연결**에서 개인별 ZIP을 받습니다. 가입자에 묶인 등록 토큰은 30분 동안 한 번만
 사용할 수 있습니다. 단말이 활성화되지 않았으면 로그인 직후 설치 안내가 열립니다. MCP 서버가 없어도 설치할 수 있습니다.
 
-받은 파일을 풀고 **설치 파일 하나를 실행한 뒤 OS 권한 확인에 한 번 응하면** 끝납니다(D-71). 필수 구성요소 설치, 승인 하네스 배치,
+**받은 설치 파일 하나를 실행한 뒤 OS 권한 확인에 한 번 응하면** 끝납니다(D-71). 필수 구성요소 설치, 승인 하네스 배치,
 관리 계정 결정, 관리형 설정·프록시 구성, 모델 로그인까지 설치기가 합니다. 이미 설치돼 있으면 같은 파일이 재설치·복구 경로입니다.
 
 ```bash
-rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+f="$(ls -t ~/Downloads/mcp-managed-setup-linux* | head -1)" && chmod +x "$f" && "$f"
 ```
 
 Windows는 `mcp-managed-kit-windows.zip`을 풀고 `install.cmd`를 두 번 눌러 실행합니다. Python 3.10 이상이 모든 사용자용

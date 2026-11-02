@@ -184,14 +184,14 @@ const locationRows = (value = {}) => [
 ];
 const ROLE = { admin: "관리자", employee: "직원", partner: "협력사" };
 const PLATFORM_KIT = { linux: "Linux", macos: "macOS", windows: "Windows" };
-const KIT_FILE = { linux: "mcp-managed-kit-linux.zip", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.cmd" };
+const KIT_FILE = { linux: "mcp-managed-setup-linux", macos: "mcp-connect-macos.command", windows: "mcp-managed-setup-windows.exe" };
 function preferredKitPlatform() {
   return "windows";
 }
 function kitSteps(os, kit = {}) {
-  const run = os === "linux" ? html`<li>터미널에서 실행<code>rm -rf ~/mcp-managed-kit && unzip -q "$(ls -t ~/Downloads/mcp-managed-kit-linux*.zip | head -1)" -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh</code><span class="sub">관리자 암호 1회</span></li>`
+  const run = os === "linux" ? html`<li>터미널에서 실행<code>f="$(ls -t ~/Downloads/${KIT_FILE.linux}* | head -1)" && chmod +x "$f" && "$f"</code><span class="sub">관리자 암호 1회</span></li>`
     : os === "macos" ? html`<li>터미널에서 실행<code>/bin/bash "$HOME/Downloads/${KIT_FILE.macos}"</code><span class="sub">관리자 암호 1회 · 연결 파일 유효 시간 5분</span></li>`
-    : html`<li>받은 .cmd 파일 실행<span class="sub">관리자 권한 확인 1회 · 지금 계정 그대로</span></li>`;
+    : html`<li>받은 .exe 파일 실행<span class="sub">관리자 권한 확인 1회 · 지금 계정 그대로</span></li>`;
   const ready = kit.auto_activate === false ? "관리자 활성화 뒤 사용" : "설치가 끝나면 바로 사용";
   return html`<ol class="kit-steps"><li>설치 파일 받기</li>${run}<li>${ready}</li></ol>
     ${os === "linux" ? kv([["제거", html`<code>sudo ~/mcp-managed-kit/install.sh --remove</code>`]]) : ""}`;
@@ -3302,7 +3302,7 @@ const ACTIONS = {
     try {
       const os = el.dataset.os || "linux";
       const isolated = el.closest("[data-kit]")?.querySelector('[name="kit-isolated"]')?.checked ? "&isolated=true" : "";
-      const query = (os === "macos" ? "&delivery=command" : os === "windows" ? "&packaging=oneclick" : "") + isolated;
+      const query = (os === "macos" ? "&delivery=command" : "&packaging=oneclick") + isolated;
       const action = `/api/pc-kit?platform=${encodeURIComponent(os)}${query}`;
       const response = await fetch(`${action}&issue_ticket=true`,
         { method: "POST", headers: { authorization: `Bearer ${token}` } })
