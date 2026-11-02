@@ -1,10 +1,9 @@
 {
-  "captured_at": "2026-11-02T17:15:25+09:00",
-  "head": "946938be25cd104b4236fb892915fb563a010455",
-  "branch": "11/02-release-1.0.0",
+  "captured_at": "2026-11-02T18:25:00+09:00",
+  "head": "07ce2080ee7741e1d79840706a5c2ebfb9265241",
+  "branch": "11/02-accounts-mint",
   "status": [
-    "M CHANGELOG.md",
-    " M research/llm-wiki/analysis/integration-cases.json",
+    "M research/llm-wiki/analysis/integration-cases.json",
     " M research/llm-wiki/analysis/requirements.json",
     " M research/llm-wiki/analysis/threat-trace-review-1020/README.md",
     " M research/llm-wiki/catalogs/threats.json",
@@ -13,7 +12,7 @@
     "?? c",
     "?? p3_ui.py",
     "?? q",
-    "?? research/llm-wiki/status/reports/2026-11-02-release-1.0.0.md",
+    "?? research/llm-wiki/status/reports/2026-11-02-accounts-and-mint-lab.md",
     "?? sftp_put.py"
   ],
   "scope": "local-code-only",
@@ -30,7 +29,7 @@
     },
     {
       "path": "full_stack_lab/gateway/app/poisoning.py",
-      "sha256": "da82d7c57048e3c04bdd8a8f573657adb87bd640bb9fcdbcd641b1c057bf83e1"
+      "sha256": "20ed5c39e624d71308bf396dcaa1decdadc406404bf2565643c82fce7576dc74"
     },
     {
       "path": "full_stack_lab/gateway/app/idp.py",

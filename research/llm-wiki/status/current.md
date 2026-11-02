@@ -1,5 +1,7 @@
 # 개발 현황 — 2026-11-02
 
+- 11-02 콘솔에 비밀번호 변경(모든 계정)·아이디 변경·비밀번호 재설정(관리자 계정은 root만, 관리자 비밀번호 12자)을 더하고, 실습 회사 이름을 bob·bob.local에서 mint·mint.local로 바꿨다(PR #81). PostgreSQL 시험 21개·기기 화면·실제 로그인·Gitea 이름 변경 확인. [보고](reports/2026-11-02-accounts-and-mint-lab.md)
+
 - 11-02 판본 1.0.0. 배포 저장소를 운영 범위 코드(211개)와 새로 쓴 사용자 문서로 다시 만들고, 배포 범위 코드의 주석·화면 문구에서 개발 흔적을 정리했다(traces.py 0건, sol 교차 검수 높음·중간 0). 시험 통과. [보고](reports/2026-11-02-release-1.0.0.md)
 
 - 11-02 판본 0.10.0. 배포 저장소 `MCP-governance/mint`를 공개하고 태그 `v0.10.0`·GitHub 릴리스로 올린다. 개발 문서·위키·CI를 뺀 코드와 README·CHANGELOG만 담고, README의 빠진 문서 링크는 이 저장소의 같은 태그로 연결한다. 생성은 `.github/release/make_mint.py`(AGENTS.md 「릴리스」). [보고](reports/2026-11-02-release-0.10.0.md)
