@@ -13,11 +13,11 @@
 
 ## 설치
 
-아래 설치 예시는 공개 판본 `v0.9.0` 기준입니다. 현재 브랜치의 키트·승인·화면 변경은 [미배포 변경](../CHANGELOG.md#미배포)을 함께 확인합니다.
+아래 설치 예시는 배포 저장소 [MCP-governance/mint](https://github.com/MCP-governance/mint)의 공개 판본 `v0.10.0` 기준입니다. 현재 브랜치의 키트·승인·화면 변경은 [미배포 변경](../CHANGELOG.md#미배포)을 함께 확인합니다.
 
 ```bash
-git clone --branch v0.9.0 https://github.com/MCP-governance/mcp-gateway.git
-cd mcp-gateway/deploy
+git clone --branch v0.10.0 https://github.com/MCP-governance/mint.git
+cd mint/deploy
 ./install.sh --bind <사내 IPv4> [--name <DNS 이름>]
 ```
 
