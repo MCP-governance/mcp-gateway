@@ -919,7 +919,7 @@ test("연결 통제 상세에서 해당 추가 연결의 승인 관리로 이동
 test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 POL 연결만 표시한다", async () => {
   const policy = { policy_id: "P-1", name: "<img src=x>", status: "운영", enforced_by: "opa", outcome: "차단",
     purpose: "목적", scope: "<script>bad</script>", condition: "조건", enforcement: "거부", monitor_behavior: "protected",
-    requirement_ids: ["REQ-03"], pol_ids: ["POL-001", "REQ-03", "POL-001"],
+    requirement_ids: ["REQ-03"], pol_ids: ["POL-I-01", "REQ-03", "POL-I-01"],
     recent: { count: 2, last_seen_at: "2026-10-31T00:00:00Z" } };
   const ui = build(true, { "/gw/policy/ledger": { policies: [policy], source_state: "loaded",
     checked_at: "2026-10-31T01:00:00Z", record_window_hours: 24,
@@ -927,7 +927,7 @@ test("정책 목록은 관리 상태와 원장 근거를 구분하고 명시적 
   const out = await ui.ROUTES.policy("", "");
   const body = String(out.html.tabs.find((tab) => tab.key === "ledger").body);
   assert.match(body, /정책 로드 상태[^]*룰셋 일치 여부[^]*일치[^]*정책 데이터 일치 여부[^]*불일치[^]*조회 기준 시각/);
-  assert.match(body, /등록 상태[^]*최근 24시간 판정[^]*운영[^]*기록 있음[^]*POL-001/);
+  assert.match(body, /등록 상태[^]*최근 24시간 판정[^]*운영[^]*기록 있음[^]*POL-I-01/);
   assert.ok(body.includes("&lt;img"));
   assert.ok(!body.includes("<img"));
   let detail;
@@ -948,26 +948,26 @@ test("정책 조회 실패와 기록 없음은 집행 성공이나 정상 빈 �
   assert.match(String(failed.html.tabs.find((tab) => tab.key === "ledger").body), /정책 원본 조회 실패/);
   assert.doesNotMatch(String(failed.html.tabs.find((tab) => tab.key === "ledger").body), /등록된 정책 없음/);
   const unverified = build(true, { "/gw/policy/ledger": { policies: [{ policy_id: "P-2", name: "두 번째", status: "운영",
-    enforced_by: "untrusted", recent: { count: 0 }, requirement_ids: ["POL-090"] }], source_state: "loaded", deployment: {} } });
+    enforced_by: "untrusted", recent: { count: 0 }, requirement_ids: ["POL-D-09"] }], source_state: "loaded", deployment: {} } });
   const result = await unverified.ROUTES.policy("", "");
   const body = String(result.html.tabs.find((tab) => tab.key === "ledger").body);
   assert.match(body, /미확인[^]*기록 없음[^]*매핑 미확인/);
-  assert.doesNotMatch(body, /untrusted|POL-090|집행 중/);
+  assert.doesNotMatch(body, /untrusted|POL-D-09|집행 중/);
 });
 
 test("조직 정책은 코드 존재를 적용 성공으로 표시하지 않으며 규칙 후보만 연결한다", async () => {
   const ui = build(true, { "/gw/policy/ledger": { source_state: "unavailable", policies: [{ policy_id: "MCP-CATALOG-001", name: "계약 검사" }],
-    organization: { source_state: "available", policies: [{ id: "POL-004", name: "<img src=x>", stage: "도입 검토",
+    organization: { source_state: "available", policies: [{ id: "POL-I-04", name: "<img src=x>", stage: "도입 검토",
       implementation: "rego+sensor", category: "pac", has_rule: true, has_test_definition: true,
       content: "<script>bad</script>", candidate_rule_ids: ["MCP-CATALOG-001", "MISSING-001"] }] } } });
   const out = await ui.ROUTES.policy("", "organization");
   assert.equal(out.html.active, "organization");
   const tab = out.html.tabs.find((t) => t.key === "organization");
   assert.equal(tab.n, 1);
-  assert.match(String(tab.body), /POL-004[^]*&lt;img[^]*판정 코드 있음[^]*미확인/);
+  assert.match(String(tab.body), /POL-I-04[^]*&lt;img[^]*판정 코드 있음[^]*미확인/);
   let detail;
   ui.policyDrawer((title, actions, tabs) => { detail = tabs; });
-  ui.ACTIONS["organization-policy"]({ dataset: { id: "POL-004" } });
+  ui.ACTIONS["organization-policy"]({ dataset: { id: "POL-I-04" } });
   assert.match(String(detail[0].body), /&lt;script&gt;/);
   assert.match(String(detail[1].body), /시험 정의 있음[^]*시험 실행 확인[^]*미확인[^]*조직 적용 확인[^]*미확인/);
   assert.match(String(detail[2].body), /data-act="policy" data-id="MCP-CATALOG-001"/);

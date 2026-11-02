@@ -84,7 +84,7 @@ def render():
         "# 정책 ID → 시트의 정책·실행 규칙과 구현 분류. 규칙의 METADATA custom.pol_id가 이 키를 가리킨다.",
         "policies := {",
     ]
-    for pol in sorted(sheet["policies"]):
+    for pol in sheet["policies"]:  # 시트 순서
         p, c = sheet["policies"][pol], classes[pol]
         rule = p.get("rule", {})
         entry = {

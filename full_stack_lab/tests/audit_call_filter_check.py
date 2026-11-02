@@ -34,7 +34,7 @@ class FilterTests(unittest.TestCase):
             self.db.execute("INSERT INTO decisions VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (
                 i, "bob" if i == 2 else "alice", "Block", "docs",
                 json.dumps({"workstation": "other" if i == 3 else "pc-1", "event_kind": "mcp-connection" if i == 4 else "tools/call"}),
-                "OTHER" if i == 5 else "POL-001", "2026-10-31T01:00:00+00:00", 0, 0, "{}", "read", "", "trace-1", "needle"))
+                "OTHER" if i == 5 else "POL-I-01", "2026-10-31T01:00:00+00:00", 0, 0, "{}", "read", "", "trace-1", "needle"))
 
     def select(self, where, params):
         sql = "SELECT d.id FROM decisions d LEFT JOIN principals p ON p.token=d.user_token WHERE " + where

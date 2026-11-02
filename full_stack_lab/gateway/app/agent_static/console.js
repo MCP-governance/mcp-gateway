@@ -2745,7 +2745,7 @@ const organizationCode = (p) => p.has_rule ? "판정 코드 있음" : p.category
 
 const policyExecutor = (p) => ({ opa: "정책 엔진", gateway: "게이트웨이", endpoint: "엔드포인트", vendor: "벤더" }[p.enforced_by] || "—");
 const policyEnvironment = (env) => ({ prod: "운영 환경", stage: "사전 검증 환경", dev: "개발 환경" }[env] || "—");
-const policyLinks = (p) => Array.isArray(p.pol_ids) ? [...new Set(p.pol_ids.filter((id) => /^POL-\d{3}$/.test(id)))] : [];
+const policyLinks = (p) => Array.isArray(p.pol_ids) ? [...new Set(p.pol_ids.filter((id) => /^POL-[A-Z]-\d{2}$/.test(id)))] : [];
 const policyRecorded = (p) => Number.isSafeInteger(p.recent?.count) && p.recent.count > 0;
 const policyRecordLabel = (p) => policyRecorded(p) ? "기록 있음" : p.recent?.count === 0 ? "기록 없음" : "미확인";
 const policySourceLabel = (ledger) => ledger.source_state === "loaded" ? "조회 확인" : ledger.source_state === "unavailable" ? "조회 실패" : "미확인";
