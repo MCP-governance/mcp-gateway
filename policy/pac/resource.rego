@@ -45,20 +45,20 @@ contract_ok if {
 # title: Prompt 템플릿 승인본
 # description: 템플릿 내용 해시가 승인본과 같고, 차단된 지시 유형이 없고, 요청 사용자에게 사용 권한이 있을 때만 쓴다. 미승인 변경본은 재심사 전까지 쓰지 않는다.
 # custom:
-#   pol_id: [POL-007, POL-067]
-#   risk_id: [RSK-06, RSK-47]
+#   pol_id: [POL-I-07, POL-O-05]
+#   risk_id: [RSK-I-06, RSK-O-04]
 #   checkpoint: Prompt 템플릿 도입·갱신 심사, 서버 제공 Prompt 템플릿 변경 시
-findings contains lib.finding("POL-067", "DENY", "승인본과 다른 Prompt 템플릿") if {
+findings contains lib.finding("POL-O-05", "DENY", "승인본과 다른 Prompt 템플릿") if {
 	stage == "prompt_use"
 	not prompt_matches_approved
 }
 
-findings contains lib.finding("POL-007", "DENY", "차단된 지시 유형") if {
+findings contains lib.finding("POL-I-07", "DENY", "차단된 지시 유형") if {
 	stage == "prompt_use"
 	not facts.prompt_scan.blocked_types == []
 }
 
-findings contains lib.finding("POL-007", "DENY", "Prompt 사용 권한 없음") if {
+findings contains lib.finding("POL-I-07", "DENY", "Prompt 사용 권한 없음") if {
 	stage == "prompt_use"
 	not prompt_acl_ok
 }
@@ -86,10 +86,10 @@ resource_acl_ok if {
 # METADATA
 # title: Resource 반환의 사용자 권한
 # custom:
-#   pol_id: POL-043
-#   risk_id: RSK-38
+#   pol_id: POL-E-10
+#   risk_id: RSK-E-15
 #   checkpoint: Resource 내용을 반환하기 시
-findings contains lib.finding("POL-043", "DENY", "권한 없음·파일 ID 판정 실패") if {
+findings contains lib.finding("POL-E-10", "DENY", "권한 없음·파일 ID 판정 실패") if {
 	stage == "resource_read"
 	not resource_readable
 }
@@ -103,10 +103,10 @@ resource_readable if {
 # title: 변경된 Resource 목록의 노출
 # description: 목록에는 지금 사용자에게 허용되고 삭제되지 않은 Resource만 둔다. 삭제 목록을 모르면(배열 아님) 차단한다.
 # custom:
-#   pol_id: POL-065
-#   risk_id: RSK-31
+#   pol_id: POL-O-03
+#   risk_id: RSK-E-08
 #   checkpoint: Resource 목록 추가·삭제·변경 시
-findings contains lib.finding("POL-065", "DENY", "삭제·권한 밖 Resource 노출") if {
+findings contains lib.finding("POL-O-03", "DENY", "삭제·권한 밖 Resource 노출") if {
 	stage == "resource_list"
 	not resource_list_ok
 }
@@ -122,10 +122,10 @@ resource_list_ok if {
 # METADATA
 # title: 중요 Resource의 출처·변경 범위
 # custom:
-#   pol_id: POL-066
-#   risk_id: RSK-46
+#   pol_id: POL-O-04
+#   risk_id: RSK-O-03
 #   checkpoint: 중요 Resource 내용·출처 변경 시
-findings contains lib.finding("POL-066", "DENY", "미승인 출처·변경 범위") if {
+findings contains lib.finding("POL-O-04", "DENY", "미승인 출처·변경 범위") if {
 	stage == "resource_update"
 	not resource_change_approved
 }

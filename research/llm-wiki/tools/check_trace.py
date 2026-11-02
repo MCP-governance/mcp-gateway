@@ -37,8 +37,10 @@ FAMILIES = [
     ("G", "WBS 작업", r"G\d{2}\.\d{2}", 2, True),
     ("F", "기능", r"F-\d{2}", 2, False),
     ("POL", "정책", r"POL-\d{2}", 2, True),
-    # 팀 시트 「MCP 보안 관리 정책」(10-27, 90개)은 세 자리 번호다. 50개 정책표(POL-NN)와 별도 체계다.
-    ("SP", "팀 정책(90개)", r"POL-\d{3}", 3, True),
+    # 팀 시트 「MCP 보안 관리 정책」 90개. 10-27판은 세 자리 번호, 11-01판부터 단계별 번호(POL-I-01 …)다.
+    # 둘 다 50개 정책표(POL-NN)와 별도 체계다. 옛 번호는 대응표(policy/source/renumbering.json)가 정의한다.
+    ("SP", "팀 정책(10-27판 번호)", r"POL-\d{3}", 3, True),
+    ("TP", "팀 정책(90개)", r"POL-[IREOD]-\d{2}", 2, True),
     ("E", "시험", r"E\d{2}", 2, False),
     ("CMP", "구성요소", r"CMP-\d{2}", 2, True),
     ("OSS", "OSS 재사용", r"OSS-\d{2}", 2, True),
@@ -147,11 +149,16 @@ def collect_defs(read):
     sheet90 = "policy/source/sheet.json"  # 시트에서 뽑은 정본(policy/tools/build_catalog.py extract)
     text = read(sheet90)
     if text:
-        titles = {k: v.get("target", "") for k, v in json.loads(text)["policies"].items()}
+        titles = {k: v.get("content", "") for k, v in json.loads(text)["policies"].items()}
         for n, line in lines(sheet90):
-            m = re.match(r'  "(POL-\d{3})": \{', line)
+            m = re.match(r'  "(POL-[IREOD]-\d{2})": \{', line)
             if m:
-                add("SP", m[1], titles.get(m[1], ""), sheet90, n)
+                add("TP", m[1], titles.get(m[1], ""), sheet90, n)
+    renumbering = "policy/source/renumbering.json"
+    for n, line in lines(renumbering):
+        m = re.match(r'  "(POL-\d{3})": "(POL-[IREOD]-\d{2})"', line)
+        if m:
+            add("SP", m[1], f"→ {m[2]}", renumbering, n)
     mapping = f"{WIKI}/analysis/drive-curation/policy-id-mapping.json"
     text = read(mapping)
     if text:  # 원본 PAC01~PAC{count}는 독스용 정책표 전체이고, 번호 대응 JSON의 systems가 개수를 고정한다
@@ -384,11 +391,12 @@ def self_test():
         "docs/ai/DECISIONS.md": "# 결정\n## D-7 하나 (2026-10-01)\n본문 DEV-02\n## D-8 둘\n## D-8 둘 again\n## D-10 셋\n",
         f"{WIKI}/status/backlog.md": "| ID | 작업 |\n| --- | --- |\n| DEV-01 | 첫째 |\n| DEV-02 | 둘째 |\n| AIG-01 | 셋째 |\n",
         "code.py": "# D-07 와 D-999, DEV-1, DEV-66·67, D-9~10, DEV-01\nx = 'ND-12 D-8x'\n# POL-001·002 POL-0001\n",
-        "policy/source/sheet.json": '{"policies": {\n  "POL-001": {"target": "a"},\n  "POL-002": {"target": "b"}\n}}\n',
+        "policy/source/sheet.json": '{"policies": {\n  "POL-I-01": {"content": "a"}\n}}\n',
+        "policy/source/renumbering.json": '{"map": {\n  "POL-001": "POL-I-01",\n  "POL-002": "POL-I-02"\n}}\n',
         f"{WIKI}/status/reports/old.md": "옛 보고 D-998\n",
     }
     defs = collect_defs(files.get)
-    assert [(f, i) for f, i, *_ in defs] == [("D", "D-07"), ("D", "D-08"), ("D", "D-08"), ("D", "D-10"), ("DEV", "DEV-01"), ("DEV", "DEV-02"), ("AIG", "AIG-01"), ("SP", "POL-001"), ("SP", "POL-002")]
+    assert [(f, i) for f, i, *_ in defs] == [("D", "D-07"), ("D", "D-08"), ("D", "D-08"), ("D", "D-10"), ("DEV", "DEV-01"), ("DEV", "DEV-02"), ("AIG", "AIG-01"), ("TP", "POL-I-01"), ("SP", "POL-001"), ("SP", "POL-002")]
     info, errors, warnings = analyze(defs, files)
     text = "\n".join(errors)
     assert "중복 정의 D-08" in text, text

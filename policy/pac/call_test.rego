@@ -125,247 +125,247 @@ test_contract_block_identity_missing if blocked(run(json.remove(read_req, ["user
 
 test_contract_block_unknown_operation if blocked(run(object.union(read_req, {"operation": "launch"}), base_facts), "INPUT_CONTRACT")
 
-# --- POL-003 ---
+# --- POL-I-03 ---
 
-test_pol_003_pass_in_permission_table if not "POL-003" in run(read_req, base_facts).policy_ids
+test_pol_i_03_pass_in_permission_table if not "POL-I-03" in run(read_req, base_facts).policy_ids
 
-test_pol_003_block_other_data_class if {
-	blocked(run(json.patch(read_req, [{"op": "replace", "path": "/target/data_class", "value": "hr_record"}]), base_facts), "POL-003")
+test_pol_i_03_block_other_data_class if {
+	blocked(run(json.patch(read_req, [{"op": "replace", "path": "/target/data_class", "value": "hr_record"}]), base_facts), "POL-I-03")
 }
 
-test_pol_003_block_table_unavailable if {
-	blocked(run_with(read_req, base_facts, {"permission_table": null}), "POL-003")
+test_pol_i_03_block_table_unavailable if {
+	blocked(run_with(read_req, base_facts, {"permission_table": null}), "POL-I-03")
 }
 
 hr_req := json.patch(read_req, [{"op": "replace", "path": "/target/data_class", "value": "hr_record"}])
 
-test_pol_003_pass_entry_approved_by_data_owner if {
-	not "POL-003" in run_with(hr_req, base_facts, {"permission_table": [grant("kim", "search", "hr_record", "read")]}).policy_ids
+test_pol_i_03_pass_entry_approved_by_data_owner if {
+	not "POL-I-03" in run_with(hr_req, base_facts, {"permission_table": [grant("kim", "search", "hr_record", "read")]}).policy_ids
 }
 
-test_pol_003_block_entry_approved_by_security_admin if {
+test_pol_i_03_block_entry_approved_by_security_admin if {
 	e := object.union(grant("kim", "search", "hr_record", "read"), {"approved_by_role": "security_admin"})
-	blocked(run_with(hr_req, base_facts, {"permission_table": [e]}), "POL-003")
+	blocked(run_with(hr_req, base_facts, {"permission_table": [e]}), "POL-I-03")
 }
 
-test_pol_003_block_exception_is_not_a_grant if {
-	blocked(run_with(hr_req, base_facts, {"exceptions": [exception("POL-003", "kim", "srv/search", "data_owner")]}), "POL-003")
+test_pol_i_03_block_exception_is_not_a_grant if {
+	blocked(run_with(hr_req, base_facts, {"exceptions": [exception("POL-I-03", "kim", "srv/search", "data_owner")]}), "POL-I-03")
 }
 
-# --- POL-010 (실행 단계) ---
+# --- POL-I-10 (실행 단계) ---
 
-test_pol_010_pass_flagged_sensitive_tool if not "POL-010" in run(send_req, send_facts).policy_ids
+test_pol_i_10_pass_flagged_sensitive_tool if not "POL-I-10" in run(send_req, send_facts).policy_ids
 
-test_pol_010_block_unflagged_sensitive_tool if {
+test_pol_i_10_block_unflagged_sensitive_tool if {
 	reg := json.patch(registry, [{"op": "replace", "path": "/srv/tools/mail/requires_confirmation", "value": false}])
-	blocked(run_with(send_req, send_facts, {"servers": reg}), "POL-010")
+	blocked(run_with(send_req, send_facts, {"servers": reg}), "POL-I-10")
 }
 
-test_pol_010_block_delete_on_read_tool if {
+test_pol_i_10_block_delete_on_read_tool if {
 	r := object.union(read_req, {"operation": "delete"})
-	blocked(run_with(r, base_facts, {"permission_table": [grant("kim", "search", "internal_doc", "delete")]}), "POL-010")
+	blocked(run_with(r, base_facts, {"permission_table": [grant("kim", "search", "internal_doc", "delete")]}), "POL-I-10")
 }
 
-# --- POL-013 ---
+# --- POL-R-02 ---
 
-test_pol_013_pass_normal_basis if not "POL-013" in run(read_req, base_facts).policy_ids
+test_pol_r_02_pass_normal_basis if not "POL-R-02" in run(read_req, base_facts).policy_ids
 
-test_pol_013_block_expired_exception_basis if {
-	e := object.union(exception("POL-013", "srv", "search", "security_admin"), {"not_after_ns": now - 1})
-	blocked(run_with(read_req, json.patch(base_facts, [{"op": "replace", "path": "/approval/basis", "value": "exception"}]), {"exceptions": [e]}), "POL-013")
+test_pol_r_02_block_expired_exception_basis if {
+	e := object.union(exception("POL-R-02", "srv", "search", "security_admin"), {"not_after_ns": now - 1})
+	blocked(run_with(read_req, json.patch(base_facts, [{"op": "replace", "path": "/approval/basis", "value": "exception"}]), {"exceptions": [e]}), "POL-R-02")
 }
 
-test_pol_013_pass_valid_exception_basis if {
-	d := run_with(read_req, json.patch(base_facts, [{"op": "replace", "path": "/approval/basis", "value": "exception"}]), {"exceptions": [exception("POL-013", "srv", "search", "security_admin")]})
-	not "POL-013" in d.policy_ids
+test_pol_r_02_pass_valid_exception_basis if {
+	d := run_with(read_req, json.patch(base_facts, [{"op": "replace", "path": "/approval/basis", "value": "exception"}]), {"exceptions": [exception("POL-R-02", "srv", "search", "security_admin")]})
+	not "POL-R-02" in d.policy_ids
 }
 
-test_pol_013_block_basis_missing if blocked(run(read_req, json.remove(base_facts, ["approval"])), "POL-013")
+test_pol_r_02_block_basis_missing if blocked(run(read_req, json.remove(base_facts, ["approval"])), "POL-R-02")
 
-# --- POL-015 ---
+# --- POL-R-04 ---
 
-test_pol_015_pass_exact_match if not "POL-015" in run(read_req, base_facts).policy_ids
+test_pol_r_04_pass_exact_match if not "POL-R-04" in run(read_req, base_facts).policy_ids
 
-test_pol_015_block_ambiguous_name if blocked(read_run([{"op": "replace", "path": "/catalog/matches", "value": 2}]), "POL-015")
+test_pol_r_04_block_ambiguous_name if blocked(read_run([{"op": "replace", "path": "/catalog/matches", "value": 2}]), "POL-R-04")
 
-test_pol_015_block_unknown_tool if blocked(run(object.union(read_req, {"tool": "search2"}), base_facts), "POL-015")
+test_pol_r_04_block_unknown_tool if blocked(run(object.union(read_req, {"tool": "search2"}), base_facts), "POL-R-04")
 
-# --- POL-016 ---
+# --- POL-R-05 ---
 
-test_pol_016_pass_valid_token if not "POL-016" in run(read_req, base_facts).policy_ids
+test_pol_r_05_pass_valid_token if not "POL-R-05" in run(read_req, base_facts).policy_ids
 
-test_pol_016_block_token_for_other_server if blocked(read_run([{"op": "replace", "path": "/token/audience", "value": "other"}]), "POL-016")
+test_pol_r_05_block_token_for_other_server if blocked(read_run([{"op": "replace", "path": "/token/audience", "value": "other"}]), "POL-R-05")
 
-test_pol_016_block_expired_token if blocked(read_run([{"op": "replace", "path": "/token/expires_ns", "value": now}]), "POL-016")
+test_pol_r_05_block_expired_token if blocked(read_run([{"op": "replace", "path": "/token/expires_ns", "value": now}]), "POL-R-05")
 
-test_pol_016_block_no_token if blocked(run(read_req, json.remove(base_facts, ["token"])), "POL-016")
+test_pol_r_05_block_no_token if blocked(run(read_req, json.remove(base_facts, ["token"])), "POL-R-05")
 
-test_pol_016_pass_local_server_without_token if {
+test_pol_r_05_pass_local_server_without_token if {
 	reg := json.patch(registry, [{"op": "add", "path": "/srv/kind", "value": "local"}])
-	not "POL-016" in run_with(read_req, object.union(base_facts, {"token": {"used": false}}), {"servers": reg}).policy_ids
+	not "POL-R-05" in run_with(read_req, object.union(base_facts, {"token": {"used": false}}), {"servers": reg}).policy_ids
 }
 
-test_pol_016_block_remote_server_without_token if blocked(read_run([{"op": "replace", "path": "/token", "value": {"used": false}}]), "POL-016")
+test_pol_r_05_block_remote_server_without_token if blocked(read_run([{"op": "replace", "path": "/token", "value": {"used": false}}]), "POL-R-05")
 
-# --- POL-025 ---
+# --- POL-R-14 ---
 
-test_pol_025_pass_bound_credential if not "POL-025" in run(read_req, base_facts).policy_ids
+test_pol_r_14_pass_bound_credential if not "POL-R-14" in run(read_req, base_facts).policy_ids
 
-test_pol_025_pass_no_credential_used if not "POL-025" in read_run([{"op": "replace", "path": "/credential", "value": {"used": false}}]).policy_ids
+test_pol_r_14_pass_no_credential_used if not "POL-R-14" in read_run([{"op": "replace", "path": "/credential", "value": {"used": false}}]).policy_ids
 
-test_pol_025_block_other_server_credential if blocked(read_run([{"op": "replace", "path": "/credential/bound_server", "value": "github"}]), "POL-025")
+test_pol_r_14_block_other_server_credential if blocked(read_run([{"op": "replace", "path": "/credential/bound_server", "value": "github"}]), "POL-R-14")
 
-test_pol_025_block_credential_unknown if blocked(run(read_req, json.remove(base_facts, ["credential"])), "POL-025")
+test_pol_r_14_block_credential_unknown if blocked(run(read_req, json.remove(base_facts, ["credential"])), "POL-R-14")
 
-# --- POL-034 ---
+# --- POL-E-01 ---
 
-test_pol_034_pass_delegated if not "POL-034" in run(read_req, base_facts).policy_ids
+test_pol_e_01_pass_delegated if not "POL-E-01" in run(read_req, base_facts).policy_ids
 
-test_pol_034_block_other_agent if blocked(run(object.union(read_req, {"agent": "unknown-agent"}), base_facts), "POL-034")
+test_pol_e_01_block_other_agent if blocked(run(object.union(read_req, {"agent": "unknown-agent"}), base_facts), "POL-E-01")
 
-test_pol_034_block_expired_delegation if {
-	blocked(run_with(read_req, base_facts, {"delegations": [object.union(delegation("search", "internal_doc", "read"), {"not_after_ns": now})]}), "POL-034")
+test_pol_e_01_block_expired_delegation if {
+	blocked(run_with(read_req, base_facts, {"delegations": [object.union(delegation("search", "internal_doc", "read"), {"not_after_ns": now})]}), "POL-E-01")
 }
 
-# --- POL-035 ---
+# --- POL-E-02 ---
 
-test_pol_035_pass_fresh_lookup if not "POL-035" in run(read_req, base_facts).policy_ids
+test_pol_e_02_pass_fresh_lookup if not "POL-E-02" in run(read_req, base_facts).policy_ids
 
-test_pol_035_block_lookup_failed if blocked(read_run([{"op": "replace", "path": "/permission_lookup/status", "value": "error"}]), "POL-035")
+test_pol_e_02_block_lookup_failed if blocked(read_run([{"op": "replace", "path": "/permission_lookup/status", "value": "error"}]), "POL-E-02")
 
-test_pol_035_block_lookup_reused_from_other_call if {
-	blocked(read_run([{"op": "replace", "path": "/permission_lookup/request_id", "value": "r0"}]), "POL-035")
+test_pol_e_02_block_lookup_reused_from_other_call if {
+	blocked(read_run([{"op": "replace", "path": "/permission_lookup/request_id", "value": "r0"}]), "POL-E-02")
 }
 
-# --- POL-036 ---
+# --- POL-E-03 ---
 
-test_pol_036_pass_document_granted if not "POL-036" in run(read_req, base_facts).policy_ids
+test_pol_e_03_pass_document_granted if not "POL-E-03" in run(read_req, base_facts).policy_ids
 
-test_pol_036_block_other_document if {
-	blocked(run(json.patch(read_req, [{"op": "replace", "path": "/target/doc_id", "value": "doc-2"}]), base_facts), "POL-036")
+test_pol_e_03_block_other_document if {
+	blocked(run(json.patch(read_req, [{"op": "replace", "path": "/target/doc_id", "value": "doc-2"}]), base_facts), "POL-E-03")
 }
 
-test_pol_036_block_document_unknown if blocked(run(json.remove(read_req, ["target/doc_id"]), base_facts), "POL-036")
+test_pol_e_03_block_document_unknown if blocked(run(json.remove(read_req, ["target/doc_id"]), base_facts), "POL-E-03")
 
-# --- POL-037 ---
+# --- POL-E-04 ---
 
-test_pol_037_pass_plain_call if not "POL-037" in run(read_req, base_facts).policy_ids
+test_pol_e_04_pass_plain_call if not "POL-E-04" in run(read_req, base_facts).policy_ids
 
-test_pol_037_block_external_content_as_approval if {
+test_pol_e_04_block_external_content_as_approval if {
 	r := object.union(read_req, {"intent": "approval"})
-	blocked(run(r, json.patch(base_facts, [{"op": "replace", "path": "/provenance/external_content", "value": true}])), "POL-037")
+	blocked(run(r, json.patch(base_facts, [{"op": "replace", "path": "/provenance/external_content", "value": true}])), "POL-E-04")
 }
 
-test_pol_037_block_permission_change_with_unknown_provenance if {
-	blocked(run(object.union(read_req, {"intent": "permission_change"}), json.remove(base_facts, ["provenance"])), "POL-037")
+test_pol_e_04_block_permission_change_with_unknown_provenance if {
+	blocked(run(object.union(read_req, {"intent": "permission_change"}), json.remove(base_facts, ["provenance"])), "POL-E-04")
 }
 
-test_pol_037_pass_approval_from_user_only if not "POL-037" in run(object.union(read_req, {"intent": "approval"}), base_facts).policy_ids
+test_pol_e_04_pass_approval_from_user_only if not "POL-E-04" in run(object.union(read_req, {"intent": "approval"}), base_facts).policy_ids
 
-test_pol_037_block_unknown_intent if blocked(run(object.union(read_req, {"intent": "grant"}), base_facts), "POL-037")
+test_pol_e_04_block_unknown_intent if blocked(run(object.union(read_req, {"intent": "grant"}), base_facts), "POL-E-04")
 
-# --- POL-038 ---
+# --- POL-E-05 ---
 
-test_pol_038_pass_clean_input if not "POL-038" in run(read_req, base_facts).policy_ids
+test_pol_e_05_pass_clean_input if not "POL-E-05" in run(read_req, base_facts).policy_ids
 
-test_pol_038_block_secret_in_input if blocked(read_run([{"op": "replace", "path": "/inspection/secrets", "value": ["github_token"]}]), "POL-038")
+test_pol_e_05_block_secret_in_input if blocked(read_run([{"op": "replace", "path": "/inspection/secrets", "value": ["github_token"]}]), "POL-E-05")
 
-test_pol_038_block_unneeded_personal_data if {
-	blocked(read_run([{"op": "replace", "path": "/inspection/personal_data", "value": ["resident_number"]}]), "POL-038")
+test_pol_e_05_block_unneeded_personal_data if {
+	blocked(read_run([{"op": "replace", "path": "/inspection/personal_data", "value": ["resident_number"]}]), "POL-E-05")
 }
 
-test_pol_038_pass_allowed_personal_field if {
-	not "POL-038" in read_run([{"op": "replace", "path": "/inspection/personal_data", "value": ["employee_id"]}]).policy_ids
+test_pol_e_05_pass_allowed_personal_field if {
+	not "POL-E-05" in read_run([{"op": "replace", "path": "/inspection/personal_data", "value": ["employee_id"]}]).policy_ids
 }
 
-test_pol_038_block_completed_without_lists if {
-	blocked(read_run([{"op": "replace", "path": "/inspection", "value": {"status": "completed"}}]), "POL-038")
+test_pol_e_05_block_completed_without_lists if {
+	blocked(read_run([{"op": "replace", "path": "/inspection", "value": {"status": "completed"}}]), "POL-E-05")
 }
 
-test_pol_038_block_secret_list_as_string if blocked(read_run([{"op": "replace", "path": "/inspection/secrets", "value": "token-present"}]), "POL-038")
+test_pol_e_05_block_secret_list_as_string if blocked(read_run([{"op": "replace", "path": "/inspection/secrets", "value": "token-present"}]), "POL-E-05")
 
-test_pol_038_block_inspection_not_done if blocked(run(read_req, json.remove(base_facts, ["inspection"])), "POL-038")
+test_pol_e_05_block_inspection_not_done if blocked(run(read_req, json.remove(base_facts, ["inspection"])), "POL-E-05")
 
-# --- POL-040 ---
+# --- POL-E-07 ---
 
-test_pol_040_pass_approved_final_host if not "POL-040" in run(send_req, send_facts).policy_ids
+test_pol_e_07_pass_approved_final_host if not "POL-E-07" in run(send_req, send_facts).policy_ids
 
-test_pol_040_block_redirect_to_unapproved_host if blocked(send_run([{"op": "replace", "path": "/egress/final_host", "value": "evil.example"}]), "POL-040")
+test_pol_e_07_block_redirect_to_unapproved_host if blocked(send_run([{"op": "replace", "path": "/egress/final_host", "value": "evil.example"}]), "POL-E-07")
 
-test_pol_040_block_internal_ip if blocked(send_run([{"op": "replace", "path": "/egress/resolved_ips", "value": ["192.168.0.10"]}]), "POL-040")
+test_pol_e_07_block_internal_ip if blocked(send_run([{"op": "replace", "path": "/egress/resolved_ips", "value": ["192.168.0.10"]}]), "POL-E-07")
 
-test_pol_040_block_outside_approved_ip_range if {
+test_pol_e_07_block_outside_approved_ip_range if {
 	reg := json.patch(registry, [{"op": "add", "path": "/srv/tools/mail/egress_ip_ranges", "value": ["8.8.8.0/24"]}])
-	blocked(run_with(send_req, send_facts, {"servers": reg}), "POL-040")
+	blocked(run_with(send_req, send_facts, {"servers": reg}), "POL-E-07")
 }
 
-test_pol_040_pass_inside_approved_ip_range if {
+test_pol_e_07_pass_inside_approved_ip_range if {
 	reg := json.patch(registry, [{"op": "add", "path": "/srv/tools/mail/egress_ip_ranges", "value": ["93.184.216.0/24"]}])
-	not "POL-040" in run_with(send_req, send_facts, {"servers": reg}).policy_ids
+	not "POL-E-07" in run_with(send_req, send_facts, {"servers": reg}).policy_ids
 }
 
-test_pol_040_block_egress_unknown if blocked(run(send_req, json.remove(send_facts, ["egress"])), "POL-040")
+test_pol_e_07_block_egress_unknown if blocked(run(send_req, json.remove(send_facts, ["egress"])), "POL-E-07")
 
-# --- POL-041 ---
+# --- POL-E-08 ---
 
-test_pol_041_pass_approved_transfer if not "POL-041" in run(send_req, send_facts).policy_ids
+test_pol_e_08_pass_approved_transfer if not "POL-E-08" in run(send_req, send_facts).policy_ids
 
-test_pol_041_block_other_purpose if blocked(run(object.union(send_req, {"purpose": "마케팅"}), send_facts), "POL-041")
+test_pol_e_08_block_other_purpose if blocked(run(object.union(send_req, {"purpose": "마케팅"}), send_facts), "POL-E-08")
 
-test_pol_041_block_other_recipient if blocked(run(object.union(send_req, {"recipient": "x@other.com"}), send_facts), "POL-041")
+test_pol_e_08_block_other_recipient if blocked(run(object.union(send_req, {"recipient": "x@other.com"}), send_facts), "POL-E-08")
 
-# --- POL-042 ---
+# --- POL-E-09 ---
 
-test_pol_042_pass_inside_root if not "POL-042" in run(read_req, base_facts).policy_ids
+test_pol_e_09_pass_inside_root if not "POL-E-09" in run(read_req, base_facts).policy_ids
 
-test_pol_042_block_symlink_outside_root if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/etc/shadow"}]), "POL-042")
+test_pol_e_09_block_symlink_outside_root if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/etc/shadow"}]), "POL-E-09")
 
-test_pol_042_block_prefix_trick if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/srv/data-secret/a.txt"}]), "POL-042")
+test_pol_e_09_block_prefix_trick if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/srv/data-secret/a.txt"}]), "POL-E-09")
 
-test_pol_042_block_parent_traversal if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/srv/data/../../etc/passwd"}]), "POL-042")
+test_pol_e_09_block_parent_traversal if blocked(read_run([{"op": "replace", "path": "/path/resolved", "value": "/srv/data/../../etc/passwd"}]), "POL-E-09")
 
-test_pol_042_block_null_path_on_file_tool if {
+test_pol_e_09_block_null_path_on_file_tool if {
 	r := json.patch(read_req, [{"op": "replace", "path": "/target/path", "value": null}])
-	blocked(run(r, json.patch(base_facts, [{"op": "replace", "path": "/path/resolved", "value": "/etc/passwd"}])), "POL-042")
+	blocked(run(r, json.patch(base_facts, [{"op": "replace", "path": "/path/resolved", "value": "/etc/passwd"}])), "POL-E-09")
 }
 
-test_pol_042_block_unresolved_path if blocked(run(read_req, json.remove(base_facts, ["path"])), "POL-042")
+test_pol_e_09_block_unresolved_path if blocked(run(read_req, json.remove(base_facts, ["path"])), "POL-E-09")
 
-# --- POL-044 ---
+# --- POL-E-11 ---
 
 flow_req := object.union(read_req, {"source_server": "drive", "purpose": "요약"})
 
-test_pol_044_pass_approved_flow if not "POL-044" in run(flow_req, base_facts).policy_ids
+test_pol_e_11_pass_approved_flow if not "POL-E-11" in run(flow_req, base_facts).policy_ids
 
-test_pol_044_block_unapproved_flow if blocked(run(object.union(flow_req, {"source_server": "slack"}), base_facts), "POL-044")
+test_pol_e_11_block_unapproved_flow if blocked(run(object.union(flow_req, {"source_server": "slack"}), base_facts), "POL-E-11")
 
-test_pol_044_block_credential_transfer if blocked(read_run([{"op": "replace", "path": "/data/contains_credential", "value": true}]), "POL-044")
+test_pol_e_11_block_credential_transfer if blocked(read_run([{"op": "replace", "path": "/data/contains_credential", "value": true}]), "POL-E-11")
 
-test_pol_044_block_source_server_not_a_name if blocked(run(object.union(read_req, {"source_server": ["drive"]}), base_facts), "POL-044")
+test_pol_e_11_block_source_server_not_a_name if blocked(run(object.union(read_req, {"source_server": ["drive"]}), base_facts), "POL-E-11")
 
-test_pol_044_block_credential_unknown if blocked(run(read_req, json.remove(base_facts, ["data"])), "POL-044")
+test_pol_e_11_block_credential_unknown if blocked(run(read_req, json.remove(base_facts, ["data"])), "POL-E-11")
 
-# --- POL-046 ---
+# --- POL-E-13 ---
 
 shell_req := object.union(read_req, {"tool": "shell", "operation": "execute"})
 
 shell_facts := object.union(base_facts, {"catalog": {"matches": 1, "observed_contract_sha256": "c3"}, "arguments_validated": true})
 
-test_pol_046_pass_validated_command if not "POL-046" in run(shell_req, shell_facts).policy_ids
+test_pol_e_13_pass_validated_command if not "POL-E-13" in run(shell_req, shell_facts).policy_ids
 
-test_pol_046_block_unvalidated_arguments if blocked(run(shell_req, object.union(shell_facts, {"arguments_validated": false})), "POL-046")
+test_pol_e_13_block_unvalidated_arguments if blocked(run(shell_req, object.union(shell_facts, {"arguments_validated": false})), "POL-E-13")
 
-test_pol_046_block_execute_on_unclassified_tool if {
+test_pol_e_13_block_execute_on_unclassified_tool if {
 	r := object.union(read_req, {"operation": "execute"})
-	blocked(run_with(r, base_facts, {"permission_table": [grant("kim", "search", "internal_doc", "execute")]}), "POL-046")
+	blocked(run_with(r, base_facts, {"permission_table": [grant("kim", "search", "internal_doc", "execute")]}), "POL-E-13")
 }
 
-test_pol_046_block_unapproved_operation if {
+test_pol_e_13_block_unapproved_operation if {
 	r := object.union(shell_req, {"operation": "write"})
-	blocked(run_with(r, shell_facts, {"permission_table": [grant("kim", "shell", "internal_doc", "write")]}), "POL-046")
+	blocked(run_with(r, shell_facts, {"permission_table": [grant("kim", "shell", "internal_doc", "write")]}), "POL-E-13")
 }
 
-# --- POL-047 ---
+# --- POL-E-14 ---
 
 fetch_req := json.patch(read_req, [{"op": "replace", "path": "/tool", "value": "fetch"}, {"op": "replace", "path": "/target", "value": {"data_class": "public_doc"}}])
 
@@ -374,199 +374,199 @@ fetch_facts := object.union(base_facts, {
 	"egress": {"final_host": "docs.vendor.com", "resolved_ips": ["151.101.1.69"]},
 })
 
-test_pol_047_pass_approved_url if not "POL-047" in run(fetch_req, fetch_facts).policy_ids
+test_pol_e_14_pass_approved_url if not "POL-E-14" in run(fetch_req, fetch_facts).policy_ids
 
-test_pol_047_block_metadata_endpoint if {
+test_pol_e_14_block_metadata_endpoint if {
 	f := json.patch(fetch_facts, [{"op": "replace", "path": "/egress/resolved_ips", "value": ["169.254.169.254"]}])
-	blocked(run(fetch_req, f), "POL-047")
+	blocked(run(fetch_req, f), "POL-E-14")
 }
 
-test_pol_047_block_cidr_instead_of_address if {
-	blocked(run(fetch_req, json.patch(fetch_facts, [{"op": "replace", "path": "/egress/resolved_ips", "value": ["8.8.8.0/24"]}])), "POL-047")
+test_pol_e_14_block_cidr_instead_of_address if {
+	blocked(run(fetch_req, json.patch(fetch_facts, [{"op": "replace", "path": "/egress/resolved_ips", "value": ["8.8.8.0/24"]}])), "POL-E-14")
 }
 
-test_pol_047_block_unapproved_host if {
-	blocked(run(fetch_req, json.patch(fetch_facts, [{"op": "replace", "path": "/egress/final_host", "value": "pastebin.com"}])), "POL-047")
+test_pol_e_14_block_unapproved_host if {
+	blocked(run(fetch_req, json.patch(fetch_facts, [{"op": "replace", "path": "/egress/final_host", "value": "pastebin.com"}])), "POL-E-14")
 }
 
-# --- POL-048 ---
+# --- POL-E-15 ---
 
-test_pol_048_pass_valid_schema if not "POL-048" in run(read_req, base_facts).policy_ids
+test_pol_e_15_pass_valid_schema if not "POL-E-15" in run(read_req, base_facts).policy_ids
 
-test_pol_048_block_undeclared_field if blocked(read_run([{"op": "replace", "path": "/schema/undeclared_fields", "value": ["__hidden"]}]), "POL-048")
+test_pol_e_15_block_undeclared_field if blocked(read_run([{"op": "replace", "path": "/schema/undeclared_fields", "value": ["__hidden"]}]), "POL-E-15")
 
-test_pol_048_block_invalid_schema if blocked(read_run([{"op": "replace", "path": "/schema/valid", "value": false}]), "POL-048")
+test_pol_e_15_block_invalid_schema if blocked(read_run([{"op": "replace", "path": "/schema/valid", "value": false}]), "POL-E-15")
 
-# --- POL-049 ---
+# --- POL-E-16 ---
 
 resp_req := object.union(read_req, {"stage": "response"})
 
-test_pol_049_pass_within_limit if run_response(resp_req, base_facts, {"items": 50, "bytes": 1000}).effect == "ALLOW"
+test_pol_e_16_pass_within_limit if run_response(resp_req, base_facts, {"items": 50, "bytes": 1000}).effect == "ALLOW"
 
-test_pol_049_block_over_limit_restricts if {
+test_pol_e_16_block_over_limit_restricts if {
 	d := run_response(resp_req, base_facts, {"items": 51, "bytes": 1000})
 	d.effect == "RESTRICT"
-	d.policy_ids == ["POL-049"]
+	d.policy_ids == ["POL-E-16"]
 }
 
-test_pol_049_block_negative_count if blocked(run_response(resp_req, base_facts, {"items": -1, "bytes": 10}), "POL-049")
+test_pol_e_16_block_negative_count if blocked(run_response(resp_req, base_facts, {"items": -1, "bytes": 10}), "POL-E-16")
 
-test_pol_049_block_size_unknown if blocked(run_response(resp_req, base_facts, {"items": 10}), "POL-049")
+test_pol_e_16_block_size_unknown if blocked(run_response(resp_req, base_facts, {"items": 10}), "POL-E-16")
 
-test_pol_049_block_default_limit_applies if {
+test_pol_e_16_block_default_limit_applies if {
 	r := object.union(resp_req, {"tool": "mail"})
 	d := run_response(r, base_facts, {"items": 21, "bytes": 10})
 	d.effect == "RESTRICT"
 }
 
-test_pol_049_block_no_limit_at_all if {
+test_pol_e_16_block_no_limit_at_all if {
 	d := call.decision with input as {"request": object.union(resp_req, {"tool": "mail"}), "facts": base_facts, "response": {"items": 1, "bytes": 1}}
 		with data.pol as json.remove(pol_data, ["default_result_limit"])
-	blocked(d, "POL-049")
+	blocked(d, "POL-E-16")
 }
 
-# --- POL-050 ---
+# --- POL-E-17 ---
 
-test_pol_050_pass_within_volume if not "POL-050" in run(read_req, base_facts).policy_ids
+test_pol_e_17_pass_within_volume if not "POL-E-17" in run(read_req, base_facts).policy_ids
 
-test_pol_050_block_volume_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/window_documents", "value": 201}]), "POL-050")
+test_pol_e_17_block_volume_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/window_documents", "value": 201}]), "POL-E-17")
 
-test_pol_050_block_blocked_pattern if blocked(read_run([{"op": "replace", "path": "/usage/blocked_pattern", "value": true}]), "POL-050")
+test_pol_e_17_block_blocked_pattern if blocked(read_run([{"op": "replace", "path": "/usage/blocked_pattern", "value": true}]), "POL-E-17")
 
-test_pol_050_block_volume_unknown if blocked(read_run([{"op": "remove", "path": "/usage/window_documents"}]), "POL-050")
+test_pol_e_17_block_volume_unknown if blocked(read_run([{"op": "remove", "path": "/usage/window_documents"}]), "POL-E-17")
 
-# --- POL-051 / POL-052 ---
+# --- POL-E-18 / POL-E-19 ---
 
 account_facts := json.patch(base_facts, [{"op": "replace", "path": "/server_account", "value": {"used": true}}, {"op": "add", "path": "/acl", "value": {"user_can": true, "user": "kim", "doc_id": "doc-1"}}])
 
-test_pol_051_pass_user_also_permitted if not "POL-051" in run(read_req, account_facts).policy_ids
+test_pol_e_18_pass_user_also_permitted if not "POL-E-18" in run(read_req, account_facts).policy_ids
 
-test_pol_051_block_only_server_account_permitted if {
-	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/user_can", "value": false}])), "POL-051")
+test_pol_e_18_block_only_server_account_permitted if {
+	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/user_can", "value": false}])), "POL-E-18")
 }
 
-test_pol_051_block_acl_for_other_document if {
-	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/doc_id", "value": "doc-2"}])), "POL-051")
+test_pol_e_18_block_acl_for_other_document if {
+	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/doc_id", "value": "doc-2"}])), "POL-E-18")
 }
 
-test_pol_051_block_acl_for_other_user if {
-	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/user", "value": "lee"}])), "POL-051")
+test_pol_e_18_block_acl_for_other_user if {
+	blocked(run(read_req, json.patch(account_facts, [{"op": "replace", "path": "/acl/user", "value": "lee"}])), "POL-E-18")
 }
 
-test_pol_051_block_server_account_unknown if blocked(run(read_req, json.remove(base_facts, ["server_account"])), "POL-051")
+test_pol_e_18_block_server_account_unknown if blocked(run(read_req, json.remove(base_facts, ["server_account"])), "POL-E-18")
 
-test_pol_052_pass_account_in_scope if not "POL-052" in run(read_req, account_facts).policy_ids
+test_pol_e_19_pass_account_in_scope if not "POL-E-19" in run(read_req, account_facts).policy_ids
 
-test_pol_052_block_account_outside_scope if {
-	blocked(run_with(read_req, account_facts, {"server_accounts": {"srv": {"operations": ["read"], "data_classes": ["public_doc"]}}}), "POL-052")
+test_pol_e_19_block_account_outside_scope if {
+	blocked(run_with(read_req, account_facts, {"server_accounts": {"srv": {"operations": ["read"], "data_classes": ["public_doc"]}}}), "POL-E-19")
 }
 
-test_pol_052_block_other_document_than_account_scope if {
-	blocked(run_with(read_req, account_facts, {"server_accounts": {"srv": {"operations": ["read"], "data_classes": ["internal_doc"], "documents": ["doc-9"]}}}), "POL-052")
+test_pol_e_19_block_other_document_than_account_scope if {
+	blocked(run_with(read_req, account_facts, {"server_accounts": {"srv": {"operations": ["read"], "data_classes": ["internal_doc"], "documents": ["doc-9"]}}}), "POL-E-19")
 }
 
-test_pol_052_block_account_scope_missing if blocked(run_replacing(read_req, account_facts, "/server_accounts", {}), "POL-052")
+test_pol_e_19_block_account_scope_missing if blocked(run_replacing(read_req, account_facts, "/server_accounts", {}), "POL-E-19")
 
-# --- POL-053 / POL-054 ---
+# --- POL-E-20 / POL-E-21 ---
 
-test_pol_053_pass_matching_confirmation if not "POL-053" in run(send_req, send_facts).policy_ids
+test_pol_e_20_pass_matching_confirmation if not "POL-E-20" in run(send_req, send_facts).policy_ids
 
-test_pol_053_block_no_confirmation_asks_user if {
+test_pol_e_20_block_no_confirmation_asks_user if {
 	d := run(send_req, json.remove(send_facts, ["confirmation"]))
 	d.effect == "CONFIRM"
-	d.policy_ids == ["POL-010", "POL-053"]
+	d.policy_ids == ["POL-E-20", "POL-I-10"]
 }
 
-test_pol_010_block_no_confirmation_at_execution if "POL-010" in run(send_req, json.remove(send_facts, ["confirmation"])).policy_ids
+test_pol_i_10_block_no_confirmation_at_execution if "POL-I-10" in run(send_req, json.remove(send_facts, ["confirmation"])).policy_ids
 
-test_pol_053_block_arguments_changed_after_confirmation if blocked(send_run([{"op": "replace", "path": "/arguments_sha256", "value": "h2"}]), "POL-053")
+test_pol_e_20_block_arguments_changed_after_confirmation if blocked(send_run([{"op": "replace", "path": "/arguments_sha256", "value": "h2"}]), "POL-E-20")
 
-test_pol_053_block_recipient_changed if blocked(run(object.union(send_req, {"recipient": "b@partner.com"}), send_facts), "POL-053")
+test_pol_e_20_block_recipient_changed if blocked(run(object.union(send_req, {"recipient": "b@partner.com"}), send_facts), "POL-E-20")
 
-test_pol_053_block_confirmation_moved_to_other_tool if blocked(send_run([{"op": "replace", "path": "/confirmation/tool", "value": "share"}]), "POL-053")
+test_pol_e_20_block_confirmation_moved_to_other_tool if blocked(send_run([{"op": "replace", "path": "/confirmation/tool", "value": "share"}]), "POL-E-20")
 
-test_pol_054_pass_unused_own_confirmation if not "POL-054" in run(send_req, send_facts).policy_ids
+test_pol_e_21_pass_unused_own_confirmation if not "POL-E-21" in run(send_req, send_facts).policy_ids
 
-test_pol_054_block_reused_confirmation if blocked(send_run([{"op": "replace", "path": "/confirmation/used", "value": true}]), "POL-054")
+test_pol_e_21_block_reused_confirmation if blocked(send_run([{"op": "replace", "path": "/confirmation/used", "value": true}]), "POL-E-21")
 
-test_pol_054_block_admin_confirmation_is_not_user if blocked(send_run([{"op": "replace", "path": "/confirmation/confirmed_by", "value": "admin-1"}]), "POL-054")
+test_pol_e_21_block_admin_confirmation_is_not_user if blocked(send_run([{"op": "replace", "path": "/confirmation/confirmed_by", "value": "admin-1"}]), "POL-E-21")
 
-test_pol_054_block_expired_confirmation if blocked(send_run([{"op": "replace", "path": "/confirmation/expires_ns", "value": now}]), "POL-054")
+test_pol_e_21_block_expired_confirmation if blocked(send_run([{"op": "replace", "path": "/confirmation/expires_ns", "value": now}]), "POL-E-21")
 
-test_pol_054_block_reserved_for_other_call if blocked(send_run([{"op": "replace", "path": "/confirmation/reserved_for", "value": "r0"}]), "POL-054")
+test_pol_e_21_block_reserved_for_other_call if blocked(send_run([{"op": "replace", "path": "/confirmation/reserved_for", "value": "r0"}]), "POL-E-21")
 
-# --- POL-056 ---
+# --- POL-E-23 ---
 
-test_pol_056_pass_within_rate if not "POL-056" in run(read_req, base_facts).policy_ids
+test_pol_e_23_pass_within_rate if not "POL-E-23" in run(read_req, base_facts).policy_ids
 
-test_pol_056_block_agent_rate_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/agent/window_calls", "value": 101}]), "POL-056")
+test_pol_e_23_block_agent_rate_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/agent/window_calls", "value": 101}]), "POL-E-23")
 
-test_pol_056_block_tool_concurrency_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/tool/concurrent", "value": 11}]), "POL-056")
+test_pol_e_23_block_tool_concurrency_exceeded if blocked(read_run([{"op": "replace", "path": "/usage/tool/concurrent", "value": 11}]), "POL-E-23")
 
-test_pol_056_block_counters_missing if blocked(read_run([{"op": "remove", "path": "/usage/user"}]), "POL-056")
+test_pol_e_23_block_counters_missing if blocked(read_run([{"op": "remove", "path": "/usage/user"}]), "POL-E-23")
 
-test_pol_056_block_string_limits if {
-	blocked(run_replacing(read_req, base_facts, "/rate_limits/tool", {"window_calls": "10", "concurrent": "2"}), "POL-056")
+test_pol_e_23_block_string_limits if {
+	blocked(run_replacing(read_req, base_facts, "/rate_limits/tool", {"window_calls": "10", "concurrent": "2"}), "POL-E-23")
 }
 
-test_pol_056_block_limits_missing if blocked(run_replacing(read_req, base_facts, "/rate_limits", {}), "POL-056")
+test_pol_e_23_block_limits_missing if blocked(run_replacing(read_req, base_facts, "/rate_limits", {}), "POL-E-23")
 
-# --- POL-058 ---
+# --- POL-E-25 ---
 
-test_pol_058_pass_central_store if not "POL-058" in run(read_req, base_facts).policy_ids
+test_pol_e_25_pass_central_store if not "POL-E-25" in run(read_req, base_facts).policy_ids
 
-test_pol_058_pass_protected_buffer_only if {
+test_pol_e_25_pass_protected_buffer_only if {
 	f := json.patch(base_facts, [{"op": "replace", "path": "/audit", "value": {"central_writable": false, "buffer_writable": true, "recorded": true}}])
-	not "POL-058" in run(read_req, f).policy_ids
+	not "POL-E-25" in run(read_req, f).policy_ids
 }
 
-test_pol_058_block_no_store if {
-	blocked(read_run([{"op": "replace", "path": "/audit", "value": {"central_writable": false, "buffer_writable": false}}]), "POL-058")
+test_pol_e_25_block_no_store if {
+	blocked(read_run([{"op": "replace", "path": "/audit", "value": {"central_writable": false, "buffer_writable": false}}]), "POL-E-25")
 }
 
-test_pol_058_block_writable_but_record_failed if blocked(read_run([{"op": "replace", "path": "/audit/recorded", "value": false}]), "POL-058")
+test_pol_e_25_block_writable_but_record_failed if blocked(read_run([{"op": "replace", "path": "/audit/recorded", "value": false}]), "POL-E-25")
 
-test_pol_058_block_string_false if {
-	blocked(read_run([{"op": "replace", "path": "/audit", "value": {"central_writable": "true", "buffer_writable": "true"}}]), "POL-058")
+test_pol_e_25_block_string_false if {
+	blocked(read_run([{"op": "replace", "path": "/audit", "value": {"central_writable": "true", "buffer_writable": "true"}}]), "POL-E-25")
 }
 
-# --- POL-063 ---
+# --- POL-O-01 ---
 
-test_pol_063_pass_unchanged_contract if not "POL-063" in run(read_req, base_facts).policy_ids
+test_pol_o_01_pass_unchanged_contract if not "POL-O-01" in run(read_req, base_facts).policy_ids
 
-test_pol_063_block_changed_contract if blocked(read_run([{"op": "replace", "path": "/catalog/observed_contract_sha256", "value": "c9"}]), "POL-063")
+test_pol_o_01_block_changed_contract if blocked(read_run([{"op": "replace", "path": "/catalog/observed_contract_sha256", "value": "c9"}]), "POL-O-01")
 
-# --- POL-064 ---
+# --- POL-O-02 ---
 
 list_req := object.union(json.remove(read_req, ["operation"]), {"stage": "list"})
 
 list_facts := object.union(base_facts, {"permitted_tools": ["search", "mail"]})
 
-test_pol_064_pass_own_cache_permitted_tools if {
+test_pol_o_02_pass_own_cache_permitted_tools if {
 	d := run_response(list_req, list_facts, {"tools": ["search"], "cached": true, "cache_owner": "kim"})
-	not "POL-064" in d.policy_ids
+	not "POL-O-02" in d.policy_ids
 }
 
-test_pol_064_block_other_users_cache if {
-	blocked(run_response(list_req, list_facts, {"tools": ["search"], "cached": true, "cache_owner": "lee"}), "POL-064")
+test_pol_o_02_block_other_users_cache if {
+	blocked(run_response(list_req, list_facts, {"tools": ["search"], "cached": true, "cache_owner": "lee"}), "POL-O-02")
 }
 
-test_pol_064_block_unpermitted_tool_exposed if {
-	blocked(run_response(list_req, list_facts, {"tools": ["search", "shell"], "cached": false}), "POL-064")
+test_pol_o_02_block_unpermitted_tool_exposed if {
+	blocked(run_response(list_req, list_facts, {"tools": ["search", "shell"], "cached": false}), "POL-O-02")
 }
 
-# --- POL-081 / POL-082 ---
+# --- POL-O-19 / POL-D-01 ---
 
-test_pol_081_pass_active_server if not "POL-081" in run(read_req, base_facts).policy_ids
+test_pol_o_19_pass_active_server if not "POL-O-19" in run(read_req, base_facts).policy_ids
 
-test_pol_081_block_suspended_tool if {
+test_pol_o_19_block_suspended_tool if {
 	reg := json.patch(registry, [{"op": "replace", "path": "/srv/tools/search/state", "value": "suspended"}])
-	blocked(run_with(read_req, base_facts, {"servers": reg}), "POL-081")
+	blocked(run_with(read_req, base_facts, {"servers": reg}), "POL-O-19")
 }
 
-test_pol_082_pass_active_server if not "POL-082" in run(read_req, base_facts).policy_ids
+test_pol_d_01_pass_active_server if not "POL-D-01" in run(read_req, base_facts).policy_ids
 
-test_pol_082_block_decommissioned_server if {
+test_pol_d_01_block_decommissioned_server if {
 	reg := json.patch(registry, [{"op": "replace", "path": "/srv/state", "value": "decommissioned"}])
-	blocked(run_with(read_req, base_facts, {"servers": reg}), "POL-082")
+	blocked(run_with(read_req, base_facts, {"servers": reg}), "POL-D-01")
 }

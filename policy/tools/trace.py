@@ -6,7 +6,7 @@
 검사 조건
   - 분류가 「이미 구현」·「구현 가능(PaC)」이고 Rego가 판정하는 정책은 그 정책을 내는 판정 줄이 있다.
   - 판정 줄이 있는 정책은 METADATA custom.pol_id에도 적혀 있다(주석과 코드가 같은 정책을 가리킨다).
-  - 그 정책마다 통과 시험(test_pol_NNN_pass_*)과 차단 시험(test_pol_NNN_block_*)이 하나 이상씩 있다.
+  - 그 정책마다 통과 시험(test_pol_x_nn_pass_*)과 차단 시험(test_pol_x_nn_block_*)이 하나 이상씩 있다.
   - 규칙·시험이 가리키는 정책 ID는 시트에 있다.
   - 솔루션 기능·제외로 분류한 정책은 사유가 있다.
 opa 없이 Rego 파일을 직접 읽는다(CI의 정적 단계에서 돌리기 위해서다). 시험의 실행·통과는 opa test가 본다.
@@ -24,7 +24,7 @@ TRACE = ROOT / "TRACE.md"
 CATEGORY = {"implemented": "이미 구현", "pac": "구현 가능(PaC)", "solution": "솔루션 기능으로 커버", "excluded": "구현 불가·제외"}
 ENFORCED = {"rego": "Rego", "rego+sensor": "Rego + 센서", "solution": "솔루션"}
 # 판정 줄: findings의 lib.finding("POL-…") 또는 ops violations의 "policy_id": "POL-…".
-DECISION_LINE = re.compile(r'lib\.finding\("(POL-\d{3})"|"policy_id": "(POL-\d{3})"')
+DECISION_LINE = re.compile(r'lib\.finding\("(POL-[A-Z]-\d{2})"|"policy_id": "(POL-[A-Z]-\d{2})"')
 
 
 def load_policies():
@@ -42,7 +42,7 @@ def rule_sources():
         for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             m = re.match(r"#\s+pol_id:\s*(.+)$", line)
             if m:
-                annotated.update(re.findall(r"POL-\d{3}", m.group(1)))
+                annotated.update(re.findall(r"POL-[A-Z]-\d{2}", m.group(1)))
             for a, b in DECISION_LINE.findall(line):
                 decisions[a or b].append(f"{path.name}:{i}")
     return decisions, annotated
@@ -52,10 +52,10 @@ def test_counts():
     counts = defaultdict(lambda: {"pass": 0, "block": 0, "adv": 0})
     for path in sorted(PAC.glob("*_test.rego")):
         text = path.read_text(encoding="utf-8")
-        for m in re.finditer(r"^test_pol_(\d{3})_(pass|block)_\w+", text, re.M):
-            counts[f"POL-{m.group(1)}"][m.group(2)] += 1
-        for m in re.finditer(r"^test_adv_pol_(\d{3})_\w+", text, re.M):
-            counts[f"POL-{m.group(1)}"]["adv"] += 1
+        for m in re.finditer(r"^test_pol_([a-z])_(\d{2})_(pass|block)_\w+", text, re.M):
+            counts[f"POL-{m.group(1).upper()}-{m.group(2)}"][m.group(3)] += 1
+        for m in re.finditer(r"^test_adv_pol_([a-z])_(\d{2})_\w+", text, re.M):
+            counts[f"POL-{m.group(1).upper()}-{m.group(2)}"]["adv"] += 1
     return counts
 
 
@@ -69,7 +69,7 @@ def cell(text):
 
 def render(sheet, policies, decisions, tests):
     rows = []
-    for pol in sorted(policies):
+    for pol in policies:  # 시트 순서(도입→등록→실행→관리→폐기)
         p = policies[pol]
         t = tests.get(pol, {"pass": 0, "block": 0, "adv": 0})
         where = ", ".join(decisions.get(pol, [])) or "—"

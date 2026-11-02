@@ -12,7 +12,7 @@ def catalog() -> dict:
             raise ValueError("Invalid organization policy catalog")
         seen = set()
         for policy in policies:
-            if not isinstance(policy, dict) or not re.fullmatch(r"POL-\d{3}", str(policy.get("id", ""))):
+            if not isinstance(policy, dict) or not re.fullmatch(r"POL-[A-Z]-\d{2}", str(policy.get("id", ""))):
                 raise ValueError("Invalid policy identifier")
             if policy["id"] in seen or any(not isinstance(policy.get(key), str) for key in ("name", "stage", "content")):
                 raise ValueError("Invalid policy definition")
