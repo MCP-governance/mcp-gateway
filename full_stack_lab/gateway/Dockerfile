@@ -4,6 +4,9 @@ FROM golang:1.24.13-bookworm AS native-go
 WORKDIR /src/gitleaks
 COPY native/gitleaks/ ./
 RUN CGO_ENABLED=1 go build -trimpath -buildmode=c-shared -o /out/libmcpgw_gitleaks.so .
+# The PC setup programs: one fixed executable per platform, the employee's kit is appended at download.
+COPY native/setup/ /src/setup/
+RUN cd /src/setup && CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w -H windowsgui" -o /out/setup/windows-amd64.exe .     && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o /out/setup/linux-amd64 .
 FROM python:3.12-slim AS native-c
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev libpcre2-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -18,6 +21,7 @@ RUN python /tmp/windows-python/prepare-windows-python.py /tmp/windows-python/win
     && rm -r /tmp/windows-python
 COPY --from=secrets /usr/bin/gitleaks /usr/local/bin/gitleaks
 COPY --from=native-go /out/libmcpgw_gitleaks.so /usr/local/lib/
+COPY --from=native-go /out/setup/ /opt/mcp-setup/
 COPY --from=native-c /out/ /usr/local/lib/python3.12/site-packages/
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app

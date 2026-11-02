@@ -398,7 +398,7 @@ export const EN = {
   "협력사": "Partner",
   "설치 파일 받기": "Download installer",
   "터미널에서 실행": "Run in a terminal",
-  "받은 .cmd 파일 실행": "Run the downloaded .cmd file",
+  "받은 .exe 파일 실행": "Run the downloaded .exe file",
   "관리자 권한 확인 1회": "Administrator confirmation once",
   "관리자 암호 1회 · 연결 파일 유효 시간 5분": "Administrator password once · connection file valid for 5 minutes",
   "관리자 활성화 뒤 사용": "Use after administrator activation",

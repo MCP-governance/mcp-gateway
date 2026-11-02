@@ -56,8 +56,10 @@ Windows 트레이의 상태 창·더블클릭·바탕화면 「MCP 연결」은 
    실행 파일과 상위 경로는 root 소유이며 사용자 쓰기가 금지돼야 합니다. `--client codex=/승인경로`로 경로를 지정할 수 있습니다.
 
 ```bash
-rm -rf mcp-managed-kit && unzip -q mcp-managed-kit-linux.zip -d mcp-managed-kit && ./mcp-managed-kit/install.sh
+f="$(ls -t ~/Downloads/mcp-managed-setup-linux* | head -1)" && chmod +x "$f" && "$f"
 ```
+
+콘솔이 내려주는 `mcp-managed-setup-linux`는 키트를 `~/mcp-managed-kit`에 풀고 `install.sh`를 실행하는 실행 파일입니다(D-338).
 
 `install.sh`는 `bootstrap.py`를 sudo로 한 번 올리고, 그 안에서 필수 구성요소 설치 → 승인 하네스 배치(SHA-256 기록) →
 관리 계정 결정 → `managed-linux.py install` → 실행 연결(관리자 계정일 때) → 모델 로그인을 순서대로 합니다(D-71).
@@ -122,7 +124,7 @@ AppArmor 프로필은 계정의 정확한 이름과 enforce 행을 대조합니�
 PATH 변경이 없고 CA 경로만 사용자 환경 변수(`NODE_EXTRA_CA_CERTS`·`CODEX_CA_CERTIFICATE`)로 둔다. 아래 계정·방화벽·로그아웃 설명은
 **「고급: 격리 계정」 기준**이다.
 
-콘솔의 **PC 연결 설정 → Windows**는 `mcp-managed-setup-windows.cmd` 한 파일을 내려줍니다(D-197).
+콘솔의 **PC 연결 설정 → Windows**는 `mcp-managed-setup-windows.exe` 한 파일을 내려줍니다(D-197·D-338).
 실행 후 UAC 한 번을 승인하면 포함된 ZIP을 메모리에서 검증하고 보호된 승인 설치기를 준비한 뒤 등록까지 실행합니다.
 별도 압축 해제·IT 선행 배포·직원 계정 로그아웃은 필요하지 않습니다. 기존에 설치된 공식 Claude 또는 Codex 실행 파일은 필요합니다.
 직원 계정과 별도의 표준 관리 계정 `mcpgw-<직원>`을 준비하고 Windows `CreateProfile`로 프로필을 생성하므로 첫 로그인 없이 설치가 끝납니다.

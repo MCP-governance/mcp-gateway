@@ -484,7 +484,9 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
     else:
         user = await current_identity(authorization)
     source = Path(os.getenv("ENDPOINT_KIT_DIR", "/endpoint-kit"))
-    if packaging == "oneclick" and (platform != "windows" or not (source / "windows-oneclick.ps1.in").is_file()):
+    program = Path(os.getenv("SETUP_PROGRAM_DIR", "/opt/mcp-setup")) / ("windows-amd64.exe" if platform == "windows" else "linux-amd64")
+    if packaging == "oneclick" and (platform == "macos" or not program.is_file()
+                                    or platform == "windows" and not (source / "windows-oneclick.ps1.in").is_file()):
         raise HTTPException(503, "설치 파일이 배포되지 않았습니다.")
     names = KIT_FILES[platform]
     if any(not (source / name).is_file() for name in names):
@@ -503,7 +505,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
     ca = field_ca()
     if delivery == "command" and platform != "macos":
         raise HTTPException(400, "지원하지 않는 설치 방식입니다.")
-    if packaging == "oneclick" and (not ca or urlsplit(public).scheme != "https"):
+    if packaging == "oneclick" and platform == "windows" and (not ca or urlsplit(public).scheme != "https"):
         raise HTTPException(503, "게이트웨이 HTTPS 인증서가 필요합니다.")
     if issue_ticket:
         ticket = secrets.token_urlsafe(32)
@@ -574,11 +576,16 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
             entry.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(entry, value)
     if packaging == "oneclick":
-        from .windows_oneclick import launcher
-        return Response(launcher(output.getvalue(), (source / "windows-oneclick.ps1.in").read_text(encoding="utf-8")),
-                        media_type="application/octet-stream",
-                        headers={"Content-Disposition": 'attachment; filename="mcp-managed-setup-windows.cmd"',
-                                 "Cache-Control": "no-store"})
+        # One executable to run: the fixed setup program with this kit appended after it.
+        if platform == "windows":
+            from .windows_oneclick import launcher
+            body = launcher(output.getvalue(), (source / "windows-oneclick.ps1.in").read_text(encoding="utf-8"), program.read_bytes())
+            filename = "mcp-managed-setup-windows.exe"
+        else:
+            body = program.read_bytes() + b"\n:MCPGW_ARCHIVE\n" + base64.b64encode(output.getvalue()) + b"\n"
+            filename = "mcp-managed-setup-linux"
+        return Response(body, media_type="application/octet-stream",
+                        headers={"Content-Disposition": f'attachment; filename="{filename}"', "Cache-Control": "no-store"})
     return Response(output.getvalue(), media_type="application/zip",
                     headers={"Content-Disposition": f'attachment; filename="mcp-managed-kit-{platform}.zip"',
                              "Cache-Control": "no-store",

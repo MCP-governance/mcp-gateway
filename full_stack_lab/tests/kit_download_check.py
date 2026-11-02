@@ -1,6 +1,7 @@
 """Offline production-route checks. DB/auth/response doubles are not appliance evidence."""
 import ast
 import asyncio
+import base64
 import hashlib
 import io
 import json
@@ -71,7 +72,10 @@ class KitDownloadCheck(unittest.IsolatedAsyncioTestCase):
         folder = Path(self.temp.name)
         for name in ('install.sh', 'install.cmd', 'windows-oneclick.ps1.in', 'python.zip', 'windows-python.json'):
             (folder / name).write_text('offline fixture', encoding='utf-8')
-        self.env = patch.dict(os.environ, {'ENDPOINT_KIT_DIR': str(folder), 'WINDOWS_PYTHON_DIR': str(folder),
+        for name in ('windows-amd64.exe', 'linux-amd64'):
+            (folder / name).write_bytes(b'program fixture:' + name.encode())
+        self.folder = folder
+        self.env = patch.dict(os.environ, {'ENDPOINT_KIT_DIR': str(folder), 'WINDOWS_PYTHON_DIR': str(folder), 'SETUP_PROGRAM_DIR': str(folder),
                                           'IDP_ISSUER': 'https://gateway.invalid', 'MCP_FIELD_MODE': '0'})
         self.env.start()
         self.addCleanup(self.env.stop)
@@ -88,7 +92,7 @@ class KitDownloadCheck(unittest.IsolatedAsyncioTestCase):
         commands = ModuleType('kit_test.kit_commands')
         exec(compile((APP / 'kit_commands.py').read_text(encoding='utf-8'), str(APP / 'kit_commands.py'), 'exec'), commands.__dict__)
         windows = ModuleType('kit_test.windows_oneclick')
-        windows.launcher = lambda archive, template: b'cmd-fixture:' + archive
+        windows.launcher = lambda archive, template, program: program + b'|' + archive
         self.modules = patch.dict(sys.modules, {'kit_test.endpoint_plane': endpoint,
                                                'kit_test.kit_commands': commands, 'kit_test.windows_oneclick': windows})
         self.modules.start()
@@ -177,12 +181,34 @@ class KitDownloadCheck(unittest.IsolatedAsyncioTestCase):
         self.enrollment.assert_not_awaited()
 
     async def test_windows_oneclick_and_zip_keep_filenames(self):
-        for packaging, filename in (('oneclick', 'mcp-managed-setup-windows.cmd'), ('zip', 'mcp-managed-kit-windows.zip')):
+        for packaging, filename in (('oneclick', 'mcp-managed-setup-windows.exe'), ('zip', 'mcp-managed-kit-windows.zip')):
             self.enrollment.reset_mock()
             ticket = await self.issue(platform='windows', packaging=packaging, isolated=True)
             result = await self.download(Request(ticket), platform='windows', packaging=packaging, isolated=True)
             self.assertIn(filename, result.headers['Content-Disposition'])
             self.assertEqual(result.headers['Cache-Control'], 'no-store')
+
+    async def test_oneclick_is_the_setup_program_with_the_kit_appended(self):
+        ticket = await self.issue(platform='windows', packaging='oneclick')
+        result = await self.download(Request(ticket), platform='windows', packaging='oneclick')
+        self.assertTrue(result.body.startswith(b'program fixture:windows-amd64.exe|PK'))
+        ticket = await self.issue(packaging='oneclick')
+        result = await self.download(Request(ticket), packaging='oneclick')
+        self.assertIn('filename="mcp-managed-setup-linux"', result.headers['Content-Disposition'])
+        program, archive = result.body.split(b'\n:MCPGW_ARCHIVE\n')
+        self.assertEqual(program, b'program fixture:linux-amd64')
+        with zipfile.ZipFile(io.BytesIO(base64.b64decode(archive))) as kit:
+            self.assertEqual(kit.getinfo('install.sh').external_attr >> 16, 0o755)
+            self.assertIn('enrollment.json', kit.namelist())
+        # Without the built program there is no executable to hand out, not a fallback script.
+        (self.folder / 'linux-amd64').unlink()
+        with self.assertRaises(HTTPException) as caught:
+            await self.issue(packaging='oneclick')
+        self.assertEqual(caught.exception.status_code, 503)
+
+    def test_setup_program_never_holds_the_payload_line(self):
+        # The Windows loader splits the download on the first payload marker line; the program in front of it must not have one.
+        self.assertNotIn('MCPGW_PAYLOAD', (APP.parent / 'native/setup/setup_windows.go').read_text(encoding='utf-8'))
 
     async def test_macos_command_issues_a_separate_scoped_header_ticket(self):
         ticket = await self.issue(platform='macos', delivery='command', isolated=True)

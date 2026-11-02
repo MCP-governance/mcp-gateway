@@ -58,15 +58,15 @@ test("내 PC 연결: 운영체제 버튼은 선택만 하고 받기는 별도 �
 test("내 PC 연결: 선택한 운영체제의 절차만 보인다", () => {
   const context = sandbox("Linux x86_64");
   const linux = context.kit("linux");
-  // 다시 받은 파일은 「(1)」이 붙으므로 가장 최근 것을 푼다. 10-28 PJ1: 이전 키트 폴더가 있으면 unzip이 파일마다 덮어쓰기를 물어 설치가 멈췄다.
-  assert.ok(linux.includes("rm -rf ~/mcp-managed-kit && unzip -q \"$(ls -t ~/Downloads/mcp-managed-kit-linux*.zip | head -1)\" -d ~/mcp-managed-kit && ~/mcp-managed-kit/install.sh"));
+  // 다시 받은 파일은 「(1)」이 붙으므로 가장 최근 것을 실행한다. 받은 파일에는 실행 권한이 없다.
+  assert.ok(linux.includes('f="$(ls -t ~/Downloads/mcp-managed-setup-linux* | head -1)" && chmod +x "$f" && "$f"'));
   assert.ok(linux.includes("sudo ~/mcp-managed-kit/install.sh --remove"));
   assert.ok(!linux.includes("mint-"));
-  assert.ok(!linux.includes("mcp-connect-macos") && !linux.includes(".cmd"));
+  assert.ok(!linux.includes("mcp-connect-macos") && !linux.includes(".exe") && !linux.includes("install.sh</code><span"));
   const mac = context.kit("macos");
   assert.ok(mac.includes("mcp-connect-macos.command") && !mac.includes("sudo"));
   const windows = context.kit("windows");
-  assert.ok(windows.includes(".cmd") && !windows.includes("sudo") && !windows.includes("mcp-connect-macos"));
+  assert.ok(windows.includes(".exe") && !windows.includes(".cmd") && !windows.includes("sudo") && !windows.includes("mcp-connect-macos"));
 });
 
 test("내 PC 연결: 기본 선택은 Windows(주 대상)", () => {
@@ -90,9 +90,10 @@ test("내 PC 연결: 내려받는 파일 이름은 서버가 주는 값을 쓴�
   assert.match(download, /form\.submit\(\)/);
   assert.doesNotMatch(download, /\.blob\(|\.download\s*=/);
   const service = readFileSync(new URL("../gateway/app/agent_service.py", import.meta.url), "utf8");
-  for (const filename of ["mcp-managed-setup-windows.cmd", "mcp-connect-macos.command", "mcp-managed-kit-{platform}.zip"]) {
+  for (const filename of ["mcp-connect-macos.command", "mcp-managed-kit-{platform}.zip"]) {
     assert.ok(service.includes(`attachment; filename="${filename}"`), filename);
   }
+  for (const filename of ["mcp-managed-setup-windows.exe", "mcp-managed-setup-linux"]) assert.ok(service.includes(`filename = "${filename}"`), filename);
 });
 
 test("삭제된 사용자: 목록 탭과 복구 동작이 있다", () => {

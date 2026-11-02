@@ -1,9 +1,9 @@
-"""Package the existing Windows ZIP with a single, explicitly elevated entry point."""
+"""Package the existing Windows ZIP behind the fixed setup program as one explicitly elevated executable."""
 import base64
 
 
-def launcher(archive: bytes, bootstrap: str) -> bytes:
-    # CMD stays below its command length limit; the payload is read as data, never as batch commands.
+def launcher(archive: bytes, bootstrap: str, program: bytes) -> bytes:
+    # The command stays far below the Windows command line limit; the payload is read as data, never as a command.
     import json
     payload = base64.b64encode(json.dumps({
         "archive": base64.b64encode(archive).decode("ascii"), "bootstrap": bootstrap,
@@ -36,9 +36,8 @@ def launcher(archive: bytes, bootstrap: str) -> bytes:
         f"$seed=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{encoded_seed}')).Replace('@CTX@',$ctx);"
         "$encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($seed));"
         "$exe=Join-Path ([Environment]::GetFolderPath('Windows')) 'System32\\WindowsPowerShell\\v1.0\\powershell.exe';"
-        # No wait: the console that opened the .cmd (Windows Terminal on Windows 11) closes once UAC is approved.
+        # No wait: the setup program ends once UAC is approved; the elevated installer reports on its own.
         "try {Start-Process -FilePath $exe -ArgumentList ('-NoProfile -STA -NonInteractive -WindowStyle Hidden -EncodedCommand '+$encoded) -Verb RunAs -WindowStyle Hidden | Out-Null; exit 0} catch {exit 1}"
     )
-    return ("@echo off\r\nsetlocal\r\nset \"MCPGW_SETUP_FILE=%~f0\"\r\n"
-            '"%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -Command "'
-            + command + '"\r\nexit /b %errorlevel%\r\n:MCPGW_PAYLOAD\r\n' + payload + '\r\n').encode("utf-8")
+    # The setup program runs the line after its own code; the loader above reads the rest of this same file.
+    return program + ("\r\n:MCPGW_COMMAND " + command + "\r\n:MCPGW_PAYLOAD\r\n" + payload + "\r\n").encode("utf-8")
