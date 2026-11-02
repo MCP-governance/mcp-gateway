@@ -353,7 +353,7 @@ pac14 if {
     r.approval == false
 }
 
-# PAC-15: the Gateway must first reserve state atomically.
+# The Gateway must first reserve state atomically.
 # REVIEW B1: Rego orders values of different types (null < boolean < number < string),
 # so `null <= 10`, `true <= 10` and `5 <= "1"` were all true and a missing or mistyped
 # counter or limit passed. A count is a non-negative number and so is its limit.

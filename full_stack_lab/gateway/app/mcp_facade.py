@@ -1,6 +1,6 @@
 """The Gateway as an MCP server: what employee harnesses connect to instead of the real servers.
 
-Two shapes of the same policy path (D-30):
+Two shapes of the same policy path:
 - `/mcp/<server>/` - one registered server, tools under their own names. The managed
   config of Claude Code, Codex, Gemini CLI and OpenCode lists these, so a harness sees
   `filesystem`, `git`, ... exactly as if it had connected to them directly.
@@ -12,7 +12,7 @@ on HTTP/SSE, the spawn-time principal on stdio) and never from tool arguments.
 
 Only initialize/ping/tools/list/tools/call are handled; resources, prompts,
 sampling and the rest are not mediated, so the server does not register them and
-the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
+the SDK answers "method not found" (MCP-METHOD-001).
 """
 from __future__ import annotations
 
@@ -141,7 +141,7 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         if not registry.permits(registry.allowed_principals(row["server_id"]), principal):
             continue
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
-            continue  # a tool nobody scoped is neither listed here nor callable (D-91)
+            continue  # a tool nobody scoped is neither listed here nor callable
         grouped.setdefault(row["server_id"], []).append(row)
     states = {}
     for server_id, server_rows in grouped.items():

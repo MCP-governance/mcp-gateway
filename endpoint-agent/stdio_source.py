@@ -94,7 +94,7 @@ def environment(manifest):
             raise OSError('Windows 시스템 경로 확인 실패')
         env['SystemRoot'] = buffer.value
     # 관리자가 넣을 수 없는 고정 시스템 경로만(PATH는 아래 거부 목록). 없으면 os.environ['PATH']를 읽는
-    # 의존성이 바로 죽는다(MarkItDown의 pydub, PJ1 10-28). 직원 PATH를 물려받지 않는다.
+    # 의존성이 바로 죽는다(MarkItDown의 pydub). 직원 PATH를 물려받지 않는다.
     env['PATH'] = (os.pathsep.join([str(Path(env['SystemRoot']) / 'System32'), env['SystemRoot']]) if os.name == 'nt'
                    else '/usr/local/bin:/usr/bin:/bin')
     denied = re.compile(r'^(LD_|DYLD_|PYTHON|NODE_OPTIONS$|NODE_PATH$|SYSTEMROOT$|WINDIR$|COMSPEC$|PATHEXT$|BASH_ENV$|ENV$|PATH$|HOME$)')
@@ -133,8 +133,8 @@ def prepare(config, manifest, request, check=None, seconds=1800):
                 raise ValueError('검사한 Linux wheel에는 glibc 2.28 이상이 필요합니다')
     base = Path(config['source_root'])
     digest = hashlib.sha256(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-    # 64자 이름은 wheel의 깊은 파일을 Windows 경로 한도(260자) 너머로 밀었다: 설치(짧은 prepare-* 폴더)는 되고
-    # 이름을 바꾼 뒤 검증·실행이 실패했다(pj3 onnxruntime 263자). 설치 폴더와 같은 16자로 둔다. 내용은 .ready.json이 고정한다.
+    # 64자 이름은 wheel의 깊은 파일을 Windows 경로 한도(260자) 너머로 민다: 설치(짧은 prepare-* 폴더)는 되지만
+    # 긴 이름으로 바꾸면 검증·실행이 실패한다(onnxruntime 263자). 설치 폴더와 같은 16자로 둔다. 내용은 .ready.json이 고정한다.
     folder = base / digest[:16]
     end = time.monotonic() + seconds
     def current():
@@ -147,7 +147,7 @@ def prepare(config, manifest, request, check=None, seconds=1800):
     try:
         current()
         ready = folder / '.ready.json'
-        # 보호·해시 전체 검증은 Windows에서 파일 8천 개에 1분 가까이 걸려 호출 상한을 다 썼다(pj3). 실행기 프로세스가
+        # 보호·해시 전체 검증은 Windows에서 파일 8천 개에 1분 가까이 걸려 호출 상한을 넘긴다. 실행기 프로세스가
         # 검증을 통과한 폴더의 지문(경로·크기·수정 시각·파일 번호)을 기억하고, 지문이 같으면 다시 하지 않는다.
         # 바뀐 파일은 지문을 바꾸므로 전체 검증으로 돌아간다. 재시작하면 사전 준비가 다시 검증한다.
         verified = config.setdefault('verified_sources', {})
@@ -268,7 +268,7 @@ def command(folder, source, manifest, config):
             parent = parent.parent
         paths.append(parent)
         target, module = '.'.join(package), True
-    # -S skips site, so the locked wheels' .pth files (pywin32's pywintypes path, pj3) are read here explicitly.
+    # -S skips site, so the locked wheels' .pth files (pywin32's pywintypes path) are read here explicitly.
     script = "import sys,runpy,json,site;sys.path[:0]=json.loads(sys.argv[1]);site.addsitedir(sys.path[0]);p=sys.argv[3];m=sys.argv[2]=='module';sys.argv=sys.argv[3:];(runpy.run_module if m else runpy.run_path)(p,run_name='__main__')"
     return [sys.executable, '-I', '-S', '-B', '-c', script, json.dumps([str(p) for p in paths]),
             'module' if module else 'path', target, *args]

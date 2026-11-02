@@ -1,4 +1,4 @@
-"""Risk tier of an intake request from what the applicant stated (DEV-71).
+"""Risk tier of an intake request from what the applicant stated.
 
 Pure and deterministic: the same input always yields the same tier. The table is a policy
 choice, not a value any law prescribes, and it replaces no impact assessment: a person performs
@@ -43,7 +43,7 @@ FLOORS = (
     ("자율 실행 권한", lambda i: i["permission"] == "x" and i["autonomy"] == "autonomous", "high"),
 )
 
-# D-189. High and very high need two different administrators; a written reason never substitutes for one.
+# High and very high need two different administrators; a written reason never substitutes for one.
 # Very high also needs the written reason ("required"). Critical finding acceptance is separate (review.accept_risk).
 APPROVAL = {
     "low": {"approvers": 1, "reason": "none"},

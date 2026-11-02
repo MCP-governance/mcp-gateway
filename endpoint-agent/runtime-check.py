@@ -7,8 +7,7 @@ from pathlib import Path
 
 FILES = ("agent.py", "install.py", "managed-windows.py", "os-observer-windows.py", "offline_buffer.py", "windows_status.py", "kit_screen.py")
 # Linux-only branches are not imported on Windows; application modules have startup side effects. tomli·toml are the
-# fallbacks for Pythons before 3.11 (D-232); the embedded 3.13 has tomllib, and requiring them failed every Windows
-# install at 「실행 파일 준비」 (pj3 10-25).
+# fallbacks for Pythons before 3.11; the embedded 3.13 has tomllib, so the Windows install must not require them.
 NOT_IMPORTED = {"fcntl", "pwd", "grp", "termios", "tty", "agent", "windows_status", "tomli", "toml"}
 
 

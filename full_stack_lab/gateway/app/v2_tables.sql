@@ -1,5 +1,5 @@
--- v2 schema additions. Idempotent; runs at every Gateway start after agent_tables.sql
--- and lifecycle_tables.sql. See docs/ai/DATA_MODEL.md.
+-- Schema additions. Idempotent; runs at every Gateway start after agent_tables.sql
+-- and lifecycle_tables.sql.
 
 CREATE TABLE IF NOT EXISTS console_sessions (
   jti uuid PRIMARY KEY,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS console_sessions (
 );
 CREATE INDEX IF NOT EXISTS console_sessions_expiry_idx ON console_sessions(expires_at);
 
--- Registry rows now come from registry/catalog.toml (registry.sync()).
+-- Registry rows come from registry/catalog.toml (registry.sync()).
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS package text;
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS version text;
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS deployment text NOT NULL DEFAULT 'internal';
@@ -24,7 +24,7 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS description text;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS input_schema jsonb;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS annotations jsonb;
 
--- Audit chain v5 columns.
+-- Audit chain columns.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS server_id text;
 CREATE INDEX IF NOT EXISTS decisions_tool_sunset_idx
   ON decisions(server_id, tool_name, created_at DESC) WHERE upstream_executed;
@@ -35,7 +35,7 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS summary text;
 CREATE INDEX IF NOT EXISTS decisions_server_time_idx ON decisions(server_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS decisions_time_idx ON decisions(created_at DESC);
 
--- Paper: the unit of analysis is the usage relationship (organisation, purpose,
+-- The unit of analysis is the usage relationship (organisation, purpose,
 -- provider, allowed resources), not the server. One server can carry several.
 CREATE TABLE IF NOT EXISTS usage_relationships (
   id text PRIMARY KEY,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS oauth_refresh_tokens (
 );
 CREATE INDEX IF NOT EXISTS oauth_refresh_family_idx ON oauth_refresh_tokens(family_id);
 
--- v2 target and evidence kinds (the v1 constraints enumerated the old set).
+-- Target and evidence kinds. Dropping and re-adding each CHECK applies the full list to existing databases.
 ALTER TABLE revocation_targets DROP CONSTRAINT IF EXISTS revocation_targets_kind_check;
 ALTER TABLE revocation_targets ADD CONSTRAINT revocation_targets_kind_check CHECK (kind IN (
   'gateway-route', 'gateway-access', 'client-token', 'refresh-token', 'dynamic-registration', 'session',
@@ -94,11 +94,11 @@ ALTER TABLE termination_evidence ADD CONSTRAINT termination_evidence_kind_check 
   'revocation-response', 'introspection', 'provider-attestation', 'gateway-denial', 'liveness-probe',
   'endpoint-inventory', 'credential-check', 'resource-rejection', 'session-termination', 'operator-statement'));
 
--- Calls that are in flight right now. The ceilings used to be counted from the audit
--- table, which only holds calls that already finished, so ten calls arriving together
--- each saw nine of them as not yet existing and all ten passed. A row is written here
--- before the policy sees the call, under a per-principal lock, so the number the policy
--- reads already includes this call and every other one still running.
+-- Calls that are in flight right now. Ceilings cannot be counted from the audit table alone,
+-- which only holds calls that already finished: calls arriving together would each see the
+-- others as not yet existing and all pass. A row is written here before the policy sees the
+-- call, under a per-principal lock, so the number the policy reads already includes this call
+-- and every other one still running.
 CREATE TABLE IF NOT EXISTS call_reservations (
   request_id   uuid PRIMARY KEY,
   user_token   text NOT NULL,
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS endpoint_os_events (
 );
 CREATE INDEX IF NOT EXISTS endpoint_os_events_received_idx ON endpoint_os_events(received_at DESC);
 
--- MCP tool calls the harness itself reported through the managed PostToolUse hook (D-301): every MCP tool call
+-- MCP tool calls the harness itself reported through the managed PostToolUse hook: every MCP tool call
 -- leaves a row whatever its path (Gateway, vendor connector, local). Sizes and hashes only, never content. Append-only.
 CREATE TABLE IF NOT EXISTS endpoint_tool_events (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS endpoint_mcp_requests (
 CREATE INDEX IF NOT EXISTS endpoint_mcp_requests_open_idx ON endpoint_mcp_requests(status, created_at DESC);
 
 -- Endpoint evidence: where a stored observation came from and whether the stored form
--- is the form the agent said it sent. NULL origin/provenance = written before this.
+-- is the form the agent said it sent. NULL origin/provenance = rows written before these columns existed.
 ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));
 ALTER TABLE endpoint_inventory ADD COLUMN IF NOT EXISTS provenance jsonb;
 ALTER TABLE endpoint_listeners ADD COLUMN IF NOT EXISTS origin text CHECK (origin IN ('automatic','manual','os_event'));
@@ -209,9 +209,8 @@ CREATE TABLE IF NOT EXISTS endpoint_network_samples (
 );
 CREATE INDEX IF NOT EXISTS endpoint_network_samples_time_idx ON endpoint_network_samples(measured_at DESC);
 
--- An approved call that did not run is not a rejection (docs/architecture/proposals/
--- runtime-boundaries.md): NOT_EXECUTED = stopped before dispatch, UNCONFIRMED =
--- dispatched but the result is unknown. Databases created before this get the wider CHECK.
+-- An approved call that did not run is not a rejection: NOT_EXECUTED = stopped before dispatch,
+-- UNCONFIRMED = dispatched but the result is unknown. Existing databases get the wider CHECK from this block.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'approvals_status_check'
                   AND pg_get_constraintdef(oid) LIKE '%UNCONFIRMED%') THEN
@@ -225,13 +224,13 @@ END $$;
 -- audit fingerprint: it says how long the gateway took, not what it decided.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS timings jsonb;
 
--- Intake provenance and supply-chain freshness (D-90). The intake worker records where the
+-- Intake provenance and supply-chain freshness. The intake worker records where the
 -- code came from and what it hashed to; the vulnerability database timestamp makes a stale
 -- scan visible instead of silently green.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS provenance jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE supply_chain_reports ADD COLUMN IF NOT EXISTS vuln_db_updated_at timestamptz;
 
--- A critical finding blocks until an operator accepts it for a limited time (D-90). The row is
+-- A critical finding blocks until an operator accepts it for a limited time. The row is
 -- the record; an acceptance past expires_at no longer counts and the request returns to hold.
 CREATE TABLE IF NOT EXISTS accepted_risks (
   id bigserial PRIMARY KEY,
@@ -248,11 +247,11 @@ CREATE TABLE IF NOT EXISTS accepted_risks (
 );
 CREATE INDEX IF NOT EXISTS accepted_risks_intake_idx ON accepted_risks(intake_id, expires_at DESC);
 
--- Human-approved scope of every tool a Console registration serves (D-91): purpose, asset,
+-- Human-approved scope of every tool a Console registration serves: purpose, asset,
 -- action and external destinations. A tool without one is not enabled.
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS scope_review jsonb;
 
--- Who approved what, for whom and why (D-92). Append-only like decisions: a correction is a new
+-- Who approved what, for whom and why. Append-only like decisions: a correction is a new
 -- event, never an edit.
 CREATE TABLE IF NOT EXISTS approval_events (
   id bigserial PRIMARY KEY,
@@ -334,7 +333,7 @@ CREATE TABLE IF NOT EXISTS upstream_pool_events (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Approved source MCP servers the solution builds and runs itself (DEV-38, D-114). Approval stays on the
+-- Approved source MCP servers the solution builds and runs itself. Approval stays on the
 -- intake; a runtime is one build-and-run of its verified commit with a fixed recipe. Only the runtime
 -- worker (the one process with the container engine) moves these rows; attempts is its fencing token.
 CREATE TABLE IF NOT EXISTS mcp_runtimes (
@@ -411,7 +410,7 @@ ALTER TABLE approvals ADD COLUMN IF NOT EXISTS explanation jsonb;
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS revoked_at timestamptz;
 ALTER TABLE approvals ADD COLUMN IF NOT EXISTS revoked_by text;
 
--- DEV-71: what the applicant stated about data, transfer, permission and users. The risk tier is
+-- What the applicant stated about data, transfer, permission and users. The risk tier is
 -- computed from it each time (risk_tier.assess), never stored as a value that could drift from it.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS risk_input jsonb NOT NULL DEFAULT '{}';
 
@@ -443,7 +442,7 @@ CREATE TRIGGER mcp_session_events_append_only
   BEFORE UPDATE OR DELETE ON mcp_session_events
   FOR EACH ROW EXECUTE FUNCTION reject_record_mutation();
 
--- D-142 (P-FLOW-001): what an important read released, as salted hashes of its normalised text and
+-- P-FLOW-001: what an important read released, as salted hashes of its normalised text and
 -- never the text, for the flow window. Not the ledger and not evidence: a row can only be added, and
 -- is deleted once expired. A read without a row stays a flow source for the whole window.
 CREATE TABLE IF NOT EXISTS flow_fingerprints (
@@ -471,7 +470,7 @@ ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS fix_available_at timestamptz
 ALTER TABLE incident_cases ADD COLUMN IF NOT EXISTS handled_at timestamptz;
 ALTER TABLE incident_timer_heartbeat ADD COLUMN IF NOT EXISTS last_failed_at timestamptz;
 
--- D-149: NULL approval means the legacy contract had no output schema, never TOFU.
+-- NULL approval means the legacy contract had no output schema, never TOFU.
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS output_schema jsonb;
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS observed_output_schema_hash text
   DEFAULT '74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b';
@@ -479,7 +478,7 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approved_output_schema_hash text;
 
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS requested_tools jsonb NOT NULL DEFAULT '[]';
 
--- D-235: credentials an employee connects for a service that must see that employee (GitHub). Ciphertext only
+-- Credentials an employee connects for a service that must see that employee (GitHub). Ciphertext only
 -- (AES-GCM bound to principal and endpoint); the key is the device secret USER_CREDENTIAL_KEY, not stored here.
 CREATE TABLE IF NOT EXISTS user_upstream_credentials (
   principal    text NOT NULL,

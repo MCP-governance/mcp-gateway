@@ -1,7 +1,7 @@
 """Pure contract helpers: canonical hashing, the policy-result schema, the audit chain's
 column sets. Nothing here reads the environment, opens a connection or starts tracing,
-so replay, registry and offline tools can import it without importing the Gateway
-(ROADMAP 6: "순수 계약 모듈"). core re-exports the names for older callers.
+so replay, registry and offline tools can import it without importing the Gateway.
+core re-exports the names for older callers.
 """
 from __future__ import annotations
 
@@ -72,10 +72,10 @@ AUDIT_COLUMN_SETS[4] = (*AUDIT_COLUMN_SETS[3], "upstream_attempted")
 AUDIT_COLUMN_SETS[5] = (*AUDIT_COLUMN_SETS[4], "server_id", "resource_id", "destinations", "client", "summary")
 # v6: the PDF-integration fields - the policy input (for replay against a candidate
 # policy), the investigation risk score, Presidio entity types and chain flags.
-# origin/main (cc086e5) added these on v1 as *its* "v5"; v2's v5 means other columns,
-# so the merged line records them as v6. A database written by v1's v5 is not migrated
-# (v2 needs `./console.sh reset`): verifying its rows against v2's v5 would fail, and
-# accepting either definition would let a row tampered in a column only one covers pass.
+# A chain version number is not reused for another column set. A database written under
+# an older definition of the same number is not migrated (it needs `./console.sh reset`):
+# verifying its rows against this definition would fail, and accepting either definition
+# would let a row tampered in a column only one covers pass.
 AUDIT_COLUMN_SETS[6] = (*AUDIT_COLUMN_SETS[5], "policy_input", "risk_score", "privacy_types", "sequence_flags")
 AUDIT_COLUMN_SETS[7] = (*AUDIT_COLUMN_SETS[6], "created_at")
 AUDIT_COLUMN_SETS[8] = (*AUDIT_COLUMN_SETS[7], "outcome")
@@ -110,7 +110,7 @@ def audit_fingerprint(record: dict, version: int = CHAIN_VERSION) -> str:
 def walk_chain(rows, head: dict | None, seal: dict | None = None) -> dict:
     """Name the first row that does not follow from the previous one.
 
-    A retention seal (D-141, signed outside the database) is the only thing that lets the
+    A retention seal (signed outside the database) is the only thing that lets the
     walk start after GENESIS, and a row at or below it is a resurrected disposal.
     """
     previous = seal["last_sha256"] if seal else GENESIS

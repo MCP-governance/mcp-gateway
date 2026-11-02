@@ -1,6 +1,6 @@
-"""하네스가 기본으로 붙이는 커넥터와 기능(D-51).
+"""하네스가 기본으로 붙이는 커넥터와 기능.
 
-직원 PC의 보고는 인벤토리이며 집행 증거가 아니다(D-53). 벤더 출처와 무관하게 미승인 항목은 거부 정책의 대상이다.
+직원 PC의 보고는 인벤토리이며 집행 증거가 아니다. 벤더 출처와 무관하게 미승인 항목은 거부 정책의 대상이다.
 승인은 Gateway 밖 경로의 예외 승인이고, 관리형 Gateway 전용 프로필을 넓히지 않는다. 정식 경로는 도입 신청이다.
 사용자 설정은 보조 조치이며, 보호된 관리형 설정·단말 실행 통제·망·상위 자격 통제를 별도로 검증해야 한다.
 """
@@ -21,7 +21,7 @@ router = APIRouter()
 REVIEW_DAYS = int(os.getenv("CONNECTOR_REVIEW_DAYS", "14"))
 BLOCKING = {"pending", "denied", "expired"}
 # 하네스가 기본으로 가진 기능과 하네스 계정이 붙이는 커넥터(claude.ai 커넥터·ChatGPT 앱)는 기본 승인이고 관리자가 막는다.
-# 플러그인과 직원이 직접 붙인 서버는 지금처럼 검토를 받는다(D-298).
+# 플러그인과 직원이 직접 붙인 서버는 검토를 받는다.
 DEFAULT_KINDS = {"feature", "connector", "app"}
 # 보고가 없어도 콘솔에서 막을 수 있는 항목. 키는 key_of와 같은 형식이다.
 FEATURES = (("claude", "WebFetch", "웹 가져오기"), ("claude", "WebSearch", "웹 검색"), ("claude", "chrome", "브라우저 연동"),
@@ -290,7 +290,7 @@ async def decide_connector(request: Decision, authorization: str | None = Header
                    ON CONFLICT (item_key) DO UPDATE SET decision=EXCLUDED.decision, note=EXCLUDED.note,
                      decided_by=EXCLUDED.decided_by, decided_at=now()""",
                 (request.key, request.decision, request.note.strip(), user["principal"]))
-        # Only a change to what the endpoints must hold opens the grace for heartbeats rendered just before it (D-298).
+        # Only a change to what the endpoints must hold opens the grace for earlier heartbeats.
         if ((before or {}).get("decision") == "denied") != (request.decision == "denied"):
             await connection.execute("UPDATE endpoint_settings SET controls_changed_at=now() WHERE id=1")
     if request.decision == "reset":

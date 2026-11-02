@@ -72,12 +72,12 @@ try {
     }
     $approvalPath = Join-Path $paths.state 'approved-windows-kit.json'
     # An approval this one-click file wrote may be replaced by a newer one-click file the same way (UAC again): that is
-    # the kit's update path (D-239). An approval IT deployed has no marker and still needs IT.
+    # the kit's update path. An approval IT deployed has no marker and still needs IT.
     $oneclickMark = Join-Path $paths.state 'approved-by-oneclick'
     $replace = $true
     if (Test-Path -LiteralPath $approvalPath) {
         # A kit this one-click path installed is replaced whole: checking it against this version's file list first
-        # rejected every update that added a file (pj3 10-31: "ask IT" after each new kit).
+        # would reject every update that added a file.
         Assert-EndpointProtectedPath $approvalPath
         $approved = if (Test-Path -LiteralPath $oneclickMark) {
             Assert-EndpointProtectedPath $oneclickMark
@@ -118,9 +118,9 @@ try {
     $enrollment = Join-Path $private 'enrollment.json'
     [IO.File]::WriteAllBytes($enrollment, $files['enrollment.json'])
     $requestPath = Join-Path $private 'request.json'
-    # The signed-in employee's own account (D-239); a kit downloaded with the advanced option asks for the companion.
+    # The signed-in employee's own account; a kit downloaded with the advanced option asks for the companion.
     $isolated = ([Text.Encoding]::UTF8.GetString($files['enrollment.json']) | ConvertFrom-Json).isolated -eq $true
-    # The kit carries no enrollment token (D-290): without this sign-in every one-click install stopped in the worker.
+    # The kit carries no enrollment token, so without this sign-in every one-click install would stop in the worker.
     $token = Read-EndpointKitLogin $manifest.gateway_url ([Text.Encoding]::UTF8.GetString($files['root.crt'])) ([Text.Encoding]::UTF8.GetString($files['root.sha256']).Trim())
     if (-not $token) { exit 1 }
     $request = @{ action='install'; mode='managed'; user=$Context.user; requester_sid=$Context.sid;

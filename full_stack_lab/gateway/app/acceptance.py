@@ -168,7 +168,7 @@ async def tools_listed_per_role() -> str:
 
 
 async def per_server_endpoint() -> str:
-    """D-30: /mcp/<server>/ is what harness configs point at - the server's own tool
+    """/mcp/<server>/ is what harness configs point at - the server's own tool
     names, the same decisions, and no fallback for a name the registry does not know."""
     await operating("git")
     url = API + "/mcp/git/"
@@ -435,7 +435,7 @@ async def read_then_send_chain_blocked() -> str:
 
 
 async def relationship_scope_alerts() -> str:
-    """D-39: UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
+    """UR-PG-ANALYTICS allows public.products and sales.orders. A permitted read of
     another table runs but is flagged; a read inside the relationship stays a plain Allow."""
     await operating("postgres")
     outside = await call("employee", "postgres__execute_sql", {"sql": "SELECT count(*) FROM hr.employees LIMIT 1"})
@@ -452,7 +452,7 @@ async def relationship_scope_alerts() -> str:
 
 
 async def server_check_is_side_effect_free() -> str:
-    """D-40: the check negotiates a session and changes nothing it reports on."""
+    """The check negotiates a session and changes nothing it reports on."""
     # last_seen_at is not compared: the background catalog watch moves it every minute.
     state = "SELECT (SELECT status FROM mcp_servers WHERE id='git') AS status, (SELECT count(*) FROM decisions) AS decisions"
     before = await db.fetch_one(state)
@@ -471,10 +471,10 @@ async def server_check_is_side_effect_free() -> str:
 
 
 async def console_registration_expires() -> str:
-    """D-49: an approved server registered from the Console serves under /mcp/<id>/ with only
+    """An approved server registered from the Console serves under /mcp/<id>/ with only
     the tools the admin approved; a contract other than the reviewed one is refused; the
     approval ends on a date (P-APPROVAL-EXPIRY-001); deregistering takes the path away.
-    The lab's fetch server stands in under another id, so no outside network is needed."""
+    The fetch server stands in under another id, so no outside network is needed."""
     await operating("fetch")
     server_id = "acceptance-fetch"
     endpoint = os.getenv("ACCEPTANCE_FETCH_ENDPOINT", "")
@@ -558,7 +558,7 @@ async def console_registration_expires() -> str:
 
 
 async def oversized_arguments_not_sent() -> str:
-    """D-59: the arguments go to the server as they are; a size the schema never bounded
+    """The arguments go to the server as they are; a size the schema never bounded
     is refused before dispatch instead of being handed to the provider."""
     await operating("git")
     out = await call("employee", "git_log", {"repo_path": "/srv/git/" + "a" * 70_000, "max_count": 1}, API + "/mcp/git/")
@@ -748,7 +748,6 @@ async def pc_kit_downloads() -> str:
     return "내 PC 연결 키트 " + ", ".join(seen)
 
 
-# ── 10-25 기능(D-239): 간편 모드 새 PC 자동 활성화 ─────────────────────────────────────────────────
 # 실제 등록 경로(/oauth/device-enroll)·관리형 정책·heartbeat를 HTTP로 거친다. 장치는 합성 직원 한 명의 것이고 끝나면 폐기한다.
 # 그 직원은 관리형 장치가 필요한 계정이 되므로 다른 시험의 직원과 분리한다.
 
@@ -808,7 +807,6 @@ async def endpoint_auto_activation() -> str:
     return "간편 모드 새 PC 자동 활성화·토큰 발급, 격리 모드와 자동 활성화 끔은 관리자 확인 대기, 설정 원복·장치 폐기"
 
 
-# ── 10-23 기능: 원클릭 승인의 분류 낮추기(D-199), 서버 단위 동의(D-201), 승인 미리보기의 로컬 실행 값(D-206·D-207) ──
 # 승인 대상은 위 등록 시험과 같은 실제 fetch 서버(수용 스택의 TLS 경로)다. 신청·승인은 합성 계정이 하고, 끝나면 등록을 해제한다.
 # 원클릭 승인이 만드는 도구 심사는 외부 목적지가 비어 주소 인자를 모두 막는다. 그래서 fetch를 실제로 부르는 동의 시험은
 # 등록 시험과 같은 계약 검토 경로로 등록하고, 원클릭 시험은 등록 상태·원장·목록까지만 본다.
@@ -945,7 +943,7 @@ def _lowering(ctx: dict) -> dict:
 
 
 async def one_click_lowers_tool_class() -> str:
-    """D-199: 원클릭 승인은 도구 분류를 제안값 이하로만 바꾼다. 올리기·낡은 화면·비관리자는 받지 않고,
+    """원클릭 승인은 도구 분류를 제안값 이하로만 바꾼다. 올리기·낡은 화면·비관리자는 받지 않고,
     게이트웨이의 등록 범위 가드도 승인 범위와 다른 분류를 거부한다."""
     async with httpx.AsyncClient(timeout=180) as client, _fetch_intake(client, "분류") as ctx:
         suggested, sid, intake = ctx["suggested"], ctx["sid"], ctx["intake"]
@@ -1002,7 +1000,7 @@ async def one_click_lowers_tool_class() -> str:
 
 
 async def server_consent_flow() -> str:
-    """D-201: 동의가 필요하면 그 서버의 승인 도구 동의를 한꺼번에 대기시키고, 서버 단위 결정은 본인의 화면 목록에만
+    """동의가 필요하면 그 서버의 승인 도구 동의를 한꺼번에 대기시키고, 서버 단위 결정은 본인의 화면 목록에만
     적용된다. 허용·거부·철회마다 도구별 감사 사건이 남고, 호출은 그 결정을 따른다."""
     async with httpx.AsyncClient(timeout=180) as client, _consent_server(client) as sid:
         url = f"{API}/mcp/{sid}/"
@@ -1080,7 +1078,7 @@ async def server_consent_flow() -> str:
 
 
 async def approval_preview_local_run_values() -> str:
-    """D-206·D-207: 승인 미리보기가 공식 저장소 경로에 맞는 PC 격리 실행 기본값(루트 전용 이미지는 상태 문구)을 돌려준다.
+    """승인 미리보기가 공식 저장소 경로에 맞는 PC 격리 실행 기본값(루트 전용 이미지는 상태 문구)을 돌려준다.
     합성 신청 행(보류 상태, 검증 전)이라 실행·등록은 하지 않고 응답 필드만 확인한다."""
     cases = [
         ("src/filesystem", OFFICIAL_SERVERS, {"image": "mcp/filesystem", "command": ["/workspace/mcp-docs"],
@@ -1138,7 +1136,7 @@ async def approval_preview_local_run_values() -> str:
 
 
 async def one_click_audience() -> str:
-    """D-234: 원클릭 승인의 기본 사용 대상은 전체 직원('*')이고, 변경 API가 신청자만·지정 직원으로 좁히고 다시 넓힌다.
+    """원클릭 승인의 기본 사용 대상은 전체 직원('*')이고, 변경 API가 신청자만·지정 직원으로 좁히고 다시 넓힌다.
     좁힌 뒤 목록과 호출은 그 결정을 따르고, 변경마다 감사 사건이 남는다. 지정 직원이 없거나 없는 아이디는 등록 전에 거부한다."""
     async with httpx.AsyncClient(timeout=180) as client, _fetch_intake(client, "대상") as ctx:
         sid, intake, admin = ctx["sid"], ctx["intake"], _bearer("admin")
@@ -1238,7 +1236,7 @@ async def _github_registration():
 
 
 async def my_connections_and_missing_credential() -> str:
-    """D-235: 「내 연결」은 직원·관리자 모두 부르고, 직원별 연결이 필요한 서버만 보여 준다. 연결이 없는 GitHub 호출은
+    """「내 연결」은 직원·관리자 모두 부르고, 직원별 연결이 필요한 서버만 보여 준다. 연결이 없는 GitHub 호출은
     상위 서비스를 부르기 전에 MCP-CREDENTIAL-001로 막고 「내 연결」을 안내한다. 실제 GitHub 토큰은 쓰지 않는다."""
     employee = _bearer("employee")
     async with httpx.AsyncClient(timeout=90) as client:
@@ -1303,11 +1301,11 @@ async def _run() -> dict:
         ("usage-relationship-scope-alerts", relationship_scope_alerts()),
         ("server-check-changes-nothing", server_check_is_side_effect_free()),
         ("console-registration-pins-and-expires", console_registration_expires()),
-        # 10-23 기능. 위 등록 시험이 같은 fetch 경로를 해제한 뒤에 같은 서버를 원클릭 승인으로 다시 등록한다.
+        # 위 등록 시험이 같은 fetch 경로를 해제한 뒤에 같은 서버를 원클릭 승인으로 다시 등록한다.
         ("one-click-approval-lowers-tool-class", one_click_lowers_tool_class()),
         ("server-level-consent-decisions", server_consent_flow()),
         ("approval-preview-local-run-values", approval_preview_local_run_values()),
-        # 10-25 기능(D-234 사용 대상, D-235 직원별 계정 연결)
+        # 직원별 계정 연결
         ("one-click-audience-everyone-then-narrowed", one_click_audience()),
         ("my-connections-and-missing-credential-block", my_connections_and_missing_credential()),
         ("invited-employee-enrollment", invitation_enrollment()),
@@ -1323,7 +1321,7 @@ async def _run() -> dict:
         ("console-employee-screens-load", console_employee_screens_load()),
         ("console-registry-export-downloads", console_downloads_work()),
         ("console-pc-kit-downloads", pc_kit_downloads()),
-        # 10-25 기능(D-239): 간편 모드 자동 활성화
+        # 간편 모드 자동 활성화
         ("endpoint-simple-mode-auto-activation", endpoint_auto_activation()),
     ]:
         await check(name, coro)

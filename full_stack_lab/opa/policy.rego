@@ -15,7 +15,7 @@ package mcp.authz
 
 import rego.v1
 
-# DEV-69: facts are made from the reviewed registry, never tool arguments or IP geography.
+# Facts are made from the reviewed registry, never tool arguments or IP geography.
 residency_fact := object.get(input, ["pac", "facts", "residency"], null)
 
 residency_required if {
@@ -142,7 +142,7 @@ recent_important := object.get(input, ["context", "recent_important"], 0)
 
 important_limit := object.get(input, ["context", "important_limit"], 1000000000)
 
-# PAC-15. 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
+# 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
 # 세지 못한다. Gateway가 판정 전에 이번 호출의 자리를 원자적으로 예약하고, 그
 # 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 값이 없는 배포와
 # 예전에 기록된 재생 사례는 이 통제가 없던 때이므로 판단하지 않는다.
@@ -180,7 +180,7 @@ pii_types := object.get(input, ["request", "pii_types"], [])
 sequence_flags := object.get(input, ["request", "sequence_flags"], [])
 
 # POL-33. 같은 주체가 창 안에서 중요정보를 읽은 다른 서버와, 이 도구가 넘겨받아도 된다고 심사된 서버.
-# 앞의 목록은 Gateway의 request.flow_match_mode에 따라 다르다(D-142). coarse(기본)는 창 안에서 읽은 모든 서버,
+# 앞의 목록은 Gateway의 request.flow_match_mode에 따라 다르다. coarse(기본)는 창 안에서 읽은 모든 서버,
 # content는 이 호출의 내용을 읽기 결과와 대조해 같거나 대조하지 못한 서버만 담는다. 대조 결과는
 # request.flow_observed에 기록만 되고 이 정책은 flow_observed와 flow_match_mode를 읽지 않는다.
 flow_sources := object.get(input, ["request", "flow_sources"], [])
@@ -222,7 +222,7 @@ transport_secure := object.get(input, ["contract", "transport_secure"], true)
 
 endpoint_allowed := object.get(input, ["contract", "endpoint_allowed"], true)
 
-# v2: where the call is going (URLs, mail recipients) and what outbound content holds.
+# Where the call is going (URLs, mail recipients) and what outbound content holds.
 # The Gateway's classifier fills these from the tool arguments; the policy judges.
 destinations := object.get(input, ["destinations"], [])
 
@@ -238,7 +238,7 @@ x_restrictions := {key: data.restrictions[key] |
 	data.restrictions[key]
 }
 
-# PAC-15 replaces the role × classification × action matrix.
+# The policy evaluates each approved action against the applicable constraints.
 pac_findings := findings if {
     document := object.get(input, "pac", {})
     findings := data.mcp.decision.all_findings with input as document
@@ -533,7 +533,7 @@ candidate["MCP-SHADOW-001"] := {
 	contract_ok
 }
 
-# D-39. 논문의 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
+# 논문의 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
 # 평상시 호출에도 적용한다. 서버에 운영 중인 이용 관계가 있는데 호출한 자원이 어느 관계의
 # 허용 자원에도 없으면 경보로 남긴다. 차단이 아닌 이유: 카탈로그의 allowed_resources는
 # 회수 범위를 적으려고 만든 목록이라 아직 소유자가 인가 목록으로 검토한 적이 없다. 차단으로

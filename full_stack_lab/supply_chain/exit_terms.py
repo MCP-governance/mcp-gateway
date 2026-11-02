@@ -25,7 +25,7 @@ CRITERIA = {
     "C4": ("회수 증거·감사 접근", "audit_access_retained",
            r"audit|introspect|revocation.{0,20}(log|evidence)|retention|감사|회수.{0,10}증거|로그.{0,10}보존"),
 }
-# A conclusion needs a sentence that names both the object and the act (D-50): "we store your
+# A conclusion needs a sentence that names both the object and the act: "we store your
 # OAuth token", "revoke the API key", "export audit logs for 90 days". A keyword alone
 # ("permission") is a candidate, not evidence. Each term maps to the paper's criterion.
 TERMS = {
@@ -161,7 +161,7 @@ def jev(state: dict, api_key: str, url: str = JEV_URL, timeout: int = 30) -> tup
 
 
 def conclude(discovery: dict, doc: str, transport: str, api_key: str = "", ask=jev) -> dict:
-    """A conclusion per exit term and the termination grade it caps (D-50).
+    """A conclusion per exit term and the termination grade it caps.
 
     Grade rule = decommission.drill(): the provider's held credentials not disclosed caps the
     relationship at T3 (C1), no way to revoke or no audit access afterwards caps it at T2.

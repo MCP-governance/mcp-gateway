@@ -1,4 +1,4 @@
-"""Human review records of an intake: who approved what, and what had to hold first (D-90..D-92).
+"""Human review records of an intake: who approved what, and what had to hold first.
 
 Three things live here because the Console API (agent_service) and the Gateway (core, main) both
 need the same answer: whether a person may approve a request they did not make, whether an
@@ -109,7 +109,7 @@ def solo_operator(user: dict) -> bool:
 
 
 async def record_solo_mode_observation() -> bool:
-    """Start-up record of the single-operator setting (D-188). Writes a row only when the observed value
+    """Start-up record of the single-operator setting. Writes a row only when the observed value
     differs from the last recorded one, so a restart with the same setting adds nothing and a change is
     recorded once. Stores the boolean, never the raw environment value. Returns whether a row was written."""
     observed = solo_mode_enabled()
@@ -320,7 +320,7 @@ _PINNED_TAIL = r")(:443)?([/?#]|$)"
 
 
 def address_pattern(hosts: list[str]) -> str:
-    # No reviewed destination means no address at all: an empty list used to admit any HTTPS host.
+    # No reviewed destination means no address at all: an empty list would otherwise admit any HTTPS host.
     return "^https://(" + "|".join(re.escape(h) for h in hosts) + _PINNED_TAIL if hosts else "(?!)"
 
 
@@ -381,7 +381,7 @@ def derived_constraints(advertised: dict[str, dict], reviews: dict[str, dict]) -
         if item.get("inputs") is not None:
             check_inputs(name, schema, item["inputs"])
             schema["properties"] = {k: v for k, v in (schema.get("properties") or {}).items() if k in item["inputs"]}
-        # Keep $defs so $ref inside the advertised contract still resolves (DEV-44).
+        # Keep $defs so $ref inside the advertised contract still resolves.
         out[name] = {**{k: v for k, v in schema.items() if k in ("$defs", "definitions", "required", "properties")},
                      "type": "object", "properties": schema.get("properties") or {}, "additionalProperties": False}
     return out

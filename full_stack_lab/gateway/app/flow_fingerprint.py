@@ -1,9 +1,9 @@
-"""P-FLOW-001 content match (D-142): does a call's text repeat what this principal read elsewhere.
+"""P-FLOW-001 content match: does a call's text repeat what this principal read elsewhere.
 
 A read of important data keeps salted hashes of its normalised text, never the text. A later call
 to another server is a flow from that read only when its arguments share enough of those hashes.
 What cannot be compared (no fingerprint stored, the stored one cannot be read, a failure here) stays
-a flow source: the principal-wide mark of D-133 is the floor, so every failure here over-blocks.
+a flow source: the principal-wide mark is the floor, so every failure here over-blocks.
 No I/O in this module; the ledger queries are in core.py.
 """
 from __future__ import annotations

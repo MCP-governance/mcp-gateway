@@ -1,4 +1,4 @@
-"""Reproductions of the paper's experiments E1-E3 on this lab's real components.
+"""Reproductions of the paper's experiments E1-E3 on real components.
 
     python -m app.experiments e1|e2|e3        (./console.sh experiment e1)
 
@@ -9,14 +9,14 @@ E1  Token revocation (RFC 7009) vs. what a resource server actually accepts.
     The IdP answers 200 and introspection (RFC 7662) turns inactive at once, but a
     verifier that only checks signatures keeps accepting the token until `exp`.
     Revoking only the access token leaves the refresh token usable.
-E2  Session termination (Streamable HTTP, revisions before 2026-07-28): DELETE with
+E2  Session termination (Streamable HTTP): DELETE with
     Mcp-Session-Id against the ten real MCP servers - who issues sessions at all,
     who answers 405, and whether the session keeps working afterwards.
 E3  Dual delegation: after the upstream (IdP) credential is revoked and confirmed
     inactive by introspection, the MCP server's own downstream credential (a Gitea
     token of the gitea-mcp account) still reads the repositories - until the provider
     side revokes it. Uses a dedicated experiment token of the same account so the
-    running lab keeps working.
+    ongoing operations continue.
 """
 from __future__ import annotations
 

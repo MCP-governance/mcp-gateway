@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS audit_chain (
 );
 INSERT INTO audit_chain(id, head_sha256) VALUES (1, repeat('0', 64)) ON CONFLICT (id) DO NOTHING;
 
--- The application role owns this PoC schema, so REVOKE alone cannot take away the
+-- The application role owns this schema, so REVOKE alone cannot take away the
 -- owner's implicit UPDATE/DELETE privilege. A trigger makes ordinary application
 -- writes fail closed; a production deployment should additionally use a separate
 -- migration owner and an append-only writer role.
@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS gateway_settings (
 
 -- Which workspace path a scanner covers for this server. Scan output imported under
 -- a server's own source_ref is what _contract() counts, so without this the Trivy
--- numbers on the dashboard and the MCP-SUPPLY-001 gate were two unrelated things.
+-- numbers on the dashboard and the MCP-SUPPLY-001 gate would be two unrelated things.
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS scan_path text;
 
 -- A reviewer who can only approve has one button and no way to say why not.
@@ -139,9 +139,9 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS obligations jsonb NOT NULL DEFAUL
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS exception_id text;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS conflicts jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS environment text;
--- NULL은 구버전 기록이다. 기존 해시는 고치지 않고 체인 v4부터 시도 여부를 보호한다.
+-- NULL은 체인 판본 4 이전에 기록된 행이다. 그 행의 해시는 고치지 않고, 체인 판본 4부터 시도 여부를 보호한다.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS upstream_attempted boolean;
--- v5 captures the redacted policy input so attack and normal traces can be
+-- v5 captures the redacted policy input so recorded decisions can be
 -- evaluated against a candidate policy without executing the MCP tool again.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS policy_input jsonb;
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS risk_score integer NOT NULL DEFAULT 0;
@@ -154,9 +154,9 @@ ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approval_valid_until timestamptz;
 UPDATE mcp_tools SET approval_valid_until = timestamptz '2027-06-30 23:59:59+00'
   WHERE approval_valid_until IS NULL;
 
--- 협력업체 직원(partner)으로 역할 이름을 바꾼다. 내부망 테스트베드에 "고객"이
--- 있는 것이 이상하고, 이 역할이 실제로 대리하는 것은 신뢰경계 밖에서 들어오는
--- 외부 인력이다. 기존 볼륨에도 적용해야 로그인 신원과 DB 역할이 갈라지지 않는다.
+-- 협력업체 직원(partner)으로 역할 이름을 바꾼다. 이 역할이 실제로 대리하는 것은
+-- 신뢰경계 밖에서 들어오는 외부 인력이므로 "고객"이라는 이름은 맞지 않는다.
+-- 기존 볼륨에도 적용해야 로그인 신원과 DB 역할이 갈라지지 않는다.
 ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_role_check;
 UPDATE principals SET role='partner' WHERE role='customer';
 UPDATE principals SET token='partner-demo', display_name='협력업체 김민수', department='협력사 A'
@@ -179,7 +179,7 @@ CREATE INDEX IF NOT EXISTS mcp_intake_requests_status_idx ON mcp_intake_requests
 -- The automatic intake queue must recover work abandoned by a stopped worker.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_lease_expires_at timestamptz;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS validation_attempts integer NOT NULL DEFAULT 0;
--- D-49: 승인한 신청이 Gateway에 어떤 서버 id로 등록됐는가. 승인과 등록은 다른 결정이다.
+-- 승인한 신청이 Gateway에 어떤 서버 id로 등록됐는가. 승인과 등록은 다른 결정이다.
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS registered_server_id text;
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS intake_kind text NOT NULL DEFAULT 'repository';
 ALTER TABLE mcp_intake_requests ADD COLUMN IF NOT EXISTS endpoint_url text;
@@ -208,16 +208,15 @@ CREATE TABLE IF NOT EXISTS scan_jobs (
 CREATE INDEX IF NOT EXISTS scan_jobs_status_idx ON scan_jobs(status, created_at);
 CREATE INDEX IF NOT EXISTS scan_jobs_target_idx ON scan_jobs(target_id, created_at DESC);
 
--- ── AI 코드 감사 실행 구조 (v1.5) ──────────────────────────────────────────
--- 이전 판의 mcp-scan은 "관리자가 버튼을 누르면 QUEUED 한 줄을 넣는다"가 전부였다.
--- 그래서 세 가지가 동시에 깨져 있었다.
+-- ── AI 코드 감사 실행 구조 ──────────────────────────────────────────
+-- mcp-scan이 관리자 버튼 한 번에 QUEUED 한 줄을 넣는 것만으로는 세 가지가 함께 깨진다.
 --
 --  1) 워커가 RUNNING 중에 죽으면 그 행은 영원히 RUNNING으로 남고, 재실행 API는
---     QUEUED·RUNNING이면 409로 막으므로 그 대상은 다시는 감사할 수 없었다.
---  2) 워커가 아예 떠 있지 않아도 Console은 "설정됨"만 보여줬다. 큐에 쌓이는 것과
---     실행되는 것을 화면에서 구분할 수 없었다.
---  3) 대상이 도입 요청뿐이라, 이미 Registry에 올라가 실제로 호출되는 서버는
---     감사 대상이 될 수 없었다. 심사받은 코드와 운영 중인 코드가 갈라진다.
+--     QUEUED·RUNNING이면 409로 막으므로 그 대상은 다시는 감사할 수 없다.
+--  2) 워커가 아예 떠 있지 않아도 Console이 "설정됨"만 보여주면 큐에 쌓이는 것과
+--     실행되는 것을 화면에서 구분할 수 없다.
+--  3) 대상이 도입 요청뿐이면, 이미 Registry에 올라가 실제로 호출되는 서버는
+--     감사 대상이 될 수 없어 심사받은 코드와 운영 중인 코드가 갈라진다.
 --
 -- lease는 "이 작업을 이 시각까지 들고 있겠다"는 선언이다. 만료되면 다른 워커가
 -- 회수한다. 작업이 실패해도 대기열에 조용히 남지 않는 것이 이 설계의 목적이다.
@@ -253,9 +252,9 @@ ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS lease_expires_at timestamptz;
 ALTER TABLE scan_jobs ADD COLUMN IF NOT EXISTS cancel_requested boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS scan_jobs_lease_idx ON scan_jobs(status, lease_expires_at);
 
--- 같은 대상에 대해 살아 있는 작업은 하나뿐이다. 이전에는 애플리케이션 조회 한
--- 번으로만 막았으므로 동시에 두 번 누르면 두 개가 들어갔다.
--- 이전 판이 남긴 중복 대기 행이 있으면 인덱스 생성이 실패하고, 그러면 이 파일을
+-- 같은 대상에 대해 살아 있는 작업은 하나뿐이다. 애플리케이션 조회 한 번으로만 막으면
+-- 동시에 두 번 누를 때 두 개가 들어간다.
+-- 중복 대기 행이 남아 있으면 인덱스 생성이 실패하고, 그러면 이 파일을
 -- 실행하는 서비스가 뜨지 않는다. 마이그레이션이 기동을 막는 것이 가장 나쁘다.
 -- 같은 대상의 오래된 대기 행을 먼저 정리하고 만든다.
 UPDATE scan_jobs old SET status='CANCELLED', finished_at=now(),
@@ -276,7 +275,7 @@ CREATE TABLE IF NOT EXISTS worker_heartbeats (
   detail jsonb NOT NULL DEFAULT '{}'
 );
 
--- ── 신원 관리대장 이관 (v1.5) ────────────────────────────────────────────────
+-- ── 신원 관리대장 이관 ────────────────────────────────────────────────
 -- 이미 만들어진 DB에도 같은 모양을 적용한다. db/init.sql은 최초 생성 때만 돌고,
 -- 이 파일은 gateway와 agent-service가 뜰 때마다 돈다.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -289,7 +288,7 @@ ALTER TABLE principals ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'ac
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_by text;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS managed_required boolean NOT NULL DEFAULT false;
--- 중앙 AI 게이트웨이(LiteLLM 등)로만 MCP를 쓰는 직원. 관리형 PC 요구를 기동 때 되살리지 않는다(D-250).
+-- 중앙 AI 게이트웨이(LiteLLM 등)로만 MCP를 쓰는 직원. 관리형 PC 요구를 기동 때 되살리지 않는다.
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS ai_gateway_only boolean NOT NULL DEFAULT false;
 ALTER TABLE principals DROP CONSTRAINT IF EXISTS principals_status_check;
 ALTER TABLE principals ADD CONSTRAINT principals_status_check
@@ -308,7 +307,7 @@ UPDATE principals SET user_id='user-admin-001', email='admin@bob.local',
        employee_no=COALESCE(employee_no,'EMP-002'), job_title=COALESCE(job_title,'거버넌스팀 관리자')
  WHERE token='admin-demo' AND user_id IS NULL;
 
--- ── 하네스 기본 커넥터(D-51) ────────────────────────────────────────────────
+-- ── 하네스 기본 커넥터 ────────────────────────────────────────────────
 -- 직원 PC 키트가 보고한 Claude Code·Codex의 계정 커넥터·플러그인·앱·기본 기능. 섀도와 따로 둔다:
 -- 벤더가 계정에 붙여 주는 기능이라 먼저 목록에 올리고 관리자가 승인·거부한다(connectors.py).
 CREATE TABLE IF NOT EXISTS harness_items (
@@ -333,7 +332,7 @@ CREATE TABLE IF NOT EXISTS harness_decisions (
   decided_by text NOT NULL,
   decided_at timestamptz NOT NULL DEFAULT now()
 );
--- D-62: what an administrator saw in the vendor's admin console for a native connector.
+-- what an administrator saw in the vendor's admin console for a native connector.
 -- A manual record, never fetched from the vendor; it is shown as such.
 CREATE TABLE IF NOT EXISTS harness_vendor_controls (
   item_key text PRIMARY KEY,

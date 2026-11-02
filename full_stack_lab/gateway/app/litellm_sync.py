@@ -1,4 +1,4 @@
-"""Optional LiteLLM 1.105 management-plane reconciliation (D-208).
+"""Optional LiteLLM 1.105 management-plane reconciliation.
 
 Only explicit operator bindings cross this boundary. Transport tokens, upstream
 credentials and raw management responses never enter the queue or event ledger.
@@ -23,7 +23,7 @@ STATES = {"pending": "동기화 대기", "failed": "동기화 실패", "verified
 MAX_BODY = 2 * 1024 * 1024
 # A: LiteLLM's MCP server points at MINT /mcp/<server>/ and forwards the employee's own MINT token (oauth_delegate
 # passes the caller's per-server header through; LiteLLM stores nothing). B: LiteLLM calls the upstream directly and the
-# guardrail asks MINT before each call. One setting chooses both the registered address and the auth mode (D-249).
+# guardrail asks MINT before each call. One setting chooses both the registered address and the auth mode.
 ROUTES = {"mint": "oauth_delegate", "direct": None}
 # Subject-level failures deny that key or team only; these make the registered server itself untrustworthy.
 SERVER_LEVEL = {"server-readback-mismatch", "worker-server-readback-mismatch", "invalid-worker-server-response"}
@@ -61,7 +61,7 @@ def mint_endpoint(server_id):
 
 
 async def team_ceiling(api, config):
-    """True when key grants cannot leak through a team MINT grants (D-249).
+    """True when key grants cannot leak through a team MINT grants.
 
     LiteLLM 1.105 only uses require_key_mcp_access_defined to stop a key without its own MCP list from inheriting
     its team's servers, and its /config/field API refuses that field (a config-file setting). With no team bindings
@@ -288,7 +288,7 @@ async def _propagate(api, plan, config, observations):
                 if not stale:
                     raise
                 # A mapping the operator has since removed or corrected: no longer ours to write, and no grant
-                # can reach it through MINT (it is not in the current bindings). Seen in CI after a mapping fix.
+                # can reach it through MINT (it is not in the current bindings).
                 observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
                                      "stale": True, "skipped": str(exc)})
                 continue
@@ -303,13 +303,13 @@ async def _propagate(api, plan, config, observations):
             observations.append({"kind": kind, "subject_sha256": hashlib.sha256(identifier.encode()).hexdigest(),
                                  "tools": observed, "server_granted": sid in (actual.get("mcp_servers") or [])})
             if not active:
-                # LiteLLM 1.105 drops a deleted server from a key's permission on write (CI); absent and empty both deny.
+                # LiteLLM 1.105 drops a deleted server from a key's permission on write; absent and empty both deny.
                 if observed not in (None, []):
                     raise SyncError("permissions-readback-mismatch")
             elif actual != permissions and {k: v for k, v in actual.items() if k != "object_permission_id"} != permissions:
                 raise SyncError("permissions-readback-mismatch")
         except (SyncError, KeyError, TypeError) as exc:
-            # One wrong key or team stops only that subject; the others keep the server (D-249).
+            # One wrong key or team stops only that subject; the others keep the server.
             subject_errors.append(str(exc) if isinstance(exc, SyncError) else "invalid-permissions-response")
             failed_subjects.append(hashlib.sha256(identifier.encode()).hexdigest())
     if failed_subjects:
@@ -394,7 +394,7 @@ async def _propagate(api, plan, config, observations):
 
 
 async def observe(api, plan, config):
-    """Read-only check of a verified state. Returns mismatch codes and writes nothing (D-249)."""
+    """Read-only check of a verified state. Returns mismatch codes and writes nothing."""
     path = "/v1/mcp/server/" + quote(plan["remote_id"], safe="")
     found, problems = await api.request("GET", path, missing=True), []
     if plan["active"]:

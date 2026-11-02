@@ -1,18 +1,18 @@
-"""OAuth 2.0 endpoints of the synthetic IdP, for workstation agents.
+"""OAuth 2.0 endpoints of the IdP, for workstation agents.
 
-The metadata, revocation and introspection endpoints are the standard ones the paper
-measured on 2,802 providers (RFC 8414 / RFC 7009 / RFC 7662). They are implemented
+The metadata, revocation and introspection endpoints are the standard ones
+(RFC 8414 / RFC 7009 / RFC 7662). They are implemented
 here faithfully, including the parts that make termination hard:
 
 * revocation answers 200 whether or not the token was valid (RFC 7009 §2.2), so the
   response alone never proves the target's state;
 * revoking an access token does not revoke its refresh token (RFC 7009 leaves it at
-  MAY), which reproduces experiment E1;
+  MAY);
 * revoking a refresh token revokes its whole family, including issued access tokens.
 
 The Gateway validates tokens statefully (signature + revocation list + account
 ledger), so a revoked token stops working at the Gateway immediately. A verifier that
-only checks signatures would keep accepting it until `exp` - see experiments/e1.
+only checks signatures would keep accepting it until `exp`.
 """
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ async def token(request: Request, grant_type: str = Form(...), client_id: str = 
                 return _error("invalid_grant", "관리형 엔드포인트 인증으로 전환했습니다. 기존 갱신 토큰은 폐기했습니다.", 403)
             await connection.execute("UPDATE oauth_refresh_tokens SET rotated_at=now() WHERE id=%s", (stored["id"],))
             issued = await _issue(row, client_id, stored["family_id"], connection)
-        # After the commit (D-154): written first, a failed issuance left the list refusing a token the
+        # After the commit: written first, a failed issuance left the list refusing a token the
         # rolled-back DB still honours, and its next use revoked the whole family as a reuse.
         await asyncio.to_thread(disposal.remember, "refresh", _sha(refresh_token))
         return issued
@@ -160,12 +160,12 @@ class DeviceEnrollment(StrictModel):
     # Linux: the account UID. Windows: the account SID and the header command rendered into the
     # managed harness settings (the interpreter path differs per device, so the installer reports it).
     local_uid: int | None = Field(default=None, ge=501)
-    # Linux: sha256 of this machine's id, so a reinstall on the same PC is told from a copy on another (D-217).
+    # Linux: sha256 of this machine's id, so a reinstall on the same PC is told from a copy on another.
     machine_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     local_sid: str | None = Field(default=None, pattern=r"^S-1-5-21-\d+-\d+-\d+-\d+$")
     helper_command: str | None = Field(default=None, max_length=400,
                                        pattern=r'^"[A-Za-z]:\\[^"]+\\pythonw?\.exe" -I -S "[A-Za-z]:\\[^"]+\\managed-windows\.py" header$')
-    # simple: the employee's own account, no kernel confinement (D-239). Kits before it sent nothing and installed isolated.
+    # simple: the employee's own account, no kernel confinement. A kit that sends no mode installs isolated, the default.
     mode: Literal["simple", "isolated"] = "isolated"
 
     @model_validator(mode="after")

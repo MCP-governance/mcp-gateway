@@ -118,7 +118,7 @@ CREATE INDEX IF NOT EXISTS termination_evidence_target_idx ON termination_eviden
 -- 남아 있는 서버 항목은 Gateway 기록에 존재하지 않으므로, C1의 모집단을 게이트웨이
 -- 혼자서는 열거할 수 없다. 그 부분은 엔드포인트 평면이 보고한다.
 --
--- 이 표가 종료 판정과 이어지는 지점이 핵심이다. 폐기한 서버가 어느 노트북의
+-- 이 표가 종료 판정과 이어지는 지점이 핵심이다. 폐기한 서버가 어느 엔드포인트의
 -- 설정에 그대로 남아 있으면 그것은 회수되지 않은 접근 경로다.
 CREATE TABLE IF NOT EXISTS endpoint_agents (
   endpoint_id text PRIMARY KEY,
@@ -216,9 +216,8 @@ ON CONFLICT (id) DO UPDATE SET
   gate = EXCLUDED.gate, ordinal = EXCLUDED.ordinal;
 
 -- ── 7. 감사 작업의 확장 (AI-Infra-Guard 전체 활용) ──────────────────────────
--- v1.5까지 scan_jobs는 정적 코드 감사 한 종류였다. AI-Infra-Guard는 그 밖에
--- 실행 중인 서버를 대상으로 하는 동적 점검과 AI 인프라 지문·취약점 점검을 함께
--- 제공한다. 셋을 한 표에 두되 mode와 kind로 구분한다. 무엇을 돌렸는지 모르는
+-- scan_jobs는 정적 코드 감사, 실행 중인 서버의 동적 점검, AI 인프라 지문·취약점
+-- 점검을 함께 제공한다. 셋을 한 표에 두되 mode와 kind로 구분한다. 무엇을 돌렸는지 모르는
 -- 결과는 증적이 아니다.
 -- kind는 'mcp-scan' 하나로 둔다. 원본 A.I.G UI의 인프라 지문·CVE 점검은
 -- Gateway 컨테이너에서 수동 실행할 수 있으나 이 자동 작업 표에 연결되지 않는다.
@@ -241,7 +240,7 @@ ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_trigger_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_trigger_check
   CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift', 'termination', 'anomaly'));
 
--- 같은 대상이라도 정적 감사와 동적 점검은 서로 다른 작업이다. v1.5의 유일 인덱스는
+-- 같은 대상이라도 정적 감사와 동적 점검은 서로 다른 작업이다. 유일 인덱스는
 -- 대상 하나에 살아 있는 작업 하나만 허용했으므로, 폐기 확인용 동적 점검이 정적
 -- 재감사 때문에 큐에 들어가지 못하는 일이 생긴다.
 DROP INDEX IF EXISTS scan_jobs_one_live_per_target;
@@ -256,8 +255,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS scan_jobs_one_live_per_target_mode
   ON scan_jobs(target_kind, target_id, kind, mode) WHERE status IN ('QUEUED', 'RUNNING');
 
 -- catalog 드리프트가 관측된 시각. T4(드리프트 재감사) 트리거가 "마지막 감사보다
--- 뒤에 드리프트가 있었는가"를 이 값으로 판단한다. v1.5는 이 칸이 없어서 트리거
--- 값만 예약된 채 구현되지 못했다.
+-- 뒤에 드리프트가 있었는가"를 이 값으로 판단한다.
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS drift_observed_at timestamptz;
 
 -- ── 8. 종료 준비를 도입 시점에 확보한다 (조달 체크리스트) ──────────────────
@@ -279,9 +277,8 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS exit_terms jsonb NOT NULL DEFAU
 
 -- ── 8. 엔드포인트 평면의 자격 분리 ──────────────────────────────────────────
 --
--- v1.5까지 엔드포인트 에이전트는 관리자 계정으로 로그인했다. 그 구성에서는
--- 사람들의 PC에 깔린 프로세스 하나가 침해되면 관리자 API 전체가 노출된다.
--- CONTROL_PLANES.md 6절이 그 사실을 한계로 적어 두고 있었고, 여기서 고친다.
+-- 엔드포인트 에이전트에 관리자 계정을 쓰면 프로세스 하나가 침해될 때
+-- 관리자 API 전체가 노출된다. 장치 자격은 이 권한 집중을 막는다.
 --
 -- 장치 자격은 사람 계정과 완전히 다른 축이다. 로그인하지 않고, 토큰을 발급받지
 -- 않으며, 할 수 있는 일이 scopes에 적힌 것뿐이다. 침해되어도 최대치는 "거짓
@@ -305,7 +302,7 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS advertised_name text;
 -- ── 9. 내부망 MCP 탐색 ──────────────────────────────────────────────────────
 --
 -- 설정 파일 대조는 "이 사람이 쓰겠다고 적어 둔 것"을 본다. 적지 않고 띄운 것은
--- 보지 못한다. 로컬에서 `npx some-mcp-server`를 직접 실행하거나, 팀 서버에
+-- 보지 못한다. 로컬에서 `npx some-mcp-server`를 직접 실행하거나, 내부 서버에
 -- MCP를 하나 올려놓고 주소만 공유하면 설정 파일에는 아무것도 남지 않는다.
 --
 -- 그래서 두 번째 관측 축이 필요하다. 게이트웨이 장비는 사원 PC의 루프백과
@@ -331,7 +328,7 @@ CREATE TABLE IF NOT EXISTS endpoint_scan_policy (
 );
 INSERT INTO endpoint_scan_policy(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
--- 새 PC 자동 활성화(D-239). 간편 모드 PC가 설치 점검을 통과하면 게이트웨이가 활성화한다. 끄면 관리자 확인.
+-- 새 PC 자동 활성화. 간편 모드 PC가 설치 점검을 통과하면 게이트웨이가 활성화한다. 끄면 관리자 확인.
 CREATE TABLE IF NOT EXISTS endpoint_settings (
   id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   auto_activate boolean NOT NULL DEFAULT true,
@@ -339,7 +336,7 @@ CREATE TABLE IF NOT EXISTS endpoint_settings (
   updated_at timestamptz
 );
 INSERT INTO endpoint_settings(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
--- 관리자가 하네스 기본 기능·커넥터 통제를 바꾼 시각(D-298). 바로 전 통제로 온 heartbeat는 격리가 아니라 뒤처짐이다.
+-- 관리자가 하네스 기본 기능·커넥터 통제를 바꾼 시각. 바로 전 통제로 온 heartbeat는 격리가 아니라 뒤처짐이다.
 ALTER TABLE endpoint_settings ADD COLUMN IF NOT EXISTS controls_changed_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS endpoint_listeners (
@@ -379,8 +376,8 @@ ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS device_epoch text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_username text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_uid integer;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS policy_hash text;
--- servers_version in the managed policy (D-238): moves whenever the operating server set may have changed.
--- A diagnostic, never a decision input; per-person scope (D-234) and department changes do not move it.
+-- servers_version in the managed policy: moves whenever the operating server set may have changed.
+-- A diagnostic, never a decision input; per-person scope and department changes do not move it.
 CREATE SEQUENCE IF NOT EXISTS mcp_servers_version;
 CREATE OR REPLACE FUNCTION bump_mcp_servers_version() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN PERFORM nextval('mcp_servers_version'); RETURN NULL; END $$;
@@ -413,7 +410,7 @@ CREATE TABLE IF NOT EXISTS endpoint_managed_events (
   observed_at timestamptz NOT NULL DEFAULT now()
 );
 
--- DEV-73 (D-175): one MCP message for an approved local server, run on the caller's own device.
+-- One MCP message for an approved local server, run on the caller's own device.
 -- The device's root runner takes only its own rows; the gateway waits for the result row.
 CREATE TABLE IF NOT EXISTS local_jobs (
   id uuid PRIMARY KEY,

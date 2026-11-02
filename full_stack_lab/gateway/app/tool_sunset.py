@@ -1,4 +1,4 @@
-"""Time out unused, human-scoped tools using the append-only decision ledger (DEV-75)."""
+"""Time out unused, human-scoped tools using the append-only decision ledger."""
 from __future__ import annotations
 
 import asyncio
@@ -173,7 +173,7 @@ async def _state(connection, server_id, tool_name, reviewed_at, now, event, chec
             reason="도구 이용 기한 만료", scope=scope, connection=c))
         return {"active": False, "available": True, "eligible": True, **result, "status": "재심사 필요"}
     # The deadline moves with every call by seconds; one extension a day per tool is the record worth keeping
-    # (an event per call grew the ledger by the call count). The decision still uses the exact last use.
+    # (an event per call would grow the ledger by the call count). The decision still uses the exact last use.
     if result["recent"] and last_use and (not event or event["kind"] != "tool-sunset-extension"
                                            or str(event["scope"].get("deadline") or "")[:10]
                                            != result["deadline"].astimezone(timezone.utc).date().isoformat()):
@@ -238,7 +238,7 @@ async def check_many(server_id: str, tool_names: list[str], now: datetime | None
     if reviewed:
         read_complete = False
         try:
-            # Reading settings while holding a pool connection previously deadlocked all ten readers.
+            # Reading settings while holding a pool connection would deadlock all ten readers.
             setting = await retention.setting()
             seal = await asyncio.to_thread(retention.current_seal)
             async with db.transaction() as connection:

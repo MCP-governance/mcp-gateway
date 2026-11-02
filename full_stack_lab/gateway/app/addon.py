@@ -1,4 +1,4 @@
-"""외부 AI 게이트웨이(LiteLLM·Kong·Portkey 등)가 MCP 도구 호출 직전에 부르는 판정 API (D-191).
+"""외부 AI 게이트웨이(LiteLLM·Kong·Portkey 등)가 MCP 도구 호출 직전에 부르는 판정 API.
 
 판정은 `core.execute_call`의 기존 경로를 그대로 쓰고 upstream 전송만 건너뛴다(`_decide_only`).
 신원은 요청의 Bearer 직원 토큰에서만 정한다. 게이트웨이가 주장하는 사용자·키·팀(`asserted`)은 기록만 한다.

@@ -31,7 +31,7 @@ def outcome_axes(event: dict) -> dict:
 
     withheld = (preview.get("disposition") == "withheld"
                 or event.get("response_disposition") == "withheld" or policy == "MCP-OUTPUT-001")
-    # 401 authentication, 403 access refused, 429 rate or quota: different provider outcomes (luna review 1).
+    # 401 authentication, 403 access refused, 429 rate or quota: different provider outcomes.
     provider_task = {401: "제공자 인증 실패", 403: "제공자 접근 거부", 429: "제공자 한도 초과"}.get(status)
     provider_failure = provider_task is not None
     if isinstance(result, dict):

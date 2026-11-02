@@ -315,7 +315,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
             case_id, "endpoint-config", f"{row['hostname']} · {row['config_path']} 의 '{row['server_label']}' 항목",
             "endpoint", "endpoint-agent", actor, invalidate=False, subject_ref=row["fingerprint"],
             verification="endpoint-report", note="엔드포인트가 보고한 MCP 설정 잔존"))
-    # Credentials employees connected themselves (D-235): this organisation holds the encrypted copy, so it can
+    # Credentials employees connected themselves: this organisation holds the encrypted copy, so it can
     # enumerate them, delete them and look again - unlike what the provider holds.
     for row in (await user_credentials.holders(server["endpoint"]) if server.get("endpoint") else []):
         created.append(await add_target(
@@ -853,7 +853,7 @@ async def reopen_case(case_id: str, actor: str, reason: str) -> dict:
 
 
 async def restore_server(server_id: str, actor: str) -> dict:
-    """Lab only: put a retired server back into service so the demo can be repeated.
+    """Put a retired server back into service so the demonstration can be repeated.
     In an organisation, bringing a terminated relationship back is a new intake."""
     if await asyncio.to_thread(disposal.blocked, server_id=server_id):
         raise ValueError("폐기된 서버는 새 도입 승인이 필요합니다.")

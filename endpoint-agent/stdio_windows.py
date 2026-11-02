@@ -78,7 +78,7 @@ class ProcessInfo(C.Structure):
 
 
 # 직원 프로필의 위치 값만 물려준다. 이게 없으면 Java·Python 서버가 설정·임시 폴더를 못 정해 죽는다
-# (Ghidra: APPDATA 없음, 11-01 pj3). 직원이 바꿀 수 있는 실행 경로·옵션(PATH, PYTHON*, JAVA_TOOL_OPTIONS 등)은
+# 직원이 바꿀 수 있는 실행 경로·옵션(PATH, PYTHON*, JAVA_TOOL_OPTIONS 등)은
 # 승인한 코드 밖을 실행하게 하므로 넣지 않는다.
 PROFILE_KEYS = {k.upper() for k in (
     'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'TEMP', 'TMP', 'HOMEDRIVE', 'HOMEPATH', 'USERNAME', 'USERDOMAIN',

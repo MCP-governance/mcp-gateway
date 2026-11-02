@@ -26,8 +26,10 @@ INCLUDE = (
     "full_stack_lab/registry/provenance-trust-keys.json", "full_stack_lab/db/init.sql", "full_stack_lab/db/002-litellm.sql",
     "full_stack_lab/corp/gitea-entrypoint.sh",
 )
-# deploy/check.py checks this repository's documents; the OPA replay cases are test fixtures, not policy data.
-EXCLUDE = ("endpoint-agent/tests-windows/", "deploy/check.py", "full_stack_lab/opa/replay_cases")
+# deploy/check.py checks this repository's documents; the OPA replay cases are test fixtures, not policy data;
+# acceptance.py and experiments.py run the lab's checks and nothing in the gateway imports them.
+EXCLUDE = ("endpoint-agent/tests-windows/", "deploy/check.py", "full_stack_lab/opa/replay_cases",
+           "full_stack_lab/gateway/app/acceptance.py", "full_stack_lab/gateway/app/experiments.py")
 TEST = re.compile(r"(^|/)(test_[^/]*\.py|[^/]*_test\.(rego|py)|[^/]*\.test\.[cm]?js)$")
 OVERLAY = Path(__file__).resolve().parent / "mint"
 LINK = re.compile(r'(?:\]\(|(?:src|href)=")([^)"\s]+)')

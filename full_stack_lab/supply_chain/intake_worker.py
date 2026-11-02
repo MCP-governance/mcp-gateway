@@ -241,7 +241,7 @@ def validate(connection, request: dict) -> None:
     gitleaks = REPORT_DIR / f"intake-{request_id}-gitleaks.json"
     terms_report = REPORT_DIR / f"intake-{request_id}-exit-terms.json"
     discovery = investigate(checkout, url, commit)
-    # D-50: the platform concludes (Jev when TYPESAFE_API_KEY is set, strict rules otherwise);
+    # The platform concludes (Jev when TYPESAFE_API_KEY is set, strict rules otherwise);
     # the admin approves on that conclusion or accepts the risk, instead of re-reading the docs.
     conclusion = conclude(discovery, readme(checkout), request.get("requested_transport") or "streamable-http",
                           os.getenv("TYPESAFE_API_KEY", ""))

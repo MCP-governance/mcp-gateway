@@ -9,7 +9,7 @@ Run as a module to (re)generate the lock from the live servers:
 
     python -m app.registry_lock lock      # prints the lock JSON for every catalog server
 
-Servers an admin registers from the Console (an approved intake request → Gateway, D-49)
+Servers an admin registers from the Console after an approved intake request
 live beside the reviewed files in REGISTRY_RUNTIME_DIR/servers.json, in the same shape
 plus their pinned contracts. catalog() is the union of the two - like LiteLLM's config
 servers + DB servers - and the reviewed file wins a name clash.
@@ -93,7 +93,7 @@ def pinned_protocol(server_id: str) -> str | None:
 
 
 def runtime_endpoints() -> set[str]:
-    """Endpoints an admin approved by registering them; they count as allowed egress (D-49)."""
+    """Endpoints an admin approved by registering them; they count as allowed egress."""
     catalog()  # reloads the cache when a file changed
     return {spec["endpoint"] for key, spec in _cache["runtime"]["servers"].items()
             if key in servers() and spec.get("intake_id")}
@@ -108,7 +108,7 @@ def server(server_id: str) -> dict | None:
     return servers().get(server_id)
 
 
-# An approval's audience may be every active employee (D-234). The approval stays an envelope: its
+# An approval's audience may be every active employee. The approval stays an envelope: its
 # reviewed tools, actions and argument constraints still bind, only the list of people is open.
 ALL_PRINCIPALS = "*"
 
@@ -120,8 +120,8 @@ def permits(allowed: list[str] | None, token: str) -> bool:
 def allowed_principals(server_id: str) -> list[str] | None:
     """Who may call a server; None means whoever the policy allows.
 
-    D-57: a Console registration made without an approved intake (registered before the
-    intake became mandatory) serves nobody until it is re-registered through one.
+    A Console registration without an approved intake serves nobody until it is
+    registered through one.
     Reviewed catalog.toml servers keep the policy-only scope.
     """
     spec = _runtime_spec(server_id)
@@ -145,7 +145,7 @@ def approved_tools(server_id: str) -> dict[str, str]:
 
 
 def reviewed_tools(server_id: str) -> set[str]:
-    """Tools a person has scoped (D-91). A catalog.toml server is reviewed in git as a whole; a
+    """Tools a person has scoped. A catalog.toml server is reviewed in git as a whole; a
     Console registration serves only the approved tools that carry a scope review."""
     approved = set((server(server_id) or {}).get("tools", {}))
     spec = _runtime_spec(server_id)
@@ -237,7 +237,7 @@ async def sync() -> dict:
                 )
             stats["tools"] += 1
         if spec.get("valid_until"):
-            # BeyondTrust식 기한 있는 사용 승인: 기한이 지나면 P-APPROVAL-EXPIRY-001이 호출을 막는다(D-49).
+            # BeyondTrust식 기한 있는 사용 승인: 기한이 지나면 P-APPROVAL-EXPIRY-001이 호출을 막는다.
             await db.execute("UPDATE mcp_tools SET approval_valid_until=%s WHERE server_id=%s",
                              (spec["valid_until"], server_id))
         # Tools that neither the catalog nor the lock know any more.

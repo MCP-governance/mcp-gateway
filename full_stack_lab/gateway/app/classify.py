@@ -100,11 +100,11 @@ class Classification:
 
 
 # ── DLP ─────────────────────────────────────────────────────────────────────
-# Credentials by the prefix their issuer puts on them. Only formats a vendor documents
+# Credentials by the prefix their issuer puts on them. Only documented formats
 # are here, because a hit on an outbound call is a refusal (P-DLP-001): the generic
-# "32+ hex" and "24+ base64" rules of the IBM CPEX secrets plugin (Apache-2.0,
-# plugins/rust/python-package/secrets_detection/src/patterns.rs), from which the
-# GitHub, Slack, Google, Stripe, JWT and AWS-secret forms below are taken, also match
+# "32+ hex" and "24+ base64" rules in the IBM CPEX secrets plugin (Apache-2.0),
+# from which the GitHub, Slack, Google, Stripe, JWT and AWS-secret forms below are
+# taken, also match
 # every git commit and SHA-256 digest a developer mails, so they are not.
 # The same strings feed the Presidio recognizer that masks them in tool results.
 SECRET_PATTERNS = {
@@ -115,7 +115,7 @@ SECRET_PATTERNS = {
     "slack-token": r"(?<![0-9A-Za-z])xox[abpqr]-[0-9A-Za-z\-]{10,80}(?![0-9A-Za-z])",
     "google-api-key": r"(?<![0-9A-Za-z])AIza[0-9A-Za-z\-_]{35}(?![0-9A-Za-z])",
     "stripe-key": r"(?<![0-9A-Za-z])(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}(?![0-9A-Za-z])",
-    # OpenAI keys and the LiteLLM virtual keys this lab issues share the `sk-` form.
+    # OpenAI keys and LiteLLM virtual keys share the `sk-` form.
     "sk-api-key": r"(?<![0-9A-Za-z])sk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{20,}(?![0-9A-Za-z])",
     "anthropic-key": r"(?<![0-9A-Za-z])sk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_\-]{40,}(?![0-9A-Za-z])",
     "jwt": r"(?<![0-9A-Za-z])eyJ[A-Za-z0-9_\-]{10,}\.eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}(?![0-9A-Za-z])",
@@ -124,8 +124,8 @@ SECRET_PATTERNS = {
                           r"|bearer[_-]?token|client[_-]?secret)(?![0-9A-Za-z])\s*[:=]\s*[\"']?[A-Za-z0-9_\-./+]{20,}",
 }
 # Korean glues particles to a number or a word ("010-1234-5678입니다"), and \b treats Hangul as a word character, so
-# none of the patterns below may rely on it: a number followed by a particle was invisible to the outbound check
-# (tests/korean_pii_eval.py measured it on synthetic samples).
+# none of the patterns below may rely on it: a number followed by a particle is
+# invisible to the outbound check.
 DLP_PATTERNS = {
     "kr-rrn": re.compile(r"(?<![0-9A-Za-z])\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[- ]?[1-8]\d{6}(?![0-9])"),
     "card-number": re.compile(r"(?<![0-9A-Za-z])(?:\d{4}[- ]?){3}\d{4}(?![0-9])"),
@@ -295,7 +295,7 @@ def host_category(raw_host: str) -> str:
         return "infrastructure"
     if any(host.startswith(prefix) for prefix in org.get("infrastructure_prefixes", [])):
         return "infrastructure"
-    if "." not in host:  # a bare service name only resolves inside the lab
+    if "." not in host:  # a bare service name only resolves on the internal network
         return "infrastructure"
     # An internal domain that is not the approved intranet host is company infrastructure.
     if any(host == domain or host.endswith("." + domain)
@@ -304,7 +304,7 @@ def host_category(raw_host: str) -> str:
     return "external"
 
 
-# An argument named like an address is where a console-registered server will reach (D-132).
+# An argument named like an address is where a console-registered server will reach.
 ADDRESS_ARG = re.compile(r"(?:^|_)(?:url|uri|href|link|endpoint)s?$", re.I)
 
 
@@ -353,9 +353,9 @@ def _web_resource(dest: Destination) -> Resource:
 
 
 # PostgreSQL's own grammar decides what a statement does (pglast wraps libpg_query,
-# the parser the server itself uses). The regex version this replaces read the text
-# instead: `SELECT ... INTO other.table` looked like a read, a table name inside a
-# dollar-quoted string looked like DDL, and `pg_terminate_backend(...)` looked like an
+# the parser the server itself uses). A regex reading the text can misclassify
+# `SELECT ... INTO other.table` as a read, a table name inside a dollar-quoted string
+# as DDL, and `pg_terminate_backend(...)` as an
 # ordinary select. Anything the server would not accept is not classified at all -
 # it is returned as "x", the strictest answer, because an unparsed statement is the
 # case we know least about.
@@ -378,13 +378,13 @@ SQL_X_FUNCTIONS = {
 SQL_W_FUNCTIONS = {"nextval", "setval"}
 # A SELECT can call a user-defined function with any side effect, so a function the
 # server does not ship is judged as "x". Which functions it ships, and whether each can
-# change anything, is the server's own catalog and not a list written here: an earlier
-# hand-written allowlist of 40 names classified 25 of 40 ordinary analytics queries
-# (`extract`, `row_number() over`, `split_part`, `percentile_cont` ...) as execution.
+# change anything, is the server's own catalog and not a list written here. A fixed
+# allowlist can classify ordinary analytics queries (`extract`, `row_number() over`,
+# `split_part`, `percentile_cont` ...) as execution.
 # pg_proc marks every built-in immutable, stable or volatile; PostgreSQL does not let an
 # immutable or stable function modify the database, so those read. Volatile built-ins
 # are mostly administration (locks, replication slots, files, backends, statistics
-# resets) and are "x" unless they are listed here as reading only.
+# resets) and are "x" unless listed here as reading only.
 #   Regenerate for a new major version (output → pg_builtin_functions.json):
 PG_FUNCTIONS_QUERY = """select proname, case when bool_or(provolatile = 'v') then 'v'
   when bool_or(provolatile = 's') then 's' else 'i' end
@@ -504,7 +504,7 @@ def sql_facts(sql: str) -> tuple[str, list[str]]:
     return action, sorted(_sql_relations(tree, ctes))
 
 
-# ── usage relationship scope (D-39) ─────────────────────────────────────────
+# ── usage relationship scope ─────────────────────────────────────────────────
 # A relationship's allowed_resources name company data of four kinds. Other kinds (a
 # mail message, a shell command, a URL) are not something a relationship grants, so
 # they neither widen nor break its scope; destinations are judged by the egress rules.
@@ -818,7 +818,7 @@ def classify(server: str, tool: str, arguments: dict | None, principal: str = ""
             EXTRACTORS[server](tool, args, cls)
         elif (spec := registry.server(server) or {}).get("data_class") in CLASS_ORDER:
             # A server registered from the Console has no argument extractor; its whole data is
-            # the grade the admin gave it at registration (D-49). Unknown stays important.
+            # the grade assigned at registration. Unknown stays important.
             cls.resources.append(Resource("service", f"{server}:{tool}", spec["data_class"]))
             cls.destinations.extend(url_destination(value) for value in address_arguments(args))
             cls.dlp = dlp_scan(args)
@@ -922,7 +922,7 @@ if __name__ == "__main__":
     assert sql_facts("select * from information_schema.tables") == ("r", ["information_schema.tables"])
     mail = classify("email", "send_email", {"recipients": ["a@gmail.com"], "subject": "hi", "body": "900101-1234567"})
     assert mail.action == "x" and "kr-rrn" in mail.dlp and mail.data_class == "important"
-    assert classify("email", "send_email", {"recipients": ["ysg@bob.local"], "subject": "배포", "body": "완료"}).action == "w"
+    assert classify("email", "send_email", {"recipients": ["user@bob.local"], "subject": "배포", "body": "완료"}).action == "w"
     assert classify("fetch", "fetch", {"url": "http://intranet.bob.local/wiki/onboarding.html"}).action == "r"
     assert classify("fetch", "fetch", {"url": "https://share.external.example/?q=1"}).action == "x"
     assert classify("fetch", "fetch", {"url": "http://corp-git:3000/api/v1/admin/users"}).destinations[0].category == "infrastructure"
@@ -965,7 +965,7 @@ if __name__ == "__main__":
                         ("aws-secret-key", "aws_secret_access_key = " + fake),
                         ("api-key-assignment", "client_secret: " + fake)):
         assert label in dlp_scan(text), (label, dlp_scan(text))
-    # Korean glues a particle to the value; \b is not a boundary there (tests/korean_pii_eval.py).
+    # Korean glues a particle to the value; \b is not a boundary there.
     for label, text in (("kr-rrn", "주민번호는991231-3123456입니다"), ("kr-mobile", "연락처는 010-0000-1234이며"),
                         ("kr-mobile", "+82 10-0000-1234"), ("kr-business-number", "사업자등록번호: 251-55-79895"),
                         ("kr-account", "국민은행 계좌번호는 799604-52-4520입니다"), ("kr-passport", "여권번호: M75620909"),
@@ -999,5 +999,5 @@ if __name__ == "__main__":
     assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from information_schema.tables"}).resources, []) == []
     assert outside_scope(classify("gitea", "get_file_contents", {"owner": "bob", "repo": "infra-secrets", "path": "a"}).resources,
                          ["bob/handbook", "bob/payment-service"]) == ["bob/infra-secrets"]
-    assert outside_scope(classify("email", "send_email", {"recipients": ["ysg@bob.local"], "subject": "s", "body": "b"}).resources, []) == []
+    assert outside_scope(classify("email", "send_email", {"recipients": ["user@bob.local"], "subject": "s", "body": "b"}).resources, []) == []
     print("classify self-check: OK")

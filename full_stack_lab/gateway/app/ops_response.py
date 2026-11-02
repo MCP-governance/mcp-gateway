@@ -1,4 +1,4 @@
-"""Operational containment and isolated checks against the loaded policy (D-121/122)."""
+"""Operational containment and isolated checks against the loaded policy."""
 import asyncio
 import copy
 import json

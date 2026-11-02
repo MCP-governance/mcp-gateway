@@ -411,7 +411,7 @@ function Remove-EndpointFiles([string]$Root, [string[]]$OwnedFiles = @()) {
     if (-not (Get-ChildItem -LiteralPath $resolved -Force)) { Remove-Item -LiteralPath $resolved }
 }
 
-# Screen text of the wizard and the tray, Korean first with an English switch (D-239). Labels only.
+# Screen text of the wizard and the tray, Korean first with an English switch. Labels only.
 $script:EndpointText = @{
     ko = @{ product = 'MINT'; mint_account = 'MINT 아이디'; mint_password = '비밀번호'; sign_in = '로그인';
         mint_invalid = '로그인: 아이디·비밀번호 확인 필요'; mint_locked = '로그인: 계정 잠김·승인 확인 필요';
@@ -473,7 +473,7 @@ $script:EndpointText = @{
         done_install = 'Installed'; done_remove = 'Removed'; checking_gateway = 'Checking the gateway'; confirm = 'Location and scope' }
 }
 
-# The kit carries no enrollment token (D-290): the employee's MINT sign-in issues one. Returns @{ token } or @{ error = <label key> }.
+# The employee's MINT sign-in issues the enrollment token. Returns @{ token } or @{ error = <label key> }.
 function Request-EndpointKitToken([string]$Gateway, [string]$Certificate, [string]$Fingerprint, [string]$User, [string]$Password) {
     $body = $null
     try {

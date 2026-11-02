@@ -1,4 +1,4 @@
-"""Kernel-label checks for the root-managed Linux header broker (D-183).
+"""Kernel-label checks for the root-managed Linux header broker.
 
 No /proc/PID fallback: the accepted socket's security context avoids PID reuse.
 The warning stage preserves the legacy UID boundary; it is not process binding.
@@ -55,7 +55,7 @@ def authorize_peer(connection, config):
             reason = "uid-mismatch"
             allowed = False
         elif mode == "uid":
-            # Simple mode (D-239): no profile exists to bind to; the account's UID is the whole boundary.
+            # Simple mode: no profile exists to bind to; the account's UID is the whole boundary.
             allowed = True
         elif mode not in ("warn", "enforce"):
             reason = "invalid-binding-mode"

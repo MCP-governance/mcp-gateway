@@ -1,11 +1,11 @@
-"""Where an intake came from, and whether the artifact in use is the artifact that was scanned (D-90).
+"""Where an intake came from, and whether the artifact in use is the artifact that was scanned.
 
 The intake worker records a digest of the source tree it scanned; the Gateway side recomputes it
 from the copy employees will actually use and compares. Provider-hosted servers have no artifact
 to hash: they are recorded as "not applicable" with their endpoint, never with a made-up digest.
 
 supply_chain/provenance.py carries the same two functions for the worker (its image has a
-separate build context); tests/provenance_check.py fails if the two ever disagree.
+separate build context); a test fails if the two ever disagree.
 """
 from __future__ import annotations
 

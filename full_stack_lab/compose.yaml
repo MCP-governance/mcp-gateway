@@ -248,6 +248,8 @@ services:
     build: *gateway-build
     command: ["uvicorn", "app.agent_service:app", "--host", "0.0.0.0", "--port", "8000"]
     environment:
+      # The lab's workstation agents are retired at every start, as before; a production bundle sets none.
+      RETIRED_ENDPOINTS: ws-ysg,ws-jwj,ws-pse,ws-nkk
       INTAKE_REPORT_DIR: /intake-reports
       MCP_PROVENANCE_REGISTRY_ALLOWLIST: ${MCP_PROVENANCE_REGISTRY_ALLOWLIST:-}
       DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:-demo-only-change-me}@db:5432/mcp_governance

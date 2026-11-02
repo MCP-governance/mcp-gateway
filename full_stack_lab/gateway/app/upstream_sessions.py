@@ -1,4 +1,4 @@
-"""Process-local, conversation-bound MCP sessions (D-115); no response cache."""
+"""Process-local, conversation-bound MCP sessions; no response cache."""
 from __future__ import annotations
 
 import asyncio

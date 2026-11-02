@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Administrator-installed enrollment, policy service and header broker.
 
-Two modes (D-239). simple (default): the employee's own account keeps running its own harnesses;
+Two modes . simple (default): the employee's own account keeps running its own harnesses;
 the installer writes the managed settings, the header helper and this service, and nothing else.
 isolated: an ordinary account confined by AppArmor and a UID nftables table (needs AppArmor, nft
 and native ELF Codex/Claude). Only the root service holds the device key. SO_PEERCRED and, in the
@@ -43,17 +43,17 @@ STATE = Path("/var/lib/mcpgw-managed")
 PRIVILEGED = {"sudo", "wheel", "docker", "lxd", "libvirt", "root"}
 TOKEN_CACHE_SECONDS = 180
 # Copied to PROGRAMS by install. The digest of their text is the kit version, the same one /api/health reports
-# (full_stack_lab/gateway/app/release.py KIT_PROGRAMS); tests/kit_continuity_check.py keeps the two lists equal.
+# The release manifest and continuity check keep the two lists equal.
 PROGRAM_FILES = ("managed-linux.py", "enforce-linux.py", "broker_binding.py", "agent.py", "os-observer.py",
                  "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py", "kit_screen.py", "kit_access.py")
 STATUS_SHIM = Path("/usr/local/bin/mint")
-OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")  # 10-28 이전 이름
+OLD_STATUS_SHIM = Path("/usr/local/bin/mcpgw-status")
 SHIM_MARK = "# mcpgw managed status"
 STATUS_STALE_SECONDS = 180
 ADDED_SHOWN_SECONDS = 3600
 ENFORCEMENT = Path("/usr/local/lib/mcpgw-enforcement")
 # Simple mode: the employee's own harnesses trust the Gateway's private CA through the session environment
-# (pam_env reads /etc/environment for every login, SSH included); no shell rc file is edited (D-239).
+# pam_env reads /etc/environment for every login, including SSH; no shell rc file is edited.
 ENVIRONMENT = Path("/etc/environment")
 CA_BEGIN, CA_END = "# >>> mcpgw managed ca >>>", "# <<< mcpgw managed ca <<<"
 HARNESS_VERSIONS = {}
@@ -265,9 +265,9 @@ def forget_stale_sign_in(home: str) -> None:
 
 # -- Launchers the employee's own shells find first. A terminal opened before the install has no launcher
 # function, and its PATH (from the session's ~/.profile) lists ~/.local/bin ahead of /usr/local/bin, so
-# `claude` there ran the unmanaged copy (10-23 pj2: the model sign-in went to the employee's account).
+# `claude` there could run an unmanaged copy under the employee's account.
 # Claude Code's native installer leaves a launcher the user replaced in place and keeps installing versions
-# beside it; other installers may rewrite theirs, so the service puts ours back (D-228). --
+# beside it; other installers may rewrite theirs, so the service puts ours back . --
 HOME_LAUNCHER_DIRS = (".local/bin", "bin", ".npm-global/bin")
 HOME_MARK = b"#!/bin/sh\n# mcpgw home launcher\n"
 HOME_LAUNCHER_EVERY = 300
@@ -401,7 +401,7 @@ def ca_environment(config):
 
 def write_helper(user):
     """Simple mode's header helper, at the path the Gateway renders for every Linux device. A script, not the
-    compiled wrapper of the isolated stage: there is no profile to attach and no compiler on the PC (D-239)."""
+    helper script runs without a user profile or compiler."""
     folder = ENFORCEMENT / ("mcpgw-" + user)
     for node in (ENFORCEMENT, folder):
         node.mkdir(mode=0o755, exist_ok=True)
@@ -501,7 +501,7 @@ def enroll(bundle, username, uid, mode="isolated", platform="linux"):
 def install(args, prepared=None):
     if os.geteuid() != 0:
         raise ValueError("조직 관리자가 root로 설치해야 합니다")
-    # A manual install without --mode (and every caller before D-239) is the isolated one.
+    # A manual install without --mode  is the isolated one.
     args.mode = getattr(args, "mode", "isolated")
     simple = args.mode == "simple"
     bundle = json.loads(args.enrollment.read_text())
@@ -815,7 +815,7 @@ def status(args):
     try:
         summary = model_status(json.loads(path.read_text()))
     except (OSError, ValueError):
-        # Right after install the service has not written its first summary yet (10-23 pj2): not a failure.
+        # The service may not have written its first summary yet; this is not a failure.
         if list(Path("/etc/systemd/system").glob("mcpgw-managed-*.service")):
             print("장치 상태: 연결 준비 중")
             print("잠시 뒤 다시 확인하세요.")
@@ -1155,7 +1155,7 @@ def serve(args):
         log = lambda item: print(json.dumps(item, ensure_ascii=False), flush=True)
         source_root = Path('/var/lib/mcpgw-sources')
         source_root.mkdir(mode=0o755, exist_ok=True)
-        # 승인 MCP는 직원 계정으로 돈다: 지나가기만 허용(목록은 숨김). 서비스 umask로 700이 되면 ImportError(PJ1 10-28).
+        # 승인 MCP는 직원 계정으로 돈다: 지나가기만 허용(목록은 숨김). 서비스 umask로 700이 되면 ImportError.
         source_root.chmod(0o711)
         def source_protected(path):
             return all(not p.is_symlink() and p.stat().st_uid == 0 and not p.stat().st_mode & 0o022
@@ -1215,7 +1215,7 @@ def serve(args):
             INVENTORY_NOW.wait(wait)
             INVENTORY_NOW.clear()
     def logins():
-        # 설치 때 한 번 본 로그인 상태가 계속 보이면 직원이 로그인한 뒤에도 「로그인 필요」가 남는다(PJ1, 10-28).
+        # 설치 때 한 번 본 로그인 상태가 계속 보이면 직원이 로그인한 뒤에도 「로그인 필요」가 남는다.
         while True:
             try:
                 read_logins(config)
@@ -1282,7 +1282,7 @@ def serve(args):
             except urllib.error.HTTPError as exc:
                 if exc.code != 422 or not {"host", "network_quality"} & beat.keys():
                     raise
-                beat.pop("host", None)  # a Gateway older than D-62 / this report rejects the extra field
+                beat.pop("host", None)  # a Gateway can reject optional fields; retry without them
                 beat.pop("network_quality", None)
                 report = request(config, "/api/endpoint/heartbeat", beat)
             if report["state"] == "active" and report["compliant"]:
@@ -1290,7 +1290,7 @@ def serve(args):
                     token = request(config, "/oauth/device-token", {})
                     cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
                     # One fast round after the activation: the guidance of the new state arrives with the next policy
-                    # fetch, and until then the harness is told the PC still waits (pj3 10-25: up to a minute).
+                    # fetch, and until then the harness is told activation is pending.
                     pause = 60 if cache.get("state") == "active" else 10
             else:
                 with lock:
@@ -1346,8 +1346,7 @@ def rollback(args):
     Path("/etc/systemd/system", unit).unlink(missing_ok=True)
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     if (Path("/usr/local/lib/mcpgw-enforcement") / f"mcpgw-{args.user}" / "state.json").exists():
-        # The enforcer beside this file: run from a new kit, that is the kit's copy. The copy a failed earlier
-        # install left under /usr/local is the old code and stopped this removal (10-23 kuku VM, D-229).
+        # Use this kit's enforcer for rollback rather than a stale installed copy.
         subprocess.run([sys.executable, str(Path(__file__).with_name("enforce-linux.py")), "--user", args.user, "--rollback"],
                        check=True, capture_output=True, text=True)
     elif (ENFORCEMENT / f"mcpgw-{args.user}" / "header-helper").exists():
@@ -1398,12 +1397,12 @@ def header(args):
             connection.connect(args.socket)
             response = json.loads(connection.recv(8192))
         if set(response) != {"Authorization"}:
-            # The service says why it has no token; the Gateway turns the suffix into the 401 line the employee sees (D-217).
+            # The service says why it has no token; the Gateway turns the suffix into the 401 line the employee sees .
             state = response.get("state") if isinstance(response, dict) else ""
             reason = state if state in ("pending", "quarantined") else ""
             raise ValueError("엔드포인트 활성화·정책 연결이 필요합니다")
     except (OSError, ValueError) as exc:
-        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
+        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다.
         # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
         print("관리형 연결 불가: " + str(exc), file=sys.stderr)
         response = {"Authorization": UNAVAILABLE["Authorization"] + ("." + reason if reason else "")}

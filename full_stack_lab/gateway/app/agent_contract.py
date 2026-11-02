@@ -105,7 +105,7 @@ def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
 
 
 # What the managed header helper prints when it has no token to give. Never a credential: it is refused like any
-# unsigned value, but the reason it was refused reaches the employee in the harness's own 401 line (D-217).
+# unsigned value, but the reason it was refused reaches the employee in the harness's own 401 line.
 PLACEHOLDER_REASON = {
     "pending": "이 PC는 관리자 활성화를 기다리는 중입니다. 관리자가 활성화하면 자동으로 연결됩니다.",
     "quarantined": "이 PC는 점검에서 격리되어 관리자의 재활성화를 기다리는 중입니다.",

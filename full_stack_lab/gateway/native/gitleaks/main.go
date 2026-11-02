@@ -1,9 +1,9 @@
 // Gitleaks as an in-process C-ABI library for the Gateway.
 //
-// The Gateway used to start the gitleaks binary for every inspection: a process
-// spawn, a temp directory and a full rule compile per call. This library loads the
-// same upstream rule catalog once and scans in the calling process. Each scan gets a
-// fresh detector because DetectSource accumulates findings on the detector; the
+// A binary process, temporary directory and full rule compile for every inspection
+// add overhead. This library loads the same upstream rule catalog once and scans in
+// the calling process. Each scan gets a fresh detector because DetectSource
+// accumulates findings on the detector; the
 // compiled rules are shared, which upstream does across its own goroutines.
 //
 // The detector is configured exactly like `gitleaks stdin --redact=100

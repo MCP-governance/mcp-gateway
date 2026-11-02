@@ -227,7 +227,7 @@ REQUEST_STATES = {"OPEN": "검토 대기", "CLOSED": "처리됨"}
 APPLICATION_STATES = {"HOLD": "검토 대기", "REMOTE_REVIEWED": "계약 검토 완료", "VALIDATION_QUEUED": "검증 대기", "VALIDATING": "검증 중",
                       "VALIDATED": "검증 완료", "APPROVED": "승인", "REJECTED": "거부", "FAILED": "검증 실패"}
 LOGINS = {"claude": ["claude", "auth", "login"], "codex": ["codex", "login", "--device-auth"]}
-# Console pages the terminal can open; consent and account connections are given only there, signed in (D-301).
+# Console pages the terminal can open; consent and account connections are given only there, signed in.
 CONSOLE_PAGES = {"logs": "activity", "consent": "consent", "requests": "intake", "connections": "connections"}
 SUBCOMMANDS = ("servers", "logs", "requests", "request", "sources", "login", "ui", "console")
 HELP = "\n".join((
@@ -740,7 +740,7 @@ def serve_ui(address, status_lines, check, open_browser=True, idle=1800):
                 button = (f'<form method="get" action="/{token}/"><input type="hidden" name="check" value="1">'
                           f'<button class="btn sm">연결 점검</button></form>')
                 if os.name == "nt":
-                    # A console window of its own for the device-code sign-in, as the tray did.
+                    # A console window of its own for the device-code sign-in.
                     button += "".join(f'<form method="post" action="/{token}/login"><input type="hidden" name="harness" value="{key}">'
                                       f'<button class="btn sm">{label} 로그인</button></form>' for key, label in HARNESSES.items())
                 body = f'<div class="kpis">{kpis}</div><div class="stack">{kv_html("엔드포인트", pairs, button)}'

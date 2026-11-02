@@ -1,10 +1,10 @@
-"""Ledger retention: jurisdiction floors and the sealed prefix of the audit chain (D-141).
+"""Ledger retention: jurisdiction floors and the sealed prefix of the audit chain.
 
-A seal lives in the signed disposal journal (D-123), outside PostgreSQL, so a DB backup
+A seal lives in the signed disposal journal, outside PostgreSQL, so a DB backup
 restore cannot roll it back. It says "decisions up to last_id are disposed and the chain
 continued from last_sha256". verify_audit_chain starts from that hash and treats any row
 at or below last_id as resurrected. Nothing here deletes a decision row: the purge step is
-held for the owner's decision on README principle 5 (docs/ai/LEDGER_RETENTION.md).
+held for the owner's decision on the retention principle.
 """
 import json
 import re
@@ -14,7 +14,7 @@ from . import disposal
 
 # Month/year floors are rounded up to the longest calendar span (6 months = 184 days,
 # 1 year = 366, 3 years = 1096), so a day count never falls short of the clause.
-# Sources: research/llm-wiki/analysis/compliance/dev-plan/README.md 7장 (binding duties only).
+# Sources: binding duties only.
 FLOORS = {
     "EU": (184, "LIB-M01 Art. 19(1)·26(6)"),
     "CN": (184, "LIB-M10 제23조제3호"),

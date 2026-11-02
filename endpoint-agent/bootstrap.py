@@ -2,7 +2,7 @@
 """One elevation, one connected endpoint: everything between "run the file" and "type claude".
 
 The employee runs install.sh from the kit, confirms the sudo prompt once and answers nothing else.
-Simple mode (the default, D-239) leaves the employee's own account and harnesses as they are and adds
+Simple mode (the default) leaves the employee's own account and harnesses as they are and adds
 the managed settings, the header helper and the reporting service; the Gateway activates the PC when
 its install checks pass (if the organization allows it) and still decides every call. --isolated (or a
 kit downloaded with 「고급: 격리 계정」) is the earlier install: required packages, the approved harness
@@ -57,7 +57,7 @@ ENGINES = {"apt-get": "docker.io", "dnf": "podman", "pacman": "docker"}
 ENGINE_BINARIES = ("podman", "docker")
 INSTALL_VERB = {"apt-get": "apt-get install", "dnf": "dnf install", "pacman": "pacman -S"}
 # The harness vendors ship the executable and its tool-call host side by side in one release
-# directory; taking them from anywhere else pairs mismatched builds (D-67).
+# directory; taking them from anywhere else pairs mismatched builds.
 VENDOR_GLOBS = ("**/@openai/codex-*/vendor/*/bin", "**/@anthropic-ai/claude-code*/vendor/*/bin",
                 "**/@anthropic-ai/claude-code*/bin", "**/@anthropic-ai/claude-code-*", "**/bin")
 
@@ -104,7 +104,7 @@ DIAGNOSTIC = None
 
 
 def step(message: str) -> None:
-    """한 단계. 화면이 단계마다 소요 시간을 재고, 끝에 결과 세 칸과 다음 할 일을 보인다(D-239)."""
+    """한 단계. 화면이 단계마다 소요 시간을 재고, 끝에 결과 세 칸과 다음 할 일을 보인다."""
     SCREEN.step(message)
 
 
@@ -161,7 +161,7 @@ def install_packages(manager: str, names: list[str], env: dict) -> bool:
 def ensure_packages(isolated: bool = True) -> None:
     """필수 구성요소와 컨테이너 엔진을 설치 한 번에 갖춘다. 없는 도구만 한 번에 조회·설치하고(패키지 관리자 갱신도 한 번),
     엔진은 못 받아도 설치를 멈추지 않는다: 원격 MCP는 엔진 없이 쓰고, 로컬 MCP만 엔진 설치 뒤 쓸 수 있다.
-    간편 모드는 컴파일러·방화벽·AppArmor 도구가 필요 없고, curl·openssl도 없으면 시도만 한다(D-239)."""
+    간편 모드는 컴파일러·방화벽·AppArmor 도구가 필요 없고, curl·openssl도 없으면 시도만 한다."""
     wanted = REQUIRED if isolated else OPTIONAL
     missing = [tool for tool in wanted if not shutil.which(tool)]
     if missing or not has_engine():
@@ -288,7 +288,7 @@ def place_harnesses(employee: str) -> dict[str, dict]:
             if name == "claude" and (APPROVED / "claude").is_file():
                 placed[name] = {"path": str(APPROVED / name), "source": "already-approved"}
                 continue
-            # PC에 있는 하네스만 관리한다(D-216). 없는 것은 나중에 설치하고 키트를 다시 실행하면 추가된다.
+            # PC에 있는 하네스만 관리한다. 없는 것은 설치 후 키트를 다시 실행하면 추가된다.
             # 알리지 않는다: 하나도 없으면 아래에서 멈추고, 끝 안내는 배치한 것만 적는다.
             continue
         for item, origin in origins.items():
@@ -428,9 +428,9 @@ def replace_launcher(name: str, managed: str, shell: Path) -> str:
     shim.unlink(missing_ok=True)
     # The harness runs in the managed account's home. Its own working directory is not readable by
     # that account, and starting a child from a directory it cannot search fails - which is how the
-    # header helper failed on PJ1. `cd /` keeps that out of the way; the login shell moves to $HOME.
+    # `cd /` keeps that out of the way; the login shell moves to $HOME.
     # The entry wrapper by absolute path: the managed account's own ~/.local/bin comes first on its
-    # PATH, and a harness installer that ran there at login (PJ1, 10-15) put an unapproved copy in it
+    # PATH, and a harness installer that ran there at login can put an unapproved copy in it
     # that AppArmor then refused. Only the wrapper next to the login shell moves into the harness profile.
     shim.write_text(MARK.decode() + " managed harness launcher\n"
                     'command="' + str(shell.parent / name) + '"\n'
@@ -462,7 +462,7 @@ def remove_shims(managed: str) -> None:
 
 def installed(account: str) -> bool:
     # A folder an older kit's isolated install left (its state.json holds the shell to restore) counts too:
-    # otherwise switching to simple mode skipped it and the profiles and account stayed (PJ1, 10-28).
+    # otherwise switching to simple mode could skip it and leave the profiles and account in place.
     return ((STATE / account).exists() or (ENFORCEMENT / f"mcpgw-{account}" / "state.json").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-managed-{account}.service").exists()
             or (Path("/etc/systemd/system") / f"mcpgw-egress-{account}.service").exists())
@@ -491,7 +491,7 @@ def legacy_companion(employee: str) -> bool:
 def remove_companion(employee: str, legacy: bool = False) -> None:
     """The separate account an isolated install created, once nothing of it is installed. Only one this kit
     made (its comment says so, or an older kit's launcher folder did); its home stays, with whatever the
-    employee kept there (D-239)."""
+    employee kept there."""
     name = companion_of(employee)
     try:
         entry = pwd.getpwnam(name)
@@ -532,7 +532,7 @@ def close_sessions(account: str) -> None:
         stderr=subprocess.DEVNULL)
     run("pkill", "-u", account, check=False, quiet=True, stderr=subprocess.DEVNULL)
     # The enforcer refuses while any process of the account is alive; a harness or a pending model
-    # sign-in takes a moment to exit after the signal (10-23 kuku VM). Wait, then force.
+    # sign-in takes a moment to exit after the signal. Wait, then force.
     for _ in range(20):
         if run("pgrep", "-u", account, check=False, quiet=True).returncode:
             return
@@ -544,7 +544,7 @@ def close_sessions(account: str) -> None:
 def failure_reason(output: str) -> str:
     """Why the managed install failed, in the words that say it: the enforcer's refusal ("...: error: ..."),
     or the failing command's own error output plus the exception that named the command. The last line alone
-    was a traceback line or a truncated "Command [...]" (10-23 kuku VM)."""
+    may be a traceback line or a truncated "Command [...]"."""
     lines = [line.rstrip() for line in (output or "").splitlines() if line.strip()]
     for line in reversed(lines):
         if ": error: " in line:
@@ -593,12 +593,12 @@ def harness_login(account: str, harnesses: list[str], simple: bool = False) -> d
         credential, command = LOGINS[name]
         if (home / credential).is_file():
             # The file only proves a sign-in once happened: a session the provider has since revoked
-            # (PJ1, 10-22) still reports "Logged in" and then fails every model call with 401. The
+            # may still report "Logged in" and then fail every model call with 401. The
             # model answer measured at the end says which.
             signed[name] = True
             continue
         if not sys.stdin.isatty():
-            # A remote or scripted install has nobody to read the code: asking would hang it for 15 minutes (pj2 10-25).
+            # A remote or scripted install has nobody to read the code, so prompting would leave it waiting.
             signed[name] = False
             continue
         step("Codex 장치 코드 로그인" if name == "codex" else f"{name} 모델 로그인")
@@ -631,7 +631,7 @@ def resume_screen() -> None:
 
 
 def model_cell(managed, account: str, harnesses: list[str], simple: bool, signed: dict | None = None) -> tuple[str, str]:
-    """① A real model answer from the harness the employee will type, as that account (D-239)."""
+    """① A real model answer from the harness the employee will type, as that account."""
     name = next((h for h in ("claude", "codex") if h in harnesses), None)
     if not name:
         return ("모델 응답", "— (하네스 없음)")
@@ -920,7 +920,7 @@ def connect(managed, employee: str, isolated: bool, args, started: float) -> int
         managed.private_write(model_path, json.dumps(result["model_signed_in"]))
         model_path.chmod(0o644)
     except OSError:
-        pass  # the service re-reads the sign-in state every 30 seconds (D-297); the install itself is done
+        pass  # the service re-reads the sign-in state every 30 seconds; the install itself is done
     result["state"] = SCREEN.summary.get("state", "unknown")
     result.update(employee=employee, managed_account=account, mode="isolated" if isolated else "simple",
                   harnesses=({name: item.get("digests", {}) for name, item in placed.items()} if isolated
