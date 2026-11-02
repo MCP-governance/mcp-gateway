@@ -31,7 +31,7 @@ INCLUDE = (
 EXCLUDE = ("endpoint-agent/tests-windows/", "deploy/check.py", "full_stack_lab/opa/replay_cases",
            "full_stack_lab/gateway/app/acceptance.py", "full_stack_lab/gateway/app/experiments.py")
 TEST = re.compile(r"(^|/)(test_[^/]*\.py|[^/]*_test\.(rego|py)|[^/]*\.test\.[cm]?js)$")
-OVERLAY = Path(__file__).resolve().parent / "mint"
+OVERLAY = ".github/release/mint/"
 LINK = re.compile(r'(?:\]\(|(?:src|href)=")([^)"\s]+)')
 
 
@@ -81,23 +81,20 @@ def main(tag, out):
             shutil.rmtree(child) if child.is_dir() else child.unlink()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         for member in tar:
-            if not member.isfile() or member.name not in files:
+            # User documentation comes from the same tag as the code, under its release path.
+            name = member.name[len(OVERLAY):] if member.name.startswith(OVERLAY) else member.name
+            if not member.isfile() or not (member.name in files or member.name.startswith(OVERLAY)):
                 continue
             data = tar.extractfile(member).read()
-            if member.name == ".gitattributes":
+            if name == ".gitattributes":
                 # Rules for the lab's own files and the research wiki name paths the release does not have.
                 data = b"".join(line for line in data.splitlines(True) if not line.startswith((b"full_stack_lab/", b"research/"))
                                 and "통합 시트".encode() not in line)
-            target = out / member.name
+            target = out / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
             if modes[member.name] == "100755":
                 os.chmod(target, 0o755)
-    for source in OVERLAY.rglob("*"):
-        if source.is_file():
-            target = out / source.relative_to(OVERLAY)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source, target)
     problems = broken_links(out)
     for path in out.rglob("*"):
         if path.is_file() and ".git" not in path.relative_to(out).parts:
