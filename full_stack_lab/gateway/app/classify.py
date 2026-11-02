@@ -739,7 +739,7 @@ def _redis(tool: str, args: dict, cls: Classification) -> None:
 
 
 def _email(tool: str, args: dict, cls: Classification) -> None:
-    mailbox = Resource("mailbox", "ai-assistant@bob.local", "nonimportant")
+    mailbox = Resource("mailbox", "ai-assistant@mint.local", "nonimportant")
     if tool not in {"send_email", "forward_email", "save_to_mailbox"}:
         cls.resources.append(mailbox)
         return
@@ -763,7 +763,7 @@ def _gitea(tool: str, args: dict, cls: Classification) -> None:
         cls.resources.append(repo_resource(args["owner"], args["repo"]))
     elif args.get("org") or tool in {"list_org_repos", "search_repos", "list_my_repos"}:
         # Listings reveal names of every repository, including the important one.
-        cls.resources.append(Resource("repository-list", f"{args.get('org') or 'bob'}/*", "nonimportant"))
+        cls.resources.append(Resource("repository-list", f"{args.get('org') or 'mint'}/*", "nonimportant"))
     else:
         cls.resources.append(Resource("gitea", "corp-git:metadata", "public"))
     if tool in {"create_or_update_file", "issue_write", "wiki_write", "pull_request_write"}:
@@ -922,8 +922,8 @@ if __name__ == "__main__":
     assert sql_facts("select * from information_schema.tables") == ("r", ["information_schema.tables"])
     mail = classify("email", "send_email", {"recipients": ["a@gmail.com"], "subject": "hi", "body": "900101-1234567"})
     assert mail.action == "x" and "kr-rrn" in mail.dlp and mail.data_class == "important"
-    assert classify("email", "send_email", {"recipients": ["user@bob.local"], "subject": "배포", "body": "완료"}).action == "w"
-    assert classify("fetch", "fetch", {"url": "http://intranet.bob.local/wiki/onboarding.html"}).action == "r"
+    assert classify("email", "send_email", {"recipients": ["user@mint.local"], "subject": "배포", "body": "완료"}).action == "w"
+    assert classify("fetch", "fetch", {"url": "http://intranet.mint.local/wiki/onboarding.html"}).action == "r"
     assert classify("fetch", "fetch", {"url": "https://share.external.example/?q=1"}).action == "x"
     assert classify("fetch", "fetch", {"url": "http://corp-git:3000/api/v1/admin/users"}).destinations[0].category == "infrastructure"
     assert classify("fetch", "fetch", {"url": "http://169.254.169.254/latest"}).destinations[0].category == "infrastructure"
@@ -932,21 +932,21 @@ if __name__ == "__main__":
     for internal in ("http://127.1/", "http://0x7f.0.0.1/", "http://0177.0.0.1/", "http://2130706433/",
                      "http://[::ffff:127.0.0.1]/", "http://LOCALHOST./", "http://0/",
                      "http://127.0.0.1.nip.io/", "http://169.254.169.254.nip.io/", "http://10-0-0-1.sslip.io/",
-                     "http://corp-db.bob.local/", "http://corp-git.bob.local:3000/api/v1/admin/users",
+                     "http://corp-db.mint.local/", "http://corp-git.mint.local:3000/api/v1/admin/users",
                      "https://example.com@127.0.0.1/", "http://[::1]/", "http://192.168.0.5/"):
         assert url_destination(internal).category == "infrastructure", internal
-    assert url_destination("http://intranet.bob.local./wiki").category == "intranet"
-    assert url_destination("http://INTRANET.BOB.LOCAL/wiki").category == "intranet"
+    assert url_destination("http://intranet.mint.local./wiki").category == "intranet"
+    assert url_destination("http://INTRANET.MINT.LOCAL/wiki").category == "intranet"
     for outside in ("https://share.external.example/", "https://8.8.8.8/", "http://example.com/"):
         assert url_destination(outside).category == "external", outside
     assert classify("redis", "get", {"key": "session:3f9a1c"}).data_class == "important"
     assert classify("redis", "scan_keys", {"pattern": "cache:*"}).data_class == "public"
     assert classify("redis", "scan_keys", {"pattern": "*"}).data_class == "important"
-    assert classify("gitea", "get_file_contents", {"owner": "bob", "repo": "infra-secrets", "path": "prod/db.env"}).data_class == "important"
+    assert classify("gitea", "get_file_contents", {"owner": "mint", "repo": "infra-secrets", "path": "prod/db.env"}).data_class == "important"
     assert classify("git", "git_log", {"repo_path": "/repos/handbook"}).data_class == "public"
     assert classify("desktop", "start_process", {"command": "cat /etc/shadow"}).data_class == "important"
     assert classify("playwright", "browser_type", {"text": "x"}, "p1").action == "x"  # unknown page counts as external
-    nav = classify("playwright", "browser_navigate", {"url": "http://intranet.bob.local/"}, "p1")
+    nav = classify("playwright", "browser_navigate", {"url": "http://intranet.mint.local/"}, "p1")
     remember_navigation("p1", nav, True)
     assert classify("playwright", "browser_type", {"text": "x"}, "p1").action == "w"
     assert classify("unknown-server", "anything", {}).data_class == "important"
@@ -985,8 +985,8 @@ if __name__ == "__main__":
     leak = classify("email", "send_email", {"recipients": ["x@gmail.com"], "subject": "config",
                                             "body": "GITHUB_TOKEN=ghp_" + fake[:36]})
     assert leak.action == "x" and "github-token" in leak.dlp, (leak.action, leak.dlp)
-    args, applied = apply_restrictions(mail, {"recipients": ["a@gmail.com"], "body": "x" * 50}, {"max_chars": 10, "journal_bcc": "c@bob.local"})
-    assert len(args["body"]) == 10 and args["bcc"] == ["c@bob.local"] and len(applied) == 2
+    args, applied = apply_restrictions(mail, {"recipients": ["a@gmail.com"], "body": "x" * 50}, {"max_chars": 10, "journal_bcc": "c@mint.local"})
+    assert len(args["body"]) == 10 and args["bcc"] == ["c@mint.local"] and len(applied) == 2
     # Usage relationship scope: path prefixes by segment, exact or wildcard names, unscoped kinds ignored.
     scoped = classify("filesystem", "write_file", {"path": "/shared/team/data/x.md", "content": "x"})
     assert outside_scope(scoped.resources, ["/shared"]) == []
@@ -997,7 +997,7 @@ if __name__ == "__main__":
                          ["public.products", "sales.orders"]) == ["sales.customers"]
     assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from sales.customers"}).resources, ["sales.*"]) == []
     assert outside_scope(classify("postgres", "execute_sql", {"sql": "select * from information_schema.tables"}).resources, []) == []
-    assert outside_scope(classify("gitea", "get_file_contents", {"owner": "bob", "repo": "infra-secrets", "path": "a"}).resources,
-                         ["bob/handbook", "bob/payment-service"]) == ["bob/infra-secrets"]
-    assert outside_scope(classify("email", "send_email", {"recipients": ["user@bob.local"], "subject": "s", "body": "b"}).resources, []) == []
+    assert outside_scope(classify("gitea", "get_file_contents", {"owner": "mint", "repo": "infra-secrets", "path": "a"}).resources,
+                         ["mint/handbook", "mint/payment-service"]) == ["mint/infra-secrets"]
+    assert outside_scope(classify("email", "send_email", {"recipients": ["user@mint.local"], "subject": "s", "body": "b"}).resources, []) == []
     print("classify self-check: OK")

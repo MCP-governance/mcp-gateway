@@ -15,7 +15,7 @@ import urllib.request
 
 URL = os.environ["LITELLM_URL"].rstrip("/")
 MASTER = os.environ.get("LITELLM_MASTER_KEY", "")
-MODELS = [m for m in os.environ.get("LLM_KEY_MODELS", "bob-assistant").split(",") if m]
+MODELS = [m for m in os.environ.get("LLM_KEY_MODELS", "mint-assistant").split(",") if m]
 
 
 def call(path: str, body: dict | None = None) -> tuple[int, str]:

@@ -1,6 +1,6 @@
 #!/bin/sh
 # An employee PC: the harnesses are installed and managed by IT (/etc/*), the person
-# works through `bob-ask` / `workday` (or `docker compose exec ws-… claude`), and the
+# works through `mint-ask` / `workday` (or `docker compose exec ws-… claude`), and the
 # endpoint agent reports what MCP configuration is on this machine.
 set -eu
 mkdir -p "$HOME/transcripts" "$HOME/work" "$HOME/.gemini"

@@ -76,9 +76,9 @@ E
   wait_for pg 60 docker exec $P-pg pg_isready -U mcp || return 1
   wait_for gitea 90 docker exec $P-gitea wget -q -O- http://localhost:3000/api/healthz || return 1
   docker exec $P-gitea gitea admin user create --admin --username corpadmin --password "$GITEA_ADMIN_PASSWORD" \
-    --email corpadmin@bob.local --must-change-password=false >/dev/null || return 1
+    --email corpadmin@mint.local --must-change-password=false >/dev/null || return 1
   docker exec $P-gitea gitea admin user create --username mcp-bot --random-password \
-    --email mcp-bot@bob.local --must-change-password=false >/dev/null || return 1
+    --email mcp-bot@mint.local --must-change-password=false >/dev/null || return 1
   provision || return 1
   mcp_gitea || return 1
   wait_for presidio 120 docker exec $P-presidio-analyzer python -c "import urllib.request; urllib.request.urlopen('http://localhost:3000/health', timeout=2)" || return 1

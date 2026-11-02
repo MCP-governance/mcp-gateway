@@ -31,7 +31,7 @@ Azure-Samples/AI-Gateway, Azure-Samples/remote-mcp-apim-functions-python 4개를
 | --- | --- | --- | --- |
 | `ms-mcp-gateway`(.NET, K8s) | `3594c4e`(2026-08-25) | 세션 인지 리버스 프록시 + Entra RBAC. **정책 엔진·PII·rug-pull·rate-limit·해시체인 감사 전부 없음** | 아무것도 없는 제품의 기준선으로만 유용. `X-Dev-*` 헤더 우회 패턴은 우리 회귀 테스트에 참고 |
 | `ms-wassette`(Rust, Wasmtime) | `742ebb7`(2026-09-29) | MCP 도구를 **Wasm 컴포넌트**로 격리 실행. 기능 기반 정책 파일(`storage/network/environment/runtime/resources/ipc`), deny-by-default | 정책 YAML 스키마는 참고할 만함. **`deny` 리스트가 스키마엔 있는데 런타임에 전혀 읽히지 않는** 죽은 필드라는 구체적 결함 발견(코드로 재확인, 아래) |
-| `ms-AI-Gateway` + `ms-remote-mcp-apim` | `1679e31`/`130c553` | APIM 정책 XML: OAuth 2.1 DCR+PKCE 프록시(원저작자는 `remote-mcp-apim`, `AI-Gateway`가 복제), RFC 9728 PRM, `llm-content-safety`, `validate-azure-ad-token` | DCR/PKCE APIM 정책 원문은 우리 `bob-sso`가 흉내내지 않는 시나리오(제3자 클라이언트 자체등록)의 참조 구현 |
+| `ms-AI-Gateway` + `ms-remote-mcp-apim` | `1679e31`/`130c553` | APIM 정책 XML: OAuth 2.1 DCR+PKCE 프록시(원저작자는 `remote-mcp-apim`, `AI-Gateway`가 복제), RFC 9728 PRM, `llm-content-safety`, `validate-azure-ad-token` | DCR/PKCE APIM 정책 원문은 우리 `mint-sso`가 흉내내지 않는 시나리오(제3자 클라이언트 자체등록)의 참조 구현 |
 | `ms-agent-framework` | `4b1c231`(2026-09-30) | MCP 도구별 `approval_mode`(always/never/특정 목록) — **에이전트 SDK 안의 일시정지/재개**일 뿐 게이트웨이 통제가 아님 | 우리 PAC-13과 다른 계층임을 확인. 기본값이 `never_require`(옵트인)라는 점만 참고 |
 | `ms-PyRIT` | `ea9d0b4`(재클론) | `MCPStreamableHTTPServerConfig`로 **실제 MCP 서버를 PyRIT 타깃으로 삼아 자동 레드팀**, garak 계열 latent-injection 시드 | 우리 Gateway `/mcp/<server>/`를 그대로 PyRIT 타깃으로 걸 수 있음. injection 시드는 회귀 테스트 입력 후보 |
 
@@ -259,7 +259,7 @@ Azure-Samples/AI-Gateway, Azure-Samples/remote-mcp-apim-functions-python 4개를
 - **`ms-PyRIT`가 이 항목의 핵심**이다. 두 갈래로 쓸모가 있다.
   1. **`pyrit/prompt_target/common/mcp_tool_provider.py:30-59`**: `MCPStreamableHTTPServerConfig{type, url, headers}`
      또는 `MCPStdioServerConfig`로 **진짜 MCP 서버(=우리 Gateway의 `/mcp/<server>/` 엔드포인트)를 PyRIT 타깃으로 등록**한다.
-     VS Code 스타일 `mcpServers`/`servers` 설정 포맷을 그대로 파싱하므로(`:62-80`), 우리 `bob-sso` 토큰을 `headers`에
+     VS Code 스타일 `mcpServers`/`servers` 설정 포맷을 그대로 파싱하므로(`:62-80`), 우리 `mint-sso` 토큰을 `headers`에
      넣어 그대로 오케스트레이터(`RedTeamingOrchestrator` 등, 이 파일 밖) 타깃으로 걸 수 있다 — **자동화된 MCP 레드팀
      하네스로 그대로 채용 가능**.
   2. **`pyrit/datasets/seed_datasets/local/garak/latent_injection_*.prompt`**(NVIDIA Garak에서 이식, Apache-2.0
@@ -304,7 +304,7 @@ Azure-Samples/AI-Gateway, Azure-Samples/remote-mcp-apim-functions-python 4개를
    `redirect_uri` 정확 일치 검사(`:227-265`)** — 우리가 향후 제3자(협력사) MCP 클라이언트의 자체 등록(DCR)을 지원해야 할
    때 그대로 참조할 만한 완성도. 지금 당장 필요하지는 않음(§5).
 3. **[중] PyRIT의 `MCPStreamableHTTPServerConfig`(`pyrit/prompt_target/common/mcp_tool_provider.py:30-44`)를 우리
-   Gateway 대상 자동 레드팀 하네스로 채용** — `bin/bob-ask`/`workday`류 시나리오 러너와 별개로, PyRIT 오케스트레이터가
+   Gateway 대상 자동 레드팀 하네스로 채용** — `bin/mint-ask`/`workday`류 시나리오 러너와 별개로, PyRIT 오케스트레이터가
    `/mcp/<server>/`를 직접 두드리게 해서 회귀 테스트를 자동화하는 방향. 우선순위는 "중"이지만 셋업 비용이 낮아 빠르게
    시도해볼 만하다.
 4. **[중] Garak 계열 latent-injection 시드**(`pyrit/datasets/seed_datasets/local/garak/latent_injection_*.prompt`) —

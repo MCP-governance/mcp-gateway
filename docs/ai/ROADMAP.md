@@ -27,7 +27,7 @@
 9. **신뢰되는 HTTPS 주소** — 현재 field 배치는 Tailscale IP 전용 HTTP이며 연결은 tailnet이 암호화한다(D-46).
    브라우저 자체의 HTTPS 신뢰가 필요한 환경에서는 tailnet HTTPS 인증서 발급을 켜거나 조직 TLS 프록시를 둔다.
    현재 tailnet의 `tailscale cert`는 발급을 거절한다. 일반 LAN IP에 이 HTTP 배치를 노출하지 않는다.
-10. **하네스의 완전한 MCP OAuth** — 지금은 `bob-sso`가 password grant로 대신 받아 온다. 인가 코드 + DCR(Dynamic Client Registration)을 하네스가 직접 하게 바꾸는 편이 MCP 인가 명세에 더 가깝다.
+10. **하네스의 완전한 MCP OAuth** — 지금은 `mint-sso`가 password grant로 대신 받아 온다. 인가 코드 + DCR(Dynamic Client Registration)을 하네스가 직접 하게 바꾸는 편이 MCP 인가 명세에 더 가깝다.
 11. **추가 클라이언트(Antigravity·Cursor·VS Code)** — 같은 Gateway URL을 각자의 MCP 설정에 넣으면 되고 단말 에이전트는 그 파일들을 이미 인벤토리한다. GUI 앱이라 랩에서 실행·검증하지 않았고, `render.py`에 이 형식들의 관리형 설정 생성을 더할 수 있다.
 12. **더 나은 도구 선택을 위한 모델 경로** — GPU 추론(Intel Arc, Vulkan 또는 IPEX 경유) 또는 LiteLLM 뒤에 클라우드 키를 붙이는 두 방향 다 검토할 것. 지금 CPU 2B 모델은 벤치 4건 중 2건만 기대한 도구를 곧바로 골랐다(나머지는 탐색 도구·별칭 도구).
 13. **Gemini CLI `tools.exclude` → Policy Engine 이관** — Gemini CLI가 사용 중단을 예고했다. 대체 설정 스키마가 확정되면 `workstation/managed/render.py`의 Gemini 설정을 옮긴다.

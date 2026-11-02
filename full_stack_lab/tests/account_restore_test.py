@@ -14,7 +14,7 @@ from app import agent_service as service
 from app import endpoint_plane, local_jobs, review
 
 ADMIN = {"roles": ["admin"], "principal": "root", "user_id": "root"}
-EMPLOYEE = {"roles": ["employee"], "principal": "emp-bob", "user_id": "bob"}
+EMPLOYEE = {"roles": ["employee"], "principal": "emp-mint", "user_id": "mint"}
 
 
 class Cursor:

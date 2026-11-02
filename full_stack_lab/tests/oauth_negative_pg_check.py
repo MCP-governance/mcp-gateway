@@ -25,7 +25,7 @@ PRINCIPAL = "oauth-negative"
 
 async def login() -> dict:
     result = await idp.token(REQUEST, grant_type="password", client_id=CLIENT,
-                             username=f"{PRINCIPAL}@bob.local", password="lab-password", refresh_token=None)
+                             username=f"{PRINCIPAL}@mint.local", password="lab-password", refresh_token=None)
     assert isinstance(result, dict), result
     return result
 

@@ -8,7 +8,7 @@ if (!['list', 'allow', 'deny'].includes(CASE)) throw new Error('Unknown LOAD_CAS
 const GATEWAY = 'http://gateway:8080';
 const IDP = 'http://agent-service:8000';
 const SERVERS = ['filesystem', 'git', 'fetch', 'memory', 'desktop', 'postgres', 'redis', 'email', 'gitea', 'playwright'];
-const EMPLOYEES = ['ysg@bob.local', 'jwj@bob.local', 'pse@bob.local'];
+const EMPLOYEES = ['ysg@mint.local', 'jwj@mint.local', 'pse@mint.local'];
 const PROTOCOL = '2025-11-25';
 const requests = new Counter('mcp_requests');
 const errors = new Counter('mcp_errors');

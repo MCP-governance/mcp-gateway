@@ -37,7 +37,7 @@ v2와의 차이: v2는 PC에 손으로 짠 에이전트(`office_agent.py`)가 �
                 │                          │
 ┌───────────────┼──────────────── office (internal) ─────────────────────────────────────────────┐
 │  ws-ysg Claude Code   ws-jwj Codex CLI   ws-pse Gemini CLI   ws-nkk OpenCode(+섀도 설정)          │
-│  (네 PC 모두 하네스 4종 설치 · /etc/* 관리형 설정 · bob-sso · 단말 에이전트)                        │
+│  (네 PC 모두 하네스 4종 설치 · /etc/* 관리형 설정 · mint-sso · 단말 에이전트)                        │
 │     │ ① SSO 토큰(IdP)      │ ② LLM(LiteLLM 가상 키)             │ ③ MCP(/mcp/<server>/)           │
 │     ▼                     ▼                                    ▼                                │
 │  agent-service(IdP·Console)   llm-gateway(LiteLLM) ──model──► ollama     gateway ──policy──► opa  │
@@ -121,7 +121,7 @@ Antigravity는 GUI 앱이라 랩에서 실행하지 않는다. 같은 Gateway UR
 
 | 하네스 | 파일(시스템 관리형 위치) | 서버 항목 | 토큰 | 하네스 안의 도구 승인 |
 | --- | --- | --- | --- | --- |
-| Claude Code | `/etc/claude-code/managed-mcp.json`(배타적) + `managed-settings.json` | `type:"http"`, `url` | `headersHelper: bob-sso header` | `permissions.allow: mcp__<server>` |
+| Claude Code | `/etc/claude-code/managed-mcp.json`(배타적) + `managed-settings.json` | `type:"http"`, `url` | `headersHelper: mint-sso header` | `permissions.allow: mcp__<server>` |
 | Codex CLI | `/etc/codex/managed_config.toml`(기본 설정) + `requirements.toml`(강제 제약) | `[mcp_servers.<s>] url` + 이름·URL identity | `bearer_token_env_var = "BOB_SSO_TOKEN"` | `default_tools_approval_mode = "approve"` |
 | Gemini CLI | `/etc/gemini-cli/settings.json`(시스템 설정, 최우선) | `httpUrl` | `headers.Authorization = "Bearer $BOB_SSO_TOKEN"` | `trust: true` |
 | OpenCode | `/etc/opencode/opencode.json`(`OPENCODE_CONFIG`) | `type:"remote"`, `url` | `headers … {env:BOB_SSO_TOKEN}` | 기본 허용 |
@@ -129,17 +129,17 @@ Antigravity는 GUI 앱이라 랩에서 실행하지 않는다. 같은 Gateway UR
 하네스 안의 도구 승인은 IT가 회사 도구를 **사전 승인**한 것이다. 사람에게 되묻지 않을 뿐 판정은 Gateway가 한다 —
 하네스 쪽 승인을 끄면 차단이 두 군데로 나뉘어 어느 쪽이 막았는지 흐려진다.
 
-LLM 연결도 관리형 설정이 정한다: Claude `ANTHROPIC_BASE_URL=http://llm-gateway:4000`(모든 모델 슬롯 `bob-assistant`),
-Codex `model_provider=bob`(`wire_api="responses"`, `env_key="BOB_LLM_KEY"`, `requires_openai_auth=false`), Gemini
-`GOOGLE_GEMINI_BASE_URL`(`/etc/profile.d/bob-harness.sh`), OpenCode `@ai-sdk/openai-compatible` 공급자. 직원의 LiteLLM
+LLM 연결도 관리형 설정이 정한다: Claude `ANTHROPIC_BASE_URL=http://llm-gateway:4000`(모든 모델 슬롯 `mint-assistant`),
+Codex `model_provider=mint`(`wire_api="responses"`, `env_key="BOB_LLM_KEY"`, `requires_openai_auth=false`), Gemini
+`GOOGLE_GEMINI_BASE_URL`(`/etc/profile.d/mint-harness.sh`), OpenCode `@ai-sdk/openai-compatible` 공급자. 직원의 LiteLLM
 가상 키는 `BOB_LLM_KEY` 하나이고 profile 스크립트가 하네스별 이름(`ANTHROPIC_AUTH_TOKEN`, `GEMINI_API_KEY`)으로 내어 준다.
 
 ### 3.2 PC에 회사가 더한 것
 
 | 파일 | 역할 |
 | --- | --- |
-| `bin/bob-sso` | SSO 자격 도우미. IdP `/oauth/token`(password grant, `client_id`=워크스테이션 — SSO 로그인의 대역)으로 로그인하고 refresh로 갱신, `~/.cache/bob-sso/token.json`(flock, 0600). `token` / `header` |
-| `bin/bob-ask` | 직원이 하네스에 입력하는 한 번의 지시를 헤드리스로 실행. `--servers`로 작업에 필요한 서버만 켠다(하네스 고유 스위치). 원본 이벤트는 `~/transcripts/` |
+| `bin/mint-sso` | SSO 자격 도우미. IdP `/oauth/token`(password grant, `client_id`=워크스테이션 — SSO 로그인의 대역)으로 로그인하고 refresh로 갱신, `~/.cache/mint-sso/token.json`(flock, 0600). `token` / `header` |
+| `bin/mint-ask` | 직원이 하네스에 입력하는 한 번의 지시를 헤드리스로 실행. `--servers`로 작업에 필요한 서버만 켠다(하네스 고유 스위치). 원본 이벤트는 `~/transcripts/` |
 | `bin/workday` | 시나리오(`scenarios/<ws>.toml`) 실행. `llm`=하네스에 자연어 지시, `scripted`=MCP Inspector CLI가 같은 URL·토큰으로 정해진 호출. 판정은 직원 토큰으로 Gateway `/api/activity`에서 읽는다 |
 | `bin/harness-check` | 하네스 4종이 관리형 서버 전부에 Gateway로 붙는지 **모델 없이** 확인(`mcp list`, Codex는 app-server `mcpServerStatus/list`) |
 | `managed/harness-prompt.md` | 소형 CPU 모델용 짧은 시스템 프롬프트(컴팩트 모드) |
@@ -149,13 +149,13 @@ Codex `model_provider=bob`(`wire_api="responses"`, `env_key="BOB_LLM_KEY"`, `req
 **컴팩트 모드**(`BOB_HARNESS_COMPACT=1`, 기본): CPU의 소형 모델은 코딩 에이전트의 수만 토큰 프롬프트를 쓸 만한 시간에
 읽지 못한다. 그래서 하네스의 시스템 프롬프트를 짧게 바꾸고 내장 도구(셸·편집·웹·이미지·서브에이전트)를 끈다 —
 Claude `--tools "" --system-prompt-file`, Codex `model_instructions_file` + `--disable shell_tool …`, Gemini `GEMINI_SYSTEM_MD`,
-OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 호출은 하네스의 MCP 클라이언트가 한다. LiteLLM 뒤에
+OpenCode `--agent mint`. **MCP 경로는 그대로**다: 도구 목록 조회와 호출은 하네스의 MCP 클라이언트가 한다. LiteLLM 뒤에
 클라우드 모델을 붙이면 `0`으로 하네스 본래 프롬프트를 쓴다.
 
 ## 4. 호출 한 건의 흐름
 
-1. 직원이 하네스에 지시한다(랩에서는 `bob-ask` 또는 `workday`가 대신 입력).
-2. 하네스가 관리형 설정의 MCP 서버마다 `initialize` → `tools/list`를 `/mcp/<server>/`로 보낸다. 토큰은 `bob-sso`가 준다.
+1. 직원이 하네스에 지시한다(랩에서는 `mint-ask` 또는 `workday`가 대신 입력).
+2. 하네스가 관리형 설정의 MCP 서버마다 `initialize` → `tools/list`를 `/mcp/<server>/`로 보낸다. 토큰은 `mint-sso`가 준다.
    토큰이 없거나 틀리면 `401` + `WWW-Authenticate: Bearer resource_metadata=…`(RFC 9728).
 3. `main.ServerPath`가 URL의 서버 이름을 떼어 `scope["mcp_server"]`에 넣고 같은 MCP 앱으로 넘긴다. 등록되지 않은 이름은
    404(집계 엔드포인트로 새지 않는다). `tools/list`는 **승인된 스키마**를 그 서버의 **고유 도구 이름**으로 돌려준다
@@ -209,10 +209,10 @@ OpenCode `--agent bob`. **MCP 경로는 그대로**다: 도구 목록 조회와 
 | --- | --- | --- |
 | Claude Code | Anthropic Messages | `/v1/messages` |
 | Codex CLI | OpenAI Responses(유일한 wire_api) | `/v1/responses` |
-| Gemini CLI | Gemini generateContent | `/v1beta/models/bob-assistant:generateContent` |
+| Gemini CLI | Gemini generateContent | `/v1beta/models/mint-assistant:generateContent` |
 | OpenCode | OpenAI Chat Completions | `/v1/chat/completions` |
 
-LiteLLM(`llm/litellm.yaml`)은 네 형식을 모두 `bob-assistant` → Ollama `/v1`(`openai/` 공급자)로 보낸다.
+LiteLLM(`llm/litellm.yaml`)은 네 형식을 모두 `mint-assistant` → Ollama `/v1`(`openai/` 공급자)로 보낸다.
 `reasoning_effort: none`으로 qwen3.5의 생각 모드를 끈다(실측 70초 → 1.3초). Ollama는 모델 하나·요청 하나만 올린다
 (`OLLAMA_MAX_LOADED_MODELS=1`, `NUM_PARALLEL=1`, KV 캐시 q8). 기본 모델은 `qwen3.5:2b-q4_K_M`(적재 1.7GB, 12K 컨텍스트),
 품질이 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`(D-32). 가상 키는 `llm-provision`이 직원 이메일에 묶어 발급하고 사용량은
@@ -245,7 +245,7 @@ LiteLLM DB에 직원 단위로 남는다.
 
 | 주체 | 자격 | 발급·검증 |
 | --- | --- | --- |
-| 직원의 하네스(MCP) | OAuth 접근 토큰(Ed25519 JWT, 10분) + refresh(8시간) | IdP `/oauth/token`(`bob-sso`), Gateway가 서명·폐기목록·관리대장으로 검증 |
+| 직원의 하네스(MCP) | OAuth 접근 토큰(Ed25519 JWT, 10분) + refresh(8시간) | IdP `/oauth/token`(`mint-sso`), Gateway가 서명·폐기목록·관리대장으로 검증 |
 | 직원의 하네스(LLM) | LiteLLM 가상 키 `sk-…`(`BOB_LLM_KEY`) | LiteLLM이 검증, 사용량은 LiteLLM DB |
 | Console 사용자 | 관리자 30분 유휴·최대 8시간, 그 외 계정 30분 | 서버 `console_sessions`가 만료를 강제하고, 관리자 SSO는 암호화된 refresh token으로 접근 토큰을 갱신한다. 로그아웃은 즉시 무효화한다 |
 | PC의 엔드포인트 에이전트 | 장치 키 | 엔드포인트 평면(인벤토리·리스너·OS 차단 관측). 오프라인 버퍼는 관측 전송을 보강하며 게이트웨이 heartbeat 공백의 기존 180초 일시 격리를 바꾸지 않는다 |
@@ -253,7 +253,7 @@ LiteLLM DB에 직원 단위로 남는다.
 | MCP 서버 → 하위 시스템 | 서버 보유 자격 | email: 메일 계정, gitea: PAT, postgres/redis: 접속 문자열 |
 
 IdP는 RFC 8414 메타데이터, RFC 7009 폐기, RFC 7662 조사를 제공하고 Gateway는 RFC 9728 보호 자원 메타데이터를 낸다.
-하네스가 MCP OAuth 인가 코드 흐름을 직접 하지 않고 `bob-sso`를 쓰는 것은 헤드리스 컨테이너에 브라우저가 없어서다
+하네스가 MCP OAuth 인가 코드 흐름을 직접 하지 않고 `mint-sso`를 쓰는 것은 헤드리스 컨테이너에 브라우저가 없어서다
 (실제 PC라면 하네스의 OAuth 로그인 — ROADMAP).
 
 ## 9. 섀도 MCP와 단말
@@ -307,7 +307,7 @@ Gitleaks 기본 규칙을 Gateway 전송 인자와 도입 워커에 연결하고
 | --- | --- |
 | `full_stack_lab/console.sh` | 단일 진입점(up·workday·ask·harnesses·test·experiment·restore …) → [RUNBOOK.md](RUNBOOK.md) |
 | `full_stack_lab/compose.yaml` | 전체 스택(프로필: `llm`, `llm-download`, `supply-chain`, `llm-stub`, `replay`) |
-| `full_stack_lab/workstation/` | 직원 PC 이미지: `Dockerfile`, `managed/`(관리형 설정 원본·`render.py`), `bin/`(bob-sso·bob-ask·workday·harness-check), `scenarios/`, `shadow/` |
+| `full_stack_lab/workstation/` | 직원 PC 이미지: `Dockerfile`, `managed/`(관리형 설정 원본·`render.py`), `bin/`(mint-sso·mint-ask·workday·harness-check), `scenarios/`, `shadow/` |
 | `full_stack_lab/gateway/app/` | Gateway(FastAPI)·IdP·Console API·Console 정적 파일 |
 | `…/mcp_facade.py` | MCP 서버(저수준 SDK): 서버별·집계 도구 목록, 하네스 식별 기록 |
 | `…/main.py` | API, `/mcp` 마운트(`RequireBearer` → `ServerPath`) |

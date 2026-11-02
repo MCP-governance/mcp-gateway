@@ -1,7 +1,7 @@
-# 제품 랩 litellm.yaml(llm/litellm.yaml)과 같은 모양: 직원은 모델 이름 하나(bob-assistant)와 자기 가상 키만 안다.
+# 제품 랩 litellm.yaml(llm/litellm.yaml)과 같은 모양: 직원은 모델 이름 하나(mint-assistant)와 자기 가상 키만 안다.
 # 로컬 모델은 비용이 0이라 예산 정책이 안 걸리므로 시험용 단가를 model_info에 둔다(실제 과금 아님).
 model_list:
-  - model_name: bob-assistant
+  - model_name: mint-assistant
     litellm_params:
       model: openai/qwen3:0.6b
       api_base: http://ollama:11434/v1
@@ -11,7 +11,7 @@ model_list:
     model_info:
       input_cost_per_token: 0.00001
       output_cost_per_token: 0.00002
-  - model_name: bob-reserved
+  - model_name: mint-reserved
     litellm_params:
       model: openai/qwen3:0.6b
       api_base: http://ollama:11434/v1

@@ -1757,6 +1757,8 @@ ROUTES.people = async (_, tab, query = new URLSearchParams()) => {
                 <button type="button" data-act="suspend-open" data-token="${a.token}" data-name="${a.display_name}">MCP 이용 중지</button>
                 <button type="button" data-act="suspend-all" data-token="${a.token}" data-name="${a.display_name}">전체 중지</button>
                 <button type="button" data-act="resume-all" data-token="${a.token}" data-name="${a.display_name}">전체 재개</button>
+                ${a.role !== "admin" || viewer.user_id === "root" ? html`<button type="button" data-act="account-rename" data-id="${a.user_id}" data-name="${a.display_name}">아이디 변경</button>
+                  <button type="button" data-act="account-password" data-id="${a.user_id}" data-name="${a.display_name}" data-role="${a.role}">비밀번호 재설정</button>` : ""}
                 ${a.user_id !== "root" ? html`<button type="button" class="danger" data-act="account-delete" data-id="${a.user_id}" data-name="${a.display_name}">삭제</button>` : ""}`)}</td></tr>`)}
           </tbody></table><p class="empty" role="status" data-list-empty="account-list" hidden>조건에 맞는 결과 없음</p>`, { flush: true, tools: listToolbar("account-list", "이름·이메일·부서 검색") }) },
         { key: "deleted", label: "삭제된 사용자", n: deletedAccounts.length,
@@ -3226,6 +3228,38 @@ const ACTIONS = {
     if (!fd) return;
     const r = await api(`/api/accounts/${el.dataset.id}/status`, { method: "PUT", body: { status: fd.get("status"), note: fd.get("note") || "" } });
     await reload();
+    toast(r.message);
+  },
+  async "account-rename"(el) {
+    const fd = await ask({ title: `${el.dataset.name} 아이디 변경`,
+      fields: field.text("user_id", "새 아이디", 'required minlength="3" maxlength="32" pattern="[a-z][a-z0-9]*(?:[._\\-][a-z0-9]+)*" autocomplete="off"', el.dataset.id),
+      confirm: "변경" });
+    if (!fd) return;
+    const r = await api(`/api/accounts/${encodeURIComponent(el.dataset.id)}/name`, { method: "PUT", body: { user_id: fd.get("user_id").trim().toLowerCase() } });
+    await reload();
+    toast(r.message);
+  },
+  async "account-password"(el) {
+    const min = el.dataset.role === "admin" ? 12 : 8;
+    const fd = await ask({ title: `${el.dataset.name} 비밀번호 재설정`,
+      fields: html`${field.text("new_password", "새 비밀번호", `type="password" required minlength="${min}" maxlength="150" autocomplete="new-password"`)}
+        ${field.text("confirm_password", "새 비밀번호 확인", `type="password" required minlength="${min}" maxlength="150" autocomplete="new-password"`)}`,
+      confirm: "변경" });
+    if (!fd) return;
+    if (fd.get("new_password") !== fd.get("confirm_password")) { toast("새 비밀번호가 서로 다릅니다.", true); return; }
+    const r = await api(`/api/accounts/${encodeURIComponent(el.dataset.id)}/password`, { method: "PUT", body: { new_password: fd.get("new_password") } });
+    toast(r.message);
+  },
+  async password() {
+    const min = viewer.admin ? 12 : 8;
+    const fd = await ask({ title: "비밀번호 변경",
+      fields: html`${field.text("current_password", "현재 비밀번호", 'type="password" required maxlength="150" autocomplete="current-password"')}
+        ${field.text("new_password", "새 비밀번호", `type="password" required minlength="${min}" maxlength="150" autocomplete="new-password"`)}
+        ${field.text("confirm_password", "새 비밀번호 확인", `type="password" required minlength="${min}" maxlength="150" autocomplete="new-password"`)}`,
+      confirm: "변경" });
+    if (!fd) return;
+    if (fd.get("new_password") !== fd.get("confirm_password")) { toast("새 비밀번호가 서로 다릅니다.", true); return; }
+    const r = await api("/auth/password", { method: "POST", body: { current_password: fd.get("current_password"), new_password: fd.get("new_password") } });
     toast(r.message);
   },
   async "suspend-open"(el) {

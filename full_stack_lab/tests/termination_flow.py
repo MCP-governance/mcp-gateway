@@ -25,7 +25,7 @@ GATEWAY = os.getenv("LAB_GATEWAY_URL", "http://127.0.0.1:8080")
 
 def token() -> str:
     req = urllib.request.Request(os.getenv("LAB_CONSOLE_URL", "http://127.0.0.1:8000") + "/auth/mock-login", method="POST",
-                                 data=json.dumps({"email": "kkg@bob.local", "password": "test-password"}).encode(),
+                                 data=json.dumps({"email": "kkg@mint.local", "password": "test-password"}).encode(),
                                  headers={"Content-Type": "application/json"})
     return json.load(urllib.request.urlopen(req))["access_token"]
 

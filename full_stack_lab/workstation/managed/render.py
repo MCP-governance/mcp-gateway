@@ -15,7 +15,7 @@ import tomllib
 from pathlib import Path
 from urllib.parse import urlsplit
 
-MODEL = "bob-assistant"
+MODEL = "mint-assistant"
 
 parser = argparse.ArgumentParser(description="Render reviewed MCP registry into managed harness settings")
 parser.add_argument("catalog", type=Path)
@@ -58,7 +58,7 @@ def merge(relative: str, extra: dict) -> None:
 # Claude Code: managed-mcp.json takes exclusive control of MCP servers; the token comes
 # from headersHelper, re-run by Claude Code before it expires.
 write("claude-code/managed-mcp.json", json.dumps({"mcpServers": {
-    s: {"type": "http", "url": url(s), "headersHelper": "/usr/local/bin/bob-sso header"} for s in servers
+    s: {"type": "http", "url": url(s), "headersHelper": "/usr/local/bin/mint-sso header"} for s in servers
 }}, indent=2) + "\n")
 template = json.loads((Path(__file__).parent / "claude-code/managed-settings.json").read_text(encoding="utf-8"))
 template["permissions"]["allow"] = [f"mcp__{s}" for s in servers]
@@ -69,7 +69,7 @@ template.update({"disableClaudeAiConnectors": True, "allowAllClaudeAiMcps": Fals
                  "allowManagedHooksOnly": True})
 write("claude-code/managed-settings.json", json.dumps(template, ensure_ascii=False, indent=2) + "\n")
 
-# Codex CLI: TOML, token from the environment variable bob-ask fills per run. Company
+# Codex CLI: TOML, token from the environment variable mint-ask fills per run. Company
 # tools are pre-approved in the harness (approve) - the decision is the Gateway's, as
 # with Claude Code's permissions.allow and Gemini CLI's trust.
 codex = (Path(__file__).parent / "codex/config.toml").read_text(encoding="utf-8")
@@ -96,10 +96,10 @@ merge("opencode/opencode.json", {
                 "headers": {"Authorization": "Bearer {env:BOB_SSO_TOKEN}"}} for s in servers},
 })
 
-write("bob/servers", "\n".join(servers) + "\n")
+write("mint/servers", "\n".join(servers) + "\n")
 print(f"managed harness config: {len(servers)} servers -> {root}")
 if args.install:
-    for folder in ("claude-code", "codex", "gemini-cli", "opencode", "bob"):
+    for folder in ("claude-code", "codex", "gemini-cli", "opencode", "mint"):
         destination = Path("/etc") / folder
         destination.mkdir(parents=True, exist_ok=True)
         for source in (root / folder).iterdir():

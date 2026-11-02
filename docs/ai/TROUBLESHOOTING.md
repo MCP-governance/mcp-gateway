@@ -36,13 +36,13 @@
 | 모든 쓰기·외부 호출이 `P-DATA-INSPECTION-001` | presidio-analyzer 불능 | `docker compose ps presidio-analyzer`, `/api/health`의 `presidio_*` |
 | `./console.sh: Permission denied` | Windows 도구로 `\\wsl.localhost\…` 파일을 편집하면 새 파일로 다시 써져 실행 비트가 사라진다 | `chmod +x console.sh tests/security_regression.sh`, 커밋 전 `git diff --summary`로 mode change 확인 |
 | `git` "dubious ownership"(시드) | root로 남의 디렉터리 | `git -c safe.directory=*` |
-| Gitea `PUT /orgs/bob/members` 405 | API가 팀 경유만 허용 | Owners 팀 멤버 PUT |
+| Gitea `PUT /orgs/mint/members` 405 | API가 팀 경유만 허용 | Owners 팀 멤버 PUT |
 | Codex CLI가 "MCP tool call requires approval, but approval policy is never" | `approval_policy="never"`인데 서버별 승인 모드가 비어 있음 | 서버마다 `default_tools_approval_mode="approve"` |
 | 컨테이너에서 Codex 셸 도구가 "No permissions to create new namespace" | bwrap 네임스페이스 생성 불가 | 컴팩트 모드(`BOB_HARNESS_COMPACT=1`)가 셸 도구를 꺼서 우회 |
 | `codex mcp list`가 다 연결된 것처럼 보이는데 실제로는 안 붙음 | 이 명령은 설정만 보여 주고 연결을 확인하지 않음 | `codex app-server`의 `mcpServerStatus/list`(`harness-check`가 씀) |
 | Gemini CLI에서 MCP 서버가 전부 Disabled | 비신뢰 폴더에서 MCP를 끔 | `~/.gemini/trustedFolders.json`에 작업 디렉터리 신뢰 등록 |
 | Gemini CLI가 `tools.exclude` 사용 중단 예고 경고를 띄움 | 설정 키가 곧 바뀔 예정 | 지금은 그대로 동작함 — 무시. 마이그레이션은 [ROADMAP.md](ROADMAP.md) |
-| 소형 모델이 도구를 못 찾고 90초씩 끔 | 집계 엔드포인트(`/mcp/`)의 도구 166개가 한 목록에 다 보임 | 서버별 엔드포인트(`/mcp/<server>/`) + `bob-ask --servers` |
+| 소형 모델이 도구를 못 찾고 90초씩 끔 | 집계 엔드포인트(`/mcp/`)의 도구 166개가 한 목록에 다 보임 | 서버별 엔드포인트(`/mcp/<server>/`) + `mint-ask --servers` |
 | WSL VM이 반복해서 멎음(`Wsl/Service/0x8007274c`, wsl.exe 무응답) | 스택(~3.6GB) 위에 큰 로컬 모델(qwen3.5:4b@16K, +3.46GB)과 하네스 실행이 겹쳐 7.6GB VM 메모리를 넘음 | `wsl --shutdown` 후 재기동. 기본 모델은 2B로 유지, Ollama는 모델 1개만 상주(`OLLAMA_MAX_LOADED_MODELS=1`) |
 | SSH로 솔루션 기기에서 compose를 부르면 이미지 받기가 `docker-credential-desktop.exe: executable file not found` | Docker Desktop WSL 통합의 자격 도우미가 대화형 셸 PATH(Windows 경로)에만 있음 | `export PATH="$PATH:/mnt/c/Program Files/Docker/Docker/resources/bin"` 뒤 실행 |
 | A.I.G 작업이 첫 요청에서 끊김(Ollama 로그에 `500 · 1m0s`) | `mcp-scan`의 OpenAI 클라이언트 제한이 요청당 60초. CPU에서 큰 모델·생각 모드가 그 안에 첫 바이트를 못 보냄 | 기본 `qwen3.5:0.8b` 유지(D-47). 더 큰 모델은 GPU 기기나 외부 endpoint |

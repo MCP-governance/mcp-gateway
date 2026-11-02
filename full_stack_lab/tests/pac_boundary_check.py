@@ -16,8 +16,8 @@ def main():
     assert not pac.scope({"token": "admin-demo", "synthetic": True}, "postgres", "execute_sql", cls.action, cls.resources, {"sql": sql})["allowed"]
     assert not pac.scope({"token": "acceptance-user-employee", "synthetic": False}, "postgres", "execute_sql", "r", [])["allowed"]
     assert not pac.under("/sharedx/file", ["/shared"])
-    assert list(pac.leaves({"recipients": ["a@bob.local"], "options": {"command": "x"}})) == [
-        (["recipients", 0], "a@bob.local"), (["options", "command"], "x")]
+    assert list(pac.leaves({"recipients": ["a@mint.local"], "options": {"command": "x"}})) == [
+        (["recipients", 0], "a@mint.local"), (["options", "command"], "x")]
     original = registry.REGISTRY_DIR
     try:
         registry.REGISTRY_DIR = Path("/registry/field")

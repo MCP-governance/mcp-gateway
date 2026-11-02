@@ -70,7 +70,7 @@ jobs:
         run: |
           python -m pip install --quiet pyflakes
           python -m pyflakes gateway/app/*.py tests/*.py supply_chain/*.py workstation/*.py workstation/managed/*.py \
-            workstation/bin/bob-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py \
+            workstation/bin/mint-sso workstation/bin/workday workstation/bin/harness-check corp/*.py scripts/*.py \
             ../endpoint-agent/*.py field/pc/mcpgw_pc.py
 
       - name: 중첩 풀 연결 검사
@@ -89,7 +89,7 @@ jobs:
           node --test ../.github/ci/compose-cache.test.cjs
           python3 ../.github/ci/changes_test.py
           python3 ../.github/ci/prepare_lab_capabilities_test.py
-          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/bob-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
+          bash -n console.sh tests/security_regression.sh workstation/entrypoint.sh workstation/bin/mint-ask mcp/run-server.sh corp/gitea-entrypoint.sh ../endpoint-agent/install-linux.sh
           node --check gateway/app/agent_static/console.js
           node --check gateway/app/agent_static/charts.mjs
           node --check gateway/app/agent_static/login.js
@@ -584,11 +584,11 @@ jobs:
         run: |
           npm install -g --no-fund --no-audit @anthropic-ai/claude-code@2.1.282 @openai/codex@0.157.0
           # README ②: 사내망에 열기 전에 계정마다 비밀번호를 바꾼다 — 바꾼 값으로 로그인되는지까지 본다.
-          printf 'ci-field-password-01\n' | APPLIANCE_BIND=127.0.0.1 ./console.sh field set-password ysg@bob.local
+          printf 'ci-field-password-01\n' | APPLIANCE_BIND=127.0.0.1 ./console.sh field set-password ysg@mint.local
           servers="$(python3 -c 'import tomllib; print(",".join(sorted(tomllib.load(open("registry/catalog.toml", "rb"))["servers"])))')"
           echo "ci-field-password-01" | python3 field/pc/mcpgw_pc.py setup --url https://127.0.0.1 \
             --ca "$FIELD_CA" --ca-sha256 "$FIELD_CA_SHA256" \
-            --servers "$servers" --workstation ci-runner --email ysg@bob.local --password-stdin
+            --servers "$servers" --workstation ci-runner --email ysg@mint.local --password-stdin
           python3 ~/.mcpgw/mcpgw_pc.py doctor
           # D-51: 키트가 실제 하네스의 기본 커넥터·기능을 읽어 Gateway에 보고하는지(Codex 웹 검색은 기본으로 켜져 있다).
           export NODE_EXTRA_CA_CERTS="$FIELD_CA" CODEX_CA_CERTIFICATE="$FIELD_CA"
@@ -612,13 +612,13 @@ jobs:
           test "$(code -H 'Accept: text/html' $base/git/)" = 302
           test "$(code -H 'X-WEBAUTH-USER: corpadmin' $base/git/api/v1/user)" = 401
           curl --cacert "$FIELD_CA" -fsS -c /tmp/jar -o /dev/null -X POST $base/auth/mock-login -H 'content-type: application/json' \
-            -d '{"email":"ysg@bob.local","password":"ci-field-password-01"}'
+            -d '{"email":"ysg@mint.local","password":"ci-field-password-01"}'
           test "$(curl --cacert "$FIELD_CA" -s -b /tmp/jar -o /tmp/git.html -w '%{http_code}' $base/git/)" = 200
           grep -q '"/git/ysg"' /tmp/git.html
           # 인가: 관리자 역할은 Gitea 관리자라 랩의 비공개 저장소를 읽고, 직원은 같은 저장소를 읽지 못한다.
-          git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40bob.local:test-password@127.0.0.1/git/bob/handbook.git" | grep -q HEAD
-          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://ysg%40bob.local:ci-field-password-01@127.0.0.1/git/bob/handbook.git"; then exit 1; fi
-          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40bob.local:wrong-password@127.0.0.1/git/bob/handbook.git"; then exit 1; fi
+          git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40mint.local:test-password@127.0.0.1/git/mint/handbook.git" | grep -q HEAD
+          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://ysg%40mint.local:ci-field-password-01@127.0.0.1/git/mint/handbook.git"; then exit 1; fi
+          if git -c http.sslCAInfo="$FIELD_CA" ls-remote "https://kkg%40mint.local:wrong-password@127.0.0.1/git/mint/handbook.git"; then exit 1; fi
 
       - name: 실패 시 컨테이너 로그
         if: failure()

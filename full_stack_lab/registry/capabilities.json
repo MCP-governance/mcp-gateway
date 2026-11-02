@@ -33,7 +33,7 @@
         "/repos/handbook"
       ],
       "repositories": [
-        "bob/handbook"
+        "mint/handbook"
       ],
       "tables": [
         "public.products",
@@ -121,9 +121,9 @@
         "/repos/infra-secrets"
       ],
       "repositories": [
-        "bob/handbook",
-        "bob/payment-service",
-        "bob/infra-secrets"
+        "mint/handbook",
+        "mint/payment-service",
+        "mint/infra-secrets"
       ],
       "tables": [
         "public.products",

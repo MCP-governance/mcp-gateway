@@ -48,7 +48,7 @@ async def main():
     upstream.session = held_session
     _, claims = mint(token)
     await core.execute_call(call_payload(token, "gitea", "issue_write",
-                                         {"method": "create", "owner": "bob", "repo": "payment-service", "title": title, "body": "lab"}, claims))
+                                         {"method": "create", "owner": "mint", "repo": "payment-service", "title": title, "body": "lab"}, claims))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "model": {"name": "bob-assistant"},
+  "model": {"name": "mint-assistant"},
   "security": {"auth": {"selectedType": "gemini-api-key"}},
   "general": {"enableAutoUpdate": false, "enableAutoUpdateNotification": false},
   "privacy": {"usageStatisticsEnabled": false},

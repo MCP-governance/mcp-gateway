@@ -84,9 +84,9 @@ Gemini CLI `/etc/gemini-cli/settings.json`, OpenCode `/etc/opencode/opencode.jso
 
 ### email (mcp-email-server)
 - `MCP_ALLOWED_HOSTS: mcp-email:8000` 필요(없으면 421 Misdirected Request).
-- 서버가 `ai-assistant@bob.local` 메일함 비밀번호를 **보유**한다. `exit_terms`가 전부 false →
+- 서버가 `ai-assistant@mint.local` 메일함 비밀번호를 **보유**한다. `exit_terms`가 전부 false →
   종료 시 모집단을 열거할 수 없어 최선 등급 **T3** (논문의 "고지 없는 제공자").
-- 외부 수신자 메일은 x로 승격, 저널 BCC(`compliance@bob.local`) 제한 실행(`P-X-RESTRICT-001`).
+- 외부 수신자 메일은 x로 승격, 저널 BCC(`compliance@mint.local`) 제한 실행(`P-X-RESTRICT-001`).
 - 세션을 발급한다(E2): DELETE 200 후 같은 세션 404.
 
 ### gitea (gitea-mcp)
@@ -102,7 +102,7 @@ Gemini CLI `/etc/gemini-cli/settings.json`, OpenCode `/etc/opencode/opencode.jso
 
 ## 3-1. 출력 마스킹이 서버 결과에 미치는 영향
 모든 실행 결과는 Presidio를 거친다(D-23). 가려지는 것: 주민번호, 휴대전화, **외부 도메인** 이메일, 카드·IBAN·SSN,
-`password=`류 자격 문자열. 가려지지 않는 것: 날짜·이름·URL·IP, 사내(`bob.local`) 주소, 호출의 수신자 주소.
+`password=`류 자격 문자열. 가려지지 않는 것: 날짜·이름·URL·IP, 사내(`mint.local`) 주소, 호출의 수신자 주소.
 그래서 postgres의 `sales.customers` 조회는 이름만 보이고 전화·주민번호·이메일이 `[REDACTED]`가 된다.
 
 ## 4. 발견한 함정 (다시 밟지 말 것)

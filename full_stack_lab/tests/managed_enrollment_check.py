@@ -38,7 +38,7 @@ async def main():
     try:
         status, result = call("/auth/signup", {"username": name, "display_name": "Enrollment boundary check", "password": password})
         assert status == 200 and result["status"] == "pending", result
-        status, admin = call("/auth/mock-login", {"email": "kkg@bob.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
+        status, admin = call("/auth/mock-login", {"email": "kkg@mint.local", "password": os.getenv("MOCK_SSO_PASSWORD", "test-password")})
         assert status == 200, admin
         admin = admin["access_token"]
         request = await db.fetch_one("SELECT id FROM signup_requests WHERE username=%s", (name,))

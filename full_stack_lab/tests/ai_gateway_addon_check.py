@@ -159,7 +159,7 @@ class AddonRoutes(unittest.IsolatedAsyncioTestCase):
         result = {"decision_id": 7, "outcome": "executed", "is_error": False, "result_sha256": "a" * 64, "result_bytes": 5}
         record = AsyncMock(return_value=11)
         for row, recorded in (({"user_token": "tok-alice", "client": {"ingress": addon.INGRESS}}, True),
-                              ({"user_token": "tok-bob", "client": {"ingress": addon.INGRESS}}, False),
+                              ({"user_token": "tok-mint", "client": {"ingress": addon.INGRESS}}, False),
                               ({"user_token": "tok-alice", "client": {"ingress": "mcp"}}, False), (None, False)):
             record.reset_mock()
             with patch.object(addon.db, "fetch_one", AsyncMock(return_value=row)), patch.object(addon.review, "record_event", record):

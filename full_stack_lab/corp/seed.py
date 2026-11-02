@@ -50,7 +50,7 @@ BoB Corp는 결제 대행과 데이터 분석 서비스를 제공합니다. 본�
 플랫폼개발팀·데이터분석팀·보안기술팀·경영지원팀으로 구성됩니다.
 
 - 대표 서비스: BoB Pay(결제), BoB Insight(분석)
-- 고객 문의: help@bob.local
+- 고객 문의: help@mint.local
 """,
     "public/leave-policy-2026.md": """# 2026 휴가 규정 (공개)
 
@@ -62,7 +62,7 @@ BoB Corp는 결제 대행과 데이터 분석 서비스를 제공합니다. 본�
 
 - 과제: BoB Pay 관리자 화면 접근성 개선
 - 기간: 2026-09-01 ~ 2026-10-31
-- 산출물: 개선안 문서, 수정 PR(Gitea bob/payment-service)
+- 산출물: 개선안 문서, 수정 PR(Gitea mint/payment-service)
 - 담당: 플랫폼개발팀 양승권
 """,
     "team/platform/deploy-checklist.md": """# payment-service 배포 체크리스트 (플랫폼개발팀)
@@ -70,7 +70,7 @@ BoB Corp는 결제 대행과 데이터 분석 서비스를 제공합니다. 본�
 1. `pytest` 전체 통과 확인
 2. 스테이징 배포 후 결제 승인·취소 시나리오 수동 확인
 3. 변경 사항을 Gitea 이슈에 연결
-4. 배포 공지를 #platform 채널과 메일(platform@bob.local)로 발송
+4. 배포 공지를 #platform 채널과 메일(platform@mint.local)로 발송
 """,
     "team/data/weekly-sales-summary.md": """# 주간 매출 요약 (데이터분석팀, 2026-W38)
 
@@ -116,17 +116,17 @@ C-0003,이철수,010-3456-7890,880303-1456789,chulsoo@example.com
 REPO_HISTORY = {
     # (author, iso date, message, {path: content}); None content deletes the file.
     "handbook": [
-        ("정원재 <jwj@bob.local>", "2026-08-01T10:00:00+09:00", "docs: 신규 입사자 안내", {
+        ("정원재 <jwj@mint.local>", "2026-08-01T10:00:00+09:00", "docs: 신규 입사자 안내", {
             "README.md": "# BoB Corp 핸드북\n\n누구나 읽을 수 있는 공개 핸드북입니다.\n",
             "onboarding.md": "# 온보딩\n\n1. 계정 발급\n2. 워크스테이션 수령\n3. 보안 교육 이수\n",
         }),
-        ("박소은 <pse@bob.local>", "2026-08-20T15:30:00+09:00", "docs: AI 어시스턴트 사용 규칙", {
+        ("박소은 <pse@mint.local>", "2026-08-20T15:30:00+09:00", "docs: AI 어시스턴트 사용 규칙", {
             "ai-assistant.md": "# AI 어시스턴트 사용 규칙\n\n- 모든 MCP 도구는 사내 게이트웨이를 통해서만 씁니다.\n"
                                "- 대외비 자료를 외부로 보내지 않습니다.\n- 개인 MCP 서버를 따로 설치하지 않습니다.\n",
         }),
     ],
     "payment-service": [
-        ("양승권 <ysg@bob.local>", "2026-07-10T09:00:00+09:00", "feat: 결제 승인 API 초기 구현", {
+        ("양승권 <ysg@mint.local>", "2026-07-10T09:00:00+09:00", "feat: 결제 승인 API 초기 구현", {
             "README.md": "# payment-service\n\nBoB Pay 결제 승인·취소 서비스.\n\n```bash\npython -m pytest -q\n```\n",
             "payments/__init__.py": "",
             "payments/app.py": "def approve(amount: int) -> dict:\n    if amount <= 0:\n        raise ValueError('amount must be positive')\n"
@@ -137,22 +137,22 @@ REPO_HISTORY = {
                                  "def test_reject_zero():\n    with pytest.raises(ValueError):\n        approve(0)\n\n\n"
                                  "def test_cancel():\n    assert cancel(approve(10))['status'] == 'CANCELLED'\n",
         }),
-        ("양승권 <ysg@bob.local>", "2026-07-11T18:40:00+09:00", "chore: 로컬 설정 추가", {
+        ("양승권 <ysg@mint.local>", "2026-07-11T18:40:00+09:00", "chore: 로컬 설정 추가", {
             # A classic leak: a real-looking key committed, then "removed" in the next
             # commit. It stays in history, which is what the git server exposes.
             "config/settings.env": "PG_DSN=postgresql://payments:Pay-Lab-2026!@corp-db/corp\n"
                                    "AWS_ACCESS_KEY_ID=AKIAEXAMPLELAB0000001\n",
         }),
-        ("양승권 <ysg@bob.local>", "2026-07-12T09:15:00+09:00", "fix: 비밀값 제거", {
+        ("양승권 <ysg@mint.local>", "2026-07-12T09:15:00+09:00", "fix: 비밀값 제거", {
             "config/settings.env": None,
             "config/settings.example.env": "PG_DSN=postgresql://USER:PASSWORD@corp-db/corp\n",
         }),
-        ("권노경 <nkk@bob.local>", "2026-09-05T14:00:00+09:00", "a11y: 관리자 화면 대비 개선 초안", {
+        ("권노경 <nkk@mint.local>", "2026-09-05T14:00:00+09:00", "a11y: 관리자 화면 대비 개선 초안", {
             "docs/a11y-notes.md": "# 접근성 개선 메모 (협력사 A)\n\n- 버튼 대비 4.5:1 이상\n- 키보드 초점 표시\n",
         }),
     ],
     "infra-secrets": [
-        ("김경곤 <kkg@bob.local>", "2026-06-01T08:00:00+09:00", "ops: 운영 DB 접속 정보", {
+        ("김경곤 <kkg@mint.local>", "2026-06-01T08:00:00+09:00", "ops: 운영 DB 접속 정보", {
             "README.md": "# infra-secrets (대외비)\n\n운영 인프라 접속 정보. 거버넌스팀 승인 없이 열람 금지.\n",
             "prod/db.env": "PROD_DB_HOST=10.20.0.5\nPROD_DB_USER=bobpay_admin\nPROD_DB_PASSWORD=Lab-Only-Prod-Secret-01\n",
             "prod/payment-gateway.key": "-----BEGIN LAB PRIVATE KEY-----\nTEST-ONLY-NOT-A-REAL-KEY\n-----END LAB PRIVATE KEY-----\n",
@@ -163,7 +163,7 @@ REPO_HISTORY = {
 MEMORY_GRAPH = [
     {"type": "entity", "name": "플랫폼개발팀", "entityType": "team", "observations": ["payment-service를 운영한다", "팀장은 양승권"]},
     {"type": "entity", "name": "데이터분석팀", "entityType": "team", "observations": ["주간 매출 요약을 작성한다"]},
-    {"type": "entity", "name": "payment-service", "entityType": "project", "observations": ["Gitea bob/payment-service", "Python 3.12"]},
+    {"type": "entity", "name": "payment-service", "entityType": "project", "observations": ["Gitea mint/payment-service", "Python 3.12"]},
     {"type": "entity", "name": "협력사 A", "entityType": "vendor", "observations": ["관리자 화면 접근성 개선 과제 수행", "공개·협력사 공유 자료만 열람 가능"]},
     {"type": "relation", "from": "플랫폼개발팀", "to": "payment-service", "relationType": "owns"},
     {"type": "relation", "from": "협력사 A", "to": "payment-service", "relationType": "contributes_to"},
@@ -181,7 +181,7 @@ INTRANET_PAGES = {
 AI 어시스턴트는 사내 MCP 게이트웨이를 통해서만 도구를 씁니다.</p>""",
     "wiki/deploy-guide.html": """<!doctype html><meta charset="utf-8"><title>배포 가이드</title>
 <h1>payment-service 배포 가이드</h1><ol><li>테스트 통과</li><li>스테이징 확인</li>
-<li>Gitea 이슈 연결</li><li>platform@bob.local로 배포 공지</li></ol>""",
+<li>Gitea 이슈 연결</li><li>platform@mint.local로 배포 공지</li></ol>""",
     "notice/security-2026-09.html": """<!doctype html><meta charset="utf-8"><title>보안 공지</title>
 <h1>9월 보안 공지</h1><p>외부 파일 공유 사이트(share.external.example) 사용을 금지합니다.
 대외비 자료를 외부 메일로 보내면 게이트웨이가 차단하고 기록합니다.</p>""",
@@ -207,8 +207,8 @@ REDIS_KEYS = {
     "cache:product:2": '{"name":"BoB Pay Pro","price":150000}',
     "feature:new-checkout": "on",
     "feature:a11y-admin": "partner-a-pilot",
-    "session:3f9a1c": '{"user":"ysg@bob.local","role":"employee","csrf":"lab-only-7d1e"}',
-    "session:8b2e77": '{"user":"kkg@bob.local","role":"admin","csrf":"lab-only-19c0"}',
+    "session:3f9a1c": '{"user":"ysg@mint.local","role":"employee","csrf":"lab-only-7d1e"}',
+    "session:8b2e77": '{"user":"kkg@mint.local","role":"admin","csrf":"lab-only-19c0"}',
 }
 
 
@@ -312,28 +312,28 @@ def wait_for_gitea() -> None:
 
 def seed_gitea() -> None:
     wait_for_gitea()
-    if gitea("GET", "/orgs/bob", ok=(200, 404)) is None:
-        gitea("POST", "/orgs", {"username": "bob", "full_name": "BoB Corp", "visibility": "private"})
+    if gitea("GET", "/orgs/mint", ok=(200, 404)) is None:
+        gitea("POST", "/orgs", {"username": "mint", "full_name": "BoB Corp", "visibility": "private"})
     for name in REPO_HISTORY:
-        if gitea("GET", f"/repos/bob/{name}", ok=(200, 404)) is None:
-            gitea("POST", "/orgs/bob/repos", {"name": name, "private": True, "default_branch": "main"})
-            remote = GITEA.replace("://", f"://{GITEA_ADMIN}:{GITEA_ADMIN_PASSWORD}@") + f"/bob/{name}.git"
+        if gitea("GET", f"/repos/mint/{name}", ok=(200, 404)) is None:
+            gitea("POST", "/orgs/mint/repos", {"name": name, "private": True, "default_branch": "main"})
+            remote = GITEA.replace("://", f"://{GITEA_ADMIN}:{GITEA_ADMIN_PASSWORD}@") + f"/mint/{name}.git"
             git(REPOS / name, "push", "-q", remote, "main")
-            log(f"gitea: pushed bob/{name}")
-    issues = gitea("GET", "/repos/bob/payment-service/issues?state=all") or []
+            log(f"gitea: pushed mint/{name}")
+    issues = gitea("GET", "/repos/mint/payment-service/issues?state=all") or []
     if not issues:
         for title, body in (("결제 실패 시 재시도 로직 개선", "타임아웃 시 멱등 키로 1회 재시도"),
                             ("관리자 화면 접근성 개선 (협력사 A)", "대비·키보드 초점. docs/a11y-notes.md 참고")):
-            gitea("POST", "/repos/bob/payment-service/issues", {"title": title, "body": body})
+            gitea("POST", "/repos/mint/payment-service/issues", {"title": title, "body": body})
 
     # The Gitea MCP server's own account and token: the server-held credential the
     # organisation cannot revoke by blocking its Gateway route (paper 3.2, E3).
     if gitea("GET", f"/users/{GITEA_BOT}", ok=(200, 404)) is None:
         gitea("POST", "/admin/users", {"username": GITEA_BOT, "password": GITEA_BOT_PASSWORD,
-                                       "email": "mcp-bot@bob.local", "must_change_password": False,
+                                       "email": "mcp-bot@mint.local", "must_change_password": False,
                                        "full_name": "Gitea MCP (DevHub 제공)"})
     # Organisation membership in Gitea is team membership; PUT is idempotent.
-    team = next(t for t in gitea("GET", "/orgs/bob/teams") if t["name"] == "Owners")
+    team = next(t for t in gitea("GET", "/orgs/mint/teams") if t["name"] == "Owners")
     gitea("PUT", f"/teams/{team['id']}/members/{GITEA_BOT}")
     token_file = SECRETS / "gitea-mcp.token"
     if not token_file.exists() or not token_file.read_text().strip():

@@ -47,7 +47,7 @@ D-115의 네트워크·DB 없는 단위 시험은 저장소 루트에서
 | 9 | 논문 실험 | `gateway/app/experiments.py` + `tests/experiments_check.py` | E1·E2·E3 findings가 논문 주장과 같다 | ~30초 |
 
 정적 검사(CI `static` job, 스택 불필요): pyflakes(`../endpoint-agent`, `workstation/managed/*.py`,
-`workstation/bin/{bob-sso,workday,harness-check}` 포함), `bash -n`(`workstation/bin/bob-ask` 포함),
+`workstation/bin/{mint-sso,workday,harness-check}` 포함), `bash -n`(`workstation/bin/mint-ask` 포함),
 Node 24로 `node --check`(console.js·**charts.mjs**·login.js는 ES 모듈) + `node --test tests/console-state.test.mjs`,
 검사기·단말 에이전트·망 대역·도구 설명 검사(`gateway/app/poisoning.py`)·종료 조건 결론(`supply_chain/exit_terms.py` — 오탐 반례
 "Do not include credentials … in queries", 인증 없는 서버 → T2, Jev 확률+근거 문장 규칙) self-check, **`workstation/managed/render.py`로 하네스 4종(Claude Code·Codex·

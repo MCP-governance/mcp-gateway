@@ -21,14 +21,14 @@ COPY workstation/managed /opt/office/managed
 COPY registry/catalog.toml /opt/office/catalog.toml
 ARG MANAGED_GATEWAY_URL=http://gateway:8080/mcp
 RUN python3 /opt/office/managed/render.py /opt/office/catalog.toml /opt/office/rendered --gateway-url "$MANAGED_GATEWAY_URL" \
- && install -d /etc/claude-code /etc/codex /etc/gemini-cli /etc/opencode /etc/bob \
+ && install -d /etc/claude-code /etc/codex /etc/gemini-cli /etc/opencode /etc/mint \
  && cp /opt/office/rendered/claude-code/* /etc/claude-code/ \
  && cp /opt/office/rendered/codex/config.toml /etc/codex/managed_config.toml \
  && cp /opt/office/rendered/codex/requirements.toml /etc/codex/requirements.toml \
  && cp /opt/office/rendered/gemini-cli/settings.json /etc/gemini-cli/settings.json \
  && cp /opt/office/rendered/opencode/opencode.json /etc/opencode/opencode.json \
- && cp /opt/office/rendered/bob/servers /opt/office/managed/bob/harness-prompt.md /etc/bob/ \
- && cp /opt/office/managed/profile.sh /etc/profile.d/bob-harness.sh
+ && cp /opt/office/rendered/mint/servers /opt/office/managed/mint/harness-prompt.md /etc/mint/ \
+ && cp /opt/office/managed/profile.sh /etc/profile.d/mint-harness.sh
 COPY --chmod=0755 workstation/bin/ /usr/local/bin/
 COPY workstation/scenarios /opt/office/scenarios
 COPY workstation/shadow /opt/office/shadow

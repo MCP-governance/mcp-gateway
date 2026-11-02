@@ -138,7 +138,7 @@ def positives() -> list[dict]:
     cards = [c for c in ("4242424242424242", "4111111111111111", "5555555555554444", "378282246310005") if luhn_ok(c)]
     add("card-number", "카드번호", "card", "card number", [hyphen(c, (4, 8, 12)) if len(c) == 16 else c for c in cards], {"CREDIT_CARD", "CARD_NUMBER"},
         ["korean-spaced", "korean-particle", "json", "english"])
-    emails = ["gildong.hong@example.co.kr", "kim_cs+test@bob.local", "park@sub.example.com"]
+    emails = ["gildong.hong@example.co.kr", "kim_cs+test@mint.local", "park@sub.example.com"]
     add("email", "이메일", "email", "email", emails, {"EMAIL_ADDRESS"})
     out += [{"category": "email-attached", "context": "attached", "value": e, "expect": ["EMAIL_ADDRESS"], "text": f"담당자메일{e}로 보내 주세요."} for e in emails]
 

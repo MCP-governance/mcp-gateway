@@ -9,9 +9,9 @@
 # this LiteLLM version dropped the model's tool_calls (content "" and no calls),
 # while /v1 passes them through unchanged.
 model_list:
-  - model_name: bob-assistant
+  - model_name: mint-assistant
     litellm_params:
-      model: openai/bob-assistant
+      model: openai/mint-assistant
       api_base: http://ollama:11434/v1
       api_key: ollama-local-no-auth
       # qwen3.5 thinks by default; on a CPU that is ~1 min of hidden tokens per turn.

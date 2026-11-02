@@ -130,10 +130,10 @@ admin_token() {
     return 1
   fi
   curl -fsS -X POST $CONSOLE/auth/mock-login -H 'content-type: application/json' \
-    -d "{\"email\":\"kkg@bob.local\",\"password\":\"$(env_value MOCK_SSO_PASSWORD || true)\"}" 2>/dev/null \
+    -d "{\"email\":\"kkg@mint.local\",\"password\":\"$(env_value MOCK_SSO_PASSWORD || true)\"}" 2>/dev/null \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])' 2>/dev/null \
   || curl -fsS -X POST $CONSOLE/auth/mock-login -H 'content-type: application/json' \
-    -d '{"email":"kkg@bob.local","password":"test-password"}' \
+    -d '{"email":"kkg@mint.local","password":"test-password"}' \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])'
 }
 
@@ -210,7 +210,7 @@ up() {
     local ctx; ctx="$(env_value LOCAL_LLM_CONTEXT)"; ctx="${ctx:-12288}"
     for _ in $(seq 1 30); do docker compose --profile llm exec -T ollama ollama list >/dev/null 2>&1 && break; sleep 2; done
     docker compose --profile llm exec -T ollama sh -c \
-      "printf 'FROM %s\nPARAMETER num_thread %s\nPARAMETER temperature 0\nPARAMETER num_ctx %s\n' '$model' '$threads' '$ctx' > /tmp/Modelfile && ollama create bob-assistant -f /tmp/Modelfile >/dev/null"
+      "printf 'FROM %s\nPARAMETER num_thread %s\nPARAMETER temperature 0\nPARAMETER num_ctx %s\n' '$model' '$threads' '$ctx' > /tmp/Modelfile && ollama create mint-assistant -f /tmp/Modelfile >/dev/null"
     docker compose --profile llm up -d llm-gateway
     docker compose --profile llm run --rm llm-provision
   else
@@ -231,7 +231,7 @@ up() {
   fi
   echo
   echo "준비되었습니다."
-  echo "  운영 콘솔 : ${CONSOLE/127.0.0.1/localhost}   (kkg@bob.local / test-password)"
+  echo "  운영 콘솔 : ${CONSOLE/127.0.0.1/localhost}   (kkg@mint.local / test-password)"
   echo "  Gitea     : http://localhost:$(host_port GITEA_PORT 3000)   (corpadmin — 제공자 자격 확인용)"
   echo "  Jaeger    : http://localhost:$(host_port JAEGER_PORT 16686)"
   echo "  하루 업무 : ./console.sh workday        판정 흐름 : ./console.sh watch"
@@ -558,7 +558,7 @@ case "${1:-up}" in
   workday) shift; workday "$@" ;;
   ask)
     ws="${2:?워크스테이션을 지정하세요 (예: ws-ysg)}"; goal="${3:?지시를 입력하세요}"; shift 3
-    docker compose exec -T "$ws" bob-ask "$@" "$goal"
+    docker compose exec -T "$ws" mint-ask "$@" "$goal"
     ;;
   harnesses) harness_check ;;
   watch) watch_decisions ;;

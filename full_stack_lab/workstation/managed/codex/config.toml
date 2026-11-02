@@ -1,7 +1,7 @@
 # Company defaults for Codex CLI. The model is the company LLM gateway (LiteLLM,
 # OpenAI Responses API); MCP servers are appended by render.py, all via the Gateway.
-model = "bob-assistant"
-model_provider = "bob"
+model = "mint-assistant"
+model_provider = "mint"
 approval_policy = "never"
 sandbox_mode = "read-only"
 check_for_update_on_startup = false
@@ -13,7 +13,7 @@ apps = false
 [analytics]
 enabled = false
 
-[model_providers.bob]
+[model_providers.mint]
 name = "BoB LLM Gateway"
 base_url = "http://llm-gateway:4000/v1"
 env_key = "BOB_LLM_KEY"

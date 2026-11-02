@@ -107,12 +107,12 @@ if __name__ == '__main__':
     setup = """import asyncio
 from app import db
 asyncio.run(db.execute(\"\"\"INSERT INTO principals(token,email,display_name,role,synthetic,department,password_hash,user_id)
-SELECT 'reservation-check','reservation-check@bob.local','reservation-check','employee',true,department,password_hash,'reservation-check'
-FROM principals WHERE email='ysg@bob.local' ON CONFLICT(token) DO UPDATE SET status='active'\"\"\"))
+SELECT 'reservation-check','reservation-check@mint.local','reservation-check','employee',true,department,password_hash,'reservation-check'
+FROM principals WHERE email='ysg@mint.local' ON CONFLICT(token) DO UPDATE SET status='active'\"\"\"))
 """
     subprocess.check_call(['docker', 'compose', 'exec', '-T', 'gateway', 'python', '-c', setup])
     try:
-        email = 'reservation-check@bob.local'
+        email = 'reservation-check@mint.local'
         password = os.getenv('MOCK_SSO_PASSWORD', 'test-password')
         console_token = post('/api/session', {'email': email, 'password': password})['access_token']
         token = mcp_token(email, password)

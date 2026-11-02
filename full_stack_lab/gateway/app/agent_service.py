@@ -68,7 +68,7 @@ async def bootstrap_field_accounts() -> None:
     if os.getenv("MCP_FIELD_MODE") != "1":
         return
     # Keep the fixture in its own volume to avoid affecting field data.
-    await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@bob.local'")
+    await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@mint.local'")
     # Additional field administrators for approvals requiring a second person.
     for username, role in (("root", "admin"), ("user", "employee"), ("admin1", "admin"), ("admin2", "admin"), ("admin3", "admin")):
         await db.execute(
@@ -182,14 +182,19 @@ class Signup(StrictModel):
 DELETED_USERNAME = "삭제된 아이디입니다. 관리자에게 복구를 요청하세요."
 
 
-@app.post("/auth/signup")
-async def request_signup(request: Signup, http_request: Request):
-    username = request.username.strip().lower()
+def valid_username(value: str) -> str:
+    username = value.strip().lower()
     # 같은 아이디가 내부 Gitea의 사용자 이름이 된다. Gitea는 기호 연속·기호로 끝나는 이름을 받지 않는다.
     if not (3 <= len(username) <= 32 and re.fullmatch(r"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*", username)):
         raise HTTPException(422, "아이디는 영문자로 시작하는 영문·숫자 3~32자이고, 기호(._-)는 영문·숫자 사이에만 쓸 수 있습니다.")
     if username.endswith(GITEA_ALIAS_SUFFIX):
         raise HTTPException(422, "이 아이디는 쓸 수 없습니다.")
+    return username
+
+
+@app.post("/auth/signup")
+async def request_signup(request: Signup, http_request: Request):
+    username = valid_username(request.username)
     caller = http_request.client.host if http_request.client else "unknown"
     key = f"signup|{caller}"
     if not login_allowed(key):
@@ -701,7 +706,7 @@ async def ensure_gitea_user(user: dict) -> str:
 
 async def reconcile_gitea_accounts() -> None:
     rows = await db.fetch_all("""SELECT email, display_name, role, status FROM principals
-                                 WHERE email IS NOT NULL AND email NOT LIKE '%@bob.local'""")
+                                 WHERE email IS NOT NULL AND email NOT LIKE '%@mint.local'""")
     for row in rows:
         login = gitea_login(row["email"])
         if row["status"] == "deleted":
@@ -833,7 +838,7 @@ async def list_accounts(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
         raise HTTPException(403, "신원 관리대장은 관리자만 볼 수 있습니다.")
-    field_filter = " AND email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
+    field_filter = " AND email NOT LIKE '%@mint.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
     return {"accounts": await db.fetch_all(
         """SELECT token, user_id, email, display_name, role, department, employee_no, job_title,
                   status, status_changed_by, status_changed_at,
@@ -947,6 +952,116 @@ async def set_account_status(user_id: str, request: AccountStatus,
             "message": f"{row['display_name'] or row['email']} 계정을 {label} 상태로 변경했습니다."}
 
 
+class PasswordChange(StrictModel):
+    current_password: str = Field(max_length=150)
+    new_password: str = Field(min_length=8, max_length=150)
+
+
+class PasswordReset(StrictModel):
+    new_password: str = Field(min_length=8, max_length=150)
+
+
+class AccountRename(StrictModel):
+    user_id: str = Field(min_length=3, max_length=32)
+
+
+async def managed_account(user: dict, user_id: str) -> dict:
+    """The account an administrator changes here: never their own, and an administrator's only by root."""
+    if "admin" not in user["roles"]:
+        raise HTTPException(403, "계정 관리는 관리자만 할 수 있습니다.")
+    if user_id == user["user_id"]:
+        raise HTTPException(409, "자기 계정은 비밀번호 변경에서 바꿉니다.")
+    row = await db.fetch_one("""SELECT token, user_id, email, display_name, role, status FROM principals
+                                WHERE user_id=%s AND status <> 'deleted'""", (user_id,))
+    if not row:
+        raise HTTPException(404, "관리대장에 없는 계정입니다.")
+    if row["role"] == "admin" and user["user_id"] != "root":
+        raise HTTPException(403, "관리자 계정은 root만 바꿀 수 있습니다.")
+    return row
+
+
+async def end_account_sessions(row: dict) -> None:
+    """Sign the account out everywhere: issued tokens, console sessions and federated sessions."""
+    await idp.revoke_principal_tokens(row["user_id"])
+    await db.execute("DELETE FROM console_sessions WHERE user_id=%s", (row["user_id"],))
+    for binding in await db.fetch_all("SELECT id FROM oidc_bindings WHERE principal=%s", (row["token"],)):
+        await oidc.end_binding_sessions(binding["id"])
+
+
+async def store_password(token: str, password: str, actor: str, role: str) -> None:
+    # The server command (./mint.sh set-password) asks 12 characters of every account; an administrator's
+    # password set from the console follows it, an employee's follows the sign-up rule.
+    if role == "admin" and len(password) < 12:
+        raise HTTPException(422, "관리자 계정의 비밀번호는 12자 이상이어야 합니다.")
+    await db.execute("""UPDATE principals SET password_hash=crypt(%s, gen_salt('bf', 12)),
+                               password_changed_by=%s, password_changed_at=now() WHERE token=%s""",
+                     (password, actor, token))
+
+
+@app.post("/auth/password")
+async def change_own_password(request: PasswordChange, authorization: str | None = Header(default=None)):
+    """Any signed-in account, root included, changes its own password with the current one."""
+    user = await current_identity(authorization)
+    _, claims = authenticate(authorization)
+    key = f"password|{user['principal']}"
+    if not login_allowed(key):
+        raise HTTPException(429, "시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
+    if not await db.fetch_one("SELECT 1 FROM principals WHERE token=%s AND password_hash = crypt(%s, password_hash)",
+                              (user["principal"], request.current_password)):
+        record_failed_login(key)
+        raise HTTPException(403, "현재 비밀번호가 맞지 않습니다.")
+    if request.new_password == request.current_password:
+        raise HTTPException(422, "새 비밀번호가 현재 비밀번호와 같습니다.")
+    await store_password(user["principal"], request.new_password, user["principal"], "admin" if "admin" in user["roles"] else "employee")
+    # This session stays; any other console session of the account signs in again.
+    await db.execute("DELETE FROM console_sessions WHERE user_id=%s AND jti<>%s", (user["user_id"], claims["jti"]))
+    return {"status": "changed", "message": "비밀번호를 바꿨습니다."}
+
+
+@app.put("/api/accounts/{user_id}/password")
+async def reset_account_password(user_id: str, request: PasswordReset, authorization: str | None = Header(default=None)):
+    user = await current_identity(authorization)
+    row = await managed_account(user, user_id)
+    await store_password(row["token"], request.new_password, user["principal"], row["role"])
+    await end_account_sessions(row)
+    return {"status": "reset", "message": f"{row['display_name'] or row['user_id']} 계정의 비밀번호를 바꿨습니다."}
+
+
+async def rename_gitea_user(old: str, new: str) -> None:
+    async with _gitea_lock, gitea_admin_client() as client:
+        found = await client.get(f"/api/v1/users/{quote(old)}")
+        if found.status_code == 404:
+            return  # created under the new name at the next sign-in
+        renamed = await client.post(f"/api/v1/admin/users/{quote(old)}/rename", json={"new_username": new})
+        if not renamed.is_success:
+            raise HTTPException(502, f"내부 Git 사용자 이름을 바꾸지 못했습니다 (Gitea {renamed.status_code}).")
+    _gitea_ready.difference_update({f"{old}|True", f"{old}|False"})
+
+
+@app.put("/api/accounts/{user_id}/name")
+async def rename_account(user_id: str, request: AccountRename, authorization: str | None = Header(default=None)):
+    """A new sign-in name for an account. The principal (token) stays, so its records and approvals stay with it."""
+    user = await current_identity(authorization)
+    row = await managed_account(user, user_id)
+    name = valid_username(request.user_id)
+    if name == row["user_id"]:
+        raise HTTPException(422, "지금과 같은 아이디입니다.")
+    if existing := await db.fetch_one("SELECT status FROM principals WHERE user_id=%s OR lower(email)=%s", (name, name)):
+        raise HTTPException(409, DELETED_USERNAME if existing["status"] == "deleted" else "이미 사용 중인 아이디입니다.")
+    if await db.fetch_one("SELECT 1 FROM signup_requests WHERE username=%s AND status='pending'", (name,)):
+        raise HTTPException(409, "가입 신청 중인 아이디입니다.")
+    # An account whose sign-in address is its name signs in with the new name; one with a real address keeps it.
+    login_is_name = (row["email"] or "").lower() == row["user_id"].lower()
+    if login_is_name and os.getenv("MCP_FIELD_MODE") == "1":
+        await rename_gitea_user(gitea_login(row["email"]), gitea_login(name))
+    await end_account_sessions(row)
+    await db.execute("""UPDATE principals SET user_id=%s, email=CASE WHEN %s THEN %s ELSE email END,
+                               status_changed_by=%s, status_changed_at=now() WHERE token=%s""",
+                     (name, login_is_name, name, user["principal"], row["token"]))
+    return {"status": "renamed", "user_id": name,
+            "message": f"{row['display_name'] or row['user_id']} 계정의 아이디를 {name}(으)로 바꿨습니다."}
+
+
 @app.delete("/api/accounts/{user_id}")
 async def delete_account(user_id: str, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
@@ -991,7 +1106,7 @@ async def delete_account(user_id: str, authorization: str | None = Header(defaul
 
 @app.get("/api/accounts/deleted")
 async def list_deleted_accounts(user: dict = Depends(admin_caller)):
-    field_filter = " AND email NOT LIKE '%@bob.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
+    field_filter = " AND email NOT LIKE '%@mint.local'" if os.getenv("MCP_FIELD_MODE") == "1" else ""
     return {"accounts": await db.fetch_all(
         """SELECT user_id, email, display_name, role, department, status_changed_by, status_changed_at
            FROM principals WHERE status = 'deleted'""" + field_filter + " ORDER BY status_changed_at DESC")}

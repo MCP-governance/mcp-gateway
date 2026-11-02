@@ -267,9 +267,9 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_one_wrong_key_does_not_stop_the_other_employee(self):
         self.state.keys[OTHER_KEY] = {"user_id": "mallory", "object_permission": {}}
-        self.config["users"].append({"mint_user_id": "bob", "litellm_user_id": "lite-bob", "key_hashes": [OTHER_KEY]})
+        self.config["users"].append({"mint_user_id": "mint", "litellm_user_id": "lite-mint", "key_hashes": [OTHER_KEY]})
         self.config["teams"] = []
-        self.plan["allowed_users"] = ["alice", "bob"]
+        self.plan["allowed_users"] = ["alice", "mint"]
         with self.assertRaisesRegex(sync.SyncError, "^key-owner-mismatch$") as caught:
             await self.run_plan()
         self.assertFalse(caught.exception.server_level)
@@ -309,7 +309,7 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.state.server["url"], "https://upstream.test/mcp")
 
     async def test_unapproved_user_gets_explicit_empty_tools(self):
-        self.plan["allowed_users"] = ["bob"]
+        self.plan["allowed_users"] = ["mint"]
         await self.run_plan()
         self.assertEqual(self.state.keys[KEY]["object_permission"]["mcp_tool_permissions"]["mint_approved"], [])
         self.assertEqual(self.state.teams["team"]["object_permission"]["mcp_tool_permissions"]["mint_approved"], [])

@@ -108,7 +108,7 @@ done
 expect "GET /api/health 무인증 (상태만)" "$(code "$GATEWAY/api/health")" 200
 
 echo "── Console 역할 경계 ──"
-EMP="$(token ysg@bob.local)"
+EMP="$(token ysg@mint.local)"
 for path in gw/registry gw/overview gw/termination/cases gw/policy/ledger gw/endpoint/inventory api/accounts approvals; do
   expect "직원 → /$path" "$(code "$CONSOLE/$path" -H "authorization: Bearer $EMP")" 403
 done
@@ -117,7 +117,7 @@ others="$(curl -fsS "$CONSOLE/gw/activity?limit=500" -H "authorization: Bearer $
 expect "직원 활동 로그에 다른 사람의 호출 없음" "$others" 0
 
 echo "── 로그아웃은 다음 요청부터 ──"
-T="$(token jwj@bob.local)"
+T="$(token jwj@mint.local)"
 expect "로그아웃 전 /gw/activity" "$(code "$CONSOLE/gw/activity?limit=1" -H "authorization: Bearer $T")" 200
 curl -fsS -X POST "$CONSOLE/auth/logout" -H "authorization: Bearer $T" >/dev/null
 expect "로그아웃 후 /gw/activity" "$(code "$CONSOLE/gw/activity?limit=1" -H "authorization: Bearer $T")" 401
@@ -129,21 +129,21 @@ echo "── 원격 MCP의 종료 조건은 신청자가 아니라 플랫폼이 
 # A requester cannot promise the provider's exit terms; a remote server is approvable
 # only after an admin records them from an HTTPS provider document. The request is
 # left in the validation queue and rejected at the end, so a rerun can submit the same repository.
-REQ_BODY='{"display_name":"Exit terms regression","repository_url":"https://github.com/bob-lab/exit-terms-regression","requested_transport":"streamable-http","purpose":"security regression: exit terms are verified by the platform"}'
+REQ_BODY='{"display_name":"Exit terms regression","repository_url":"https://github.com/mint-lab/exit-terms-regression","requested_transport":"streamable-http","purpose":"security regression: exit terms are verified by the platform"}'
 # Keep the synthetic nonexistent repository out of the live scanner while the
 # approval boundary is exercised; request submission now queues automatically.
 docker compose stop intake-worker >/dev/null 2>&1
 trap 'docker compose start intake-worker opa mcp-git >/dev/null 2>&1' EXIT
 # A run that died halfway leaves its request open; close it so this one can submit.
-psql_q "UPDATE mcp_intake_requests SET status='REJECTED', review_note='security regression rerun' WHERE repository_url='https://github.com/bob-lab/exit-terms-regression' AND status NOT IN ('REJECTED','FAILED')" >/dev/null
+psql_q "UPDATE mcp_intake_requests SET status='REJECTED', review_note='security regression rerun' WHERE repository_url='https://github.com/mint-lab/exit-terms-regression' AND status NOT IN ('REJECTED','FAILED')" >/dev/null
 # An approval now carries the supplier assurance it is refused without; the values are synthetic (tests/intake_fixture.py).
 approval_body() { python3 -B tests/intake_fixture.py "$@"; }
-REQUESTER="$(token miso@bob.local)"
+REQUESTER="$(token miso@mint.local)"
 expect "신청자가 종료 조건을 스스로 체크 → 거부" "$(code -X POST "$CONSOLE/api/mcp-requests" -H "authorization: Bearer $REQUESTER" \
   -H 'content-type: application/json' -d "${REQ_BODY%\}},\"revocation_evidence\":true}")" 422
 REQ_ID="$(curl -fsS -X POST "$CONSOLE/api/mcp-requests" -H "authorization: Bearer $REQUESTER" -H 'content-type: application/json' \
   -d "$REQ_BODY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["request"]["id"])')"
-ADMIN_I="$(token kkg@bob.local)"
+ADMIN_I="$(token kkg@mint.local)"
 TERMS='{"provider_credential_disclosure":true,"revocation_evidence":true,"audit_access_retained":true,"note":"security regression: provider terms section 7"'
 expect "직원이 종료 조건 검증 기록 → 거부" "$(code -X PUT "$CONSOLE/api/mcp-requests/$REQ_ID/exit-terms" -H "authorization: Bearer $REQUESTER" \
   -H 'content-type: application/json' -d "$TERMS,\"evidence_url\":\"https://provider.example/terms\"}")" 403
@@ -177,13 +177,13 @@ docker compose stop mcp-git >/dev/null 2>&1
 down="$(probe emp-ysg git git_log "$HANDBOOK")"
 expect "mcp-git 정지 중 호출은 실행되지 않음" "${down##* }" False
 docker compose start mcp-git >/dev/null 2>&1 && wait_healthy mcp-git
-curl -fsS -X POST "$GATEWAY/api/catalog/refresh" -H "authorization: Bearer $(token kkg@bob.local)" >/dev/null
+curl -fsS -X POST "$GATEWAY/api/catalog/refresh" -H "authorization: Bearer $(token kkg@mint.local)" >/dev/null
 expect "mcp-git 복구 후 호출" "$(probe emp-ysg git git_log "$HANDBOOK")" "Allow P-AUTHZ-ALLOW-001 True"
 trap - EXIT
 
 echo "── 실패 안전: 개인정보 검사기가 없으면 ──"
 trap 'docker compose start presidio-analyzer presidio-anonymizer >/dev/null 2>&1' EXIT
-OUTBOUND='{"account_name": "assistant", "recipients": ["platform@bob.local"], "subject": "배포", "body": "18시 배포 예정"}'
+OUTBOUND='{"account_name": "assistant", "recipients": ["platform@mint.local"], "subject": "배포", "body": "18시 배포 예정"}'
 docker compose stop presidio-analyzer >/dev/null 2>&1
 expect "분석기 정지 중 발송 → 실행 전 차단" "$(probe emp-ysg email send_email "$OUTBOUND")" "Block P-DATA-INSPECTION-001 False"
 docker compose start presidio-analyzer >/dev/null 2>&1 && wait_healthy presidio-analyzer
@@ -194,7 +194,7 @@ docker compose start presidio-anonymizer >/dev/null 2>&1 && wait_healthy presidi
 trap - EXIT
 
 echo "── 감사 기록 변조는 드러난다 ──"
-ADMIN="$(token kkg@bob.local)"
+ADMIN="$(token kkg@mint.local)"
 verify() { curl -fsS "$GATEWAY/api/audit/verify" -H "authorization: Bearer $ADMIN" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["intact"], d.get("broken_at"))'; }
 row="$(psql_q "SELECT max(id) FROM decisions")"
 if psql_q "UPDATE decisions SET reason = reason WHERE id = $row" >/dev/null 2>&1; then
