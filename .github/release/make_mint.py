@@ -2,14 +2,15 @@
 
 usage: python .github/release/make_mint.py vX.Y.Z <mint checkout>
 
-Replaces the checkout's files with the tagged code minus the development material (agent rules, research wiki,
-design documents, CI), points README links at what was left out to this repository at the same tag, stages the
-result with the executable bits, and writes the CHANGELOG section of that version to .git/mint-release-notes.md.
+The release holds what an organisation runs: the production bundle (deploy/) and the server components it builds
+and mounts, the employee PC kit, the LiteLLM add-on and the policy-as-code package. The lab, tests and development
+material stay here. User documentation comes from .github/release/mint/ (README files, CHANGELOG, assets).
+The result must have no development traces (traces.py) and no relative link outside itself; it is staged with the
+executable bits, and the CHANGELOG section of the version is written to .git/mint-release-notes.md.
 Commit, tag, push and the GitHub release stay manual (AGENTS.md 「릴리스」).
 """
 import io
 import os
-import posixpath
 import re
 import shutil
 import subprocess
@@ -17,41 +18,24 @@ import sys
 import tarfile
 from pathlib import Path
 
-DEV = "https://github.com/MCP-governance/mcp-gateway"
-RAW = "https://raw.githubusercontent.com/MCP-governance/mcp-gateway"
-DROP_DIRS = ("research/", "docs/", ".github/", "endpoint-agent/tests-windows/")
-# deploy/check.py checks this repository's documents; the Windows development tests name the test appliance.
-DROP_FILES = {"AGENTS.md", "CLAUDE.md", "todo.md", "WINDOWS-RESULT.md", "MANUAL_TEST_WINDOWS.md", "deploy/check.py"}
-# Markdown that ships: what users read, and the prompt the workstation image hands to harnesses.
-KEEP_MD = {"CHANGELOG.md", "full_stack_lab/workstation/managed/bob/harness-prompt.md"}
-LINK = re.compile(r'(!\[[^\]]*\]\(|\]\(|(?:src|href)=")([^)"\s]+)')
+INCLUDE = (
+    "VERSION", ".gitattributes",
+    "deploy/", "endpoint-agent/", "addons/litellm/", "policy/pac/",
+    "full_stack_lab/gateway/", "full_stack_lab/opa/", "full_stack_lab/privacy/", "full_stack_lab/supply_chain/",
+    "full_stack_lab/model-proxy/", "full_stack_lab/field/", "full_stack_lab/registry/field/",
+    "full_stack_lab/registry/provenance-trust-keys.json", "full_stack_lab/db/init.sql", "full_stack_lab/db/002-litellm.sql",
+    "full_stack_lab/corp/gitea-entrypoint.sh",
+)
+# deploy/check.py checks this repository's documents; the OPA replay cases are test fixtures, not policy data.
+EXCLUDE = ("endpoint-agent/tests-windows/", "deploy/check.py", "full_stack_lab/opa/replay_cases")
+TEST = re.compile(r"(^|/)(test_[^/]*\.py|[^/]*_test\.(rego|py)|[^/]*\.test\.[cm]?js)$")
+OVERLAY = Path(__file__).resolve().parent / "mint"
+LINK = re.compile(r'(?:\]\(|(?:src|href)=")([^)"\s]+)')
 
 
-def kept(path):
-    if path.startswith(DROP_DIRS) or path in DROP_FILES:
-        return False
-    return not path.endswith(".md") or path in KEEP_MD or posixpath.basename(path).startswith("README")
-
-
-def rewrite(path, text, shipped, everything, tag):
-    def under(paths, target):
-        return target in paths or any(p.startswith(target.rstrip("/") + "/") for p in paths)
-
-    def fix(match):
-        prefix, target = match.groups()
-        if re.match(r"[A-Za-z][A-Za-z0-9+.-]*:|#|/", target):
-            return match.group(0)
-        file, hashmark, anchor = target.partition("#")
-        resolved = posixpath.normpath(posixpath.join(posixpath.dirname(path), file))
-        if under(shipped, resolved) or not under(everything, resolved):
-            return match.group(0)
-        if prefix.startswith(("!", "src")):
-            url = f"{RAW}/{tag}/{resolved}"
-        else:
-            url = f"{DEV}/{'blob' if resolved in everything else 'tree'}/{tag}/{resolved}"
-        return prefix + url + hashmark + anchor
-
-    return LINK.sub(fix, text)
+def shipped(path):
+    return (path.startswith(INCLUDE) and not path.startswith(EXCLUDE) and not TEST.search(path)
+            and not path.endswith(".md"))
 
 
 def notes(changelog, version):
@@ -61,7 +45,25 @@ def notes(changelog, version):
     return match.group(1).strip() + "\n"
 
 
+def broken_links(out):
+    bad = []
+    for page in out.rglob("*.md"):
+        if ".git" in page.parts:
+            continue
+        for target in LINK.findall(page.read_text(encoding="utf-8")):
+            if "MCP-governance/mcp-gateway" in target:
+                bad.append(f"{page.relative_to(out)} -> {target}")
+            if re.match(r"[A-Za-z][A-Za-z0-9+.-]*:|#|/", target):
+                continue
+            if not (page.parent / target.split("#", 1)[0]).exists():
+                bad.append(f"{page.relative_to(out)} -> {target}")
+    return bad
+
+
 def main(tag, out):
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from traces import hits
+
     out = Path(out)
     if not (out / ".git").exists():
         raise SystemExit(f"{out} is not a git checkout")
@@ -71,31 +73,47 @@ def main(tag, out):
         if line:
             meta, path = line.split("\t", 1)
             modes[path] = meta.split()[0]
-    shipped = {p for p in modes if kept(p)}
+    files = {p for p in modes if shipped(p)}
     for child in out.iterdir():
         if child.name != ".git":
             shutil.rmtree(child) if child.is_dir() else child.unlink()
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         for member in tar:
-            if not member.isfile() or member.name not in shipped:
+            if not member.isfile() or member.name not in files:
                 continue
             data = tar.extractfile(member).read()
-            if member.name.endswith(".md"):
-                data = rewrite(member.name, data.decode("utf-8"), shipped, modes, tag).encode("utf-8")
-            elif member.name == ".gitattributes":
-                data = b"".join(l for l in data.splitlines(True) if b"research/" not in l and "통합 시트".encode() not in l)
+            if member.name == ".gitattributes":
+                data = b"".join(line for line in data.splitlines(True)
+                                if b"research/" not in line and "통합 시트".encode() not in line)
             target = out / member.name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
             if modes[member.name] == "100755":
                 os.chmod(target, 0o755)
+    for source in OVERLAY.rglob("*"):
+        if source.is_file():
+            target = out / source.relative_to(OVERLAY)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, target)
+    problems = broken_links(out)
+    for path in out.rglob("*"):
+        if path.is_file() and ".git" not in path.relative_to(out).parts:
+            name = path.relative_to(out).as_posix()
+            try:
+                text = path.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                continue
+            problems += [f"{name}:{number}: {line[:120]}" for number, line, _ in hits(name, text)]
+    if problems:
+        print("\n".join(problems))
+        raise SystemExit(f"{len(problems)} traces or broken links; nothing staged")
     subprocess.check_call(["git", "-C", str(out), "-c", "core.autocrlf=false", "add", "-A"])
-    for path in sorted(p for p in shipped if modes[p] == "100755"):
+    for path in sorted(p for p in files if modes[p] == "100755"):
         subprocess.check_call(["git", "-C", str(out), "update-index", "--chmod=+x", "--", path])
-    version = tag.removeprefix("v")
-    (out / ".git" / "mint-release-notes.md").write_text(notes((out / "CHANGELOG.md").read_text(encoding="utf-8"), version),
-                                                       encoding="utf-8")
-    print(f"{len(shipped)} files staged in {out}; release notes in .git/mint-release-notes.md")
+    (out / ".git" / "mint-release-notes.md").write_text(
+        notes((out / "CHANGELOG.md").read_text(encoding="utf-8"), tag.removeprefix("v")), encoding="utf-8")
+    count = len(subprocess.check_output(["git", "-C", str(out), "ls-files"]).splitlines())
+    print(f"{count} files staged in {out}; release notes in .git/mint-release-notes.md")
 
 
 if __name__ == "__main__":

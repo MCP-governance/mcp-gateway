@@ -427,7 +427,7 @@ async def authorized(connection, device, server, digest, method, *, generation=N
                AND r.signature_generation>=a.signature_generation) AS withdrawn
         FROM local_approvals a JOIN endpoint_agents e ON e.endpoint_id=%s JOIN principals p ON p.token=e.owner_token
         JOIN mcp_intake_requests i ON i.id=a.intake_id AND i.local_observer_device=a.observer_device
-             -- 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다(D-192). 운영 실행은 아래 observed·OPERATING 조건이 막는다.
+             -- 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다. 운영 실행은 아래 observed·OPERATING 조건이 막는다.
              AND (i.status='APPROVED' OR (NOT a.observed AND i.status IN ('HOLD','VALIDATED')))
         LEFT JOIN mcp_servers s ON s.id=a.server_id WHERE a.server_id=%s
         AND EXISTS(SELECT 1 FROM policy_versions WHERE status='ACTIVE')""", (device['endpoint_id'],server))).fetchone()

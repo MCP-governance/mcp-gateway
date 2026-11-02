@@ -1516,7 +1516,7 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
                  UNION ALL
                  SELECT d.request_id, d.created_at, d.data_class FROM decisions d
                   WHERE d.user_token=%s AND d.created_at > now() - interval '1 hour'
-                    AND d.action <> 'connect'  -- a refused connection is not a call (D-57)
+                    AND d.action <> 'connect'  -- a refused connection is not a call
                     AND NOT EXISTS (SELECT 1 FROM call_reservations r WHERE r.request_id=d.request_id)
                ) arrivals""",
             (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token, user_token))
