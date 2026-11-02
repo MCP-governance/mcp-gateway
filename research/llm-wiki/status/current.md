@@ -1,5 +1,7 @@
 # 개발 현황 — 2026-11-02
 
+- 11-02 판본 0.10.0. 배포 저장소 `MCP-governance/mint`를 공개하고 태그 `v0.10.0`·GitHub 릴리스로 올린다. 개발 문서·위키·CI를 뺀 코드와 README·CHANGELOG만 담고, README의 빠진 문서 링크는 이 저장소의 같은 태그로 연결한다. 생성은 `.github/release/make_mint.py`(AGENTS.md 「릴리스」). [보고](reports/2026-11-02-release-0.10.0.md)
+
 - 11-02 PC 연결 설정의 설치 파일을 Windows `mcp-managed-setup-windows.exe`, Linux `mcp-managed-setup-linux` 실행 파일로 바꿨다(D-338, PR #78). 이미지 Go 단계가 고정 설치 프로그램을 빌드하고 다운로드 때 키트를 붙인다. 기기 시험 스택 배포 뒤 pj3에서 exe로 재설치·새 장치 활성 하트비트까지, pj1에서 키트 풀기·install.sh 실행까지 확인했다. 코드 서명 없음(알 수 없는 게시자 경고). [보고](reports/2026-11-02-kit-setup-executable.md)
 
 - 11-02 팀 정책 시트 11-01판(`D3-1. MCP 보안 관리 정책.xlsm`)을 PaC에 반영했다(D-337, 브랜치 `11/02-pac-policy-update`). 번호가 단계별(`POL-I-01`~`POL-D-09`)로 바뀌어 `policy/`·콘솔 정책 목록·시험 이름을 옮기고 대응표 `policy/source/renumbering.json`을 두었다. 문장·규칙이 바뀐 9건 중 POL-R-15(Tool·자료 접근권한)·POL-O-15(인증정보 사용 범위)·POL-D-09(백업 복원, 제외→PaC) 규칙을 고쳤다. Rego 519건·추적 검사·콘솔 Node 15개 파일 통과. 기기 배포·화면 확인은 미실행. [보고](reports/2026-11-02-pac-policy-update.md)
