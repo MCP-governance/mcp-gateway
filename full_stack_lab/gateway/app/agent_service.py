@@ -1113,9 +1113,9 @@ async def gateway_proxy(path: str, authorization: str | None, method: str = "GET
 PAGES_BY_ROLE = {
     # 직원·협력사 직원에게 필요한 것은 "내 호출이 어떻게 판정됐는가"와 "쓰고 싶은
     # MCP를 신청하는 길"이다. 조직 전체의 기록·정책·종료 판정은 관리자 몫이다.
-    "partner": ("activity", "consent", "intake", "connections"),
-    "employee": ("activity", "consent", "intake", "connections"),
-    "admin": ("overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent", "connections"),
+    "partner": ("activity", "consent", "intake"),
+    "employee": ("activity", "consent", "intake"),
+    "admin": ("overview", "activity", "security", "servers", "people", "endpoints", "policy", "intake", "termination", "consent"),
 }
 ROLE_LABELS = {"partner": "협력업체 직원", "employee": "직원", "admin": "관리자"}
 

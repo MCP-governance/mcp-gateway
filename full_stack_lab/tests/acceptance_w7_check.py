@@ -419,11 +419,12 @@ class W7Checks(unittest.IsolatedAsyncioTestCase):
         self.assertIn("미연결 호출", str(raised.exception))
         self.assertIn(world.GITHUB, world.deregistered)
 
-    def test_connections_menu_and_screen_are_checked_for_both_roles(self):
-        self.assertIn("connections", a.ADMIN_MENUS)
-        self.assertIn("connections", a.EMPLOYEE_MENUS)
+    def test_connections_menu_and_screen_are_gone_for_both_roles(self):
+        # The service account page was removed from the console; its API stays for the plugin rework.
+        self.assertNotIn("connections", a.ADMIN_MENUS)
+        self.assertNotIn("connections", a.EMPLOYEE_MENUS)
         for screens in (a.ADMIN_SCREENS, a.EMPLOYEE_SCREENS):
-            self.assertIn(("/api/my-connections", ["connections", "available"]), screens)
+            self.assertNotIn("/api/my-connections", [path for path, _ in screens])
 
     def test_items_are_registered_after_the_registration_check(self):
         source = Path(a.__file__).read_text(encoding="utf-8")

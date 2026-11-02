@@ -1,54 +1,55 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-11-02T13:54:42+09:00
+확인 시각: 2026-11-02T15:18:36+09:00
 
-HEAD: `a4cc662c413021e5fb6c517b6626cebce27d37b7` · 로컬 브랜치: `11/02-pac-policy-update`
+HEAD: `76c63c1de720e52dcf3067c29de5aaa797a5a12f` · 로컬 브랜치: `feat/console-ui`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M docs/ai/decisions/D-301-350.md
- M full_stack_lab/gateway/app/agent_static/console.js
- M full_stack_lab/gateway/app/organization_policies.json
- M full_stack_lab/gateway/app/organization_policy.py
- M full_stack_lab/tests/audit_call_filter_check.py
- M full_stack_lab/tests/console-ia.test.mjs
- M policy/README.md
- M policy/TRACE.md
- M policy/pac/call.rego
- M policy/pac/call_test.rego
- M policy/pac/catalog.rego
- M policy/pac/connect.rego
- M policy/pac/connect_test.rego
- M policy/pac/intake.rego
- M policy/pac/intake_test.rego
- M policy/pac/lib.rego
- M policy/pac/ops.rego
- M policy/pac/ops_test.rego
- M policy/pac/resource.rego
- M policy/pac/resource_test.rego
- M policy/pac/zz_adversarial_test.rego
- M policy/source/classification.json
- M policy/source/sheet.json
- M policy/tools/build_catalog.py
- M policy/tools/build_console_catalog.py
- M policy/tools/trace.py
+M  docs/ai/decisions/D-301-350.md
+M  full_stack_lab/gateway/app/agent_static/console.js
+M  full_stack_lab/gateway/app/organization_policies.json
+M  full_stack_lab/gateway/app/organization_policy.py
+M  full_stack_lab/tests/audit_call_filter_check.py
+M  full_stack_lab/tests/console-ia.test.mjs
+M  full_stack_lab/tests/dest_pin_credential_redaction_check.py
+M  full_stack_lab/tests/endpoint_auto_activation_check.py
+M  full_stack_lab/tests/harness_detect_check.py
+M  full_stack_lab/tests/managed_policy_gap_check.py
+M  policy/README.md
+M  policy/TRACE.md
+M  policy/pac/call.rego
+M  policy/pac/call_test.rego
+M  policy/pac/catalog.rego
+M  policy/pac/connect.rego
+M  policy/pac/connect_test.rego
+M  policy/pac/intake.rego
+M  policy/pac/intake_test.rego
+M  policy/pac/lib.rego
+M  policy/pac/ops.rego
+M  policy/pac/ops_test.rego
+M  policy/pac/resource.rego
+M  policy/pac/resource_test.rego
+M  policy/pac/zz_adversarial_test.rego
+M  policy/source/classification.json
+A  policy/source/renumbering.json
+M  policy/source/sheet.json
+M  policy/tools/build_catalog.py
+M  policy/tools/build_console_catalog.py
+M  policy/tools/trace.py
  M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/catalogs/threats.json
- M research/llm-wiki/status/current.md
- M research/llm-wiki/status/decisions-index.md
- M research/llm-wiki/threats/control-map.md
- M research/llm-wiki/tools/check_trace.py
-?? api.py
-?? c
-?? p3_ui.py
-?? policy/source/renumbering.json
-?? q
-?? research/llm-wiki/status/reports/2026-11-02-pac-policy-update.md
-?? sftp_put.py
+M  research/llm-wiki/status/current.md
+M  research/llm-wiki/status/decisions-index.md
+A  research/llm-wiki/status/reports/2026-11-02-pac-policy-update.md
+UU research/llm-wiki/status/reports/README.md
+M  research/llm-wiki/status/repository-snapshot.json
+M  research/llm-wiki/status/repository-snapshot.md
+M  research/llm-wiki/tools/check_trace.py
 ```
 
 ## 주요 파일 바이트
