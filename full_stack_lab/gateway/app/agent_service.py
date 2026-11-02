@@ -1055,9 +1055,11 @@ async def rename_account(user_id: str, request: AccountRename, authorization: st
     if login_is_name and os.getenv("MCP_FIELD_MODE") == "1":
         await rename_gitea_user(gitea_login(row["email"]), gitea_login(name))
     await end_account_sessions(row)
+    # A default account shows its name as its display name; that follows the new name, a real name stays.
     await db.execute("""UPDATE principals SET user_id=%s, email=CASE WHEN %s THEN %s ELSE email END,
+                               display_name=CASE WHEN display_name=user_id THEN %s ELSE display_name END,
                                status_changed_by=%s, status_changed_at=now() WHERE token=%s""",
-                     (name, login_is_name, name, user["principal"], row["token"]))
+                     (name, login_is_name, name, name, user["principal"], row["token"]))
     return {"status": "renamed", "user_id": name,
             "message": f"{row['display_name'] or row['user_id']} 계정의 아이디를 {name}(으)로 바꿨습니다."}
 

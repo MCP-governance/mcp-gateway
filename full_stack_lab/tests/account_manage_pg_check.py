@@ -83,8 +83,9 @@ async def reset_ends_sessions():
 async def rename_rules():
     with as_user(ROOT):
         code = await status_of(service.rename_account("admin2", service.AccountRename(user_id="kim"), "Bearer x"))
-    row = await db.fetch_one("SELECT user_id, email FROM principals WHERE token='admin2'")
-    CHECKS.ok("root renames an administrator; the principal stays", code == 200 and row == {"user_id": "kim", "email": "kim"})
+    row = await db.fetch_one("SELECT user_id, email, display_name FROM principals WHERE token='admin2'")
+    CHECKS.ok("root renames an administrator; the principal stays and a default display name follows",
+              code == 200 and row == {"user_id": "kim", "email": "kim", "display_name": "kim"})
     CHECKS.ok("the new name signs in and the old one does not",
               await signs_in("kim", "admin2-pass1") and not await signs_in("admin2", "admin2-pass1"))
     with as_user(ROOT):
@@ -97,8 +98,8 @@ async def rename_rules():
     CHECKS.ok("a name the sign-in rules do not allow is refused", bad == 422)
     CHECKS.ok("the same name is refused", same == 422)
     CHECKS.ok("root does not rename itself", own == 409)
-    row = await db.fetch_one("SELECT user_id, email FROM principals WHERE token='emp-park'")
-    CHECKS.ok("an account with a real address keeps signing in with it", mailed == 200 and row == {"user_id": "park2", "email": "park@corp.example"})
+    row = await db.fetch_one("SELECT user_id, email, display_name FROM principals WHERE token='emp-park'")
+    CHECKS.ok("an account with a real address and name keeps both", mailed == 200 and row == {"user_id": "park2", "email": "park@corp.example", "display_name": "박지민"})
     with as_user(ADMIN1):
         code = await status_of(service.rename_account("kim", service.AccountRename(user_id="kim2"), "Bearer x"))
     CHECKS.ok("an administrator other than root cannot rename another administrator", code == 403)
@@ -137,6 +138,7 @@ async def main():
             ("admin2", "admin2", "admin2", "admin", "admin2-pass1"), ("emp-lee", "lee", "lee", "employee", "lee-pass1"),
             ("emp-park", "park", "park@corp.example", "employee", "park-pass1")):
         await account(token, user_id, email, role, password)
+    await db.execute("UPDATE principals SET display_name='박지민' WHERE token='emp-park'")
     for case in (reset_rules, reset_ends_sessions, rename_rules, own_password, restart_keeps_renamed_defaults):
         await CHECKS.case(case.__name__, case())
     return CHECKS.finish()
