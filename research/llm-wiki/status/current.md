@@ -1,4 +1,6 @@
-# 개발 현황 — 2026-11-01
+# 개발 현황 — 2026-11-02
+
+- 11-02 팀 정책 시트 11-01판(`D3-1. MCP 보안 관리 정책.xlsm`)을 PaC에 반영했다(D-337, 브랜치 `11/02-pac-policy-update`). 번호가 단계별(`POL-I-01`~`POL-D-09`)로 바뀌어 `policy/`·콘솔 정책 목록·시험 이름을 옮기고 대응표 `policy/source/renumbering.json`을 두었다. 문장·규칙이 바뀐 9건 중 POL-R-15(Tool·자료 접근권한)·POL-O-15(인증정보 사용 범위)·POL-D-09(백업 복원, 제외→PaC) 규칙을 고쳤다. Rego 519건·추적 검사·콘솔 Node 15개 파일 통과. 기기 배포·화면 확인은 미실행. [보고](reports/2026-11-02-pac-policy-update.md)
 
 - 11-01 UI 검수의 F01·F03·F06~F09만 `11/01-ui-review`, 기준 `e393fc01`에서 반영했다(D-330). 지정 로컬 검사 전체와 Node 155건·Python 단위 168건, Edge 390·406·480px의 상태/도입 요청 6화면 배치 검사를 통과했다. 실제 원장 #243·#245~247, 배포 및 지정 시험 PC 재검증은 미실행이며 커밋하지 않았다. [보고](reports/2026-11-01-ui-review-fix.md)
 
@@ -178,6 +180,7 @@
 
 ## 10-27 정책 90개 PaC
 
+- 11-02: 시트 11-01판으로 번호가 `POL-I-01` 형식으로 바뀌었다(D-337). 아래의 세 자리 번호는 10-27판이며 대응은 `policy/source/renumbering.json`.
 - 팀 시트 POL-001~090을 `policy/`의 Rego PaC로 옮겼다(D-261). 65개 정책에 판정, 25개는 솔루션·제외(사유는 `policy/TRACE.md`). 시험 505건(독립 반례 144 포함) 통과, CI에 추적 검사. 게이트웨이 판정 경로에는 아직 연결하지 않았다. [분석](../analysis/pac-policy90-1027/README.md)·[보고](reports/2026-10-27-pac-policy90.md)
 
 ## 10-27 사내 저장소·콘솔 HTTPS·메뉴 통합 (PR #67, 브랜치 `10/27-internal-repo-console-only`)
