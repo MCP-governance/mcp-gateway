@@ -201,7 +201,7 @@ def device_client_id() -> str:
     return os.getenv("GITHUB_OAUTH_CLIENT_ID", "").strip()
 
 
-# Pending device authorisations. ponytail: one agent-service process; a restart means "start again".
+# Pending device authorisations live in one agent-service process; a restart means "start again".
 _flows: dict[str, dict] = {}
 
 

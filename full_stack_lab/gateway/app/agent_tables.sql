@@ -131,7 +131,7 @@ CREATE INDEX IF NOT EXISTS decisions_user_time_idx ON decisions(user_token, crea
 CREATE INDEX IF NOT EXISTS catalog_snapshots_server_idx ON catalog_snapshots(server_id, id DESC);
 CREATE INDEX IF NOT EXISTS supply_chain_source_idx ON supply_chain_reports(source_ref, scanner, id DESC);
 
--- §11.17 정책 판단 및 집행 증적. 판정만 남기면 "어느 정책의 어느 버전이, 어떤
+-- 정책 판단 및 집행 증적. 판정만 남기면 "어느 정책의 어느 버전이, 어떤
 -- 의무와 예외를 달고, 어떤 경쟁 정책을 제치고 최종 판단이 됐는지"를 나중에
 -- 재구성할 수 없다. 기존 행은 chain_version으로 구분되므로 해시 체인은 그대로다.
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS policy_version text;
@@ -148,7 +148,7 @@ ALTER TABLE decisions ADD COLUMN IF NOT EXISTS risk_score integer NOT NULL DEFAU
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS privacy_types jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE decisions ADD COLUMN IF NOT EXISTS sequence_flags jsonb NOT NULL DEFAULT '[]';
 
--- §11.4.1 승인 유효기간 만료 확인. 승인은 영구가 아니므로 Registry가 기한을
+-- 승인 유효기간 만료 확인. 승인은 영구가 아니므로 Registry가 기한을
 -- 들고 있어야 정책이 그것을 판단할 수 있다.
 ALTER TABLE mcp_tools ADD COLUMN IF NOT EXISTS approval_valid_until timestamptz;
 UPDATE mcp_tools SET approval_valid_until = timestamptz '2027-06-30 23:59:59+00'

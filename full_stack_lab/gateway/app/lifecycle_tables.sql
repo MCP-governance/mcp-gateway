@@ -5,8 +5,7 @@
 -- mcp_servers.status='DISABLED' 한 칸뿐이었다. 그 한 칸은 "호출을 막았다"만
 -- 말하고 "회수했다"는 말하지 못한다. 둘은 다른 사실이다.
 --
--- 여기의 표는 CISC-W'26 투고 논문(「원격 MCP 서비스 종료 시 권한 회수의 구조적
--- 한계 및 종료 판정 기준 제안」)의 C1~C4 기준과 T1~T3 등급을 그대로 데이터
+-- 여기의 표는 종료 판정의 C1~C4 기준과 T1~T3 등급을 그대로 데이터
 -- 모델로 옮긴 것이다. 판정을 사람의 서술이 아니라 조회 가능한 행으로 만드는 것이
 -- 목적이다. "종료했습니다"는 주장이고, "C3을 충족하지 못해 T2입니다"는 판정이다.
 SELECT pg_advisory_xact_lock(hashtext('mcp_governance_schema_migration'));
@@ -25,8 +24,8 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS lifecycle_changed_by text;
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS termination_case_id uuid;
 
 -- ── 2. 종료 케이스 ──────────────────────────────────────────────────────────
--- 논문은 분석 단위를 "조직·목적·제공자·허용 자원으로 식별되는 접근 허용의 집합"
--- 곧 이용 관계로 정의한다. 이 테스트베드에서는 Registry 서버 하나가 그 대리키가
+-- 분석 단위는 "조직·목적·제공자·허용 자원으로 식별되는 접근 허용의 집합"
+-- 곧 이용 관계다. 여기서는 Registry 서버 하나가 그 대리키가
 -- 되지만, 케이스를 열 때 목적·제공자·자원을 스냅샷으로 함께 굳힌다. 폐기가 끝난
 -- 뒤 Registry 행이 바뀌어도 "무엇을 종료한 케이스였는가"가 남아야 한다.
 CREATE TABLE IF NOT EXISTS termination_cases (
@@ -50,9 +49,9 @@ CREATE TABLE IF NOT EXISTS termination_cases (
   closed_by text,
   closed_at timestamptz,
   close_note text,
-  -- T3(판단 불가)를 종결하려면 위험 수용의 주체가 기록에 남아야 한다. 논문 5.1은
-  -- T3를 "위험 수용을 판단하기에 증거가 부족한 상태"로 분류하고 별도 승인을
-  -- 요구한다. 이 칸이 비어 있으면 T3 케이스는 닫히지 않는다.
+  -- T3(판단 불가)를 종결하려면 위험 수용의 주체가 기록에 남아야 한다. T3는
+  -- "위험 수용을 판단하기에 증거가 부족한 상태"로 분류되며 별도 승인을 요구한다.
+  -- 이 칸이 비어 있으면 T3 케이스는 닫히지 않는다.
   risk_accepted_by text,
   risk_accepted_at timestamptz,
   risk_acceptance_note text
@@ -65,10 +64,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS termination_cases_one_live_per_server
   ON termination_cases(server_id) WHERE status IN ('OPEN', 'REVOKING', 'ASSESSED', 'REOPENED');
 
 -- ── 3. 회수 대상 모집단 (C1) ────────────────────────────────────────────────
--- 논문 C1은 "회수 대상을 빠짐없이 열거하고 조치 대상과 대조하였는가"를 묻는다.
+-- C1은 "회수 대상을 빠짐없이 열거하고 조치 대상과 대조하였는가"를 묻는다.
 -- 열거되지 않은 것은 조치되지도 않으므로, 이 표가 비면 나머지 세 기준은 검토할
 -- 대상조차 없다. holder가 provider인 행은 조직이 스스로 회수할 수 없는 자격,
--- 곧 논문 3.2절의 하위 위임 자격이다.
+-- 곧 하위 위임 자격이다.
 CREATE TABLE IF NOT EXISTS revocation_targets (
   id uuid PRIMARY KEY,
   case_id uuid NOT NULL REFERENCES termination_cases(id) ON DELETE CASCADE,
@@ -94,7 +93,7 @@ CREATE INDEX IF NOT EXISTS revocation_targets_case_idx ON revocation_targets(cas
 -- ── 4. 증거 (C4) ────────────────────────────────────────────────────────────
 -- C4는 "증거가 대상·시점을 특정하며 열람 가능한가"를 묻는다. 그래서 subject와
 -- observed_at이 NOT NULL이다. "폐기 요청을 보냈다"는 기록은 대상의 상태를
--- 특정하지 않으므로 그것만으로는 C4를 충족하지 못한다(논문 3.1).
+-- 특정하지 않으므로 그것만으로는 C4를 충족하지 못한다.
 CREATE TABLE IF NOT EXISTS termination_evidence (
   id uuid PRIMARY KEY,
   case_id uuid NOT NULL REFERENCES termination_cases(id) ON DELETE CASCADE,
@@ -259,8 +258,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS scan_jobs_one_live_per_target_mode
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS drift_observed_at timestamptz;
 
 -- ── 8. 종료 준비를 도입 시점에 확보한다 (조달 체크리스트) ──────────────────
--- 논문 5.2는 이들 증거가 "개시 시점의 기록 체계와 계약 설계에 의존하므로 소급
--- 확보가 어렵다"고 적는다. 그러면 T3의 구조적 원인을 줄이는 자리는 종료 단계가
+-- 이들 증거는 개시 시점의 기록 체계와 계약 설계에 의존하므로 소급
+-- 확보가 어렵다. 그러면 T3의 구조적 원인을 줄이는 자리는 종료 단계가
 -- 아니라 도입 단계다. 끝낼 수 없는 것을 시작하지 않는 것이 유일한 완화다.
 --
 -- 여기 기록하는 것은 **계약 조항의 존재**이지 제공자가 실제로 고지했다는 사실이

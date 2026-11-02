@@ -93,9 +93,9 @@ def public_key() -> Ed25519PublicKey:
 def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
                 extra: dict | None = None) -> tuple[str, dict]:
     """A self-contained access token. Returns (jwt, claims) so the issuer can record
-    what it issued - verification never needs that record, which is exactly the
-    paper's E1 property: a verifier that only checks signatures keeps accepting a
-    revoked token until it expires."""
+    what it issued - verification never needs that record, which is exactly why a
+    verifier that only checks signatures keeps accepting a revoked token until it
+    expires."""
     now = datetime.now(UTC)
     claims = {"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE, "client_id": client_id,
               "iat": now, "nbf": now, "exp": now + timedelta(minutes=minutes), "jti": str(uuid4()),

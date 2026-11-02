@@ -19,7 +19,7 @@ from fastapi import HTTPException
 
 from .destination import pin_transport
 
-# What a token was issued for. `mcp` tokens are what `bob-sso` keeps on the employee's
+# What a token was issued for. `mcp` tokens are what the SSO client keeps on the employee's
 # PC for the harnesses, so they sit at rest in a file a local process can read; `console`
 # tokens come from an interactive sign-in and last 30 minutes. They authenticate the same
 # person, which is why the administrative APIs ask for the second: otherwise anything that

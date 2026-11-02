@@ -52,7 +52,7 @@ INTAKE_APPROVAL_LOCK = asyncio.Lock()
 
 
 async def bootstrap_passwords() -> None:
-    """합성 계정의 초기 비밀번호를 한 번만 채운다.
+    """기본 계정의 초기 비밀번호를 한 번만 채운다.
 
     해시를 SQL 파일에 박아두면 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 없고, 매
     기동마다 덮어쓰면 관리대장이 아니라 환경변수가 정본이 된다. 그래서 비어 있는
@@ -322,7 +322,7 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
 
 @app.post("/auth/mock-login")
 async def login(request: Login, http_request: Request):
-    """합성 로그인. 비밀번호 검증은 신원 관리대장의 사용자별 bcrypt 해시로 한다.
+    """내장 로그인. 비밀번호 검증은 신원 관리대장의 사용자별 bcrypt 해시로 한다.
 
     이전 판은 모든 계정이 같은 환경변수 하나(`MOCK_SSO_PASSWORD`)를 비밀번호로
     썼다. 그러면 한 계정만 잠그거나 한 계정의 비밀번호만 바꾸는 일이 불가능하고,
@@ -640,7 +640,7 @@ def gitea_admin_client() -> httpx.AsyncClient:
     base = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
     return httpx.AsyncClient(base_url=base, timeout=30, trust_env=False,
                              auth=(os.getenv("GITEA_ADMIN_USER", "corpadmin"),
-                                   os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")))
+                                   os.getenv("GITEA_ADMIN_PASSWORD", "")))
 
 
 async def ensure_gitea_team(client: httpx.AsyncClient) -> int:
@@ -2786,7 +2786,7 @@ class Rejection(StrictModel):
 async def reject(approval_id: UUID, request: Rejection, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(f"{GATEWAY_URL}/api/approvals/{approval_id}/reject",
                                      headers={"Authorization": authorization}, json={"note": request.note})
@@ -2799,7 +2799,7 @@ async def reject(approval_id: UUID, request: Rejection, authorization: str | Non
 async def approve(approval_id: UUID, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(f"{GATEWAY_URL}/api/approvals/{approval_id}/approve", headers={"Authorization": authorization})
     if response.status_code >= 400:

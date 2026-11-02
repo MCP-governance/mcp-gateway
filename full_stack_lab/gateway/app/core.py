@@ -39,7 +39,7 @@ from .contract import (  # re-exported: older callers import these from core
 from . import intake_proposal, litellm_sync, review  # noqa: E402  (approval records, intake gate; see review.py)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
-# 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
+# 정책 관리대장은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
 # Gateway가 별도 사본을 들면 "승인된 정책"이 둘이 된다.
 POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/policy_ledger")
 GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
@@ -1217,7 +1217,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "supplier_approved": server["status"] != "BLOCKED_SUPPLY_CHAIN",
         "critical_vulnerabilities": 0 if raw_critical <= int(critical["accepted"] or 0) else raw_critical,
         "critical_accepted": raw_critical if 0 < raw_critical <= int(critical["accepted"] or 0) else 0,
-        # 승인은 영구가 아니다(§11.4.1). 기한은 Registry가 들고, 만료 판단은 정책이 한다.
+        # 승인은 영구가 아니다. 기한은 Registry가 들고, 만료 판단은 정책이 한다.
         "approval_valid_until": tool["approval_valid_until"].isoformat()
         if tool.get("approval_valid_until")
         else None,
@@ -1586,7 +1586,7 @@ async def opa_document(name: str) -> Any:
 
 
 async def policy_ledger(refresh: bool = False) -> dict:
-    """§12.5 PaC 정책 관리대장. 없으면 판정이 관리정보 없이 나가지만 차단하지는 않는다.
+    """PaC 정책 관리대장. 없으면 판정이 관리정보 없이 나가지만 차단하지는 않는다.
 
     관리정보를 못 읽은 것과 정책을 못 읽은 것은 다른 사건이다. 후자는 이미
     P-CONTROL-FAIL-CLOSED가 차단하고, 전자까지 차단하면 대시보드 장애가 업무
@@ -1609,7 +1609,7 @@ async def policy_ledger(refresh: bool = False) -> dict:
 def local_verdict(policy_id: str, decision: str, reason: str, **extra: Any) -> dict:
     """Gateway가 직접 내리는 판정도 OPA 판정과 같은 관리정보를 달고 나가야 한다.
 
-    §11.7은 판단 결과에 적용 정책과 정책 버전을 포함하라고 하지, 그 판단을 누가
+    판단 결과에는 적용 정책과 정책 버전을 담아야 하고, 그 판단을 누가
     내렸는지로 예외를 두지 않는다. PEP가 PDP보다 앞에서 거부한 요청만 증적 형식이
     다르면 감사에서 두 종류의 기록을 대조해야 한다.
     """
@@ -2408,7 +2408,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         contract = await _contract(server_id, tool)
         policy_input = {
-            # §11.6 환경정보와 상황정보. 시각은 Gateway가 재고 정책이 판단한다.
+            # 환경정보와 상황정보. 시각은 Gateway가 재고 정책이 판단한다.
             "environment": GATEWAY_ENVIRONMENT,
             "now": datetime.now(UTC).isoformat(),
             "principal": {
@@ -2618,11 +2618,11 @@ async def approve_request(approval_id: str, reviewer_token: str, reason: str | N
                           evidence_sha256: str | None = None) -> dict:
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
-        raise ValueError("합성 관리자만 승인할 수 있습니다.")
+        raise ValueError("관리자만 승인할 수 있습니다.")
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
     if not row or row["status"] != "PENDING":
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
-    # §8.6 forbids a self-approved exception and the exception ledger enforces it
+    # A self-approved exception is forbidden, and the exception ledger enforces it
     # (requested_by != approved_by). The same rule has to hold for the per-call approval
     # an administrator raises for their own high-risk call, or the control is one click
     # by one person - which is the thing an approval step exists to prevent.
@@ -2786,7 +2786,7 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str,
     """
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
-        raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
+        raise ValueError("관리자만 승인 요청을 처리할 수 있습니다.")
     if not note.strip():
         raise ValueError("거부 사유는 비워둘 수 없습니다.")
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))

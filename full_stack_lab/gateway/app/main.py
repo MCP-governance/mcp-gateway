@@ -266,7 +266,7 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
     """
     user = await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     return user
 
 
@@ -798,7 +798,7 @@ async def session(request: SessionRequest) -> dict:
         async with httpx.AsyncClient(timeout=5) as client:
             response = await client.post(AGENT_SERVICE_URL + "/auth/mock-login", json=request.model_dump())
     except httpx.HTTPError as exc:
-        raise HTTPException(503, "합성 인증 서비스에 연결할 수 없습니다.") from exc
+        raise HTTPException(503, "인증 서비스에 연결할 수 없습니다.") from exc
     if response.status_code == 429:
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     if response.status_code == 403:

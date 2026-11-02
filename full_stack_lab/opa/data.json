@@ -3,7 +3,7 @@
     "bundle_id": "PAC15-CAPABILITIES-20261001",
     "pack_version": "pac15-v1",
     "scope": "approved-principal-server-feature-resource",
-    "owner": "lab-maintainers"
+    "owner": "security-operations"
   },
   "restrictions": {
     "_comment": "Restrict 판정이 붙일 수 있는 값. 도구가 선언한 restrictable과 교집합만 적용된다.",

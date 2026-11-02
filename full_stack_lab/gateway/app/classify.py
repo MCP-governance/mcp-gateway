@@ -275,7 +275,7 @@ def host_category(raw_host: str) -> str:
     """intranet | infrastructure | external for a URL host, before any connection.
 
     Trailing dots, uppercase and the numeric address forms above are normalised first:
-    `INTRANET.BOB.LOCAL.` and `intranet.bob.local` are one host, and a name that
+    `INTRANET.EXAMPLE.LOCAL.` and `intranet.example.local` are one host, and a name that
     carries an internal address is infrastructure whoever resolves it.
     """
     org = _org()
@@ -290,7 +290,7 @@ def host_category(raw_host: str) -> str:
     if any(_internal_address(address) for address in _embedded_addresses(host)):
         return "infrastructure"
     infrastructure = {name.lower().rstrip(".") for name in org.get("infrastructure_hosts", [])}
-    # A container service answers to both `corp-db` and `corp-db.bob.local`.
+    # A container service answers to both `corp-db` and `corp-db.example.local`.
     if host in infrastructure or host.split(".")[0] in infrastructure:
         return "infrastructure"
     if any(host.startswith(prefix) for prefix in org.get("infrastructure_prefixes", [])):
@@ -518,7 +518,7 @@ def _scope_covers(entry: str, resource: Resource) -> bool:
         base = posixpath.normpath(entry) if entry.startswith("/") else None
         return bool(base) and (base == "/" or resource.id == base or resource.id.startswith(base + "/"))
     value, entry = resource.id.lower(), entry.lower()
-    # "sales.*" and "bob/*" name a whole schema or organisation.
+    # "sales.*" and "acme/*" name a whole schema or organisation.
     if entry.endswith(("/*", ".*")):
         return value.startswith(entry[:-1])
     return value == entry

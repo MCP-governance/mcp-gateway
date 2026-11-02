@@ -18,8 +18,8 @@ MINT limits the MCP connections used by AI coding agents on employee PCs (Claude
 and decides every tool call that passes through the gateway **before it runs**. When an employee requests an MCP onboarding, the request goes through
 a supply-chain check and is approved by a different administrator. Only approved servers appear in the managed settings on employee PCs.
 
-Each call is checked for identity, tool classification, input inspection, policy, and usage consent. Personal and secret data in responses is masked before
-it is returned, and every decision is written to an append-only audit ledger. When a usage relationship ends, MINT blocks the server immediately
+Each call is checked for identity, tool classification, input inspection, policy, and usage consent. Personal and secret data detected in responses is masked before
+it is returned, responses that cannot be returned safely are withheld, and every decision is written to an append-only audit ledger. When a usage relationship ends, MINT blocks the server immediately
 and judges from evidence whether the credentials were revoked.
 
 The employee PC kit deploys the harness's managed settings and reports status. The server installs as a single Docker Compose bundle,
@@ -28,6 +28,8 @@ and administrators operate it through the web console and the `./mint.sh` comman
 <p align="center">
   <img src="assets/architecture.png" alt="MINT overall architecture" width="100%">
 </p>
+
+The trace collector (Jaeger) in the diagram is optional and is off in the default deployment.
 
 ## Supported environments
 
@@ -73,7 +75,7 @@ The installer contains the gateway address, the root certificate, and its finger
 | --- | --- | --- |
 | Windows | `mcp-managed-setup-windows.exe` | Run the downloaded file and approve the UAC prompt once. The installer is not code-signed, so if Windows shows an "Unknown publisher" warning, choose **Run** once more. |
 | Linux | `mcp-managed-setup-linux` | The browser does not set the execute permission, so run `chmod +x` and then start it from a terminal. Enter the administrator password once. x86-64 only. |
-| macOS | `mcp-connect-macos.command` | Run it from a terminal with `/bin/bash "$HOME/Downloads/mcp-connect-macos.command"`. Enter the administrator password once. |
+| macOS | `mcp-connect-macos.command` | Run it from a terminal with `/bin/bash "$HOME/Downloads/mcp-connect-macos.command"`. Enter the administrator password once. Run the file within five minutes of downloading it. If it expires or the attempt fails, download a new file. |
 
 On Linux, use the command shown in the console as it is.
 
@@ -81,9 +83,10 @@ On Linux, use the command shown in the console as it is.
 f="$(ls -t ~/Downloads/mcp-managed-setup-linux* | head -1)" && chmod +x "$f" && "$f"
 ```
 
-The default is Simple mode, which installs into the signed-in employee account. After the installation check passes, the PC is activated automatically according to the organization's settings.
+On Windows and Linux the default is Simple mode, which installs into the signed-in employee account. After the installation check passes, the PC is activated automatically according to the organization's settings.
 If you choose **Advanced: isolated account** in **PC connection setup**, the harness is isolated in a separate managed account with firewall and access restrictions, and an administrator activates it in **Endpoint management**.
-After installation, run `mint` in a new terminal to see the status, MCP servers, call logs, and onboarding requests.
+On macOS the kit installs into a separate managed account and is not activated automatically, so an administrator activates it in **Endpoint management**.
+On Windows and Linux, run `mint` in a new terminal after installation to see the status, MCP servers, call logs, and onboarding requests.
 For what the installer sets up, removal, and troubleshooting, see [endpoint-agent/README.md](endpoint-agent/README.md).
 
 ## Operations
@@ -121,10 +124,10 @@ When solo operation is needed, set `ROOT_SOLO_APPROVAL=1` in `.env` so that the 
 
 - **Identity comes only from the transport-layer token.** Values in arguments, headers, or reported by the client are recorded but not used in decisions.
 - **Employee tokens are never forwarded to upstream MCP servers.** The gateway holds per-server credentials separately.
-- **If it cannot decide, it blocks.** If the policy engine or an inspector fails, or a tool's classification is unknown, the call is blocked.
+- **If it cannot decide, it blocks.** If the policy engine or an inspector fails, the call is blocked. Data whose classification is unclear is treated as important and decided under policy.
 - **The gateway controls only calls that pass through its path.** PCs without the kit, unmanaged accounts, and vendor default connectors are the responsibility of endpoint, network, and vendor settings; the console shows them as a control status.
 - **Simple mode does not prevent endpoint bypass.** The gateway's pre-execution decision applies, but another process in the employee account that reaches the outside without going through the gateway must be covered by other controls such as EDR, DLP, or a proxy. Without such controls, use the isolated account.
-- **A termination verdict is a judgment based on public evidence.** It does not directly verify that the provider actually revoked the credentials.
+- **A termination verdict is a judgment based on the evidence collected and submitted, within the scope that evidence establishes.** It does not directly verify that the provider actually revoked the credentials.
 
 ## Documentation
 

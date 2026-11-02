@@ -152,7 +152,7 @@ async def _registry_index(connection=None) -> list[dict]:
     rows = (await db.fetch_all(query) if connection is None
             else await (await connection.execute(query)).fetchall())
     # The Gateway is recognised by its MCP URL, not by a label: anyone can name a
-    # server "bob-gateway" in a config file.
+    # server "acme-gateway" in a config file.
     gateway_urls = {normalise("streamable-http", url) for url in (
         os.getenv("GATEWAY_PUBLIC_MCP_URL", "http://gateway:8080/mcp/"),
         "http://localhost:8080/mcp/", "http://127.0.0.1:8080/mcp/")}
@@ -764,7 +764,7 @@ async def assign_links(rows: list[dict]) -> None:
     """One decision per reported call, on the PC and the web alike. A burst of the same tool (for example, three
     hub_repo_search calls in two seconds) has several candidates per call: a call with a single candidate keeps it,
     the rest take the nearest unclaimed one in time order, so no decision is shown twice and none is dropped.
-    ponytail: matching is within the rows at hand (one page); a burst split across pages may pair differently."""
+    Matching is within the rows at hand (one page); a burst split across pages may pair differently."""
     taken = {row["decision_id"] for row in rows if row.get("candidate_count") == 1 and row.get("decision_id")}
     pending = {}
     for row in sorted(rows, key=lambda r: r.get("called_at") or 0):
@@ -1141,7 +1141,7 @@ async def managed_policy(device: dict, *, connection=None) -> dict:
     # Simple mode: the employee's own Claude takes the Gateway's private CA from the managed settings, so a terminal
     # opened before the install connects too; the session variable alone left it at UNABLE_TO_GET_ISSUER_CERT_LOCALLY.
     # The path is where the kit writes the CA. Codex still needs the session variable.
-    # ponytail: field mode stands for "kits carry the private CA"; record the kit's CA at enrollment if that ever differs.
+    # Field mode stands for "kits carry the private CA"; record the kit's CA at enrollment if that ever differs.
     ca_env = {}
     if (device.get("detail") or {}).get("mode") == "simple" and os.getenv("MCP_FIELD_MODE") == "1":  # managed_mode written out: some checks load managed_policy alone
         if windows:
@@ -1292,7 +1292,7 @@ def policy_installed(policy: dict, reported: str | None, hashes: dict | None) ->
     hashes = hashes or {}
     if set(hashes) != set(policy["configuration_hashes"]):
         return False
-    # ponytail: the legacy branch carries kits that installed before the control hash existed to their next fetch; drop it once none reports one.
+    # The legacy branch carries kits that installed before the control hash existed to their next fetch; drop it once none reports one.
     return reported == installed_hash(policy["control_hash"], hashes) or (
         reported == legacy_hash(policy) and hashes == policy["configuration_hashes"])
 

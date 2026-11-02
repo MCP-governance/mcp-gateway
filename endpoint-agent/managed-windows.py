@@ -300,7 +300,7 @@ def restore_codex_block(config, policy):
         return False  # unreadable: the heartbeat reports the mismatch
     if codex_block(current) == policy["files"][CODEX_BLOCK]:
         return False
-    # ponytail: a writer that drops the markers but keeps our tables leaves duplicates for Codex; seen only if Codex does.
+    # A writer that drops the markers but keeps our tables leaves duplicates for Codex; that happens only if Codex itself drops them.
     write_file(path, with_codex_block(current, policy["files"][CODEX_BLOCK]))
     return True
 

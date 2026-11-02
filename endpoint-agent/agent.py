@@ -877,7 +877,7 @@ def connection_check(gateway_url: str, context: ssl.SSLContext, authorization: s
                 "protocolVersion": "2025-06-18", "capabilities": {},
                 "clientInfo": {"name": "mcpgw-install-check", "version": AGENT_VERSION}}})
             post({"jsonrpc": "2.0", "method": "notifications/initialized"})
-            # ponytail: one page of tools/list; follow nextCursor if a server ever pages its tools.
+            # One page of tools/list; follow nextCursor if a server ever pages its tools.
             tools = _rpc_result(post({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})).get("tools") or []
             result["initialized"].append(server)
             result["tools"] += len(tools)

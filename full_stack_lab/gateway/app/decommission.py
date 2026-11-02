@@ -1,7 +1,6 @@
 """Ending a usage relationship, and stating on what evidence it has ended.
 
-Implements the judgment procedure of the team's CISC-W'26 paper
-「원격 MCP 서비스 종료 시 권한 회수의 구조적 한계 및 종료 판정 기준 제안」 (section 5):
+Implements the termination judgment procedure:
 
 * The unit is the usage relationship: organisation · purpose · provider · allowed
   resources (registry `usage_relationships`). A case is opened per relationship.
@@ -12,15 +11,16 @@ Implements the judgment procedure of the team's CISC-W'26 paper
     C4 evidence       - evidence identifies the target's *state* and time and is readable
   C1 and C4 are prerequisites (unmet -> T3), C2 and C3 set the degree (unmet -> T2),
   all four -> T1. The case grade is the lowest target grade.
-* Evidence is graded by what it can prove (paper 3.1): an RFC 7009 revocation response
+* Evidence is graded by what it can prove: an RFC 7009 revocation response
   proves only that a request was processed, so it never satisfies C4 on its own;
   introspection proves the authorization server's view; a denial at the Gateway proves
   this organisation's enforced path; a credential check in the downstream system proves
   the server-held credential is gone.
 
-The Gateway is the paper's 5.2 mitigation: it recorded, from the start, which
-principals used the relationship, so C1's population and C4's evidence for the
-organisation's side are collected here without asking the provider.
+The Gateway is the mitigation for evidence that cannot be obtained retroactively:
+it recorded, from the start, which principals used the relationship, so C1's
+population and C4's evidence for the organisation's side are collected here
+without asking the provider.
 """
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ from . import db, dispatch, disposal, registry, secret_scan, upstream, user_cred
 SLA_DAYS = int(os.getenv("TERMINATION_SLA_DAYS", "14"))
 GITEA_ADMIN_URL = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
 GITEA_ADMIN_USER = os.getenv("GITEA_ADMIN_USER", "corpadmin")
-GITEA_ADMIN_PASSWORD = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")
+GITEA_ADMIN_PASSWORD = os.getenv("GITEA_ADMIN_PASSWORD", "")
 # The protected resource the revoked token is shown to, and where the organisation keeps the value
 # it provisioned (a file the operator mounts; the value is only ever sent to that resource).
 GITEA_RESOURCE_URL = os.getenv("GITEA_RESOURCE_URL", GITEA_ADMIN_URL).rstrip("/")
@@ -181,8 +181,8 @@ async def drill(server_id: str) -> dict:
 
     The answer is the *best attainable* grade given the contract and what the
     organisation can verify itself. A provider that holds credentials it was never
-    obliged to disclose caps the relationship at T3 before termination even starts;
-    paper 5.2: that evidence cannot be obtained retroactively.
+    obliged to disclose caps the relationship at T3 before termination even starts.
+    Such evidence cannot be obtained retroactively.
     """
     server = await _server(server_id)
     provider = _is_provider(server)
@@ -305,7 +305,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
             f"{row['display_name'] or row['user_token']}({row['department'] or '-'})의 이 이용 관계 접근",
             "org", "gateway-ledger", actor, invalidate=False, subject_ref=row["user_token"],
             verification="gateway-probe",
-            note="Gateway 원장이 개시 시점부터 기록한 이용 주체(논문 5.2)"))
+            note="Gateway 원장이 개시 시점부터 기록한 이용 주체"))
     residue = await db.fetch_all(
         """SELECT i.endpoint_id, i.config_path, i.server_label, i.fingerprint, a.hostname
              FROM endpoint_inventory i JOIN endpoint_agents a USING (endpoint_id)
@@ -338,7 +338,7 @@ async def seed_targets(case_id: str, actor: str) -> list[dict]:
                 case_id, "server-held-credential",
                 f"{server['supplier']} 가 하위 시스템에 대해 보유한 위임 자격(고지 없음)", "provider",
                 "operator-manual", actor, status="UNVERIFIABLE", invalidate=False,
-                note="제공자가 보유 자격을 고지하기 전에는 존재 여부조차 열거할 수 없습니다(논문 3.2)."))
+                note="제공자가 보유 자격을 고지하기 전에는 존재 여부조차 열거할 수 없습니다."))
     return created
 
 
@@ -385,7 +385,7 @@ async def revoke_target(target_id: str, actor: str, status: str, note: str | Non
 
 async def add_evidence(case_id: str, kind: str, subject: str, source: str, detail: dict, actor: str,
                        observed_at: datetime | None = None, target_id: str | None = None) -> dict:
-    """Evidence without a subject and a time is not evidence (paper 3.1). The content
+    """Evidence without a subject and a time is not evidence. The content
     hash lets a later reader tell whether an attached value was changed."""
     await _case(case_id)
     if kind not in EVIDENCE_KINDS:
@@ -853,17 +853,17 @@ async def reopen_case(case_id: str, actor: str, reason: str) -> dict:
 
 
 async def restore_server(server_id: str, actor: str) -> dict:
-    """Put a retired server back into service so the demonstration can be repeated.
+    """Put a retired server back into service so the same termination flow can be run again.
     In an organisation, bringing a terminated relationship back is a new intake."""
     if await asyncio.to_thread(disposal.blocked, server_id=server_id):
         raise ValueError("폐기된 서버는 새 도입 승인이 필요합니다.")
     server = await _server(server_id)
     await db.execute(
         """UPDATE termination_cases SET status='CLOSED', closed_by=COALESCE(closed_by, %s), closed_at=COALESCE(closed_at, now()),
-             close_note=COALESCE(close_note, '실습 복원으로 종결') WHERE server_id=%s AND status <> 'CLOSED'""",
+             close_note=COALESCE(close_note, '복원으로 종결') WHERE server_id=%s AND status <> 'CLOSED'""",
         (actor, server_id))
     await db.execute(
-        """UPDATE mcp_servers SET lifecycle='OPERATING', status='PENDING', status_reason='실습 복원 — 계약 재확인 대기',
+        """UPDATE mcp_servers SET lifecycle='OPERATING', status='PENDING', status_reason='복원 — 계약 재확인 대기',
              lifecycle_changed_at=now(), lifecycle_changed_by=%s, termination_case_id=NULL WHERE id=%s""", (actor, server_id))
     await db.execute("UPDATE usage_relationships SET status='ACTIVE' WHERE server_id=%s", (server_id,))
     # Restoring the lifecycle does not bring back a credential the case revoked in a

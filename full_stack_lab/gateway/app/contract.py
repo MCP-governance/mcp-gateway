@@ -62,7 +62,7 @@ AUDIT_COLUMN_SETS = {
         "decision", "policy_id", "reason", "upstream_executed", "restrictions", "approval_id",
         "request_payload", "result_preview", "error",
         "enforcement", "would_decision", "would_policy_id",
-        # §11.17 정책 판단 및 집행 증적
+        # 정책 판단 및 집행 증적
         "policy_version", "obligations", "exception_id", "conflicts", "environment",
     ),
 }

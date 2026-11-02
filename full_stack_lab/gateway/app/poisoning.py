@@ -329,7 +329,7 @@ def findings(tool: dict) -> list[str]:
         found.append("인코딩된 문장")
     # The schema comes from the server, so its shape is not trusted either.
     props = schema.get("properties") if isinstance(schema, dict) else None
-    # ponytail: top-level parameters only; a nested one still has its description and default scanned above.
+    # Top-level parameters only; a nested one still has its description and default scanned above.
     if isinstance(props, dict) and any(CARRIER.match(str(name)) for name in props):
         found.append("정보 전달용 인자")
     return found

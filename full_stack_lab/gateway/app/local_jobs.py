@@ -99,7 +99,7 @@ async def failure_message(error, diagnostics=None):
 
 
 def manifest_errors(manifest: dict, server_id: str) -> list[str]:
-    """The same rules the device runner applies again before it starts anything (C10 §8)."""
+    """The same rules the device runner applies again before it starts anything."""
     errors = []
     if set(manifest) - {"approval", "source"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
         return ["매니페스트 항목은 server_id·image·command·mounts·env·reason만 허용합니다."]
