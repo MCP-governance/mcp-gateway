@@ -16,7 +16,7 @@ from urllib.parse import urlsplit
 import sys
 
 LAB = Path(__file__).resolve().parents[1]
-NAMES = {"managed_policy", "managed_platform", "json_document", "installed_hash", "legacy_hash", "policy_installed",
+NAMES = {"managed_policy", "managed_platform", "runs_on", "json_document", "installed_hash", "legacy_hash", "policy_installed",
          "control_matches", "held_servers", "policy_accepted", "managed_failure", "heartbeat", "activate_managed",
          "managed_checks", "MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM", "managed_mode", "SIMPLE_CHECKS",
          "endpoint_settings"}

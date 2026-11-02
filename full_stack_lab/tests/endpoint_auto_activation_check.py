@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, patch
 from urllib.parse import urlsplit
 
 LAB = Path(__file__).resolve().parents[1]
-NAMES = {"managed_policy", "managed_platform", "managed_mode", "json_document", "installed_hash", "legacy_hash",
+NAMES = {"managed_policy", "managed_platform", "runs_on", "managed_mode", "json_document", "installed_hash", "legacy_hash",
          "policy_installed", "heartbeat", "managed_checks", "MANAGED_CHECKS", "MANAGED_CHECKS_BY_PLATFORM",
          "SIMPLE_CHECKS", "endpoint_settings"}
 PACKAGE = "auto_activation"

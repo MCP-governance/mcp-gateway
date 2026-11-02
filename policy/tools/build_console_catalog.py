@@ -20,12 +20,12 @@ def build():
     for path in (ROOT / "pac").glob("*.rego"):
         text = path.read_text(encoding="utf-8")
         if path.name.endswith("_test.rego"):
-            tests.update("POL-" + n for n in re.findall(r"test_pol_(\d{3})_(?:pass|block)_", text))
+            tests.update(f"POL-{a.upper()}-{n}" for a, n in re.findall(r"test_pol_([a-z])_(\d{2})_(?:pass|block)_", text))
         else:
-            rules.update(a or b for a, b in re.findall(r'lib\.finding\("(POL-\d{3})"|"policy_id": "(POL-\d{3})"', text))
+            rules.update(a or b for a, b in re.findall(r'lib\.finding\("(POL-[A-Z]-\d{2})"|"policy_id": "(POL-[A-Z]-\d{2})"', text))
     policies = []
-    for pid, source in sorted(sheet.items()):
-        if not re.fullmatch(r"POL-\d{3}", pid):
+    for pid, source in sheet.items():
+        if not re.fullmatch(r"POL-[A-Z]-\d{2}", pid):
             raise ValueError("Invalid policy identifier")
         classification = classes[pid]
         rule = source.get("rule") or {}

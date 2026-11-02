@@ -18,7 +18,7 @@ import rego.v1
 # 효과의 강도. 한 요청에 여러 정책이 걸리면 가장 강한 효과가 최종 결과다.
 #   DENY     차단(시트의 차단·거부·중단)
 #   MANUAL   사람 판단 전까지 차단(시트의 「보안 관리자 판단 전까지 차단」)
-#   CONFIRM  요청 사용자 본인의 확인을 받은 뒤 한 번 진행(시트 POL-053·054)
+#   CONFIRM  요청 사용자 본인의 확인을 받은 뒤 한 번 진행(시트 POL-E-20·POL-E-21)
 #   RESTRICT 제한 허용(시트의 「공개자료 조회만 허용」·「한도까지 제한」)
 #   ALERT    진행하되 경보
 rank := {"DENY": 5, "MANUAL": 4, "CONFIRM": 3, "RESTRICT": 2, "ALERT": 1}
@@ -156,7 +156,7 @@ approved(entries, pol_id) := [e |
 ]
 
 # 판정을 건너뛰는 시한부 예외. 시트의 「예외 심사」는 대부분 승인 목록을 바꾸는 절차이므로(승인 전에는 차단)
-# 이 함수는 예외 자체가 정책인 곳(POL-013 예외 승인, POL-070 기한 연장)에서만 쓴다.
+# 이 함수는 예외 자체가 정책인 곳(POL-R-02 예외 승인, POL-O-08 기한 연장)에서만 쓴다.
 exception_for(pol_id, target, scope_item) if {
 	catalog.policies[pol_id].exception_approver in {"security_admin", "data_owner"}
 	some e in approved(data.pol.exceptions, pol_id)
@@ -171,7 +171,7 @@ exception_for(pol_id, target, scope_item) if {
 
 # 공인 주소가 아닌 대역: 루프백·사설·링크 로컬·CGNAT·벤치마크·문서용·멀티캐스트·예약.
 # IPv4 매핑 IPv6(::ffff:0:0/96)는 넣지 않는다: Go의 net은 IPv4 주소를 그 형태로 다뤄 모든 IPv4가 걸린다.
-# "::ffff:10.0.0.1" 같은 매핑 주소는 위 IPv4 대역이 그대로 잡는다(시험 test_pol_023_block_ipv4_mapped_private).
+# "::ffff:10.0.0.1" 같은 매핑 주소는 위 IPv4 대역이 그대로 잡는다(시험 test_pol_r_12_block_ipv4_mapped_private).
 protected_cidrs := [
 	"0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16", "172.16.0.0/12",
 	"192.0.0.0/24", "192.0.2.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24",
