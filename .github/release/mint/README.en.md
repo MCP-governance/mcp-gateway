@@ -62,7 +62,7 @@ cd mint/deploy
 
 The installer creates `.env`, the secrets, and the signing keys, builds the images and starts the services, then exports the private root certificate to `deploy/ca/root.crt`.
 When it finishes, compare the fingerprint in `deploy/ca/root.sha256` through a separate channel, register the root certificate in the browser, and sign in at `https://<internal IPv4>/` as the administrator `root`.
-The initial password is in `deploy/initial-admin-password`; change it right away with `./mint.sh set-password root`.
+The initial password is in `deploy/initial-admin-password`; change it right away with **Change password** at the top of the console or `./mint.sh set-password root`.
 
 DNS names, trusted certificates (`tailscale` or `file`), solo operation mode, and the settings are described in [deploy/README.md](deploy/README.md).
 
@@ -98,6 +98,8 @@ For what the installer sets up, removal, and troubleshooting, see [endpoint-agen
 | Alerts, incident reports, monitoring integration | Console **Security monitoring** |
 | MCP server audience and suspension, control of built-in features and connectors | Console **AI connection management** |
 | Accounts, usage suspension, sign-up requests | Console **User management** |
+| Change user ID, reset password | Console **User management** |
+| Change my password | **Change password** at the top of the console |
 | Employee PC activation and status | Console **Endpoint management** |
 | Policy review | Console **Security management policies** |
 | MCP onboarding request, review, and approval | Console **Adoption management** (employee menu: **Onboarding**; page title: **Onboarding requests**) |

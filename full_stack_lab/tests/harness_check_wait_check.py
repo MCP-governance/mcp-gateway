@@ -11,7 +11,7 @@ BIN = pathlib.Path(__file__).resolve().parents[1] / "workstation" / "bin" / "har
 
 os.environ.setdefault("WORKSTATION_ID", "ws-test")
 _read = pathlib.Path.read_text
-pathlib.Path.read_text = lambda self, *a, **k: "a b" if str(self).replace("\\", "/") == "/etc/bob/servers" else _read(self, *a, **k)
+pathlib.Path.read_text = lambda self, *a, **k: "a b" if str(self).replace("\\", "/") == "/etc/mint/servers" else _read(self, *a, **k)
 loader = importlib.machinery.SourceFileLoader("harness_check", str(BIN))
 mod = importlib.util.module_from_spec(importlib.util.spec_from_loader("harness_check", loader))
 loader.exec_module(mod)

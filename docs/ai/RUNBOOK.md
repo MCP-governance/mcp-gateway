@@ -171,10 +171,10 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 
 | 명령 | 하는 일 |
 | --- | --- |
-| `./console.sh up` | `.env` 생성(서명 키·LiteLLM 마스터 키·직원별 LLM 키·장치 키) → 이미지 빌드 → 회사 시스템·MCP 10종 → Ollama 모델 확인/받기 → `bob-assistant` 파생 모델 → LiteLLM·키 발급 → Gateway·Console·워커 → 계약 기준선(없으면 생성) → 장치 자격 등록 → 직원 PC 4대(각자 하네스 4종 설치) |
+| `./console.sh up` | `.env` 생성(서명 키·LiteLLM 마스터 키·직원별 LLM 키·장치 키) → 이미지 빌드 → 회사 시스템·MCP 10종 → Ollama 모델 확인/받기 → `mint-assistant` 파생 모델 → LiteLLM·키 발급 → Gateway·Console·워커 → 계약 기준선(없으면 생성) → 장치 자격 등록 → 직원 PC 4대(각자 하네스 4종 설치) |
 | `./console.sh up --no-llm` | LLM 없이. 직원 PC의 하네스 도구 호출은 **MCP Inspector CLI**가 scripted 모드로 대신한다. CI가 쓴다 |
 | `./console.sh workday [ws\|all] [--mode llm\|scripted] [--check]` | 직원 PC의 하루 업무 시나리오(`workstation/scenarios/*.toml`)를 각자의 하네스로 실행. llm=하네스가 자연어 지시로 도구를 고름, scripted=MCP Inspector CLI가 같은 Gateway URL·SSO 토큰으로 직접 호출. `--check`는 scripted에서만 기대 판정과 엄격 대조 |
-| `./console.sh ask <ws> "지시" [--servers a,b] [--harness claude\|codex\|gemini\|opencode]` | 한 직원 PC에 설치된 하네스에 헤드리스로 업무 지시(`bob-ask`). PC마다 기본 하네스가 다르다(ws-ysg=claude, ws-jwj=codex, ws-pse=gemini, ws-nkk=opencode). 네 PC 모두 하네스 4종이 다 설치돼 있어 `--harness`로 바꿔 부를 수 있다 |
+| `./console.sh ask <ws> "지시" [--servers a,b] [--harness claude\|codex\|gemini\|opencode]` | 한 직원 PC에 설치된 하네스에 헤드리스로 업무 지시(`mint-ask`). PC마다 기본 하네스가 다르다(ws-ysg=claude, ws-jwj=codex, ws-pse=gemini, ws-nkk=opencode). 네 PC 모두 하네스 4종이 다 설치돼 있어 `--harness`로 바꿔 부를 수 있다 |
 | `./console.sh harnesses` | 직원 PC 4대의 하네스 4종이 Gateway의 관리형 MCP 서버 10종에 모두 붙는지 확인(모델 호출 없음) |
 | `./console.sh watch` | Gateway 판정을 사람이 읽는 한 줄 로그로 계속 출력 (`scripts/watch.py`) |
 | `./console.sh contracts [--check\|--update]` | 계약 잠금 대조 / 재생성(재생성 후 diff를 읽고 커밋) |
@@ -193,13 +193,13 @@ scope가 없는 예전 토큰도 관리권한으로 승격하지 않으므로 �
 
 | 이메일 | 역할 | 부서 | 워크스테이션 |
 | --- | --- | --- | --- |
-| kkg@bob.local | admin | 거버넌스팀 | — |
-| mks@bob.local | admin | 보안운영팀 | — |
-| ysg@bob.local | employee | 플랫폼개발팀 | ws-ysg |
-| jwj@bob.local | employee | 데이터분석팀 | ws-jwj |
-| pse@bob.local | employee | 보안기술팀 | ws-pse |
-| miso@bob.local | employee | 보안기술팀 | — |
-| nkk@bob.local | partner | 협력사 A | ws-nkk (섀도 MCP 설정 보유) |
+| kkg@mint.local | admin | 거버넌스팀 | — |
+| mks@mint.local | admin | 보안운영팀 | — |
+| ysg@mint.local | employee | 플랫폼개발팀 | ws-ysg |
+| jwj@mint.local | employee | 데이터분석팀 | ws-jwj |
+| pse@mint.local | employee | 보안기술팀 | ws-pse |
+| miso@mint.local | employee | 보안기술팀 | — |
+| nkk@mint.local | partner | 협력사 A | ws-nkk (섀도 MCP 설정 보유) |
 
 Gitea 관리자: `corpadmin` / `corp-admin-lab-only` (`GITEA_ADMIN_*`). Console은 관리자면 전체, 아니면
 자기 활동·도입 신청만 보인다.
@@ -212,7 +212,7 @@ cd full_stack_lab && ./console.sh up          # 첫 실행은 모델 다운로�
 ./console.sh workday                          # 네 직원의 하루(LLM 모드)
 ./console.sh watch                            # 다른 창에서 판정 흐름
 ```
-브라우저: `http://localhost:${CONSOLE_PORT}` → kkg@bob.local.
+브라우저: `http://localhost:${CONSOLE_PORT}` → kkg@mint.local.
 
 #### 코드만 바꿨을 때
 - Gateway/Console Python·정적 파일: `docker compose build -q gateway agent-service && docker compose up -d gateway gateway-sse agent-service`
@@ -238,13 +238,13 @@ Console `#/termination` → 이용 관계 "종료 시작" → 케이스 화면�
 - 회사 시드만 다시: `docker compose run --rm corp-seed --force`.
 
 ### 2.6 컨테이너 직원 PC에서 하네스를 손으로 쓰기
-`bob-ask`·`workday`를 거치지 않고, 직원이 평소 쓰듯 하네스를 직접 불러도 된다.
+`mint-ask`·`workday`를 거치지 않고, 직원이 평소 쓰듯 하네스를 직접 불러도 된다.
 
 ```bash
 docker compose exec ws-ysg bash -l
-bob-ask "payment-service 최근 커밋 3개 요약해 줘"   # 이 PC의 기본 하네스(HARNESS=claude)로
+mint-ask "payment-service 최근 커밋 3개 요약해 줘"   # 이 PC의 기본 하네스(HARNESS=claude)로
 claude -p "..."                                      # 하네스를 직접 불러도 같은 경로 — Claude는 headersHelper로 토큰을 받고,
-                                                     # codex·gemini·opencode는 로그인 셸의 함수(/etc/profile.d/bob-harness.sh)가 실행마다 새 토큰을 채운다
+                                                     # codex·gemini·opencode는 로그인 셸의 함수(/etc/profile.d/mint-harness.sh)가 실행마다 새 토큰을 채운다
 ```
 다른 하네스도 같은 방식(`codex exec`, `gemini -p`, `opencode run`) — 네 PC 모두 하네스 4종이 다 설치돼 있다.
 
@@ -255,7 +255,7 @@ claude -p "..."                                      # 하네스를 직접 불�
 카탈로그를 고치고 이미지를 다시 빌드한다.
 
 `BOB_HARNESS_COMPACT=1`(기본)은 CPU 소형 모델을 위해 하네스의 내장 도구를 끄고 프롬프트를
-`/etc/bob/harness-prompt.md`로 줄인다. 클라우드 모델을 붙일 때는 `0`으로 하네스 본래 프롬프트를 쓴다.
+`/etc/mint/harness-prompt.md`로 줄인다. 클라우드 모델을 붙일 때는 `0`으로 하네스 본래 프롬프트를 쓴다.
 
 로컬 모델은 `LOCAL_LLM_MODEL`(기본 `qwen3.5:2b-q4_K_M`, 적재 1.7GB)·`LOCAL_LLM_CONTEXT`(기본 12288)로
 바꾼다. 품질이 더 필요하면 `LOCAL_LLM_MODEL=qwen3.5:4b`이지만 16K 컨텍스트에서 +3.4GB가 더 든다. 메모리 8GB 안팎의

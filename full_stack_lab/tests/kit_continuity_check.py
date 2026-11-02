@@ -246,7 +246,7 @@ class ConfigShadow(unittest.IsolatedAsyncioTestCase):
             "display_name": "memory", "advertised_name": "memory-server", "lifecycle": "OPERATING", "status": "READY"}]))
         plane = extract(LAB / "gateway/app/endpoint_plane.py",
                         {"normalise", "safe_endpoint_ref", "command_digest", "_match", "_registry_index"},
-                        {"db": db, "os": os, "hashlib": hashlib, "urlsplit": urlsplit, "SELF_MCP_NAME": "bob-gateway"})
+                        {"db": db, "os": os, "hashlib": hashlib, "urlsplit": urlsplit, "SELF_MCP_NAME": "mint-gateway"})
         with patch.dict(os.environ, {"GATEWAY_PUBLIC_MCP_URL": base + "/"}):
             index = await plane._registry_index()
         with tempfile.TemporaryDirectory() as folder:

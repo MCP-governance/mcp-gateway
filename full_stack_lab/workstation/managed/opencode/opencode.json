@@ -3,20 +3,20 @@
   "autoupdate": false,
   "share": "disabled",
   "provider": {
-    "bob": {
+    "mint": {
       "npm": "@ai-sdk/openai-compatible",
       "name": "BoB LLM Gateway",
       "options": {"baseURL": "http://llm-gateway:4000/v1", "apiKey": "{env:BOB_LLM_KEY}"},
-      "models": {"bob-assistant": {"name": "bob-assistant", "tool_call": true}}
+      "models": {"mint-assistant": {"name": "mint-assistant", "tool_call": true}}
     }
   },
-  "model": "bob/bob-assistant",
-  "small_model": "bob/bob-assistant",
+  "model": "mint/mint-assistant",
+  "small_model": "mint/mint-assistant",
   "agent": {
-    "bob": {
+    "mint": {
       "mode": "primary",
       "description": "Company assistant on the local model: MCP tools only",
-      "prompt": "{file:/etc/bob/harness-prompt.md}",
+      "prompt": "{file:/etc/mint/harness-prompt.md}",
       "tools": {"bash": false, "edit": false, "write": false, "patch": false, "webfetch": false, "websearch": false, "todowrite": false, "todoread": false, "task": false}
     }
   }

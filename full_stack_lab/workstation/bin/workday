@@ -4,7 +4,7 @@ own harness, and what the Gateway decided about each call.
 
     workday [--mode llm|scripted] [--task ID] [--check]
 
-llm       bob-ask hands the task's request to the installed harness (Claude Code,
+llm       mint-ask hands the task's request to the installed harness (Claude Code,
           Codex, Gemini CLI, OpenCode); the model decides which MCP tools to call.
 scripted  the official MCP Inspector CLI makes the scenario's tool calls with the same
           Gateway URLs and SSO token, no model - deterministic, for tests and CI.
@@ -33,7 +33,7 @@ def say(mark: str, text: str) -> None:
 
 
 def token() -> str:
-    return subprocess.run(["bob-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(["mint-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
 
 
 def activity(after: int, limit: int = 100) -> dict:
@@ -75,7 +75,7 @@ def run(task: dict, mode: str) -> tuple[list[dict], list[str]]:
                 hidden.append(step["tool"])
     else:
         servers = ",".join(task.get("servers") or [])
-        done = subprocess.run(["bob-ask", *(["--servers", servers] if servers else []), task["goal"]],
+        done = subprocess.run(["mint-ask", *(["--servers", servers] if servers else []), task["goal"]],
                               capture_output=True, text=True, timeout=int(os.getenv("WORKDAY_TASK_TIMEOUT", "1200")))
         if done.returncode != 0:
             say("!", f"harness exit {done.returncode}: {done.stdout.strip()[-300:]}")

@@ -21,7 +21,7 @@ case "$id" in
     proxy /opt/venvs/git/bin/mcp-server-git ;;
   fetch)
     proxy /opt/venvs/fetch/bin/mcp-server-fetch --ignore-robots-txt \
-      --user-agent "BobCorpAssistant/2.0 (+http://intranet.bob.local)" ;;
+      --user-agent "BobCorpAssistant/2.0 (+http://intranet.mint.local)" ;;
   postgres)
     proxy /opt/venvs/postgres/bin/postgres-mcp --access-mode=unrestricted ;;
   redis)

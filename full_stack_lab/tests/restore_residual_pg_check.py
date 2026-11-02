@@ -98,7 +98,7 @@ async def setup_fixture() -> tuple[str, str, str, str]:
     await db.execute("UPDATE mcp_servers SET deployment='provider', exit_terms=%s WHERE id=%s",
                      (Jsonb({"provider_credential_disclosure": True}), SERVER))
 
-    login = await account_login(f"{ACCOUNT}@bob.local")
+    login = await account_login(f"{ACCOUNT}@mint.local")
     kit = await endpoint_plane.enrollment_token(USER)
     device = await endpoint_plane.consume_enrollment(
         kit["enrollment_token"], "restore-device-key-material-0123456789", "restore-host", "labuser", 1000)

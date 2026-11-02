@@ -125,13 +125,13 @@ class SessionTerminationTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_terminated_session_is_rejected_and_other_principal_remains_active(self):
         await mcp_sessions.register("session-alice", "alice-token", "jti-a", "device-a", "server-a")
-        await mcp_sessions.register("session-bob", "bob-token", "jti-b", "device-b", "server-a")
+        await mcp_sessions.register("session-mint", "mint-token", "jti-b", "device-b", "server-a")
 
         self.assertTrue(await mcp_sessions.active("session-alice", "alice-token", "device-a", "server-a"))
         self.assertEqual(await mcp_sessions.terminate(reason="principal-disabled", principal="alice-token"), 1)
 
         self.assertFalse(await mcp_sessions.active("session-alice", "alice-token", "device-a", "server-a"))
-        self.assertTrue(await mcp_sessions.active("session-bob", "bob-token", "device-b", "server-a"))
+        self.assertTrue(await mcp_sessions.active("session-mint", "mint-token", "device-b", "server-a"))
         event_insert = next(call for call in fake_db_instance.execute.await_args_list
                             if call.args[0].startswith("INSERT INTO mcp_session_events"))
         self.assertEqual(event_insert.args[1][0], "principal-disabled")
@@ -158,16 +158,16 @@ class SessionTerminationTests(unittest.IsolatedAsyncioTestCase):
     async def test_session_id_is_rejected_for_another_principal_or_device(self):
         await mcp_sessions.register("bound-session", "alice-token", "jti-a", "device-a", "server-a")
 
-        self.assertFalse(await mcp_sessions.active("bound-session", "bob-token", "device-a", "server-a"))
+        self.assertFalse(await mcp_sessions.active("bound-session", "mint-token", "device-a", "server-a"))
         self.assertFalse(await mcp_sessions.active("bound-session", "alice-token", "device-b", "server-a"))
         self.assertFalse(await mcp_sessions.active("bound-session", "alice-token", "device-a", "server-b"))
 
     async def test_refusal_names_the_policy_by_how_the_session_ended(self):
         await mcp_sessions.register("cut", "alice-token", "jti-a", None, "server-a")
-        await mcp_sessions.register("stopped", "bob-token", "jti-b", None, "server-b")
+        await mcp_sessions.register("stopped", "mint-token", "jti-b", None, "server-b")
         await mcp_sessions.register("bound", "carol-token", "jti-c", None, "server-b")
         await mcp_sessions.terminate(reason="termination", server_id="server-a")
-        await mcp_sessions.terminate(reason="principal-disabled", principal="bob-token")
+        await mcp_sessions.terminate(reason="principal-disabled", principal="mint-token")
 
         self.assertEqual((await mcp_sessions.refusal("cut"))["policy_id"], "MCP-DECOMM-001")
         self.assertEqual((await mcp_sessions.refusal("stopped"))["policy_id"], "PAC-14")

@@ -414,8 +414,8 @@ async def _invalidate(case_id: str, actor: str, note: str) -> None:
 
 
 # ── automated evidence collection ────────────────────────────────────────────
-SAMPLE_ARGUMENTS = {"repo_path": "/repos/handbook", "url": "http://intranet.bob.local/", "path": "/shared/public",
-                    "owner": "bob", "repo": "handbook", "key": "cache:product:1", "sql": "SELECT 1"}
+SAMPLE_ARGUMENTS = {"repo_path": "/repos/handbook", "url": "http://intranet.mint.local/", "path": "/shared/public",
+                    "owner": "mint", "repo": "handbook", "key": "cache:product:1", "sql": "SELECT 1"}
 
 
 async def _probe_call(server_id: str) -> tuple[str, dict]:

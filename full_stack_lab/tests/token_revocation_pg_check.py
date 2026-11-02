@@ -51,7 +51,7 @@ async def accepted(tokens):
 async def family_revocation():
     await add_principal("tok-a")
     await db.execute("UPDATE principals SET password_hash=crypt('lab-password', gen_salt('bf', 4)) WHERE token='tok-a'")
-    first = await login("tok-a@bob.local")
+    first = await login("tok-a@mint.local")
     second = await rotate(first["refresh_token"])
     third = await rotate(second["refresh_token"])
     access = [first["access_token"], second["access_token"], third["access_token"]]
@@ -69,7 +69,7 @@ async def family_revocation():
                                (idp._sha(first["refresh_token"]),))
     CHECKS.ok("nothing was issued after the revocation", count["n"] == 3, issued=count["n"])
 
-    fourth = await login("tok-a@bob.local")
+    fourth = await login("tok-a@mint.local")
     fifth = await rotate(fourth["refresh_token"])
     replay = await rotate(fourth["refresh_token"])
     CHECKS.ok("replaying a rotated refresh token revokes the whole family",
@@ -77,7 +77,7 @@ async def family_revocation():
               and await accepted([fourth["access_token"], fifth["access_token"]]) == [401, 401]
               and getattr(await rotate(fifth["refresh_token"]), "status_code", 200) == 400)
 
-    sixth = await login("tok-a@bob.local")
+    sixth = await login("tok-a@mint.local")
     seventh = await rotate(sixth["refresh_token"])
     await idp.revoke(seventh["access_token"], "access_token")
     CHECKS.ok("revoking one access token refuses that token only (RFC 7009 scope, as the paper's E1 requires)",
@@ -94,7 +94,7 @@ async def issue_against_revoke():
     await db.execute("UPDATE principals SET password_hash=crypt('lab-password', gen_salt('bf', 4)) WHERE token='tok-b'")
     survivors = 0
     for trial in range(12):
-        start = await login("tok-b@bob.local")
+        start = await login("tok-b@mint.local")
         replies = await asyncio.gather(rotate(start["refresh_token"]), idp.revoke(start["refresh_token"], "refresh_token"),
                                        rotate(start["refresh_token"]), return_exceptions=True)
         minted = [r["access_token"] for r in replies if isinstance(r, dict) and "access_token" in r]
@@ -114,7 +114,7 @@ async def issue_against_revoke():
 async def issuance_rolls_back():
     await add_principal("tok-c")
     await db.execute("UPDATE principals SET password_hash=crypt('lab-password', gen_salt('bf', 4)) WHERE token='tok-c'")
-    start = await login("tok-c@bob.local")
+    start = await login("tok-c@mint.local")
     family = (await db.fetch_one("SELECT family_id FROM oauth_refresh_tokens WHERE token_sha256=%s", (idp._sha(start["refresh_token"]),)))["family_id"]
     constraint = "lab_fail_" + uuid.uuid4().hex[:8]
     await db.execute(f"ALTER TABLE oauth_refresh_tokens ADD CONSTRAINT {constraint} CHECK (family_id <> '{family}' OR token_sha256 = '{idp._sha(start['refresh_token'])}')")

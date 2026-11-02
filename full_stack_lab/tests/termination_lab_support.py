@@ -86,7 +86,7 @@ async def add_principal(token: str, role: str = "employee", status: str = "activ
         """INSERT INTO principals(token, display_name, role, department, synthetic, user_id, email, status)
            VALUES (%s,%s,%s,%s,true,%s,%s,%s)
            ON CONFLICT (token) DO UPDATE SET status=EXCLUDED.status, role=EXCLUDED.role""",
-        (token, token, role, department, token, f"{token}@bob.local", status))
+        (token, token, role, department, token, f"{token}@mint.local", status))
 
 
 async def add_server(server_id: str, endpoint: str = "http://mcp-lab:8000/mcp") -> None:

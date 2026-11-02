@@ -24,7 +24,7 @@
 | `http://localhost:16686` | Jaeger (`JAEGER_PORT`) |
 | `http://localhost:3000` | 회사 Gitea — 제공자 콘솔 역할 (`GITEA_PORT`, `corpadmin`) |
 
-CI 기본 스택은 `127.0.0.1`에만 게시됩니다. 합성 계정: 관리자 `kkg@bob.local`·`mks@bob.local`,
+CI 기본 스택은 `127.0.0.1`에만 게시됩니다. 합성 계정: 관리자 `kkg@mint.local`·`mks@mint.local`,
 직원 `ysg@`(플랫폼개발팀)·`jwj@`(데이터분석팀)·`pse@`(보안기술팀)·`miso@`, 협력사 `nkk@`.
 
 ## 2. 직원의 하루
@@ -38,7 +38,7 @@ CI 기본 스택은 `127.0.0.1`에만 게시됩니다. 합성 계정: 관리자 
 ```
 
 직원 PC에는 Claude Code·Codex·Gemini CLI·OpenCode 네 하네스가 모두 설치돼 있고(주 하네스는 PC마다
-다름), `bob-ask`가 그중 하나를 헤드리스로 부릅니다. 관리형 MCP 설정은 `registry/catalog.toml`에서
+다름), `mint-ask`가 그중 하나를 헤드리스로 부릅니다. 관리형 MCP 설정은 `registry/catalog.toml`에서
 이미지 빌드 때 생성됩니다. 시나리오(`workstation/scenarios/*.toml`, 21건)는 실제 업무와 실제 위험을 섞었습니다.
 
 | 직원 | 하는 일 | 보이는 통제 |
@@ -111,7 +111,7 @@ REPLAY_POLICY_DIR=./candidate-opa ./console.sh replay  # 후보 정책 디렉터
 | `opa/` | Rego 정책·시험·관리대장·예외·값 |
 | `mcp/` | MCP 런타임 이미지와 실행 스크립트 |
 | `corp/` | 회사 시드(파일·저장소·DB·메일·Redis·인트라넷·Gitea) |
-| `workstation/` | 직원 PC 이미지(하네스 4종), `bin/{bob-ask,workday,harness-check,bob-sso}`, 시나리오, `managed/render.py`(카탈로그 → 하네스별 관리형 설정), 섀도 설정 |
+| `workstation/` | 직원 PC 이미지(하네스 4종), `bin/{mint-ask,workday,harness-check,mint-sso}`, 시나리오, `managed/render.py`(카탈로그 → 하네스별 관리형 설정), 섀도 설정 |
 | `llm/` | LiteLLM 설정 |
 | `../endpoint-agent/` | 엔드포인트 에이전트(표준 라이브러리만). 직원 PC 이미지가 빌드 때 복사하고, 실제 PC에는 설치기로 배포 |
 | `supply_chain/` | 도입 신청 격리 검증 워커(Syft·Trivy·Semgrep·AI-Infra-Guard mcp-scan, 플랫폼별 wheel 해시 잠금·종료 조건 조사) |

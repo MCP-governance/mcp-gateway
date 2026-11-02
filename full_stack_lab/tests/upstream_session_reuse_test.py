@@ -74,7 +74,7 @@ class PoolTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(self.closed)
 
     async def test_T2_T3_every_key_boundary_is_separate(self):
-        cases = [key(), key(principal="bob"), key(downstream=("chat-b", "jwt-a")),
+        cases = [key(), key(principal="mint"), key(downstream=("chat-b", "jwt-a")),
                  key(downstream=("chat-a", "jwt-b")), key(server="server-b")]
         for item in cases:
             async with self.pool.borrow(item, self.factory):
@@ -97,11 +97,11 @@ class PoolTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(self.closed), 1)
 
     async def test_T5_endpoint_and_downstream_closure_are_scoped(self):
-        for item in [key(), key(principal="bob"), key(server="b", endpoint="https://b.example/mcp")]:
+        for item in [key(), key(principal="mint"), key(server="b", endpoint="https://b.example/mcp")]:
             async with self.pool.borrow(item, self.factory):
                 pass
         self.assertEqual(await self.pool.close(principal="alice", conversation=sessions.conversation_id(key().downstream)), 2)
-        self.assertEqual([item.principal for item in self.pool.entries], ["bob"])
+        self.assertEqual([item.principal for item in self.pool.entries], ["mint"])
         self.assertEqual(await self.pool.close(endpoint=key().endpoint), 1)
 
     async def test_T6_rotation_retires_all_old_conversations(self):
@@ -160,7 +160,7 @@ class PoolTests(unittest.IsolatedAsyncioTestCase):
         self.pool.size = 1
         async with self.pool.borrow(key(), self.factory):
             pass
-        async with self.pool.borrow(key(principal="bob"), self.factory):
+        async with self.pool.borrow(key(principal="mint"), self.factory):
             self.assertEqual(len(self.pool.entries), 1)
         self.assertEqual(len(self.closed), 1)
 
@@ -248,7 +248,7 @@ class PoolTests(unittest.IsolatedAsyncioTestCase):
                 closing.set()
                 await finish.wait()
         async with self.pool.borrow(key(), self.factory) as active:
-            async with self.pool.borrow(key(principal="bob"), slow_close):
+            async with self.pool.borrow(key(principal="mint"), slow_close):
                 pass
             async def acquire():
                 async with self.pool.borrow(key(principal="carol"), self.factory):

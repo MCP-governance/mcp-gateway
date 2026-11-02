@@ -120,7 +120,7 @@ class FakeIdpGateway:
                     self.log.append("revoke")
                 return 200, {}
             if form.get("grant_type") == "password":
-                if (form.get("username"), form.get("password")) != ("ysg@bob.local", "test-password"):
+                if (form.get("username"), form.get("password")) != ("ysg@mint.local", "test-password"):
                     return 401, {"error": "invalid_grant", "error_description": "아이디와 비밀번호를 확인하세요."}
                 self.log.append("password")
                 return 200, self.issue(form["client_id"], secrets.token_hex(4))
@@ -173,7 +173,7 @@ class KitTest(unittest.TestCase):
 
     def setup_against(self, url, *extra):
         return self.main("setup", "--url", url, "--servers", ",".join(SERVERS), "--workstation", "ysg-laptop",
-                         "--email", "ysg@bob.local", "--password-stdin", *extra, stdin="test-password\n")
+                         "--email", "ysg@mint.local", "--password-stdin", *extra, stdin="test-password\n")
 
     def test_address_rules(self):
         for bad in ("http://mcp-gw.internal", "http://192.168.0.10", "https://u:p@mcp-gw.internal", "https://mcp-gw.internal/?t=1"):
@@ -258,7 +258,7 @@ class KitTest(unittest.TestCase):
         fake = FakeIdpGateway()
         self.addCleanup(fake.close)
         with self.assertRaises(SystemExit) as failed:
-            self.main("setup", "--url", fake.url, "--servers", "git", "--email", "ysg@bob.local", "--password-stdin",
+            self.main("setup", "--url", fake.url, "--servers", "git", "--email", "ysg@mint.local", "--password-stdin",
                       stdin="wrong\n")
         self.assertIn("아이디와 비밀번호", str(failed.exception.code))
         self.assertFalse([c for c in self.claude_calls if c[:2] == ["mcp", "add-json"]])

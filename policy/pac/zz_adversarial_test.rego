@@ -117,7 +117,7 @@ test_adv_pol_i_03_exception_unbound_operation if {
 # POL-I-03: 다른 사용자의 권한표로 현재 호출을 허용할 수 없음.
 test_adv_pol_i_03_permission_other_user if {
 	i := json.patch(adv_call_input, [])
-	d := json.patch(adv_data, [{"op": "add", "path": "/permission_table", "value": [{"user": "bob", "server_id": "s1", "tool": "read", "data_class": "internal", "operation": "read", "not_after_ns": 20086400000000000}]}])
+	d := json.patch(adv_data, [{"op": "add", "path": "/permission_table", "value": [{"user": "mint", "server_id": "s1", "tool": "read", "data_class": "internal", "operation": "read", "not_after_ns": 20086400000000000}]}])
 	decision := call.decision with input as i with data.pol as d
 	decision.effect == "DENY"
 	"POL-I-03" in decision.policy_ids
@@ -543,7 +543,7 @@ test_adv_pol_r_22_consent_at_expiry if {
 
 # POL-R-22: 다른 사용자의 서버 연결 동의 재사용 차단.
 test_adv_pol_r_22_consent_other_user if {
-	i := json.patch(adv_connect_input, [{"op": "add", "path": "/connection/consent/user", "value": "bob"}])
+	i := json.patch(adv_connect_input, [{"op": "add", "path": "/connection/consent/user", "value": "mint"}])
 	d := json.patch(adv_data, [])
 	decision := connect.decision with input as i with data.pol as d
 	decision.effect == "DENY"
@@ -696,7 +696,7 @@ test_adv_pol_e_09_root_prefix_confusion if {
 
 # POL-E-10: 다른 사용자의 실제 파일 권한을 현재 사용자에게 적용 불가.
 test_adv_pol_e_10_acl_for_other_user if {
-	i := json.patch(adv_resource_input, [{"op": "add", "path": "/request/stage", "value": "resource_read"}, {"op": "add", "path": "/facts/acl/user", "value": "bob"}])
+	i := json.patch(adv_resource_input, [{"op": "add", "path": "/request/stage", "value": "resource_read"}, {"op": "add", "path": "/facts/acl/user", "value": "mint"}])
 	d := json.patch(adv_data, [])
 	decision := resource.decision with input as i with data.pol as d
 	decision.effect == "DENY"
@@ -900,7 +900,7 @@ test_adv_pol_e_21_confirmation_at_expiry if {
 
 # POL-E-21: 요청 사용자 본인이 아닌 관리자의 확인은 사용 불가.
 test_adv_pol_e_21_other_confirming_user if {
-	i := json.patch(adv_call_input, [{"op": "add", "path": "/request/operation", "value": "delete"}, {"op": "add", "path": "/facts/confirmation", "value": {"server_id": "s1", "tool": "read", "operation": "delete", "target": "d1", "recipient": "partner", "arguments_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "confirmed_by": "alice", "reserved_for": "r1", "used": false, "expires_ns": 20003600000000000}}, {"op": "add", "path": "/facts/confirmation/confirmed_by", "value": "bob"}])
+	i := json.patch(adv_call_input, [{"op": "add", "path": "/request/operation", "value": "delete"}, {"op": "add", "path": "/facts/confirmation", "value": {"server_id": "s1", "tool": "read", "operation": "delete", "target": "d1", "recipient": "partner", "arguments_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "confirmed_by": "alice", "reserved_for": "r1", "used": false, "expires_ns": 20003600000000000}}, {"op": "add", "path": "/facts/confirmation/confirmed_by", "value": "mint"}])
 	d := json.patch(adv_data, [])
 	decision := call.decision with input as i with data.pol as d
 	decision.effect == "DENY"
@@ -984,7 +984,7 @@ test_adv_pol_o_01_ops_tool_missing_name if {
 
 # POL-O-02: 다른 사용자 소유 캐시는 Tool 목록으로 노출 불가.
 test_adv_pol_o_02_cache_owned_by_other_user if {
-	i := json.patch(adv_call_input, [{"op": "add", "path": "/request/stage", "value": "list"}, {"op": "add", "path": "/response/cached", "value": true}, {"op": "add", "path": "/response/cache_owner", "value": "bob"}])
+	i := json.patch(adv_call_input, [{"op": "add", "path": "/request/stage", "value": "list"}, {"op": "add", "path": "/response/cached", "value": true}, {"op": "add", "path": "/response/cache_owner", "value": "mint"}])
 	d := json.patch(adv_data, [])
 	decision := call.decision with input as i with data.pol as d
 	decision.effect == "DENY"

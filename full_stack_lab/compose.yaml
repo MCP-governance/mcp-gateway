@@ -432,7 +432,7 @@ services:
       GREENMAIL_OPTS: >-
         -Dgreenmail.setup.test.smtp -Dgreenmail.setup.test.imap -Dgreenmail.setup.test.api
         -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled
-        -Dgreenmail.users=ai-assistant:assistant-lab-only@bob.local
+        -Dgreenmail.users=ai-assistant:assistant-lab-only@mint.local
     networks: [corp]
 
   corp-git:
@@ -468,7 +468,7 @@ services:
       - corp_www_intranet:/usr/share/nginx/html:ro
     networks:
       corp:
-        aliases: [intranet.bob.local]
+        aliases: [intranet.mint.local]
 
   # The "internet" as seen from inside the lab: a file-sharing site whose access log
   # shows every URL an exfiltration attempt reached.
@@ -564,7 +564,7 @@ services:
     environment:
       MCP_EMAIL_SERVER_ACCOUNT_NAME: assistant
       MCP_EMAIL_SERVER_FULL_NAME: BoB AI Assistant
-      MCP_EMAIL_SERVER_EMAIL_ADDRESS: ai-assistant@bob.local
+      MCP_EMAIL_SERVER_EMAIL_ADDRESS: ai-assistant@mint.local
       MCP_EMAIL_SERVER_USER_NAME: ai-assistant
       MCP_EMAIL_SERVER_PASSWORD: assistant-lab-only
       MCP_EMAIL_SERVER_IMAP_HOST: corp-mail
@@ -613,7 +613,7 @@ services:
     hostname: ws-ysg
     environment: &ws-env
       HARNESS: claude
-      EMPLOYEE_EMAIL: ysg@bob.local
+      EMPLOYEE_EMAIL: ysg@mint.local
       WORKSTATION_ID: ws-ysg
       BOB_LLM_KEY: ${LLM_KEY_WS_YSG:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_YSG:-}
@@ -629,7 +629,7 @@ services:
     environment:
       <<: *ws-env
       HARNESS: codex
-      EMPLOYEE_EMAIL: jwj@bob.local
+      EMPLOYEE_EMAIL: jwj@mint.local
       WORKSTATION_ID: ws-jwj
       BOB_LLM_KEY: ${LLM_KEY_WS_JWJ:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_JWJ:-}
@@ -640,7 +640,7 @@ services:
     environment:
       <<: *ws-env
       HARNESS: gemini
-      EMPLOYEE_EMAIL: pse@bob.local
+      EMPLOYEE_EMAIL: pse@mint.local
       WORKSTATION_ID: ws-pse
       BOB_LLM_KEY: ${LLM_KEY_WS_PSE:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_PSE:-}
@@ -653,7 +653,7 @@ services:
     environment:
       <<: *ws-env
       HARNESS: opencode
-      EMPLOYEE_EMAIL: nkk@bob.local
+      EMPLOYEE_EMAIL: nkk@mint.local
       WORKSTATION_ID: ws-nkk
       BOB_LLM_KEY: ${LLM_KEY_WS_NKK:-}
       ENDPOINT_DEVICE_KEY: ${ENDPOINT_KEY_WS_NKK:-}
@@ -670,8 +670,8 @@ services:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
       # Register the keys that ./console.sh generated into .env, one per workstation.
       LLM_KEYS: >-
-        ws-ysg=ysg@bob.local=${LLM_KEY_WS_YSG:-},ws-jwj=jwj@bob.local=${LLM_KEY_WS_JWJ:-},
-        ws-pse=pse@bob.local=${LLM_KEY_WS_PSE:-},ws-nkk=nkk@bob.local=${LLM_KEY_WS_NKK:-}
+        ws-ysg=ysg@mint.local=${LLM_KEY_WS_YSG:-},ws-jwj=jwj@mint.local=${LLM_KEY_WS_JWJ:-},
+        ws-pse=pse@mint.local=${LLM_KEY_WS_PSE:-},ws-nkk=nkk@mint.local=${LLM_KEY_WS_NKK:-}
     depends_on:
       llm-gateway: {condition: service_healthy}
     networks: [office]

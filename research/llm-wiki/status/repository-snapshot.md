@@ -1,16 +1,15 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-11-02T17:15:25+09:00
+확인 시각: 2026-11-02T18:25:00+09:00
 
-HEAD: `946938be25cd104b4236fb892915fb563a010455` · 로컬 브랜치: `11/02-release-1.0.0`
+HEAD: `07ce2080ee7741e1d79840706a5c2ebfb9265241` · 로컬 브랜치: `11/02-accounts-mint`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M CHANGELOG.md
- M research/llm-wiki/analysis/integration-cases.json
+M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
  M research/llm-wiki/analysis/threat-trace-review-1020/README.md
  M research/llm-wiki/catalogs/threats.json
@@ -19,7 +18,7 @@ M CHANGELOG.md
 ?? c
 ?? p3_ui.py
 ?? q
-?? research/llm-wiki/status/reports/2026-11-02-release-1.0.0.md
+?? research/llm-wiki/status/reports/2026-11-02-accounts-and-mint-lab.md
 ?? sftp_put.py
 ```
 
@@ -29,7 +28,7 @@ M CHANGELOG.md
 | --- | --- |
 | `full_stack_lab/gateway/app/core.py` | `cba0c9df121a007c6b83df9e5480ec49cf739dd20eec212b33c31b8b91c38adf` |
 | `full_stack_lab/gateway/app/pac.py` | `bc9884db62b33244057b4f816d33b3505ad9789b549efd733b3b9f0993dc20ee` |
-| `full_stack_lab/gateway/app/poisoning.py` | `da82d7c57048e3c04bdd8a8f573657adb87bd640bb9fcdbcd641b1c057bf83e1` |
+| `full_stack_lab/gateway/app/poisoning.py` | `20ed5c39e624d71308bf396dcaa1decdadc406404bf2565643c82fce7576dc74` |
 | `full_stack_lab/gateway/app/idp.py` | `30b0e4aec24a40b1847bb23852651a60fe7c1f81cdef97690ea948e03901fd8f` |
 | `full_stack_lab/gateway/app/privacy.py` | `fe7511a3482184faa983c9bcd89f0ef49376c8a3ffce8b8bf3c9495212ef25f3` |
 | `full_stack_lab/gateway/app/secret_scan.py` | `6173e8e4db7337df6ab61d0f029a7ecd0bdd1fd2005c9cf1f63a69ce49084054` |

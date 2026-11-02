@@ -570,8 +570,8 @@
           "destinations": [
             {
               "kind": "email",
-              "value": "dev-team@bob.local",
-              "host": "bob.local",
+              "value": "dev-team@mint.local",
+              "host": "mint.local",
               "category": "internal-mail",
               "external": false
             }

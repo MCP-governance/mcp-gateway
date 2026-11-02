@@ -39,7 +39,7 @@ IDP = (os.getenv("IDP_INTERNAL_URL") or os.getenv("IDP_ISSUER", "http://agent-se
 GITEA = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
 GITEA_ADMIN = os.getenv("GITEA_ADMIN_USER", "corpadmin")
 GITEA_ADMIN_PASSWORD = os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")
-EXPERIMENT_USER = os.getenv("EXPERIMENT_EMAIL", "pse@bob.local")
+EXPERIMENT_USER = os.getenv("EXPERIMENT_EMAIL", "pse@mint.local")
 EXPERIMENT_PASSWORD = os.getenv("MOCK_SSO_PASSWORD", "test-password")
 ROUNDS = int(os.getenv("EXPERIMENT_ROUNDS", "5"))
 
@@ -197,9 +197,9 @@ async def e3() -> dict:
             upstream_inactive = (await introspection(issued["access_token"])).get("active") is False and \
                 (await introspection(issued["refresh_token"])).get("active") is False
             # Downstream: the MCP server's own credential against the document store.
-            before = await client.get(f"{GITEA}/api/v1/repos/bob/payment-service/contents/README.md", headers=_gitea(token=server_token))
+            before = await client.get(f"{GITEA}/api/v1/repos/mint/payment-service/contents/README.md", headers=_gitea(token=server_token))
             revoked = await client.delete(f"{GITEA}/api/v1/users/{account}/tokens/{name}", headers=_gitea(sudo=account))
-            after = await client.get(f"{GITEA}/api/v1/repos/bob/payment-service/contents/README.md", headers=_gitea(token=server_token))
+            after = await client.get(f"{GITEA}/api/v1/repos/mint/payment-service/contents/README.md", headers=_gitea(token=server_token))
             rounds.append({
                 "upstream_fully_revoked_and_introspected_inactive": upstream_inactive,
                 "downstream_access_with_server_credential_after_upstream_revocation": before.status_code,

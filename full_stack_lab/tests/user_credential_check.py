@@ -109,8 +109,8 @@ class Storage(StoreCase):
         self.assertNotIn(TOKEN.encode(), blob)
         self.assertEqual((await uc.lookup("alice", ENDPOINT))["secret"], TOKEN)
         # A row copied to another employee or endpoint does not decrypt.
-        self.store.rows[("bob", ENDPOINT)] = dict(self.store.rows[("alice", ENDPOINT)])
-        self.assertIsNone(await uc.lookup("bob", ENDPOINT))
+        self.store.rows[("mint", ENDPOINT)] = dict(self.store.rows[("alice", ENDPOINT)])
+        self.assertIsNone(await uc.lookup("mint", ENDPOINT))
         with self.assertRaises(Exception):
             uc.unseal("alice", ENDPOINT + "x", blob)
 
@@ -174,7 +174,7 @@ class Selection(StoreCase):
         await uc.save("alice", ENDPOINT, TOKEN, "token", "a", None)
         await upstream.refresh_connected(ENDPOINT, "alice")
         self.assertEqual(upstream.credential_headers(ENDPOINT + "other", "alice"), {})
-        self.assertEqual(upstream.credential_headers(ENDPOINT, "bob"), {})
+        self.assertEqual(upstream.credential_headers(ENDPOINT, "mint"), {})
         self.assertEqual(upstream.credential_headers(ENDPOINT, None), {})
 
     async def test_several_rows_for_one_endpoint_choose_by_principal(self):
@@ -364,7 +364,7 @@ class Lifecycle(StoreCase):
         for actor_status in ("delete", "disable"):
             await uc.save("alice", ENDPOINT, TOKEN, "token", "a", None)
             await uc.save("alice", "https://other.example/mcp", OTHER, "token", "b", None)
-            await uc.save("bob", ENDPOINT, OTHER, "token", "b", None)
+            await uc.save("mint", ENDPOINT, OTHER, "token", "b", None)
             user = {"principal": "root", "roles": ["admin"], "user_id": "root"}
             patches = [patch.object(agent_service, "current_identity", AsyncMock(return_value=user)),
                        patch.object(agent_service.upstream, "release_pool", AsyncMock()),
@@ -387,14 +387,14 @@ class Lifecycle(StoreCase):
                     await agent_service.set_account_status("alice", agent_service.AccountStatus(status="disabled"),
                                                            authorization="Bearer x")
             self.assertEqual([k for k in self.store.rows if k[0] == "alice"], [], actor_status)
-            self.assertIn(("bob", ENDPOINT), self.store.rows)
+            self.assertIn(("mint", ENDPOINT), self.store.rows)
             reasons = [e["reason"] for e in self.store.events if e["kind"] == "upstream-credential-disconnect"]
             self.assertIn("계정 삭제" if actor_status == "delete" else "계정 중지", reasons)
             self.store.rows.clear()
 
     async def test_relationship_termination_deletes_the_organisations_copies_and_proves_it(self):
         await uc.save("alice", ENDPOINT, TOKEN, "token", "alice-gh", None)
-        await uc.save("bob", ENDPOINT, OTHER, "token", "bob-gh", None)
+        await uc.save("mint", ENDPOINT, OTHER, "token", "mint-gh", None)
         targets = []
 
         async def add_target(case_id, kind, label, holder, discovered, actor, **kw):

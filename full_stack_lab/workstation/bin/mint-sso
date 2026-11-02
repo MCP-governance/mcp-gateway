@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""bob-sso: the company SSO credential helper on an employee PC.
+"""mint-sso: the company SSO credential helper on an employee PC.
 
 Harnesses take an MCP bearer token from a command or an environment variable; this
 is that command. It signs in to the company IdP as the PC's user (OAuth password
 grant standing in for SSO, client_id = workstation), keeps the refresh token in
-~/.cache/bob-sso and hands out a fresh access token (10-minute JWT).
+~/.cache/mint-sso and hands out a fresh access token (10-minute JWT).
 
-    bob-sso token     access token            (Codex bearer_token_env_var, Gemini/OpenCode env)
-    bob-sso header    {"Authorization": ...}  (Claude Code headersHelper)
+    mint-sso token     access token            (Codex bearer_token_env_var, Gemini/OpenCode env)
+    mint-sso header    {"Authorization": ...}  (Claude Code headersHelper)
 """
 import fcntl
 import json
@@ -21,7 +21,7 @@ from pathlib import Path
 
 IDP = os.getenv("IDP_URL", "http://agent-service:8000").rstrip("/")
 CLIENT = os.getenv("WORKSTATION_ID") or os.uname().nodename
-CACHE = Path.home() / ".cache" / "bob-sso" / "token.json"
+CACHE = Path.home() / ".cache" / "mint-sso" / "token.json"
 
 
 def grant(fields: dict) -> dict | None:
@@ -33,7 +33,7 @@ def grant(fields: dict) -> dict | None:
         if fields["grant_type"] == "refresh_token":
             return None  # expired or revoked: fall back to signing in again
         detail = json.loads(exc.read() or b"{}").get("error_description", exc.code)
-        sys.exit(f"bob-sso: 로그인 실패 ({detail})")
+        sys.exit(f"mint-sso: 로그인 실패 ({detail})")
 
 
 def token() -> str:

@@ -559,7 +559,7 @@ test_ssrf_destination_blocks_even_admin if {
 test_intranet_destination_is_not_ssrf if {
 	result := decision with input as with_input({
 		"principal": {"role": "employee"}, "tool": {"action": "r"}, "resource": {"data_class": "nonimportant"},
-		"destinations": [{"kind": "url", "value": "http://intranet.bob.local/", "category": "intranet"}],
+		"destinations": [{"kind": "url", "value": "http://intranet.mint.local/", "category": "intranet"}],
 	})
 	result.decision == "Allow"
 }
@@ -778,7 +778,7 @@ test_every_ledger_outcome_is_a_reference_value if {
 external_mail := {"kind": "email", "value": "buyer@outside.example", "host": "outside.example",
 	"category": "external-mail", "external": true}
 
-internal_mail := {"kind": "email", "value": "review@bob.local", "host": "bob.local",
+internal_mail := {"kind": "email", "value": "review@mint.local", "host": "mint.local",
 	"category": "internal-mail", "external": false}
 
 test_confidential_external_send_blocks_before_approval if {

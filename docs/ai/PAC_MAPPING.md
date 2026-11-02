@@ -57,8 +57,8 @@
 | `http://0x7f.0.0.1/` | external | 127.0.0.1 |
 | `http://0177.0.0.1/` | external | 127.0.0.1 |
 | `http://169.254.169.254.nip.io/` | external | 169.254.169.254 (클라우드 메타데이터) |
-| `http://corp-db.bob.local/` | external | 사내 DB |
-| `http://intranet.bob.local./` | external | 사내 위키 |
+| `http://corp-db.mint.local/` | external | 사내 DB |
+| `http://intranet.mint.local./` | external | 사내 위키 |
 
 `classify.host_category()`가 이제 (1) 후행 점·대문자 정규화, (2) `socket.inet_aton`으로 10진·8진·16진·축약
 IPv4 해석, (3) IPv4-mapped IPv6, (4) 이름 안에 박힌 주소(`nip.io`·`sslip.io` 형태, 점·하이픈 표기 모두),
@@ -94,7 +94,7 @@ IPv4 해석, (3) IPv4-mapped IPv6, (4) 이름 안에 박힌 주소(`nip.io`·`ss
 | `CATALOG_RULES` | **계약**(설명·스키마) | 등록 시 확인 요구 | + 외부 전송 문구, 민감 파일 경로, 숨긴 주석, 공백 아래 숨은 문장, 인코딩된 문장, 정보 전달용 인자(D-73) |
 
 넓힐수록 오탐 비용이 커지므로 각 묶음에 정상 문장 대조군을 자체 검사에 넣었다
-(`python -m app.poisoning`). 예: "Send the invoice to finance@bob.local"은 인자에서 걸리지 않는다 —
+(`python -m app.poisoning`). 예: "Send the invoice to finance@mint.local"은 인자에서 걸리지 않는다 —
 목적지는 문구가 아니라 분류기의 destinations가 판단한다.
 
 **주입 탐지율은 재현 가능한 측정으로 둔다.** `tests/injection_corpus_check.py`가 microsoft/PyRIT 고정 커밋
@@ -128,7 +128,7 @@ IPv4 해석, (3) IPv4-mapped IPv6, (4) 이름 안에 박힌 주소(`nip.io`·`ss
 
 ### 3.5 토큰 scope 분리와 자기 승인 금지 (PAC-06·PAC-13)
 
-실측: 직원 PC의 하네스가 쓰는 MCP 토큰(`scope=mcp`, `bob-sso`가 `~/.cache/bob-sso/token.json`에 둔다)으로
+실측: 직원 PC의 하네스가 쓰는 MCP 토큰(`scope=mcp`, `mint-sso`가 `~/.cache/mint-sso/token.json`에 둔다)으로
 관리 API가 그대로 열렸다 — `/api/state` 200, `/api/registry` 200, 승인 API는 역할 검사를 통과해 409(그 승인
 건이 없다)까지 갔다. 관리자 계정이면 **PC의 파일을 읽을 수 있는 아무 프로세스나** 그 사람 이름으로 고위험
 호출을 승인할 수 있었다는 뜻이다.

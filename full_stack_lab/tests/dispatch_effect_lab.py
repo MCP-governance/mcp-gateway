@@ -35,13 +35,13 @@ async def no_secrets(text):
 
 async def issues(prefix):
     async with httpx.AsyncClient(auth=AUTH, timeout=20) as client:
-        response = await client.get(f"{GITEA}/repos/bob/payment-service/issues",
+        response = await client.get(f"{GITEA}/repos/mint/payment-service/issues",
                                     params={"state": "all", "type": "issues", "limit": 100})
     return [i["title"] for i in response.json() if i["title"].startswith(prefix)]
 
 
 def arguments(title, body="lab"):
-    return {"method": "create", "owner": "bob", "repo": "payment-service", "title": title, "body": body}
+    return {"method": "create", "owner": "mint", "repo": "payment-service", "title": title, "body": body}
 
 
 async def call(token, title, body="lab", **extra):

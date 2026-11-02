@@ -287,6 +287,9 @@ ALTER TABLE principals ADD COLUMN IF NOT EXISTS password_hash text;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_by text;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS status_changed_at timestamptz;
+-- Who last set the password, and when: the account itself, or the administrator who reset it.
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS password_changed_by text;
+ALTER TABLE principals ADD COLUMN IF NOT EXISTS password_changed_at timestamptz;
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS managed_required boolean NOT NULL DEFAULT false;
 -- 중앙 AI 게이트웨이(LiteLLM 등)로만 MCP를 쓰는 직원. 관리형 PC 요구를 기동 때 되살리지 않는다.
 ALTER TABLE principals ADD COLUMN IF NOT EXISTS ai_gateway_only boolean NOT NULL DEFAULT false;
@@ -297,13 +300,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS principals_user_id_key ON principals(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS principals_email_key ON principals(email);
 CREATE INDEX IF NOT EXISTS principals_email_idx ON principals(lower(email));
 
-UPDATE principals SET user_id='user-partner-001', email='partner@bob.local',
+UPDATE principals SET user_id='user-partner-001', email='partner@mint.local',
        employee_no=COALESCE(employee_no,'EXT-001'), job_title=COALESCE(job_title,'협력업체 담당')
  WHERE token='partner-demo' AND user_id IS NULL;
-UPDATE principals SET user_id='user-test-001', email='miso@bob.local',
+UPDATE principals SET user_id='user-test-001', email='miso@mint.local',
        employee_no=COALESCE(employee_no,'EMP-001'), job_title=COALESCE(job_title,'보안기술팀 사원')
  WHERE token='emp-demo' AND user_id IS NULL;
-UPDATE principals SET user_id='user-admin-001', email='admin@bob.local',
+UPDATE principals SET user_id='user-admin-001', email='admin@mint.local',
        employee_no=COALESCE(employee_no,'EMP-002'), job_title=COALESCE(job_title,'거버넌스팀 관리자')
  WHERE token='admin-demo' AND user_id IS NULL;
 

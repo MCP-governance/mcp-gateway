@@ -15,11 +15,11 @@ with httpx.Client(base_url=base, auth=auth, timeout=20) as client:
             sys.exit(f"{method} {path} -> {response.status_code}")
         return response
 
-    call("POST", "/orgs", {201, 422}, json={"username": "bob", "visibility": "private"})
-    owners = next(t for t in call("GET", "/orgs/bob/teams", {200}).json() if t["name"] == "Owners")
+    call("POST", "/orgs", {201, 422}, json={"username": "mint", "visibility": "private"})
+    owners = next(t for t in call("GET", "/orgs/mint/teams", {200}).json() if t["name"] == "Owners")
     call("PUT", f"/teams/{owners['id']}/members/mcp-bot", {204})
     for name in ("payment-service", "infra-secrets", "handbook"):
-        call("POST", "/orgs/bob/repos", {201, 409}, json={"name": name, "private": True, "auto_init": True})
+        call("POST", "/orgs/mint/repos", {201, 409}, json={"name": name, "private": True, "auto_init": True})
     for stale in ("gitea-mcp-server", "lab-second"):
         call("DELETE", f"/users/mcp-bot/tokens/{stale}", {204, 404}, headers={"Sudo": "mcp-bot"})
     token = call("POST", "/users/mcp-bot/tokens", {201}, headers={"Sudo": "mcp-bot"},

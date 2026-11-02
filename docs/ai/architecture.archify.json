@@ -54,7 +54,7 @@
   ],
   "connections": [
     {"id": "admin-console", "from": "admin", "to": "idp", "label": "Console"},
-    {"id": "ws-token", "from": "ws", "to": "idp", "label": "① SSO 토큰 · bob-sso", "fromSide": "top", "toSide": "bottom"},
+    {"id": "ws-token", "from": "ws", "to": "idp", "label": "① SSO 토큰 · mint-sso", "fromSide": "top", "toSide": "bottom"},
     {"id": "ws-llm", "from": "ws", "to": "llm", "label": "② LLM · 하네스 형식", "fromSide": "bottom", "toSide": "left"},
     {"id": "ws-call", "from": "ws", "to": "gateway", "label": "③ MCP · Bearer", "variant": "emphasis"},
     {"id": "endpoint-report", "from": "endpoint", "to": "audit", "label": "인벤토리 보고", "variant": "dashed", "fromSide": "right", "toSide": "bottom"},

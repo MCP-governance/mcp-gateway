@@ -46,14 +46,14 @@ class FixtureMcpIdentityTests(unittest.TestCase):
 
         with patch.dict("os.environ", {"IDP_INTERNAL_URL": "http://idp.internal/"}), \
                 patch.object(urllib.request, "urlopen", side_effect=urlopen):
-            self.assertEqual(adversarial.mcp_token("worker@bob.local", "secret"), "mcp-worker")
+            self.assertEqual(adversarial.mcp_token("worker@mint.local", "secret"), "mcp-worker")
         request, timeout = seen[0]
         self.assertEqual(request.full_url, "http://idp.internal/oauth/token")
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.get_header("Content-type"), "application/x-www-form-urlencoded")
         self.assertEqual(parse_qs(request.data.decode()), {
             "grant_type": ["password"], "client_id": ["adversarial-ws"],
-            "username": ["worker@bob.local"], "password": ["secret"]})
+            "username": ["worker@mint.local"], "password": ["secret"]})
         self.assertEqual(timeout, 15)
 
     def test_reservation_grant_and_call_use_mcp_token_only(self):
@@ -95,14 +95,14 @@ class FixtureMcpIdentityTests(unittest.TestCase):
             return '{"upstream_attempted":true,"upstream_executed":true}'
 
         with patch.object(reservation.subprocess, "check_output", side_effect=check_output):
-            bearer = reservation.mcp_token("reservation@bob.local", "secret")
+            bearer = reservation.mcp_token("reservation@mint.local", "secret")
             self.assertEqual(bearer, "mcp-reservation")
             result = reservation.mcp_write(bearer, "SELECT 1")
         request, timeout = issued[0]
         self.assertEqual(request.full_url, "http://idp.internal/oauth/token")
         self.assertEqual(parse_qs(request.data.decode()), {
             "grant_type": ["password"], "client_id": ["reservation-check-ws"],
-            "username": ["reservation@bob.local"], "password": ["secret"]})
+            "username": ["reservation@mint.local"], "password": ["secret"]})
         self.assertEqual(timeout, 15)
         self.assertEqual(result["decision"], "Allow")
         self.assertTrue(result["upstream_executed"])
@@ -111,11 +111,11 @@ class FixtureMcpIdentityTests(unittest.TestCase):
         with patch.object(urllib.request, "urlopen", side_effect=urllib.error.HTTPError(
                 "http://idp.internal/oauth/token", 403, "forbidden", None, None)):
             with self.assertRaises(urllib.error.HTTPError):
-                adversarial.mcp_token("worker@bob.local", "secret")
+                adversarial.mcp_token("worker@mint.local", "secret")
         with patch.object(reservation.subprocess, "check_output", side_effect=subprocess.CalledProcessError(
                 1, ["docker", "compose", "exec", "gateway"])):
             with self.assertRaises(subprocess.CalledProcessError):
-                reservation.mcp_token("reservation@bob.local", "secret")
+                reservation.mcp_token("reservation@mint.local", "secret")
 
 
 if __name__ == "__main__":

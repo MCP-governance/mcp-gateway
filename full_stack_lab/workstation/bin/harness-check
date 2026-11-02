@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 WS = os.getenv("WORKSTATION_ID") or os.uname().nodename
-SERVERS = Path("/etc/bob/servers").read_text().split()
+SERVERS = Path("/etc/mint/servers").read_text().split()
 CONNECTED = re.compile(r"✓|✔|\bconnected\b", re.I)
 FAILED = re.compile(r"✗|✘|fail|error|disconnected|disabled|needs auth", re.I)
 
@@ -104,7 +104,7 @@ def codex() -> tuple[set[str], str]:
 
 
 def main() -> int:
-    os.environ["BOB_SSO_TOKEN"] = subprocess.run(["bob-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
+    os.environ["BOB_SSO_TOKEN"] = subprocess.run(["mint-sso", "token"], check=True, capture_output=True, text=True).stdout.strip()
     failed = False
     checks = {
         "claude": lambda: (from_listing(out := run(["claude", "mcp", "list"])), out),
