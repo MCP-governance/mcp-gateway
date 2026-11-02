@@ -142,7 +142,7 @@ function Set-EndpointPermissionText {
     $permission.Text = if ($mode -ne 'managed') { '—' } elseif ($isolatedBox.Checked) { T 'permission_isolated' } else { T 'permission_simple' }
 }
 Add-EndpointRow 'permission' $permission
-# Simple mode is the default (D-239): the signed-in account as it is. The companion account is the advanced option.
+# Simple mode is the default: the signed-in account as it is. The companion account is the advanced option.
 $isolatedBox = New-Object Windows.Forms.CheckBox
 $isolatedBox.AutoSize = $true
 $isolatedBox.Text = T 'isolated'

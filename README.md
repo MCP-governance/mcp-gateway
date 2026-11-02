@@ -10,7 +10,7 @@
 
 [![검증](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml)
 [![CodeQL](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml)
-![판본](https://img.shields.io/badge/판본-0.10.0-1f4287)
+![판본](https://img.shields.io/badge/판본-1.0.0-1f4287)
 ![MCP](https://img.shields.io/badge/MCP-2025--11--25-1f4287)
 ![Docker](https://img.shields.io/badge/배포-Docker%20Compose-2496ED?logo=docker&logoColor=white)
 
@@ -47,10 +47,10 @@ MINT는 직원 PC의 AI 코딩 에이전트(Claude Code·Codex CLI)의 관리형
 
 ## 5분 설치
 
-설치 예시는 배포 저장소 [MCP-governance/mint](https://github.com/MCP-governance/mint)의 공개 판본 `v0.10.0` 기준입니다. 이 README의 최신 코드 설명에는 [미배포 변경](CHANGELOG.md#미배포)이 포함됩니다.
+설치 예시는 배포 저장소 [MCP-governance/mint](https://github.com/MCP-governance/mint)의 공개 판본 `v1.0.0` 기준입니다. 이 README의 최신 코드 설명에는 [미배포 변경](CHANGELOG.md#미배포)이 포함됩니다.
 
 ```bash
-git clone --branch v0.10.0 https://github.com/MCP-governance/mint.git
+git clone --branch v1.0.0 https://github.com/MCP-governance/mint.git
 cd mint/deploy
 ./install.sh --bind <사내 IPv4>
 ```

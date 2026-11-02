@@ -2,7 +2,7 @@
 
 이 프로세스는 통제하지 않는다. 오직 본다.
 
-게이트웨이는 자기를 통과한 호출만 알고, 그것이 이 저장소가 반복해서 적어 온
+게이트웨이는 자기를 통과한 호출만 알고, 그것이 알려진
 한계다. 사람들의 PC에는 MCP 클라이언트 설정 파일이 있고, 거기 적힌 서버 목록이
 "이 조직에서 실제로 쓰이는 MCP"의 모집단에 가장 가깝다. 그 목록과 Registry를
 대조해야만 두 가지를 말할 수 있다.
@@ -10,7 +10,7 @@
   1. 등록되지 않은 서버가 쓰이고 있다            (강제 경로 밖의 경로)
   2. 폐기한 서버가 아직 설정에 남아 있다          (회수되지 않은 접근 경로)
 
-두 번째가 종료 판정의 C1(모집단)에 직접 들어간다.
+두 번째가 모집단 판정에 직접 들어간다.
 
 ── 설정 대조만으로 부족한 이유 ──────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ def user_command_settings(home):
         return False, [{"file": "~", "keys": []}]
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     # POSIX: 각 단계를 앞 단계 핸들 기준·링크 비추적으로 연다. 검사 뒤 디렉터리를 링크로 바꿔도
-    # root의 읽기가 홈 밖으로 나가지 않는다(S6 검토). Windows는 경로 검사라 교체 경쟁이 남는다.
+    # root의 읽기가 홈 밖으로 나가지 않는다. Windows는 경로 검사라 교체 경쟁이 남는다.
     posix = os.open in os.supports_dir_fd and hasattr(os, "O_DIRECTORY")
     opened_fds = []
 
@@ -163,7 +163,7 @@ def user_command_settings(home):
                     continue
                 entries = os.listdir(directory) if posix else [p.name for p in directory.iterdir()]
                 if folder == ".codex":
-                    # 프로필 파일 이름은 직원이 정하므로 보고에는 고정 표기만 쓴다(S6 검토).
+                    # 프로필 파일 이름은 직원이 정하므로 보고에는 고정 표기만 쓴다.
                     if len(entries) > 4096:
                         raise ValueError
                     profiles = sorted(n for n in entries if n.lower().endswith(".config.toml"))
@@ -687,7 +687,7 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
     """A process inside a container the kit's local runner started for an approved local MCP.
 
     Without this every call to an approved local server raised MCP-SHADOW-002 for its own container
-    (10-23 PJ1). The runner's containers carry the label mcpgw.local=1; only root or the engine's group
+    The runner's containers carry the label mcpgw.local=1; only root or the engine's group
     can create a labelled container, and either could already do anything on this PC."""
     try:
         found = CONTAINER_ID.search((pid_dir / "cgroup").read_text(errors="replace"))
@@ -712,7 +712,7 @@ def _approved_local_run(pid_dir: Path, seen: dict) -> bool:
 
 
 # A harness's own command line carries the employee's prompt (`claude -p "…modelcontextprotocol/python-sdk…"`): matching
-# the markers there reported the harness itself as a stdio MCP server (S4-03, PJ1 10-25). The servers it starts are
+# the markers there reported the harness itself as a stdio MCP server. The servers it starts are
 # separate processes and are still checked.
 HARNESS_SCRIPT = re.compile(r"[\\/](?:@anthropic-ai[\\/]claude-code[\\/]cli\.js|@openai[\\/]codex[\\/]bin[\\/]codex\.js)$", re.I)
 
@@ -856,7 +856,7 @@ def _rpc_result(payload: str) -> dict:
 
 def connection_check(gateway_url: str, context: ssl.SSLContext, authorization: str, servers: list[str],
                      timeout: float = 20) -> dict:
-    """설치 확인(D-239): 직원 하네스와 같은 헤더로 승인 서버마다 initialize·tools/list만 보낸다. 도구는 실행하지 않는다.
+    """설치 확인: 직원 하네스와 같은 헤더로 승인 서버마다 initialize·tools/list만 보낸다. 도구는 실행하지 않는다.
     {initialized: [서버], failed: {서버: 사유}, tools: 도구 수}. 헤더 값은 돌려주지도 기록하지도 않는다."""
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                          urllib.request.HTTPSHandler(context=context))
@@ -877,7 +877,7 @@ def connection_check(gateway_url: str, context: ssl.SSLContext, authorization: s
                 "protocolVersion": "2025-06-18", "capabilities": {},
                 "clientInfo": {"name": "mcpgw-install-check", "version": AGENT_VERSION}}})
             post({"jsonrpc": "2.0", "method": "notifications/initialized"})
-            # ponytail: one page of tools/list; follow nextCursor if a server ever pages its tools.
+            # One page of tools/list; follow nextCursor if a server ever pages its tools.
             tools = _rpc_result(post({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})).get("tools") or []
             result["initialized"].append(server)
             result["tools"] += len(tools)
@@ -892,7 +892,7 @@ MODEL_PROMPT = "Reply with the single word OK."
 
 
 def model_check(argv: list[str], *, env: dict | None = None, cwd: str | None = None, timeout: int = 120) -> dict:
-    """하네스가 모델 응답을 실제로 받는지. 자격 파일이 있다는 것만으로 성공 처리하지 않는다(D-239). 응답 본문은 남기지 않는다."""
+    """하네스가 모델 응답을 실제로 받는지. 자격 파일이 있다는 것만으로 성공 처리하지 않는다. 응답 본문은 남기지 않는다."""
     started = time.monotonic()
     try:
         done = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout,
@@ -1054,7 +1054,7 @@ def enroll() -> None:
     })
 
 
-# Managed PostToolUse hook (D-301). The harness runs it as the employee after every MCP tool call; it appends one line
+# Managed PostToolUse hook. The harness runs it as the employee after every MCP tool call; it appends one line
 # to the employee's own spool and the service, which holds the device key, sends the spool on. Sizes and a hash of the
 # arguments only — never the arguments or the result.
 TOOL_EVENT_SPOOL = Path(".mcpgw") / "tool-events.jsonl"

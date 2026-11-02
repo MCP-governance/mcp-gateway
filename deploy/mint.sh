@@ -205,7 +205,7 @@ up() {
   # OPA와 게이트웨이는 정책 파일을 기동할 때만 읽는다. 정책이 바뀐 판본에서도 반영되게 다시 만든다.
   dc up -d --force-recreate opa gateway
   dc up -d db presidio-analyzer presidio-anonymizer agent-service intake-worker corp-git
-  # 솔루션 MCP 실행기는 판본에서 빠졌다(D-299). 이전 판본에서 올린 기기에 남은 실행기와 그것이 띄운 MCP·망을 거둔다.
+  # 실행기가 없는 판본으로 전환할 때 남아 있는 실행기와 그것이 띄운 MCP·망을 거둔다.
   # 이 기기의 Docker는 MINT 전용이라 실행기 라벨(mcpgw.runtime)로 찾는다.
   docker ps -aq --filter "label=com.docker.compose.project=$(project)" --filter "label=com.docker.compose.service=runtime-worker"     | xargs -r docker rm -f >/dev/null
   docker ps -aq --filter label=mcpgw.runtime | xargs -r docker rm -f >/dev/null
@@ -382,7 +382,7 @@ token, db_role = (name, "admin") if role == "admin" else ("emp-" + name, "employ
 with psycopg.connect(os.environ["DATABASE_URL"]) as db:
     if db.execute("SELECT 1 FROM principals WHERE lower(email)=lower(%s) OR user_id=%s OR token=%s", (name, name, token)).fetchone():
         sys.exit("이미 있는 아이디입니다")
-    # AI 게이트웨이 전용 직원은 PC 키트 없이 자기 MCP 토큰을 받는다. 판정·원장은 다른 직원과 같다(D-250).
+    # AI 게이트웨이 전용 직원은 PC 키트 없이 자기 MCP 토큰을 받는다. 판정·원장은 다른 직원과 같다.
     db.execute("""INSERT INTO principals(token,user_id,email,display_name,role,department,password_hash,managed_required,ai_gateway_only)
                   VALUES (%s,%s,%s,%s,%s,%s,crypt(%s, gen_salt(%s, 12)),%s,%s)""",
                (token, name, name, name, db_role, department, sys.stdin.read(), "bf", db_role != "admin" and not gateway, gateway))

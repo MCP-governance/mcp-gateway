@@ -70,7 +70,7 @@ def _key_material(name: str) -> bytes:
     except ValueError:
         material = b""
     if len(material) != 32:
-        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes; run ./console.sh")
+        raise RuntimeError(f"{name} must be 32 base64url-encoded bytes")
     return material
 
 
@@ -93,9 +93,9 @@ def public_key() -> Ed25519PublicKey:
 def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
                 extra: dict | None = None) -> tuple[str, dict]:
     """A self-contained access token. Returns (jwt, claims) so the issuer can record
-    what it issued - verification never needs that record, which is exactly the
-    paper's E1 property: a verifier that only checks signatures keeps accepting a
-    revoked token until it expires."""
+    what it issued - verification never needs that record, which is exactly why a
+    verifier that only checks signatures keeps accepting a revoked token until it
+    expires."""
     now = datetime.now(UTC)
     claims = {"sub": user["user_id"], "iss": ISSUER, "aud": AUDIENCE, "client_id": client_id,
               "iat": now, "nbf": now, "exp": now + timedelta(minutes=minutes), "jti": str(uuid4()),
@@ -105,7 +105,7 @@ def issue_token(user: dict, minutes: int = 30, client_id: str = "console",
 
 
 # What the managed header helper prints when it has no token to give. Never a credential: it is refused like any
-# unsigned value, but the reason it was refused reaches the employee in the harness's own 401 line (D-217).
+# unsigned value, but the reason it was refused reaches the employee in the harness's own 401 line.
 PLACEHOLDER_REASON = {
     "pending": "이 PC는 관리자 활성화를 기다리는 중입니다. 관리자가 활성화하면 자동으로 연결됩니다.",
     "quarantined": "이 PC는 점검에서 격리되어 관리자의 재활성화를 기다리는 중입니다.",

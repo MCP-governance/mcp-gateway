@@ -1,7 +1,7 @@
 """Connections from the Gateway to the registered MCP servers.
 
 Upstreams are registered Streamable HTTP endpoints. The Gateway never forwards the
-employee's token upstream. Internal lab servers use their own downstream credentials;
+employee's token upstream. Internal servers use their own downstream credentials;
 remote SaaS credentials must be separately provisioned and bound to resource and caller.
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ class CredentialUnavailable(ValueError):
     pass
 
 
-# Credentials employees connected themselves (D-235), by (principal, endpoint). A copy of the database row for the
+# Credentials employees connected themselves, by (principal, endpoint). A copy of the database row for the
 # synchronous header choice: refresh_connected() fills it before each dispatch and every pool maintenance round, and
 # close_pool() drops what it closes, so a disconnect reaches a warm session within one sweep.
 _connected: dict[tuple[str, str], tuple[str, float]] = {}
@@ -98,7 +98,7 @@ def credential_choice(endpoint: str, principal: str | None = None) -> tuple[dict
             names = r['allowed_principals']
             if not isinstance(names, list) or not names or any(not isinstance(p, str) or not p for p in names):
                 raise ValueError('principal binding format')
-        # "*": the operator shares this credential with every caller the server's approval admits (D-234).
+        # "*": the operator shares this credential with every caller the server's approval admits.
         if principal is None:
             row = next((r for r in rows if '*' in r['allowed_principals']), rows[0])
         else:
@@ -146,10 +146,10 @@ class _Lease:
 
 
 # Dispatch connections are reused per (endpoint, principal, credential): a tools/call
-# no longer pays a TCP and TLS handshake every time. Conversation-bound MCP sessions
-# have their own lifetime (D-115), and a pool entry is never shared between
+# avoids paying a TCP and TLS handshake every time. Conversation-bound MCP sessions
+# have their own lifetime, and a pool entry is never shared between
 # principals, so nothing an upstream ties to a connection crosses callers. Cookies are
-# not kept at all, as with the fresh client each call used to get.
+# not kept at all, as with a fresh client per call.
 POOL_SIZE = int(os.getenv("UPSTREAM_POOL_SIZE", "32"))
 _pool: OrderedDict[tuple, _Lease] = OrderedDict()
 _sessions = upstream_sessions.Pool(POOL_SIZE)
@@ -437,8 +437,8 @@ MAX_TOOL_PAGES = 50
 
 
 async def list_all_tools(client: Client) -> list:
-    """Every page of tools/list. A contract compared on the first page alone missed tools the server
-    put on later pages, and an enabled tool there blocked every call to the server (DEV-44)."""
+    """Every page of tools/list. A contract compared on the first page alone misses tools the server
+    puts on later pages, and an enabled tool there blocks every call to the server."""
     tools, cursor = [], None
     for _ in range(MAX_TOOL_PAGES):
         page = await client.list_tools(cursor=cursor, cache_mode="bypass")

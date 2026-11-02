@@ -17,7 +17,7 @@ def server_id(row: dict) -> str:
     address = urlsplit(row.get("endpoint_url") or row.get("repository_url") or "")
     source = address.hostname if row.get("intake_kind") == "remote-endpoint" else address.path.strip("/")
     # A monorepo holds many servers: name each by its folder, not by the owner every one of them shares
-    # (10-23: filesystem, memory and sequentialthinking all became "modelcontextprotocol-…" to the harness).
+    # (Named by owner, filesystem, memory and sequentialthinking would all show as "modelcontextprotocol-…" to the harness.)
     if row.get("intake_kind") != "remote-endpoint" and (row.get("repository_path") or "").strip("/"):
         source = row["repository_path"].strip("/").rsplit("/", 1)[-1]
     slug = re.sub(r"[^a-z0-9]+", "-", (source or "mcp").lower()).strip("-")
@@ -73,7 +73,7 @@ def suggested_destinations(row: dict, tool: dict) -> list[str]:
 def tool_reviews(row: dict, tools: list[dict], addressed: frozenset | set = frozenset()) -> dict:
     # Only tools with an address argument get suggested destinations; an argument name alone grants nothing.
     # The transfer grade follows the request's data grade: PAC-12 pairs destination and grade exactly, so a
-    # 「내부」 server proposed at 「공개」 blocked every call to its approved destination. 「중요」 never transfers.
+    # 「내부」 server proposed at 「공개」 would block every call to its approved destination. 「중요」 never transfers.
     grade = row.get("data_class") if row.get("data_class") in ("public", "nonimportant") else "public"
     return {t["name"]: {"purpose": row["purpose"][:200], "asset": row["display_name"][:200],
                         "destinations": suggested_destinations(row, t) if t["name"] in addressed else [],

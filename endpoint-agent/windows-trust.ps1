@@ -249,8 +249,8 @@ function Read-EndpointManagedRequest([string]$RequestPath, $Approval, [string]$R
         $request.enrollment = Join-Path $private 'enrollment.json'
         [IO.File]::WriteAllText($request.enrollment, ($bundle | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
     }
-    # The one-click request carries neither field (pj3 10-25: assigning a missing property threw, every one-click
-    # install stopped here); the approved values replace whatever the caller sent.
+    # The one-click request carries neither field. Assigning a missing property throws and would stop every
+    # one-click install here, so the approved values replace whatever the caller sent.
     $selectedGateway = if ($request.gateway_url) { $request.gateway_url.TrimEnd('/') } else { $Approval.gateway_url }
     $null = New-EndpointGatewayRequest ($selectedGateway + '/api/health') $certificate $fingerprint
     $request | Add-Member -NotePropertyName gateway_url -NotePropertyValue $selectedGateway -Force

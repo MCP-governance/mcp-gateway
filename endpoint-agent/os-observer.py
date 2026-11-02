@@ -67,8 +67,8 @@ def event(record: dict, uid: int, profile: str, raw_line: str | None = None) -> 
                    "protocol": fields.get("PROTO", ""), "destination_port": fields.get("DPT", ""),
                    "source_port": fields.get("SPT", ""), "tcp_flags": " ".join(flags)}
         # A SYN-ACK leaving the managed account answers a connection someone else opened to a
-        # listener the harness runs (Codex's login callback, DEV-35): not a connection attempt.
-        # Without SPT and the flags the 10-15 log read as "connections to ephemeral ports".
+        # listener the harness runs (Codex's login callback): not a connection attempt.
+        # SPT and the flags distinguish this from "connections to ephemeral ports".
         if "SYN" in flags:
             denied = "listener_reply" if "ACK" in flags else "blocked_attempt"
         kind, collector = "network-denied", "journal-nft"

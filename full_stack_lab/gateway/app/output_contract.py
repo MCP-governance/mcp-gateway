@@ -1,4 +1,4 @@
-"""Output approval and negotiated result shapes (D-149)."""
+"""Output approval and negotiated result shapes."""
 from __future__ import annotations
 
 import math
@@ -82,7 +82,7 @@ def for_protocol(payload: dict, protocol: str | None) -> dict:
     value = payload["structured"]
     if protocol in JSON_PROTOCOLS or (protocol in OBJECT_PROTOCOLS and isinstance(value, dict)):
         return payload
-    # Unknown/old callers get the conservative object-era behavior used before D-149.
+    # Unknown callers get the conservative object-era behavior.
     if protocol is None and isinstance(value, dict):
         return payload
     result = {key: item for key, item in payload.items() if key != "structured"}

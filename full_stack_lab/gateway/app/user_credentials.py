@@ -1,9 +1,9 @@
-"""Credentials an employee connects for a service that must see that employee, not the organisation (D-235).
+"""Credentials an employee connects for a service that must see that employee, not the organisation.
 
 The employee's own GitHub account is the first one. The value is used only for that employee's calls to that
-server's registered endpoint: it is never an MINT login token (AGENTS.md), never a shared one, and never leaves
+server's registered endpoint: it is never an MINT login token, never a shared one, and never leaves
 this module in plaintext except as the Authorization header of such a call. The database holds AES-GCM
-ciphertext bound to (principal, endpoint); the key is the device secret USER_CREDENTIAL_KEY (console.sh).
+ciphertext bound to (principal, endpoint); the key is the device secret USER_CREDENTIAL_KEY (mint.sh).
 Nothing here logs, returns or records a value: the ledger gets who, which service, which account name, when.
 """
 from __future__ import annotations
@@ -201,7 +201,7 @@ def device_client_id() -> str:
     return os.getenv("GITHUB_OAUTH_CLIENT_ID", "").strip()
 
 
-# Pending device authorisations. ponytail: one agent-service process; a restart means "start again".
+# Pending device authorisations live in one agent-service process; a restart means "start again".
 _flows: dict[str, dict] = {}
 
 

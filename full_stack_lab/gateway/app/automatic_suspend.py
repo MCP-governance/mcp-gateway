@@ -1,4 +1,4 @@
-"""DEV-74 automation on the employee/server suspension state established by D-181."""
+"""Automatic suspension for an employee and server pair."""
 from __future__ import annotations
 
 from . import db, review
@@ -39,7 +39,7 @@ async def expire(user_token: str | None = None, server_id: str | None = None) ->
 
 async def suspend(connection, user_token: str, server_id: str, policies: tuple[str, ...],
                   threshold: int, window_seconds: int, duration_seconds: int) -> bool:
-    """Add one D-181 state row and ledger event when this pair reaches its configured threshold."""
+    """Add a state row and ledger event when this pair reaches its configured threshold."""
     if threshold < 1 or window_seconds < 1 or duration_seconds < 1:
         raise ValueError("자동 중지 임계·관측 창·중지 기간은 양수여야 합니다.")
     await _expire_locked(connection, user_token, server_id)

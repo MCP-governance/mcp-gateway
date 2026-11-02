@@ -31,9 +31,9 @@ MAX_LINE = 262144
 MAX_BYTES = 1048576
 MAX_LINES = 1024
 MAX_QUEUE = 32
-READ_SECONDS = 60  # 게이트웨이 RUN_SECONDS와 같다(D-333)
+READ_SECONDS = 60  # 게이트웨이 RUN_SECONDS와 같다
 PREPARE_SECONDS = 180
-# 설치·승인 때 미리 받을 때는 첫 호출 한도(PREPARE_SECONDS)에 묶이지 않는다. PJ1의 첫 pull이 5~15분이었다.
+# 설치·승인 때 미리 받을 때는 첫 호출 한도(PREPARE_SECONDS)에 묶이지 않는다. 첫 pull은 5~15분까지 걸릴 수 있다.
 PREFETCH_SECONDS = 1800
 PREPARE_EVERY = 60
 PREPARE_WAITING = 15
@@ -61,7 +61,7 @@ def contract_matches(tool, pin):
         return False
     digest=lambda value:hashlib.sha256(canonical(value)).hexdigest()
     description=tool.get('description','')
-    # D-336: Python 3.13 strips docstring indentation that 3.12 keeps; the Gateway sends the approved text's cleaned hash.
+    # Python 3.13 strips docstring indentation that 3.12 keeps; the Gateway sends the approved text's cleaned hash.
     described=digest(description)==pin['description_sha256'] or (
         bool(pin.get('description_clean_sha256')) and digest(inspect.cleandoc(description))==pin['description_clean_sha256'])
     return described and digest(tool.get('inputSchema',{}))==pin['schema_sha256'] \
@@ -105,7 +105,7 @@ class PinnedMounts:
     def __init__(self, manifest, home, owner=None, documents=None):
         """documents: (home, uid, gid) of the employee when the harness runs in a separate managed account. A
         read-only mount then comes from the employee's own home, where they can put files; writable state stays in
-        the managed account's home, which the employee cannot reach (D-224)."""
+        the managed account's home, which the employee cannot reach."""
         self.stack, self.paths, self.options, self.readable = ExitStack(), [], [], []
         try:
             if not Path(home).is_absolute() or home in ('/','/root') or ':' in home or ',' in home:
@@ -123,7 +123,7 @@ class PinnedMounts:
                 parent = None
                 for index, part in enumerate(absolute.parts):
                     if creator and index >= inside:
-                        # 첫 설치 PC에는 승인된 폴더가 아직 없다(10-23 pj2). 관리 계정 홈 안의 승인 경로만,
+                        # 첫 설치 PC에는 승인된 폴더가 아직 없다. 관리 계정 홈 안의 승인 경로만,
                         # 고정된 부모 FD 아래에 그 계정 소유 0700으로 만든다. 이미 있는 링크·파일은 아래 open이 거부한다.
                         try:
                             os.mkdir(part,folder_mode,dir_fd=parent)
@@ -204,9 +204,9 @@ def container_command(engine, manifest, account, *, mount_options=None, namespac
     elif namespace not in ('docker-remap','host'):
         raise ValueError('엔진별 사용자 매핑 설정이 없습니다')
     else:
-        # runc 1.2+는 다른 프로세스의 /proc/<pid>/fd 링크를 바인드 원천으로 받지 않는다(EINVAL, 10-22 PJ1 docker 29.8.1).
+        # runc 1.2+는 다른 프로세스의 /proc/<pid>/fd 링크를 바인드 원천으로 받지 않는다(EINVAL, docker 29.8.1).
         # 경로로 바인드하고 생성 직전 recheck()가 고정한 inode와 같은지 확인한다.
-        # ponytail: 생성~시작 사이 폴더 교체 경쟁은 남는다. 막으려면 open_tree 지원 엔진의 FD 마운트로 옮긴다.
+        # 생성~시작 사이 폴더 교체 경쟁은 남는다. 막으려면 open_tree 지원 엔진의 FD 마운트로 옮긴다.
         if host_paths is None or len(host_paths)!=len(mount_options)//2:
             raise ValueError('경로 바인드에는 고정한 홈 경로가 필요합니다')
         mount_options=[v for binding,host in zip(mount_options[1::2],host_paths)
@@ -285,7 +285,7 @@ def engine_configuration(config, manifest, check=None, seconds=PREPARE_SECONDS):
 
 
 class McpError(RuntimeError):
-    """The MCP answered the request with a JSON-RPC error. Its message is the only record of why (10-27: memory's
+    """The MCP answered the request with a JSON-RPC error. Its message is the only record of why (for example, the memory server's
     EROFS on a read-only root came back on stdout while stderr held just the start banner)."""
     def __init__(self, error):
         super().__init__('로컬 MCP가 오류를 반환했습니다')
@@ -594,7 +594,7 @@ def verify_manifest(config, manifest, signature, digest, server_id):
 
 
 def employee_documents(config):
-    """별도 관리 계정을 쓰는 직원의 (홈, uid, gid). 읽기 전용 마운트는 그 홈에서 온다(D-224)."""
+    """별도 관리 계정을 쓰는 직원의 (홈, uid, gid). 읽기 전용 마운트는 그 홈에서 온다."""
     if os.name == 'nt' or config.get('owner_uid') is None:
         return None
     import pwd
@@ -687,7 +687,7 @@ def execute_job(config, job, request, account):
         reason='timeout' if isinstance(exc,TimeoutError) else 'contract' if isinstance(exc,ContractMismatch) else 'failed'
         answer={'error':'로컬 MCP 실행을 완료하지 못했습니다','diagnostics':{'kind':reason,'exit_code':None,'stderr_tail':''}}
         mcp_error=exc.detail if isinstance(exc,McpError) else ''
-        # Only to this PC's journal: a failure before the container starts left no cause anywhere (10-23 PJ1).
+        # Only to this PC's journal: a failure before the container starts left no cause anywhere.
         # The runner's own ValueError messages carry no data; other exceptions keep their type only.
         detail=str(exc)[:200] if type(exc) is ValueError else ''
         if hasattr(exc,'code') and hasattr(exc,'read'):  # urllib HTTPError: the Gateway's own refusal sentence
@@ -790,7 +790,7 @@ def prepare_reason(exc):
 
 
 def ensure_mounts(manifest, account, documents):
-    """승인 폴더를 첫 호출 전에 만든다. 소유·권한·링크 거부는 실행 때와 같은 PinnedMounts가 정한다(D-223·D-224)."""
+    """승인 폴더를 첫 호출 전에 만든다. 소유·권한·링크 거부는 실행 때와 같은 PinnedMounts가 정한다."""
     mounts=PinnedMounts(manifest,account.pw_dir,(account.pw_uid,account.pw_gid),documents)
     try:
         return list(mounts.readable)
@@ -888,7 +888,7 @@ def run(config, request, log):
             request(config,f"/api/endpoint/local-jobs/{job['id']}",answer)
         except Exception as exc:
             # The Gateway refuses a device that is not active (pending activation, quarantined): that is waiting, not a
-            # fault. Say it once per change and back off, instead of an error line every second (D-217).
+            # fault. Say it once per change and back off, instead of an error line every second.
             status=getattr(exc,'code',None)
             kind=('waiting',status) if status in (401,403,409) else ('error',type(exc).__name__)
             if kind!=last:

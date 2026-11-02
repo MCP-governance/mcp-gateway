@@ -81,7 +81,7 @@ def render():
         "",
         "import rego.v1",
         "",
-        "# 정책 ID → 시트의 정책·실행 규칙과 구현 분류. 규칙의 METADATA custom.pol_id가 이 키를 가리킨다.",
+        "# 정책 ID → 조직 보안 정책의 정책·실행 규칙과 구현 분류. 규칙의 METADATA custom.pol_id가 이 키를 가리킨다.",
         "policies := {",
     ]
     for pol in sheet["policies"]:  # 시트 순서
@@ -101,7 +101,7 @@ def render():
             "exception_approver": approver(rule.get("exception", "")),
             "category": c["category"],
             "enforced_by": c["enforced_by"],
-            "note": c["note"],
+            # The classification note is this repository's implementation analysis; the shipped catalog leaves it out.
         }
         body = ", ".join(f"{rego_string(k)}: {rego_string(v)}" for k, v in entry.items())
         lines.append(f"\t{rego_string(pol)}: {{{body}}},")

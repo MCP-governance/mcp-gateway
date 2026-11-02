@@ -39,7 +39,7 @@ from .contract import (  # re-exported: older callers import these from core
 from . import intake_proposal, litellm_sync, review  # noqa: E402  (approval records, intake gate; see review.py)
 
 OPA_URL = os.getenv("OPA_URL", "http://opa:8181/v1/data/mcp/authz/decision")
-# 정책 관리대장(§11.8 / §12.5)은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
+# 정책 관리대장은 정책 코드와 함께 배포되고 OPA가 그 정본이다.
 # Gateway가 별도 사본을 들면 "승인된 정책"이 둘이 된다.
 POLICY_LEDGER_URL = os.getenv("POLICY_LEDGER_URL", "http://opa:8181/v1/data/policy_ledger")
 GATEWAY_ENVIRONMENT = os.getenv("GATEWAY_ENVIRONMENT", "prod")
@@ -54,8 +54,8 @@ SERVER_CHECK_TIMEOUT_SECONDS = float(os.getenv("SERVER_CHECK_TIMEOUT_SECONDS", "
 
 # Instruction-shaped text aimed at the model lives in one ruleset (app/poisoning.py),
 # which every door uses: contracts at registration and catalog refresh, arguments on
-# the way out, results on the way back. The gateway used to keep a shorter pattern of
-# its own here, so the weakest check ran on the least trusted content.
+# the way out, results on the way back. A second, shorter pattern list kept in the
+# gateway would run the weakest check on the least trusted content.
 MAX_RESULT_BYTES = int(os.getenv("MAX_RESULT_BYTES", "262144"))
 MAX_RESULT_ITEMS = int(os.getenv("MAX_RESULT_ITEMS", "1000"))
 if MAX_RESULT_BYTES <= 0 or MAX_RESULT_ITEMS <= 0:
@@ -78,7 +78,7 @@ CHAIN_WINDOW_MINUTES = int(os.getenv("CHAIN_WINDOW_MINUTES", "10"))
 
 
 def _flow_match_mode(value: str | None) -> str:
-    """D-142: "content" narrows P-FLOW-001 to calls whose text matches what was read; anything else,
+    """The "content" mode narrows P-FLOW-001 to calls whose text matches what was read; anything else,
     a misspelling included, is "coarse": every call after a read from another server."""
     return "content" if (value or "").strip().lower() == "content" else "coarse"
 
@@ -99,7 +99,7 @@ AUTO_SUSPEND_DURATION_SECONDS = int(os.getenv("AUTO_SUSPEND_DURATION_SECONDS", "
 CONCURRENCY_LIMIT = int(os.getenv("CONCURRENCY_LIMIT", "4"))
 RESERVATION_TTL_SECONDS = int(os.getenv("RESERVATION_TTL_SECONDS", "120"))
 MAX_ARGUMENT_BYTES = int(os.getenv("MAX_ARGUMENT_BYTES", "65536"))
-# D-176: count only repeated, request-attributable security violations. State,
+# Count only repeated, request-attributable security violations. State,
 # approval, consent, catalog, classification, rate, and fail-closed refusals are
 # deliberately absent because they can be normal workflow or service conditions.
 AUTO_SUSPEND_POLICIES = (
@@ -111,7 +111,7 @@ DENIAL_POLICIES = AUTO_SUSPEND_POLICIES
 
 def check_auto_suspend_settings(threshold: int, window_seconds: int, duration_seconds: int,
                                 policies: tuple[str, ...]) -> None:
-    """D-176: a wrong setting stops the gateway at start. Quietly disabling the control would be worse."""
+    """A wrong setting stops the gateway at start. Quietly disabling the control would be worse."""
     for name, value in (("AUTO_SUSPEND_THRESHOLD", threshold), ("AUTO_SUSPEND_WINDOW_SECONDS", window_seconds),
                         ("AUTO_SUSPEND_DURATION_SECONDS", duration_seconds)):
         if value < 1:
@@ -136,8 +136,8 @@ class ResultRejected(RuntimeError):
 
 
 # What a client receives as tool output. Images, audio, embedded resources and
-# resource links carry bytes or URIs the output checks cannot read; they used to reach
-# the client flattened into truncated JSON text. They are withheld instead.
+# resource links carry bytes or URIs the output checks cannot read, so they are withheld rather than
+# flattened into truncated JSON text for the client.
 RESULT_CONTENT_TYPES = {"text"}
 
 
@@ -288,9 +288,9 @@ async def refresh_catalog(server_id: str) -> dict:
         findings.append({"type": "unsafe-description",
                          "tools": metadata_findings})
 
-    # What gates the server (D-69) is the contract a client can actually reach: the enabled tools'
+    # What gates the server is the contract a client can actually reach: the enabled tools'
     # descriptions and schemas. Hosted servers report a build id as their version (GitHub: one per
-    # deploy) and change helpers nobody enabled; pinning those took figma and github down every few
+    # deploy) and change helpers nobody enabled; pinning those takes figma and github down every few
     # days with no reviewed tool changed. Those changes are still recorded below as findings.
     enabled = {name for name, row in registered.items() if row["enabled"]}
     enabled_missing = sorted(enabled - set(observed))
@@ -362,10 +362,10 @@ async def refresh_catalog(server_id: str) -> dict:
         )
     if snapshot:
         await ops_response.catalog_alerts(server_id, findings, snapshot["id"])
-    # T4. 계약이 바뀌면 심사한 코드와 지금 도는 코드가 갈라졌다는 뜻이므로 AI 코드
-    # 감사도 다시 돌아야 한다. v1.5는 scan_jobs.trigger에 'drift' 값만 예약해 두고
-    # 이 시각을 남기지 않아서, 워커가 "마지막 감사 이후 드리프트가 있었는가"를
-    # 물어볼 수 없었다. 큐잉은 워커가 하고, 여기서는 사실만 기록한다.
+    # 계약이 바뀌면 심사한 코드와 지금 도는 코드가 갈라졌다는 뜻이므로 AI 코드
+    # 감사도 다시 돌아야 한다. scan_jobs.trigger에 'drift' 값이 예약되어 있어도
+    # 이 시각이 없으면 워커가 "마지막 감사 이후 드리프트가 있었는가"를
+    # 물어볼 수 없다. 큐잉은 워커가 하고, 여기서는 사실만 기록한다.
     if not exact_match:
         await upstream.release_pool(server["endpoint"], None, "contract-drift")
         await db.execute(
@@ -386,8 +386,8 @@ async def refresh_catalog(server_id: str) -> dict:
 async def approve_contract(server_id: str, actor: str, note: str) -> dict:
     """관측된 도구 계약을 승인본으로 올린다 (CTL-30 변경 식별과 재평가).
 
-    이 기능이 없던 v1.5까지, 정당한 변경 뒤에 계약을 다시 승인하는 방법은 SQL을
-    직접 고치는 것뿐이었다. 그러면 재승인이 기록되지 않고, "누가 언제 무엇을
+    정당한 변경 뒤에 계약을 다시 승인하는 방법이 SQL을
+    직접 고치는 것뿐이면 재승인이 기록되지 않고, "누가 언제 무엇을
     승인했는가"가 남지 않는다. 승인 절차가 없는 통제는 우회로 유지된다.
 
     승인 대상은 **지금 관측된 값**이다. 그래서 호출 순서가 중요하다 - 먼저
@@ -419,7 +419,7 @@ async def approve_contract(server_id: str, actor: str, note: str) -> dict:
             fields.append("description")
         if row["approved_schema_hash"] != row["observed_schema_hash"]:
             fields.append("schema")
-        # An unpinned legacy approval is pinned by this person's review (D-149).
+        # An unpinned legacy approval is pinned by this person's review.
         if not output_contract.observed_matches(row) or row.get("approved_output_schema_hash") is None:
             fields.append("output_schema")
         if row["approved_server_version"] != row["observed_server_version"]:
@@ -504,7 +504,7 @@ async def refresh_all_catalogs() -> dict:
         if (registry.server(server_id) or {}).get("deployment") == "local":
             # 로컬 실행 서버는 호출하는 직원 PC의 실행기가 승인 계약을 호출마다 대조한다(local-runner control contracts).
             # 관찰 PC 한 대가 정책 갱신 중이라 거절한 것을 서버 전체 ERROR로 내리면, ERROR는 로컬 실행 허가에서 빠져
-            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라졌다.
+            # 스스로 복구하지 못하고 모든 직원 하네스 설정에서 사라진다.
             results[server_id] = "LOCAL"
             continue
         try:
@@ -512,7 +512,7 @@ async def refresh_all_catalogs() -> dict:
                 results[server_id] = (await refresh_catalog(server_id))["status"]
             except (psycopg.errors.DeadlockDetected, psycopg.errors.SerializationFailure):
                 # 기동 중 agent-service의 스키마 DDL과 교착하면 스냅숏 없이 ERROR로 남아 다음 갱신까지
-                # 이 서버의 도구가 목록에서 모두 빠졌다. 롤백된 일시 오류이므로 조회만 한 번 다시 한다.
+                # 이 서버의 도구가 목록에서 모두 빠진다. 롤백된 일시 오류이므로 조회만 한 번 다시 한다.
                 results[server_id] = (await refresh_catalog(server_id))["status"]
         except Exception as exc:
             await db.execute(
@@ -523,7 +523,7 @@ async def refresh_all_catalogs() -> dict:
 
 
 async def check_server(server_id: str) -> dict:
-    """D-40: can the Gateway open an MCP session with this server right now?
+    """Can the Gateway open an MCP session with this server right now?
 
     LiteLLM keeps the same split (health_check_server beside its tool discovery). The
     catalog refresh reads tools/list and rewrites contract state, so it is the wrong
@@ -548,7 +548,7 @@ async def check_server(server_id: str) -> dict:
             "checked_at": checked_at}
 
 
-# ── Console registration of an approved server (D-49) ────────────────────────────
+# ── Console registration of an approved server ────────────────────────────
 # LiteLLM keeps config servers and runtime (DB) servers side by side; here the runtime
 # half is REGISTRY_RUNTIME_DIR/servers.json. What LiteLLM does not do, and this must:
 # pin the contract the admin reviewed (no trust-on-first-use), and give the approval an
@@ -622,7 +622,7 @@ async def register_server(request: dict, actor: str) -> dict:
     server_location = residency.normalize(request.get("residency"))
     local = request.get("local")
     if local:
-        # DEV-73: the server runs on each caller's own device under a signed manifest.
+        # The server runs on each caller's own device under a signed manifest.
         if request["endpoint"] != local_jobs.PREFIX + server_id:
             raise ValueError(f"로컬 실행 서버는 {local_jobs.PREFIX}{server_id} 주소로 등록합니다.")
         endpoint = request["endpoint"]
@@ -666,7 +666,7 @@ async def register_server(request: dict, actor: str) -> dict:
                                             for n in selected}, actor).items()}):
             raise ValueError("화면에서 승인한 범위와 다릅니다. 도입 검토를 다시 열어 확인하세요.")
     # Registration repeats the checks approval made: provenance recorded and compared with the copy in
-    # use, every scan finished and fresh, no critical finding without a live acceptance (D-90).
+    # use, every scan finished and fresh, no critical finding without a live acceptance.
     gate = await review.intake_gate(intake, verified=True)
     if gate["blockers"]:
         raise ValueError("등록할 수 없습니다: " + " / ".join(item["message"] for item in gate["blockers"]))
@@ -729,14 +729,14 @@ async def register_server(request: dict, actor: str) -> dict:
     unknown = sorted(set(request["tools"]) - set(advertised))
     if unknown:
         raise ValueError(f"서버가 제공하지 않는 도구: {', '.join(unknown)}")
-    # D-52: a selected tool whose text reads like an instruction to the model is approved only on purpose.
+    # A selected tool whose text reads like an instruction to the model is approved only on purpose.
     flagged = {name: poisoning.findings(advertised[name]) for name in request["tools"]}
     flagged = {name: reasons for name, reasons in flagged.items() if reasons}
     if flagged and not request.get("poisoning_ack"):
         raise ValueError("도구 설명에 모델을 조종하는 문구로 보이는 부분이 있습니다: "
                          + ", ".join(f"{name}({'·'.join(reasons)})" for name, reasons in sorted(flagged.items()))
                          + ". 내용을 읽고 확인했다고 표시해야 등록할 수 있습니다.")
-    # What a person scoped, tool by tool; a tool without it is registered but not enabled (D-91).
+    # What a person scoped, tool by tool; a tool without it is registered but not enabled.
     tool_reviews = review.normalize_tool_reviews(request["tools"], request.get("tool_reviews"), actor)
     for name, item in tool_reviews.items():
         if item["inputs"] is not None:
@@ -747,20 +747,20 @@ async def register_server(request: dict, actor: str) -> dict:
     github = source_url.startswith("https://github.com/")
     package = source_url.removeprefix("https://") if github else host
     # For a GitHub source the version is the validated commit, which is also what the
-    # A.I.G worker checks out for a static audit of this server (source_ref = package@commit).
+    # intake worker checks out for a static audit of this server (source_ref = package@commit).
     version = commit if github and commit else found["version"]
     assurance = request.get("supplier_assurance") or {}
     assurance_errors = supplier_assurance.validate(assurance, required=False)
     if assurance_errors:
         raise ValueError("등록할 수 없습니다: " + " / ".join(assurance_errors))
-    # DEV-71: the tier is read again from the stated input the approval was made on, and the approval
+    # The tier is read again from the stated input the approval was made on, and the approval
     # must have recorded that same input. A data grade above what the applicant stated understates the tier.
     stated = risk_tier.assess(intake.get("risk_input"))
     approved_risk = (intake.get("evidence") or {}).get("risk_assessment") or {}
     if stated["status"] != "ok" or approved_risk.get("input_sha256") != stated["input_sha256"]:
         raise ValueError("등록할 수 없습니다: 승인 때 확인한 영향평가 입력이 없거나 바뀌었습니다. 다시 신청하세요.")
     rule = risk_tier.APPROVAL[stated["tier"]]
-    # root in single-operator mode approved alone on purpose (forced, D-306). The mark alone proves nothing: the mode
+    # root in single-operator mode approved alone on purpose. The mark alone proves nothing: the mode
     # must be on now and every recorded approver must be root.
     recorded = approved_risk.get("approvers") or []
     forced = bool(approved_risk.get("solo_operator") and review.solo_mode_enabled() and recorded
@@ -801,7 +801,7 @@ async def register_server(request: dict, actor: str) -> dict:
         "intake_id": request.get("intake_id") or None,
         # A remote service is scoped to the principals its contract review named. A source-validated
         # server is scoped to the person who asked for it, with arguments derived from its pinned contract
-        # and the reviewed destinations: an administrator enters an address, not JSON Schema (10-15).
+        # and the reviewed destinations: an administrator enters an address, not JSON Schema.
         "allowed_principals": (remote_review["allowed_principals"] if remote_review
                                else (intake.get("evidence") or {}).get("audience_principals") or [intake["submitted_by"]]),
         "parameter_constraints": (remote_review.get("parameter_constraints", {}) if remote_review
@@ -837,7 +837,7 @@ async def register_server(request: dict, actor: str) -> dict:
         await registry.sync()
     if intake["intake_kind"] == "repository":
         # The scan evidence follows the release it approved: the Gateway reads criticals under the
-        # server's own source_ref, and an accepted risk that lapses must bite there (D-90).
+        # server's own source_ref, and an accepted risk that lapses must bite there.
         linked, pattern = registry.source_ref(spec), f"%/intake-{intake_id}-%"
         await db.execute("DELETE FROM supply_chain_reports WHERE source_ref=%s AND report_path LIKE %s", (linked, pattern))
         await db.execute(
@@ -918,7 +918,7 @@ async def deregister_server(server_id: str, actor: str, reason: str | None = Non
 async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
     """Adds scope reviews (purpose, asset, external destinations) to tools of an existing Console
     registration, for registrations made before every tool carried one. The action is the one the
-    registration already approved; the reviewer is never the person who asked for the server (D-91)."""
+    registration already approved; the reviewer is never the person who asked for the server."""
     async with REGISTER_LOCK:
         doc = registry.runtime()
         spec = doc["servers"].get(server_id)
@@ -967,7 +967,7 @@ async def review_tool_scopes(server_id: str, reviews: dict, actor: str) -> dict:
 
 
 async def update_server_audience(server_id: str, audience: str, users: list[str], actor: str) -> dict:
-    """Widen or narrow who may use an approved server (D-234). The reviewed tools, actions and argument
+    """Widen or narrow who may use an approved server. The reviewed tools, actions and argument
     constraints stay as approved; only the people change. Narrowing takes effect on the next call."""
     async with REGISTER_LOCK:
         doc = registry.runtime()
@@ -1003,7 +1003,7 @@ async def update_server_audience(server_id: str, audience: str, users: list[str]
 
 
 async def review_server_residency(server_id: str, location: dict, actor: str) -> dict:
-    """Re-review the declared location without changing the approved remote contract (D-138)."""
+    """Re-review the declared location without changing the approved remote contract."""
     normalized = residency.normalize(location)
     async with REGISTER_LOCK:
         doc = registry.runtime()
@@ -1047,7 +1047,7 @@ RENEW_CONTRACT = ("registered", "enabled", "schema_hash_match", "description_has
 
 async def renew_approvals(now: datetime | None = None) -> list[dict]:
     """Extend a Console registration's use approval by its original period when it is about to
-    lapse and nothing it was approved on has changed (D-70): every enabled tool still matches its
+    lapse and nothing it was approved on has changed: every enabled tool still matches its
     reviewed description and schema, the server is READY and operating, the supply chain shows no
     critical finding, the endpoint is still allowed. Anything else lapses as before and needs a new
     intake. An approval that has already lapsed is not revived."""
@@ -1074,7 +1074,7 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
                 continue
             # The approval also rests on the intake still standing and on every served tool keeping its
             # scope review: a request sent back to hold (a lapsed risk acceptance) or a tool whose scope
-            # was withdrawn needs a person again, not a quiet extension (D-94).
+            # was withdrawn needs a person again, not a quiet extension.
             intake = await db.fetch_one("SELECT status FROM mcp_intake_requests WHERE id=%s::uuid", (spec.get("intake_id"),))
             if not intake or intake["status"] != "APPROVED" or set(spec.get("tools", {})) - registry.reviewed_tools(server_id):
                 continue
@@ -1107,7 +1107,7 @@ async def renew_approvals(now: datetime | None = None) -> list[dict]:
 
 
 async def apply_risk_grace(now: datetime | None = None) -> list[dict]:
-    """Approvals made before risk input existed are assumed to be the highest tier. They stay valid for
+    """Approvals without a stated risk input are assumed to be the highest tier. They stay valid for
     the grace period counted from the first run of this check, then lapse into re-approval through the
     same approval expiry as any other (RQ-08). An approval that carries its stated input is untouched."""
     if registry.RUNTIME_PATH is None:
@@ -1191,7 +1191,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "SELECT * FROM catalog_snapshots WHERE server_id=%s ORDER BY id DESC LIMIT 1", (server_id,)
     )
     # An operator's time-limited acceptance of the intake's critical findings counts while it lasts
-    # (D-90); when it runs out the raw count is what the policy sees again.
+    # when it runs out the raw count is what the policy sees again.
     critical = await db.fetch_one(
         """SELECT COALESCE(sum(critical_count),0) AS critical_count,
                   (SELECT COALESCE(max(a.critical_count),0) FROM accepted_risks a WHERE a.intake_id=%s::uuid
@@ -1217,7 +1217,7 @@ async def _contract(server_id: str, tool_name: str) -> dict:
         "supplier_approved": server["status"] != "BLOCKED_SUPPLY_CHAIN",
         "critical_vulnerabilities": 0 if raw_critical <= int(critical["accepted"] or 0) else raw_critical,
         "critical_accepted": raw_critical if 0 < raw_critical <= int(critical["accepted"] or 0) else 0,
-        # 승인은 영구가 아니다(§11.4.1). 기한은 Registry가 들고, 만료 판단은 정책이 한다.
+        # 승인은 영구가 아니다. 기한은 Registry가 들고, 만료 판단은 정책이 한다.
         "approval_valid_until": tool["approval_valid_until"].isoformat()
         if tool.get("approval_valid_until")
         else None,
@@ -1301,7 +1301,7 @@ async def egress_allowed(endpoint: str | None) -> bool:
     if not host:
         return True  # stdio: 네트워크 목적지가 없다
     if endpoint in registry.runtime_endpoints():
-        return True  # 관리자가 Console 등록 절차에서 이 엔드포인트 자체를 승인했다(D-49)
+        return True  # 관리자가 Console 등록 절차에서 이 엔드포인트 자체를 승인했다
     allowed = await opa_document("egress")
     entries = (allowed or {}).get("allowed_hosts") if isinstance(allowed, dict) else None
     if not isinstance(entries, list):
@@ -1352,7 +1352,7 @@ def _privacy_ignore(cls: classify.Classification) -> Callable[[str, str], bool]:
 
 
 async def _sequence_flags(user_token: str, cls: classify.Classification) -> list[str]:
-    """P-CHAIN-001 input. v1 linked calls by a signed agent session; v2 links them by the
+    """P-CHAIN-001 input. Calls are linked by the
     verified principal, which a client cannot split by opening new tasks."""
     if not any(d.external for d in cls.destinations):
         return []
@@ -1374,7 +1374,7 @@ async def _flow_sources(user_token: str, server_id: str, cls: classify.Classific
     provider-hosted server: it receives every argument, a search query included.
 
     With `outbound_text` the call's text is compared with what was read, and `observed` receives the
-    result per server for the decision record (D-142). In "content" mode a server then stays a source
+    result per server for the decision record. In "content" mode a server then stays a source
     only when the text matches or the read could not be compared; in "coarse" mode, the default, every
     server in the window stays one and the comparison is a record only. Without `outbound_text`, and
     on any failure of the comparison, every server in the window is a source.
@@ -1409,7 +1409,7 @@ async def _dispatch_flow_recheck(connection, user_token: str, server_id: str, po
 
 
 async def _remember_flow(user_token: str, server_id: str, decision_id: int, result: dict) -> None:
-    """D-142: keep salted hashes of what an important read released, once its decision is recorded.
+    """Keep salted hashes of what an important read released, once its decision is recorded.
 
     Never raises. A read without a row stays a flow source for the whole window (the coarse mark),
     so a failure here over-blocks and never lets a flow through.
@@ -1432,7 +1432,7 @@ async def _remember_flow(user_token: str, server_id: str, decision_id: int, resu
 
 
 async def _relationship_scope(server_id: str, cls: classify.Classification) -> dict:
-    """D-39: the paper's unit of analysis, applied to every call and not only at termination.
+    """The usage relationship is the unit of analysis, applied to every call and not only at termination.
 
     A server with ACTIVE usage relationships admits the union of their allowed_resources;
     the policy judges a call whose scoped resources fall outside it. Terminating or
@@ -1516,7 +1516,7 @@ async def _reserve_call(request_id: str, user_token: str, server_id: str, tool: 
                  UNION ALL
                  SELECT d.request_id, d.created_at, d.data_class FROM decisions d
                   WHERE d.user_token=%s AND d.created_at > now() - interval '1 hour'
-                    AND d.action <> 'connect'  -- a refused connection is not a call (D-57)
+                    AND d.action <> 'connect'  -- a refused connection is not a call
                     AND NOT EXISTS (SELECT 1 FROM call_reservations r WHERE r.request_id=d.request_id)
                ) arrivals""",
             (RATE_LIMIT_WINDOW_SECONDS, IMPORTANT_BURST_MINUTES, user_token, user_token))
@@ -1586,7 +1586,7 @@ async def opa_document(name: str) -> Any:
 
 
 async def policy_ledger(refresh: bool = False) -> dict:
-    """§12.5 PaC 정책 관리대장. 없으면 판정이 관리정보 없이 나가지만 차단하지는 않는다.
+    """PaC 정책 관리대장. 없으면 판정이 관리정보 없이 나가지만 차단하지는 않는다.
 
     관리정보를 못 읽은 것과 정책을 못 읽은 것은 다른 사건이다. 후자는 이미
     P-CONTROL-FAIL-CLOSED가 차단하고, 전자까지 차단하면 대시보드 장애가 업무
@@ -1609,7 +1609,7 @@ async def policy_ledger(refresh: bool = False) -> dict:
 def local_verdict(policy_id: str, decision: str, reason: str, **extra: Any) -> dict:
     """Gateway가 직접 내리는 판정도 OPA 판정과 같은 관리정보를 달고 나가야 한다.
 
-    §11.7은 판단 결과에 적용 정책과 정책 버전을 포함하라고 하지, 그 판단을 누가
+    판단 결과에는 적용 정책과 정책 버전을 담아야 하고, 그 판단을 누가
     내렸는지로 예외를 두지 않는다. PEP가 PDP보다 앞에서 거부한 요청만 증적 형식이
     다르면 감사에서 두 종류의 기록을 대조해야 한다.
     """
@@ -1694,7 +1694,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
             listed = await upstream.list_all_tools(client)
             registered = await db.fetch_all("SELECT * FROM mcp_tools WHERE server_id=%s", (server_id,))
             observed = {t.name: upstream.tool_view(t) for t in listed}
-            # Same rule as refresh_catalog (D-69): the reviewed contract is what a client can reach — the
+            # Same rule as refresh_catalog: the reviewed contract is what a client can reach — the
             # enabled tools' descriptions and schemas. Hosted servers answer from pods with different build
             # ids, so the version string is not part of it; unexposed helpers may change without blocking.
             enabled_rows = [row for row in registered if row["enabled"] and row["name"] == tool]
@@ -1751,7 +1751,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                     final_input["now"] = datetime.now(UTC).isoformat()
                     live = next(row for row in registered if row["name"] == tool)
                     # The description and schema were just matched above; the build id this connection
-                    # happened to report is not part of the reviewed contract (D-69).
+                    # happened to report is not part of the reviewed contract.
                     live = {**live, "observed_server_version": live["approved_server_version"],
                             "observed_description_hash": canonical_hash(observed[tool]["description"]),
                             "observed_schema_hash": canonical_hash(observed[tool]["input_schema"])}
@@ -1827,7 +1827,7 @@ async def _call_upstream(server_id: str, tool: str, arguments: dict, approval_id
                 # withholds that response rather than erasing the known execution state.
                 dispatch_state["upstream_executed"] = True
                 payload = {"content": upstream.content_items(result), "is_error": bool(result.is_error)}
-                # Only an approved output schema is enforced; an unpinned legacy approval is not (D-149).
+                # Only an approved output schema is enforced; an unpinned legacy approval is not.
                 dispatch_state["_output_schema"] = (observed[tool].get("output_schema")
                                                     if all(r.get("approved_output_schema_hash") for r in enabled_rows) else None)
                 if result.structured_content is not None or "structured_content" in getattr(result, "model_fields_set", set()):
@@ -2114,7 +2114,7 @@ async def _record_decision(event: dict) -> int:
             (entry,),
         )
         if counts_for_suspend:
-            # D-176: the suspension check is a consequence of this Block, not a condition of recording it.
+            # The suspension check is a consequence of this Block, not a condition of recording it.
             # A failure rolls back only this savepoint; the Block row stays in the append-only ledger, and
             # the check runs again on the next qualifying call, which counts this row too.
             try:
@@ -2189,7 +2189,7 @@ async def verify_audit_chain(connection=None, seal: dict | None = None) -> dict:
 
     An edited or deleted row cannot be made to fit again without rewriting every row
     after it, so this answers "was the audit log tampered with" with a row id rather
-    than with an assurance. A retention seal (D-141, signed outside the database) is the
+    than with an assurance. A retention seal (signed outside the database) is the
     only thing that lets the walk start after GENESIS; a row it covers is resurrected.
     """
     if seal is None:
@@ -2247,7 +2247,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 await expire_suspension(user_token, server_id)
             except Exception as exc:
                 suspension_error = exc
-        # An administrator's stop (DEV-79) and a live automatic stop share the same state row.
+        # An administrator's stop and a live automatic stop share the same state row.
         principal = (None if suspension_error else await db.fetch_one(
             """SELECT p.*, EXISTS (SELECT 1 FROM user_server_suspensions u WHERE u.user_token=p.token
                                     AND u.server_id=%s AND u.resumed_at IS NULL) AS server_suspended
@@ -2334,7 +2334,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
         laps.lap("reserve")
 
         # A schema rarely bounds length, and the arguments go to the provider as they are:
-        # a 200 KB string reached an outside provider before it refused it (D-59).
+        # a 200 KB string can reach an outside provider before it refuses it.
         if len(json.dumps(arguments, ensure_ascii=False).encode()) > MAX_ARGUMENT_BYTES:
             base_event.update(local_verdict(
                 "P-INPUT-SCHEMA-001", "Block", f"도구 인자가 {MAX_ARGUMENT_BYTES // 1024}KB를 넘어 보내지 않았습니다."))
@@ -2354,7 +2354,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 base_event.update(local_verdict(
                     "P-INPUT-SCHEMA-001", "Block", "도구 인자가 승인된 입력 형식과 다릅니다."))
                 return await _decision_payload(base_event, laps)
-        # What the reviewer scoped for this tool (D-91): inputs, masking, transfer grade, flows, consent.
+        # What the reviewer scoped for this tool: inputs, masking, transfer grade, flows, consent.
         tool_review = ((registry.server(server_id) or {}).get("tool_reviews") or {}).get(tool) or {}
         if tool_review.get("inputs") is not None and (outside := sorted(set(arguments) - set(tool_review["inputs"]))):
             base_event.update(local_verdict(
@@ -2366,7 +2366,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
             base_event.update(local_verdict("P-VOLUME-002", "Block", reason))
             return await _decision_payload(base_event, laps)
 
-        # PDF 8~10쪽. What leaves the organisation is inspected before the policy sees
+        # What leaves the organisation is inspected before the policy sees
         # the call; if the inspection cannot run, the call does not either.
         external = any(d.external for d in cls.destinations)
         # A provider-hosted server receives every argument, reads included: a search
@@ -2408,7 +2408,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
 
         contract = await _contract(server_id, tool)
         policy_input = {
-            # §11.6 환경정보와 상황정보. 시각은 Gateway가 재고 정책이 판단한다.
+            # 환경정보와 상황정보. 시각은 Gateway가 재고 정책이 판단한다.
             "environment": GATEWAY_ENVIRONMENT,
             "now": datetime.now(UTC).isoformat(),
             "principal": {
@@ -2510,7 +2510,7 @@ async def execute_call(payload: dict, approval_granted: bool = False, approval_i
                 span.set_attribute("mcp.decision", result["decision"])
                 span.set_attribute("mcp.policy_id", result["policy_id"])
 
-        # D-191: 외부 AI 게이트웨이 애드온은 판정만 받고 전송은 호출한 쪽이 한다. 승인 대기 행도 만들지 않는다 —
+        # 외부 AI 게이트웨이 애드온은 판정만 받고 전송은 호출한 쪽이 한다. 승인 대기 행도 만들지 않는다 —
         # 승인되면 이 게이트웨이가 같은 호출을 직접 보내 이중 실행되기 때문이다.
         decide_only = bool(payload.get("_decide_only"))
         if result["decision"] == "Approval" and not decide_only:
@@ -2618,11 +2618,11 @@ async def approve_request(approval_id: str, reviewer_token: str, reason: str | N
                           evidence_sha256: str | None = None) -> dict:
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
-        raise ValueError("합성 관리자만 승인할 수 있습니다.")
+        raise ValueError("관리자만 승인할 수 있습니다.")
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
     if not row or row["status"] != "PENDING":
         raise ValueError("대기 중인 승인 요청이 아닙니다.")
-    # §8.6 forbids a self-approved exception and the exception ledger enforces it
+    # A self-approved exception is forbidden, and the exception ledger enforces it
     # (requested_by != approved_by). The same rule has to hold for the per-call approval
     # an administrator raises for their own high-risk call, or the control is one click
     # by one person - which is the thing an approval step exists to prevent.
@@ -2786,7 +2786,7 @@ async def reject_request(approval_id: str, reviewer_token: str, note: str,
     """
     reviewer = await db.fetch_one("SELECT * FROM principals WHERE token=%s", (reviewer_token,))
     if not reviewer or reviewer["role"] != "admin" or reviewer["status"] != "active":
-        raise ValueError("합성 관리자만 승인 요청을 처리할 수 있습니다.")
+        raise ValueError("관리자만 승인 요청을 처리할 수 있습니다.")
     if not note.strip():
         raise ValueError("거부 사유는 비워둘 수 없습니다.")
     row = await db.fetch_one("SELECT * FROM approvals WHERE id=%s", (approval_id,))
@@ -2863,9 +2863,9 @@ async def import_supply_chain_reports() -> list[dict]:
         imported.append({"scanner": "Semgrep", **summary})
 
     # A report named for a server is attributed to that server's pinned source_ref,
-    # which is the value _contract() counts criticals against. Without this the
-    # dashboard's scan numbers and the MCP-SUPPLY-001 gate never referred to the same
-    # thing: one scanned the workspace, the other looked up a server.
+    # which is the value _contract() counts criticals against. Otherwise the
+    # dashboard's scan numbers and the MCP-SUPPLY-001 gate refer to different things:
+    # one scans the workspace, the other looks up a server.
     servers = {row["id"]: row["source_ref"] for row in await db.fetch_all("SELECT id, source_ref FROM mcp_servers")}
     for report in sorted(REPORT_DIR.glob("trivy-*.json")):
         server_id = report.stem[len("trivy-"):]

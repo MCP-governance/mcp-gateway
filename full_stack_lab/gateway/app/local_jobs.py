@@ -1,4 +1,4 @@
-"""Approved local MCP servers run on the caller's own device (DEV-73, D-175).
+"""Approved local MCP servers run on the caller's own device.
 
 The gateway keeps one decision path: execute_call judges the call exactly as for a remote
 server, and only the transport differs. Each MCP message becomes a row here that the
@@ -31,12 +31,12 @@ UTC = timezone.utc
 POLL_SECONDS = 0.05
 MAX_RESULT_BODY = 262144
 MAX_PARAMS_BYTES = int(os.getenv("LOCAL_PARAMS_MAX_BYTES", "65536"))
-# Stored-state ceilings. Defaults are the reviewed values; an environment value lets a lab check the real boundary.
+# Stored-state ceilings. Defaults are the reviewed values; a deployment value can set the configured boundary.
 ACTIVE_TOTAL_LIMIT = int(os.getenv("LOCAL_JOBS_PENDING_MAX", "64"))
 ROW_LIMIT = int(os.getenv("LOCAL_JOBS_ROWS_MAX", "10000"))
 RESULT_STORE_BYTES = int(os.getenv("LOCAL_RESULTS_STORE_MAX_BYTES", str(64 * 1024 * 1024)))
 CLAIM_SECONDS = 5
-# 호출마다 프로세스를 새로 띄운다: JVM 서버(Ghidra)는 기동만 11~14초라 20초로는 도구가 돌 시간이 없었다(D-333).
+# 각 호출마다 프로세스를 새로 띄운다: JVM 서버는 기동에 시간이 걸려 도구 실행 시간을 확보해야 한다.
 # 철회·정지는 실행기가 0.2초마다 제어를 확인해 끊으므로 이 값은 정지 지연이 아니라 한 호출의 상한이다.
 RUN_SECONDS = 60
 PREPARE_SECONDS = 180
@@ -90,7 +90,7 @@ async def failure_message(error, diagnostics=None):
         except Exception:
             text='[오류 본문 숨김]'
         return '[비밀 숨김]' if text==secret_scan.ERROR_REDACTED else text
-    # The MCP's own error first: it names the cause, while stderr is often only a start banner (10-27 memory EROFS).
+    # The MCP's own error first: it names the cause, while stderr may contain only a start banner.
     for key,label in (('mcp_error','MCP 오류'),('stderr_tail','표준 오류')):
         value=diagnostics.get(key)
         if isinstance(value,str) and value:
@@ -99,7 +99,7 @@ async def failure_message(error, diagnostics=None):
 
 
 def manifest_errors(manifest: dict, server_id: str) -> list[str]:
-    """The same rules the device runner applies again before it starts anything (C10 §8)."""
+    """The same rules the device runner applies again before it starts anything."""
     errors = []
     if set(manifest) - {"approval", "source"} != {"server_id", "image", "command", "mounts", "env", "reason"}:
         return ["매니페스트 항목은 server_id·image·command·mounts·env·reason만 허용합니다."]
@@ -260,10 +260,9 @@ RENEWAL_FIELDS = ('valid_until', 'approval_days')
 
 
 def control_generation(server_id: str) -> str:
-    """What a job's own server may do: its registration (renewal aside), the reviewed catalog and PaC capabilities.
+    """What a job's own server may do: its registration (renewal aside), the reviewed catalog and policy capabilities.
 
-    The whole servers.json used to be hashed, so a registration or an automatic renewal of any other server stopped
-    every running local job on the PC."""
+    Hash only the relevant control so another server's registration or renewal does not stop this job."""
     from . import pac, registry
     reviewed = registry.CATALOG_PATH.read_bytes() if registry.CATALOG_PATH.exists() else b''
     spec = {key: value for key, value in (registry.server(server_id) or {}).items() if key not in RENEWAL_FIELDS}
@@ -273,7 +272,7 @@ def control_generation(server_id: str) -> str:
 
 async def _device(device_id: str | None) -> dict:
     device = await db.fetch_one("SELECT * FROM endpoint_agents WHERE endpoint_id=%s", (device_id,)) if device_id else None
-    # Windows는 platform 열이 아니라 local_sid로 안다: 관측기 등록 보고가 platform을 「Windows 11」로 덮어쓴다(managed_platform, pj3 10-28).
+    # Windows는 platform 열이 아니라 local_sid로 안다: 관측기 등록 보고가 platform을 「Windows 11」로 덮어쓸 수 있다(managed_platform).
     if not device or device["status"] != "active" or device["managed_state"] != "active" or not (device.get("local_uid") or (device.get("detail") or {}).get("local_sid")):
         raise NotStarted("로컬 실행을 맡을 활성 관리형 엔드포인트가 없습니다.")
     if not device.get('heartbeat_at') or (datetime.now(UTC)-device['heartbeat_at']).total_seconds() >= 180:
@@ -282,7 +281,7 @@ async def _device(device_id: str | None) -> dict:
 
 
 async def _device_control(device: dict) -> str:
-    """A job is bound to the control in force, not to the server list: an approval elsewhere keeps it (D-238)."""
+    """A job is bound to the control in force, not to the server list: an approval elsewhere keeps it."""
     from . import endpoint_plane
     return (await endpoint_plane.managed_policy(device))['control_hash']
 
@@ -427,7 +426,7 @@ async def authorized(connection, device, server, digest, method, *, generation=N
                AND r.signature_generation>=a.signature_generation) AS withdrawn
         FROM local_approvals a JOIN endpoint_agents e ON e.endpoint_id=%s JOIN principals p ON p.token=e.owner_token
         JOIN mcp_intake_requests i ON i.id=a.intake_id AND i.local_observer_device=a.observer_device
-             -- 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다(D-192). 운영 실행은 아래 observed·OPERATING 조건이 막는다.
+             -- 원클릭 승인은 승인 전에 신청자 PC에서 계약을 관찰한다. 운영 실행은 아래 observed·OPERATING 조건이 막는다.
              AND (i.status='APPROVED' OR (NOT a.observed AND i.status IN ('HOLD','VALIDATED')))
         LEFT JOIN mcp_servers s ON s.id=a.server_id WHERE a.server_id=%s
         AND EXISTS(SELECT 1 FROM policy_versions WHERE status='ACTIVE')""", (device['endpoint_id'],server))).fetchone()
@@ -440,7 +439,7 @@ async def authorized(connection, device, server, digest, method, *, generation=N
         return None
     if row['observed']:
         return row if row['lifecycle']=='OPERATING' and row['server_status'] in ('READY','DRIFT') else None
-    # 솔루션 실행기로 등록됐다 멈춘 서버의 엔드포인트 실행 재승인(D-299): 승인 전 관찰만 같은 관찰 PC에서 허용한다.
+    # 솔루션 실행기로 등록됐다 멈춘 서버의 엔드포인트 실행 재승인: 승인 전 관찰만 같은 관찰 PC에서 허용한다.
     reapproval = row['server_status'] == 'DISABLED' and (row['deployment'] or '') != 'local'
     if row['lifecycle'] is not None and (row['lifecycle']!='OPERATING'
                                          or (row['server_status'] not in ('PENDING','READY','DRIFT') and not reapproval)):
@@ -474,8 +473,8 @@ class LocalClient:
 
     # A call's own container initializes and checks the approved contract (description, input and output
     # schema hashes, protocol) on the device before it calls (local-runner execute_job). Answering a call's
-    # initialize and tools/list from that approval here saves two container starts per call, which used to
-    # spend the call's time budget before the call itself ran. Observation still asks the server.
+    # initialize and tools/list from that approval here avoids two container starts per call, preserving time for execution.
+    # Observation still asks the server.
     async def start(self) -> None:
         if not self.discovery:
             from . import registry
@@ -543,7 +542,7 @@ async def claim(device: dict, wait: float) -> dict | None:
                        (a.state='claimed' OR (a.started_at IS NOT NULL AND a.stopped_at IS NULL)))
                    ORDER BY created_at LIMIT 1""", (device['endpoint_id'],device['endpoint_id']))).fetchone()
             if row:
-                # Lock order (D-175): execution locks first, the job row last. The candidate was chosen without a
+                # Lock order: execution locks first, the job row last. The candidate was chosen without a
                 # lock, so it is read again under the locks; if it was cancelled or changed meanwhile, nothing is claimed.
                 # The per-device claim lock above already serializes claimers, so SKIP LOCKED is not needed.
                 await admission_locks(connection,device,row['server_id'])
@@ -606,7 +605,7 @@ async def current_job(connection,row,device):
 
 
 async def _same_control(row,device,*,connection=None):
-    """The job's control is still in force and the device holds it; server-list changes elsewhere keep the job (D-238)."""
+    """The job's control is still in force and the device holds it; server-list changes elsewhere keep the job."""
     from . import endpoint_plane
     policy=await endpoint_plane.managed_policy(device,connection=connection)
     return endpoint_plane.control_matches(policy,row['device_policy']) and await endpoint_plane.policy_accepted(device,policy,connection=connection)
@@ -632,8 +631,7 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
         allowed = await authorized(connection,device,row['server_id'],row['manifest_sha256'],row['method'],
                                    generation=row['policy_generation'])
         # The job was made under the control still in force (current_job). Servers added or removed elsewhere keep
-        # the job; any control change stops it (D-238: one approval or one upstream in ERROR made every local job
-        # on the PC fail until the kit refreshed).
+        # the job; a change to its control stops it.
         if (not allowed or row['stop_requested'] or row['state']!='claimed' or row['deadline']<=datetime.now(UTC)
                 or row['lease_until']<=datetime.now(UTC) or not await current_job(connection,row,device)):
             raise NotStarted("정책·서명 세대·철회 상태가 바뀌었거나 실행 기한이 지났습니다.")
@@ -672,9 +670,10 @@ async def validate_job(device: dict, job_id: str, *, start=False) -> dict:
 
 
 def clean_description_hash(tool: dict) -> str | None:
-    """The approved description with docstring indentation removed (D-336). Python 3.13 strips it at compile time and
-    3.12 keeps it, so one source shows two descriptions: approved on a 3.12 PC, refused on a 3.13 one (Ghidra, pj3).
-    Only the stored text that still matches the approved hash is normalized; any other change still refuses."""
+    """Normalize the approved description indentation before comparing its hash.
+
+    Only the stored text that still matches the approved hash is normalized; any other change still refuses.
+    """
     import inspect
     text = tool.get('description')
     if not isinstance(text, str) or hashlib.sha256(canonical(text)).hexdigest() != tool.get('approved_description_hash'):

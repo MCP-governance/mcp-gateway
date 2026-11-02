@@ -96,7 +96,7 @@ function Update-EndpointTray {
         $script:lastBlock = $script:blocks[-1].id
         $icon.ShowBalloonTip(5000, (T 'blocked'), $script:blocks[-1].at, [Windows.Forms.ToolTipIcon]::Warning)
     }
-    # The first time the PC is active, check it once by itself: model answer, tools, one server (D-239).
+    # When the PC first becomes active, check it once by itself: model answer, tools, one server.
     if ($simple -and -not $script:probe -and -not $script:probeJob -and $script:label -notin @('disconnected', 'service_stopped') -and
         $script:snapshot.state -eq 'active') { Start-EndpointProbe }
 }

@@ -14,7 +14,7 @@ state   gateway_enforced · endpoint_enforced · vendor_enforced · observed_onl
 
 `endpoint_enforced` needs a Linux managed device whose last heartbeat (under 180 s) says
 the AppArmor profiles, the UID nftables table and the protected harness files match.
-A simple-mode device (D-239: the employee's own account, nothing confined) is `observed_only`
+A simple-mode device (the employee's own account, nothing confined) is `observed_only`
 even when healthy: the Gateway still decides every call, the endpoint enforces nothing.
 Any other account on that device, an old agent that did not report the others, Windows
 or WSL is a bypass, not an enforcement. `vendor_enforced` needs an administrator's
@@ -129,7 +129,7 @@ def device_state(device: dict, now: datetime) -> dict:
     return {"endpoint_id": device["endpoint_id"], "hostname": device.get("hostname"), "owner": device.get("owner_token"),
             "platform": platform, "account": device.get("local_username"), "uid": device.get("local_uid"),
             "account_state": state, "mode": managed_mode(device) if device.get("device_epoch") else None,
-            # Simple mode claims no endpoint control to lose; its other paths are listed, not re-labelled (D-239).
+            # Simple mode claims no endpoint control to lose; its other paths are listed, not re-labelled.
             "state": "bypass_possible" if bypass and state != "unknown_not_enrolled" and not simple else state,
             "evidence": evidence, "bypass": bypass, "verified_at": device.get("heartbeat_at") or device.get("last_seen_at"),
             # What the state rests on: the kernel heartbeat for a confined account, else the agent's own report.
@@ -237,7 +237,7 @@ async def snapshot() -> dict:
     for row in harness_rows:
         kinds_by_key.setdefault(row["item_key"], set()).add(row["kind"])
     for row in harness_rows:
-        # 하네스 기본 기능(이미지 생성·웹 검색 등)은 MCP 연동이 아니다. 켬/끔은 하네스 설정에서 다룬다(D-303).
+        # 하네스 기본 기능(이미지 생성·웹 검색 등)은 MCP 연동이 아니다. 켬/끔은 하네스 설정에서 다룬다.
         if row["kind"] == "feature":
             continue
         decision = decided.get(row["item_key"]) or {}
@@ -380,7 +380,7 @@ if __name__ == "__main__":
     assert endpoint_item_state(None, True)[0] == "observed_only" and endpoint_item_state(None, False)[0] == "bypass_possible"
     assert endpoint_item_state(clean, False)[0] == "endpoint_enforced"
     assert endpoint_item_state(shared, False)[0] == "bypass_possible"
-    # Simple mode (D-239): healthy is still observed only, labelled as the Gateway's decision, never endpoint control.
+    # Simple mode: healthy is still observed only, labelled as the Gateway's decision, never endpoint control.
     simple = {**win, "enforcement_checks": {"protected_configs": True},
               "detail": {"local_sid": "S-1-5-21-1-2-3-1001", "mode": "simple", **host([{"name": "other", "uid": 1002}])}}
     healthy = device_state(simple, now)

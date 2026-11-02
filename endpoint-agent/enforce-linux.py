@@ -83,7 +83,7 @@ def nft_rules(uid: int, addresses: list[str], port: int, proxy_port: int | None 
         ip = ipaddress.ip_address(address)
         family = "ip6" if ip.version == 6 else "ip"
         rules.append(f"meta skuid {uid} {family} daddr {ip} tcp dport {ports} accept")
-    # "destroy table" needs nftables 1.0.8+; Ubuntu 22.04 ships 1.0.2 (10-23 kuku VM). Add-then-delete is
+    # "destroy table" needs nftables 1.0.8+; Ubuntu 22.04 ships 1.0.2. Add-then-delete is
     # the portable form of "drop it if it exists", still one atomic batch.
     return (f"table inet mcpgw_uid_{uid}\ndelete table inet mcpgw_uid_{uid}\n"
             f"table inet mcpgw_uid_{uid} {{\n chain output {{\n"
@@ -135,7 +135,7 @@ def profile(name: str, shell: Path, home: str, binaries: dict[str, Path], helper
         # Both harnesses start the header helper with `sh -c` (dash); the model's shell tool
         # runs bash. bash therefore moves to a -tool profile that has everything the harness
         # has except the helper and its socket, so a command the model writes cannot fetch
-        # the device token (DEV-31). Anything bash starts, sh included, stays in -tool.
+        # the device token. Anything bash starts, sh included, stays in -tool.
         text += f"""profile {name}-{key}-entry {{
   #include <abstractions/base>
   /usr/** mr,

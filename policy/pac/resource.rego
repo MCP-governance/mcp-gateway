@@ -1,7 +1,7 @@
 # METADATA
 # title: Resource·Prompt — 서버 제공 템플릿과 자료
 # description: |
-#   현재 게이트웨이는 Resource·Prompt를 중개하지 않아 모두 거부한다(시트 분류 「구현 불가·제외」의 사유).
+#   현재 게이트웨이는 Resource·Prompt를 중개하지 않아 모두 거부한다(정책 분류 「구현 불가·제외」의 사유).
 #   이 패키지는 중개를 도입할 때 붙일 판정이다. 그때까지는 어떤 경로도 이 패키지의 ALLOW로 열리지 않는다.
 #   input.request.stage:
 #     prompt_use       서버 제공 Prompt 템플릿을 쓰기 전

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Administrator-installed Windows enrollment, policy service and header broker.
 
-The Windows counterpart of managed-linux.py. Simple mode (the default, D-239) enrolls the signed-in
+The Windows counterpart of managed-linux.py. Simple mode (the default) enrolls the signed-in
 employee's own account as it is, administrator or not, with no logout. The isolated mode
 (「고급: 격리 계정」) enrolls one ordinary companion account and keeps a per-account Windows Firewall
 rule that blocks every outbound destination except the Gateway host's Gateway and model-proxy ports.
@@ -264,7 +264,7 @@ def checked_codex_text(path):
 
 def keep_backup(path):
     """One copy per distinct content: the service retries every few seconds and an unchanged broken file must not
-    pile up copies (pj3 11-01: 1,087 in three hours)."""
+    pile up copies."""
     data = path.read_bytes()
     backup = path.with_name(path.name + ".mcpgw-" + hashlib.sha256(data).hexdigest()[:12] + ".backup")
     if not backup.exists():
@@ -292,7 +292,7 @@ def apply_policy(config, policy):
 def restore_codex_block(config, policy):
     """Simple mode: the block lives in the employee's own config.toml, which their Codex app rewrites (plugins and the
     like). That is the employee's file, not a control: put our block back before reporting instead of letting one
-    rewrite quarantine the PC (pj3 10-25). True when it was rewritten."""
+    rewrite quarantine the PC. True when it was rewritten."""
     path = codex_config(config)
     try:
         current = checked_codex_text(path)
@@ -300,7 +300,7 @@ def restore_codex_block(config, policy):
         return False  # unreadable: the heartbeat reports the mismatch
     if codex_block(current) == policy["files"][CODEX_BLOCK]:
         return False
-    # ponytail: a writer that drops the markers but keeps our tables leaves duplicates for Codex; seen only if Codex does.
+    # A writer that drops the markers but keeps our tables leaves duplicates for Codex; that happens only if Codex itself drops them.
     write_file(path, with_codex_block(current, policy["files"][CODEX_BLOCK]))
     return True
 
@@ -483,7 +483,7 @@ def checks(config, policy, *, findings=None):
         block = None
     hashes[CODEX_BLOCK] = hashlib.sha256((block or "").encode()).hexdigest()
     if config.get("mode") == "simple":
-        # Nothing is confined in simple mode: the managed files, rendered and protected, are all there is (D-239).
+        # Nothing is confined in simple mode: the managed files, rendered and protected, are all there is.
         return hashes, {"protected_configs": protected(targets + list({t.parent for t in targets})
                                                        + [PROGRAMS, Path(sys.executable).parent])}
     rules = rule_state(config)
@@ -548,9 +548,9 @@ def serve_pipe(config, cache, lock, source=False):
         if handle == invalid:
             raise OSError(ctypes.get_last_error(), "파이프를 만들 수 없습니다")
         return handle
-    # A client still holding the previous service's pipe keeps the name alive for a moment after a restart; the first
-    # instance then fails, and a thread that gave up left the PC with no token and no source pipe until the next restart
-    # (pj3 11-01, "서비스 중지"). The flag stays: it is what keeps another process from squatting the name.
+    # A client may still hold the previous service's pipe briefly after a restart; the first instance then fails, and
+    # a thread that gives up leaves the PC with no token or source pipe until the next restart. Keep the flag so
+    # another process cannot squat the name.
     while True:
         try:
             handle = instance(first=True)
@@ -624,7 +624,7 @@ def header(args):
     import getpass
     response = read_broker(getpass.getuser())
     if not isinstance(response, dict) or set(response) != {"Authorization"}:
-        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다(D-148 PJ1).
+        # 헤더가 없으면 하네스가 OAuth 인증 대기로 표시·캐시해 복구 뒤에도 연결하지 않는다.
         # 게이트웨이가 거부하는 고정 값이면 연결 실패로만 남아 다음 연결에서 다시 시도된다.
         print("관리형 연결 불가: 엔드포인트 활성화·정책 연결이 필요합니다", file=sys.stderr)
         response = {"Authorization": "Bearer endpoint-not-active"}
@@ -733,7 +733,7 @@ def file_version(path):
 
 def harness_versions(profile):
     """claude·codex versions read from their install folders, never by running them: this is the SYSTEM service,
-    and the employee's own executable must not run with its rights (D-239)."""
+    and the employee's own executable must not run with its rights."""
     found = {}
     version = re.compile(r"^\d+\.\d+[0-9A-Za-z.+_-]*$")
     native = sorted((p.name for p in (Path(profile) / ".local/share/claude/versions").glob("*") if version.match(p.name)),
@@ -741,7 +741,7 @@ def harness_versions(profile):
     if native:
         found["claude"] = native[0][:40]
     # WinGet and the Codex desktop installer keep no version in the path: the executable's own version resource
-    # (read as data, not run). pj3 10-25: WinGet claude.exe 2.1.302.0; codex.exe carries none.
+    # (read as data, not run).
     for name, pattern in NATIVE_HARNESSES:
         for path in sorted(Path(profile).glob(pattern)):
             value = file_version(path)
@@ -749,7 +749,7 @@ def harness_versions(profile):
                 found[name] = value
     for name, pattern in NATIVE_HARNESSES:
         # Installed without a version resource (the Codex desktop installer's codex.exe): still a harness on this PC.
-        # An empty version reads as 「설치됨」; leaving it out hid Codex from the tray and the console (pj3 10-28).
+        # An empty version reads as 「설치됨」; include it so Codex appears in the tray and the console.
         if name not in found and any(Path(profile).glob(pattern)):
             found[name] = ""
     for name, package in (("claude", "@anthropic-ai/claude-code"), ("codex", "@openai/codex")):
@@ -776,7 +776,7 @@ def broadcast_environment():
         pass
 
 
-# Ends on ConvertTo-Json: a silenced "no such user" leaves $? false, and powershell.exe -Command then exits 1 (pj3 10-25).
+# Ends on ConvertTo-Json so a silenced "no such user" does not leave $? false and make powershell.exe -Command exit 1.
 REMOVE_COMPANION = """
 $sid = $null
 $u = @(Get-LocalUser | Where-Object { $_.Name -eq $in.name })[0]
@@ -796,7 +796,7 @@ def previous_installs(employee):
 
 
 def retire_companion(employee):
-    """Switching to simple mode leaves no companion account, tray task or tray folder behind (D-239).
+    """Switching to simple mode leaves no companion account, tray task or tray folder behind.
     Its profile folder stays: what the employee kept there is theirs."""
     sid = powershell(REMOVE_COMPANION, {"name": ("mcpgw-" + employee)[:20]})
     if sid:
@@ -822,7 +822,7 @@ def enroll(args):
         args.user, person, companion = managed_user(employee, isolated=True)
         person = prepare_profile(args.user, person)
     else:
-        # Simple mode (D-239): the signed-in employee's own account, administrator or not, sessions left running.
+        # Simple mode: the signed-in employee's own account, administrator or not, sessions left running.
         person, companion = account(employee), False
     if not person["profile"] or not (Path(person["profile"]) / "NTUSER.DAT").exists():
         if not companion:
@@ -931,7 +931,7 @@ def install(args):
         write_file(Path(config["firewall_baseline"]), json.dumps({"rules": rule_state(config)["rules"]}))
     else:
         # The employee's own harnesses trust the Gateway's CA through their user environment. No firewall rule,
-        # no PATH entry, no copied harness; Claude takes the model proxy from the managed settings (D-239).
+        # no PATH entry, no copied harness; Claude takes the model proxy from the managed settings.
         launcher_files = {}
         set_user_environment(config, {**ca_environment(config), "PATH_APPEND": str(PROGRAMS / "bin")})
         broadcast_environment()
@@ -1039,7 +1039,7 @@ def serve(args):
             inventory_status = "success"
             try:  # configuration inventory is independent from OS event observation
                 # -X utf8: under pythonw the child prints in the ANSI code page (cp949) and -I ignores PYTHONIOENCODING.
-                # pj3 10-28: the Korean progress line failed to decode, stdout came back None and the thread died at once.
+                # UTF-8 decoding keeps the Korean progress line readable and prevents the child output from ending this thread.
                 done = subprocess.run([sys.executable, "-B", "-I", "-S", "-X", "utf8", str(PROGRAMS / "agent.py"), "--config",
                                        str(observer_config), "--once"], check=True, timeout=40, capture_output=True, text=True,
                                       encoding="utf-8", errors="replace")
@@ -1115,7 +1115,7 @@ def serve(args):
                 with lock:
                     cache.update(token=token["access_token"], until=time.monotonic() + TOKEN_CACHE_SECONDS)
                 # One fast round after the activation: the active-state guidance comes with the next policy fetch;
-                # until then Claude tells the employee the PC still waits (pj3 10-25: up to a minute).
+                # Until then Claude tells the employee the PC still waits.
                 pause = 60 if last_state == "active" else 10
             else:
                 with lock:
@@ -1227,7 +1227,7 @@ def uninstall(args):
 
 def probe(args):
     """The tray's 연결 확인, as the signed-in employee (never elevated): ① a model answer from their own harness,
-    ② the tool count and ③ one approved server's initialize, with the header their harness gets (D-239)."""
+    ② the tool count and ③ one approved server's initialize, with the header their harness gets."""
     import getpass
     import importlib.util
     spec = importlib.util.spec_from_file_location("probe_observer", Path(__file__).with_name("agent.py"))

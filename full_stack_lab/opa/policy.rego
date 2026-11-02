@@ -10,12 +10,12 @@ package mcp.authz
 # 재승인을 거쳐 바뀌고, 허용 목적지는 그보다 훨씬 자주 바뀐다.
 #
 # 구조: else 사슬이 아니라 "성립한 후보 전부"를 모으고 관리대장의 priority로 최종
-# 판단을 고른다(§11.14). else 사슬은 첫 일치 이후를 볼 수 없어 정책 충돌 자체를
+# 판단을 고른다. else 사슬은 첫 일치 이후를 볼 수 없어 정책 충돌 자체를
 # 관측할 수 없다. 여기서는 진 후보가 conflicts에 남는다.
 
 import rego.v1
 
-# DEV-69: facts are made from the reviewed registry, never tool arguments or IP geography.
+# Facts are made from the reviewed registry, never tool arguments or IP geography.
 residency_fact := object.get(input, ["pac", "facts", "residency"], null)
 
 residency_required if {
@@ -125,7 +125,7 @@ candidate["P-RESIDENCY-002"] := {
     not residency_approved
 }
 
-# ── 정책 입력 (§11.6) ────────────────────────────────────────────────────────
+# ── 정책 입력 ────────────────────────────────────────────────────────
 
 # 적용환경. 관리대장의 environments와 대조해 정책의 적용 여부를 정한다.
 environment := object.get(input, ["environment"], "prod")
@@ -142,10 +142,10 @@ recent_important := object.get(input, ["context", "recent_important"], 0)
 
 important_limit := object.get(input, ["context", "important_limit"], 1000000000)
 
-# PAC-15. 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
+# 호출량은 "끝난 호출"만 세면 막을 수 없다 - 같이 도착한 호출은 서로를
 # 세지 못한다. Gateway가 판정 전에 이번 호출의 자리를 원자적으로 예약하고, 그
-# 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 값이 없는 배포와
-# 예전에 기록된 재생 사례는 이 통제가 없던 때이므로 판단하지 않는다.
+# 결과(진행 중 호출 수·같은 호출의 중복 여부)를 여기로 넘긴다. 요청 예약 상태가 없으면
+# 이 통제에서 판단하지 않는다.
 active_calls := object.get(input, ["context", "active_calls"], 0)
 
 concurrency_limit := object.get(input, ["context", "concurrency_limit"], 1000000000)
@@ -180,7 +180,7 @@ pii_types := object.get(input, ["request", "pii_types"], [])
 sequence_flags := object.get(input, ["request", "sequence_flags"], [])
 
 # POL-33. 같은 주체가 창 안에서 중요정보를 읽은 다른 서버와, 이 도구가 넘겨받아도 된다고 심사된 서버.
-# 앞의 목록은 Gateway의 request.flow_match_mode에 따라 다르다(D-142). coarse(기본)는 창 안에서 읽은 모든 서버,
+# 앞의 목록은 Gateway의 request.flow_match_mode에 따라 다르다. coarse(기본)는 창 안에서 읽은 모든 서버,
 # content는 이 호출의 내용을 읽기 결과와 대조해 같거나 대조하지 못한 서버만 담는다. 대조 결과는
 # request.flow_observed에 기록만 되고 이 정책은 flow_observed와 flow_match_mode를 읽지 않는다.
 flow_sources := object.get(input, ["request", "flow_sources"], [])
@@ -222,7 +222,7 @@ transport_secure := object.get(input, ["contract", "transport_secure"], true)
 
 endpoint_allowed := object.get(input, ["contract", "endpoint_allowed"], true)
 
-# v2: where the call is going (URLs, mail recipients) and what outbound content holds.
+# Where the call is going (URLs, mail recipients) and what outbound content holds.
 # The Gateway's classifier fills these from the tool arguments; the policy judges.
 destinations := object.get(input, ["destinations"], [])
 
@@ -238,7 +238,7 @@ x_restrictions := {key: data.restrictions[key] |
 	data.restrictions[key]
 }
 
-# PAC-15 replaces the role × classification × action matrix.
+# The policy evaluates each approved action against the applicable constraints.
 pac_findings := findings if {
     document := object.get(input, "pac", {})
     findings := data.mcp.decision.all_findings with input as document
@@ -278,7 +278,7 @@ classification_missing if {
 	classification_source == ""
 }
 
-# ── 필수 입력 누락 (§11.16) ─────────────────────────────────────────────────
+# ── 필수 입력 누락 ─────────────────────────────────────────────────
 
 missing_inputs contains "principal.role" if not input.principal.role
 
@@ -295,7 +295,7 @@ missing_inputs contains "now" if {
 	not input.now
 }
 
-# ── 정책 후보 (§11.7 판단 결과) ─────────────────────────────────────────────
+# ── 정책 후보 (판단 결과) ─────────────────────────────────────────────
 #
 # 각 후보는 자기 조건만 본다. "앞 규칙이 안 걸렸으니까"에 기대지 않는다.
 # 더 제한적인 정책이 이기는 것은 관리대장의 priority가 정한다.
@@ -533,11 +533,11 @@ candidate["MCP-SHADOW-001"] := {
 	contract_ok
 }
 
-# D-39. 논문의 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
+# 분석 단위인 이용 관계(조직·목적·제공자·허용 자원)를 종료 때만이 아니라
 # 평상시 호출에도 적용한다. 서버에 운영 중인 이용 관계가 있는데 호출한 자원이 어느 관계의
 # 허용 자원에도 없으면 경보로 남긴다. 차단이 아닌 이유: 카탈로그의 allowed_resources는
-# 회수 범위를 적으려고 만든 목록이라 아직 소유자가 인가 목록으로 검토한 적이 없다. 차단으로
-# 올리는 것은 관리대장의 결정이다. 값이 없는 입력(구버전 Gateway·재생 사례)은 판단하지 않는다.
+# 회수 범위를 적는 목록이라 인가 목록으로 검토되기 전에는 차단으로 올리지 않는다.
+# 이용 관계 정보가 입력에 없으면 판단하지 않는다.
 relationship_defined := object.get(input, ["relationship", "defined"], false)
 
 relationship_in_scope := object.get(input, ["relationship", "in_scope"], true)
@@ -686,11 +686,11 @@ candidate["P-AUTHZ-ALLOW-001"] := {
 	contract_ok
 }
 
-# ── 정책 상태·적용환경 필터 (§11.9, §11.12) ─────────────────────────────────
+# ── 정책 상태·적용환경 필터 ─────────────────────────────────
 #
 # 관리대장이 "운영" 또는 "제한"이라고 말하고, 이 요청의 환경이 정책의 적용환경에
 # 들어 있을 때만 집행한다. "중지"된 정책이 계속 집행되면 중지 결정이 기록에만
-# 존재하고 실제와 다르다(§11.12 승인된 정책과 실제 배포 정책의 일치).
+# 존재하고 실제와 다르다(승인된 정책과 실제 배포 정책의 일치).
 
 enforcing_status := {"운영", "제한"}
 
@@ -705,14 +705,14 @@ active_candidates[pid] := verdict if {
 	in_force(pid)
 }
 
-# 관리대장에 아예 없는 정책. §11.8은 정책 코드만으로 목적과 근거를 대신하지 말
-# 것을 요구하므로, 관리정보 없는 정책이 판단에 관여하면 통제 실패로 본다.
+# 관리대장에 아예 없는 정책. 정책 코드만으로 목적과 근거를 대신해서는 안 되므로,
+# 관리정보 없는 정책이 판단에 관여하면 통제 실패로 본다.
 unregistered_candidates contains pid if {
 	some pid, _ in candidate
 	not data.policy_ledger[pid]
 }
 
-# ── 우선순위 기반 최종 판단 (§11.14) ────────────────────────────────────────
+# ── 우선순위 기반 최종 판단 ────────────────────────────────────────
 
 ranked := sort([[data.policy_ledger[pid].priority, pid] |
 	some pid, _ in active_candidates
@@ -731,7 +731,7 @@ conflicts := [{
 	pid != selected_id
 ]
 
-# ── 실패 안전 (§11.16) ──────────────────────────────────────────────────────
+# ── 실패 안전 ──────────────────────────────────────────────────────
 
 default_verdict := {
 	"decision": "Block",
@@ -747,7 +747,7 @@ ledger_failure_verdict := {
 	"conditions": {"matched": [], "violated": ["policy-ledger-missing"]},
 }
 
-# ── 판단 결과 조립 (§11.7, §11.17) ──────────────────────────────────────────
+# ── 판단 결과 조립 ──────────────────────────────────────────
 
 enrich(verdict, pid) := object.union(verdict, {
 	"policy_id": pid,

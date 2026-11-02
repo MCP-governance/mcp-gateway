@@ -3,8 +3,8 @@ full_stack_lab/run-native.sh text eol=lf
 full_stack_lab/gateway/start-with-aig.sh text eol=lf
 full_stack_lab/tests/*.sh text eol=lf
 full_stack_lab/workstation/bin/* text eol=lf
-# Code and docs check out with LF on every machine: the appliance, WSL and the hashing in the wiki read
-# the same bytes as the repository. Windows installer files (.cmd, .ps1) keep their own endings.
+# Code and docs check out with LF on every machine, so every device reads the same bytes as the repository.
+# Windows installer files (.cmd, .ps1) keep their own endings.
 *.py text eol=lf
 *.js text eol=lf
 *.mjs text eol=lf

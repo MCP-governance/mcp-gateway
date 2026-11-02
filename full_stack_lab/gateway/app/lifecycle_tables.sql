@@ -5,8 +5,7 @@
 -- mcp_servers.status='DISABLED' 한 칸뿐이었다. 그 한 칸은 "호출을 막았다"만
 -- 말하고 "회수했다"는 말하지 못한다. 둘은 다른 사실이다.
 --
--- 여기의 표는 CISC-W'26 투고 논문(「원격 MCP 서비스 종료 시 권한 회수의 구조적
--- 한계 및 종료 판정 기준 제안」)의 C1~C4 기준과 T1~T3 등급을 그대로 데이터
+-- 여기의 표는 종료 판정의 C1~C4 기준과 T1~T3 등급을 그대로 데이터
 -- 모델로 옮긴 것이다. 판정을 사람의 서술이 아니라 조회 가능한 행으로 만드는 것이
 -- 목적이다. "종료했습니다"는 주장이고, "C3을 충족하지 못해 T2입니다"는 판정이다.
 SELECT pg_advisory_xact_lock(hashtext('mcp_governance_schema_migration'));
@@ -25,8 +24,8 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS lifecycle_changed_by text;
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS termination_case_id uuid;
 
 -- ── 2. 종료 케이스 ──────────────────────────────────────────────────────────
--- 논문은 분석 단위를 "조직·목적·제공자·허용 자원으로 식별되는 접근 허용의 집합"
--- 곧 이용 관계로 정의한다. 이 테스트베드에서는 Registry 서버 하나가 그 대리키가
+-- 분석 단위는 "조직·목적·제공자·허용 자원으로 식별되는 접근 허용의 집합"
+-- 곧 이용 관계다. 여기서는 Registry 서버 하나가 그 대리키가
 -- 되지만, 케이스를 열 때 목적·제공자·자원을 스냅샷으로 함께 굳힌다. 폐기가 끝난
 -- 뒤 Registry 행이 바뀌어도 "무엇을 종료한 케이스였는가"가 남아야 한다.
 CREATE TABLE IF NOT EXISTS termination_cases (
@@ -50,9 +49,9 @@ CREATE TABLE IF NOT EXISTS termination_cases (
   closed_by text,
   closed_at timestamptz,
   close_note text,
-  -- T3(판단 불가)를 종결하려면 위험 수용의 주체가 기록에 남아야 한다. 논문 5.1은
-  -- T3를 "위험 수용을 판단하기에 증거가 부족한 상태"로 분류하고 별도 승인을
-  -- 요구한다. 이 칸이 비어 있으면 T3 케이스는 닫히지 않는다.
+  -- T3(판단 불가)를 종결하려면 위험 수용의 주체가 기록에 남아야 한다. T3는
+  -- "위험 수용을 판단하기에 증거가 부족한 상태"로 분류되며 별도 승인을 요구한다.
+  -- 이 칸이 비어 있으면 T3 케이스는 닫히지 않는다.
   risk_accepted_by text,
   risk_accepted_at timestamptz,
   risk_acceptance_note text
@@ -65,10 +64,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS termination_cases_one_live_per_server
   ON termination_cases(server_id) WHERE status IN ('OPEN', 'REVOKING', 'ASSESSED', 'REOPENED');
 
 -- ── 3. 회수 대상 모집단 (C1) ────────────────────────────────────────────────
--- 논문 C1은 "회수 대상을 빠짐없이 열거하고 조치 대상과 대조하였는가"를 묻는다.
+-- C1은 "회수 대상을 빠짐없이 열거하고 조치 대상과 대조하였는가"를 묻는다.
 -- 열거되지 않은 것은 조치되지도 않으므로, 이 표가 비면 나머지 세 기준은 검토할
 -- 대상조차 없다. holder가 provider인 행은 조직이 스스로 회수할 수 없는 자격,
--- 곧 논문 3.2절의 하위 위임 자격이다.
+-- 곧 하위 위임 자격이다.
 CREATE TABLE IF NOT EXISTS revocation_targets (
   id uuid PRIMARY KEY,
   case_id uuid NOT NULL REFERENCES termination_cases(id) ON DELETE CASCADE,
@@ -94,7 +93,7 @@ CREATE INDEX IF NOT EXISTS revocation_targets_case_idx ON revocation_targets(cas
 -- ── 4. 증거 (C4) ────────────────────────────────────────────────────────────
 -- C4는 "증거가 대상·시점을 특정하며 열람 가능한가"를 묻는다. 그래서 subject와
 -- observed_at이 NOT NULL이다. "폐기 요청을 보냈다"는 기록은 대상의 상태를
--- 특정하지 않으므로 그것만으로는 C4를 충족하지 못한다(논문 3.1).
+-- 특정하지 않으므로 그것만으로는 C4를 충족하지 못한다.
 CREATE TABLE IF NOT EXISTS termination_evidence (
   id uuid PRIMARY KEY,
   case_id uuid NOT NULL REFERENCES termination_cases(id) ON DELETE CASCADE,
@@ -118,7 +117,7 @@ CREATE INDEX IF NOT EXISTS termination_evidence_target_idx ON termination_eviden
 -- 남아 있는 서버 항목은 Gateway 기록에 존재하지 않으므로, C1의 모집단을 게이트웨이
 -- 혼자서는 열거할 수 없다. 그 부분은 엔드포인트 평면이 보고한다.
 --
--- 이 표가 종료 판정과 이어지는 지점이 핵심이다. 폐기한 서버가 어느 노트북의
+-- 이 표가 종료 판정과 이어지는 지점이 핵심이다. 폐기한 서버가 어느 엔드포인트의
 -- 설정에 그대로 남아 있으면 그것은 회수되지 않은 접근 경로다.
 CREATE TABLE IF NOT EXISTS endpoint_agents (
   endpoint_id text PRIMARY KEY,
@@ -216,9 +215,8 @@ ON CONFLICT (id) DO UPDATE SET
   gate = EXCLUDED.gate, ordinal = EXCLUDED.ordinal;
 
 -- ── 7. 감사 작업의 확장 (AI-Infra-Guard 전체 활용) ──────────────────────────
--- v1.5까지 scan_jobs는 정적 코드 감사 한 종류였다. AI-Infra-Guard는 그 밖에
--- 실행 중인 서버를 대상으로 하는 동적 점검과 AI 인프라 지문·취약점 점검을 함께
--- 제공한다. 셋을 한 표에 두되 mode와 kind로 구분한다. 무엇을 돌렸는지 모르는
+-- scan_jobs는 정적 코드 감사, 실행 중인 서버의 동적 점검, AI 인프라 지문·취약점
+-- 점검을 함께 제공한다. 셋을 한 표에 두되 mode와 kind로 구분한다. 무엇을 돌렸는지 모르는
 -- 결과는 증적이 아니다.
 -- kind는 'mcp-scan' 하나로 둔다. 원본 A.I.G UI의 인프라 지문·CVE 점검은
 -- Gateway 컨테이너에서 수동 실행할 수 있으나 이 자동 작업 표에 연결되지 않는다.
@@ -241,7 +239,7 @@ ALTER TABLE scan_jobs DROP CONSTRAINT IF EXISTS scan_jobs_trigger_check;
 ALTER TABLE scan_jobs ADD CONSTRAINT scan_jobs_trigger_check
   CHECK (trigger IN ('manual', 'validated', 'rescan', 'drift', 'termination', 'anomaly'));
 
--- 같은 대상이라도 정적 감사와 동적 점검은 서로 다른 작업이다. v1.5의 유일 인덱스는
+-- 같은 대상이라도 정적 감사와 동적 점검은 서로 다른 작업이다. 유일 인덱스는
 -- 대상 하나에 살아 있는 작업 하나만 허용했으므로, 폐기 확인용 동적 점검이 정적
 -- 재감사 때문에 큐에 들어가지 못하는 일이 생긴다.
 DROP INDEX IF EXISTS scan_jobs_one_live_per_target;
@@ -256,13 +254,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS scan_jobs_one_live_per_target_mode
   ON scan_jobs(target_kind, target_id, kind, mode) WHERE status IN ('QUEUED', 'RUNNING');
 
 -- catalog 드리프트가 관측된 시각. T4(드리프트 재감사) 트리거가 "마지막 감사보다
--- 뒤에 드리프트가 있었는가"를 이 값으로 판단한다. v1.5는 이 칸이 없어서 트리거
--- 값만 예약된 채 구현되지 못했다.
+-- 뒤에 드리프트가 있었는가"를 이 값으로 판단한다.
 ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS drift_observed_at timestamptz;
 
 -- ── 8. 종료 준비를 도입 시점에 확보한다 (조달 체크리스트) ──────────────────
--- 논문 5.2는 이들 증거가 "개시 시점의 기록 체계와 계약 설계에 의존하므로 소급
--- 확보가 어렵다"고 적는다. 그러면 T3의 구조적 원인을 줄이는 자리는 종료 단계가
+-- 이들 증거는 개시 시점의 기록 체계와 계약 설계에 의존하므로 소급
+-- 확보가 어렵다. 그러면 T3의 구조적 원인을 줄이는 자리는 종료 단계가
 -- 아니라 도입 단계다. 끝낼 수 없는 것을 시작하지 않는 것이 유일한 완화다.
 --
 -- 여기 기록하는 것은 **계약 조항의 존재**이지 제공자가 실제로 고지했다는 사실이
@@ -279,9 +276,8 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS exit_terms jsonb NOT NULL DEFAU
 
 -- ── 8. 엔드포인트 평면의 자격 분리 ──────────────────────────────────────────
 --
--- v1.5까지 엔드포인트 에이전트는 관리자 계정으로 로그인했다. 그 구성에서는
--- 사람들의 PC에 깔린 프로세스 하나가 침해되면 관리자 API 전체가 노출된다.
--- CONTROL_PLANES.md 6절이 그 사실을 한계로 적어 두고 있었고, 여기서 고친다.
+-- 엔드포인트 에이전트에 관리자 계정을 쓰면 프로세스 하나가 침해될 때
+-- 관리자 API 전체가 노출된다. 장치 자격은 이 권한 집중을 막는다.
 --
 -- 장치 자격은 사람 계정과 완전히 다른 축이다. 로그인하지 않고, 토큰을 발급받지
 -- 않으며, 할 수 있는 일이 scopes에 적힌 것뿐이다. 침해되어도 최대치는 "거짓
@@ -305,7 +301,7 @@ ALTER TABLE mcp_servers ADD COLUMN IF NOT EXISTS advertised_name text;
 -- ── 9. 내부망 MCP 탐색 ──────────────────────────────────────────────────────
 --
 -- 설정 파일 대조는 "이 사람이 쓰겠다고 적어 둔 것"을 본다. 적지 않고 띄운 것은
--- 보지 못한다. 로컬에서 `npx some-mcp-server`를 직접 실행하거나, 팀 서버에
+-- 보지 못한다. 로컬에서 `npx some-mcp-server`를 직접 실행하거나, 내부 서버에
 -- MCP를 하나 올려놓고 주소만 공유하면 설정 파일에는 아무것도 남지 않는다.
 --
 -- 그래서 두 번째 관측 축이 필요하다. 게이트웨이 장비는 사원 PC의 루프백과
@@ -331,7 +327,7 @@ CREATE TABLE IF NOT EXISTS endpoint_scan_policy (
 );
 INSERT INTO endpoint_scan_policy(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
--- 새 PC 자동 활성화(D-239). 간편 모드 PC가 설치 점검을 통과하면 게이트웨이가 활성화한다. 끄면 관리자 확인.
+-- 새 PC 자동 활성화. 간편 모드 PC가 설치 점검을 통과하면 게이트웨이가 활성화한다. 끄면 관리자 확인.
 CREATE TABLE IF NOT EXISTS endpoint_settings (
   id integer PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   auto_activate boolean NOT NULL DEFAULT true,
@@ -339,7 +335,7 @@ CREATE TABLE IF NOT EXISTS endpoint_settings (
   updated_at timestamptz
 );
 INSERT INTO endpoint_settings(id) VALUES (1) ON CONFLICT (id) DO NOTHING;
--- 관리자가 하네스 기본 기능·커넥터 통제를 바꾼 시각(D-298). 바로 전 통제로 온 heartbeat는 격리가 아니라 뒤처짐이다.
+-- 관리자가 하네스 기본 기능·커넥터 통제를 바꾼 시각. 바로 전 통제로 온 heartbeat는 격리가 아니라 뒤처짐이다.
 ALTER TABLE endpoint_settings ADD COLUMN IF NOT EXISTS controls_changed_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS endpoint_listeners (
@@ -379,8 +375,8 @@ ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS device_epoch text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_username text;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS local_uid integer;
 ALTER TABLE endpoint_agents ADD COLUMN IF NOT EXISTS policy_hash text;
--- servers_version in the managed policy (D-238): moves whenever the operating server set may have changed.
--- A diagnostic, never a decision input; per-person scope (D-234) and department changes do not move it.
+-- servers_version in the managed policy: moves whenever the operating server set may have changed.
+-- A diagnostic, never a decision input; per-person scope and department changes do not move it.
 CREATE SEQUENCE IF NOT EXISTS mcp_servers_version;
 CREATE OR REPLACE FUNCTION bump_mcp_servers_version() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN PERFORM nextval('mcp_servers_version'); RETURN NULL; END $$;
@@ -413,7 +409,7 @@ CREATE TABLE IF NOT EXISTS endpoint_managed_events (
   observed_at timestamptz NOT NULL DEFAULT now()
 );
 
--- DEV-73 (D-175): one MCP message for an approved local server, run on the caller's own device.
+-- One MCP message for an approved local server, run on the caller's own device.
 -- The device's root runner takes only its own rows; the gateway waits for the result row.
 CREATE TABLE IF NOT EXISTS local_jobs (
   id uuid PRIMARY KEY,

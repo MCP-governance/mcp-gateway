@@ -1,7 +1,7 @@
 """Audit rows as sentences a person can read.
 
 The decisions table is evidence; this module is the narrator. Every view of
-activity - the Console timeline, `./console.sh watch`, reports - goes through
+activity - the Console timeline, reports - goes through
 `describe()` so the same row reads the same way everywhere.
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ def describe(row: dict) -> dict:
     if decision == "Approval":
         outcome = "관리자 승인 대기"
     evidence = row.get("result_preview") or {}
-    # Rows written before D-62 have no disposition; derive it from the execution flags.
+    # Rows written by earlier versions have no disposition; derive it from the execution flags.
     response = evidence.get("disposition") or (
         "withheld" if row.get("upstream_executed") and row.get("policy_id") == "MCP-OUTPUT-001"
         else "returned" if row.get("upstream_executed")

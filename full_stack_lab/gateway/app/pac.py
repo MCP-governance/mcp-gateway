@@ -1,4 +1,4 @@
-"""PAC-15 facts from transport identity, reviewed capabilities and reserved state.
+"""Facts from transport identity, reviewed capabilities and reserved state.
 
 The execution agent is this Gateway broker, not an attested Claude/Codex binary.
 Parameter bindings are materialized only after the reviewed schema and resource
@@ -23,7 +23,7 @@ VERSION = "pac15-v1"
 BROKER = "mcp-governance-gateway-broker"
 # Token claims and request headers by which a caller says "I act for someone else" (RFC 8693 act /
 # may_act and the usual spellings). The Gateway has no verified actor identity to judge them with,
-# so any of them makes PAC-05 refuse the call as unsupported (D-94).
+# so any of them makes PAC-05 refuse the call as unsupported.
 DELEGATION_CLAIMS = ("act", "may_act", "on_behalf_of", "actor", "delegated_by")
 DELEGATION_HEADERS = ("x-on-behalf-of", "x-act-as", "x-delegated-user")
 
@@ -87,8 +87,8 @@ def scope(principal: dict, server: str, tool: str, action: str, resources: list,
     document = capabilities()
     for grant in document["capabilities"]:
         subject = principal["token"] in grant["principals"]
-        # Only controlled, explicitly marked lab principals use the test grant.
-        # This is not an employee/admin wildcard in a field deployment.
+        # Only controlled, explicitly marked test principals use the test grant.
+        # This is not an employee/admin wildcard in a deployment.
         test_subject = ("acceptance-" + principal["token"].rsplit("-", 1)[-1]
                         if principal["token"].startswith("acceptance-") else
                         "adversarial" if principal["token"].startswith("adversarial-") else
@@ -159,7 +159,7 @@ def visible(principal: dict, server_id: str, tool: str, action: str) -> bool:
 
 def servers_for(principal: dict) -> list[str]:
     """Servers this person has at least one reviewed, permitted tool on: what tools/list would show
-    them and what a managed harness configuration may carry (D-93)."""
+    them and what a managed harness configuration may carry."""
     usable = []
     for server_id, spec in sorted(registry.servers().items()):
         if not registry.permits(registry.allowed_principals(server_id), principal["token"]):
@@ -174,7 +174,7 @@ _NAME_SAFE = re.compile(r"[^0-9A-Za-z가-힣 ._()·\-]")
 
 
 def harness_guidance(principal: dict | None, servers: list[str]) -> str:
-    """Which approved MCP servers this person has, written into the harness's own memory (D-233).
+    """Which approved MCP servers this person has, written into the harness's own memory.
 
     A harness defers MCP tools behind a search (Claude Code ToolSearch, Codex tool search) and shows the
     model only tool names, so a request that names no server ("react 저장소 구조 알려줘") is often answered

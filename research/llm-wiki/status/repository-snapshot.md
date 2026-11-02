@@ -1,23 +1,25 @@
 # 저장소 코드 스냅샷
 
-확인 시각: 2026-11-02T15:52:27+09:00
+확인 시각: 2026-11-02T17:15:25+09:00
 
-HEAD: `f31b400acb70811ada56dcd342b80c6200355692` · 로컬 브랜치: `11/02-kit-exe`
+HEAD: `946938be25cd104b4236fb892915fb563a010455` · 로컬 브랜치: `11/02-release-1.0.0`
 
 로컬 코드 상태입니다. 배포·활성화·실기기 검증과 실험 성공을 증명하지 않습니다.
 
 ## 워킹 트리
 
 ```text
-M research/llm-wiki/analysis/integration-cases.json
+M CHANGELOG.md
+ M research/llm-wiki/analysis/integration-cases.json
  M research/llm-wiki/analysis/requirements.json
+ M research/llm-wiki/analysis/threat-trace-review-1020/README.md
  M research/llm-wiki/catalogs/threats.json
  M research/llm-wiki/status/current.md
 ?? api.py
 ?? c
 ?? p3_ui.py
 ?? q
-?? research/llm-wiki/status/reports/2026-11-02-kit-setup-executable.md
+?? research/llm-wiki/status/reports/2026-11-02-release-1.0.0.md
 ?? sftp_put.py
 ```
 
@@ -25,14 +27,14 @@ M research/llm-wiki/analysis/integration-cases.json
 
 | 파일 | SHA-256 |
 | --- | --- |
-| `full_stack_lab/gateway/app/core.py` | `d9198a7b01b52aae208b072e1a68610eadd59f28c22731de14d55b0e4868835b` |
-| `full_stack_lab/gateway/app/pac.py` | `b3f0ad2728cd183117416926433af4a7f4b6ac6b922423d0c42fc07fa7c5cbdf` |
-| `full_stack_lab/gateway/app/poisoning.py` | `c676b6259619e5f8eababc13dfe0d69bb5a29c42c2ac31abadb737c871c93c06` |
-| `full_stack_lab/gateway/app/idp.py` | `3685b2b442fe9f6cbcf7836a366a0e12fc384d64cf15e14228cb3587d7fc55fe` |
-| `full_stack_lab/gateway/app/privacy.py` | `592d7649736ef4580cb9a2faad8f1e661eeacfe68e056512e002e10471081f8f` |
-| `full_stack_lab/gateway/app/secret_scan.py` | `daeda53835856b9ea603dfe19d377befa38510759eb58572edfb8b0318b7f951` |
-| `full_stack_lab/opa/pac15.rego` | `067f288654d530c538d1438b7a8341b8c42684d24dee880d4971d0503ce0c850` |
+| `full_stack_lab/gateway/app/core.py` | `cba0c9df121a007c6b83df9e5480ec49cf739dd20eec212b33c31b8b91c38adf` |
+| `full_stack_lab/gateway/app/pac.py` | `bc9884db62b33244057b4f816d33b3505ad9789b549efd733b3b9f0993dc20ee` |
+| `full_stack_lab/gateway/app/poisoning.py` | `da82d7c57048e3c04bdd8a8f573657adb87bd640bb9fcdbcd641b1c057bf83e1` |
+| `full_stack_lab/gateway/app/idp.py` | `30b0e4aec24a40b1847bb23852651a60fe7c1f81cdef97690ea948e03901fd8f` |
+| `full_stack_lab/gateway/app/privacy.py` | `fe7511a3482184faa983c9bcd89f0ef49376c8a3ffce8b8bf3c9495212ef25f3` |
+| `full_stack_lab/gateway/app/secret_scan.py` | `6173e8e4db7337df6ab61d0f029a7ecd0bdd1fd2005c9cf1f63a69ce49084054` |
+| `full_stack_lab/opa/pac15.rego` | `241999b6fe092bad73d83c7f3c51c3cc3dea2cbc88ee14a31b9ce682f14b6a95` |
 | `full_stack_lab/opa/decision.rego` | `b6fe334869e38016dd043489b2c3f63207adc5a54fbef199738517b815a9b904` |
-| `endpoint-agent/bootstrap.py` | `73d129b5c572ab9290fc0528aff4f7d0a17ddb5ea663f48740453daa7eb1dee9` |
-| `endpoint-agent/managed-linux.py` | `f0663c02332d3a9f152e2c29a9d17a2fd44ff410ebfa3ae73ca38991a5b9c412` |
-| `endpoint-agent/enforce-linux.py` | `2ce6a711e2e9dfcc47e2b1ca3cebdf9fe6f39171267312ab42c87b1e822e025c` |
+| `endpoint-agent/bootstrap.py` | `1999155151bb3f3b9fd408cf479d0cbe1d78c4d086d1a53a16e71ddfdbdc5da9` |
+| `endpoint-agent/managed-linux.py` | `4e047e2ab00a0e88f4ec44d721182395828410b1f8d902d4421f5777f7b9553c` |
+| `endpoint-agent/enforce-linux.py` | `998f7ef1df87e9298e97cf42c483300d23787c506a05527b85e052f0ebb9e5c2` |

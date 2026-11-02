@@ -1,12 +1,12 @@
-# Tailscale IP 전용 HTTPS 앞단 — 실기기 배치 전용(루트 README "실제 기기로 배치하기", D-46). 게시하는 것은
-# 이 Caddy와 모델 프록시(D-67)뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway, 기존 compose.yaml 그대로)
+# Tailscale IP 전용 HTTPS 앞단. 게시하는 것은
+# 이 Caddy와 모델 프록시뿐이다. 나머지 서비스는 여전히 loopback에만 있거나(Console·Gateway)
 # 아예 게시되지 않는다(MCP 서버 10종, LLM 게이트웨이). 경로로만 나눈다:
 #
 #   /mcp/<server>/                        Gateway의 서버별 MCP 엔드포인트
-#   /api/health                           Gateway 생존 확인(무인증 — README가 밝힌 두 개 중 하나)
+#   /api/health                           Gateway 생존 확인(무인증)
 #   /.well-known/oauth-protected-resource Gateway의 RFC 9728 메타데이터
 #   /oauth/*, /.well-known/oauth-authorization-server   IdP(직원 PC 키트의 로그인·갱신·폐기)
-#   /git/*                                내부 Gitea — 솔루션 로그인을 거쳐야만(forward_auth, D-48)
+#   /git/*                                내부 Gitea — 솔루션 로그인을 거쳐야만(forward_auth)
 #   그 밖 전부                             Console(웹) — agent-service가 정적 파일도 같이 서빙
 #
 # Docker가 HTTPS 포트를 Tailscale IP에만 바인딩한다. 루트는 배치의 /data에만 보존한다.
@@ -80,7 +80,7 @@
 	handle /api/endpoint/* {
 		reverse_proxy gateway:8080
 	}
-	# 외부 AI 게이트웨이 애드온의 판정 API(D-191). Gateway가 직원 MCP 토큰을 검증한다.
+# 외부 AI 게이트웨이 애드온의 판정 API. Gateway가 직원 MCP 토큰을 검증한다.
 	handle /api/addon/v1/* {
 		reverse_proxy gateway:8080
 	}

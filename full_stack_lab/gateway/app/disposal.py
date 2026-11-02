@@ -1,4 +1,4 @@
-"""Signed write-ahead tombstones, stored outside PostgreSQL (D-123)."""
+"""Signed write-ahead tombstones, stored outside PostgreSQL."""
 import asyncio
 import base64
 import hashlib
@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DIRECTORY = Path(os.getenv("DISPOSAL_DIR", "/disposal"))
-# "ledger" is a retention seal over the audit chain (D-141); retention.py reads it.
+# "ledger" is a retention seal over the audit chain; retention.py reads it.
 KINDS = {"token", "refresh", "server", "credential", "ledger"}
 LOG = logging.getLogger(__name__)
 _INDEX = {}

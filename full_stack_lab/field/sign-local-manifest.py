@@ -1,4 +1,4 @@
-"""Sign an approved local MCP manifest (DEV-73, D-175).
+"""Sign an approved local MCP manifest .
 
 Run by the approver on a machine that is not the gateway. This pins manifest resources;
 the executor still trusts gateway-issued jobs and does not resist a compromised gateway.

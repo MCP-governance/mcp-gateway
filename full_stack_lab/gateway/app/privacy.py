@@ -1,10 +1,10 @@
 """Presidio's unmodified analyzer and anonymizer services at the Gateway boundary.
 
-Ported from origin/main cc086e5 (PDF integration) to v2's real tools. Two changes:
+Two changes on top of Presidio's defaults:
 
-- **Entity allowlist.** v1 inspected small synthetic documents. v2 masks real tool
-  output - git logs, SQL rows, web pages - where Presidio's default English
-  recognizers (dates, person names, locations, URLs, IPs) would redact the work
+- **Entity allowlist.** Presidio's default English recognizers (dates, person names,
+  locations, URLs, IPs) suit small synthetic documents, but the Gateway masks real
+  tool output - git logs, SQL rows, web pages - where they would redact the work
   itself. Only regulated identifiers and credentials are inspected.
 - **Ignore hook.** A mail recipient is a destination, not disclosed content, and an
   internal colleague's address is not personal data the organisation hides from
@@ -26,23 +26,22 @@ from .classify import SECRET_PATTERNS, _luhn
 
 ANALYZER = os.getenv("PRESIDIO_ANALYZER_URL", "http://presidio-analyzer:3000")
 ANONYMIZER = os.getenv("PRESIDIO_ANONYMIZER_URL", "http://presidio-anonymizer:3000")
-# The analyzer serves requests in turn. Six concurrent documentation results queued
-# past an 8 s timeout on the appliance and a public result was withheld (fail-closed,
-# D-59). Queue here, where the wait is not the request's timeout, and give the
-# request itself room. Still fail-closed when Presidio is really down.
+# The analyzer serves requests in turn. Concurrent documentation results queued past
+# the request timeout would withhold a whole public result (fail-closed). Queue here,
+# where the wait is not the request's timeout, and give the request itself room.
+# Still fail-closed when Presidio is really down.
 TIMEOUT = float(os.getenv("PRESIDIO_TIMEOUT_SECONDS", "20"))
 _slots = asyncio.Semaphore(int(os.getenv("PRESIDIO_CONCURRENCY", "2")))
 
 # Presidio ships English recognizers. These request-local patterns cover the Korean
-# identifiers and credential assignments used by this lab without forking Presidio.
+# identifiers and credential assignments without forking Presidio.
 RECOGNIZERS = [
     {"name": "Email including reserved test domains", "supported_language": "en",
      "supported_entity": "EMAIL_ADDRESS", "patterns": [
          {"name": "email", "regex": r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![A-Za-z])", "score": 0.85}]},
     # The same shape the DLP labels use: birth date validated, hyphen optional, 1-4 citizens and 5-8 foreign
     # residents. Korean glues its particles to a number ("990101-3123456입니다"), and \b treats Hangul as a word
-    # character, so a number followed or preceded by a particle was never a match: a quarter of the resident
-    # numbers and 70% of the mobile numbers written that way reached the model unmasked (tests/korean_pii_eval.py).
+    # character, so a \b pattern never matches a number followed or preceded by a particle.
     # Every pattern here says "not a Latin letter or digit" instead of \b.
     {"name": "Korean resident registration number", "supported_language": "en",
      "supported_entity": "KR_RRN", "patterns": [
@@ -170,14 +169,14 @@ async def mask_text(text: str, ignore: Ignore | None = None) -> tuple[str, list[
         raise InspectionUnavailable("PII anonymizer unavailable or returned invalid data") from exc
 
 
-# 문서·예시에 흔한 자리표시 값. 실제 자격이 아니라 결과 전체를 보류할 근거가 아니다(10-23 실사용 오탐).
+# 문서·예시에 흔한 자리표시 값. 실제 자격이 아니라 결과 전체를 보류할 근거가 아니다.
 PLACEHOLDER = re.compile(r"(?i)^[\s\"']*(?:<[^<>]{1,60}>|\$\{[^{}]{1,60}\}|\{\{[^{}]{1,60}\}\}|\*{3,}|x{3,}|\.{3}|"
                          r"(?:your|my|example|sample|dummy|test|fake)[-_ ]?[a-z_-]{0,30}|changeme|replace[-_ ]?me|redacted)[\s\"']*$")
 
 
 def _identifier_number(number: int | float) -> str | None:
-    """숫자 값에는 하이픈 같은 서식이 없다. ID·타임스탬프·점수가 서식 패턴(사업자·계좌·전화)에 걸려
-    결과 전체를 보류하던 오탐 대신, 숫자 자체로 검증되는 주민번호(생년월일·성별 자리)와 카드번호(Luhn)만 본다."""
+    """숫자 값에는 하이픈 같은 서식이 없다. ID·타임스탬프·점수가 서식 패턴(사업자·계좌·전화)에 걸리면
+    결과 전체가 보류되므로, 숫자 자체로 검증되는 주민번호(생년월일·성별 자리)와 카드번호(Luhn)만 본다."""
     if not isinstance(number, int) or number < 0:
         return None
     digits = str(number)
@@ -186,7 +185,7 @@ def _identifier_number(number: int | float) -> str | None:
         if 1 <= month <= 12 and 1 <= day <= 31 and gender in "12345678":
             return "KR_RRN"
     # 카드 IIN은 3~6으로 시작하고 현행 번호는 14자리 이상이다. 13자리 밀리초 타임스탬프(17…)가
-    # Luhn을 우연히 통과해 공개 문서 검색 결과 전체를 보류하던 오탐(10-23 Cloudflare Docs)을 막는다.
+    # Luhn을 우연히 통과해 공개 문서 검색 결과 전체가 보류되는 것을 막는다.
     if 14 <= len(digits) <= 19 and digits[0] in "3456" and _luhn(digits):
         return "CARD_NUMBER"
     return None
@@ -235,7 +234,7 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
     # Presidio's credential recognizer rather than inspect the value in isolation.
     # Only a match that crosses a synthetic "key=" prefix is a structured credential. One wholly inside a
     # text value (a document quoting client_secret=...) is masked with that string below, not withheld
-    # with the whole result (five SDK documents were withheld).
+    # with the whole result.
     joined = "\n".join(f"{key}={child}" for key, child in assignments)
     prefixes, offset = [], 0
     for key, child in assignments:
@@ -253,9 +252,9 @@ async def mask_payload(value: object, ignore: Ignore | None = None) -> tuple[obj
         if isinstance(item, str):
             document = _json_document(item)
             if document is not None:
-                # JSON carried as text is inspected as JSON: masking the text whole put an unquoted [REDACTED] in
-                # place of a number, and the broken JSON was then withheld for the wrong reason. Numbers
-                # and keys follow the structured rule above (D-214); strings are masked inside the structure.
+                # JSON carried as text is inspected as JSON: masking the text whole would put an unquoted [REDACTED] in
+                # place of a number and break the JSON, which is then withheld for the wrong reason. Numbers
+                # and keys follow the structured rule above; strings are masked inside the structure.
                 masked, kinds = await mask_payload(document, ignore)
                 return (json.dumps(masked, ensure_ascii=False, indent=2 if "\n" in item else None) if kinds else item), kinds
             return await mask_text(item, ignore)

@@ -1,7 +1,7 @@
 """HTTP clients kept per event loop, so a tools/call reuses warm connections.
 
-Every call used to open a fresh client for OPA (twice) and Presidio (up to four
-times): a TCP handshake per request for services one hop away. A client is bound to
+Opening a fresh client on every call costs a TCP handshake per request to OPA (twice
+per call) and Presidio (up to four per call), both one hop away. A client is bound to
 the loop that created it, so the cache is keyed by the running loop.
 """
 from __future__ import annotations

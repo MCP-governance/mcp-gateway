@@ -1,6 +1,6 @@
 """The Gateway as an MCP server: what employee harnesses connect to instead of the real servers.
 
-Two shapes of the same policy path (D-30):
+Two shapes of the same policy path:
 - `/mcp/<server>/` - one registered server, tools under their own names. The managed
   config of Claude Code, Codex, Gemini CLI and OpenCode lists these, so a harness sees
   `filesystem`, `git`, ... exactly as if it had connected to them directly.
@@ -12,7 +12,7 @@ on HTTP/SSE, the spawn-time principal on stdio) and never from tool arguments.
 
 Only initialize/ping/tools/list/tools/call are handled; resources, prompts,
 sampling and the rest are not mediated, so the server does not register them and
-the SDK answers "method not found" (MCP-METHOD-001 in the audit narrative).
+the SDK answers "method not found" (MCP-METHOD-001).
 """
 from __future__ import annotations
 
@@ -141,7 +141,7 @@ async def _approved_tools(role: str, server: str | None = None, principal: str =
         if not registry.permits(registry.allowed_principals(row["server_id"]), principal):
             continue
         if row["name"] not in registry.reviewed_tools(row["server_id"]):
-            continue  # a tool nobody scoped is neither listed here nor callable (D-91)
+            continue  # a tool nobody scoped is neither listed here nor callable
         grouped.setdefault(row["server_id"], []).append(row)
     states = {}
     for server_id, server_rows in grouped.items():
@@ -287,9 +287,9 @@ def build_mcp() -> Server:
 
 def transport_security() -> TransportSecuritySettings:
     hosts = ["gateway:*", "gateway-sse:*", "localhost:*", "127.0.0.1:*"]
-    # 실기기 배치(compose.field.yaml): PC의 하네스는 공개 주소로 부르고 Caddy가 그 Host를 그대로 넘긴다.
+    # 사내망 배치: PC의 하네스는 공개 주소로 부르고 Caddy가 그 Host를 그대로 넘긴다.
     # DNS 리바인딩 방어는 유지하되, 배포자가 정한 그 이름 하나만 더한다(포트 없는 Host도 오므로 둘 다).
-    # 포트 없는 Host(기본 443)는 "이름:*"과 별개 항목이다. 공개 이름이 위 기본 목록의 이름과 같아도(루프백 시험 배치)
+    # 포트 없는 Host(기본 443)는 "이름:*"과 별개 항목이다. 공개 이름이 위 기본 목록의 이름과 같아도
     # 포트 없는 항목은 따로 더해야 한다.
     public = urlsplit(os.getenv("GATEWAY_PUBLIC_MCP_URL", "")).hostname
     for name in (public, os.getenv("FIELD_PUBLIC_NAME", "")):

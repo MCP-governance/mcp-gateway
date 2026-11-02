@@ -1,4 +1,4 @@
-"""LiteLLM MCP 도구 호출 직전에 MINT 판정을 거는 커스텀 가드레일 (D-191).
+"""LiteLLM MCP 도구 호출 직전에 MINT 판정을 거는 커스텀 가드레일.
 
 설치: 이 파일을 LiteLLM config.yaml 옆에 두고 아래처럼 등록한다.
     guardrails:
@@ -50,7 +50,7 @@ class MintGuardrail(CustomGuardrail):
         self._timeout = float(os.getenv("MINT_TIMEOUT_SECONDS", "10"))
         self._client: httpx.AsyncClient | None = None
         # 판정→사후 기록 연결용. 프로세스 안에만 두고 토큰은 로그·spend 기록에 싣지 않는다.
-        # ponytail: LiteLLM 복제본이 여러 개여도 같은 호출의 pre/post는 한 프로세스에서 끝난다.
+        # LiteLLM 복제본이 여러 개여도 같은 호출의 pre/post는 한 프로세스에서 끝난다.
         self._pending: dict[str, tuple[str, int]] = {}
         super().__init__(**kwargs)
 
@@ -65,7 +65,7 @@ class MintGuardrail(CustomGuardrail):
         if "mcp_tool_name" not in data:
             return data  # MCP 호출이 아니면 관여하지 않는다
         # 1.105는 tools/list 때도 같은 훅으로 도구 설명을 검사한다(tool_catalog_guard). 목록은 실행이 아니므로 판정하지
-        # 않는다 — 여기서 막으면 모든 도구가 목록에서 사라진다(CI 실측). 호출(call_mcp_tool 등)은 그대로 판정한다.
+        # 않는다 — 여기서 막으면 모든 도구가 목록에서 사라진다. 호출(call_mcp_tool 등)은 그대로 판정한다.
         if str(getattr(call_type, "value", call_type)) == "list_mcp_tools":
             return data
         token = data.get("incoming_bearer_token")

@@ -4,14 +4,14 @@
     python mcpgw_pc.py setup --url https://<게이트웨이 주소> --ca root.crt --ca-sha256 SHA256 --servers filesystem,git
     python mcpgw_pc.py login         # 다시 로그인(리프레시 토큰이 만료·폐기됐을 때)
     python mcpgw_pc.py doctor        # 이름 해석·TLS·로그인·서버별 연결·하네스 설정을 한 줄씩 확인
-    python mcpgw_pc.py report        # 하네스 기본 커넥터·기능을 보고하고 관리자가 거부한 것을 끈다(D-51)
+    python mcpgw_pc.py report        # 하네스 기본 커넥터·기능을 보고하고 관리자가 거부한 것을 끈다
     python mcpgw_pc.py uninstall     # 이 도구가 쓴 설정만 지우고 IdP의 리프레시 토큰을 폐기
     python mcpgw_pc.py managed --url ... --servers ... --out DIR [--connectors connector-policy.json]
 
-랩 컨테이너의 `workstation/bin/bob-sso`와 같은 일을 실제 PC에서 한다: 회사 IdP(`/oauth/token`)에 password grant로
+실제 PC에서는 회사 IdP(`/oauth/token`)에 password grant로
 한 번 로그인하고, 리프레시 토큰으로 10분짜리 접근 토큰을 갱신한다. 두 하네스는 연결할 때마다 이 도구의 `header`를
 실행하고(Claude Code `headersHelper`, Codex CLI 0.148+ `http_headers_helper`), 401을 받으면 다시 부른다. 비밀번호와
-토큰은 하네스 설정 파일에 들어가지 않는다. bob-sso는 fcntl을 써서 Windows에서 돌지 않으므로 잠금을 따로 둔다.
+토큰은 하네스 설정 파일에 들어가지 않는다. fcntl을 쓰는 잠금은 Windows에서 돌지 않으므로 잠금을 따로 둔다.
 표준 라이브러리만 쓴다(Python 3.9+).
 """
 from __future__ import annotations
@@ -41,7 +41,7 @@ TOOL = "mcpgw_pc.py"
 SERVER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 BEGIN = "# >>> mcp-gateway (mcpgw_pc.py) >>>"
 END = "# <<< mcp-gateway (mcpgw_pc.py) <<<"
-# IdP의 접근 토큰은 10분. 만료 1분 전부터 새로 받는다(bob-sso와 같음).
+# IdP의 접근 토큰은 10분. 만료 1분 전부터 새로 받는다.
 LEEWAY_SECONDS = 60
 
 
@@ -87,13 +87,13 @@ def workstation_name(value: str | None) -> str:
     # IdP의 client_id. 리프레시 토큰 계열을 이 PC에 묶는 이름표다(IdP가 허용 목록으로 검증하지는 않는다).
     name = (value or socket.gethostname()).strip().lower()
     if not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", name):
-        fail("--workstation은 영문·숫자·.-_ 64자 이내(예: ysg-laptop)")
+        fail("--workstation은 영문·숫자·.-_ 64자 이내(예: dev-laptop)")
     return name
 
 
 def claude_path() -> str | None:
     """The native installer puts claude in ~/.local/bin, which a non-login shell (SSH, MDM
-    script) often lacks on PATH; setup then registered nothing for Claude Code."""
+    script) often lacks on PATH; without the fallback, setup would register nothing for Claude Code."""
     return shutil.which("claude") or shutil.which("claude", path=str(Path.home() / ".local" / "bin"))
 
 
@@ -356,7 +356,7 @@ def without_block(text: str) -> str:
         with os.fdopen(fd, "wb") as output:
             output.write(path.read_bytes() if path.exists() else text.encode("utf-8"))
         fail(f"Codex 관리 구간을 확인할 수 없어 설정을 보존했다. 백업: {backup}")
-    # shortcut: multiline TOML is deliberately refused; use a TOML-preserving editor before supporting it.
+    # Multiline TOML is deliberately refused; supporting it needs a TOML-preserving editor.
     if len(starts) != 1 or len(ends) != 1 or starts[0] >= ends[0] or '"""' in text or "'''" in text:
         ambiguous()
     block = "".join(lines[starts[0]:ends[0] + 1]).replace("\r\n", "\n").rstrip("\n")
@@ -389,7 +389,7 @@ def codex_block(settings: dict) -> str:
     lines = [BEGIN, f"# {TOOL} setup이 다시 쓴다. 이 블록 아래에 루트 키(model = ... 등)를 두지 않는다."]
     for server in settings["servers"]:
         # JSON 문자열은 TOML 기본 문자열로도 유효하다(따옴표·역슬래시 이스케이프가 같다).
-        # The Gateway decides every call, as in the lab's managed config (render.py). Without
+        # The Gateway decides every call, as the managed config rendered by render.py does. Without
         # this Codex asks per call, and `codex exec` declines them all before they reach it.
         lines += ["", f"[mcp_servers.{server}]", f'url = "{endpoint(settings, server)}"',
                   f"http_headers_helper = {json.dumps(helper_command(), ensure_ascii=False)}",
@@ -564,7 +564,7 @@ def report_in_background(settings: dict) -> None:
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detach)
 
 
-# -- 하네스 기본 커넥터·기능(D-51): 보고하고, 관리자가 거부한 것을 하네스 스스로 끄게 한다 --------------
+# -- 하네스 기본 커넥터·기능: 보고하고, 관리자가 거부한 것을 하네스 스스로 끄게 한다 --------------
 
 # `claude mcp list`의 한 줄: "claude.ai Notion: https://mcp.notion.com/mcp - ✔ Connected",
 # "plugin:engineering:slack: https://mcp.slack.com/mcp (HTTP) - ! Needs authentication",
@@ -644,7 +644,7 @@ def codex_rpc(codex: str, method: str, params: dict, timeout: float = 60) -> dic
 
 
 def effective_web_search(config_result: dict | None, requirements_result: dict | None) -> str:
-    """Codex가 실제로 쓰는 웹 검색 모드: 계층 설정을 관리형 requirements가 제한한 값. 기본은 cached이고,
+    """Codex CLI가 실제로 쓰는 웹 검색 모드: 계층 설정을 관리형 requirements가 제한한 값. 기본은 cached이고,
     관리형 목록에 그 모드가 없으면 목록의 값만 남는다(endpoint-agent/managed-linux.py와 같은 규칙)."""
     mode = ((config_result or {}).get("config") or {}).get("web_search") or "cached"
     allowed = ((requirements_result or {}).get("requirements") or {}).get("allowedWebSearchModes") or []
@@ -892,7 +892,7 @@ def uninstall_locked(args) -> None:
         print(apply_claude(settings, []))
     refresh = cached_tokens().get("refresh_token")
     if settings.get("url") and refresh:
-        # 종료 판정(TERMINATION_MODEL)의 회수 대상: 이 PC의 리프레시 토큰 계열을 IdP에서 폐기한다.
+        # 종료 판정의 회수 대상: 이 PC의 리프레시 토큰 계열을 IdP에서 폐기한다.
         # RFC 7009 응답(200)은 처리 사실만 뜻하므로 결과를 단정하지 않고 관리자 확인을 안내한다.
         try:
             status, _, _ = request(settings, settings["url"] + "/oauth/revoke",
@@ -920,7 +920,7 @@ def cmd_managed(args) -> None:
     claude = {"mcpServers": {s: {"type": "http", "url": endpoint(settings, s), "headersHelper": helper, "timeout": 300000}
                              for s in settings["servers"]}}
     (out / "managed-mcp.json").write_text(json.dumps(claude, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    # D-53: 인벤토리의 예외 승인은 이 강제 프로필을 넓히지 않는다. 처음 보는 항목도 닫혀 있어야 한다.
+    # 인벤토리의 예외 승인은 이 강제 프로필을 넓히지 않는다. 처음 보는 항목도 닫혀 있어야 한다.
     managed = {"allowAllClaudeAiMcps": False, "disableClaudeAiConnectors": True,
                "allowManagedMcpServersOnly": True,
                "allowedMcpServers": [{"serverUrl": endpoint(settings, s)} for s in settings["servers"]],
@@ -928,14 +928,14 @@ def cmd_managed(args) -> None:
                # 계정에 동기화된 플러그인·스킬과 웹 도구는 Gateway 밖 경로다. 관리형 권한 규칙만 인정해 직원이 다시 허용하지 못한다.
                "syncClaudeAiPlugins": False, "syncClaudeAiSkills": False, "allowManagedPermissionRulesOnly": True,
                "permissions": {"allow": [f"mcp__{s}" for s in settings["servers"]], "deny": ["WebFetch", "WebSearch"]},
-               # 훅·statusLine·fileSuggestion은 하네스가 셸로 시작하는 명령이라 헤더 헬퍼에 닿는다(D-147).
+               # 훅·statusLine·fileSuggestion은 하네스가 셸로 시작하는 명령이라 헤더 헬퍼에 닿는다.
                "allowManagedHooksOnly": True}
     root = ['allowed_web_search_modes = ["disabled"]', "allow_browser_and_computer_use = false",
             "allow_managed_hooks_only = true"]
     features = {"apps", "plugins", "browser_use", "computer_use"}
     apps = []
     if args.connectors:
-        # 이전 형식의 allowAllClaudeAiMcps도 강제 정책을 확장하는 데 쓰지 않는다.
+        # allowAllClaudeAiMcps 같은 전체 허용 키도 강제 정책을 확장하는 데 쓰지 않는다.
         policy = json.loads(Path(args.connectors).read_text(encoding="utf-8"))
         managed["deniedMcpServers"] = policy["claude"]["deniedMcpServers"]
         features.update(f for f in policy["codex"]["features_disabled"]

@@ -4,7 +4,7 @@
 #   검사 시점: 서버·설치 파일 등록 전, Tool 도입·기능 변경 심사, 신규 MCP 서버 도입 승인 전.
 #   입력: input.application(신청서·격리 시험 결과·구성요소 목록), input.facts(now_ns, trusted).
 #   데이터: data.pol.providers, data.pol.package_allowlist, data.pol.data_types, data.pol.exceptions.
-#   결과: decision = {effect, policy_ids, reasons}. 모든 검사를 통과하면 ALLOW(시트의 자동 승인 — 다음 단계 진행).
+#   결과: decision = {effect, policy_ids, reasons}. 모든 검사를 통과하면 ALLOW(정책의 자동 승인 — 다음 단계 진행).
 #   MANUAL은 보안 관리자 판단 전까지 등록하지 않는다는 뜻이다.
 # scope: package
 package mcp.pol.intake

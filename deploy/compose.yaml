@@ -1,8 +1,8 @@
 # MINT 운영 배포. ./mint.sh가 .env를 만들고 이 파일로 스택을 올린다(직접 docker compose를 부를 때도 같은 .env를 쓴다).
-# 서비스·망 이름은 실습 스택(full_stack_lab/compose.yaml + compose.field.yaml)과 같다: 실행기는 compose 서비스 이름
+# 서비스·망 이름은 실행기가 찾는 이름과 같다: 실행기는 compose 서비스 이름
 # gateway와 <프로젝트>_edge 망을 찾고, Caddyfile은 corp-git·agent-service·gateway를 이름으로 부른다.
-# 실습용 직원 PC·시나리오·MCP 서버·추적 수집기·메일 수신기·로컬 LLM은 넣지 않는다. SSE 전용 진입점(gateway-sse)은
-# Caddy가 경로를 주지 않아 밖에서 닿지 않으므로 뺐다.
+# 직원 PC·시나리오·MCP 서버·추적 수집기·메일 수신기·로컬 LLM은 넣지 않는다. SSE 전용 진입점(gateway-sse)은
+# Caddy가 경로를 주지 않아 밖에서 닿지 않으므로 넣지 않는다.
 # 게시 포트는 Caddy(HTTPS)와 모델 프록시 둘뿐이고 MINT_BIND 한 주소에만 묶는다.
 name: ${MINT_PROJECT:-mint}
 
@@ -17,7 +17,7 @@ x-gateway-build: &gateway-build
 
 x-gateway-env: &gateway-env
   DATABASE_URL: postgresql://mcp:${POSTGRES_PASSWORD:?}@db:5432/mcp_governance
-  # 판정 풀(tools/call). 관리 풀은 /api/overview·/api/latency·/api/health만 쓴다(D-0-6).
+  # 판정 풀(tools/call). 관리 풀은 /api/overview·/api/latency·/api/health만 쓴다.
   DB_POOL_MAX: ${DB_POOL_MAX:-10}
   DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-10}
   DB_POOL_MAX_WAITING: ${DB_POOL_MAX_WAITING:-0}

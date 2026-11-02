@@ -52,11 +52,11 @@ INTAKE_APPROVAL_LOCK = asyncio.Lock()
 
 
 async def bootstrap_passwords() -> None:
-    """합성 계정의 초기 비밀번호를 한 번만 채운다.
+    """기본 계정의 초기 비밀번호를 한 번만 채운다.
 
     해시를 SQL 파일에 박아두면 `.env`의 `MOCK_SSO_PASSWORD`로 바꿀 수 없고, 매
     기동마다 덮어쓰면 관리대장이 아니라 환경변수가 정본이 된다. 그래서 비어 있는
-    계정만 채운다. 바꾸고 싶으면 `./console.sh reset`으로 다시 심는다.
+    계정만 채운다. 바꾸려면 계정 비밀번호 변경 명령을 쓴다.
     """
     await db.execute(
         """UPDATE principals SET password_hash = crypt(%s, gen_salt('bf', 12))
@@ -67,9 +67,9 @@ async def bootstrap_passwords() -> None:
 async def bootstrap_field_accounts() -> None:
     if os.getenv("MCP_FIELD_MODE") != "1":
         return
-    # Keep the lab fixture in its own volume; old field volumes may still contain it.
+    # Keep the fixture in its own volume to avoid affecting field data.
     await db.execute("UPDATE principals SET status='disabled' WHERE email LIKE '%@bob.local'")
-    # admin1~3: the field's other administrators, so approvals that need a second person can be tried as they run.
+    # Additional field administrators for approvals requiring a second person.
     for username, role in (("root", "admin"), ("user", "employee"), ("admin1", "admin"), ("admin2", "admin"), ("admin3", "admin")):
         await db.execute(
             """INSERT INTO principals(token, user_id, email, display_name, role, password_hash)
@@ -77,11 +77,11 @@ async def bootstrap_field_accounts() -> None:
                ON CONFLICT DO NOTHING""",  # an existing account of that name (any token) stays as it is
             (username, username, username, username, role, username),
         )
-    await db.execute(
-        "UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])",
-        (["ws-ysg", "ws-jwj", "ws-pse", "ws-nkk"],),
-    )
-    # AI 게이트웨이 전용 직원은 PC 키트가 없다. 그 경로의 통제는 게이트웨이 판정이 맡는다(D-250).
+    # Endpoints a deployment retires at every start (comma-separated ids); none unless configured.
+    retired = [e.strip() for e in os.getenv("RETIRED_ENDPOINTS", "").split(",") if e.strip()]
+    if retired:
+        await db.execute("UPDATE endpoint_agents SET status='revoked' WHERE endpoint_id = ANY(%s::text[])", (retired,))
+    # AI 게이트웨이 전용 직원은 PC 키트가 없다. 그 경로의 통제는 게이트웨이 판정이 맡는다.
     await db.execute("UPDATE principals SET managed_required=true WHERE role<>'admin' AND NOT ai_gateway_only")
 
 
@@ -104,7 +104,7 @@ async def lifespan(_: FastAPI):
     await bootstrap_field_accounts()
     try:
         await review.record_solo_mode_observation()
-    except Exception:  # D-188: a ledger write that fails is logged, not allowed to stop the console from starting
+    except Exception:  # A ledger write that fails is logged and does not stop the console from starting.
         LOG.exception("root solo mode setting was not recorded in approval_events")
     if os.getenv("MCP_FIELD_MODE") == "1":
         await reconcile_gitea_accounts()
@@ -124,7 +124,7 @@ oidc.install(app)
 
 def origin_key(value: str) -> tuple:
     """Scheme, host and port with the scheme's default port filled in: a browser sends
-    https://host for the configured https://host:443 (10-18 field HTTPS)."""
+    https://host for the configured https://host:443."""
     parts = urlsplit(value.strip().rstrip("/"))
     try:
         port = parts.port
@@ -185,7 +185,7 @@ DELETED_USERNAME = "삭제된 아이디입니다. 관리자에게 복구를 요�
 @app.post("/auth/signup")
 async def request_signup(request: Signup, http_request: Request):
     username = request.username.strip().lower()
-    # 같은 아이디가 내부 Gitea의 사용자 이름이 된다(D-48). Gitea는 기호 연속·기호로 끝나는 이름을 받지 않는다.
+    # 같은 아이디가 내부 Gitea의 사용자 이름이 된다. Gitea는 기호 연속·기호로 끝나는 이름을 받지 않는다.
     if not (3 <= len(username) <= 32 and re.fullmatch(r"[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*", username)):
         raise HTTPException(422, "아이디는 영문자로 시작하는 영문·숫자 3~32자이고, 기호(._-)는 영문·숫자 사이에만 쓸 수 있습니다.")
     if username.endswith(GITEA_ALIAS_SUFFIX):
@@ -255,7 +255,7 @@ class McpIntake(StrictModel):
     endpoint_url: str = Field(default="", max_length=500)
     requested_transport: Literal["streamable-http", "stdio", "sse"]
     purpose: str = Field(min_length=10, max_length=1000)
-    # Optional on the wire so older clients keep working; approval holds a request that has none (DEV-71).
+    # Optional on the wire for older clients; approval holds a request that has none.
     risk_input: ImpactInput | None = None
     data_class: Literal["public", "nonimportant", "important"] = "nonimportant"
     requested_tools: list[str] = Field(default_factory=list, max_length=300)
@@ -322,7 +322,7 @@ async def admin_caller(authorization: str | None = Header(default=None)) -> dict
 
 @app.post("/auth/mock-login")
 async def login(request: Login, http_request: Request):
-    """합성 로그인. 비밀번호 검증은 신원 관리대장의 사용자별 bcrypt 해시로 한다.
+    """내장 로그인. 비밀번호 검증은 신원 관리대장의 사용자별 bcrypt 해시로 한다.
 
     이전 판은 모든 계정이 같은 환경변수 하나(`MOCK_SSO_PASSWORD`)를 비밀번호로
     썼다. 그러면 한 계정만 잠그거나 한 계정의 비밀번호만 바꾸는 일이 불가능하고,
@@ -388,9 +388,9 @@ async def kit_enrollment(request: Login, http_request: Request):
 async def me(authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     field = os.getenv("MCP_FIELD_MODE") == "1"
-    # 직원도 사내 저장소를 읽을 수 있다. 다운로드는 /auth/gitea가 막는다(D-262 정정).
+    # 직원도 사내 저장소를 읽을 수 있다. 다운로드는 /auth/gitea가 막는다.
     git_url = os.getenv("GITEA_PUBLIC_URL", "") if field else ""
-    # The org page, not Gitea's home: the home is a personal dashboard where company repos were hard to find.
+    # The org page keeps company repositories separate from the personal dashboard.
     return {**console_user(user), "synthetic": not field,
             "managed_required": user["managed_required"],
             "managed_devices": await db.fetch_all(
@@ -404,7 +404,7 @@ KIT_FILES = {"linux": ("install.sh", "bootstrap.py", "managed-linux.py", "enforc
              "windows": ("install.cmd", "setup.ps1", "windows-common.ps1", "windows-worker.ps1", "windows-trust.ps1", "tray.ps1",
                          "runtime-check.py", "windows_status.py", "kit_screen.py", "kit_access.py", "install.py", "install-windows.ps1",
                           "managed-windows.py", "agent.py", "os-observer-windows.py", "offline_buffer.py", "local-runner.py", "stdio_source.py", "stdio_windows.py")}
-# The employee runs one file and answers one elevation prompt; the installer does the rest (D-71).
+# The employee runs one file and answers one elevation prompt; the installer does the rest.
 KIT_EXECUTABLE = {"install.sh", "install-macos.sh"}
 
 
@@ -435,7 +435,7 @@ async def pc_kit() -> dict | None:
         "SELECT id FROM mcp_servers WHERE status IN ('READY','DRIFT') AND COALESCE(lifecycle,'OPERATING')='OPERATING' ORDER BY id")
     servers = ",".join(row["id"] for row in rows)
     automatic = await db.fetch_one("SELECT auto_activate FROM endpoint_settings WHERE id=1")
-    # Windows first: the main target (D-239). The Console selects the first platform.
+    # The Console selects the first platform.
     return {"url": "/api/pc-kit", "servers": servers, "platforms": ["windows", "macos", "linux"],
             "auto_activate": bool(automatic["auto_activate"]) if automatic else True}
 
@@ -529,7 +529,7 @@ async def download_managed_kit(request: Request, platform: Literal["linux", "win
                         headers={"Content-Disposition": 'attachment; filename="mcp-connect-macos.command"', "Cache-Control": "no-store"})
     bundle = {"gateway_url": public, "tailscale_node_id": os.getenv("ENDPOINT_TAILSCALE_NODE_ID", ""), **ca}
     if isolated:
-        # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator (D-239).
+        # 고급: 격리 계정 — a separate managed account with kernel confinement, activated by an administrator .
         bundle["isolated"] = True
     if platform in ('linux', 'windows') and os.getenv('LOCAL_MANIFEST_PUBKEY'):
         bundle['manifest_pubkey']=os.environ['LOCAL_MANIFEST_PUBKEY'].replace('\\n','\n')
@@ -616,7 +616,7 @@ async def session_activity(authorization: str | None = Header(default=None)):
     return {"status": "active"}
 
 
-# ── 내부 Gitea의 신원과 권한(D-48) ──────────────────────────────────────────────
+# ── 내부 Gitea의 신원과 권한 ──────────────────────────────────────────────
 # Caddy가 /git/* 요청마다 이 엔드포인트에 묻는다(forward_auth). 통과하면 Gitea 사용자 이름을
 # X-WEBAUTH-USER로 돌려주고, Gitea는 Caddy의 고정 IP에서 온 그 헤더만 믿는다. 그래서 Gitea에
 # 들어가는 길은 솔루션 로그인 하나이고, 계정을 중지하면 Gitea도 다음 요청부터 막힌다.
@@ -627,7 +627,7 @@ GITEA_RESERVED = {"api", "assets", "attachments", "avatar", "avatars", "captcha"
                   "gitea-actions", "issues", "login", "metrics", "milestones", "notifications", "org",
                   "pulls", "repo", "repo-avatars", "user"}
 GITEA_ALIAS_SUFFIX = "-mcpgw"
-_gitea_ready: set[str] = set()  # ponytail: 프로세스별 캐시 — 역할이 바뀌면 키가 달라져 다시 맞춘다
+_gitea_ready: set[str] = set()
 _gitea_lock = asyncio.Lock()
 
 
@@ -640,7 +640,7 @@ def gitea_admin_client() -> httpx.AsyncClient:
     base = os.getenv("GITEA_ADMIN_URL", "http://corp-git:3000").rstrip("/")
     return httpx.AsyncClient(base_url=base, timeout=30, trust_env=False,
                              auth=(os.getenv("GITEA_ADMIN_USER", "corpadmin"),
-                                   os.getenv("GITEA_ADMIN_PASSWORD", "corp-admin-lab-only")))
+                                   os.getenv("GITEA_ADMIN_PASSWORD", "")))
 
 
 async def ensure_gitea_team(client: httpx.AsyncClient) -> int:
@@ -752,7 +752,6 @@ async def gitea_forward_auth(request: Request):
 
 
 # Gitea가 파일·보관본·저장소를 내려 주는 경로. 화면(코드 보기·이슈 목록)은 열고 이것만 막는다.
-# ponytail: 경로 거부 목록이다. Gitea 판올림으로 새 다운로드 경로가 생기면 여기에 더한다(tests/approved_mcp_download_check.py).
 GITEA_DOWNLOAD = re.compile(
     r"^/(?:api|attachments|-)(?:/|$)"
     r"|/(?:archive|raw|media|attachments|releases/download|info/refs|info/lfs|objects|git-upload-pack|git-receive-pack"
@@ -1242,7 +1241,7 @@ async def repo_head(client: httpx.AsyncClient, path: str, info: dict) -> str:
 
 
 async def internal_archive_digest(client: httpx.AsyncClient, path: str, commit: str) -> dict:
-    """Digest of the commit as the internal repository would hand it to an employee (D-90)."""
+    """Digest of the commit as the internal repository would hand it to an employee."""
     spool = tempfile.SpooledTemporaryFile(max_size=32 << 20)
     try:
         async with client.stream("GET", f"{path}/archive/{commit}.tar.gz") as response:
@@ -1263,11 +1262,11 @@ async def internal_archive_digest(client: httpx.AsyncClient, path: str, commit: 
 
 
 async def publish_internal_repo(row: dict) -> tuple[str, dict]:
-    """검증한 공개 GitHub 저장소를 이 기기의 Gitea `mcp` 조직으로 가져온다(D-48).
+    """검증한 공개 GitHub 저장소를 이 기기의 Gitea `mcp` 조직으로 가져온다.
 
     조직은 limited — 로그인한 사용자만 본다. 직원은 읽기·클론·이슈, 관리자는 Gitea 관리자다.
     풀 리퀘스트는 끈다: 이 저장소는 검증한 커밋의 사본이고, 고친 코드는 도입 신청을 다시 거친다.
-    직원에게 보이기 전에, 이 사본의 파일 해시가 검증 때 기록한 것과 같은지 대조한다(D-90).
+    직원에게 보이기 전에, 이 사본의 파일 해시가 검증 때 기록한 것과 같은지 대조한다.
     """
     org = GITEA_ORG
     name = internal_repo_name(row["repository_url"])
@@ -1334,9 +1333,9 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
     # 실제로 워커의 semgrep이 깨져 있던 동안 들어온 요청이 전부 그렇게 됐다.
     # 실패한 시도의 행과 사유는 그대로 남으므로 증적이 사라지지는 않는다.
     # A source approval made before impact input existed does not block a new request: that is how it is
-    # approved again with the input it lacks (DEV-71). A registration taken back out (DISABLED) frees the
+    # approved again with the input it lacks. A registration taken back out (DISABLED) frees the
     # target too: the new request goes through the full review again, and without this the source could
-    # never be approved a second time, e.g. to correct a tool's read/write class (D-199).
+    # never be approved a second time, e.g. to correct a tool's read/write class.
     existing = await db.fetch_one(
         "SELECT id, status FROM mcp_intake_requests r"
         " WHERE intake_kind=%s AND COALESCE(endpoint_url,repository_url)=%s AND repository_path=%s"
@@ -1364,7 +1363,7 @@ async def create_mcp_request(request: McpIntake, authorization: str | None = Hea
         if not request.requested_tools or not set(request.requested_tools) <= {t["name"] for t in found["tools"]}:
             raise HTTPException(422, "필요한 도구를 하나 이상 선택하세요. 도구 목록을 다시 불러오세요.")
     # Submitting is the applicant's own consent to use this service for this purpose; it is recorded as
-    # such, apart from the operator approval that may follow (D-92).
+    # such, apart from the operator approval that may follow.
     async with db.transaction() as connection:
         row = await (await connection.execute(
             """INSERT INTO mcp_intake_requests(
@@ -1719,7 +1718,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     if pending and pending["requested_transport"] != "stdio" and not (
         manual_terms_verified(terms) or conclusion.get("grade") == "T1" or len(risk) >= 10
     ):
-        # D-50: the platform concludes; below T1 the admin either records provider evidence or
+        # The platform concludes; below T1 the admin either records provider evidence or
         # accepts the risk in writing - the same rule that closes a T3 termination case.
         raise HTTPException(409, f"종료 조건 결론이 {conclusion.get('grade') or '아직 없음'}입니다. 위험을 수용하는 사유를 "
                                  "10자 이상 적거나, 제공자 증거 문서로 확인한 기록을 남겨야 승인할 수 있습니다.")
@@ -1728,7 +1727,7 @@ async def approve_mcp_request(request_id: UUID, approval: IntakeApproval | None 
     if risk and pending["requested_transport"] != "stdio" and not manual_terms_verified(terms):
         terms = {**terms, "risk_acceptance": risk, "risk_accepted_by": user["principal"],
                  "risk_accepted_at": datetime.now(UTC).isoformat(), "conclusion_grade": conclusion.get("grade")}
-    # D-90: where the code came from, what it hashed to, whether the scan is whole and recent. A licence
+    # The record states where the code came from, what it hashed to, and whether the scan is whole and recent. A licence
     # the scanner could not read may be attested by the approver; it is recorded as theirs.
     record = dict(pending.get("provenance") or {})
     declared = approval.license.strip() if approval else ""
@@ -1812,7 +1811,7 @@ class IntakeRegistration(ResidencyFields):
     valid_days: int = Field(ge=1, le=365)
     poisoning_ack: bool = False
     tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)
-    # DEV-73: signed manifest for a run on employees' PCs. Excluded from model_dump so a reviewed
+    # Signed manifest for a run on employees' PCs. Excluded from model_dump so a reviewed
     # remote registration still compares equal to what was approved.
     local: dict | None = Field(default=None, exclude=True)
 
@@ -1884,7 +1883,7 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
                 "protocol_version": found["protocol_version"],
                 "tools": {name: advertised[name] for name in proposal.tools}, "code_scan_performed": False}
     evidence = {**row["evidence"], "remote_contract": contract}
-    # A hosted service has no artifact to hash: the record says so and names the endpoint (D-90).
+    # A hosted service has no artifact to hash: the record says so and names the endpoint.
     source = {"kind": "provider-hosted", "source_url": row["endpoint_url"], "version": found["version"], "version_immutable": False,
               "license": {"spdx": None, "applicable": False},
               "artifact": {"applicable": False, "reason": provenance.NOT_APPLICABLE, "endpoint": row["endpoint_url"]},
@@ -1908,7 +1907,7 @@ async def review_remote_contract(request_id: UUID, proposal: RemoteContractRevie
 @app.post("/api/mcp-requests/{request_id}/register")
 async def register_mcp_request(request_id: UUID, request: IntakeRegistration,
                                authorization: str | None = Header(default=None)):
-    """승인한 신청을 Gateway에 등록한다(D-49).
+    """승인한 신청을 Gateway에 등록한다.
 
     승인은 "이 코드를 들여도 된다", 등록은 "이 엔드포인트의 이 도구를 이 등급·이 기한으로 쓴다"는
     결정이다. 신청의 저장소·검증 커밋·목적·종료 조건을 그대로 실어, 등록 뒤의 A.I.G 감사와 종료
@@ -1978,7 +1977,7 @@ async def approved_mcp_rows(user: dict, server_id: str | None = None) -> list[di
                 or registry.source_ref(spec) != row["source_ref"]):
             continue
         allowed = registry.allowed_principals(row["server_id"])
-        # D-234: one judgement for who may use a server ("*" = every active employee).
+        # One judgement determines who may use a server ("*" = every active employee).
         if "admin" not in user["roles"] and not registry.permits(allowed, user["principal"]):
             continue
         try:
@@ -2149,14 +2148,14 @@ class OneClickApproval(StrictModel):
     residency: dict = Field(default_factory=dict)
     # 관리자가 제안된 읽기/쓰기 분류를 낮춘 도구만. 주석이 없는 공개 MCP는 읽기 도구도 쓰기로 제안된다.
     actions: dict[str, Literal["r", "w", "x"]] = Field(default_factory=dict, max_length=300)
-    # 사용 대상(D-234): 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
+    # 사용 대상: 기본은 전체 직원. 신청자만 또는 지정한 직원(로그인 아이디)으로 좁힐 수 있다.
     audience: Literal["all", "requester", "selected"] = "all"
     audience_users: list[str] = Field(default_factory=list, max_length=100)
     # 주소 인자가 있는 도구의 허용 호스트. 제안값과 다를 때만 범위에 남는다.
     destinations: dict[str, list[str]] = Field(default_factory=dict, max_length=300)
 
 
-ALL_PRINCIPALS = "*"  # registry.ALL_PRINCIPALS (D-234); this service does not load the registry
+ALL_PRINCIPALS = "*"  # The wildcard represents every active employee; this service does not load the registry.
 
 
 async def resolve_audience(audience: str, users: list[str], requester: str, *, connection=None) -> list[str]:
@@ -2291,7 +2290,7 @@ def local_discover_timeout(local):
 
 @app.post("/api/mcp-requests/{request_id}/local-run")
 async def set_local_run(request_id: UUID, request: LocalRunSpec, user: dict = Depends(admin_caller)):
-    """저장소형 stdio 서버를 신청자 PC의 격리 컨테이너로 실행하도록 지정한다(DEV-73). 서명은 승인 화면에서."""
+    """저장소형 stdio 서버를 신청자 PC의 격리 컨테이너로 실행하도록 지정한다. 서명은 승인 화면에서."""
     row = await approval_row(request_id, user)
     if row["intake_kind"] != "repository":
         raise HTTPException(409, "저장소 신청만 PC 격리 실행으로 지정할 수 있습니다.")
@@ -2499,7 +2498,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
             if critical and len(reason) < review.RISK_ACCEPTANCE_MIN_REASON:
                 raise HTTPException(422, "치명적 발견이 있습니다. 수용 사유를 10자 이상 입력하세요.")
             assessed = proposal["risk"]
-            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # D-188, D-306: recorded per approval
+            solo_mode, solo = review.solo_mode_enabled(), review.solo_operator(user)  # Recorded per approval.
             approvers = []
             if pending:
                 for actor in pending["approvers"]:
@@ -2510,7 +2509,7 @@ async def approve_and_register(request_id: UUID, request: OneClickApproval, user
                 approvers.append(user["principal"])
             if assessed.get("tier") not in risk_tier.APPROVAL:
                 raise HTTPException(409, "위험 등급을 산정하지 못했습니다. 다시 열어 확인하세요.")
-            # D-189: the same rule the separate approval route applies. Very high asks every click for a written reason.
+            # Very high risk asks for a written reason on every approval click.
             risk_reason = request.risk_reason.strip()
             # root in single-operator mode carries out the approval alone (forced); the record keeps solo_operator.
             verdict, message = risk_tier.decide(assessed["tier"], max(len(approvers), risk_tier.APPROVAL[assessed["tier"]]["approvers"])
@@ -2787,7 +2786,7 @@ class Rejection(StrictModel):
 async def reject(approval_id: UUID, request: Rejection, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(f"{GATEWAY_URL}/api/approvals/{approval_id}/reject",
                                      headers={"Authorization": authorization}, json={"note": request.note})
@@ -2800,7 +2799,7 @@ async def reject(approval_id: UUID, request: Rejection, authorization: str | Non
 async def approve(approval_id: UUID, authorization: str | None = Header(default=None)):
     user = await current_identity(authorization)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.post(f"{GATEWAY_URL}/api/approvals/{approval_id}/approve", headers={"Authorization": authorization})
     if response.status_code >= 400:

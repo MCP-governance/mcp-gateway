@@ -1,9 +1,9 @@
 """The upstream Gitleaks rule catalog, with no secret values in returned evidence.
 
 Detection runs in this process through libmcpgw_gitleaks.so, the Gitleaks Go
-library built as a C-ABI shared object (gateway/native/gitleaks). Starting the
-gitleaks binary per inspection cost a process spawn, a temp directory and a full
-rule compile on every call. The library keeps the compiled catalog and scans in a
+library built as a C-ABI shared object (gateway/native/gitleaks). A binary process,
+temporary directory and full rule compile for every inspection add overhead. The
+library keeps the compiled catalog and scans in a
 worker thread; ctypes releases the GIL while the scan runs, so the event loop keeps
 serving other calls. Same catalog, flags and regexp engine as `gitleaks stdin`
 (tests/secret_engine_parity_check.py).
@@ -21,7 +21,7 @@ from .privacy import InspectionUnavailable
 from .classify import SECRET_PATTERNS
 
 LIBRARY = os.getenv("GITLEAKS_LIBRARY", "/usr/local/lib/libmcpgw_gitleaks.so")
-# 문서 여러 개를 한 번에 읽는 결과(수십 KB)와 동시 호출에서 5초가 모자라 정상 문서가 보류됐다(10-23 실사용).
+# 대용량 문서와 동시 호출에서도 정상 문서가 보류되지 않도록 제한 시간을 둔다.
 TIMEOUT_SECONDS = 20
 
 _slots = asyncio.Semaphore(4)

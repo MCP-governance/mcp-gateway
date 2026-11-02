@@ -1,4 +1,4 @@
-"""An administrator stops one employee's use of one MCP server and later lets it resume (DEV-79).
+"""An administrator stops one employee's use of one MCP server and later lets it resume.
 
 The console account, the employee's other servers and everyone else's use of this server are
 untouched, so this is neither the account status nor the server-wide stop of ops_response.

@@ -134,7 +134,7 @@ class RequireBearer:
 
 
 class ServerPath:
-    """`/mcp/<server>/` is the same MCP app scoped to one registered server (D-30):
+    """`/mcp/<server>/` is the same MCP app scoped to one registered server:
     the harness's managed config lists one URL per server, so the employee sees the
     servers under their own names. The name comes from the URL only; an unknown one
     is 404 instead of silently falling back to the aggregate endpoint."""
@@ -200,7 +200,7 @@ class ServerPath:
                                                                    claims.get("device_id"), name or None):
                 # MCP transport: a session the server no longer serves is answered 404 and the
                 # client starts a new one with initialize. A session the gateway never bound
-                # (e.g. opened before this binding existed) is that case alone, not a refusal.
+                # (e.g. one opened by an older gateway) is that case alone, not a refusal.
                 refusal = await upstream.downstream_refusal(session_id)
                 body = {"detail": "MCP 세션이 종료됐습니다. 새 세션을 시작하세요."}
                 if refusal:
@@ -260,13 +260,13 @@ async def caller(authorization: str | None = Header(default=None)) -> dict:
 async def admin_caller(authorization: str | None = Header(default=None)) -> dict:
     """An administrative API asks for the role *and* for an interactive sign-in.
 
-    The same person also holds an `mcp` token, which `bob-sso` leaves in a file on their
+    The same person also holds an `mcp` token, which the SSO helper leaves in a file on their
     PC for the harnesses to read. Accepting it here would make every local process on an
     administrator's machine able to approve calls and change enforcement in their name.
     """
     user = await authenticated_user(authorization, require_scope=CONSOLE_SCOPE)
     if "admin" not in user["roles"]:
-        raise HTTPException(403, "합성 관리자 계정이 필요합니다.")
+        raise HTTPException(403, "관리자 계정이 필요합니다.")
     return user
 
 
@@ -500,7 +500,7 @@ async def registry_view(user: dict = Depends(admin_caller)) -> dict:
                             if synchronization and (row["id"] in synchronization or row["id"] in console) else {})}
                         for row in servers if row["id"] in catalog_servers or row["id"] in synchronization],
             "tools": tools, "usage_relationships": relationships,
-            # D-49: which servers came from a Console registration, and until when they may be used.
+            # which servers came from a Console registration, and until when they may be used.
             "registrations": {sid: {key: spec.get(key) for key in ("valid_until", "intake_id", "registered_by", "registered_at",
                                                                     "data_class", "tools", "tool_reviews", "provenance",
                                                                     "allowed_principals", "supplier_assurance", "supplier_assurance_unconfirmed", "residency", "residency_review", "risk_assessment")}
@@ -532,7 +532,7 @@ async def overview(user: dict = Depends(admin_caller)) -> dict:
     Content does not vary by caller (admin_caller only gates who may ask), so one
     cache entry serves every admin. Queries run one at a time on the small admin
     pool instead of asyncio.gather()-ing ten at once, so a Console poll cannot hold
-    as many connections as the judging path has in total (D-0-6).
+    as many connections as the judging path has in total.
     """
     return await _overview_cache.get(None, _compute_overview)
 
@@ -593,7 +593,7 @@ async def _compute_overview() -> dict:
                                count(*) FILTER (WHERE upstream_executed AND (result_preview->>'disposition'='withheld'
                                                 OR policy_id='MCP-OUTPUT-001')) AS withheld
                           FROM decisions d WHERE created_at > {TODAY} AND {decommission.REAL_CALL}""")
-    # decision -> sent? -> executed? -> what came back, for today's tool calls (D-63 Sankey).
+    # decision -> sent? -> executed? -> what came back, for today's tool calls (Sankey).
     pipeline = await db.admin_fetch_all(f"""SELECT decision, upstream_attempted AS attempted, upstream_executed AS executed,
                                              COALESCE(result_preview->>'disposition',
                                                       CASE WHEN upstream_executed AND policy_id='MCP-OUTPUT-001' THEN 'withheld'
@@ -798,7 +798,7 @@ async def session(request: SessionRequest) -> dict:
         async with httpx.AsyncClient(timeout=5) as client:
             response = await client.post(AGENT_SERVICE_URL + "/auth/mock-login", json=request.model_dump())
     except httpx.HTTPError as exc:
-        raise HTTPException(503, "합성 인증 서비스에 연결할 수 없습니다.") from exc
+        raise HTTPException(503, "인증 서비스에 연결할 수 없습니다.") from exc
     if response.status_code == 429:
         raise HTTPException(429, "로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.")
     if response.status_code == 403:
@@ -904,16 +904,16 @@ async def registry_approve_contract(server_id: str, request: ContractApproval,
 
 @app.post("/api/registry/{server_id}/check")
 async def registry_check(server_id: str, user: dict = Depends(admin_caller)) -> dict:
-    """지금 MCP 세션을 열 수 있는지만 본다 (D-40). 계약·상태·감사는 건드리지 않는다."""
+    """지금 MCP 세션을 열 수 있는지만 본다. 계약·상태·감사는 건드리지 않는다."""
     try:
         return await core.check_server(server_id)
     except LookupError as exc:
         raise HTTPException(404, "카탈로그에 없는 서버입니다.") from exc
 
 
-# ── 승인한 서버를 Console에서 Gateway에 등록 (D-49) ──────────────────────────────
+# ── 승인한 서버를 Console에서 Gateway에 등록 ──────────────────────────────
 class LocalRun(StrictModel):
-    """DEV-73: the manifest and the signature an approver produced offline."""
+    """The manifest and the signature an approver produced offline."""
     manifest: dict
     signature: str = Field(min_length=40, max_length=200)
 
@@ -942,8 +942,8 @@ class RegistryRegister(ResidencyFields):
     owner_department: str = Field(default="", max_length=120)
     intake_id: str = Field(default="", max_length=64)
     exit_terms: dict[str, bool] = Field(default_factory=dict)
-    poisoning_ack: bool = False  # D-52: the admin read the flagged tool text and approves it anyway
-    tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)  # D-91: a person scoped every approved tool
+    poisoning_ack: bool = False  # the admin read the flagged tool text and approves it anyway
+    tool_reviews: dict[str, ToolReview] = Field(min_length=1, max_length=300)  # a person scoped every approved tool
     local: LocalRun | None = None
 
 
@@ -1107,7 +1107,7 @@ async def audit_retention(user: dict = Depends(admin_caller)) -> dict:
 
 @app.put("/api/audit/retention")
 async def audit_retention_update(request: RetentionRequest, user: dict = Depends(admin_caller)) -> dict:
-    """A period shorter than the strictest selected jurisdiction is refused (D-141)."""
+    """A period shorter than the strictest selected jurisdiction is refused."""
     try:
         return await retention.set_setting(request.days, request.jurisdictions, user["principal"])
     except ValueError as exc:
@@ -1300,7 +1300,7 @@ async def termination_relationships(user: dict = Depends(admin_caller)) -> dict:
 
 @app.post("/api/termination/cases/{case_id}/collect")
 async def termination_collect(case_id: str, request: EvidenceCollect, user: dict = Depends(admin_caller)) -> dict:
-    """Collect state evidence the organisation can obtain itself (paper 5.2)."""
+    """Collect state evidence the organisation can obtain itself."""
     try:
         return await decommission.collect(case_id, list(request.kinds), user["principal"])
     except ValueError as exc:
@@ -1319,7 +1319,7 @@ async def termination_revoke_credential(target_id: str, user: dict = Depends(adm
 
 @app.post("/api/lab/restore/{server_id}")
 async def lab_restore(server_id: str, user: dict = Depends(admin_caller)) -> dict:
-    """Lab only: bring a terminated server back so the demo can be repeated."""
+    """Bring a terminated server back so the same termination flow can be run again."""
     try:
         result = await decommission.restore_server(server_id, user["principal"])
     except ValueError as exc:
@@ -1472,10 +1472,10 @@ async def termination_drill(server_id: str, user: dict = Depends(admin_caller)) 
 
 # ── 엔드포인트 평면 ─────────────────────────────────────────────────────────
 #
-# 이 구간의 자격은 사람 계정이 아니라 **장치 자격**이다. v1.5까지 에이전트는
-# 관리자 계정으로 로그인했고, 그래서 사람들의 PC에 깔린 프로세스가 침해되면
-# 관리자 API 전체가 노출됐다. 지금은 장치 키로만 들어오고, 그 키로 할 수 있는
-# 일은 scopes에 적힌 보고 두 가지뿐이다. 발급·조회·폐기는 관리자만 한다.
+# 이 구간의 자격은 사람 계정이 아니라 **장치 자격**이다. 에이전트가 관리자 계정으로
+# 로그인하면 사람들의 PC에 깔린 프로세스가 침해될 때 관리자 API 전체가 노출된다. 그래서
+# 장치 키로만 들어오고, 그 키로 할 수 있는 일은 scopes에 적힌 보고 두 가지뿐이다.
+# 발급·조회·폐기는 관리자만 한다.
 
 
 class EndpointDeviceCreate(StrictModel):
@@ -1573,7 +1573,7 @@ class HostReport(StrictModel):
     kernel: str = Field(max_length=120)
     wsl: bool
     other_accounts: list[HostAccount] = Field(default_factory=list, max_length=64)
-    # The harness versions installed for the managed account: what a simple-mode Windows PC reports (D-239).
+    # The harness versions installed for the managed account: what a simple-mode Windows PC reports.
     harnesses: dict[Literal["claude", "codex"], Annotated[str, Field(max_length=40, pattern=r"^[0-9A-Za-z.+_-]*$")]] = Field(
         default_factory=dict)
 
@@ -2148,7 +2148,7 @@ async def risk_catalog(user: dict = Depends(caller)) -> dict:
     """AI-Infra-Guard의 위험 범주와 이 조직의 통제를 연결한 표.
 
     발견 목록을 읽을거리가 아니라 통제로 잇는 것은 이 매핑뿐이다. 인증 없이 여는
-    이유는 조직 자산이 아니라 참조 분류표이기 때문이다(13절의 열린 읽기 목록).
+    이유는 조직 자산이 아니라 참조 분류표이기 때문이다.
     """
     rows = await db.fetch_all("SELECT * FROM aig_risk_catalog ORDER BY ordinal")
     return {"categories": [dict(row) for row in rows]}

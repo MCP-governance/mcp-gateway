@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""MINT가 승인·운영 중인 서버 목록으로 LiteLLM `mcp_servers` YAML을 만든다 (업스트림 방식, D-191).
+"""MINT가 승인·운영 중인 서버 목록으로 LiteLLM `mcp_servers` YAML을 만든다 (업스트림 방식).
 
     MINT_ADMIN_TOKEN=<콘솔 로그인 토큰> python gen_mcp_servers.py --gateway https://console.corp --api-prefix /gw --base-url https://gateway.corp > mcp_servers.yaml
     python gen_mcp_servers.py --registry-file registry.json --base-url http://edge-proxy:8081 > mcp_servers.yaml

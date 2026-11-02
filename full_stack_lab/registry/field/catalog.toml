@@ -1,4 +1,4 @@
-# Field default: no demo MCP server is approved or started.
+# Default: no sample MCP server is approved or started.
 [harness]
 gateway_url = ""
 

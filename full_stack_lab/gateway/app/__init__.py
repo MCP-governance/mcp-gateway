@@ -1,1 +1,1 @@
-"""MCP governance full-stack lab."""
+"""MCP governance full-stack application."""

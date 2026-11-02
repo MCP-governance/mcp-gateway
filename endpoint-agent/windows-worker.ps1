@@ -258,7 +258,7 @@ try {
     }
     if ($managed -and -not $reuseRuntime) {
         # The runtime is replaced in place: a running service or helper keeps its files open, and the half-extracted
-        # runtime then had no python.exe (pj3 10-25). Stop them first; finally starts them again.
+# Stop the processes first; finally starts them again.
         $stoppedTasks = @(Get-ScheduledTask -TaskName 'MCPGatewayManaged-*' -ErrorAction SilentlyContinue |
             Where-Object { $_.State -eq 'Running' } | ForEach-Object { $_.TaskName })
         foreach ($name in $stoppedTasks) { Stop-ScheduledTask -TaskName $name }

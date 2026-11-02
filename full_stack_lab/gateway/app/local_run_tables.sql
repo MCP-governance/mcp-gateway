@@ -13,7 +13,7 @@ ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS token_jti uuid;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS policy_version text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS control_sha256 text;
 ALTER TABLE local_jobs ADD COLUMN IF NOT EXISTS run_seconds double precision NOT NULL DEFAULT 60 CHECK (run_seconds>0 AND run_seconds<=60);
--- D-333: the per-call bound went from 20 to 60 seconds; installed databases carry the old check.
+-- The per-call bound is 60 seconds; installed databases carry the older 20-second check, which the next line drops.
 ALTER TABLE local_jobs DROP CONSTRAINT IF EXISTS local_jobs_run_seconds_check;
 ALTER TABLE local_jobs ADD CONSTRAINT local_jobs_run_seconds_check CHECK (run_seconds>0 AND run_seconds<=60);
 ALTER TABLE local_jobs ALTER COLUMN run_seconds SET DEFAULT 60;
@@ -66,7 +66,7 @@ BEGIN
     IF TG_OP='UPDATE' THEN changed := ROW(OLD.status,OLD.role,OLD.department) IS DISTINCT FROM ROW(NEW.status,NEW.role,NEW.department); END IF;
   ELSIF TG_TABLE_NAME='endpoint_agents' THEN
     d := OLD.endpoint_id;
-    -- policy_hash is left out: it moves with every server approval. A control change is caught per job (D-238).
+    -- policy_hash is left out: it moves with every server approval. A control change is caught per job.
     IF TG_OP='UPDATE' THEN changed := ROW(OLD.status,OLD.managed_state,OLD.device_epoch,OLD.owner_token,OLD.local_uid)
        IS DISTINCT FROM ROW(NEW.status,NEW.managed_state,NEW.device_epoch,NEW.owner_token,NEW.local_uid); END IF;
   ELSIF TG_TABLE_NAME='mcp_tools' THEN
