@@ -10,7 +10,7 @@
 
 [![Verify](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml)
 [![CodeQL](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml)
-![Version](https://img.shields.io/badge/version-0.9.0-1f4287)
+![Version](https://img.shields.io/badge/version-0.10.0-1f4287)
 ![MCP](https://img.shields.io/badge/MCP-2025--11--25-1f4287)
 ![Docker](https://img.shields.io/badge/deploy-Docker%20Compose-2496ED?logo=docker&logoColor=white)
 
@@ -48,11 +48,11 @@ relationship ends MINT blocks it immediately and judges, from evidence, whether 
 
 ## Five-minute install
 
-The install example uses the public `v0.9.0` release. The current-code descriptions in this README also include [unreleased changes](CHANGELOG.md#미배포).
+The install example uses the public `v0.10.0` release of the deployment repository [MCP-governance/mint](https://github.com/MCP-governance/mint). The current-code descriptions in this README also include [unreleased changes](CHANGELOG.md#미배포).
 
 ```bash
-git clone --branch v0.9.0 https://github.com/MCP-governance/mcp-gateway.git
-cd mcp-gateway/deploy
+git clone --branch v0.10.0 https://github.com/MCP-governance/mint.git
+cd mint/deploy
 ./install.sh --bind <internal IPv4>
 ```
 
@@ -104,6 +104,7 @@ The detailed threat model and limits are in [security boundaries](docs/ai/SECURI
 ## Development and contributing
 
 - Design: [ARCHITECTURE](docs/ai/ARCHITECTURE.md) · decisions: [DECISIONS](docs/ai/DECISIONS.md) · document map: [docs/ai](docs/ai/README.md)
+- Releases: each version's code, without the development documents and CI, goes to [MCP-governance/mint](https://github.com/MCP-governance/mint) with the same tag (`vX.Y.Z`) and a release.
 - Lab and verification stack (synthetic company, four employee PCs, ten MCP servers): [full_stack_lab/](full_stack_lab/README.md)
 - Development status, work reports and experiment evidence: [research/llm-wiki/](research/llm-wiki/README.md)
 - Contribution rules and invariants: [AGENTS.md](AGENTS.md). Work on a branch per task and add user-visible changes under "미배포" (Unreleased) in `CHANGELOG.md`.

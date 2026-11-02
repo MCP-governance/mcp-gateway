@@ -107,6 +107,7 @@ cd full_stack_lab
   병합·닫힘 즉시 원격 브랜치를 지우고, 실험·진단용 브랜치는 그날 안에 지운다.
 - 커밋 메시지: 첫 줄 `feat|fix|docs|test(v2): …`, 본문에 이유.
 - **릴리스**: 판본은 최상위 `VERSION`(유의적 버전) 하나가 정하고, 사용자에게 보이는 변경은 `CHANGELOG.md`의 「미배포」에 적는다.
+  판본을 낼 때는 `VERSION`과 「미배포」→`[X.Y.Z]` 구간을 올린 커밋을 main에 병합해 태그를 붙이고, `python .github/release/make_mint.py vX.Y.Z <mint 체크아웃>`으로 배포 저장소 `MCP-governance/mint`를 만들어 커밋 「MINT X.Y.Z」·같은 태그·GitHub 릴리스(본문은 `.git/mint-release-notes.md`)로 올린다.
   태그 `vX.Y.Z`는 `VERSION`과 같은 커밋에만 붙인다. 원격 브랜치는 병합 뒤 지우고, 지우기 전 미병합 브랜치는 `archive/<날짜>-<이름>` 태그로 보존한다.
 - **위생**: 제품 코드·README·운영 문서·배포 묶음에 기기 주소·계정·로컬 경로·비밀번호·작업 과정 서술을 쓰지 않는다
   (`python3 deploy/check.py`, 비밀은 CI의 gitleaks가 검사). 역사 기록은 `docs/ai/DECISIONS.md`와 `research/llm-wiki`에 남긴다.

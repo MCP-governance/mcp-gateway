@@ -10,7 +10,7 @@
 
 [![검증](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/verify.yml)
 [![CodeQL](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/MCP-governance/mcp-gateway/actions/workflows/codeql.yml)
-![판본](https://img.shields.io/badge/판본-0.9.0-1f4287)
+![판본](https://img.shields.io/badge/판본-0.10.0-1f4287)
 ![MCP](https://img.shields.io/badge/MCP-2025--11--25-1f4287)
 ![Docker](https://img.shields.io/badge/배포-Docker%20Compose-2496ED?logo=docker&logoColor=white)
 
@@ -47,11 +47,11 @@ MINT는 직원 PC의 AI 코딩 에이전트(Claude Code·Codex CLI)의 관리형
 
 ## 5분 설치
 
-설치 예시는 공개 판본 `v0.9.0` 기준입니다. 이 README의 최신 코드 설명에는 [미배포 변경](CHANGELOG.md#미배포)이 포함됩니다.
+설치 예시는 배포 저장소 [MCP-governance/mint](https://github.com/MCP-governance/mint)의 공개 판본 `v0.10.0` 기준입니다. 이 README의 최신 코드 설명에는 [미배포 변경](CHANGELOG.md#미배포)이 포함됩니다.
 
 ```bash
-git clone --branch v0.9.0 https://github.com/MCP-governance/mcp-gateway.git
-cd mcp-gateway/deploy
+git clone --branch v0.10.0 https://github.com/MCP-governance/mint.git
+cd mint/deploy
 ./install.sh --bind <사내 IPv4>
 ```
 
@@ -103,6 +103,7 @@ cd mcp-gateway/deploy
 ## 개발·기여
 
 - 설계: [docs/ai/ARCHITECTURE.md](docs/ai/ARCHITECTURE.md) · 결정 기록: [docs/ai/DECISIONS.md](docs/ai/DECISIONS.md) · 문서 지도: [docs/ai/README.md](docs/ai/README.md)
+- 배포: 판본마다 개발 문서·CI를 뺀 코드를 [MCP-governance/mint](https://github.com/MCP-governance/mint)에 같은 태그(`vX.Y.Z`)와 릴리스로 올립니다.
 - 실습·검증 스택(합성 회사·직원 PC 4대·MCP 서버 10종): [full_stack_lab/](full_stack_lab/README.md)
 - 개발 현황·작업 보고·실험 증거: [research/llm-wiki/](research/llm-wiki/README.md)
 - 기여 규칙과 깨면 안 되는 불변식: [AGENTS.md](AGENTS.md). 변경은 작업별 브랜치에서 하고, 사용자에게 보이는 변경은 `CHANGELOG.md`의 「미배포」에 적습니다.
