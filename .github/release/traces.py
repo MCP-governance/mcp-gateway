@@ -18,7 +18,7 @@ STRONG = re.compile(
 # In comments and docstrings only: dates, change-request numbers, model lanes, internal iterations, the lab,
 # unfinished-work markers.
 SOFT = re.compile(
-    r"\bPR ?#\d+|(?<![\w&])#\d{2,3}\b|\b(?:sol|luna|terra|Opus|Sonnet|Haiku)\b|\bv[2-4]\b|\b[Ll]ab\b|실습"
+    r"\bPR ?#\d+|(?<![\w&])#\d{2,3}\b|\b(?:sol|luna|terra|Opus|Sonnet|Haiku)\b|(?<!Compose )\bv[2-4]\b|\b[Ll]ab\b|실습"
     r"|\bTODO\b|\bFIXME\b|\bXXX\b|\bHACK\b|\bPAC-15\b|팀 룰셋|레인\b")
 # A date is a trace unless it names an MCP specification revision.
 DATE = re.compile(r"\b(?:20\d\d-)?(?:0?[1-9]|1[0-2])-[0-3]\d\b")
@@ -99,6 +99,9 @@ def _segments(kind, text):
 
 
 def comments(path, text):
+    if path.endswith(".md"):
+        # Documentation is all prose; a CHANGELOG version heading carries its release date.
+        return [(n, line) for n, line in enumerate(text.splitlines(), 1) if not line.startswith("## [")]
     kind = style(path)
     if kind == "py":
         return _python(text)
